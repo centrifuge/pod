@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"

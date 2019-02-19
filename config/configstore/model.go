@@ -2,15 +2,16 @@ package configstore
 
 import (
 	"encoding/json"
+	"math/big"
+	"reflect"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"math/big"
-	"reflect"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -520,16 +521,14 @@ func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 	return acc.EthereumContextWaitTimeout
 }
 
-
-
 // SignMsg signs a message with the signing key
 func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	//TODO change signing keys to curve ed25519
 	publicKey, privateKey, err := ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
-	if err !=  nil {
+	if err != nil {
 		return nil, err
 	}
-	signature, err := crypto.SignMessage(privateKey,msg,crypto.CurveEd25519,true)
+	signature, err := crypto.SignMessage(privateKey, msg, crypto.CurveEd25519, true)
 	if err != nil {
 		return nil, err
 	}
@@ -544,10 +543,8 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		PublicKey: publicKey,
 		Signature: signature,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
-	},nil
+	}, nil
 }
-
-
 
 // GetKeys returns the keys of an account
 // TODO remove GetKeys and add signing methods to account
@@ -555,20 +552,19 @@ func (acc *Account) GetKeys() (idKeys identity.IDKeys, err error) {
 	keys := map[int]identity.IDKey{}
 
 	pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
-	if err !=  nil {
+	if err != nil {
 		return idKeys, err
 	}
 	keys[identity.KeyPurposeP2P] = identity.IDKey{
-		PublicKey: pk,
+		PublicKey:  pk,
 		PrivateKey: sk}
 
-
 	pk, sk, err = ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
-	if err !=  nil {
+	if err != nil {
 		return idKeys, err
 	}
 	keys[identity.KeyPurposeSigning] = identity.IDKey{
-		PublicKey: pk,
+		PublicKey:  pk,
 		PrivateKey: sk}
 
 	//secp256k1 keys
@@ -579,15 +575,15 @@ func (acc *Account) GetKeys() (idKeys identity.IDKeys, err error) {
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 
 	keys[identity.KeyPurposeEthMsgAuth] = identity.IDKey{
-		PublicKey: address32Bytes[:],
+		PublicKey:  address32Bytes[:],
 		PrivateKey: sk}
 
 	id, err := acc.GetIdentityID()
 	if err != nil {
 		return idKeys, err
 	}
-	idKeys = identity.IDKeys{Id:id,Keys:keys}
-	return idKeys,nil
+	idKeys = identity.IDKeys{ID: id, Keys: keys}
+	return idKeys, nil
 
 }
 

@@ -3,14 +3,14 @@ package identity
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 // DID stores the identity address of the user
 type DID common.Address
-
 
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
@@ -27,11 +27,12 @@ func NewDIDFromString(address string) DID {
 	return DID(common.HexToAddress(address))
 }
 
+// NewDIDFromByte returns a DID based on a byte slice
 func NewDIDFromByte(did []byte) DID {
 	return DID(common.BytesToAddress(did))
 }
 
-// Service interface contains the methods to interact with the identity contract
+// ServiceDID interface contains the methods to interact with the identity contract
 type ServiceDID interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key KeyDID) error
@@ -71,7 +72,7 @@ type ServiceDID interface {
 	GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)
 }
 
-// Key defines a single ERC725 identity key
+// KeyDID defines a single ERC725 identity key
 type KeyDID interface {
 	GetKey() [32]byte
 	GetPurpose() *big.Int
@@ -131,9 +132,8 @@ type IDKey struct {
 	PrivateKey []byte
 }
 
-// Keys holds key of an identity
+// IDKeys holds key of an identity
 type IDKeys struct {
-	Id   []byte
+	ID   []byte
 	Keys map[int]IDKey
 }
-

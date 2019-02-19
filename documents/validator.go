@@ -295,7 +295,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 				return errS
 			}
 
-			signed, erri := idService.IsSignedWithPurpose(did,msg,sig.Signature,big.NewInt(identity.KeyPurposeSigning))
+			signed, erri := idService.IsSignedWithPurpose(did, msg, sig.Signature, big.NewInt(identity.KeyPurposeSigning))
 			if !signed || erri != nil {
 				err = errors.AppendError(
 					erri,

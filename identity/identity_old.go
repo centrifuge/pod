@@ -51,8 +51,6 @@ type IDConfig struct {
 	Keys map[int]IDKey
 }
 
-
-
 // Equal checks if c == other
 func (c CentID) Equal(other CentID) bool {
 	for i := range c {

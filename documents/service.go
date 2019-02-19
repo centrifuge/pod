@@ -70,7 +70,7 @@ type service struct {
 	notifier         notification.Sender
 	anchorRepository anchors.AnchorRepository
 	registry         *ServiceRegistry
-	idService identity.ServiceDID
+	idService        identity.ServiceDID
 }
 
 var srvLog = logging.Logger("document-service")
@@ -86,7 +86,7 @@ func DefaultService(
 		anchorRepository: anchorRepo,
 		notifier:         notification.NewWebhookSender(),
 		registry:         registry,
-		idService: idService,
+		idService:        idService,
 	}
 }
 

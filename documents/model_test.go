@@ -4,9 +4,10 @@ package documents
 
 import (
 	"crypto/sha256"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -58,7 +59,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
 
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")

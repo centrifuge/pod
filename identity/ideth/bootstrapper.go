@@ -27,7 +27,6 @@ const BootstrappedDIDFactory string = "BootstrappedDIDFactory"
 // BootstrappedDIDService stores the id of the service
 const BootstrappedDIDService string = "BootstrappedDIDService"
 
-
 // Bootstrap initializes the factory contract
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db

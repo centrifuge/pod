@@ -4,11 +4,12 @@ package invoice
 
 import (
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"

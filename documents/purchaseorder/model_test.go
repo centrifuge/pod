@@ -4,10 +4,11 @@ package purchaseorder
 
 import (
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/satori/go.uuid"

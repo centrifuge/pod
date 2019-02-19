@@ -317,7 +317,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	keys, err := account.GetKeys()
 	assert.Nil(t, err)
 
-	rfsv := readyForSignaturesValidator(keys.Id, keys.Keys[identity.KeyPurposeSigning].PrivateKey, keys.Keys[identity.KeyPurposeSigning].PublicKey)
+	rfsv := readyForSignaturesValidator(keys.ID, keys.Keys[identity.KeyPurposeSigning].PrivateKey, keys.Keys[identity.KeyPurposeSigning].PublicKey)
 
 	// fail getCoreDoc
 	model := mockModel{}
@@ -355,7 +355,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	cd.SigningRoot = utils.RandomSlice(32)
 
 	signature, err := account.SignMsg(cd.SigningRoot)
-	assert.Nil(t,err)
+	assert.Nil(t, err)
 
 	cd.Signatures = []*coredocumentpb.Signature{signature}
 	model = mockModel{}
@@ -390,8 +390,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 
-
-	srv.On("IsSignedWithPurpose", mock.Anything, mock.Anything,mock.Anything, mock.Anything).Return(false,errors.New("fail")).Once()
+	srv.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(false, errors.New("fail")).Once()
 	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
 	cd.Signatures = append(cd.Signatures, s)
 	err = ssv.Validate(nil, model)
@@ -402,7 +401,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(cd, nil).Once()
-	srv.On("IsSignedWithPurpose", mock.Anything, mock.Anything,mock.Anything, mock.Anything).Return(true,nil).Once()
+	srv.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
 	cd.Signatures = []*coredocumentpb.Signature{{}}
 

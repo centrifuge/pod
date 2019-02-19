@@ -42,12 +42,10 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-
-	didService, ok :=ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
+	didService, ok := ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
 	if !ok {
 		return errors.New("identity service not initialized")
 	}
-
 
 	ctx[BootstrappedDocumentService] = DefaultService(repo, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
@@ -80,7 +78,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
-	didService, ok :=ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
+	didService, ok := ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
 	if !ok {
 		return errors.New("identity service not initialized")
 	}

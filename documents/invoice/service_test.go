@@ -55,13 +55,13 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) 
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
 	idService := testingcommons.MockIdentityService{}
-	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything,mock.Anything, mock.Anything).Return(true,nil).Once()
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(),&idService)
+	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService)
 	return idService, DefaultService(
 		docSrv,
 		repo,
