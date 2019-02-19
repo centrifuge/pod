@@ -262,14 +262,17 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
-	collabs = []string{"0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7", "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3"}
+	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
+	assert.NoError(t, err)
+	collabs = []string{collab1.String(), collab2.String()}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], collab1[:], collab2[:]})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {

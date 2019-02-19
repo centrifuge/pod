@@ -3,7 +3,6 @@
 package invoice
 
 import (
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"testing"
 
@@ -383,7 +382,6 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotNil(t, doc)
 	dm, err := doc.PackCoreDocument()
 	assert.Nil(t, err)
-	fmt.Println(dm.Document.Collaborators)
 	assert.Equal(t, wantCollab[:], dm.Document.Collaborators[2])
 	assert.Len(t, dm.Document.Collaborators, 3)
 	oldDM, err := old.PackCoreDocument()
@@ -419,7 +417,7 @@ func TestService_Update(t *testing.T) {
 	assert.Contains(t, err.Error(), "document not found")
 
 	payload := testingdocuments.CreateInvoicePayload()
-	payload.Collaborators = []string{"0x010203040506"}
+	payload.Collaborators = []string{testingidentity.GenerateRandomDID().String()}
 	inv, err := invSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	dm, err = inv.PackCoreDocument()
@@ -441,7 +439,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	data.GrossAmount = 100
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
-	collab := hexutil.Encode(utils.RandomSlice(6))
+	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
 		Identifier:    hexutil.Encode(dm.Document.DocumentIdentifier),
 		Collaborators: []string{collab},

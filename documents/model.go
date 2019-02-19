@@ -607,12 +607,14 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.D
 func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
-		ocsm[hexutil.Encode(c)] = struct{}{}
+		cs := strings.ToLower(hexutil.Encode(c))
+		ocsm[cs] = struct{}{}
 	}
 
 	var uc []string
 	for _, c := range newCollabs {
-		if _, ok := ocsm[c]; ok {
+		cs := strings.ToLower(c)
+		if _, ok := ocsm[cs]; ok {
 			continue
 		}
 
