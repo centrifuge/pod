@@ -450,7 +450,7 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 
 // GenerateNewSalts generates salts for new document
 func GenerateNewSalts(document proto.Message, prefix string, compactPrefix []byte) (*proofs.Salts, error) {
-	docSalts := &proofs.Salts{}
+	docSalts := new(proofs.Salts)
 	t := NewDefaultTreeWithPrefix(docSalts, prefix, compactPrefix)
 	err := t.AddLeavesFromDocument(document)
 	if err != nil {
