@@ -250,6 +250,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 func TestPOModel_calculateDataRoot(t *testing.T) {
 	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
 	poModel := new(PurchaseOrder)
+	poModel.CoreDocumentModel = documents.NewCoreDocModel()
 	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")

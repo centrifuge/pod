@@ -775,13 +775,10 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
+func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload documentpb.AccessTokenParams, roleKey []byte) (*coredocumentpb.AccessToken, error) {
 	tokenIdentifier := utils.RandomSlice(32)
 	granterID := id.ID[:]
-	roleID, err := utils.ConvertIntToByte32(len(m.Document.Roles))
-	if err != nil {
-		return nil, err
-	}
+	roleID := roleKey
 	granteeID, err := identity.CentIDFromString(payload.Grantee)
 	if err != nil {
 		return nil, err
@@ -822,16 +819,14 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
-	at, err := nm.assembleAccessToken(id, payload)
+
+	role := new(coredocumentpb.Role)
+	rk := utils.RandomSlice(32)
+	role.RoleKey = rk[:]
+	at, err := nm.assembleAccessToken(id, payload, rk[:])
 	if err != nil {
 		return nil, errors.New("failed to construct AT: %v", err)
 	}
-	role := new(coredocumentpb.Role)
-	rk, err := utils.ConvertIntToByte32(len(nm.Document.Roles))
-	if err != nil {
-		return nil, errors.New("failed to derive role key: %v", err)
-	}
-	role.RoleKey = rk[:]
 	role.AccessTokens = append(role.AccessTokens, at)
 	nm.addNewRule(role, ACLRead)
 	if err := nm.setCoreDocumentSalts(); err != nil {

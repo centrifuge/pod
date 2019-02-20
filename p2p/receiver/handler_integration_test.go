@@ -104,7 +104,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	assert.NotNil(t, anchorResp, "must be non nil")
 
 	// Retrieve document from anchor repository with document_identifier
-	getReq := getGetDocumentRequest(dm)
+	getReq := getDocumentRequestPeer(dm)
 	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
 	assert.Nil(t, err)
 	assert.ObjectsAreEqual(getDocResp.Document, doc)
@@ -384,9 +384,12 @@ func getSignatureRequest(dm *documents.CoreDocumentModel) *p2ppb.SignatureReques
 	return &p2ppb.SignatureRequest{Document: &doc}
 }
 
-func getGetDocumentRequest(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
+func getDocumentRequestPeer(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
 	doc := dm.Document
-	return &p2ppb.GetDocumentRequest{DocumentIdentifier: doc.DocumentIdentifier}
+	return &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: doc.DocumentIdentifier,
+		AccessType: p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
 }
 
 func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2ppb.SignatureResponse {
