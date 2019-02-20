@@ -24,7 +24,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -229,6 +229,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	data.ExtraData = "0x010203020301"
 	data.Recipient = "0x010203040506"
+	inv.CoreDocumentModel = documents.NewCoreDocModel()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
@@ -257,6 +258,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
+	inv.CoreDocumentModel = documents.NewCoreDocModel()
 	collabs = []string{"0x010102040506", "0x010203020302"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")

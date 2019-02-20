@@ -216,6 +216,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrder)
+	poModel.CoreDocumentModel = documents.NewCoreDocModel()
 	err := poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
@@ -236,6 +237,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collabs = []string{"0x010102040506", "0x010203020302"}
+	poModel.CoreDocumentModel = documents.NewCoreDocModel()
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 
