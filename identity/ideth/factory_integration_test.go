@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/testingutils"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -51,7 +53,7 @@ func TestMain(m *testing.M) {
 
 func TestCreateIdentity_successful(t *testing.T) {
 
-	factory := ctx[BootstrappedDIDFactory].(Factory)
+	factory := ctx[BootstrappedDIDFactory].(identity.Factory)
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 

@@ -36,7 +36,7 @@ var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
-	var bootstappers = []bootstrap.TestBootstrapper{
+	var bootstrappers = []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
@@ -44,15 +44,15 @@ func TestMain(m *testing.M) {
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
-		&configstore.Bootstrapper{},
 		&ideth.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		&queue.Starter{},
 	}
 
-	bootstrap.RunTestBootstrappers(bootstappers, ctx)
+	bootstrap.RunTestBootstrappers(bootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
-	bootstrap.RunTestTeardown(bootstappers)
+	bootstrap.RunTestTeardown(bootstrappers)
 	os.Exit(result)
 }
 

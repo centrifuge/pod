@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -48,7 +50,7 @@ func getTestDIDContext(t *testing.T, did id.DID) context.Context {
 }
 
 func deployIdentityContract(t *testing.T) *id.DID {
-	factory := ctx[BootstrappedDIDFactory].(Factory)
+	factory := ctx[BootstrappedDIDFactory].(identity.Factory)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := factory.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")
@@ -87,7 +89,7 @@ func TestServiceAddKey_successful(t *testing.T) {
 
 func TestServiceAddKey_fail(t *testing.T) {
 	testKey := getTestKey()
-	did := id.NewDIDFromString("0x123")
+	did := testingidentity.GenerateRandomDID()
 	aCtx := getTestDIDContext(t, did)
 	idSrv := initIdentity()
 
@@ -199,7 +201,7 @@ func TestExists(t *testing.T) {
 	err := idSrv.Exists(aCtx, *did)
 	assert.Nil(t, err, "identity contract should exist")
 
-	err = idSrv.Exists(aCtx, id.NewDIDFromString("0x123"))
+	err = idSrv.Exists(aCtx, testingidentity.GenerateRandomDID())
 	assert.Error(t, err, "identity contract should not exist")
 	resetDefaultCentID()
 
