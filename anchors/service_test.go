@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -74,9 +73,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetGethCallOpts").Return(nil)
-	ethRepo := newService(cfg, repo, nil, func() ethereum.Client {
-		return ethClient
-	})
+	ethRepo := newService(cfg, repo, nil, ethClient,nil)
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

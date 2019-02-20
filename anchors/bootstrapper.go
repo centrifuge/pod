@@ -54,13 +54,5 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	repo := newService(cfg, repositoryContract, queueSrv, client,txManager)
 	ctx[BootstrappedAnchorRepo] = repo
 
-	task := &anchorConfirmationTask{
-		// Passing timeout as a common property for every request, if we need more fine-grain control per request then we will override by invoker
-		Timeout:                 cfg.GetEthereumContextWaitTimeout(),
-		AnchorCommittedFilterer: &repositoryContract.AnchorContractFilterer,
-		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
-	}
-
-	queueSrv.RegisterTaskType(task.TaskTypeName(), task)
 	return nil
 }
