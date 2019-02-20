@@ -4,75 +4,72 @@ package testingidentity
 
 import (
 	"context"
-	"testing"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 )
 
-func CreateIdentityWithKeys(cfg config.Configuration, idService identity.Service) identity.CentID {
-	idConfig, _ := identity.GetIdentityConfig(cfg)
-	// only create identity if it doesn't exist
-	id, err := idService.LookupIdentityForID(idConfig.ID)
+func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.ServiceDID, idFactory identity.Factory) (identity.DID, error) {
+	ctxh, _ := contextutil.New(context.Background(), acc)
+	idConfig, err := identity.GetIdentityConfig(acc)
 	if err != nil {
-		_, confirmations, _ := idService.CreateIdentity(testingconfig.CreateAccountContext(&testing.T{}, cfg), idConfig.ID)
-		<-confirmations
+		return identity.DID{}, err
+	}
+	var did *identity.DID
+	// only create identity if it doesn't exist
+	err = idService.Exists(ctxh, identity.NewDIDFromBytes(acc.IdentityID))
+	if err != nil {
+		did, err = idFactory.CreateIdentity(ctxh)
+		if err != nil {
+			return identity.DID{}, err
+		}
 		// LookupIdentityForId
-		id, _ = idService.LookupIdentityForID(idConfig.ID)
+		err = idService.Exists(ctxh, *did)
 	}
 
 	// only add key if it doesn't exist
-	_, err = id.LastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(cfg.GetEthereumContextWaitTimeout())
-	defer cancel()
+	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
+	ctxh, err = contextutil.New(ctx, acc)
 	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
-		<-confirmations
+		return identity.DID{}, nil
 	}
-	_, err = id.LastKeyForPurpose(identity.KeyPurposeSigning)
-	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext(cfg.GetEthereumContextWaitTimeout())
-	defer cancel()
+	keys, err := idService.GetKeysByPurpose(*did, big.NewInt(identity.KeyPurposeEthMsgAuth))
 	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeSigning, idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
-		<-confirmations
+		return identity.DID{}, nil
+	}
+	defer cancel()
+	if err != nil || len(keys) == 0 {
+		pk, _ := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
+		keyDID := identity.NewKey(pk, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(identity.KeyTypeECDSA))
+		err = idService.AddKey(ctxh, keyDID)
+		if err != nil {
+			return identity.DID{}, nil
+		}
+	}
+	keys, err = idService.GetKeysByPurpose(*did, big.NewInt(identity.KeyPurposeSigning))
+	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
+	ctxh, _ = contextutil.New(ctx, acc)
+	defer cancel()
+	if err != nil || len(keys) == 0 {
+		pk, _ := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
+		keyDID := identity.NewKey(pk, big.NewInt(identity.KeyPurposeSigning), big.NewInt(identity.KeyTypeECDSA))
+		err = idService.AddKey(ctxh, keyDID)
+		if err != nil {
+			return identity.DID{}, nil
+		}
 	}
 
-	return idConfig.ID
+	return *did, nil
 }
 
-func CreateAccountIDWithKeys(contextTimeout time.Duration, cfg *configstore.Account, idService identity.Service) identity.Identity {
-	ctxh, _ := contextutil.New(context.Background(), cfg)
-	idConfig, _ := identity.GetIdentityConfig(cfg)
-	// only create identity if it doesn't exist
-	id, err := idService.LookupIdentityForID(idConfig.ID)
-	if err != nil {
-		_, confirmations, _ := idService.CreateIdentity(ctxh, idConfig.ID)
-		<-confirmations
-		// LookupIdentityForId
-		id, _ = idService.LookupIdentityForID(idConfig.ID)
-	}
-
-	// only add key if it doesn't exist
-	_, err = id.LastKeyForPurpose(identity.KeyPurposeEthMsgAuth)
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
-	defer cancel()
-	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeEthMsgAuth, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
-		<-confirmations
-	}
-	_, err = id.LastKeyForPurpose(identity.KeyPurposeSigning)
-	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
-	defer cancel()
-	if err != nil {
-		confirmations, _ := id.AddKeyToIdentity(ctx, identity.KeyPurposeSigning, idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
-		<-confirmations
-	}
-
-	return id
+func GenerateRandomDID() identity.DID {
+	r := utils.RandomSlice(common.AddressLength)
+	return identity.NewDIDFromBytes(r)
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -22,7 +21,7 @@ var cfg config.Configuration
 var idService identity.Service
 var payOb nft.PaymentObligation
 var txManager transactions.Manager
-var tokenRegistry coredocument.TokenRegistry
+var tokenRegistry documents.TokenRegistry
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -32,7 +31,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
-	tokenRegistry = ctx[nft.BootstrappedPayObService].(coredocument.TokenRegistry)
+	tokenRegistry = ctx[nft.BootstrappedPayObService].(documents.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)

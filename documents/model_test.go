@@ -9,6 +9,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -56,6 +59,7 @@ func TestMain(m *testing.M) {
 	}
 	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
 	ctx[ideth.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
+	ctx[ideth.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
@@ -157,6 +161,9 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 
 	// DocumentRoot was updated
 	assert.Equal(t, ncd.PreviousRoot, ocd.DocumentRoot)
+
+	// TokenRegistry was copied over
+	assert.Equal(t, ndm.TokenRegistry, dm.TokenRegistry)
 }
 
 func TestReadACLs_initReadRules(t *testing.T) {
@@ -207,7 +214,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 
 	err = dm.CalculateSigningRoot(cd.DataRoot)
@@ -234,7 +241,7 @@ func TestGetDataProofHashes(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.DataRoot = utils.RandomSlice(32)
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 
 	err = dm.CalculateSigningRoot(cd.DataRoot)
@@ -260,7 +267,7 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
 	cd.EmbeddedData = docAny
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.Nil(t, err)
@@ -276,7 +283,7 @@ func TestGetDocumentSigningTree(t *testing.T) {
 func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	dm := NewCoreDocModel()
 	cd := dm.Document
-	_, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.NotNil(t, err)
@@ -316,13 +323,13 @@ func TestCreateProofs(t *testing.T) {
 	cd := dm.Document
 	cd.EmbeddedData = docAny
 	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
-	_, err = dm.getCoreDocumentSalts()
+	err = dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
 	err = dm.CalculateSigningRoot(testTree.RootHash())
 	assert.NoError(t, err)
 	err = dm.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cdTree, err := dm.GetCoreDocTree()
+	cdTree, err := dm.GetDocumentTree()
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -367,24 +374,95 @@ func TestCreateProofs(t *testing.T) {
 			assert.True(t, valid)
 		})
 	}
+}
 
+type mockRegistry struct {
+	mock.Mock
+}
+
+func (m mockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
+
+func Test_addNFTToReadRules(t *testing.T) {
+	dm := NewCoreDocModel()
+	// wrong registry or token format
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(34)
+	err := dm.AddNFTToReadRules(registry, tokenID)
+	assert.Error(t, err)
+
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	dm, err = dm.PrepareNewVersion([]string{"0x010203040506"})
+	cd := dm.Document
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Equal(t, cd.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.Len(t, cd.Roles, 1)
+
+	tokenID = utils.RandomSlice(32)
+	err = dm.AddNFTToReadRules(registry, tokenID)
+	assert.NoError(t, err)
+	assert.Len(t, cd.ReadRules, 2)
+	assert.Equal(t, cd.ReadRules[1].Action, coredocumentpb.Action_ACTION_READ)
+	assert.Len(t, cd.Roles, 2)
+}
+
+func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
+	dm := NewCoreDocModel()
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	account, err := identity.CentIDFromString("0x010203040506")
+	assert.NoError(t, err)
+
+	dm, err = dm.PrepareNewVersion([]string{account.String()})
+	assert.NoError(t, err)
+
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+
+	// account can read
+	err = dm.NFTOwnerCanRead(registry, nil, account)
+	assert.NoError(t, err)
+
+	// account not in read rules and nft missing
+	account, err = identity.CentIDFromString("0x010203040505")
+	assert.NoError(t, err)
+	tokenID := utils.RandomSlice(32)
+	err = dm.NFTOwnerCanRead(registry, tokenID, account)
+	assert.Error(t, err)
+
+	tr := mockRegistry{}
+	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
+	dm.TokenRegistry = tr
+	dm.AddNFTToReadRules(registry, tokenID)
+	err = dm.NFTOwnerCanRead(registry, tokenID, account)
+	assert.Error(t, err)
+	assert.Contains(t, err, "failed to get owner of")
+	tr.AssertExpectations(t)
+
+	// not the same owner
+	owner := common.BytesToAddress(utils.RandomSlice(20))
+	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
+	dm.TokenRegistry = tr
+	err = dm.NFTOwnerCanRead(registry, tokenID, account)
+	assert.Error(t, err)
+	tr.AssertExpectations(t)
 }
 
 func TestGetCoreDocumentSalts(t *testing.T) {
 	dm := NewCoreDocModel()
 	// From empty
-	salts, err := dm.getCoreDocumentSalts()
+	err := dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
-	assert.NotNil(t, salts)
-	assert.Equal(t, len(dm.Document.CoredocumentSalts), len(salts))
-	assert.Equal(t, dm.Document.CoredocumentSalts[0], salts[0])
+	assert.NotNil(t, dm.Document.CoredocumentSalts)
+	salts := dm.Document.CoredocumentSalts
 
 	// Return existing
-	cSalts, err := dm.getCoreDocumentSalts()
+	err = dm.setCoreDocumentSalts()
 	assert.NoError(t, err)
-	assert.NotNil(t, cSalts)
-	assert.Equal(t, len(cSalts), len(salts))
-	assert.Equal(t, cSalts[0], salts[0])
+	assert.NotNil(t, dm.Document.CoredocumentSalts)
+	assert.Equal(t, salts, dm.Document.CoredocumentSalts)
 }
 
 func TestGenerateNewSalts(t *testing.T) {

@@ -3,10 +3,44 @@ package identity
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
+)
+
+const (
+
+	// ErrMalformedAddress standard error for malformed address
+	ErrMalformedAddress = errors.Error("malformed address provided")
+
+	// BootstrappedDIDFactory stores the id of the factory
+	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
+
+	// BootstrappedDIDService stores the id of the service
+	BootstrappedDIDService string = "BootstrappedDIDService"
+
+	// BootstrappedIDService is used as a key to map the configured ID Service through context.
+	BootstrappedIDService string = "BootstrappedIDService"
+
+	// CentIDLength is the length in bytes of the CentrifugeID
+	CentIDLength = 6
+
+	// KeyPurposeP2P represents a key used for p2p txns
+	KeyPurposeP2P = 1
+
+	// KeyPurposeSigning represents a key used for signing
+	KeyPurposeSigning = 2
+
+	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
+	KeyPurposeEthMsgAuth = 3
+
+	// KeyTypeECDSA has the value one in the ERC725 identity contract
+	KeyTypeECDSA = 1
 )
 
 // DID stores the identity address of the user
@@ -17,14 +51,63 @@ func (d DID) ToAddress() common.Address {
 	return common.Address(d)
 }
 
+// String returns the DID as HEX String
+func (d DID) String() string {
+	return d.ToAddress().String()
+}
+
+// BigInt returns DID in bigInt
+func (c DID) BigInt() *big.Int {
+	return utils.ByteSliceToBigInt(c[:])
+}
+
+// Equal checks if d == other
+func (d DID) Equal(other DID) bool {
+	for i := range d {
+		if d[i] != other[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // NewDID returns a DID based on a common.Address
 func NewDID(address common.Address) DID {
 	return DID(address)
 }
 
 // NewDIDFromString returns a DID based on a hex string
-func NewDIDFromString(address string) DID {
-	return DID(common.HexToAddress(address))
+func NewDIDFromString(address string) (DID, error) {
+	if !common.IsHexAddress(address) {
+		return DID{}, ErrMalformedAddress
+	}
+	return DID(common.HexToAddress(address)), nil
+}
+
+// NewDIDsFromStrings converts hex ids to DIDs
+func NewDIDsFromStrings(ids []string) ([]DID, error) {
+	var cids []DID
+	for _, id := range ids {
+		cid, err := NewDIDFromString(id)
+		if err != nil {
+			return nil, err
+		}
+
+		cids = append(cids, cid)
+	}
+
+	return cids, nil
+}
+
+// NewDIDFromBytes returns a DID based on a bytes input
+func NewDIDFromBytes(bAddr []byte) DID {
+	return DID(common.BytesToAddress(bAddr))
+}
+
+// Factory is the interface for factory related interactions
+type Factory interface {
+	CreateIdentity(ctx context.Context) (id *DID, err error)
+	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
 // NewDIDFromByte returns a DID based on a byte slice
@@ -36,6 +119,9 @@ func NewDIDFromByte(did []byte) DID {
 type ServiceDID interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key KeyDID) error
+
+	// AddKeysForAccount adds key from configuration
+  AddKeysForAccount(acc config.Account) error
 
 	// GetKey return a key from the identity contract
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
@@ -63,6 +149,12 @@ type ServiceDID interface {
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
 	ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error
+
+	// ValidateSignature checks if signature is valid for given identity
+	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
+
+	// CurrentP2PKey retrieves the last P2P key stored in the identity
+	CurrentP2PKey(did DID) (ret string, err error)
 
 	// GetClientsP2PURLs returns p2p urls associated with each centIDs
 	// will error out at first failure

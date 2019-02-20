@@ -534,7 +534,8 @@ func (ids *ethereumIdentityService) AddKeyFromConfig(config identity.Config, pur
 		return err
 	}
 
-	id, err := ids.LookupIdentityForID(identityConfig.ID)
+	centID, _ := identity.ToCentID(identityConfig.ID[:6])
+	id, err := ids.LookupIdentityForID(centID)
 	if err != nil {
 		return err
 	}

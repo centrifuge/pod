@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"context"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -47,12 +46,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	cid, err := p2pcommon.ExtractCID(protoc)
+	did, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetAccount(cid[:])
+	tc, err := srv.config.GetAccount(did[:])
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -61,11 +60,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
-	fromID, err := identity.ToCentID(envelope.Header.SenderId)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
-
+	fromID := identity.NewDIDFromBytes(envelope.Header.SenderId)
 	err = srv.handshakeValidator.Validate(envelope.Header, &fromID, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
@@ -115,11 +110,12 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+	dm := new(documents.CoreDocumentModel)
 	if sigReq.Document == nil {
 		return nil, errors.New("nil core document")
 	}
-
-	model, err := srv.docSrv.DeriveFromCoreDocument(sigReq.Document)
+	dm.Document = sigReq.Document
+	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -160,7 +156,9 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
-	model, err := srv.docSrv.DeriveFromCoreDocument(docReq.Document)
+	dm := new(documents.CoreDocumentModel)
+	dm.Document = docReq.Document
+	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -181,10 +179,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	requesterCentID, err := identity.ToCentID(msg.Header.SenderId)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
+	requesterCentID := identity.NewDIDFromBytes(msg.Header.SenderId)
 
 	res, err := srv.GetDocument(ctx, m, requesterCentID)
 	if err != nil {
@@ -205,23 +200,21 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 }
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
-func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) (*p2ppb.GetDocumentResponse, error) {
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) (*p2ppb.GetDocumentResponse, error) {
 	model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
 
 	if err != nil {
 		return nil, err
 	}
-	doc, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
-
-	err = DocumentAccessValidator(doc, docReq, requesterCentID)
-	if err != nil {
-		return &p2ppb.GetDocumentResponse{Document: doc}, nil
-	}
-
-	return nil, err
+	//err = dm.ValidateDocumentAccess(docReq, requesterCentID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
 }
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {

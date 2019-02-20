@@ -7,10 +7,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -53,17 +51,21 @@ type PurchaseOrder struct {
 	DateCreated        *timestamp.Timestamp // purchase order date
 	ExtraData          []byte
 	PurchaseOrderSalts *proofs.Salts
-	CoreDocument       *coredocumentpb.CoreDocument
+	CoreDocumentModel  *documents.CoreDocumentModel
 }
 
 // ID returns the DocumentIdentifier for this document
 // Note: this is not same as VersionIdentifier
 func (p *PurchaseOrder) ID() ([]byte, error) {
-	coreDoc, err := p.PackCoreDocument()
+	coreDocModel, err := p.PackCoreDocument()
 	if err != nil {
 		return []byte{}, err
 	}
-	return coreDoc.DocumentIdentifier, nil
+	if coreDocModel.Document == nil {
+		return []byte{}, errors.New("nil core document")
+	}
+
+	return coreDocModel.Document.DocumentIdentifier, nil
 }
 
 // getClientData returns the client data from the purchaseOrder model
@@ -156,7 +158,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	p.CoreDocument, err = coredocument.NewWithCollaborators(collaborators)
+	p.CoreDocumentModel, err = p.CoreDocumentModel.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -260,7 +262,7 @@ func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb
 
 // PackCoreDocument packs the PurchaseOrder into a Core Document
 // If the, PurchaseOrder is new, it creates a valid identifiers
-func (p *PurchaseOrder) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	poData := p.createP2PProtobuf()
 	poSerialized, err := proto.Marshal(poData)
 	if err != nil {
@@ -277,19 +279,24 @@ func (p *PurchaseOrder) PackCoreDocument() (*coredocumentpb.CoreDocument, error)
 		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
 	}
 
-	coreDoc := new(coredocumentpb.CoreDocument)
-	proto.Merge(coreDoc, p.CoreDocument)
-	coreDoc.EmbeddedData = &poAny
-	coreDoc.EmbeddedDataSalts = documents.ConvertToProtoSalts(poSalts)
-	return coreDoc, err
+	err = p.CoreDocumentModel.PackCoreDocument(&poAny, documents.ConvertToProtoSalts(poSalts))
+	if err != nil {
+		return nil, err
+	}
+
+	return p.CoreDocumentModel, nil
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
-func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument) error {
-	if coreDoc == nil {
-		return centerrors.NilError(coreDoc)
+func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
+	if coreDocModel == nil {
+		return errors.New("coredocmodel is nil %v", coreDocModel)
+	}
+	if coreDocModel.Document == nil {
+		return errors.New("core document provided is nil %v", coreDocModel.Document)
 	}
 
+	coreDoc := coreDocModel.Document
 	if coreDoc.EmbeddedData == nil ||
 		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")
@@ -312,11 +319,9 @@ func (p *PurchaseOrder) UnpackCoreDocument(coreDoc *coredocumentpb.CoreDocument)
 		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
 	}
 
-	p.CoreDocument = new(coredocumentpb.CoreDocument)
-	proto.Merge(p.CoreDocument, coreDoc)
-	p.CoreDocument.EmbeddedDataSalts = nil
-	p.CoreDocument.EmbeddedData = nil
+	err = p.CoreDocumentModel.UnpackCoreDocument()
 	return err
+
 }
 
 // JSON marshals PurchaseOrder into a json bytes
@@ -363,19 +368,18 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 }
 
 // CreateProofs generates proofs for given fields
-func (p *PurchaseOrder) CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error) {
+func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	// There can be failure scenarios where the core doc for the particular document
 	// is still not saved with roots in db due to failures during getting signatures.
-	coreDoc, err = p.PackCoreDocument()
+	_, err = p.PackCoreDocument()
 	if err != nil {
-		return nil, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
 
 	tree, err := p.getDocumentDataTree()
 	if err != nil {
-		return coreDoc, nil, errors.New("createProofs error %v", err)
+		return nil, errors.New("createProofs error %v", err)
 	}
-
-	proofs, err = coredocument.CreateProofs(tree, coreDoc, fields)
-	return coreDoc, proofs, err
+	proofs, err = p.CoreDocumentModel.CreateProofs(tree, fields)
+	return proofs, err
 }

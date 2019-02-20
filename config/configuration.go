@@ -17,8 +17,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
@@ -97,6 +95,7 @@ type Configuration interface {
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
 	GetContractAddress(contractName ContractName) common.Address
+	GetContractBytecode(contractName ContractName) string
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
@@ -119,7 +118,7 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-	GetKeys() (identity.IDKeys, error)
+	GetKeys() (IDKeys, error)
 	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
@@ -144,6 +143,18 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+}
+
+// IDKey represents a key pair
+type IDKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
+}
+
+// IDKeys holds key of an identity
+type IDKeys struct {
+	ID   []byte
+	Keys map[int]IDKey
 }
 
 // configuration holds the configuration details for the node.
@@ -370,6 +381,11 @@ func (c *configuration) GetContractAddressString(contract string) (address strin
 // GetContractAddress returns the deployed contract address for a given contract.
 func (c *configuration) GetContractAddress(contractName ContractName) common.Address {
 	return common.HexToAddress(c.GetContractAddressString(string(contractName)))
+}
+
+// GetContractBytecode returns the deployed contract address for a given contract.
+func (c *configuration) GetContractBytecode(contractName ContractName) string {
+	return c.GetString(c.GetNetworkKey(fmt.Sprintf("contractByteCode.%s", contractName)))
 }
 
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.

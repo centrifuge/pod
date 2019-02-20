@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -15,7 +15,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -44,34 +47,43 @@ var compactProperties = map[string][]byte{
 // It should only handle protocol-level Document actions
 type Model interface {
 	storage.Model
-
 	// Get the ID of the document represented by this model
 	ID() ([]byte, error)
 
 	// PackCoreDocument packs the implementing document into a core document
 	// should create the identifiers for the core document if not present
-	PackCoreDocument() (*coredocumentpb.CoreDocument, error)
+	PackCoreDocument() (*CoreDocumentModel, error)
 
 	// UnpackCoreDocument must return the document.Model
 	// assumes that core document has valid identifiers set
-	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
+	UnpackCoreDocument(model *CoreDocumentModel) error
 
 	// CalculateDataRoot calculates the dataroot of precise-proofs tree of the model
 	CalculateDataRoot() ([]byte, error)
 
 	// CreateProofs creates precise-proofs for given fields
-	CreateProofs(fields []string) (coreDoc *coredocumentpb.CoreDocument, proofs []*proofspb.Proof, err error)
+	CreateProofs(fields []string) (proofs []*proofspb.Proof, err error)
+}
+
+// TokenRegistry defines NFT retrieval functions.
+type TokenRegistry interface {
+	// OwnerOf to retrieve owner of the tokenID
+	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
 }
 
 // CoreDocumentModel contains methods which handle all interactions mutating or reading from a core document
 // Access to a core document should always go through this model
 type CoreDocumentModel struct {
 	Document *coredocumentpb.CoreDocument
+	TokenRegistry
 }
 
 const (
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
+
+	// nftByteCount is the length of combined bytes of registry and tokenID
+	nftByteCount = 52
 )
 
 // NewDefaultTree returns a DocumentTree with default opts
@@ -97,6 +109,7 @@ func NewLeafProperty(literal string, compact []byte) proofs.Property {
 
 // NewCoreDocModel returns a new CoreDocumentModel
 // Note: collaborators and salts are to be filled by the caller
+// TODO: double check if registry should be initialised as nil
 func NewCoreDocModel() *CoreDocumentModel {
 	id := utils.RandomSlice(32)
 	cd := &coredocumentpb.CoreDocument{
@@ -106,6 +119,7 @@ func NewCoreDocModel() *CoreDocumentModel {
 	}
 	return &CoreDocumentModel{
 		cd,
+		nil,
 	}
 }
 
@@ -122,24 +136,21 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
 
-	cs := ncd.Collaborators
+	cs := ocd.Collaborators
 	for _, c := range ucs {
 		c := c
 		cs = append(cs, c[:])
 	}
 
 	ncd.Collaborators = cs
-
-	// copy read rules and roles
 	ncd.Roles = m.Document.Roles
 	ncd.ReadRules = m.Document.ReadRules
 	err = ndm.addCollaboratorsToReadSignRules(ucs)
 	if err != nil {
 		return nil, err
 	}
-	_, err = ndm.getCoreDocumentSalts()
 
-	if err != nil {
+	if err := ndm.setCoreDocumentSalts(); err != nil {
 		return nil, err
 	}
 
@@ -163,8 +174,33 @@ func (m *CoreDocumentModel) PrepareNewVersion(collaborators []string) (*CoreDocu
 		return nil, errors.New("DocumentRoot is nil")
 	}
 	ncd.PreviousRoot = ocd.DocumentRoot
+	// copy over token registry
+	ndm.TokenRegistry = m.TokenRegistry
 
 	return ndm, nil
+}
+
+// NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
+func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
+	dm := NewCoreDocModel()
+	ids, err := identity.NewDIDsFromStrings(collaborators)
+	if err != nil {
+		return nil, errors.New("failed to decode collaborator: %v", err)
+	}
+
+	for i := range ids {
+		dm.Document.Collaborators = append(dm.Document.Collaborators, ids[i][:])
+	}
+	err = dm.initReadRules(ids)
+	if err != nil {
+		return nil, errors.New("failed to init read rules: %v", err)
+	}
+
+	if err := dm.setCoreDocumentSalts(); err != nil {
+		return nil, err
+	}
+
+	return dm, nil
 }
 
 // CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
@@ -174,7 +210,7 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	cdtree, err := m.GetCoreDocTree()
+	cdtree, err := m.GetDocumentTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -206,10 +242,9 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 	return proofs, nil
 }
 
-// GetCoreDocTree returns the merkle tree for the coredoc root
-func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err error) {
+// GetDocumentTree returns the merkle tree for the coredoc root
+func (m *CoreDocumentModel) GetDocumentTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
-	h := sha256.New()
 	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
 	err = tree.AddLeavesFromDocument(document)
 	if err != nil {
@@ -226,7 +261,7 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 		Value:    []byte(document.EmbeddedData.TypeUrl),
 	}
 
-	err = documentTypeNode.HashNode(h, true)
+	err = documentTypeNode.HashNode(sha256.New(), true)
 	if err != nil {
 		return nil, err
 	}
@@ -240,13 +275,14 @@ func (m *CoreDocumentModel) GetCoreDocTree() (tree *proofs.DocumentTree, err err
 	if err != nil {
 		return nil, err
 	}
+
 	return tree, nil
 }
 
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proofs.DocumentTree, err error) {
 	// coredoc tree
-	coreDocTree, err := m.GetCoreDocTree()
+	coreDocTree, err := m.GetDocumentTree()
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +317,6 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 // GetDocumentRootTree returns the merkle tree for the document root
 func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
-	h := sha256.New()
 	tree = NewDefaultTree(ConvertToProofSalts(document.CoredocumentSalts))
 
 	// The first leave added is the signing_root
@@ -289,6 +324,7 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
+
 	// For every signature we create a LeafNode
 	sigProperty := NewLeafProperty(SignaturesField, compactProperties[SignaturesField])
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
@@ -297,6 +333,8 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 		Salt:     make([]byte, 32),
 		Value:    []byte(fmt.Sprintf("%d", len(document.Signatures))),
 	}
+
+	h := sha256.New()
 	err = sigLengthNode.HashNode(h, true)
 	if err != nil {
 		return nil, err
@@ -319,10 +357,12 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
+
 	err = tree.Generate()
 	if err != nil {
 		return nil, err
 	}
+
 	return tree, nil
 }
 
@@ -374,6 +414,7 @@ func (m *CoreDocumentModel) getSigningRootProofHashes() (hashes [][]byte, err er
 	if err != nil {
 		return
 	}
+
 	return rootProof.SortedHashes, err
 }
 
@@ -437,22 +478,38 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 	return &proofSalts
 }
 
-// getCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
-func (m *CoreDocumentModel) getCoreDocumentSalts() ([]*coredocumentpb.DocumentSalt, error) {
+// setCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
+func (m *CoreDocumentModel) setCoreDocumentSalts() error {
 	if m.Document.CoredocumentSalts == nil {
 		pSalts, err := GenerateNewSalts(m.Document, "", nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
+
 		m.Document.CoredocumentSalts = ConvertToProtoSalts(pSalts)
 	}
-	return m.Document.CoredocumentSalts, nil
+
+	return nil
+}
+
+// PackCoreDocument sets the embed data and embed salts and generates core doc salts if not exists
+func (m *CoreDocumentModel) PackCoreDocument(embedData *any.Any, embedSalts []*coredocumentpb.DocumentSalt) error {
+	m.Document.EmbeddedData = embedData
+	m.Document.EmbeddedDataSalts = embedSalts
+	return m.setCoreDocumentSalts()
+}
+
+// UnpackCoreDocument sets the embed data and embed salts and generates core doc salts if not exists
+func (m *CoreDocumentModel) UnpackCoreDocument() error {
+	m.Document.EmbeddedData = nil
+	m.Document.EmbeddedDataSalts = nil
+	return m.setCoreDocumentSalts()
 }
 
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
-func (m *CoreDocumentModel) initReadRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) initReadRules(collabs []identity.DID) error {
 	cd := m.Document
 	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
 		return nil
@@ -525,7 +582,7 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.DID) error {
 	if len(collabs) == 0 {
 		return nil
 	}
@@ -547,15 +604,17 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.C
 	return nil
 }
 
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
+func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
-		ocsm[hexutil.Encode(c)] = struct{}{}
+		cs := strings.ToLower(hexutil.Encode(c))
+		ocsm[cs] = struct{}{}
 	}
 
 	var uc []string
 	for _, c := range newCollabs {
-		if _, ok := ocsm[c]; ok {
+		cs := strings.ToLower(c)
+		if _, ok := ocsm[cs]; ok {
 			continue
 		}
 
@@ -563,7 +622,7 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	for _, c := range uc {
-		id, err := identity.CentIDFromString(c)
+		id, err := identity.NewDIDFromString(c)
 		if err != nil {
 			return nil, err
 		}
@@ -572,4 +631,125 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	return ids, nil
+}
+
+// GetExternalCollaborators returns collaborators of a document without the own centID.
+func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.DID) ([][]byte, error) {
+	var collabs [][]byte
+
+	for _, collab := range m.Document.Collaborators {
+		collabID := identity.NewDIDFromBytes(collab)
+		if !selfCentID.Equal(collabID) {
+			collabs = append(collabs, collab)
+		}
+	}
+
+	return collabs, nil
+}
+
+// NFTOwnerCanRead checks if the nft owner/account can read the document
+func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
+	// check if the account can read the doc
+	if m.AccountCanRead(account) {
+		return nil
+	}
+
+	// check if the nft is present in read rules
+	found := m.findRole(coredocumentpb.Action_ACTION_READ, func(role *coredocumentpb.Role) bool {
+		return isNFTInRole(role, registry, tokenID)
+	})
+
+	if !found {
+		return errors.New("nft missing")
+	}
+
+	// get the owner of the NFT
+	owner, err := m.TokenRegistry.OwnerOf(registry, tokenID)
+	if err != nil {
+		return errors.New("failed to get NFT owner: %v", err)
+	}
+
+	// TODO(ved): this will always fail until we roll out identity v2 with CentID type as common.Address
+	if !bytes.Equal(owner.Bytes(), account[:]) {
+		return errors.New("account (%v) not owner of the NFT", account.String())
+	}
+
+	return nil
+}
+
+// ConstructNFT appends registry and tokenID to byte slice
+func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
+	var nft []byte
+	// first 20 bytes of registry
+	nft = append(nft, registry.Bytes()...)
+
+	// next 32 bytes of the tokenID
+	nft = append(nft, tokenID...)
+
+	if len(nft) != nftByteCount {
+		return nil, errors.New("byte length mismatch")
+	}
+
+	return nft, nil
+}
+
+// AddNFTToReadRules adds NFT token to the read rules of core document.
+func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID []byte) error {
+	cd := m.Document
+	nft, err := ConstructNFT(registry, tokenID)
+	if err != nil {
+		return errors.New("failed to construct NFT: %v", err)
+	}
+
+	role := new(coredocumentpb.Role)
+	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
+	if err != nil {
+		return err
+	}
+	role.RoleKey = rk[:]
+	role.Nfts = append(role.Nfts, nft)
+	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	if err := m.setCoreDocumentSalts(); err != nil {
+		return errors.New("failed to generate CoreDocumentSalts")
+	}
+	return nil
+}
+
+//ValidateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
+func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
+	// checks which access type is relevant for the request
+	switch docReq.GetAccessType() {
+	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
+		if m.AccountCanRead(requesterCentID) {
+			return errors.New("requester does not have access")
+		}
+	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
+		registry := common.BytesToAddress(docReq.NftRegistryAddress)
+		if m.NFTOwnerCanRead(registry, docReq.NftTokenId, requesterCentID) != nil {
+			return errors.New("requester does not have access")
+		}
+		//// case AccessTokenValidation
+		// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+		//
+		// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
+	default:
+		return errors.New("invalid access type ")
+	}
+	return nil
+}
+
+// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
+func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) bool {
+	enft, err := ConstructNFT(registry, tokenID)
+	if err != nil {
+		return false
+	}
+
+	for _, n := range role.Nfts {
+		if bytes.Equal(n, enft) {
+			return true
+		}
+	}
+
+	return false
 }

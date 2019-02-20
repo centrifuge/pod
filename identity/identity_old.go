@@ -20,26 +20,26 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-const (
-
-	// BootstrappedIDService is used as a key to map the configured ID Service through context.
-	BootstrappedIDService string = "BootstrappedIDService"
-
-	// CentIDLength is the length in bytes of the CentrifugeID
-	CentIDLength = 6
-
-	// KeyPurposeP2P represents a key used for p2p txns
-	KeyPurposeP2P = 1
-
-	// KeyPurposeSigning represents a key used for signing
-	KeyPurposeSigning = 2
-
-	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
-	KeyPurposeEthMsgAuth = 3
-
-	// KeyTypeECDSA has the value one in the ERC725 identity contract
-	KeyTypeECDSA = 1
-)
+//const (
+//
+//	// BootstrappedIDService is used as a key to map the configured ID Service through context.
+//	BootstrappedIDService string = "BootstrappedIDService"
+//
+//	// CentIDLength is the length in bytes of the CentrifugeID
+//	CentIDLength = 6
+//
+//	// KeyPurposeP2P represents a key used for p2p txns
+//	KeyPurposeP2P = 1
+//
+//	// KeyPurposeSigning represents a key used for signing
+//	KeyPurposeSigning = 2
+//
+//	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
+//	KeyPurposeEthMsgAuth = 3
+//
+//	// KeyTypeECDSA has the value one in the ERC725 identity contract
+//	KeyTypeECDSA = 1
+//)
 
 // CentID represents a CentIDLength identity of an entity
 type CentID [CentIDLength]byte
@@ -47,7 +47,7 @@ type CentID [CentIDLength]byte
 // IDConfig holds information about the identity
 // Deprecated
 type IDConfig struct {
-	ID   CentID
+	ID   DID
 	Keys map[int]IDKey
 }
 
@@ -148,10 +148,7 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	centID, err := ToCentID(centIDBytes)
-	if err != nil {
-		return nil, err
-	}
+	centID := NewDIDFromBytes(centIDBytes)
 
 	//ed25519 keys
 	keys := map[int]IDKey{}

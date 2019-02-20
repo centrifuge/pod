@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -49,7 +48,7 @@ type Config interface {
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
 	cfg             Config
-	identityService identity.Service
+	identityService identity.ServiceDID
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
@@ -61,7 +60,7 @@ type ethereumPaymentObligation struct {
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func newEthereumPaymentObligation(
 	cfg Config,
-	identityService identity.Service,
+	identityService identity.ServiceDID,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
@@ -86,11 +85,12 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return MintRequest{}, err
 	}
 
-	corDoc, err := model.PackCoreDocument()
+	corDocModel, err := model.PackCoreDocument()
 	if err != nil {
 		return MintRequest{}, err
 	}
 
+	corDoc := corDocModel.Document
 	proofs, err := s.docSrv.CreateProofs(ctx, documentID, proofFields)
 	if err != nil {
 		return MintRequest{}, err
@@ -129,10 +129,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, nil, err
 	}
 
-	cid, err := identity.ToCentID(cidBytes)
-	if err != nil {
-		return nil, nil, err
-	}
+	cid := identity.NewDIDFromBytes(cidBytes)
 
 	tokenID := NewTokenID()
 	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
@@ -140,11 +137,12 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []by
 		return nil, nil, err
 	}
 
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, nil, err
 	}
 
+	cd := dm.Document
 	registry := common.HexToAddress(registryAddress)
 	mt := getStoredNFT(cd.Nfts, registry.Bytes())
 	// check if the nft is successfully minted
@@ -173,36 +171,37 @@ func (s *ethereumPaymentObligation) isNFTMinted(registry common.Address, tokenID
 	return err == nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, registry common.Address, depositAddress string, proofFields []string) func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		tc, err := contextutil.Account(ctx)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		cd, err := model.PackCoreDocument()
+		dm, err := model.PackCoreDocument()
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		data := cd.EmbeddedData
-		cd, err = coredocument.PrepareNewVersion(*cd, nil)
+		data := dm.Document.EmbeddedData
+		newDM, err := dm.PrepareNewVersion(nil)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		cd.EmbeddedData = data
-		addNFT(cd, registry.Bytes(), tokenID[:])
-		err = coredocument.AddNFTToReadRules(cd, registry, tokenID.BigInt().Bytes())
+		newCD := newDM.Document
+		newCD.EmbeddedData = data
+		addNFT(newDM, registry.Bytes(), tokenID[:])
+		err = newDM.AddNFTToReadRules(registry, tokenID.BigInt().Bytes())
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		model, err = s.docSrv.DeriveFromCoreDocument(cd)
+		model, err = s.docSrv.DeriveFromCoreDocumentModel(newDM)
 		if err != nil {
 			errOut <- err
 			return
@@ -217,11 +216,11 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		isDone := <-done
 		if !isDone {
 			// some problem occured in a child task
-			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(cd.DocumentIdentifier), txID)
+			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(newCD.DocumentIdentifier), txID)
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(ctx, tokenID, cd.DocumentIdentifier, depositAddress, proofFields)
+		requestData, err := s.prepareMintRequest(ctx, tokenID, newCD.DocumentIdentifier, depositAddress, proofFields)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
@@ -277,7 +276,8 @@ func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.N
 
 // addNFT adds/replaces the NFT
 // Note: this is replace operation. Ensure existing token is not minted
-func addNFT(cd *coredocumentpb.CoreDocument, registry, tokenID []byte) {
+func addNFT(dm *documents.CoreDocumentModel, registry, tokenID []byte) {
+	cd := dm.Document
 	nft := getStoredNFT(cd.Nfts, registry)
 	if nft == nil {
 		nft = new(coredocumentpb.NFT)

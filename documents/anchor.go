@@ -3,7 +3,6 @@ package documents
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
@@ -11,7 +10,7 @@ import (
 // AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type AnchorProcessor interface {
-	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
+	Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.DID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
 	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error
@@ -25,12 +24,11 @@ type updaterFunc func(id []byte, model Model) error
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
 func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
-
-	id := cd.CurrentVersion
+	id := dm.Document.CurrentVersion
 	err = proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare document for signatures: %v", err))

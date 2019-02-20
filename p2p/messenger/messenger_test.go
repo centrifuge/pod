@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"io"
 	"os"
 	"testing"
@@ -20,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -80,14 +80,15 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		transactions.Bootstrapper{},
+		&queue.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	idService := &testingcommons.MockIDService{}
-	ctx[identity.BootstrappedIDService] = idService
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()

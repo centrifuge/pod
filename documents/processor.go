@@ -4,11 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -26,10 +24,10 @@ type Config interface {
 type Client interface {
 
 	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error
+	GetSignaturesForDocument(ctx context.Context, model *CoreDocumentModel) error
 
 	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, receiverID identity.CentID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
@@ -51,10 +49,14 @@ func DefaultProcessor(idService identity.ServiceDID, p2pClient Client, repositor
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
-	if coreDocument == nil {
+func (dp defaultProcessor) Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.DID) (err error) {
+	if coreDocModel == nil {
+		return errors.New("passed coreDocModel is nil")
+	}
+	if coreDocModel.Document == nil {
 		return errors.New("passed coreDoc is nil")
 	}
+	coreDocument := coreDocModel.Document
 	log.Infof("sending coredocument %x to recipient %x", coreDocument.DocumentIdentifier, recipient)
 
 	c, _ := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
@@ -70,18 +72,19 @@ func (dp defaultProcessor) Send(ctx context.Context, coreDocument *coredocumentp
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
 func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
+
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
-
+	cd := dm.Document
 	dataRoot, err := model.CalculateDataRoot()
 	if err != nil {
 		return err
 	}
 
 	// calculate the signing root
-	err = coredocument.CalculateSigningRoot(cd, dataRoot)
+	err = dm.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return errors.New("failed to calculate signing root: %v", err)
 	}
@@ -94,7 +97,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	sig := identity.Sign(self, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = append(cd.Signatures, sig)
 
-	err = model.UnpackCoreDocument(cd)
+	err = model.UnpackCoreDocument(dm)
 	if err != nil {
 		return errors.New("failed to unpack the core document: %v", err)
 	}
@@ -105,7 +108,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
 func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -126,12 +129,12 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to validate model for signature request: %v", err)
 	}
 
-	err = dp.p2pClient.GetSignaturesForDocument(ctx, cd)
+	err = dp.p2pClient.GetSignaturesForDocument(ctx, dm)
 	if err != nil {
 		return errors.New("failed to collect signatures from the collaborators: %v", err)
 	}
 
-	err = model.UnpackCoreDocument(cd)
+	err = model.UnpackCoreDocument(dm)
 	if err != nil {
 		return errors.New("failed to unpack core document: %v", err)
 	}
@@ -141,7 +144,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -152,12 +155,12 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 		return errors.New("failed to validate signatures: %v", err)
 	}
 
-	err = coredocument.CalculateDocumentRoot(cd)
+	err = dm.CalculateDocumentRoot()
 	if err != nil {
 		return errors.New("failed to generate document root: %v", err)
 	}
 
-	err = model.UnpackCoreDocument(cd)
+	err = model.UnpackCoreDocument(dm)
 	if err != nil {
 		return errors.New("failed to unpack core document: %v", err)
 	}
@@ -167,7 +170,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -178,6 +181,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("pre anchor validation failed: %v", err)
 	}
 
+	cd := dm.Document
 	rootHash, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	if err != nil {
 		return errors.New("failed to get document root: %v", err)
@@ -193,14 +197,16 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return err
 	}
 
+	did := identity.NewDIDFromBytes(self.ID[:])
+
 	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, self.ID, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
+	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, did, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, self.ID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
+	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, did, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}
@@ -212,7 +218,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 
 // SendDocument does post anchor validations and sends the document to collaborators
 func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {
-	cd, err := model.PackCoreDocument()
+	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return errors.New("failed to pack core document: %v", err)
 	}
@@ -228,19 +234,14 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 		return err
 	}
 
-	extCollaborators, err := coredocument.GetExternalCollaborators(self.ID, cd)
+	extCollaborators, err := dm.GetExternalCollaborators(self.ID)
 	if err != nil {
 		return errors.New("get external collaborators failed: %v", err)
 	}
 
 	for _, c := range extCollaborators {
-		cID, erri := identity.ToCentID(c)
-		if erri != nil {
-			err = errors.AppendError(err, erri)
-			continue
-		}
-
-		erri = dp.Send(ctx, cd, cID)
+		cID := identity.NewDIDFromBytes(c)
+		erri := dp.Send(ctx, dm, cID)
 		if erri != nil {
 			err = errors.AppendError(err, erri)
 		}

@@ -19,12 +19,12 @@ type Config interface {
 
 // Manager is a manager for centrifuge transactions.
 type Manager interface {
-	// ExecuteWithinTX executes a transaction within a transaction
-	ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error)
-	GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error)
-	UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status Status, taskName, message string) error
-	GetTransactionStatus(accountID identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
-	WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error
+	// ExecuteWithinTX executes the given unit of work within a transaction
+	ExecuteWithinTX(ctx context.Context, accountID identity.DID, existingTxID uuid.UUID, desc string, work func(accountID identity.DID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error)
+	GetTransaction(accountID identity.DID, id uuid.UUID) (*Transaction, error)
+	UpdateTaskStatus(accountID identity.DID, id uuid.UUID, status Status, taskName, message string) error
+	GetTransactionStatus(accountID identity.DID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error)
+	WaitForTransaction(accountID identity.DID, txID uuid.UUID) error
 	GetDefaultTaskTimeout() time.Duration
 }
 
@@ -57,7 +57,7 @@ func (s *service) GetDefaultTaskTimeout() time.Duration {
 	return s.config.GetEthereumContextWaitTimeout()
 }
 
-func (s *service) UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status Status, taskName, message string) error {
+func (s *service) UpdateTaskStatus(accountID identity.DID, id uuid.UUID, status Status, taskName, message string) error {
 	tx, err := s.GetTransaction(accountID, id)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (s *service) UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, stat
 }
 
 // ExecuteWithinTX executes a transaction within a transaction.
-func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
+func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.DID, existingTxID uuid.UUID, desc string, work func(accountID identity.DID, txID uuid.UUID, txMan Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
 	t, err := s.repo.Get(accountID, existingTxID)
 	if err != nil {
 		t = newTransaction(accountID, desc)
@@ -105,7 +105,7 @@ func (s *service) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 				log.Error(e)
 			}
 		case <-ctx.Done():
-			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.CID, t.Description)
+			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.DID, t.Description)
 			log.Warningf(msg)
 			tempTx, err := s.repo.Get(accountID, t.ID)
 			if err != nil {
@@ -133,19 +133,19 @@ func (s *service) saveTransaction(tx *Transaction) error {
 }
 
 // GetTransaction returns the transaction associated with identity and id.
-func (s *service) GetTransaction(accountID identity.CentID, id uuid.UUID) (*Transaction, error) {
+func (s *service) GetTransaction(accountID identity.DID, id uuid.UUID) (*Transaction, error) {
 	return s.repo.Get(accountID, id)
 }
 
 // createTransaction creates a new transaction and saves it to the DB.
-func (s *service) createTransaction(accountID identity.CentID, desc string) (*Transaction, error) {
+func (s *service) createTransaction(accountID identity.DID, desc string) (*Transaction, error) {
 	tx := newTransaction(accountID, desc)
 	return tx, s.saveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
 // Note: use it with caution as this will block.
-func (s *service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
+func (s *service) WaitForTransaction(accountID identity.DID, txID uuid.UUID) error {
 	// TODO change this to use a pre-saved done channel from ExecuteWithinTX, instead of a for loop, may require significant refactoring to handle the case of restarted node
 	for {
 		resp, err := s.GetTransactionStatus(accountID, txID)
@@ -166,7 +166,7 @@ func (s *service) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) 
 }
 
 // GetTransactionStatus returns the transaction status associated with identity and id.
-func (s *service) GetTransactionStatus(identity identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
+func (s *service) GetTransactionStatus(identity identity.DID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
 	tx, err := s.GetTransaction(identity, id)
 	if err != nil {
 		return nil, err

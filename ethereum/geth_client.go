@@ -202,7 +202,7 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 
 // QueueEthTXStatusTask starts a new queuing transaction check task.
 func QueueEthTXStatusTask(
-	accountID identity.CentID,
+	accountID identity.DID,
 	txID uuid.UUID,
 	txHash common.Hash,
 	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {

@@ -3,11 +3,12 @@ package ideth
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"math/big"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -135,9 +136,8 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 		return err
 	}
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
 	log.Info("Add key to identity contract %s", did.ToAddress().String())
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -165,8 +165,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 		return err
 	}
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for add multi purpose key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -193,8 +192,7 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for revoke key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -210,8 +208,8 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 }
 
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
@@ -276,8 +274,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	// default: no ether should be send
 	value := big.NewInt(0)
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 	if err != nil {
 		return err
 	}
@@ -317,35 +314,39 @@ func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([][32]byte, err
 
 }
 
-// GetClientP2PURL returns the p2p url associated with the did
-func (i service) GetClientP2PURL(did id.DID) (string, error) {
-	contract, opts, _, err := i.prepareCall(did)
+// CurrentP2PKey returns the latest P2P key
+func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
+	keys, err := i.GetKeysByPurpose(did, big.NewInt(id.KeyPurposeP2P))
 	if err != nil {
-		return "", err
+		return ret, err
 	}
 
-	keys, err := contract.GetKeysByPurpose(opts, big.NewInt(id.KeyPurposeP2P))
-	if err != nil {
-		return "", err
-	}
-
-	lastIdx := len(keys) - 1
-	key, err := contract.GetKey(opts, keys[lastIdx])
-
+	lastKey := keys[len(keys)-1]
+	key, err := i.GetKey(did, lastKey)
 	if err != nil {
 		return "", err
 	}
 
 	if key.RevokedAt.Cmp(big.NewInt(0)) != 0 {
-		return "", errors.New("p2p key has been revoked")
+		return "", errors.New("current p2p key has been revoked")
 	}
 
 	p2pID, err := ed25519.PublicKeyToP2PKey(key.Key)
 	if err != nil {
+		return ret, err
+	}
+
+	return p2pID.Pretty(), nil
+}
+
+// GetClientP2PURL returns the p2p url associated with the did
+func (i service) GetClientP2PURL(did id.DID) (string, error) {
+	p2pID, err := i.CurrentP2PKey(did)
+	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("/ipfs/%s", p2pID.Pretty()), nil
+	return fmt.Sprintf("/ipfs/%s", p2pID), nil
 }
 
 //Exists checks if an identity contract exists
@@ -396,13 +397,13 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
-func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, error) {
+func getKeyPairsFromAccount(acc config.Account) (map[int]id.KeyDID, error) {
 	keys := map[int]id.KeyDID{}
 	var pk []byte
 
 	// ed25519 keys
 	// KeyPurposeP2P
-	pk, _, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
+	pk, _, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +414,7 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, erro
 	keys[id.KeyPurposeP2P] = id.NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
 
 	// KeyPurposeSigning
-	pk, _, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	pk, _, err = ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +426,7 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, erro
 
 	// secp256k1 keys
 	// KeyPurposeEthMsgAuth
-	pk, _, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	pk, _, err = secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -436,37 +437,52 @@ func getKeyPairsFromConfig(config config.Configuration) (map[int]id.KeyDID, erro
 	return keys, nil
 }
 
-// AddKeysFromConfig adds the keys from the config to the smart contracts
-func AddKeysFromConfig(ctx map[string]interface{}, cfg config.Configuration) error {
-	idSrv := ctx[BootstrappedDIDService].(id.ServiceDID)
-
-	tc, err := configstore.NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
+// AddKeysForAccount adds the keys from the config to the smart contracts
+func (i service) AddKeysForAccount(acc config.Account) error {
+	tctx, err := contextutil.New(context.Background(), acc)
 	if err != nil {
 		return err
 	}
 
-	tctx, err := contextutil.New(context.Background(), tc)
+	keys, err := getKeyPairsFromAccount(acc)
+	if err != nil {
+		return err
+	}
+	err = i.AddKey(tctx, keys[id.KeyPurposeP2P])
 	if err != nil {
 		return err
 	}
 
-	keys, err := getKeyPairsFromConfig(cfg)
-	if err != nil {
-		return err
-	}
-	err = idSrv.AddKey(tctx, keys[id.KeyPurposeP2P])
+	err = i.AddKey(tctx, keys[id.KeyPurposeSigning])
 	if err != nil {
 		return err
 	}
 
-	err = idSrv.AddKey(tctx, keys[id.KeyPurposeSigning])
+	err = i.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateSignature validates a signature on a message based on identity data
+func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
+	centID := id.NewDIDFromBytes(signature.EntityId)
+
+	err := i.ValidateKey(nil, centID, signature.PublicKey, id.KeyPurposeSigning)
 	if err != nil {
 		return err
 	}
 
-	err = idSrv.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
-	if err != nil {
-		return err
+	return crypto.VerifySignature(signature.PublicKey, message, signature.Signature)
+}
+
+// ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
+func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID id.DID) error {
+	calcCentID := id.NewDIDFromBytes(givenCentID)
+	if !centrifugeID.Equal(calcCentID) {
+		return errors.New("provided bytes doesn't match centID")
 	}
+
 	return nil
 }

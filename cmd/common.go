@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
-
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/pkg/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -60,23 +62,43 @@ func CreateConfig(
 	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
+	idService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	if !ok {
+		return errors.New("bootstrapped identity service not initialized")
+	}
+	idFactory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	if !ok {
+		return errors.New("bootstrapped identity factory not initialized")
+	}
+
 	// create keys locally
 	generateKeys(cfg)
 
-	id, err := ideth.CreateIdentity(ctx, cfg)
+	acc, err := configstore.TempAccount("", cfg)
+	if err != nil {
+		return err
+	}
+	ctxh, err := contextutil.New(context.Background(), acc)
+	if err != nil {
+		return err
+	}
+	id, err := idFactory.CreateIdentity(ctxh)
 	if err != nil {
 		return err
 	}
 
-	configFile.Set("identityId", id.ToAddress().String())
+	acci := acc.(*configstore.Account)
+	acci.IdentityID = id[:]
+
+	configFile.Set("identityId", id.String())
 	err = configFile.WriteConfig()
 	if err != nil {
 		return err
 	}
-	cfg.Set("identityId", id.ToAddress().String())
-	log.Infof("Identity created [%s]", id.ToAddress().String())
+	cfg.Set("identityId", id.String())
+	log.Infof("Identity created [%s]", id.String())
 
-	err = ideth.AddKeysFromConfig(ctx, cfg)
+	err = idService.AddKeysForAccount(acci)
 	if err != nil {
 		return err
 	}

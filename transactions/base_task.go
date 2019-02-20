@@ -42,17 +42,17 @@ func (b *BaseTask) ParseTransactionID(taskTypeName string, kwargs map[string]int
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(accountID identity.CentID, taskTypeName string, err error) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
 
 	// TODO this TaskStatus map update assumes that a single transaction has only one execution of a certain task type, which can be wrong, use the taskID or another unique identifier instead.
 	if err != nil {
-		log.Infof("Transaction failed: %v\n", b.TxID.String())
+		log.Errorf("Task %s failed for transaction: %v\n", taskTypeName, b.TxID.String())
 		return errors.AppendError(err, b.TxManager.UpdateTaskStatus(accountID, b.TxID, Failed, taskTypeName, err.Error()))
 	}
 
-	log.Infof("Transaction successful:%v\n", b.TxID.String())
+	log.Infof("Task %s successful for transaction:%v\n", taskTypeName, b.TxID.String())
 	return b.TxManager.UpdateTaskStatus(accountID, b.TxID, Success, taskTypeName, "")
 }

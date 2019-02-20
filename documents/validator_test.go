@@ -5,14 +5,12 @@ package documents
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/coredocument"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
@@ -143,9 +141,10 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to fetch old core document")
 
 	// newM model pack core doc fail
-	oldCD := coredocument.New()
+	oldDM := NewCoreDocModel()
+	oldCD := oldDM.Document
 	oldCD.DocumentRoot = utils.RandomSlice(32)
-	old.On("PackCoreDocument").Return(oldCD, nil).Once()
+	old.On("PackCoreDocument").Return(oldDM, nil).Once()
 	newM.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
@@ -154,10 +153,12 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to fetch new core document")
 
 	// mismatched identifiers
-	newCD := coredocument.New()
+	newDM := NewCoreDocModel()
+	newCD := newDM.Document
+	newCD.DocumentRoot = utils.RandomSlice(32)
 	newCD.NextVersion = nil
-	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	newM.On("PackCoreDocument").Return(newCD, nil).Once()
+	old.On("PackCoreDocument").Return(oldDM, nil).Once()
+	newM.On("PackCoreDocument").Return(newDM, nil).Once()
 	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
 	newM.AssertExpectations(t)
@@ -165,38 +166,14 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Equal(t, 5, errors.Len(err))
 
 	// success
-	newCD, err = coredocument.PrepareNewVersion(*oldCD, nil)
+	newDM, err = oldDM.PrepareNewVersion(nil)
 	assert.Nil(t, err)
-	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	newM.On("PackCoreDocument").Return(newCD, nil).Once()
+	old.On("PackCoreDocument").Return(oldDM, nil).Once()
+	newM.On("PackCoreDocument").Return(newDM, nil).Once()
 	err = uvv.Validate(old, newM)
 	old.AssertExpectations(t)
 	newM.AssertExpectations(t)
 	assert.Nil(t, err)
-}
-
-func Test_getCoreDocument(t *testing.T) {
-	// nil document
-	cd, err := getCoreDocument(nil)
-	assert.Error(t, err)
-	assert.Nil(t, cd)
-
-	// pack core document fail
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
-	cd, err = getCoreDocument(model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Nil(t, cd)
-
-	// success
-	model = mockModel{}
-	cd = coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	got, err := getCoreDocument(model)
-	model.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, cd, got)
 }
 
 func TestValidator_baseValidator(t *testing.T) {
@@ -211,8 +188,10 @@ func TestValidator_baseValidator(t *testing.T) {
 
 	// failed validator
 	model = mockModel{}
-	cd := coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.DocumentRoot = utils.RandomSlice(32)
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Error(t, err)
 	assert.Equal(t, "cd_salts : Required field", errors.GetErrs(err)[0].Error())
@@ -220,8 +199,8 @@ func TestValidator_baseValidator(t *testing.T) {
 	// success
 	model = mockModel{}
 	cd.DataRoot = utils.RandomSlice(32)
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	dm.setCoreDocumentSalts()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = bv.Validate(nil, model)
 	assert.Nil(t, err)
 }
@@ -237,10 +216,11 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// missing signing_root
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -253,7 +233,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 		Value:   []byte{},
 	}
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -261,11 +241,11 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "signing root mismatch")
 
 	// success
-	tree, err := coredocument.GetDocumentSigningTree(cd, cd.DataRoot)
+	tree, err := dm.GetDocumentSigningTree(cd.DataRoot)
 	assert.Nil(t, err)
 	cd.SigningRoot = tree.RootHash()
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -283,10 +263,11 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// missing document root
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = dv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -295,18 +276,18 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	// mismatch signing roots
 	cd.DocumentRoot = utils.RandomSlice(32)
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = dv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document root mismatch")
 
 	// success
-	tree, err := coredocument.GetDocumentRootTree(cd)
+	tree, err := dm.GetDocumentRootTree()
 	assert.Nil(t, err)
 	cd.DocumentRoot = tree.RootHash()
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = dv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -327,10 +308,12 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// signature length mismatch
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.DocumentRoot = utils.RandomSlice(32)
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -345,7 +328,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	}
 	cd.Signatures = append(cd.Signatures, s)
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -359,7 +342,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	cd.Signatures = []*coredocumentpb.Signature{signature}
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -377,10 +360,11 @@ func TestValidator_signatureValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// signature length mismatch
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	dm.setCoreDocumentSalts()
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -388,8 +372,8 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// failed validation
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-
+	model.On("PackCoreDocument").Return(dm, nil).Once()
+	//srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("fail")).Once()
 	srv.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(false, errors.New("fail")).Once()
 	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
 	cd.Signatures = append(cd.Signatures, s)
@@ -400,7 +384,8 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// success
 	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
+	//srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	srv.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	cd.SigningRoot = utils.RandomSlice(32)
 	cd.Signatures = []*coredocumentpb.Signature{{}}
@@ -419,16 +404,13 @@ func TestPreAnchorValidator(t *testing.T) {
 func TestValidator_anchoredValidator(t *testing.T) {
 	av := anchoredValidator(mockRepo{})
 
-	// fail get core document
-	err := av.Validate(nil, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get core document")
-
 	// failed anchorID
 	model := &mockModel{}
-	cd := &coredocumentpb.CoreDocument{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = av.Validate(nil, model)
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.CurrentVersion = utils.RandomSlice(30)
+	model.On("PackCoreDocument").Return(dm, nil).Once()
+	err := av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get anchorID")
@@ -436,7 +418,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// failed docRoot
 	model = &mockModel{}
 	cd.CurrentVersion = utils.RandomSlice(32)
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -451,7 +433,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
 	cd.DocumentRoot = utils.RandomSlice(32)
 	model = &mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -465,7 +447,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	cd.DocumentRoot = utils.RandomSlice(32)
 	model = &mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -478,7 +460,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	cd.DocumentRoot = docRoot[:]
 	model = &mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -585,7 +567,7 @@ func TestValidate_baseValidator(t *testing.T) {
 
 	for _, c := range tests {
 		model := mockModel{}
-		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
+		model.On("PackCoreDocument", mock.Anything).Return(&CoreDocumentModel{c.doc, nil}, nil).Once()
 
 		err := baseValidator.Validate(nil, &model)
 		if c.key == "" {

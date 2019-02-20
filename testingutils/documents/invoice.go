@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -28,6 +29,6 @@ func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {
 			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
-		Collaborators: []string{"0x010101010101"},
+		Collaborators: []string{testingidentity.GenerateRandomDID().String()},
 	}
 }

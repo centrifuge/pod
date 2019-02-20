@@ -22,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -30,7 +29,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -54,10 +53,11 @@ func TestMain(m *testing.M) {
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.Nil, done, nil)
 
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		&transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&ethid.Bootstrapper{},
@@ -69,28 +69,35 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", cid.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
 func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	emptyCoreDocument := &coredocumentpb.CoreDocument{}
-	err := invoiceModel.UnpackCoreDocument(emptyCoreDocument)
-	assert.Error(t, err, "it should not be possible to init a empty core document")
+	emptyCoreDocModel := &documents.CoreDocumentModel{
+		nil,
+		nil,
+	}
+	err := invoiceModel.UnpackCoreDocument(emptyCoreDocModel)
+	assert.Error(t, err, "it should not be possible to init with an empty core document")
 
 	err = invoiceModel.UnpackCoreDocument(nil)
-	assert.Error(t, err, "it should not be possible to init a empty core document")
+	assert.Error(t, err, "it should not be possible to init with an empty core document")
 
 	invalidEmbeddedData := &any.Any{TypeUrl: "invalid"}
 	coreDocument := &coredocumentpb.CoreDocument{EmbeddedData: invalidEmbeddedData}
-	err = invoiceModel.UnpackCoreDocument(coreDocument)
+	coreDocModel := &documents.CoreDocumentModel{
+		coreDocument,
+		nil,
+	}
+	err = invoiceModel.UnpackCoreDocument(coreDocModel)
 	assert.Error(t, err, "it should not be possible to init invalid typeUrl")
 
 }
@@ -98,21 +105,23 @@ func TestInvoice_FromCoreDocuments_invalidParameter(t *testing.T) {
 func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
-	err := invoiceModel.UnpackCoreDocument(coreDocument)
-	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
+	dm := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	invoiceModel.CoreDocumentModel = dm
+	err := invoiceModel.UnpackCoreDocument(dm)
+	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
 }
 
 func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	coreDocument := CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
+	dm := CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
 		Recipient:   utils.RandomSlice(identity.CentIDLength + 1),
 		Sender:      utils.RandomSlice(identity.CentIDLength),
 		Payee:       utils.RandomSlice(identity.CentIDLength),
 		GrossAmount: 42,
 	})
-	err := invoiceModel.UnpackCoreDocument(coreDocument)
+	invoiceModel.CoreDocumentModel = dm
+	err := invoiceModel.UnpackCoreDocument(dm)
 	assert.Nil(t, err)
 	assert.NotNil(t, invoiceModel.Sender)
 	assert.NotNil(t, invoiceModel.Payee)
@@ -122,15 +131,17 @@ func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
 func TestInvoice_CoreDocument_successful(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	//init model with a CoreDoc
-	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
-	invoiceModel.UnpackCoreDocument(coreDocument)
+	//init model with a CoreDocModel
 
-	returnedCoreDocument, err := invoiceModel.PackCoreDocument()
-	assert.Nil(t, err, "transformation from invoice to CoreDoc failed")
+	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	invoiceModel.CoreDocumentModel = coreDocumentModel
+	invoiceModel.UnpackCoreDocument(coreDocumentModel)
 
-	assert.Equal(t, coreDocument.EmbeddedData, returnedCoreDocument.EmbeddedData, "embeddedData should be the same")
-	assert.Equal(t, coreDocument.EmbeddedDataSalts, returnedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
+	returnedCoreDocumentModel, err := invoiceModel.PackCoreDocument()
+	assert.Nil(t, err, "transformation from invoice to CoreDocModel failed")
+
+	assert.Equal(t, coreDocumentModel.Document.EmbeddedData, returnedCoreDocumentModel.Document.EmbeddedData, "embeddedData should be the same")
+	assert.Equal(t, coreDocumentModel.Document.EmbeddedDataSalts, returnedCoreDocumentModel.Document.EmbeddedDataSalts, "embeddedDataSalt should be the same")
 }
 
 func TestInvoice_ModelInterface(t *testing.T) {
@@ -148,9 +159,10 @@ func TestInvoice_Type(t *testing.T) {
 func TestInvoice_JSON(t *testing.T) {
 	invoiceModel := &Invoice{}
 
-	//init model with a CoreDoc
-	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
-	invoiceModel.UnpackCoreDocument(coreDocument)
+	//init model with a CoreDocModel
+	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	invoiceModel.CoreDocumentModel = coreDocumentModel
+	invoiceModel.UnpackCoreDocument(coreDocumentModel)
 
 	jsonBytes, err := invoiceModel.JSON()
 	assert.Nil(t, err, "marshal to json didn't work correctly")
@@ -159,13 +171,13 @@ func TestInvoice_JSON(t *testing.T) {
 	err = invoiceModel.FromJSON(jsonBytes)
 	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
 
-	receivedCoreDocument, err := invoiceModel.PackCoreDocument()
+	receivedCoreDocumentModel, err := invoiceModel.PackCoreDocument()
 	assert.Nil(t, err, "JSON unmarshal damaged invoice variables")
-	assert.Equal(t, receivedCoreDocument.EmbeddedData, coreDocument.EmbeddedData, "JSON unmarshal damaged invoice variables")
+	assert.Equal(t, receivedCoreDocumentModel.Document.EmbeddedData, coreDocumentModel.Document.EmbeddedData, "JSON unmarshal damaged invoice variables")
 }
 
 func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
-	var model documents.Model = new(Invoice)
+	var model = new(Invoice)
 	var err error
 
 	// nil core doc
@@ -173,19 +185,20 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err, "unpack must fail")
 
 	// embed data missing
-	err = model.UnpackCoreDocument(new(coredocumentpb.CoreDocument))
+	err = model.UnpackCoreDocument(new(documents.CoreDocumentModel))
 	assert.Error(t, err, "unpack must fail due to missing embed data")
 
 	// successful
-	coreDocument := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
-	err = model.UnpackCoreDocument(coreDocument)
+	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
+	model.CoreDocumentModel = coreDocumentModel
+	err = model.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
 
-	receivedCoreDocument, err := model.PackCoreDocument()
+	receivedCoreDocumentModel, err := model.PackCoreDocument()
 	assert.Nil(t, err, "model should be able to return the core document with embedded invoice")
 
-	assert.Equal(t, coreDocument.EmbeddedData, receivedCoreDocument.EmbeddedData, "embeddedData should be the same")
-	assert.Equal(t, coreDocument.EmbeddedDataSalts, receivedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
+	assert.Equal(t, coreDocumentModel.Document.EmbeddedData, receivedCoreDocumentModel.Document.EmbeddedData, "embeddedData should be the same")
+	assert.Equal(t, coreDocumentModel.Document.EmbeddedDataSalts, receivedCoreDocumentModel.Document.EmbeddedDataSalts, "embeddedDataSalt should be the same")
 }
 
 func TestInvoiceModel_getClientData(t *testing.T) {
@@ -249,14 +262,18 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
-	collabs = []string{"0x010102040506", "0x010203020302"}
+	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.NoError(t, err)
+	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
+	assert.NoError(t, err)
+	collabs = []string{collab1.String(), collab2.String()}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
 	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
 	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-	assert.Equal(t, inv.CoreDocument.Collaborators, [][]byte{id.ID[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, inv.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], collab1[:], collab2[:]})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
@@ -273,13 +290,13 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofs(t *testing.T) {
-	i, corDoc, err := createMockInvoice(t)
+	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	corDoc, proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	assert.NotNil(t, corDoc)
-	tree, _ := coredocument.GetDocumentRootTree(corDoc)
+	tree, err := i.CoreDocumentModel.GetDocumentRootTree()
+	assert.NoError(t, err)
 
 	// Validate invoice_number
 	valid, err := tree.ValidateProof(proof[0])
@@ -292,7 +309,7 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate []byte value
-	assert.Equal(t, i.CoreDocument.Collaborators[0], proof[1].Value)
+	assert.Equal(t, i.CoreDocumentModel.Document.Collaborators[0], proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -301,17 +318,17 @@ func TestInvoiceModel_createProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, _, err := createMockInvoice(t)
+	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	_, _, err = i.CreateProofs([]string{"nonexisting"})
+	_, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, corDoc, err := createMockInvoice(t)
+	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
 	ID, err := i.ID()
-	assert.Equal(t, corDoc.DocumentIdentifier, ID)
+	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, ID)
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
@@ -323,27 +340,28 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
 }
 
-func createMockInvoice(t *testing.T) (*Invoice, *coredocumentpb.CoreDocument, error) {
-	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
-	i.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
+func createMockInvoice(t *testing.T) (*Invoice, error) {
+	i := &Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2, Currency: "USD", CoreDocumentModel: documents.NewCoreDocModel()}
+	i.CoreDocumentModel.Document.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
 	dataRoot, err := i.CalculateDataRoot()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	// get the coreDoc for the invoice
-	corDoc, err := i.PackCoreDocument()
+
+	cdm, err := i.PackCoreDocument()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc, dataRoot)
+
+	err = cdm.CalculateSigningRoot(dataRoot)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	err = coredocument.CalculateDocumentRoot(corDoc)
+	err = cdm.CalculateDocumentRoot()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	i.UnpackCoreDocument(corDoc)
-	return i, corDoc, nil
+	i.UnpackCoreDocument(cdm)
+	return i, nil
 }

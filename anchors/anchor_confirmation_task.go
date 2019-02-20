@@ -37,7 +37,7 @@ type anchorConfirmationTask struct {
 	// task parameters
 	From         common.Address
 	AnchorID     AnchorID
-	CentrifugeID identity.CentID
+	CentrifugeID identity.DID
 	BlockHeight  uint64
 	Timeout      time.Duration
 
@@ -181,8 +181,8 @@ func getBytesAnchorID(key interface{}) (AnchorID, error) {
 	return fixed, nil
 }
 
-func getBytesCentrifugeID(key interface{}) (identity.CentID, error) {
-	var fixed [identity.CentIDLength]byte
+func getBytesCentrifugeID(key interface{}) (identity.DID, error) {
+	var fixed [common.AddressLength]byte
 	b, ok := key.([]interface{})
 	if !ok {
 		return fixed, errors.New("Could not parse interface to []byte")

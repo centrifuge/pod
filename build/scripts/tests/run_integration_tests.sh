@@ -20,7 +20,6 @@ for d in $(go list -tags=integration ./... | grep -v vendor); do
         cat profile.out >> coverage.txt
         rm profile.out
     fi
-    exit $status
 done
 
 exit $status

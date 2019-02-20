@@ -60,6 +60,7 @@ type NodeConfig struct {
 	BootstrapPeers                 []string
 	NetworkID                      uint32
 	SmartContractAddresses         map[config.ContractName]common.Address
+	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
 }
 
@@ -223,6 +224,11 @@ func (nc *NodeConfig) GetContractAddress(contractName config.ContractName) commo
 	return nc.SmartContractAddresses[contractName]
 }
 
+// GetContractBytecode refer the interface
+func (nc *NodeConfig) GetContractBytecode(contractName config.ContractName) string {
+	return nc.SmartContractBytecode[contractName]
+}
+
 // GetBootstrapPeers refer the interface
 func (nc *NodeConfig) GetBootstrapPeers() []string {
 	return nc.BootstrapPeers
@@ -332,6 +338,7 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 		NetworkId:                 nc.NetworkID,
 		PprofEnabled:              nc.PprofEnabled,
 		SmartContractAddresses:    convertAddressesToStringMap(nc.SmartContractAddresses),
+		SmartContractBytecode:     convertBytecodeToStringMap(nc.SmartContractBytecode),
 	}
 }
 
@@ -339,6 +346,14 @@ func convertAddressesToStringMap(addresses map[config.ContractName]common.Addres
 	m := make(map[string]string)
 	for k, v := range addresses {
 		m[string(k)] = v.String()
+	}
+	return m
+}
+
+func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string]string {
+	m := make(map[string]string)
+	for k, v := range bcode {
+		m[string(k)] = v
 	}
 	return m
 }
@@ -388,6 +403,10 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	if err != nil {
 		return err
 	}
+	nc.SmartContractBytecode, err = convertStringMapToSmartContractBytecode(data.SmartContractBytecode)
+	if err != nil {
+		return err
+	}
 	nc.PprofEnabled = data.PprofEnabled
 	return nil
 }
@@ -400,6 +419,14 @@ func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[conf
 		} else {
 			return nil, errors.New("provided smart contract address %s is invalid", v)
 		}
+	}
+	return m, nil
+}
+
+func convertStringMapToSmartContractBytecode(bcode map[string]string) (map[config.ContractName]string, error) {
+	m := make(map[config.ContractName]string)
+	for k, v := range bcode {
+		m[config.ContractName(k)] = v
 	}
 	return m, nil
 }
@@ -456,6 +483,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		BootstrapPeers:                 c.GetBootstrapPeers(),
 		NetworkID:                      c.GetNetworkID(),
 		SmartContractAddresses:         extractSmartContractAddresses(c),
+		SmartContractBytecode:          extractSmartContractBytecode(c),
 		PprofEnabled:                   c.IsPProfEnabled(),
 	}
 }
@@ -465,6 +493,15 @@ func extractSmartContractAddresses(c config.Configuration) map[config.ContractNa
 	names := config.ContractNames()
 	for _, n := range names {
 		sms[n] = c.GetContractAddress(n)
+	}
+	return sms
+}
+
+func extractSmartContractBytecode(c config.Configuration) map[config.ContractName]string {
+	sms := make(map[config.ContractName]string)
+	names := config.ContractNames()
+	for _, n := range names {
+		sms[n] = c.GetContractBytecode(n)
 	}
 	return sms
 }
@@ -548,14 +585,14 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 
 // GetKeys returns the keys of an account
 // TODO remove GetKeys and add signing methods to account
-func (acc *Account) GetKeys() (idKeys identity.IDKeys, err error) {
-	keys := map[int]identity.IDKey{}
+func (acc *Account) GetKeys() (idKeys config.IDKeys, err error) {
+	keys := map[int]config.IDKey{}
 
 	pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
 	if err != nil {
 		return idKeys, err
 	}
-	keys[identity.KeyPurposeP2P] = identity.IDKey{
+	keys[identity.KeyPurposeP2P] = config.IDKey{
 		PublicKey:  pk,
 		PrivateKey: sk}
 
@@ -563,7 +600,7 @@ func (acc *Account) GetKeys() (idKeys identity.IDKeys, err error) {
 	if err != nil {
 		return idKeys, err
 	}
-	keys[identity.KeyPurposeSigning] = identity.IDKey{
+	keys[identity.KeyPurposeSigning] = config.IDKey{
 		PublicKey:  pk,
 		PrivateKey: sk}
 
@@ -574,7 +611,7 @@ func (acc *Account) GetKeys() (idKeys identity.IDKeys, err error) {
 	}
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 
-	keys[identity.KeyPurposeEthMsgAuth] = identity.IDKey{
+	keys[identity.KeyPurposeEthMsgAuth] = config.IDKey{
 		PublicKey:  address32Bytes[:],
 		PrivateKey: sk}
 
@@ -582,7 +619,7 @@ func (acc *Account) GetKeys() (idKeys identity.IDKeys, err error) {
 	if err != nil {
 		return idKeys, err
 	}
-	idKeys = identity.IDKeys{ID: id, Keys: keys}
+	idKeys = config.IDKeys{ID: id, Keys: keys}
 	return idKeys, nil
 
 }
