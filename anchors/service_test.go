@@ -3,7 +3,6 @@
 package anchors
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
 
@@ -49,28 +48,23 @@ func TestGenerateAnchor(t *testing.T) {
 	currentAnchorID := utils.RandomByte32()
 	currentDocumentRoot := utils.RandomByte32()
 	documentProof := utils.RandomByte32()
-	address := utils.RandomSlice(common.AddressLength)
-	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	var documentProofs [][32]byte
 	documentProofs = append(documentProofs, documentProof)
-	did := identity.NewDIDFromByte(address)
-	messageToSign := GenerateCommitHash(currentAnchorID, did, currentDocumentRoot)
-	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, did, documentProofs, signature)
+	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes,  documentProofs)
 
 	anchorID, _ := ToAnchorID(currentAnchorID[:])
 	docRoot, _ := ToDocumentRoot(documentRoot32Bytes[:])
 
 	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
-	assert.Equal(t, commitData.CentrifugeID, did, "Anchor should have the centrifuge id")
+
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
-	assert.Equal(t, commitData.Signature, signature, "Anchor should have the signature")
+
 }
 
 func TestGetDocumentRootOf(t *testing.T) {

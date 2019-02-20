@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -192,21 +191,12 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return err
-	}
-
-	did := identity.NewDIDFromBytes(self.ID[:])
-
-	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, did, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, did, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
+	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}

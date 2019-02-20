@@ -82,7 +82,7 @@ func (ethRepository *service) PreCommitAnchor(ctx context.Context, anchorID Anch
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (ethRepository *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, centID identity.DID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *WatchCommit, err error) {
+func (ethRepository *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (confirmations <-chan *WatchCommit, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (ethRepository *service) CommitAnchor(ctx context.Context, anchorID AnchorI
 		return nil, err
 	}
 
-	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, centID, documentProofs, signature)
+	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
 	confirmations, err = ethRepository.setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
 
 	if err != nil {
@@ -125,6 +125,7 @@ func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.Tran
 	//preparation of data in specific types for the call to Ethereum
 	schemaVersion := big.NewInt(int64(preCommitData.SchemaVersion))
 
+	//TODO old parameters needs an update
 	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.PreCommit, opts, preCommitData.AnchorID, preCommitData.SigningRoot,
 		preCommitData.CentrifugeID, preCommitData.Signature, preCommitData.ExpirationBlock, schemaVersion)
 
@@ -141,8 +142,7 @@ func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.Tran
 
 // sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
 func sendCommitTransaction(contract anchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) error {
-	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot,
-		commitData.CentrifugeID.BigInt(), commitData.DocumentProofs, commitData.Signature)
+	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot, commitData.DocumentProofs)
 
 	if err != nil {
 		return err
@@ -194,7 +194,6 @@ func (ethRepository *service) setUpCommitEventListener(timeout time.Duration, fr
 	asyncRes, err := ethRepository.queue.EnqueueJob(anchorRepositoryConfirmationTaskName, map[string]interface{}{
 		anchorIDParam: commitData.AnchorID,
 		addressParam:  from,
-		centIDParam:   commitData.CentrifugeID,
 		blockHeight:   commitData.BlockHeight,
 	})
 	if err != nil {
