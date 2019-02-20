@@ -143,7 +143,6 @@ func (act *anchorConfirmationTask) RunTask() (interface{}, error) {
 			fOpts,
 			[]common.Address{act.From},
 			[]*big.Int{act.AnchorID.BigInt()},
-			[]*big.Int{act.CentrifugeID.BigInt()},
 		)
 		if err != nil {
 			return nil, centerrors.Wrap(err, "failed to start filtering anchor event logs")

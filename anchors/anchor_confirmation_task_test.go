@@ -23,11 +23,7 @@ type MockAnchorCommittedFilter struct {
 	err  error
 }
 
-func (m *MockAnchorCommittedFilter) FilterAnchorCommitted(
-	opts *bind.FilterOpts,
-	from []common.Address,
-	anchorID []*big.Int,
-	centrifugeID []*big.Int) (*AnchorContractAnchorCommittedIterator, error) {
+func (m *MockAnchorCommittedFilter) FilterAnchorCommitted(opts *bind.FilterOpts, from []common.Address, anchorId []*big.Int) (*AnchorContractAnchorCommittedIterator, error) {
 
 	return m.iter, m.err
 }
@@ -37,12 +33,12 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	anchorID, _ := ToAnchorID(utils.RandomSlice(AnchorIDLength))
 	address := common.BytesToAddress([]byte{1, 2, 3, 4})
 
-	centId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
+	did := identity.NewDIDFromBytes(utils.RandomSlice(common.AddressLength))
 	timeout := float64(5000)
 	kwargs, _ := utils.SimulateJSONDecodeForGocelery(map[string]interface{}{
 		anchorIDParam:      anchorID,
 		addressParam:       address,
-		centIDParam:        centId,
+		centIDParam:        did,
 		blockHeight:        float64(0),
 		queue.TimeoutParam: timeout,
 	})
@@ -55,7 +51,7 @@ func TestAnchoringConfirmationTask_ParseKwargsHappy(t *testing.T) {
 	//convert byte 32 to big int
 	assert.Equal(t, anchorID, anchorID, "Resulting anchor Id should have the same ID as the input")
 	assert.Equal(t, address, act.From, "Resulting address should have the same ID as the input")
-	assert.Equal(t, centId, act.CentrifugeID, "Resulting centId should have the same centId as the input")
+	assert.Equal(t, did, act.CentrifugeID, "Resulting centId should have the same centId as the input")
 	assert.Equal(t, time.Duration(timeout), act.Timeout, "Resulting timeout should have the same timeout as the input")
 }
 
