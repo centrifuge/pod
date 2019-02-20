@@ -136,7 +136,6 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 		return err
 	}
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
 	log.Info("Add key to identity contract %s", did.ToAddress().String())
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
@@ -166,7 +165,6 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 		return err
 	}
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
@@ -194,7 +192,6 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
@@ -277,7 +274,6 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	// default: no ether should be send
 	value := big.NewInt(0)
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 	if err != nil {
 		return err
@@ -324,8 +320,18 @@ func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
 	if err != nil {
 		return ret, err
 	}
+
 	lastKey := keys[len(keys)-1]
-	p2pID, err := ed25519.PublicKeyToP2PKey(lastKey)
+	key, err := i.GetKey(did, lastKey)
+	if err != nil {
+		return "", err
+	}
+
+	if key.RevokedAt.Cmp(big.NewInt(0)) != 0 {
+		return "", errors.New("current p2p key has been revoked")
+	}
+
+	p2pID, err := ed25519.PublicKeyToP2PKey(key.Key)
 	if err != nil {
 		return ret, err
 	}
@@ -335,33 +341,12 @@ func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
 
 // GetClientP2PURL returns the p2p url associated with the did
 func (i service) GetClientP2PURL(did id.DID) (string, error) {
-	contract, opts, _, err := i.prepareCall(did)
+	p2pID, err := i.CurrentP2PKey(did)
 	if err != nil {
 		return "", err
 	}
 
-	keys, err := contract.GetKeysByPurpose(opts, big.NewInt(id.KeyPurposeP2P))
-	if err != nil {
-		return "", err
-	}
-
-	lastIdx := len(keys) - 1
-	key, err := contract.GetKey(opts, keys[lastIdx])
-
-	if err != nil {
-		return "", err
-	}
-
-	if key.RevokedAt.Cmp(big.NewInt(0)) != 0 {
-		return "", errors.New("p2p key has been revoked")
-	}
-
-	p2pID, err := ed25519.PublicKeyToP2PKey(key.Key)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("/ipfs/%s", p2pID.Pretty()), nil
+	return fmt.Sprintf("/ipfs/%s", p2pID), nil
 }
 
 //Exists checks if an identity contract exists
