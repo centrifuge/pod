@@ -5,10 +5,11 @@ package receiver_test
 import (
 	"context"
 	"flag"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 

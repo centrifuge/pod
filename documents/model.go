@@ -432,7 +432,7 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
-func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
+func (m *CoreDocumentModel) AccountCanRead(account identity.DID) bool {
 	// loop though read rules
 	return m.findRole(coredocumentpb.Action_ACTION_READ_SIGN, func(role *coredocumentpb.Role) bool {
 		return isAccountInRole(role, account)
@@ -562,7 +562,7 @@ func (m *CoreDocumentModel) findRole(action coredocumentpb.Action, onRole func(r
 }
 
 // isAccountInRole returns true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) bool {
+func isAccountInRole(role *coredocumentpb.Role, account identity.DID) bool {
 	for _, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
 			return true
@@ -648,7 +648,7 @@ func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.DID) ([
 }
 
 // NFTOwnerCanRead checks if the nft owner/account can read the document
-func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
+func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
 	if m.AccountCanRead(account) {
 		return nil
@@ -716,7 +716,7 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 }
 
 //ValidateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
-func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
+func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) error {
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:

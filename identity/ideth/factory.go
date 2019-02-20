@@ -2,7 +2,6 @@ package ideth
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -23,7 +22,6 @@ import (
 )
 
 var log = logging.Logger("identity")
-
 
 type factory struct {
 	factoryAddress  common.Address
@@ -97,8 +95,6 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 
 	deployedContractByte := common.Bytes2Hex(contractCode)
 	identityContractByte := getIdentityByteCode()[2:] // remove 0x prefix
-	fmt.Printf("Deployed: %x\n", deployedContractByte)
-	fmt.Printf("IDCFG: %x\n", identityContractByte)
 	if deployedContractByte != identityContractByte {
 		return errors.New("deployed identity contract bytecode not correct")
 	}

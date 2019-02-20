@@ -5,7 +5,8 @@ package ethereum
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/satori/go.uuid"
@@ -16,7 +17,7 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
 	txID := uuid.Must(uuid.NewV4()).String()
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 
 	kwargs := map[string]interface{}{
 		transactions.TxIDParam:  txID,
@@ -40,10 +41,10 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 	tests := []map[string]interface{}{
 		{
 			transactions.TxIDParam:  uuid.Must(uuid.NewV4()).String(),
-			TransactionAccountParam: identity.RandomCentID().String(),
+			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
 		},
 		{
-			TransactionAccountParam: identity.RandomCentID().String(),
+			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 		},
 		{

@@ -4,8 +4,9 @@ package documents
 
 import (
 	"context"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"testing"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"

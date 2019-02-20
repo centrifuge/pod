@@ -5,8 +5,9 @@ package transactions
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,7 @@ import (
 func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	task := new(BaseTask)
 
-	accountID := identity.RandomCentID()
+	accountID := testingidentity.GenerateRandomDID()
 	name := "some task"
 	task.TxID = uuid.Must(uuid.NewV4())
 	task.TxManager = NewManager(&mockConfig{}, NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))

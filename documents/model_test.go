@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,10 +20,8 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/ptypes/any"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -76,36 +76,38 @@ func TestMain(m *testing.M) {
 }
 
 func Test_fetchUniqueCollaborators(t *testing.T) {
-
+	o1 := testingidentity.GenerateRandomDID()
+	o2 := testingidentity.GenerateRandomDID()
+	n1 := testingidentity.GenerateRandomDID()
 	tests := []struct {
 		old    [][]byte
 		new    []string
-		result []identity.CentID
+		result []identity.DID
 		err    bool
 	}{
 		{
-			new:    []string{"0x010203040506"},
-			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+			new:    []string{n1.String()},
+			result: []identity.DID{n1},
 		},
 
 		{
-			old:    [][]byte{{1, 2, 3, 2, 3, 1}},
-			new:    []string{"0x010203040506"},
-			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+			old:    [][]byte{o1[:]},
+			new:    []string{n1.String()},
+			result: []identity.DID{n1},
 		},
 
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
-			new: []string{"0x010203040506"},
+			old: [][]byte{o1[:], n1[:]},
+			new: []string{n1.String()},
 		},
 
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			old: [][]byte{o1[:], o2[:]},
 		},
 
 		// new collaborator with wrong format
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			old: [][]byte{o1[:], o2[:]},
 			new: []string{"0x0102030405"},
 			err: true,
 		},
@@ -137,9 +139,9 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 	assert.Nil(t, newDocModel)
 
 	// missing DocumentRoot
-	c1 := utils.RandomSlice(6)
-	c2 := utils.RandomSlice(6)
-	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	c1 := testingidentity.GenerateRandomDID()
+	c2 := testingidentity.GenerateRandomDID()
+	c := []string{c1.String(), c2.String()}
 	ndm, err := dm.PrepareNewVersion(c)
 	assert.NotNil(t, err)
 	assert.Nil(t, ndm)
@@ -173,7 +175,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrZeroCollaborators, err))
 
-	cs := []identity.CentID{identity.RandomCentID()}
+	cs := []identity.DID{testingidentity.GenerateRandomDID()}
 	err = dm.initReadRules(cs)
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
@@ -187,8 +189,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 
 func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	dm := NewCoreDocModel()
-	account, err := identity.CentIDFromString("0x010203040506")
-	assert.NoError(t, err)
+	account := testingidentity.GenerateRandomDID()
 
 	dm.Document.DocumentRoot = utils.RandomSlice(32)
 	ndm, err := dm.PrepareNewVersion([]string{account.String()})
@@ -198,7 +199,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	assert.NotNil(t, cd.Roles)
 
 	// account who cant access
-	rcid := identity.RandomCentID()
+	rcid := testingidentity.GenerateRandomDID()
 	assert.False(t, ndm.AccountCanRead(rcid))
 
 	// account can access
@@ -395,7 +396,8 @@ func Test_addNFTToReadRules(t *testing.T) {
 	assert.Error(t, err)
 
 	dm.Document.DocumentRoot = utils.RandomSlice(32)
-	dm, err = dm.PrepareNewVersion([]string{"0x010203040506"})
+	dm, err = dm.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()})
+	assert.NoError(t, err)
 	cd := dm.Document
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
@@ -413,10 +415,9 @@ func Test_addNFTToReadRules(t *testing.T) {
 func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	dm := NewCoreDocModel()
 	dm.Document.DocumentRoot = utils.RandomSlice(32)
-	account, err := identity.CentIDFromString("0x010203040506")
-	assert.NoError(t, err)
+	account := testingidentity.GenerateRandomDID()
 
-	dm, err = dm.PrepareNewVersion([]string{account.String()})
+	dm, err := dm.PrepareNewVersion([]string{account.String()})
 	assert.NoError(t, err)
 
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
@@ -426,7 +427,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 
 	// account not in read rules and nft missing
-	account, err = identity.CentIDFromString("0x010203040505")
+	account = testingidentity.GenerateRandomDID()
 	assert.NoError(t, err)
 	tokenID := utils.RandomSlice(32)
 	err = dm.NFTOwnerCanRead(registry, tokenID, account)

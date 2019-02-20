@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 
@@ -32,7 +34,8 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		Bootstrapper{},
 	}
-	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
@@ -40,7 +43,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_getKey(t *testing.T) {
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	id := uuid.UUID([16]byte{})
 
 	// empty id
@@ -55,14 +58,14 @@ func Test_getKey(t *testing.T) {
 }
 
 func TestRepository(t *testing.T) {
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	bytes := utils.RandomSlice(identity.CentIDLength)
 	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
 
 	repo := ctx[BootstrappedRepo].(Repository)
 	tx := newTransaction(cid, "Some transaction")
 	assert.NotNil(t, tx.ID)
-	assert.NotNil(t, tx.CID)
+	assert.NotNil(t, tx.DID)
 	assert.Equal(t, Pending, tx.Status)
 
 	// get tx from repo
@@ -78,6 +81,6 @@ func TestRepository(t *testing.T) {
 	tx, err = repo.Get(cid, tx.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, cid, tx.CID)
+	assert.Equal(t, cid, tx.DID)
 	assert.Equal(t, Success, tx.Status)
 }

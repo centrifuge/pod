@@ -21,23 +21,23 @@ func (m MockTxManager) GetDefaultTaskTimeout() time.Duration {
 	panic("implement me")
 }
 
-func (m MockTxManager) UpdateTaskStatus(accountID identity.CentID, id uuid.UUID, status transactions.Status, taskName, message string) error {
+func (m MockTxManager) UpdateTaskStatus(accountID identity.DID, id uuid.UUID, status transactions.Status, taskName, message string) error {
 	panic("implement me")
 }
 
-func (m MockTxManager) ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID uuid.UUID, desc string, work func(accountID identity.CentID, txID uuid.UUID, txMan transactions.Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
+func (m MockTxManager) ExecuteWithinTX(ctx context.Context, accountID identity.DID, existingTxID uuid.UUID, desc string, work func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, err chan<- error)) (txID uuid.UUID, done chan bool, err error) {
 	args := m.Called(ctx, accountID, existingTxID, desc, work)
 	return args.Get(0).(uuid.UUID), args.Get(1).(chan bool), args.Error(2)
 }
 
-func (MockTxManager) GetTransaction(accountID identity.CentID, id uuid.UUID) (*transactions.Transaction, error) {
+func (MockTxManager) GetTransaction(accountID identity.DID, id uuid.UUID) (*transactions.Transaction, error) {
 	panic("implement me")
 }
 
-func (MockTxManager) GetTransactionStatus(accountID identity.CentID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
+func (MockTxManager) GetTransactionStatus(accountID identity.DID, id uuid.UUID) (*transactionspb.TransactionStatusResponse, error) {
 	panic("implement me")
 }
 
-func (MockTxManager) WaitForTransaction(accountID identity.CentID, txID uuid.UUID) error {
+func (MockTxManager) WaitForTransaction(accountID identity.DID, txID uuid.UUID) error {
 	panic("implement me")
 }
