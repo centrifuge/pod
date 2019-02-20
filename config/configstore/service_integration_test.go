@@ -3,10 +3,11 @@
 package configstore_test
 
 import (
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 

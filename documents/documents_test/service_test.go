@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -28,7 +30,7 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	cid         = identity.RandomCentID()
+	cid         = testingidentity.GenerateRandomDID()
 	centIDBytes = cid[:]
 	tenantID    = cid[:]
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
@@ -55,18 +57,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
-	poSrv := documents.DefaultService(nil, nil, nil, documents.NewServiceRegistry())
+	poSrv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
 	assert.Error(t, err)
 }
 
-func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
+func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
-	idService := testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idService := testingcommons.MockIdentityService{}
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil)
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry()), idService
+	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
 
 type mockAnchorRepo struct {
@@ -105,14 +107,12 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	if err != nil {
 		return nil, err
 	}
-	centID, err := identity.ToCentID(centIDBytes)
-	assert.Nil(t, err)
 	signKey := identity.IDKey{
 		PublicKey:  key1Pub[:],
 		PrivateKey: key1,
 	}
 	idConfig := &identity.IDConfig{
-		ID: centID,
+		ID: cid,
 		Keys: map[int]identity.IDKey{
 			identity.KeyPurposeSigning: signKey,
 		},
@@ -179,7 +179,7 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s documents.Service) testingcommons.MockIDService {
+func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIdentityService, s documents.Service) testingcommons.MockIdentityService {
 	idkey := &ethid.EthereumIdentityKey{
 		Key:       key1Pub,
 		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},

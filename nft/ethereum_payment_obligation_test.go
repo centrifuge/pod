@@ -146,14 +146,14 @@ func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address
 func TestPaymentObligationService(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
+		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
+			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
 				coreDocModel := documents.NewCoreDocModel()
 				coreDoc := coreDocModel.Document
 				coreDoc.DocumentRoot = utils.RandomSlice(32)
@@ -162,7 +162,7 @@ func TestPaymentObligationService(t *testing.T) {
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocumentModel: coreDocModel}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
-				idServiceMock := testingcommons.MockIDService{}
+				idServiceMock := testingcommons.MockIdentityService{}
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
 				ethClientMock.On("SubmitTransactionWithRetries",

@@ -2,6 +2,7 @@ package testingdocuments
 
 import (
 	"context"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -69,6 +70,11 @@ func (m *MockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	return dm, args.Error(1)
 }
 
+func (m *MockModel) UnpackCoreDocument(model *documents.CoreDocumentModel) error {
+	args := m.Called(model)
+	return args.Error(0)
+}
+
 func (m *MockModel) JSON() ([]byte, error) {
 	args := m.Called()
 	data, _ := args.Get(0).([]byte)
@@ -95,7 +101,7 @@ func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documen
 	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	dm := documents.NewCoreDocModel()
-	mockModel := MockModel {
+	mockModel := MockModel{
 		CoreDocumentModel: dm,
 	}
 	dm.Document = doc
