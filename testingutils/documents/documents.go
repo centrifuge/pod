@@ -70,7 +70,7 @@ func (m *MockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	return dm, args.Error(1)
 }
 
-func (m *MockModel) UnpackCoreDocument(model *documents.CoreDocumentModel) (error) {
+func (m *MockModel) UnpackCoreDocument(model *documents.CoreDocumentModel) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
