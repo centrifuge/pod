@@ -1,24 +1,21 @@
 // +build unit
 
-package transactions
+package txv1
 
 import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,14 +38,14 @@ func TestMain(m *testing.M) {
 
 func Test_getKey(t *testing.T) {
 	cid := identity.RandomCentID()
-	id := uuid.UUID([16]byte{})
+	id := transactions.NilTxID()
 
 	// empty id
 	key, err := getKey(cid, id)
 	assert.Nil(t, key)
 	assert.Equal(t, "transaction ID is not valid", err.Error())
 
-	id = uuid.Must(uuid.NewV4())
+	id = transactions.NewTxID()
 	key, err = getKey(cid, id)
 	assert.Nil(t, err)
 	assert.Equal(t, append(cid[:], id.Bytes()...), key)
@@ -59,18 +56,18 @@ func TestRepository(t *testing.T) {
 	bytes := utils.RandomSlice(identity.CentIDLength)
 	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
 
-	repo := ctx[BootstrappedRepo].(Repository)
-	tx := newTransaction(cid, "Some transaction")
+	repo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	tx := transactions.NewTransaction(cid, "Some transaction")
 	assert.NotNil(t, tx.ID)
 	assert.NotNil(t, tx.CID)
-	assert.Equal(t, Pending, tx.Status)
+	assert.Equal(t, transactions.Pending, tx.Status)
 
 	// get tx from repo
 	_, err := repo.Get(cid, tx.ID)
-	assert.True(t, errors.IsOfType(ErrTransactionMissing, err))
+	assert.True(t, errors.IsOfType(transactions.ErrTransactionMissing, err))
 
 	// save tx into repo
-	tx.Status = Success
+	tx.Status = transactions.Success
 	err = repo.Save(tx)
 	assert.Nil(t, err)
 
@@ -79,5 +76,5 @@ func TestRepository(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tx)
 	assert.Equal(t, cid, tx.CID)
-	assert.Equal(t, Success, tx.Status)
+	assert.Equal(t, transactions.Success, tx.Status)
 }

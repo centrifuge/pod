@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +33,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		// missing model ID
 		{
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
+				transactions.TxIDParam: transactions.NewTxID().String(),
 			},
 			err: "missing model ID",
 		},
@@ -42,7 +41,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		// missing accountID
 		{
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
+				transactions.TxIDParam: transactions.NewTxID().String(),
 				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
 			},
 
@@ -53,7 +52,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		{
 			name: "success",
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: uuid.Must(uuid.NewV4()).String(),
+				transactions.TxIDParam: transactions.NewTxID().String(),
 				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
 				AccountIDParam:         identity.RandomCentID().String(),
 			},

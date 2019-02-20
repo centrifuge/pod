@@ -3,13 +3,10 @@ package ed25519
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/libp2p/go-libp2p-peer"
 	"golang.org/x/crypto/ed25519"
 )
-
-var log = logging.Logger("ed25519")
 
 // GetPublicSigningKey returns the public key from the file
 func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey, err error) {
