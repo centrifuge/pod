@@ -44,14 +44,6 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 		return nil, err
 	}
 
-	var roleKey []byte
-	if request.SubmitRoleProof != "" {
-		roleKey, err = hexutil.Decode(request.SubmitRoleProof)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	req := MintNFTRequest{
 		DocumentID:               identifier,
 		RegistryAddress:          common.HexToAddress(request.RegistryAddress),
@@ -59,7 +51,6 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 		ProofFields:              request.ProofFields,
 		GrantNFTReadAccess:       request.GrantNftAccess,
 		SubmitNFTReadAccessProof: request.SubmitNftOwnerAccessProof,
-		SubmitRoleProof:          roleKey,
 		SubmitTokenProof:         request.SubmitTokenProof,
 	}
 	resp, _, err := g.service.MintNFT(ctxHeader, req)

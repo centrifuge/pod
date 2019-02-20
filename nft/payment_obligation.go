@@ -61,7 +61,6 @@ type MintNFTRequest struct {
 	ProofFields              []string
 	GrantNFTReadAccess       bool
 	SubmitTokenProof         bool
-	SubmitRoleProof          []byte
 	SubmitNFTReadAccessProof bool
 }
 

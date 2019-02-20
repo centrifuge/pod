@@ -837,19 +837,10 @@ func (m *CoreDocumentModel) GetNFTProofs(
 	dataRoot []byte,
 	account identity.CentID,
 	registry common.Address,
-	tokenID, roleProof []byte,
+	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
 	var pfKeys []string
-	if roleProof != nil {
-		pk, err := getRoleProofKey(m.Document.Roles, roleProof, account)
-		if err != nil {
-			return nil, err
-		}
-
-		pfKeys = append(pfKeys, pk)
-	}
-
 	if nftUniqueProof {
 		pk, err := getNFTUniqueProofKey(m.Document.Nfts, registry)
 		if err != nil {

@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -93,7 +92,9 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
 	assert.Nil(t, err, "should not error out when getting tokenID hex")
 	<-done
-	assert.NoError(t, txManager.WaitForTransaction(cid, uuid.Must(uuid.FromString(resp.TransactionID))))
+	txID, err := transactions.FromString(resp.TransactionID)
+	assert.NoError(t, err)
+	assert.NoError(t, txManager.WaitForTransaction(cid, txID))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, req.DepositAddress, owner)
@@ -129,7 +130,7 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
 
-func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof []byte) {
+func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
@@ -137,7 +138,6 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof []byte) {
 		DepositAddress:           common.HexToAddress(depositAddr),
 		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date"},
 		GrantNFTReadAccess:       grantNFT,
-		SubmitRoleProof:          roleProof,
 		SubmitNFTReadAccessProof: nftReadAccess,
 	}
 
@@ -148,14 +148,9 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool, roleProof []byte) {
 	}
 }
 
-func TestEthereumPaymentObligation_MintNFT_role_not_exists(t *testing.T) {
-	t.SkipNow()
-	failMintNFT(t, true, false, []byte("Supplier"))
-}
-
 func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
 	t.SkipNow()
-	failMintNFT(t, false, true, nil)
+	failMintNFT(t, false, true)
 }
 
 func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) {

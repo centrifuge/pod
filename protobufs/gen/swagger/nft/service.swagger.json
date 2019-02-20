@@ -69,10 +69,6 @@
           "format": "boolean",
           "title": "proof that nft is part of document"
         },
-        "submit_role_proof": {
-          "type": "string",
-          "title": "proof that role exists on document"
-        },
         "submit_nft_owner_access_proof": {
           "type": "boolean",
           "format": "boolean",

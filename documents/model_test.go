@@ -637,21 +637,10 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	tests := []struct {
 		registry       common.Address
 		tokenID        []byte
-		roleProof      []byte
 		nftReadAccess  bool
 		nftUniqueProof bool
 		error          bool
 	}{
-		// failed role proof
-		{
-			roleProof: utils.RandomSlice(32),
-			error:     true,
-		},
-
-		// good role proof
-		{
-			roleProof: make([]byte, 32, 32),
-		},
 
 		// failed nft unique proof
 		{
@@ -683,7 +672,6 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 
 		// all proofs
 		{
-			roleProof:      make([]byte, 32, 32),
 			nftUniqueProof: true,
 			registry:       registry,
 			nftReadAccess:  true,
@@ -695,7 +683,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	for _, c := range tests {
-		pfs, err := dm.GetNFTProofs(dataRoot, account, c.registry, c.tokenID, c.roleProof, c.nftUniqueProof, c.nftReadAccess)
+		pfs, err := dm.GetNFTProofs(dataRoot, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
 			assert.Error(t, err)
 			continue

@@ -92,7 +92,6 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		cid,
 		req.RegistryAddress,
 		tokenID[:],
-		req.SubmitRoleProof,
 		req.SubmitTokenProof,
 		req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof)
 	if err != nil {
@@ -149,10 +148,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 	dm, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, nil, err
-	}
-
-	if req.SubmitRoleProof != nil && !dm.IsAccountInRole(req.SubmitRoleProof, cid) {
-		return nil, nil, documents.ErrNFTRoleMissing
 	}
 
 	// check if the nft is successfully minted already
