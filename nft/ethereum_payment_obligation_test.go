@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
-	"github.com/satori/go.uuid"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -19,9 +16,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -183,7 +182,7 @@ func TestPaymentObligationService(t *testing.T) {
 				queueSrv := new(testingutils.MockQueue)
 				txMan := &testingtx.MockTxManager{}
 				txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything).Return(uuid.Nil, make(chan bool), nil)
+					mock.Anything, mock.Anything).Return(transactions.NilTxID(), make(chan bool), nil)
 				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv, txMan
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
@@ -202,7 +201,13 @@ func TestPaymentObligationService(t *testing.T) {
 				return &EthereumPaymentObligationContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
-			_, _, err := service.MintNFT(ctxh, decodeHex(test.request.Identifier), test.request.RegistryAddress, test.request.DepositAddress, test.request.ProofFields)
+			req := MintNFTRequest{
+				DocumentID:      decodeHex(test.request.Identifier),
+				RegistryAddress: common.HexToAddress(test.request.RegistryAddress),
+				DepositAddress:  common.HexToAddress(test.request.DepositAddress),
+				ProofFields:     test.request.ProofFields,
+			}
+			_, _, err := service.MintNFT(ctxh, req)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -256,26 +261,4 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
-}
-
-func Test_addNFT(t *testing.T) {
-	dm := documents.NewCoreDocModel()
-	cd := dm.Document
-	cd.DocumentRoot = utils.RandomSlice(32)
-	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
-	tokenID := utils.RandomSlice(32)
-	assert.Nil(t, cd.Nfts)
-
-	addNFT(dm, registry.Bytes(), tokenID)
-	assert.Len(t, cd.Nfts, 1)
-	assert.Len(t, cd.Nfts[0].RegistryId, 32)
-	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
-	assert.Nil(t, getStoredNFT(cd.Nfts, registry2.Bytes()))
-
-	tokenID = utils.RandomSlice(32)
-	addNFT(dm, registry.Bytes(), tokenID)
-	assert.Len(t, cd.Nfts, 1)
-	assert.Len(t, cd.Nfts[0].RegistryId, 32)
-	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
 }

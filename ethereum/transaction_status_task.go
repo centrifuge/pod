@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -39,7 +41,7 @@ type WatchTransaction struct {
 
 // TransactionStatusTask is struct for the task to check an Ethereum transaction
 type TransactionStatusTask struct {
-	transactions.BaseTask
+	txv1.BaseTask
 	timeout time.Duration
 
 	//state
@@ -63,7 +65,7 @@ func NewTransactionStatusTask(
 ) *TransactionStatusTask {
 	return &TransactionStatusTask{
 		timeout:               timeout,
-		BaseTask:              transactions.BaseTask{TxManager: txService},
+		BaseTask:              txv1.BaseTask{TxManager: txService},
 		ethContextInitializer: ethContextInitializer,
 		transactionByHash:     transactionByHash,
 		transactionReceipt:    transactionReceipt,
@@ -84,7 +86,7 @@ func (tst *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		transactionByHash:     tst.transactionByHash,
 		transactionReceipt:    tst.transactionReceipt,
 		ethContextInitializer: tst.ethContextInitializer,
-		BaseTask:              transactions.BaseTask{TxManager: tst.TxManager},
+		BaseTask:              txv1.BaseTask{TxManager: tst.TxManager},
 	}, nil
 }
 

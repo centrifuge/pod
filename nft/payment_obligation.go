@@ -5,10 +5,9 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // TokenIDLength is the length of an NFT token ID
@@ -25,8 +24,8 @@ func NewTokenID() TokenID {
 	return tid
 }
 
-// FromString converts given hex string to a TokenID
-func FromString(hexStr string) (TokenID, error) {
+// TokenIDFromString converts given hex string to a TokenID
+func TokenIDFromString(hexStr string) (TokenID, error) {
 	tokenIDBytes, err := hexutil.Decode(hexStr)
 	if err != nil {
 		return NewTokenID(), err
@@ -54,10 +53,21 @@ func (t TokenID) String() string {
 	return hexutil.Encode(t[:])
 }
 
+// MintNFTRequest holds required fields for minting NFT
+type MintNFTRequest struct {
+	DocumentID               []byte
+	RegistryAddress          common.Address
+	DepositAddress           common.Address
+	ProofFields              []string
+	GrantNFTReadAccess       bool
+	SubmitTokenProof         bool
+	SubmitNFTReadAccessProof bool
+}
+
 // PaymentObligation handles transactions related to minting of NFTs
 type PaymentObligation interface {
 	// MintNFT mints an NFT
-	MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, chan bool, error)
+	MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error)
 }
 
 // MintNFTResponse holds tokenID and transaction ID.

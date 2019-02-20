@@ -1,4 +1,4 @@
-package transactions
+package txv1
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 // ErrInvalidTransactionID error for Invalid transaction ID.
@@ -21,13 +21,13 @@ const ErrInvalidAccountID = errors.Error("Invalid Tenant ID")
 var apiLog = logging.Logger("transaction-api")
 
 // GRPCHandler returns an implementation of the TransactionServiceServer
-func GRPCHandler(srv Manager, configService config.Service) transactionspb.TransactionServiceServer {
+func GRPCHandler(srv transactions.Manager, configService config.Service) transactionspb.TransactionServiceServer {
 	return grpcHandler{srv: srv, configService: configService}
 }
 
 // grpcHandler implements transactionspb.TransactionServiceServer
 type grpcHandler struct {
-	srv           Manager
+	srv           transactions.Manager
 	configService config.Service
 }
 
@@ -39,9 +39,9 @@ func (h grpcHandler) GetTransactionStatus(ctx context.Context, req *transactions
 		return nil, err
 	}
 
-	id := uuid.FromStringOrNil(req.TransactionId)
-	if id == uuid.Nil {
-		return nil, ErrInvalidTransactionID
+	id, err := transactions.FromString(req.TransactionId)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrInvalidTransactionID, err)
 	}
 
 	tc, err := contextutil.Account(ctxHeader)

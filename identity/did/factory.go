@@ -5,17 +5,13 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/satori/go.uuid"
-
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
@@ -53,8 +49,8 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID id.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
 			errOut <- err
@@ -126,7 +122,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 	}
 
 	// TODO refactor randomCentID
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX for create identity status", s.createIdentityTX(opts))
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), transactions.NilTxID(), "Check TX for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}

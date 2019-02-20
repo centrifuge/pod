@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -24,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +47,7 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
-		transactions.Bootstrapper{},
+		txv1.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
