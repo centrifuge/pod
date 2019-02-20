@@ -15,6 +15,6 @@ var log = logging.Logger("anchorRepository")
 type AnchorRepository interface {
 	//Deprecated old version
 	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error)
-	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) error
+	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error)
 	GetDocumentRootOf(anchorID AnchorID) (DocumentRoot, error)
 }

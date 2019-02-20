@@ -46,7 +46,11 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
+	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
+
+	isDone := <- done
+
+	assert.True(t, isDone, "isDone should be true")
 
 	assert.Nil(t, err)
 

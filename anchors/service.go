@@ -114,15 +114,15 @@ func (s service) getDID(ctx context.Context) (did identity.DID, err error) {
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) error {
+func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error) {
 	did, err := s.getDID(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	uuid := contextutil.TX(ctx)
@@ -130,30 +130,25 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	conn := s.client
 	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
 
 	log.Info("Add Anchor to Commit %s from did:%s", anchorID.BigInt().String(), did.ToAddress().String())
-	txID, done, err := s.txManager.ExecuteWithinTX(ctx, did, uuid, "Check TX for anchor commit",
+	_, done, err := s.txManager.ExecuteWithinTX(ctx, did, uuid, "Check TX for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProofs))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	isDone := <-done
-	// non async task
-	if !isDone {
-		return errors.New("add key  TX failed: txID:%s", txID.String())
+	return done, nil
 
-	}
-	return err
 }
 
 // sendPreCommitTransaction sends the actual transaction to the ethereum node.
