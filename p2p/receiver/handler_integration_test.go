@@ -103,11 +103,14 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 
-	// Retrieve document from anchor repository with document_identifier
+	// Retrieve document from anchor repository with requester verification access type
 	getReq := getDocumentRequestPeer(dm)
 	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
 	assert.Nil(t, err)
 	assert.ObjectsAreEqual(getDocResp.Document, doc)
+
+	// Retrieve document from anchor repository with access token verification access type
+	// Retrieve document from anchor repository with nft verification access type
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {

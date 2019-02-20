@@ -466,7 +466,7 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 	id := idConfig.ID.String()
 	payload = documentpb.AccessTokenParams{
 		Grantee:            id,
-		DocumentIdentifier: string(m.Document.DocumentIdentifier),
+		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
 	dm, err := m.AddAccessTokenToReadRules(*idConfig, payload)
 	assert.NoError(t, err)
