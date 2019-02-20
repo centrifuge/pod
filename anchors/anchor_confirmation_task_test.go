@@ -19,7 +19,7 @@ import (
 )
 
 type MockAnchorCommittedFilter struct {
-	iter *EthereumAnchorRepositoryContractAnchorCommittedIterator
+	iter *AnchorContractAnchorCommittedIterator
 	err  error
 }
 
@@ -27,7 +27,7 @@ func (m *MockAnchorCommittedFilter) FilterAnchorCommitted(
 	opts *bind.FilterOpts,
 	from []common.Address,
 	anchorID []*big.Int,
-	centrifugeID []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error) {
+	centrifugeID []*big.Int) (*AnchorContractAnchorCommittedIterator, error) {
 
 	return m.iter, m.err
 }
@@ -147,7 +147,7 @@ func TestAnchoringConfirmationTask_RunTaskWatchError(t *testing.T) {
 	act := anchorConfirmationTask{
 		AnchorID: anchorID,
 		From:     address,
-		AnchorCommittedFilterer: &MockAnchorCommittedFilter{iter: &EthereumAnchorRepositoryContractAnchorCommittedIterator{
+		AnchorCommittedFilterer: &MockAnchorCommittedFilter{iter: &AnchorContractAnchorCommittedIterator{
 			fail: errors.New("watch error"),
 			sub:  &testingutils.MockSubscription{},
 		}},

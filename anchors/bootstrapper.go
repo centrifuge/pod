@@ -29,7 +29,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	repositoryContract, err := NewEthereumAnchorRepositoryContract(cfg.GetContractAddress(config.AnchorRepo), client.GetEthClient())
+	repositoryContract, err := NewAnchorContract(cfg.GetContractAddress(config.AnchorRepo), client.GetEthClient())
 	if err != nil {
 		return err
 	}
@@ -39,13 +39,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	repo := newEthereumAnchorRepository(cfg, repositoryContract, queueSrv, ethereum.GetClient)
+	repo := newService(cfg, repositoryContract, queueSrv, ethereum.GetClient)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	task := &anchorConfirmationTask{
 		// Passing timeout as a common property for every request, if we need more fine-grain control per request then we will override by invoker
 		Timeout:                 cfg.GetEthereumContextWaitTimeout(),
-		AnchorCommittedFilterer: &repositoryContract.EthereumAnchorRepositoryContractFilterer,
+		AnchorCommittedFilterer: &repositoryContract.AnchorContractFilterer,
 		EthContextInitializer:   ethereum.DefaultWaitForTransactionMiningContext,
 	}
 

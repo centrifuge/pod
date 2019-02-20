@@ -80,7 +80,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetGethCallOpts").Return(nil)
-	ethRepo := newEthereumAnchorRepository(cfg, repo, nil, func() ethereum.Client {
+	ethRepo := newService(cfg, repo, nil, func() ethereum.Client {
 		return ethClient
 	})
 	docRoot := utils.RandomByte32()

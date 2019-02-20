@@ -24,11 +24,7 @@ const (
 )
 
 type anchorCommittedWatcher interface {
-	FilterAnchorCommitted(
-		opts *bind.FilterOpts,
-		from []common.Address,
-		anchorID []*big.Int,
-		centID []*big.Int) (*EthereumAnchorRepositoryContractAnchorCommittedIterator, error)
+	FilterAnchorCommitted(opts *bind.FilterOpts, from []common.Address, anchorId []*big.Int) (*AnchorContractAnchorCommittedIterator, error)
 }
 
 // anchorConfirmationTask is a queued task to watch ID registration events on Ethereum using EthereumAnchoryRepositoryContract.
