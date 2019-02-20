@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	anchorRepo      anchors.AnchorRepository
-	cfg             config.Configuration
+	anchorRepo anchors.AnchorRepository
+	cfg        config.Configuration
 )
 
 func TestMain(m *testing.M) {
@@ -29,14 +29,13 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-
 func TestCommitAnchor_Integration(t *testing.T) {
-	anchorID  := utils.RandomSlice(32)
+	anchorID := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
 	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	commitAnchor(t, anchorID, documentRoot,[][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	commitAnchor(t, anchorID, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
@@ -49,7 +48,7 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
 
-	assert.Nil(t,err)
+	assert.Nil(t, err)
 
 }
 

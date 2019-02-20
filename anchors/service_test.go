@@ -35,7 +35,7 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 	correctCommitSignature := "0x4a73286521114f528967674bae4ecdc6cc94789255495429a7f58ca3ef0158ae257dd02a0ccb71d817e480d06f60f640ec021ade2ff90fe601bb7a5f4ddc569700"
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 	anchorIDTyped, _ := ToAnchorID(anchorID)
-	centIdTyped  := identity.NewDIDFromByte(address)
+	centIdTyped := identity.NewDIDFromByte(address)
 	docRootTyped, _ := ToDocumentRoot(documentRoot)
 	messageToSign := GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")
@@ -54,7 +54,7 @@ func TestGenerateAnchor(t *testing.T) {
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes,  documentProofs)
+	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, documentProofs)
 
 	anchorID, _ := ToAnchorID(currentAnchorID[:])
 	docRoot, _ := ToDocumentRoot(documentRoot32Bytes[:])
@@ -73,7 +73,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetGethCallOpts").Return(nil)
-	ethRepo := newService(cfg, repo, nil, ethClient,nil)
+	ethRepo := newService(cfg, repo, nil, ethClient, nil)
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

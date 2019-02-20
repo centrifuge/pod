@@ -2,6 +2,7 @@ package anchors
 
 import (
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -30,7 +31,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-
 	anchorContractAddr := cfg.GetContractAddress(config.AnchorRepo)
 	fmt.Println(anchorContractAddr.String())
 
@@ -49,9 +49,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-
-
-	repo := newService(cfg, repositoryContract, queueSrv, client,txManager)
+	repo := newService(cfg, repositoryContract, queueSrv, client, txManager)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	return nil

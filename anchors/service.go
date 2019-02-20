@@ -2,9 +2,10 @@ package anchors
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/satori/go.uuid"
-	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -26,12 +27,12 @@ type anchorRepositoryContract interface {
 type service struct {
 	config                   Config
 	anchorRepositoryContract anchorRepositoryContract
-	client         ethereum.Client
+	client                   ethereum.Client
 	queue                    *queue.Server
-	txManager transactions.Manager
+	txManager                transactions.Manager
 }
 
-func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client,txManager transactions.Manager) AnchorRepository {
+func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client, txManager transactions.Manager) AnchorRepository {
 	return &service{config: config, anchorRepositoryContract: anchorContract, client: client, queue: queue, txManager: txManager}
 }
 
@@ -81,7 +82,6 @@ func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{},
 			return
 		}
 
-
 		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
 		if err != nil {
 			errOut <- err
@@ -114,8 +114,8 @@ func (s service) getDID(ctx context.Context) (did identity.DID, err error) {
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte)  error {
-	did,err := s.getDID(ctx)
+func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) error {
+	did, err := s.getDID(ctx)
 	if err != nil {
 		return err
 	}
@@ -162,6 +162,3 @@ func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.Tran
 	//TODO implement
 	return nil
 }
-
-
-
