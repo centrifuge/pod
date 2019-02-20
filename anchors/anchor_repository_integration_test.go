@@ -54,25 +54,23 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 }
 
 /*
+
+//TODO can be removed because CommitAnchor is sync
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5]*anchors.CommitData
-	var confirmationList [5]<-chan *anchors.WatchCommit
-	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 	centrifugeId := utils.RandomSlice(identity.CentIDLength)
-
 
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := utils.RandomByte32()
 		currentDocumentRoot := utils.RandomByte32()
 		centIdFixed, _ := identity.ToCentID(centrifugeId)
-		messageToSign := anchors.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
 		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 		h, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
 		cfg.Set("identityId", centIdFixed.String())
 		ctx := testingconfig.CreateAccountContext(t, cfg)
-		confirmationList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, documentProofs)
+		err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, documentProofs)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
 		}
@@ -80,8 +78,6 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	}
 
 	for ix := 0; ix < 5; ix++ {
-		watchSingleAnchor := <-confirmationList[ix]
-		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
 		assert.Equal(t, commitDataList[ix].AnchorID, watchSingleAnchor.CommitData.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.CommitData.AnchorID)
 		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
 		anchorID := commitDataList[ix].AnchorID

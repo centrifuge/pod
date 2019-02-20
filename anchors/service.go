@@ -125,6 +125,8 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return err
 	}
 
+	uuid := contextutil.TX(ctx)
+
 	conn := s.client
 	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
@@ -139,7 +141,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
 
 	log.Info("Add Anchor to Commit %s from did:%s", anchorID.BigInt().String(), did.ToAddress().String())
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for anchor commit",
+	txID, done, err := s.txManager.ExecuteWithinTX(ctx, did, uuid, "Check TX for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProofs))
 	if err != nil {
 		return err
