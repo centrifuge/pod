@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/golang/protobuf/ptypes/any"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -814,9 +812,6 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 		Signature:          sig,
 		Key:                pubKey,
 	}
-	fmt.Println("sig in first assemble", hexutil.Encode(sig))
-	fmt.Println("tm in first assemble", hexutil.Encode(tm))
-	fmt.Println("pubkey first assemble", hexutil.Encode(pubKey))
 	return at, nil
 
 }
@@ -870,9 +865,6 @@ func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentReq
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account identity.CentID) error {
 	// assemble token message from the token for validation
 	tm := assembleTokenMessage(token.Identifier, token.Granter, account[:], token.RoleIdentifier, token.DocumentIdentifier)
-	fmt.Println("pubkey second assemble", hexutil.Encode(publicKey))
-	fmt.Println("tm in second assemble", hexutil.Encode(secp256k1.SignHash(tm)))
-	fmt.Println("sig in second assemble", hexutil.Encode(token.Signature))
 	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
 	if !validated {
 		return errors.New("access token is invalid")

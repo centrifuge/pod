@@ -4,7 +4,6 @@ package documents
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"os"
 	"testing"
 
@@ -391,9 +390,7 @@ func Test_addNFTToReadRules(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(34)
 	ndm, err := dm.AddNFTToReadRules(registry, tokenID)
-	fmt.Println(err)
 	assert.Error(t, err)
-	fmt.Print(ndm)
 	ndm.Document.DocumentRoot = utils.RandomSlice(32)
 	cd := ndm.Document
 	assert.NoError(t, err)
