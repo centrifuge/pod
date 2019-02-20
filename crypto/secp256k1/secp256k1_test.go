@@ -114,10 +114,10 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 }
 
 func TestSignForEthereum(t *testing.T) {
-	pk, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
+	privateKey, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
 	addr := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
 	testMsg := utils.RandomSlice(20)
-	signature, err := SignEthereum(testMsg, pk)
+	signature, err := SignEthereum(testMsg, privateKey)
 	assert.Nil(t, err)
 	sigHex := hexutil.Encode(signature)
 	correct := VerifySignatureWithAddress(addr, sigHex, testMsg)
@@ -125,10 +125,10 @@ func TestSignForEthereum(t *testing.T) {
 }
 
 func TestSignForEthereum32(t *testing.T) {
-	pk, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
+	privateKey, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
 	addr := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
 	testMsg := utils.RandomSlice(60)
-	signature, err := SignEthereum(testMsg, pk)
+	signature, err := SignEthereum(testMsg, privateKey)
 	assert.Nil(t, err)
 	sigHex := hexutil.Encode(signature)
 	correct := VerifySignatureWithAddress(addr, sigHex, testMsg)
