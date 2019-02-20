@@ -2,6 +2,8 @@ package anchors
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/satori/go.uuid"
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -37,29 +39,30 @@ type watchAnchorPreCommitted interface {
 type service struct {
 	config                   Config
 	anchorRepositoryContract anchorRepositoryContract
-	gethClientFinder         func() ethereum.Client
+	client         ethereum.Client
 	queue                    *queue.Server
+	txManager transactions.Manager
 }
 
-func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, gethClientFinder func() ethereum.Client) AnchorRepository {
-	return &service{config: config, anchorRepositoryContract: anchorContract, gethClientFinder: gethClientFinder, queue: queue}
+func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client,txManager transactions.Manager) AnchorRepository {
+	return &service{config: config, anchorRepositoryContract: anchorContract, client: client, queue: queue, txManager: txManager}
 }
 
 // GetDocumentRootOf takes an anchorID and returns the corresponding documentRoot from the chain.
-func (ethRepository *service) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
+func (s *service) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := ethRepository.gethClientFinder().GetGethCallOpts(false)
-	return ethRepository.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
+	opts, _ := s.client.GetGethCallOpts(false)
+	return s.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (ethRepository *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ethRepositoryContract := ethRepository.anchorRepositoryContract
+	ethRepositoryContract := s.anchorRepositoryContract
 	opts, err := ethereum.GetClient().GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return confirmations, err
@@ -81,42 +84,87 @@ func (ethRepository *service) PreCommitAnchor(ctx context.Context, anchorID Anch
 	return confirmations, err
 }
 
-// CommitAnchor will send a commit transaction to Ethereum.
-func (ethRepository *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (confirmations <-chan *WatchCommit, err error) {
+// ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
+func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+
+		ethTX, err := s.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
+	}
+}
+
+// TODO move func to utils or account
+func (s service) getDID(ctx context.Context) (did identity.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, err
+		return did, err
 	}
 
-	conn := ethereum.GetClient()
+	addressByte, err := tc.GetIdentityID()
+	if err != nil {
+		return did, err
+	}
+	did = identity.NewDID(common.BytesToAddress(addressByte))
+	return did, nil
+
+}
+
+// CommitAnchor will send a commit transaction to Ethereum.
+func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte)  error {
+	did,err := s.getDID(ctx)
+	if err != nil {
+		return err
+	}
+
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return err
+	}
+
+	conn := s.client
 	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
-	confirmations, err = ethRepository.setUpCommitEventListener(ethRepository.config.GetEthereumContextWaitTimeout(), opts.From, cd)
 
+	log.Info("Add Anchor to Commit %s from did:%s", anchorID.BigInt().String(), did.ToAddress().String())
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for anchor commit",
+		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProofs))
 	if err != nil {
-		wError := errors.New("%v", err)
-		log.Errorf("Failed to set up event listener for commit transaction [id: %x, hash: %x]: %v",
-			cd.AnchorID, cd.DocumentRoot, wError)
-		return
+		return err
 	}
 
-	err = sendCommitTransaction(ethRepository.anchorRepositoryContract, opts, cd)
-	if err != nil {
-		wError := errors.New("%v", err)
-		log.Errorf("Failed to send Ethereum commit transaction[id: %x, hash: %x, SchemaVersion:%v]: %v",
-			cd.AnchorID, cd.DocumentRoot, cd.SchemaVersion, wError)
-		return
+	isDone := <-done
+	// non async task
+	if !isDone {
+		return errors.New("add key  TX failed: txID:%s", txID.String())
+
 	}
-	return confirmations, err
+	return err
 }
 
 // sendPreCommitTransaction sends the actual transaction to the ethereum node.
@@ -136,20 +184,6 @@ func sendPreCommitTransaction(contract anchorRepositoryContract, opts *bind.Tran
 	log.Infof("Sent off transaction pre-commit [id: %x, hash: %x, SchemaVersion:%v] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", preCommitData.AnchorID,
 		preCommitData.SigningRoot, schemaVersion, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 
-	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
-	return nil
-}
-
-// sendCommitTransaction sends the actual transaction to register the Anchor on Ethereum registry contract
-func sendCommitTransaction(contract anchorRepositoryContract, opts *bind.TransactOpts, commitData *CommitData) error {
-	tx, err := ethereum.GetClient().SubmitTransactionWithRetries(contract.Commit, opts, commitData.AnchorID.BigInt(), commitData.DocumentRoot, commitData.DocumentProofs)
-
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Sent off the anchor [id: %x, hash: %x] to registry. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", commitData.AnchorID,
-		commitData.DocumentRoot, tx.Hash(), tx.Nonce(), tx.CheckNonce())
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 	return nil
 }
@@ -189,9 +223,9 @@ func setUpPreCommitEventListener(contractEvent watchAnchorPreCommitted, from com
 
 // setUpCommitEventListener sets up the listened for the "AnchorCommitted" event to notify the upstream code
 // about successful mining/creation of a commit
-func (ethRepository *service) setUpCommitEventListener(timeout time.Duration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
+func (s *service) setUpCommitEventListener(timeout time.Duration, from common.Address, commitData *CommitData) (confirmations chan *WatchCommit, err error) {
 	confirmations = make(chan *WatchCommit)
-	asyncRes, err := ethRepository.queue.EnqueueJob(anchorRepositoryConfirmationTaskName, map[string]interface{}{
+	asyncRes, err := s.queue.EnqueueJob(anchorRepositoryConfirmationTaskName, map[string]interface{}{
 		anchorIDParam: commitData.AnchorID,
 		addressParam:  from,
 		blockHeight:   commitData.BlockHeight,

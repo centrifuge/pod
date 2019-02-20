@@ -10,15 +10,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	identityService identity.Service
 	anchorRepo      anchors.AnchorRepository
 	cfg             config.Configuration
 )
@@ -26,7 +23,6 @@ var (
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
@@ -35,9 +31,8 @@ func TestMain(m *testing.M) {
 
 
 func TestCommitAnchor_Integration(t *testing.T) {
-	anchorID, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
-	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
-
+	anchorID  := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
 
 	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
@@ -52,15 +47,10 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	confirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
-	if err != nil {
-		t.Fatalf("Error commit Anchor %v", err)
-	}
+	err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
 
-	watchCommittedAnchor := <-confirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
-	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorID, anchorIDTyped, "Resulting anchor should have the same ID as the input")
-	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")
+	assert.Nil(t,err)
+
 }
 
 /*

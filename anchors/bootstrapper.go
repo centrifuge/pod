@@ -1,13 +1,14 @@
 package anchors
 
 import (
+	"fmt"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 // BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
@@ -29,17 +30,28 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	repositoryContract, err := NewAnchorContract(cfg.GetContractAddress(config.AnchorRepo), client.GetEthClient())
+
+	anchorContractAddr := cfg.GetContractAddress(config.AnchorRepo)
+	fmt.Println(anchorContractAddr.String())
+
+	repositoryContract, err := NewAnchorContract(anchorContractAddr, client.GetEthClient())
 	if err != nil {
 		return err
 	}
 
-	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
-		return errors.New("queue server hasn't been initialized")
+	txManager, ok := ctx[transactions.BootstrappedService].(transactions.Manager)
+	if !ok {
+		return errors.New("transactions repository not initialised")
 	}
 
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	repo := newService(cfg, repositoryContract, queueSrv, ethereum.GetClient)
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	if !ok {
+		return errors.New("queue hasn't been initialized")
+	}
+
+
+
+	repo := newService(cfg, repositoryContract, queueSrv, client,txManager)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	task := &anchorConfirmationTask{
