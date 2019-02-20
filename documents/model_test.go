@@ -4,6 +4,7 @@ package documents
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"os"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -482,4 +484,219 @@ func TestConvertToProofAndProtoSalts(t *testing.T) {
 	assert.NotNil(t, cSalts)
 	assert.Len(t, *cSalts, len(*salts))
 	assert.Equal(t, (*cSalts)[0].Value, (*salts)[0].Value)
+}
+
+func TestCoreDocumentModel_AddNFT(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	cd.DocumentRoot = utils.RandomSlice(32)
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
+	tokenID := utils.RandomSlice(32)
+	assert.Nil(t, cd.Nfts)
+	assert.Nil(t, cd.ReadRules)
+	assert.Nil(t, cd.Roles)
+
+	ndm, err := dm.AddNFT(true, registry, tokenID)
+	assert.Nil(t, err)
+	cd = ndm.Document
+	assert.Len(t, cd.Nfts, 1)
+	assert.Len(t, cd.Nfts[0].RegistryId, 32)
+	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
+	assert.Nil(t, getStoredNFT(cd.Nfts, registry2.Bytes()))
+	assert.Len(t, cd.ReadRules, 1)
+	assert.Len(t, cd.Roles, 1)
+	assert.Len(t, cd.Roles[0].Nfts, 1)
+
+	tokenID = utils.RandomSlice(32)
+	cd.DocumentRoot = utils.RandomSlice(32)
+	ndm, err = ndm.AddNFT(true, registry, tokenID)
+	assert.Nil(t, err)
+	cd = ndm.Document
+	assert.Len(t, cd.Nfts, 1)
+	assert.Len(t, cd.Nfts[0].RegistryId, 32)
+	assert.Equal(t, tokenID, getStoredNFT(cd.Nfts, registry.Bytes()).TokenId)
+	assert.Nil(t, getStoredNFT(cd.Nfts, registry2.Bytes()))
+	assert.Len(t, cd.ReadRules, 2)
+	assert.Len(t, cd.Roles, 2)
+	assert.Len(t, cd.Roles[1].Nfts, 1)
+}
+
+func TestCoreDocumentModel_IsNFTMinted(t *testing.T) {
+	dm := NewCoreDocModel()
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	assert.False(t, dm.IsNFTMinted(nil, registry))
+
+	cd := dm.Document
+	cd.DocumentRoot = utils.RandomSlice(32)
+	tokenID := utils.RandomSlice(32)
+	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
+	ndm, err := dm.AddNFT(true, registry, tokenID)
+	assert.Nil(t, err)
+
+	tr := new(mockRegistry)
+	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
+	assert.True(t, ndm.IsNFTMinted(tr, registry))
+	tr.AssertExpectations(t)
+}
+
+func TestCoreDocumentModel_IsAccountInRole(t *testing.T) {
+	dm := NewCoreDocModel()
+	account := identity.RandomCentID()
+	roleKey := make([]byte, 32, 32)
+	assert.False(t, dm.IsAccountInRole(roleKey, account))
+
+	err := dm.initReadRules([]identity.CentID{account})
+	assert.NoError(t, err)
+	assert.True(t, dm.IsAccountInRole(roleKey, account))
+}
+
+func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
+	dm := NewCoreDocModel()
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(32)
+
+	pfs, err := getReadAccessProofKeys(dm, registry, tokenID)
+	assert.Error(t, err)
+	assert.Nil(t, pfs)
+
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	ndm, err := dm.AddNFT(true, registry, tokenID)
+	assert.NoError(t, err)
+	assert.NotNil(t, ndm)
+
+	pfs, err = getReadAccessProofKeys(ndm, registry, tokenID)
+	assert.NoError(t, err)
+	assert.Len(t, pfs, 3)
+	assert.Equal(t, "read_rules[0].roles[0]", pfs[0])
+	assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
+	assert.Equal(t, "read_rules[0].action", pfs[2])
+}
+
+func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
+	dm := NewCoreDocModel()
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	pf, err := getNFTUniqueProofKey(dm.Document.Nfts, registry)
+	assert.Error(t, err)
+	assert.Empty(t, pf)
+
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	tokenID := utils.RandomSlice(32)
+	ndm, err := dm.AddNFT(false, registry, tokenID)
+	assert.NoError(t, err)
+	assert.NotNil(t, ndm)
+
+	pf, err = getNFTUniqueProofKey(ndm.Document.Nfts, registry)
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
+}
+
+func TestCoreDocument_getRoleProofKey(t *testing.T) {
+	dm := NewCoreDocModel()
+	roleKey := make([]byte, 32, 32)
+	account := identity.RandomCentID()
+	pf, err := getRoleProofKey(dm.Document.Roles, roleKey, account)
+	assert.Error(t, err)
+	assert.Empty(t, pf)
+
+	err = dm.initReadRules([]identity.CentID{account})
+	assert.NoError(t, err)
+
+	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, identity.RandomCentID())
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
+	assert.Empty(t, pf)
+
+	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, account)
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
+}
+
+func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
+	dataRoot := utils.RandomSlice(32)
+	dm := NewCoreDocModel()
+	invData := &invoicepb.InvoiceData{}
+	dataSalts, err := GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+
+	dm.Document.EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
+	account := identity.RandomCentID()
+	assert.NoError(t, dm.initReadRules([]identity.CentID{account}))
+
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(32)
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	dm, err = dm.AddNFT(true, registry, tokenID)
+	assert.NoError(t, err)
+	dm.Document.EmbeddedDataSalts = ConvertToProtoSalts(dataSalts)
+	assert.NoError(t, err)
+	assert.NoError(t, dm.setCoreDocumentSalts())
+	assert.NoError(t, dm.CalculateSigningRoot(dataRoot))
+	assert.NoError(t, dm.CalculateDocumentRoot())
+
+	tests := []struct {
+		registry       common.Address
+		tokenID        []byte
+		nftReadAccess  bool
+		nftUniqueProof bool
+		error          bool
+	}{
+
+		// failed nft unique proof
+		{
+			nftUniqueProof: true,
+			registry:       common.BytesToAddress(utils.RandomSlice(20)),
+			error:          true,
+		},
+
+		// good nft unique proof
+		{
+			nftUniqueProof: true,
+			registry:       registry,
+		},
+
+		// failed read access proof
+		{
+			nftReadAccess: true,
+			registry:      registry,
+			tokenID:       utils.RandomSlice(32),
+			error:         true,
+		},
+
+		// good read access proof
+		{
+			nftReadAccess: true,
+			registry:      registry,
+			tokenID:       tokenID,
+		},
+
+		// all proofs
+		{
+			nftUniqueProof: true,
+			registry:       registry,
+			nftReadAccess:  true,
+			tokenID:        tokenID,
+		},
+	}
+
+	tree, err := dm.GetDocumentRootTree()
+	assert.NoError(t, err)
+
+	for _, c := range tests {
+		pfs, err := dm.GetNFTProofs(dataRoot, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
+		if c.error {
+			assert.Error(t, err)
+			continue
+		}
+
+		assert.NoError(t, err)
+		assert.True(t, len(pfs) > 0)
+
+		for _, pf := range pfs {
+			valid, err := tree.ValidateProof(pf)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+		}
+	}
+
 }
