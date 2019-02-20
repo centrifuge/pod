@@ -32,7 +32,6 @@ func init() {
 				log.Fatal(err)
 			}
 			fmt.Println(hexutil.Encode(signature))
-
 		},
 	}
 

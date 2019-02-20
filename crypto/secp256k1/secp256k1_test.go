@@ -3,7 +3,6 @@
 package secp256k1
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -39,6 +38,15 @@ func TestGenerateSigningKeyPair(t *testing.T) {
 
 func TestSigningMsg(t *testing.T) {
 	testMsg := []byte("Hello, world!")
+	publicKey, privateKey, _ := GenerateSigningKeyPair()
+	signature, err := Sign(testMsg, privateKey)
+	assert.Nil(t, err)
+	correct := VerifySignature(publicKey, testMsg, signature)
+	assert.True(t, correct, "sign message didn't work correctly")
+}
+
+func TestSigningMsg32(t *testing.T) {
+	testMsg := utils.RandomSlice(60)
 	publicKey, privateKey, _ := GenerateSigningKeyPair()
 	signature, err := Sign(testMsg, privateKey)
 	assert.Nil(t, err)
@@ -108,11 +116,21 @@ func TestVerifySignatureWithFalseSignature(t *testing.T) {
 func TestSignForEthereum(t *testing.T) {
 	pk, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
 	addr := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
-	testMsg := []byte("Centrifuge likes Ethereum")
+	testMsg := utils.RandomSlice(20)
 	signature, err := SignEthereum(testMsg, pk)
 	assert.Nil(t, err)
 	sigHex := hexutil.Encode(signature)
-	fmt.Println(sigHex)
+	correct := VerifySignatureWithAddress(addr, sigHex, testMsg)
+	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
+}
+
+func TestSignForEthereum32(t *testing.T) {
+	pk, _ := hexutil.Decode("0xb5fffc3933d93dc956772c69b42c4bc66123631a24e3465956d80b5b604a2d13")
+	addr := "0xd77c534aed04d7ce34cd425073a033db4fbe6a9d"
+	testMsg := utils.RandomSlice(60)
+	signature, err := SignEthereum(testMsg, pk)
+	assert.Nil(t, err)
+	sigHex := hexutil.Encode(signature)
 	correct := VerifySignatureWithAddress(addr, sigHex, testMsg)
 	assert.Equal(t, correct, true, "generating ethereum signature for msg doesn't work correctly")
 }
