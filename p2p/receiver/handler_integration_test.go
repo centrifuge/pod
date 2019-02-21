@@ -6,9 +6,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
@@ -49,9 +47,6 @@ var (
 	idService  identity.Service
 	cfgService config.Service
 	docSrv     documents.Service
- payOb nft.PaymentObligation
- txManager transactions.Manager
- tokenRegistry documents.TokenRegistry
 )
 
 func TestMain(m *testing.M) {
@@ -62,9 +57,6 @@ func TestMain(m *testing.M) {
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
-	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
-	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
-	tokenRegistry = ctx[nft.BootstrappedPayObService].(documents.TokenRegistry)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
