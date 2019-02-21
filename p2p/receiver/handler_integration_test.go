@@ -73,8 +73,7 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-func updateAndAnchorDocument (t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
-	idConfig, err := identity.GetIdentityConfig(cfg)
+func updateDocument (t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
 	dm = prepareDocumentForP2PHandler(t, dm)
 
 	ed := dm.Document.EmbeddedData
@@ -91,22 +90,6 @@ func updateAndAnchorDocument (t *testing.T, dm *documents.CoreDocumentModel, cen
 	tree, err := dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	dm.Document.DocumentRoot = tree.RootHash()
-
-	// Anchor document
-	anchorIDTyped, _ := anchors.ToAnchorID(dm.Document.CurrentVersion)
-	docRootTyped, _ := anchors.ToDocumentRoot(dm.Document.DocumentRoot)
-	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
-	assert.Nil(t, err)
-
-	watchCommittedAnchor := <-anchorConfirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
-
-	anchorReq := getAnchoredRequest(dm)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
-	assert.Nil(t, err)
-	assert.NotNil(t, anchorResp, "must be non nil")
 }
 
 func TestHandler_GetDocumentSucceeds(t *testing.T) {
@@ -115,10 +98,10 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{centrifugeId[:]})
 	assert.Nil(t, err)
-	//cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
-	//dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
+	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
+	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 
-	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
+	updateDocument(t, dm, centrifugeId, ctxh)
 
 	// Retrieve document from anchor repository with requester verification access type
 	getReq := getDocumentRequestPeer(dm)
@@ -134,7 +117,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	}
 	dm, err = dm.AddAccessTokenToReadRules(*idConfig, at)
 
-	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
+	updateDocument(t, dm, centrifugeId, ctxh)
 
 	role := dm.Document.Roles[1]
 	token := role.AccessTokens[0]
@@ -149,7 +132,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	tokenID := utils.RandomSlice(32)
 	err = dm.AddNFTToReadRules(registry, tokenID)
 
-	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
+	updateDocument(t, dm, centrifugeId, ctxh)
 
 	nftReq := getDocumentRequestNft(dm, registry, tokenID)
 	getDocResp, err = handler.GetDocument(ctxh, nftReq, centrifugeId)
