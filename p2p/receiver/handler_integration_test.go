@@ -275,8 +275,14 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
 	centrifugeId := createIdentity(t)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = centrifugeId[:]
+
+	ctxh, err := contextutil.New(context.Background(), tc)
+	assert.Nil(t, err)
 
 	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
 	req := getSignatureRequest(dm)
@@ -291,7 +297,6 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	doc.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig(cfg)
 	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
@@ -301,7 +306,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(dm)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, centrifugeId[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)

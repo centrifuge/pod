@@ -298,7 +298,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pre anchor validation failed")
 
-	// get ID failed
+	// success
 	dm = NewCoreDocModel()
 	cd := dm.Document
 	cd.DataRoot = utils.RandomSlice(32)
@@ -308,32 +308,22 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	}
 	dm.setCoreDocumentSalts()
 	assert.Nil(t, dm.CalculateSigningRoot(cd.DataRoot))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(dm, nil).Times(5)
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, dm.CalculateDocumentRoot())
 	assert.Nil(t, err)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-	err = dp.AnchorDocument(context.Background(), model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "self value not found in the context")
 
-	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Times(5)
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 
 	repo := mockRepo{}
-	ch := make(chan *anchors.WatchCommit, 1)
-	ch <- new(anchors.WatchCommit)
-	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
+	ch := make(chan bool, 1)
+	ch <- true
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)

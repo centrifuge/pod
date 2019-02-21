@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -229,4 +234,65 @@ type IDKey struct {
 type IDKeys struct {
 	ID   []byte
 	Keys map[int]IDKey
+}
+
+// Config defines methods required for the package identity.
+type Config interface {
+	GetEthereumDefaultAccountName() string
+	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
+	GetSigningKeyPair() (pub, priv string)
+	GetEthAuthKeyPair() (pub, priv string)
+	GetEthereumContextWaitTimeout() time.Duration
+}
+
+// IDConfig holds information about the identity
+// Deprecated
+type IDConfig struct {
+	ID   DID
+	Keys map[int]IDKey
+}
+
+// GetIdentityConfig returns the identity and keys associated with the node.
+func GetIdentityConfig(config Config) (*IDConfig, error) {
+	centIDBytes, err := config.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	centID := NewDIDFromBytes(centIDBytes)
+
+	//ed25519 keys
+	keys := map[int]IDKey{}
+
+	pk, sk, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	keys[KeyPurposeP2P] = IDKey{PublicKey: pk, PrivateKey: sk}
+
+	pk, sk, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	keys[KeyPurposeSigning] = IDKey{PublicKey: pk, PrivateKey: sk}
+
+	//secp256k1 keys
+	pk, sk, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pubKey, err := hexutil.Decode(secp256k1.GetAddress(pk))
+	if err != nil {
+		return nil, err
+	}
+	keys[KeyPurposeEthMsgAuth] = IDKey{PublicKey: pubKey, PrivateKey: sk}
+
+	return &IDConfig{ID: centID, Keys: keys}, nil
+}
+
+// Sign the document with the private key and return the signature along with the public key for the verification
+// assumes that signing root for the document is generated
+// Deprecated
+func Sign(idConfig *IDConfig, purpose int, payload []byte) *coredocumentpb.Signature {
+	return crypto.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
 }

@@ -44,7 +44,7 @@ func (s *service) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, er
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot, centID identity.CentID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
+func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot, centID identity.DID, signature []byte, expirationBlock *big.Int) (confirmations <-chan *WatchPreCommit, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err

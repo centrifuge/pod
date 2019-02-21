@@ -45,7 +45,7 @@ const defaultP2PTimeout = "10s"
 type hostTestSuite struct {
 	name       string
 	host       *host
-	id         identity.CentID
+	id         identity.DID
 	httpExpect *httpexpect.Expect
 }
 
@@ -234,7 +234,8 @@ type host struct {
 	txPoolAccess       bool
 	smartContractAddrs *config.SmartContractAddresses
 	config             config.Configuration
-	identity           identity.Identity
+	identity           identity.DID
+	idService          identity.ServiceDID
 	node               *node.Node
 	canc               context.CancelFunc
 	createConfig       bool
@@ -285,16 +286,12 @@ func (h *host) init() error {
 		return err
 	}
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
 		return err
 	}
-	id, err := identity.ToCentID(idBytes)
-	if err != nil {
-		return err
-	}
-	h.identity, err = idService.LookupIdentityForID(id)
+	h.identity = identity.NewDIDFromBytes(idBytes)
+	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	if err != nil {
 		return err
 	}
@@ -378,14 +375,14 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 	}
 	// create 3 accounts
 	for i := 0; i < 3; i++ {
-		res := generateAccount(e, h.identity.CentID().String(), http.StatusOK)
+		res := generateAccount(e, h.identity.String(), http.StatusOK)
 		res.Value("identity_id").String().NotEmpty()
 	}
 	return nil
 }
 
 func (h *host) loadAccounts(e *httpexpect.Expect) error {
-	res := getAllAccounts(e, h.identity.CentID().String(), http.StatusOK)
+	res := getAllAccounts(e, h.identity.String(), http.StatusOK)
 	accounts := res.Value("data").Array()
 	accIDs := getAccounts(accounts)
 	keys := make([]string, 0, len(accIDs))
@@ -400,12 +397,12 @@ func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
 	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
-func (h *host) id() (identity.CentID, error) {
-	return h.identity.CentID(), nil
+func (h *host) id() (identity.DID, error) {
+	return h.identity, nil
 }
 
 func (h *host) p2pURL() (string, error) {
-	lastB58Key, err := h.identity.CurrentP2PKey()
+	lastB58Key, err := h.idService.CurrentP2PKey(h.identity)
 	if err != nil {
 		return "", err
 	}

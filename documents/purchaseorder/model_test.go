@@ -18,12 +18,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -35,7 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -62,7 +59,6 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
-		&ethid.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
@@ -114,17 +110,6 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 	poModel.CoreDocumentModel = coreDocumentModel
 	err := poModel.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
-}
-
-func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
-	poModel := &PurchaseOrder{}
-
-	coreDocumentModel := CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
-		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
-	poModel.CoreDocumentModel = coreDocumentModel
-	err := poModel.UnpackCoreDocument(coreDocumentModel)
-	assert.Nil(t, err)
-	assert.Nil(t, poModel.Recipient)
 }
 
 func TestPO_CoreDocument_successful(t *testing.T) {

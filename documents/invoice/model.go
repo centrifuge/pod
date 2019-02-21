@@ -41,9 +41,9 @@ type Invoice struct {
 	NetAmount        int64  // invoice amount excluding tax
 	TaxAmount        int64
 	TaxRate          int64
-	Recipient        *identity.CentID
-	Sender           *identity.CentID
-	Payee            *identity.CentID
+	Recipient        *identity.DID
+	Sender           *identity.DID
+	Payee            *identity.DID
 	Comment          string
 	DueDate          *timestamp.Timestamp
 	DateCreated      *timestamp.Timestamp
@@ -185,15 +185,15 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.DueDate = data.DueDate
 	i.DateCreated = data.DateCreated
 
-	if recipient, err := identity.CentIDFromString(data.Recipient); err == nil {
+	if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
 		i.Recipient = &recipient
 	}
 
-	if sender, err := identity.CentIDFromString(data.Sender); err == nil {
+	if sender, err := identity.NewDIDFromString(data.Sender); err == nil {
 		i.Sender = &sender
 	}
 
-	if payee, err := identity.CentIDFromString(data.Payee); err == nil {
+	if payee, err := identity.NewDIDFromString(data.Payee); err == nil {
 		i.Payee = &payee
 	}
 
@@ -228,17 +228,14 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.TaxAmount = invoiceData.TaxAmount
 	i.TaxRate = invoiceData.TaxRate
 
-	if recipient, err := identity.ToCentID(invoiceData.Recipient); err == nil {
-		i.Recipient = &recipient
-	}
+	recipient := identity.NewDIDFromBytes(invoiceData.Recipient)
+	i.Recipient = &recipient
 
-	if sender, err := identity.ToCentID(invoiceData.Sender); err == nil {
-		i.Sender = &sender
-	}
+	sender := identity.NewDIDFromBytes(invoiceData.Sender)
+	i.Sender = &sender
 
-	if payee, err := identity.ToCentID(invoiceData.Payee); err == nil {
-		i.Payee = &payee
-	}
+	payee := identity.NewDIDFromBytes(invoiceData.Payee)
+	i.Payee = &payee
 
 	i.Comment = invoiceData.Comment
 	i.DueDate = invoiceData.DueDate

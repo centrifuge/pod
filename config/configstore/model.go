@@ -516,7 +516,7 @@ type Account struct {
 	SigningKeyPair                   KeyPair
 	EthAuthKeyPair                   KeyPair
 	P2PKeyPair                       KeyPair
-	keys 														 map[int]config.IDKey
+	keys                             map[int]config.IDKey
 }
 
 // GetEthereumAccount gets EthereumAccount

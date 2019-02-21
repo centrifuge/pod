@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -49,7 +48,6 @@ func TestMain(m *testing.M) {
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
-		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},

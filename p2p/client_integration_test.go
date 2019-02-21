@@ -5,9 +5,10 @@ package p2p_test
 import (
 	"context"
 	"flag"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/ethereum/go-ethereum/common"
 

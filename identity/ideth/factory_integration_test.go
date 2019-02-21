@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -38,7 +37,6 @@ func TestMain(m *testing.M) {
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		&ethid.Bootstrapper{},
 		&Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&Bootstrapper{},
