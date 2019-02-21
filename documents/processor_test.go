@@ -4,8 +4,9 @@ package documents
 
 import (
 	"context"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"testing"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -262,8 +263,6 @@ type mockRepo struct {
 	mock.Mock
 	anchors.AnchorRepository
 }
-
-
 
 func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProofs [][32]byte) (done chan bool, err error) {
 	args := m.Called(anchorID, documentRoot, documentProofs)

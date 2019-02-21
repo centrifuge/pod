@@ -5,9 +5,10 @@ package ideth
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -200,10 +201,9 @@ func TestExists(t *testing.T) {
 	err := idSrv.Exists(aCtx, *did)
 	assert.Nil(t, err, "identity contract should exist")
 
-
 	did2 := testingutils.RandomDID()
 	assert.Nil(t, err)
-	err = idSrv.Exists(aCtx,did2)
+	err = idSrv.Exists(aCtx, did2)
 	assert.Error(t, err, "identity contract should not exist")
 	resetDefaultCentID()
 

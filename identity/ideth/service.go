@@ -3,10 +3,11 @@ package ideth
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"math/big"
 	"strings"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -469,7 +470,7 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
 	centID := id.NewDIDFromBytes(signature.EntityId)
 
-	err := i.ValidateKey(nil, centID, signature.PublicKey, id.KeyPurposeSigning)
+	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, id.KeyPurposeSigning)
 	if err != nil {
 		return err
 	}

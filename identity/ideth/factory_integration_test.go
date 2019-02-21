@@ -4,9 +4,10 @@ package ideth
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/testingutils"
 
@@ -21,17 +22,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
-
 )
 
 var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
-
-
-
-
 
 	ctx = testingutils.BuildIntegrationTestingContext()
 

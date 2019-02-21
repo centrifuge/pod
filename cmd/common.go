@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/identity"

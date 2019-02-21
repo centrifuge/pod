@@ -1,6 +1,7 @@
 package receiver
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -88,7 +89,7 @@ func peerValidator(idService identity.ServiceDID) Validator {
 		if err != nil {
 			return err
 		}
-		return idService.ValidateKey(nil, *centID, idKey, int64(identity.KeyPurposeP2P))
+		return idService.ValidateKey(context.Background(), *centID, idKey, int64(identity.KeyPurposeP2P))
 	})
 }
 

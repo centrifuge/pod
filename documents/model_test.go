@@ -4,9 +4,10 @@ package documents
 
 import (
 	"crypto/sha256"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
 
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 

@@ -3,11 +3,12 @@ package identity
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,8 +58,8 @@ func (d DID) String() string {
 }
 
 // BigInt returns DID in bigInt
-func (c DID) BigInt() *big.Int {
-	return utils.ByteSliceToBigInt(c[:])
+func (d DID) BigInt() *big.Int {
+	return utils.ByteSliceToBigInt(d[:])
 }
 
 // Equal checks if d == other
@@ -121,7 +122,7 @@ type ServiceDID interface {
 	AddKey(ctx context.Context, key KeyDID) error
 
 	// AddKeysForAccount adds key from configuration
-  AddKeysForAccount(acc config.Account) error
+	AddKeysForAccount(acc config.Account) error
 
 	// GetKey return a key from the identity contract
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)

@@ -28,7 +28,7 @@ type ProtocolSetter interface {
 
 type service struct {
 	repo                 repository
-	idFactory						 identity.Factory
+	idFactory            identity.Factory
 	idService            identity.ServiceDID
 	protocolSetterFinder func() ProtocolSetter
 }

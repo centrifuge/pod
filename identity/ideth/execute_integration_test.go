@@ -17,8 +17,9 @@ package ideth
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
 
 	"github.com/centrifuge/go-centrifuge/config"
 
@@ -138,7 +139,6 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
-
 
 	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingutils.RandomDID(), uuid.Nil, "Check TX add execute",
 		func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {

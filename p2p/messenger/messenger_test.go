@@ -6,11 +6,12 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"io"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"

@@ -4,10 +4,11 @@ package anchors_test
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -51,7 +52,7 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
 
-	isDone := <- done
+	isDone := <-done
 
 	assert.True(t, isDone, "isDone should be true")
 
@@ -91,4 +92,3 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, docRoot, gotDocRoot)
 	}
 }
-

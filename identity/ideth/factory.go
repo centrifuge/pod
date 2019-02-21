@@ -3,6 +3,7 @@ package ideth
 import (
 	"context"
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
@@ -22,7 +23,6 @@ import (
 )
 
 var log = logging.Logger("identity")
-
 
 type factory struct {
 	factoryAddress  common.Address

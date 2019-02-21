@@ -19,8 +19,8 @@ import (
 )
 
 type anchorRepositoryContract interface {
-	PreCommit(opts *bind.TransactOpts, _anchorId *big.Int, _signingRoot [32]byte, _expirationBlock *big.Int) (*types.Transaction, error)
-	Commit(opts *bind.TransactOpts, _anchorId *big.Int, _documentRoot [32]byte, _documentProofs [][32]byte) (*types.Transaction, error)
+	PreCommit(opts *bind.TransactOpts, _anchorID *big.Int, signingRoot [32]byte, expirationBlock *big.Int) (*types.Transaction, error)
+	Commit(opts *bind.TransactOpts, anchorID *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
 	Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error)
 }
 
