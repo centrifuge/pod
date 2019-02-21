@@ -19,6 +19,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -138,9 +140,8 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
-	_, done, err := txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), uuid.Nil, "Check TX add execute",
-		func(accountID id.CentID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingutils.RandomDID(), uuid.Nil, "Check TX add execute",
+		func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 			if err != nil {
 				errOut <- err
