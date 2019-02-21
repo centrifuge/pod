@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -30,7 +29,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -108,23 +107,6 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel.CoreDocumentModel = dm
 	err := invoiceModel.UnpackCoreDocument(dm)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
-}
-
-func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
-	invoiceModel := &Invoice{}
-
-	dm := CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
-		Recipient:   utils.RandomSlice(identity.CentIDLength + 1),
-		Sender:      utils.RandomSlice(identity.CentIDLength),
-		Payee:       utils.RandomSlice(identity.CentIDLength),
-		GrossAmount: 42,
-	})
-	invoiceModel.CoreDocumentModel = dm
-	err := invoiceModel.UnpackCoreDocument(dm)
-	assert.Nil(t, err)
-	assert.NotNil(t, invoiceModel.Sender)
-	assert.NotNil(t, invoiceModel.Payee)
-	assert.Nil(t, invoiceModel.Recipient)
 }
 
 func TestInvoice_CoreDocument_successful(t *testing.T) {

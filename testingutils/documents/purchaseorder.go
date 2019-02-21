@@ -4,15 +4,14 @@ package testingdocuments
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 func CreatePOData() purchaseorderpb.PurchaseOrderData {
+	recipient := testingidentity.GenerateRandomDID()
 	return purchaseorderpb.PurchaseOrderData{
-		Recipient:   utils.RandomSlice(identity.CentIDLength),
+		Recipient:   recipient[:],
 		OrderAmount: 42,
 	}
 }
@@ -20,7 +19,7 @@ func CreatePOData() purchaseorderpb.PurchaseOrderData {
 func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
 	return &clientpurchaseorderpb.PurchaseOrderCreatePayload{
 		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			Recipient:   "0x010203040506",
+			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
 			OrderAmount: 42,
 			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",

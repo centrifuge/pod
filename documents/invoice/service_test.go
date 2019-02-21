@@ -355,9 +355,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
-		Sender:      "0x010101010101",
-		Recipient:   "0x010203040506",
-		Payee:       "0x010203020406",
+		Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
+		Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
+		Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
 		GrossAmount: 42,
 		ExtraData:   "some data",
 		Currency:    "EUR",

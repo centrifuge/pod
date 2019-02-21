@@ -211,7 +211,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	assert.Nil(t, poModel.ExtraData)
 
 	data.ExtraData = "0x010203020301"
-	data.Recipient = "0x010203040506"
+	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
 
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
@@ -231,7 +231,9 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 
-	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
+	did, err := identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
+	assert.NoError(t, err)
+	assert.Equal(t, poModel.Recipient[:], did[:])
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 
 	assert.Equal(t, poModel.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], collab1[:], collab2[:]})

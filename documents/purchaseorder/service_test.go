@@ -175,7 +175,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, id, old)
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
-		Recipient: "0x010203040506",
+		Recipient: "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
 		ExtraData: "some data",
 		Currency:  "EUR",
 	}

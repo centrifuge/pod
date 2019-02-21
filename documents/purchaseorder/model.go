@@ -200,8 +200,10 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 	p.DeliveryDate = data.DeliveryDate
 	p.DateCreated = data.DateCreated
 
-	if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
-		p.Recipient = &recipient
+	if data.Recipient != "" {
+		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
+			p.Recipient = &recipient
+		}
 	}
 
 	if data.ExtraData != "" {
@@ -242,8 +244,10 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.DateCreated = data.DateCreated
 	p.ExtraData = data.ExtraData
 
-	recipient := identity.NewDIDFromBytes(data.Recipient)
-	p.Recipient = &recipient
+	if data.Recipient != nil {
+		recipient := identity.NewDIDFromBytes(data.Recipient)
+		p.Recipient = &recipient
+	}
 }
 
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present

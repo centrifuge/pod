@@ -185,16 +185,22 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.DueDate = data.DueDate
 	i.DateCreated = data.DateCreated
 
-	if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
-		i.Recipient = &recipient
+	if data.Recipient != "" {
+		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
+			i.Recipient = &recipient
+		}
 	}
 
-	if sender, err := identity.NewDIDFromString(data.Sender); err == nil {
-		i.Sender = &sender
+	if data.Sender != "" {
+		if sender, err := identity.NewDIDFromString(data.Sender); err == nil {
+			i.Sender = &sender
+		}
 	}
 
-	if payee, err := identity.NewDIDFromString(data.Payee); err == nil {
-		i.Payee = &payee
+	if data.Payee != "" {
+		if payee, err := identity.NewDIDFromString(data.Payee); err == nil {
+			i.Payee = &payee
+		}
 	}
 
 	if data.ExtraData != "" {
@@ -228,14 +234,20 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.TaxAmount = invoiceData.TaxAmount
 	i.TaxRate = invoiceData.TaxRate
 
-	recipient := identity.NewDIDFromBytes(invoiceData.Recipient)
-	i.Recipient = &recipient
+	if invoiceData.Recipient != nil {
+		recipient := identity.NewDIDFromBytes(invoiceData.Recipient)
+		i.Recipient = &recipient
+	}
 
-	sender := identity.NewDIDFromBytes(invoiceData.Sender)
-	i.Sender = &sender
+	if invoiceData.Sender != nil {
+		sender := identity.NewDIDFromBytes(invoiceData.Sender)
+		i.Sender = &sender
+	}
 
-	payee := identity.NewDIDFromBytes(invoiceData.Payee)
-	i.Payee = &payee
+	if invoiceData.Payee != nil {
+		payee := identity.NewDIDFromBytes(invoiceData.Payee)
+		i.Payee = &payee
+	}
 
 	i.Comment = invoiceData.Comment
 	i.DueDate = invoiceData.DueDate
