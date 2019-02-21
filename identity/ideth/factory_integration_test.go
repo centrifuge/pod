@@ -4,6 +4,7 @@ package ideth
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"os"
 	"testing"
 
@@ -20,12 +21,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
+
 )
 
 var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
+
+
+
+
 
 	ctx = testingutils.BuildIntegrationTestingContext()
 
@@ -37,6 +43,7 @@ func TestMain(m *testing.M) {
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
@@ -51,7 +58,7 @@ func TestMain(m *testing.M) {
 
 func TestCreateIdentity_successful(t *testing.T) {
 
-	factory := ctx[BootstrappedDIDFactory].(Factory)
+	factory := ctx[BootstrappedDIDFactory].(identity.Factory)
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 

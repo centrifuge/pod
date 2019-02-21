@@ -1,8 +1,6 @@
 package anchors
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -32,7 +30,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
 	anchorContractAddr := cfg.GetContractAddress(config.AnchorRepo)
-	fmt.Println(anchorContractAddr.String())
 
 	repositoryContract, err := NewAnchorContract(anchorContractAddr, client.GetEthClient())
 	if err != nil {
