@@ -118,7 +118,7 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-	GetKeys() (IDKeys, error)
+	GetKeys() (map[int]IDKey, error)
 	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string

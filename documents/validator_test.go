@@ -297,8 +297,9 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	account, _ := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	keys, err := account.GetKeys()
 	assert.Nil(t, err)
-
-	rfsv := readyForSignaturesValidator(keys.ID, keys.Keys[identity.KeyPurposeSigning].PrivateKey, keys.Keys[identity.KeyPurposeSigning].PublicKey)
+	accID, err := account.GetIdentityID()
+	assert.NoError(t, err)
+	rfsv := readyForSignaturesValidator(accID, keys[identity.KeyPurposeSigning].PrivateKey, keys[identity.KeyPurposeSigning].PublicKey)
 
 	// fail getCoreDoc
 	model := mockModel{}

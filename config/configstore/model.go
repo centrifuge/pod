@@ -516,6 +516,7 @@ type Account struct {
 	SigningKeyPair                   KeyPair
 	EthAuthKeyPair                   KeyPair
 	P2PKeyPair                       KeyPair
+	keys 														 map[int]config.IDKey
 }
 
 // GetEthereumAccount gets EthereumAccount
@@ -561,11 +562,11 @@ func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 // SignMsg signs a message with the signing key
 func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	//TODO change signing keys to curve ed25519
-	publicKey, privateKey, err := ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
+	keys, err := acc.GetKeys()
 	if err != nil {
 		return nil, err
 	}
-	signature, err := crypto.SignMessage(privateKey, msg, crypto.CurveEd25519, true)
+	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning].PrivateKey, msg, crypto.CurveEd25519, true)
 	if err != nil {
 		return nil, err
 	}
@@ -577,7 +578,7 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 
 	return &coredocumentpb.Signature{
 		EntityId:  did,
-		PublicKey: publicKey,
+		PublicKey: keys[identity.KeyPurposeSigning].PublicKey,
 		Signature: signature,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}, nil
@@ -585,42 +586,52 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 
 // GetKeys returns the keys of an account
 // TODO remove GetKeys and add signing methods to account
-func (acc *Account) GetKeys() (idKeys config.IDKeys, err error) {
-	keys := map[int]config.IDKey{}
-
-	pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
-	if err != nil {
-		return idKeys, err
+func (acc *Account) GetKeys() (idKeys map[int]config.IDKey, err error) {
+	if acc.keys == nil {
+		acc.keys = map[int]config.IDKey{}
 	}
-	keys[identity.KeyPurposeP2P] = config.IDKey{
-		PublicKey:  pk,
-		PrivateKey: sk}
 
-	pk, sk, err = ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
-	if err != nil {
-		return idKeys, err
+	if _, ok := acc.keys[identity.KeyPurposeP2P]; !ok {
+		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+
+		acc.keys[identity.KeyPurposeP2P] = config.IDKey{
+			PublicKey:  pk,
+			PrivateKey: sk}
 	}
-	keys[identity.KeyPurposeSigning] = config.IDKey{
-		PublicKey:  pk,
-		PrivateKey: sk}
+
+	if _, ok := acc.keys[identity.KeyPurposeSigning]; !ok {
+		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+		acc.keys[identity.KeyPurposeSigning] = config.IDKey{
+			PublicKey:  pk,
+			PrivateKey: sk}
+	}
 
 	//secp256k1 keys
-	pk, sk, err = secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
-	if err != nil {
-		return idKeys, err
-	}
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	if _, ok := acc.keys[identity.KeyPurposeEthMsgAuth]; !ok {
+		pk, sk, err := secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 
-	keys[identity.KeyPurposeEthMsgAuth] = config.IDKey{
-		PublicKey:  address32Bytes[:],
-		PrivateKey: sk}
+		acc.keys[identity.KeyPurposeEthMsgAuth] = config.IDKey{
+			PublicKey:  address32Bytes[:],
+			PrivateKey: sk}
+	}
 
 	id, err := acc.GetIdentityID()
 	if err != nil {
 		return idKeys, err
 	}
-	idKeys = config.IDKeys{ID: id, Keys: keys}
-	return idKeys, nil
+	acc.IdentityID = id
+
+	return acc.keys, nil
 
 }
 
