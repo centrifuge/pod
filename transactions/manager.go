@@ -38,7 +38,7 @@ type extendedManager interface {
 
 	// createTransaction only exposed for testing within package.
 	// DO NOT use this outside of the package, use ExecuteWithinTX to initiate a transaction with management.
-	createTransaction(accountID identity.CentID, desc string) (*Transaction, error)
+	createTransaction(accountID identity.DID, desc string) (*Transaction, error)
 }
 
 // NewManager returns a Manager implementation.

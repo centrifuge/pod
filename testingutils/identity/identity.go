@@ -4,15 +4,15 @@ package testingidentity
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
 
@@ -35,7 +35,7 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 	}
 
 	// only add key if it doesn't exist
-	ctx, cancel := ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
+	ctx, cancel := defaultWaitForTransactionMiningContext(contextTimeout)
 	ctxh, err = contextutil.New(ctx, acc)
 	if err != nil {
 		return identity.DID{}, nil
@@ -54,7 +54,7 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 		}
 	}
 	keys, err = idService.GetKeysByPurpose(*did, big.NewInt(identity.KeyPurposeSigning))
-	ctx, cancel = ethereum.DefaultWaitForTransactionMiningContext(contextTimeout)
+	ctx, cancel = defaultWaitForTransactionMiningContext(contextTimeout)
 	ctxh, _ = contextutil.New(ctx, acc)
 	defer cancel()
 	if err != nil || len(keys) == 0 {
@@ -72,4 +72,10 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 func GenerateRandomDID() identity.DID {
 	r := utils.RandomSlice(common.AddressLength)
 	return identity.NewDIDFromBytes(r)
+}
+
+// defaultWaitForTransactionMiningContext returns context with timeout for write operations
+func defaultWaitForTransactionMiningContext(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc) {
+	toBeDone := time.Now().Add(d)
+	return context.WithDeadline(context.Background(), toBeDone)
 }

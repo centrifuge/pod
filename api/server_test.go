@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+
 	"github.com/centrifuge/go-centrifuge/p2p"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -46,6 +48,7 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},

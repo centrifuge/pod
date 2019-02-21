@@ -57,7 +57,6 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&ethid.Bootstrapper{},
