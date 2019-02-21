@@ -84,10 +84,15 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 func updateAndAnchorDocument (t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	dm = prepareDocumentForP2PHandler(t, dm)
+
+	ed := dm.Document.EmbeddedData
+	edsalts := dm.Document.EmbeddedDataSalts
+
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
+
+	dm.Document.EmbeddedData = ed
+	dm.Document.EmbeddedDataSalts = edsalts
 
 	// Add signature received
 	dm.Document.Signatures = append(dm.Document.Signatures, resp.Signature)
