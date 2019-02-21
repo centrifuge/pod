@@ -39,6 +39,7 @@ func TestMain(m *testing.M) {
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},

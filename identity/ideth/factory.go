@@ -23,6 +23,7 @@ import (
 
 var log = logging.Logger("identity")
 
+
 type factory struct {
 	factoryAddress  common.Address
 	factoryContract *FactoryContract

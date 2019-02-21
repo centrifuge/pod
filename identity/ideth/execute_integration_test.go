@@ -140,7 +140,6 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
 	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingidentity.GenerateRandomDID(), uuid.Nil, "Check TX add execute",
 		func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
 			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
