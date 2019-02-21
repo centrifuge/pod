@@ -74,6 +74,11 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	centrifugeId := createIdentity(t)
 
 	dm := prepareDocumentForP2PHandler(t, nil)
+	collab := centrifugeId.String()
+	dm, err := dm.NewWithCollaborators([]string{collab})
+	assert.NoError(t, err)
+	dm, err = dm.PrepareNewVersion(nil)
+	assert.NoError(t, err)
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)

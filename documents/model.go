@@ -194,25 +194,24 @@ func (m *CoreDocumentModel) prepareNewVersion(collaborators []string) (*CoreDocu
 
 // NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
 func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
-	dm := NewCoreDocModel()
 	ids, err := identity.CentIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
 
 	for i := range ids {
-		dm.Document.Collaborators = append(dm.Document.Collaborators, ids[i][:])
+		m.Document.Collaborators = append(m.Document.Collaborators, ids[i][:])
 	}
-	err = dm.initReadRules(ids)
+	err = m.initReadRules(ids)
 	if err != nil {
 		return nil, errors.New("failed to init read rules: %v", err)
 	}
 
-	if err := dm.setCoreDocumentSalts(); err != nil {
+	if err := m.setCoreDocumentSalts(); err != nil {
 		return nil, err
 	}
 
-	return dm, nil
+	return m, nil
 }
 
 // CreateProofs util function that takes document data tree, coreDocument and a list fo fields and generates proofs
@@ -446,6 +445,7 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 // Returns an error if not.
 func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	// loop though read rules, check all the rules
+	fmt.Println("*************", m.Document.Roles)
 	return m.findRole(func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountInRole(role, account)
 		return found
