@@ -3,6 +3,9 @@
 package anchors_test
 
 import (
+	"context"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"os"
 	"testing"
 
@@ -56,11 +59,9 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 
 }
 
-/*
-
-//TODO can be removed because CommitAnchor is sync
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5]*anchors.CommitData
+	var doneList [5]chan bool
 	centrifugeId := utils.RandomSlice(identity.CentIDLength)
 
 	for ix := 0; ix < 5; ix++ {
@@ -73,7 +74,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
 		cfg.Set("identityId", centIdFixed.String())
 		ctx := testingconfig.CreateAccountContext(t, cfg)
-		err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, documentProofs)
+		doneList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, documentProofs)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
 		}
@@ -81,8 +82,8 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	}
 
 	for ix := 0; ix < 5; ix++ {
-		assert.Equal(t, commitDataList[ix].AnchorID, watchSingleAnchor.CommitData.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.CommitData.AnchorID)
-		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
+		isDone := <-doneList[ix]
+		assert.True(t, isDone)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
 		gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorID)
@@ -90,4 +91,4 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.Equal(t, docRoot, gotDocRoot)
 	}
 }
-*/
+
