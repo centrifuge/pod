@@ -4,6 +4,7 @@ package documents
 
 import (
 	"crypto/sha256"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"os"
 	"testing"
 
@@ -173,7 +174,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrZeroCollaborators, err))
 
-	cs := []identity.CentID{identity.RandomCentID()}
+	cs := []identity.DID{testingutils.RandomDID()}
 	err = dm.initReadRules(cs)
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
