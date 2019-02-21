@@ -15,31 +15,8 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 )
-
-const (
-	// CDRootField represents the coredocument root property of a tree
-	CDRootField = "cd_root"
-	// DataRootField represents the data root property of a tree
-	DataRootField = "data_root"
-	// DocumentTypeField represents the doc type property of a tree
-	DocumentTypeField = "document_type"
-	// SignaturesField represents the signatures property of a tree
-	SignaturesField = "signatures"
-	// SigningRootField represents the signature root property of a tree
-	SigningRootField = "signing_root"
-)
-
-var compactProperties = map[string][]byte{
-	CDRootField:       {0, 0, 0, 7},
-	DataRootField:     {0, 0, 0, 5},
-	DocumentTypeField: {0, 0, 0, 100},
-	SignaturesField:   {0, 0, 0, 6},
-	SigningRootField:  {0, 0, 0, 10},
-}
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the model if required
@@ -75,38 +52,6 @@ type TokenRegistry interface {
 type CoreDocumentModel struct {
 	Document *coredocumentpb.CoreDocument
 	TokenRegistry
-}
-
-const (
-	// ErrZeroCollaborators error when no collaborators are passed
-	ErrZeroCollaborators = errors.Error("require at least one collaborator")
-
-	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
-	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
-
-	// nftByteCount is the length of combined bytes of registry and tokenID
-	nftByteCount = 52
-)
-
-// NewDefaultTree returns a DocumentTree with default opts
-func NewDefaultTree(salts *proofs.Salts) *proofs.DocumentTree {
-	return NewDefaultTreeWithPrefix(salts, "", nil)
-}
-
-// NewDefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
-func NewDefaultTreeWithPrefix(salts *proofs.Salts, prefix string, compactPrefix []byte) *proofs.DocumentTree {
-	var prop proofs.Property
-	if prefix != "" {
-		prop = NewLeafProperty(prefix, compactPrefix)
-	}
-
-	t := proofs.NewDocumentTree(proofs.TreeOptions{CompactProperties: true, EnableHashSorting: true, Hash: sha256.New(), ParentPrefix: prop, Salts: salts})
-	return &t
-}
-
-// NewLeafProperty returns a proof property with the literal and the compact
-func NewLeafProperty(literal string, compact []byte) proofs.Property {
-	return proofs.NewProperty(literal, compact...)
 }
 
 // NewCoreDocModel returns a new CoreDocumentModel
@@ -448,45 +393,6 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
 
-// GenerateNewSalts generates salts for new document
-func GenerateNewSalts(document proto.Message, prefix string, compactPrefix []byte) (*proofs.Salts, error) {
-	docSalts := new(proofs.Salts)
-	t := NewDefaultTreeWithPrefix(docSalts, prefix, compactPrefix)
-	err := t.AddLeavesFromDocument(document)
-	if err != nil {
-		return nil, err
-	}
-	return docSalts, nil
-}
-
-// ConvertToProtoSalts converts proofSalts into protocolSalts
-func ConvertToProtoSalts(proofSalts *proofs.Salts) []*coredocumentpb.DocumentSalt {
-	if proofSalts == nil {
-		return nil
-	}
-
-	protoSalts := make([]*coredocumentpb.DocumentSalt, len(*proofSalts))
-	for i, pSalt := range *proofSalts {
-		protoSalts[i] = &coredocumentpb.DocumentSalt{Value: pSalt.Value, Compact: pSalt.Compact}
-	}
-
-	return protoSalts
-}
-
-// ConvertToProofSalts converts protocolSalts into proofSalts
-func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salts {
-	if protoSalts == nil {
-		return nil
-	}
-
-	proofSalts := make(proofs.Salts, len(protoSalts))
-	for i, pSalt := range protoSalts {
-		proofSalts[i] = proofs.Salt{Value: pSalt.Value, Compact: pSalt.Compact}
-	}
-
-	return &proofSalts
-}
-
 // setCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
 func (m *CoreDocumentModel) setCoreDocumentSalts() error {
 	if m.Document.CoredocumentSalts == nil {
@@ -573,27 +479,6 @@ func (m *CoreDocumentModel) findRole(onRole func(rridx, ridx int, role *coredocu
 	return false
 }
 
-// isAccountInRole returns the index of the collaborator and true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) (idx int, found bool) {
-	for i, id := range role.Collaborators {
-		if bytes.Equal(id, account[:]) {
-			return i, true
-		}
-	}
-
-	return idx, false
-}
-
-func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, error) {
-	for _, role := range roles {
-		if utils.IsSameByteSlice(role.RoleKey, key) {
-			return role, nil
-		}
-	}
-
-	return nil, errors.New("role %d not found", key)
-}
-
 func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
 	if len(collabs) == 0 {
 		return nil
@@ -614,33 +499,6 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.C
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
 
 	return nil
-}
-
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
-	ocsm := make(map[string]struct{})
-	for _, c := range oldCollabs {
-		ocsm[hexutil.Encode(c)] = struct{}{}
-	}
-
-	var uc []string
-	for _, c := range newCollabs {
-		if _, ok := ocsm[c]; ok {
-			continue
-		}
-
-		uc = append(uc, c)
-	}
-
-	for _, c := range uc {
-		id, err := identity.CentIDFromString(c)
-		if err != nil {
-			return nil, err
-		}
-
-		ids = append(ids, id)
-	}
-
-	return ids, nil
 }
 
 // GetExternalCollaborators returns collaborators of a document without the own centID.
@@ -691,22 +549,6 @@ func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []b
 	return nil
 }
 
-// ConstructNFT appends registry and tokenID to byte slice
-func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
-	var nft []byte
-	// first 20 bytes of registry
-	nft = append(nft, registry.Bytes()...)
-
-	// next 32 bytes of the tokenID
-	nft = append(nft, tokenID...)
-
-	if len(nft) != nftByteCount {
-		return nil, errors.New("byte length mismatch")
-	}
-
-	return nft, nil
-}
-
 // AddNFTToReadRules adds NFT token to the read rules of core document.
 func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID []byte) error {
 	cd := m.Document
@@ -752,23 +594,6 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 	return nil
 }
 
-// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
-// If found, returns the index of the nft in the role and true
-func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) (nftIdx int, found bool) {
-	enft, err := ConstructNFT(registry, tokenID)
-	if err != nil {
-		return nftIdx, false
-	}
-
-	for i, n := range role.Nfts {
-		if bytes.Equal(n, enft) {
-			return i, true
-		}
-	}
-
-	return nftIdx, false
-}
-
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
 func (m *CoreDocumentModel) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocumentModel, error) {
@@ -811,16 +636,6 @@ func (m *CoreDocumentModel) IsNFTMinted(tokenRegistry TokenRegistry, registry co
 	return err == nil
 }
 
-func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.NFT {
-	for _, nft := range nfts {
-		if bytes.Equal(nft.RegistryId[:20], registry) {
-			return nft
-		}
-	}
-
-	return nil
-}
-
 // IsAccountInRole checks if the the account exists in the role provided
 func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.CentID) bool {
 	role, err := getRole(roleKey, m.Document.Roles)
@@ -850,14 +665,14 @@ func (m *CoreDocumentModel) GetNFTProofs(
 		pfKeys = append(pfKeys, pk)
 	}
 
-	if readAccessProof {
-		pks, err := getReadAccessProofKeys(m, registry, tokenID)
-		if err != nil {
-			return nil, err
-		}
-
-		pfKeys = append(pfKeys, pks...)
-	}
+	//if readAccessProof {
+	//	pks, err := getReadAccessProofKeys(m, registry, tokenID)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	pfKeys = append(pfKeys, pks...)
+	//}
 
 	signingRootProofHashes, err := m.getSigningRootProofHashes()
 	if err != nil {
@@ -881,57 +696,4 @@ func (m *CoreDocumentModel) GetNFTProofs(
 	}
 
 	return proofs, nil
-}
-
-func getReadAccessProofKeys(m *CoreDocumentModel, registry common.Address, tokenID []byte) (pks []string, err error) {
-	var rridx int  // index of the read rules which contain the role
-	var ridx int   // index of the role
-	var nftIdx int // index of the NFT in the above role
-	var rk []byte  // role key of the above role
-
-	found := m.findRole(func(i, j int, role *coredocumentpb.Role) bool {
-		z, found := isNFTInRole(role, registry, tokenID)
-		if found {
-			rridx = i
-			ridx = j
-			rk = role.RoleKey
-			nftIdx = z
-		}
-
-		return found
-	}, coredocumentpb.Action_ACTION_READ)
-
-	if !found {
-		return nil, ErrNFTRoleMissing
-	}
-
-	return []string{
-		fmt.Sprintf("read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
-		fmt.Sprintf("roles[%s].nfts[%d]", hexutil.Encode(rk), nftIdx), // proof that role with nft exists
-		fmt.Sprintf("read_rules[%d].action", rridx),                   // proof that this read rule has read access
-	}, nil
-}
-
-func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (pk string, err error) {
-	nft := getStoredNFT(nfts, registry.Bytes())
-	if nft == nil {
-		return pk, errors.New("nft is missing from the document")
-	}
-
-	key := hexutil.Encode(nft.RegistryId)
-	return fmt.Sprintf("nfts[%s]", key), nil
-}
-
-func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.CentID) (pk string, err error) {
-	role, err := getRole(roleKey, roles)
-	if err != nil {
-		return pk, err
-	}
-
-	idx, found := isAccountInRole(role, account)
-	if !found {
-		return pk, ErrNFTRoleMissing
-	}
-
-	return fmt.Sprintf("roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx), nil
 }
