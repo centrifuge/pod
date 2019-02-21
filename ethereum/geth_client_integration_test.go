@@ -3,6 +3,7 @@
 package ethereum_test
 
 import (
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"os"
 	"testing"
 	"time"
@@ -60,6 +61,7 @@ func TestMain(m *testing.M) {
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 	}
 

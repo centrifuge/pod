@@ -5,6 +5,7 @@ package p2p_test
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"os"
 	"testing"
 
@@ -59,7 +60,12 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	acc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+	acci := acc.(*configstore.Account)
+	acci.IdentityID = defaultDID[:]
+	ctxh, err := contextutil.New(context.Background(), acci)
+	assert.Nil(t, err)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
 	err = client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)

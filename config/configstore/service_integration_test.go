@@ -19,7 +19,8 @@ import (
 )
 
 var identityService identity.ServiceDID
-var cfg config.Service
+var cfgSvc config.Service
+var cfg config.Configuration
 
 type MockProtocolSetter struct{}
 
@@ -31,7 +32,8 @@ func TestMain(m *testing.M) {
 	// Adding delay to startup (concurrency hack)
 	time.Sleep(time.Second + 2)
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
-	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
+	cfgSvc = ctx[config.BootstrappedConfigStorage].(config.Service)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	ctx[bootstrap.BootstrappedPeer] = &MockProtocolSetter{}
 	identityService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	result := m.Run()
@@ -40,10 +42,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_GenerateAccountHappy(t *testing.T) {
-	tct, err := cfg.GenerateAccount()
+	tct, err := cfgSvc.GenerateAccount()
 	assert.NoError(t, err)
 	i, _ := tct.GetIdentityID()
-	tc, err := cfg.GetAccount(i)
+	tc, err := cfgSvc.GetAccount(i)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc)
 	i, _ = tc.GetIdentityID()
@@ -53,7 +55,7 @@ func TestService_GenerateAccountHappy(t *testing.T) {
 	err = checkKeyPair(t, pb, pv)
 	pb, pv = tc.GetEthAuthKeyPair()
 	err = checkKeyPair(t, pb, pv)
-	ctxh := testingconfig.CreateAccountContext(t, cfg.(config.Configuration))
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err = identityService.Exists(ctxh, did)
 	assert.NoError(t, err)
 }
