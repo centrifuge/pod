@@ -727,9 +727,8 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	role.RoleKey = rk[:]
 	role.Nfts = append(role.Nfts, nft)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	if err := m.setCoreDocumentSalts(); err != nil {
-		return errors.New("failed to generate CoreDocumentSalts")
-	}
+	cdSalts, _ := GenerateNewSalts(m.Document, "", nil)
+	m.Document.CoredocumentSalts = ConvertToProtoSalts(cdSalts)
 	return nil
 }
 
@@ -895,9 +894,8 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 	}
 	role.AccessTokens = append(role.AccessTokens, at)
 	m.addNewRule(role, ACLRead)
-	if err := m.setCoreDocumentSalts(); err != nil {
-		return nil, errors.New("failed to generate CoreDocumentSalts")
-	}
+	cdSalts, _ := GenerateNewSalts(m.Document, "", nil)
+	m.Document.CoredocumentSalts = ConvertToProtoSalts(cdSalts)
 	return m, nil
 }
 

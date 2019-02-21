@@ -91,7 +91,6 @@ func updateAndAnchorDocument (t *testing.T, dm *documents.CoreDocumentModel, cen
 	tree, err := dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	dm.Document.DocumentRoot = tree.RootHash()
-	fmt.Println("dataaaa", dm.Document.EmbeddedData)
 
 	// Anchor document
 	anchorIDTyped, _ := anchors.ToAnchorID(dm.Document.CurrentVersion)
@@ -116,8 +115,8 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{centrifugeId[:]})
 	assert.Nil(t, err)
-	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
-	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
+	//cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
+	//dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 
 	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
 
@@ -145,6 +144,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
 
 	// Retrieve document from anchor repository with nft verification access type
+	// TODO: will currently always work because token owner is a collaborator
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
 	err = dm.AddNFTToReadRules(registry, tokenID)
@@ -398,12 +398,12 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 	assert.NoError(t, err)
 	doc := dm.Document
 	doc.SigningRoot = tree.RootHash()
+	fmt.Println("signing root!!!!", doc.SigningRoot	)
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = append(doc.Signatures, sig)
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	doc.DocumentRoot = tree.RootHash()
-	fmt.Println("-------", dm.Document.EmbeddedData)
 	return dm
 }
 
