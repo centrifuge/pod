@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -163,6 +164,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
 	dm := new(documents.CoreDocumentModel)
 	dm.Document = docReq.Document
+	fmt.Println("first-----------", dm.Document)
 	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)

@@ -193,7 +193,8 @@ func (m *CoreDocumentModel) prepareNewVersion(collaborators []string) (*CoreDocu
 }
 
 // NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
-func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
+func NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
+	m := NewCoreDocModel()
 	ids, err := identity.CentIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
@@ -738,6 +739,7 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
+		fmt.Println("============", peer)
 		if !m.AccountCanRead(peer) {
 			return errors.New("requester does not have access")
 		}
@@ -835,7 +837,6 @@ func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.Cen
 	_, found := isAccountInRole(role, account)
 	return found
 }
-
 
 // assembleTokenMessage assembles a token message
 func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) []byte {

@@ -3,6 +3,7 @@ package documents
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -294,6 +295,7 @@ func (s service) DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, erro
 	if dm == nil {
 		return nil, errors.New("no core doc model passed")
 	}
+	fmt.Println("service method !!!!!!!!!!", dm.Document)
 	if dm.Document == nil || dm.Document.EmbeddedData == nil {
 		return nil, errors.New("core document is nil")
 	}

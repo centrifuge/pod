@@ -47,7 +47,8 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
 
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
+	coreDocModel, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	coreDoc := coreDocModel.Document
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
@@ -73,7 +74,8 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	idService := getIDMocks(centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
+	coreDocModel, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	coreDoc := coreDocModel.Document
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
@@ -96,7 +98,8 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	idService := getIDMocks(centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
+	coreDocModel, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	coreDoc := coreDocModel.Document
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)

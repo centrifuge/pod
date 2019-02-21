@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -59,6 +60,7 @@ func (s service) DeriveFromCoreDocumentModel(dm *documents.CoreDocumentModel) (d
 	var model documents.Model = &Invoice{
 		CoreDocumentModel: dm,
 	}
+	fmt.Println("second--------------",dm)
 	err := model.UnpackCoreDocument(dm)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)

@@ -5,6 +5,7 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -72,13 +73,12 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	centrifugeId := createIdentity(t)
-
-	dm := prepareDocumentForP2PHandler(t, nil)
-	collab := centrifugeId.String()
-	dm, err := dm.NewWithCollaborators([]string{collab})
+	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{centrifugeId[:]})
+	assert.Nil(t, err)
+	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
+	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	assert.NoError(t, err)
-	dm, err = dm.PrepareNewVersion(nil)
-	assert.NoError(t, err)
+	dm = prepareDocumentForP2PHandler(t, dm)
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)
@@ -105,6 +105,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 
 	anchorReq := getAnchoredRequest(dm)
 	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
+	fmt.Print("===========", dm.Document)
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 
@@ -342,7 +343,8 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	if dm == nil {
-		dm = testingdocuments.GenerateCoreDocumentModel()
+		dm, err = testingdocuments.GenerateCoreDocumentModel()
+		assert.Nil(t, err)
 	}
 
 	m, err := docSrv.DeriveFromCoreDocumentModel(dm)
@@ -383,20 +385,19 @@ func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentMode
 }
 
 func getAnchoredRequest(dm *documents.CoreDocumentModel) *p2ppb.AnchorDocumentRequest {
-	doc := *dm.Document
-	return &p2ppb.AnchorDocumentRequest{Document: &doc}
+	fmt.Println("-----", dm.Document)
+	return &p2ppb.AnchorDocumentRequest{Document: dm.Document}
 }
 
 func getSignatureRequest(dm *documents.CoreDocumentModel) *p2ppb.SignatureRequest {
-	doc := *dm.Document
-	return &p2ppb.SignatureRequest{Document: &doc}
+	return &p2ppb.SignatureRequest{Document: dm.Document}
 }
 
 func getDocumentRequestPeer(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
 	doc := dm.Document
 	return &p2ppb.GetDocumentRequest{
 		DocumentIdentifier: doc.DocumentIdentifier,
-		AccessType: p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
 	}
 }
 
