@@ -446,7 +446,6 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 // Returns an error if not.
 func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	// loop though read rules, check all the rules
-	fmt.Println("*************", m.Document.Roles)
 	return m.findRole(func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountInRole(role, account)
 		return found
@@ -739,7 +738,6 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-		fmt.Println("============", peer)
 		if !m.AccountCanRead(peer) {
 			return errors.New("requester does not have access")
 		}
@@ -751,7 +749,7 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
 		err := m.accessTokenOwnerCanRead(docReq, peer)
 		if err != nil {
-			return errors.New("requester does not have access")
+			return err
 		}
 	default:
 		return errors.New("invalid access type ")
@@ -888,24 +886,19 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 
 // AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
 func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payload documentpb.AccessTokenParams) (*CoreDocumentModel, error) {
-	nm, err := m.PrepareNewVersion(nil)
-	if err != nil {
-		return nil, errors.New("failed to prepare new version: %v", err)
-	}
-
 	role := new(coredocumentpb.Role)
 	rk := utils.RandomSlice(32)
 	role.RoleKey = rk[:]
-	at, err := nm.assembleAccessToken(id, payload, rk[:])
+	at, err := m.assembleAccessToken(id, payload, rk[:])
 	if err != nil {
 		return nil, errors.New("failed to construct AT: %v", err)
 	}
 	role.AccessTokens = append(role.AccessTokens, at)
-	nm.addNewRule(role, ACLRead)
-	if err := nm.setCoreDocumentSalts(); err != nil {
+	m.addNewRule(role, ACLRead)
+	if err := m.setCoreDocumentSalts(); err != nil {
 		return nil, errors.New("failed to generate CoreDocumentSalts")
 	}
-	return nm, nil
+	return m, nil
 }
 
 // ATOwnerCanRead checks that the owner AT can read the document requested

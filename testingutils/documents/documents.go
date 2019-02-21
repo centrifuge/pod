@@ -9,7 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/mock"
+	"time"
 )
 
 type MockService struct {
@@ -76,7 +78,14 @@ func (m *MockModel) JSON() ([]byte, error) {
 }
 
 func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) (*documents.CoreDocumentModel, error) {
-	invData := &invoicepb.InvoiceData{}
+	dueDate := time.Now().Add(4 * 24 * time.Hour)
+	invData := &invoicepb.InvoiceData{
+		InvoiceNumber: "2132131",
+		GrossAmount:   123,
+		NetAmount:     123,
+		Currency:      "EUR",
+		DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
+	}
 	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 	serializedInv, _ := proto.Marshal(invData)
 	var dm *documents.CoreDocumentModel

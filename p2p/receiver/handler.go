@@ -3,7 +3,6 @@ package receiver
 import (
 	"context"
 	"fmt"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -120,7 +119,9 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 	if sigReq.Document == nil {
 		return nil, errors.New("nil core document")
 	}
-	dm.Document = sigReq.Document
+	doc := sigReq.Document
+	dm.Document = doc
+	fmt.Println("..........", doc.EmbeddedData)
 	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
@@ -163,8 +164,8 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
 	dm := new(documents.CoreDocumentModel)
+	fmt.Println("docReq", docReq.Document.EmbeddedData)
 	dm.Document = docReq.Document
-	fmt.Println("first-----------", dm.Document)
 	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
@@ -221,6 +222,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("inside validation", dm.Document.EmbeddedData)
 		err = dm.ValidateDocumentAccess(docReq, requesterCentID)
 		if err != nil {
 			return nil, err

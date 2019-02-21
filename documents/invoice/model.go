@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -298,7 +297,6 @@ func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 
 // UnpackCoreDocument unpacks the core document into Invoice
 func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
-	fmt.Println("final nil------------", coreDocModel)
 	if coreDocModel == nil {
 		return errors.New("coredocmodel is nil %v", coreDocModel)
 	}

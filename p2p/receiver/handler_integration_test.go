@@ -6,6 +6,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
 	"testing"
 
@@ -44,6 +49,9 @@ var (
 	idService  identity.Service
 	cfgService config.Service
 	docSrv     documents.Service
+ payOb nft.PaymentObligation
+ txManager transactions.Manager
+ tokenRegistry documents.TokenRegistry
 )
 
 func TestMain(m *testing.M) {
@@ -54,6 +62,9 @@ func TestMain(m *testing.M) {
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
+	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
+	tokenRegistry = ctx[nft.BootstrappedPayObService].(documents.TokenRegistry)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
 	testingidentity.CreateIdentityWithKeys(cfg, idService)
 	result := m.Run()
@@ -70,14 +81,8 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-func TestHandler_GetDocumentSucceeds(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	centrifugeId := createIdentity(t)
-	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{centrifugeId[:]})
-	assert.Nil(t, err)
-	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
-	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
-	assert.NoError(t, err)
+func updateAndAnchorDocument (t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
+	idConfig, err := identity.GetIdentityConfig(cfg)
 	dm = prepareDocumentForP2PHandler(t, dm)
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
@@ -85,16 +90,15 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Add signature received
-	doc := dm.Document
-	doc.Signatures = append(doc.Signatures, resp.Signature)
+	dm.Document.Signatures = append(dm.Document.Signatures, resp.Signature)
 	tree, err := dm.GetDocumentRootTree()
 	assert.NoError(t, err)
-	doc.DocumentRoot = tree.RootHash()
+	dm.Document.DocumentRoot = tree.RootHash()
+	fmt.Println("dataaaa", dm.Document.EmbeddedData)
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
-	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
+	anchorIDTyped, _ := anchors.ToAnchorID(dm.Document.CurrentVersion)
+	docRootTyped, _ := anchors.ToDocumentRoot(dm.Document.DocumentRoot)
 	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
 	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
@@ -105,18 +109,55 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 
 	anchorReq := getAnchoredRequest(dm)
 	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
-	fmt.Print("===========", dm.Document)
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
+}
+
+func TestHandler_GetDocumentSucceeds(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	centrifugeId := createIdentity(t)
+	idConfig, err := identity.GetIdentityConfig(cfg)
+	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{centrifugeId[:]})
+	assert.Nil(t, err)
+	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
+	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
+
+	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
 
 	// Retrieve document from anchor repository with requester verification access type
 	getReq := getDocumentRequestPeer(dm)
 	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
 	assert.Nil(t, err)
-	assert.ObjectsAreEqual(getDocResp.Document, doc)
+	assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
 
 	// Retrieve document from anchor repository with access token verification access type
+	docID := hexutil.Encode(dm.Document.DocumentIdentifier)
+	at := documentpb.AccessTokenParams{
+		Grantee: centrifugeId.String(),
+		DocumentIdentifier: docID,
+	}
+	dm, err = dm.AddAccessTokenToReadRules(*idConfig, at)
+
+	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
+
+	role := dm.Document.Roles[1]
+	token := role.AccessTokens[0]
+	accessTokenReq := getDocumentRequestAccessToken(dm, token.Identifier)
+	getDocResp, err = handler.GetDocument(ctxh, accessTokenReq, centrifugeId)
+	assert.Nil(t, err)
+	assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
+
 	// Retrieve document from anchor repository with nft verification access type
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(32)
+	err = dm.AddNFTToReadRules(registry, tokenID)
+
+	updateAndAnchorDocument(t, dm, centrifugeId, ctxh)
+
+	nftReq := getDocumentRequestNft(dm, registry, tokenID)
+	getDocResp, err = handler.GetDocument(ctxh, nftReq, centrifugeId)
+	assert.Nil(t, err)
+	assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
@@ -365,6 +406,7 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	doc.DocumentRoot = tree.RootHash()
+	fmt.Println("-------", dm.Document.EmbeddedData)
 	return dm
 }
 
@@ -385,7 +427,6 @@ func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentMode
 }
 
 func getAnchoredRequest(dm *documents.CoreDocumentModel) *p2ppb.AnchorDocumentRequest {
-	fmt.Println("-----", dm.Document)
 	return &p2ppb.AnchorDocumentRequest{Document: dm.Document}
 }
 
@@ -394,10 +435,30 @@ func getSignatureRequest(dm *documents.CoreDocumentModel) *p2ppb.SignatureReques
 }
 
 func getDocumentRequestPeer(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
-	doc := dm.Document
 	return &p2ppb.GetDocumentRequest{
-		DocumentIdentifier: doc.DocumentIdentifier,
+		DocumentIdentifier: dm.Document.DocumentIdentifier,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+}
+
+func getDocumentRequestNft(dm *documents.CoreDocumentModel, registry common.Address, tokenID []byte) *p2ppb.GetDocumentRequest {
+	return &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessType: p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftRegistryAddress: registry[:],
+		NftTokenId: tokenID,
+	}
+}
+
+func getDocumentRequestAccessToken(dm *documents.CoreDocumentModel, tokenID []byte) *p2ppb.GetDocumentRequest {
+	atr := &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessTokenId: tokenID,
+	}
+	return &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessType: p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: atr,
 	}
 }
 

@@ -3,7 +3,6 @@ package documents
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -185,7 +184,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
 
-	doc := docModel.Document
+	doc := *docModel.Document
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
 	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
@@ -295,7 +294,6 @@ func (s service) DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, erro
 	if dm == nil {
 		return nil, errors.New("no core doc model passed")
 	}
-	fmt.Println("service method !!!!!!!!!!", dm.Document)
 	if dm.Document == nil || dm.Document.EmbeddedData == nil {
 		return nil, errors.New("core document is nil")
 	}
