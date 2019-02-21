@@ -123,15 +123,19 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	tc, err := contextutil.Account(ctxh)
-	_, err = cfgService.CreateAccount(tc)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = centID[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.Nil(t, err)
+	_, err = cfgService.CreateAccount(acc)
 	assert.NoError(t, err)
 	dm := prepareDocumentForP2PHandler(t, nil, centID)
 	req := getSignatureRequest(dm)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, req)
 
-	pub, _ := cfg.GetP2PKeyPair()
+	pub, _ := acc.GetP2PKeyPair()
 	publicKey, err := cented25519.GetPublicSigningKey(pub)
 	assert.NoError(t, err)
 	var bPk [32]byte
@@ -168,7 +172,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = defaultDID[:]
-	ctxh, err := contextutil.New(context.Background(), tc)
+	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.Nil(t, err)
 
 	resp, err := handler.RequestDocumentSignature(ctxh, req)

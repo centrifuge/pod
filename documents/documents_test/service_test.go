@@ -66,7 +66,7 @@ func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
 	idService := testingcommons.MockIdentityService{}
-	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
 	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }

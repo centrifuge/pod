@@ -2,8 +2,6 @@ package documents
 
 import (
 	"fmt"
-	"math/big"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -286,15 +284,8 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 		}
 
 		for _, sig := range cd.Signatures {
-
-			did := identity.NewDIDFromByte(sig.EntityId)
-			msg, errS := utils.SliceToByte32(cd.SigningRoot)
-			if errS != nil {
-				return errS
-			}
-
-			signed, erri := idService.IsSignedWithPurpose(did, msg, sig.Signature, big.NewInt(identity.KeyPurposeSigning))
-			if !signed || erri != nil {
+			erri := idService.ValidateSignature(sig, cd.SigningRoot)
+			if erri != nil {
 				err = errors.AppendError(
 					erri,
 					errors.New(fmt.Sprintf("signature_%s", hexutil.Encode(sig.EntityId)), fmt.Sprintf("signature verification failed: %v", err)))
