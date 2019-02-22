@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//
-//func TestPaymentObligationMint_invoice_successful(t *testing.T) {
-//	t.Parallel()
-//	paymentObligationMint(t, typeInvoice)
-//}
+/*
+func TestPaymentObligationMint_invoice_successful(t *testing.T) {
+	t.Parallel()
+	paymentObligationMint(t, typeInvoice)
+}*/
 
 /* TODO: testcase not stable
 func TestPaymentObligationMint_po_successful(t *testing.T) {
