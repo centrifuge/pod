@@ -195,7 +195,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
-	
+
 	dm.Document.EmbeddedData = ed
 	dm.Document.EmbeddedDataSalts = edsalts
 
