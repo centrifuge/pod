@@ -307,8 +307,7 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
-	//tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(m.Document.CoredocumentSalts), SigningTreePrefix, compactProperties(SigningTreePrefix))
+	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(m.Document.CoredocumentSalts), SigningTreePrefix, compactProperties(SigningTreePrefix))
 	parentProp := NewLeafProperty(SigningTreePrefix, compactProperties(SigningTreePrefix))
 
 	err = tree.AddLeaves([]proofs.LeafNode{
