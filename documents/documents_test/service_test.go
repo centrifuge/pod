@@ -89,7 +89,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 		GrossAmount:       60,
 		CoreDocumentModel: cdm,
 	}
-	dataRoot, err := i.CalculateDataRoot()
+	dataRoot, err := i.DataRoot()
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 
 func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Invoice, error) {
 	i.GrossAmount = 50
-	dataRoot, err := i.CalculateDataRoot()
+	dataRoot, err := i.DataRoot()
 	if err != nil {
 		return nil, err
 	}

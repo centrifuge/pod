@@ -176,7 +176,7 @@ func (cd *CoreDocument) GenerateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
-	if len(cd.document.DataRoot) != byteSize {
+	if len(cd.document.DataRoot) != idSize {
 		return nil, errors.New("data root is invalid")
 	}
 

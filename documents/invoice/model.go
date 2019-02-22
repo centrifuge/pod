@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -25,6 +27,8 @@ var compactPrefix = []byte{1, 0, 0, 0}
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
+	*documents.CoreDocument
+
 	InvoiceNumber    string // invoice number or reference number
 	SenderName       string // name of the sender company
 	SenderStreet     string // street and address details of the sender company
@@ -49,8 +53,7 @@ type Invoice struct {
 	DateCreated      *timestamp.Timestamp
 	ExtraData        []byte
 
-	InvoiceSalts      *proofs.Salts
-	CoreDocumentModel *documents.CoreDocumentModel
+	InvoiceSalts *proofs.Salts
 }
 
 // getClientData returns the client data from the invoice model
@@ -154,12 +157,12 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-
-	i.CoreDocumentModel, err = i.CoreDocumentModel.NewWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
 
+	i.CoreDocument = cd
 	return nil
 }
 
@@ -259,79 +262,53 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.S
 	return i.InvoiceSalts, nil
 }
 
-// ID returns document identifier.
-// Note: this is not a unique identifier for each version of the document.
-func (i *Invoice) ID() ([]byte, error) {
-	coreDocModel, err := i.PackCoreDocument()
-	if err != nil {
-		return []byte{}, err
-	}
-	return coreDocModel.Document.DocumentIdentifier, nil
-}
-
 // PackCoreDocument packs the Invoice into a Core Document
 // If the, Invoice is new, it creates a valid identifiers
-func (i *Invoice) PackCoreDocument() (*documents.CoreDocumentModel, error) {
-	invoiceData := i.createP2PProtobuf()
-	serializedInvoice, err := proto.Marshal(invoiceData)
+func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
+	invData := i.createP2PProtobuf()
+	data, err := proto.Marshal(invData)
 	if err != nil {
-		return nil, errors.NewTypedError(err, errors.New("couldn't serialise InvoiceData"))
+		return cd, errors.New("couldn't serialise InvoiceData: %v", err)
 	}
 
-	invoiceAny := any.Any{
+	embedData := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value:   serializedInvoice,
+		Value:   data,
 	}
 
-	invoiceSalts, err := i.getInvoiceSalts(invoiceData)
+	salts, err := i.getInvoiceSalts(invData)
 	if err != nil {
-		return nil, errors.NewTypedError(err, errors.New("couldn't get InvoiceSalts"))
+		return cd, errors.New("couldn't get InvoiceSalts: %v", err)
 	}
 
-	err = i.CoreDocumentModel.PackCoreDocument(&invoiceAny, documents.ConvertToProtoSalts(invoiceSalts))
-	if err != nil {
-		return nil, err
-	}
-
-	return i.CoreDocumentModel, nil
+	return i.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice
-func (i *Invoice) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
-	if coreDocModel == nil {
-		return errors.New("coredocmodel is nil %v", coreDocModel)
-	}
-	if coreDocModel.Document == nil {
-		return errors.New("core document provided is nil %v", coreDocModel.Document)
-	}
-
-	coreDoc := coreDocModel.Document
-
-	if coreDoc.EmbeddedData == nil ||
-		coreDoc.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl {
+func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+	if cd.EmbeddedData == nil ||
+		cd.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
-	invoiceData := &invoicepb.InvoiceData{}
-	err := proto.Unmarshal(coreDoc.EmbeddedData.Value, invoiceData)
+	invoiceData := new(invoicepb.InvoiceData)
+	err := proto.Unmarshal(cd.EmbeddedData.Value, invoiceData)
 	if err != nil {
 		return err
 	}
 
 	i.loadFromP2PProtobuf(invoiceData)
-
-	if coreDoc.EmbeddedDataSalts == nil {
+	if cd.EmbeddedDataSalts == nil {
 		i.InvoiceSalts, err = i.getInvoiceSalts(invoiceData)
 		if err != nil {
 			return err
 		}
 	} else {
-		i.InvoiceSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
+		i.InvoiceSalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
 	}
 
-	err = i.CoreDocumentModel.UnpackCoreDocument()
-	return err
-
+	i.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
+	return nil
 }
 
 // JSON marshals Invoice into a json bytes
@@ -349,11 +326,11 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document
-func (i *Invoice) CalculateDataRoot() ([]byte, error) {
+// DataRoot calculates the data root and sets the root to core document
+func (i *Invoice) DataRoot() ([]byte, error) {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return nil, errors.New("calculateDataRoot error %v", err)
+		return nil, errors.New("failed to get document tree: %v", err)
 	}
 	return t.RootHash(), nil
 }
@@ -377,20 +354,33 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	return t, nil
 }
 
-// CreateProofs generates proofs for given fields
+// CreateProofs generates proofs for given fields.
 func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	// There can be failure scenarios where the core doc for the particular document
-	// is still not saved with roots in db due to failures during getting signatures.
-	_, err = i.PackCoreDocument()
-	if err != nil {
-		return nil, errors.New("createProofs error %v", err)
-	}
-
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	proofs, err = i.CoreDocumentModel.CreateProofs(tree, fields)
-	return proofs, err
+	return i.CoreDocument.CreateProofs(tree, fields)
+}
+
+// DocumentType returns the invoice document type.
+func (*Invoice) DocumentType() string {
+	return documenttypes.InvoiceDataTypeUrl
+}
+
+// PrepareNewVersion prepares new version from the old invoice.
+func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators []string) error {
+	err := i.initInvoiceFromData(data)
+	if err != nil {
+		return err
+	}
+
+	oldCD := old.(*Invoice).CoreDocument
+	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

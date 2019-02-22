@@ -293,7 +293,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.documentRootTree()
+	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
 
 	for _, c := range tests {

@@ -234,7 +234,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	model.On("DataRoot").Return(cd.DataRoot, nil)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -246,7 +246,7 @@ func TestValidator_signingRootValidator(t *testing.T) {
 	cd.SigningRoot = tree.RootHash()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	model.On("DataRoot").Return(cd.DataRoot, nil)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)

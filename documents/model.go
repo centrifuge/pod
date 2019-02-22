@@ -23,22 +23,53 @@ import (
 // It should only handle protocol-level Document actions
 type Model interface {
 	storage.Model
-	// Get the ID of the document represented by this model
-	ID() ([]byte, error)
+
+	// ID returns the document identifier
+	ID() []byte
+
+	// CurrentVersion returns the current version identifier of the document
+	CurrentVersion() []byte
+
+	// PreviousVersion returns the previous version identifier of the document
+	PreviousVersion() []byte
+
+	// NextVersion returns the next version identifier of the document.
+	NextVersion() []byte
 
 	// PackCoreDocument packs the implementing document into a core document
-	// should create the identifiers for the core document if not present
-	PackCoreDocument() (*CoreDocumentModel, error)
+	// Should only be called when the document is about to be put on wire.
+	PackCoreDocument() (coredocumentpb.CoreDocument, error)
 
-	// UnpackCoreDocument must return the document.Model
-	// assumes that core document has valid identifiers set
-	UnpackCoreDocument(model *CoreDocumentModel) error
+	// UnpackCoreDocument takes a core document protobuf and loads the data into the model.
+	UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 
-	// CalculateDataRoot calculates the dataroot of precise-proofs tree of the model
-	CalculateDataRoot() ([]byte, error)
+	// DocumentType returns the type of the document
+	DocumentType() string
+
+	// DataRoot returns the data root of the model.
+	DataRoot() ([]byte, error)
+
+	// SigningRoot returns the signing root of the model.
+	SigningRoot() ([]byte, error)
+
+	// DocumentRoot returns the document root of the model.
+	DocumentRoot() ([]byte, error)
+
+	// PreviousDocumentRoot returns the document root of the previous version.
+	PreviousDocumentRoot() []byte
+
+	// AppendSignatures appends the signatures to the model.
+	AppendSignatures(signatures ...*coredocumentpb.Signature)
+
+	// Signatures returns a copy of the signatures on the document
+	Signatures() []coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (proofs []*proofspb.Proof, err error)
+
+	// GetCollaborators returns the collaborators of this document.
+	// filter ids should not be returned
+	GetCollaborators(filterIDs ...identity.CentID) ([]identity.CentID, error)
 }
 
 // TokenRegistry defines NFT retrieval functions.
@@ -319,7 +350,7 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	return tree, nil
 }
 
-// CalculateDocumentRoot calculates the document root of the core document
+// DocumentRoot calculates the document root of the core document
 func (m *CoreDocumentModel) CalculateDocumentRoot() error {
 	document := m.Document
 	if len(document.SigningRoot) != 32 {
@@ -371,7 +402,7 @@ func (m *CoreDocumentModel) getSigningRootProofHashes() (hashes [][]byte, err er
 	return rootProof.SortedHashes, err
 }
 
-// CalculateSigningRoot calculates the signing root of the core document
+// SigningRoot calculates the signing root of the core document
 func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 	doc := m.Document
 	tree, err := m.GetDocumentSigningTree(dataRoot)

@@ -337,10 +337,10 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel)
 		dm = testingdocuments.GenerateCoreDocumentModel()
 	}
 
-	m, err := docSrv.DeriveFromCoreDocumentModel(dm)
+	m, err := docSrv.DeriveFromCoreDocument(dm)
 	assert.Nil(t, err)
 
-	droot, err := m.CalculateDataRoot()
+	droot, err := m.DataRoot()
 	assert.Nil(t, err)
 
 	dm, err = m.PackCoreDocument()

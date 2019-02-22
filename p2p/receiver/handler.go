@@ -115,12 +115,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	dm := new(documents.CoreDocumentModel)
-	if sigReq.Document == nil {
-		return nil, errors.New("nil core document")
-	}
-	dm.Document = sigReq.Document
-	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
+	model, err := srv.docSrv.DeriveFromCoreDocument(*sigReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -161,9 +156,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
-	dm := new(documents.CoreDocumentModel)
-	dm.Document = docReq.Document
-	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
+	model, err := srv.docSrv.DeriveFromCoreDocument(*docReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -210,11 +203,11 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
 func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) (*p2ppb.GetDocumentResponse, error) {
 	model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
-
 	if err != nil {
 		return nil, err
 	}
-	dm, err := model.PackCoreDocument()
+
+	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +215,8 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 	//if err != nil {
 	//	return nil, err
 	//}
-	return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
+
+	return &p2ppb.GetDocumentResponse{Document: &cd}, nil
 }
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {

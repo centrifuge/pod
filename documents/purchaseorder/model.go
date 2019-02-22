@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -26,6 +28,7 @@ var compactPrefix = []byte{2, 0, 0, 0}
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
+	*documents.CoreDocument
 	Status             string // status of the Purchase Order
 	PoNumber           string // purchase order number or reference number
 	OrderName          string // name of the ordering company
@@ -51,21 +54,6 @@ type PurchaseOrder struct {
 	DateCreated        *timestamp.Timestamp // purchase order date
 	ExtraData          []byte
 	PurchaseOrderSalts *proofs.Salts
-	CoreDocumentModel  *documents.CoreDocumentModel
-}
-
-// ID returns the DocumentIdentifier for this document
-// Note: this is not same as VersionIdentifier
-func (p *PurchaseOrder) ID() ([]byte, error) {
-	coreDocModel, err := p.PackCoreDocument()
-	if err != nil {
-		return []byte{}, err
-	}
-	if coreDocModel.Document == nil {
-		return []byte{}, errors.New("nil core document")
-	}
-
-	return coreDocModel.Document.DocumentIdentifier, nil
 }
 
 // getClientData returns the client data from the purchaseOrder model
@@ -158,11 +146,12 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	p.CoreDocumentModel, err = p.CoreDocumentModel.NewWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
 
+	p.CoreDocument = cd
 	return nil
 }
 
@@ -261,30 +250,24 @@ func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb
 }
 
 // PackCoreDocument packs the PurchaseOrder into a Core Document
-// If the, PurchaseOrder is new, it creates a valid identifiers
-func (p *PurchaseOrder) PackCoreDocument() (*documents.CoreDocumentModel, error) {
+func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	poData := p.createP2PProtobuf()
-	poSerialized, err := proto.Marshal(poData)
+	data, err := proto.Marshal(poData)
 	if err != nil {
-		return nil, centerrors.Wrap(err, "couldn't serialise PurchaseOrderData")
+		return cd, errors.New("failed to marshal po data: %v", err)
 	}
 
-	poAny := any.Any{
+	embedData := &any.Any{
 		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
-		Value:   poSerialized,
+		Value:   data,
 	}
 
-	poSalts, err := p.getPurchaseOrderSalts(poData)
+	salts, err := p.getPurchaseOrderSalts(poData)
 	if err != nil {
-		return nil, errors.NewTypedError(err, errors.New("couldn't get POSalts"))
+		return cd, errors.New("failed to get po salts: %v", err)
 	}
 
-	err = p.CoreDocumentModel.PackCoreDocument(&poAny, documents.ConvertToProtoSalts(poSalts))
-	if err != nil {
-		return nil, err
-	}
-
-	return p.CoreDocumentModel, nil
+	return p.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
@@ -339,11 +322,11 @@ func (p *PurchaseOrder) Type() reflect.Type {
 	return reflect.TypeOf(p)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document
-func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
+// DataRoot calculates the data root and sets the root to core document
+func (p *PurchaseOrder) DataRoot() ([]byte, error) {
 	t, err := p.getDocumentDataTree()
 	if err != nil {
-		return nil, errors.New("calculateDataRoot error %v", err)
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
 	return t.RootHash(), nil
 }
@@ -367,19 +350,17 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	return t, nil
 }
 
-// CreateProofs generates proofs for given fields
+// CreateProofs generates proofs for given fields.
 func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	// There can be failure scenarios where the core doc for the particular document
-	// is still not saved with roots in db due to failures during getting signatures.
-	_, err = p.PackCoreDocument()
-	if err != nil {
-		return nil, errors.New("createProofs error %v", err)
-	}
-
 	tree, err := p.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
-	proofs, err = p.CoreDocumentModel.CreateProofs(tree, fields)
-	return proofs, err
+
+	return p.CoreDocument.CreateProofs(tree, fields)
+}
+
+// DocumentType returns the po document type.
+func (*PurchaseOrder) DocumentType() string {
+	return documenttypes.PurchaseOrderDataTypeUrl
 }

@@ -93,10 +93,10 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *documen
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
-	m, err := docService.DeriveFromCoreDocumentModel(dm)
+	m, err := docService.DeriveFromCoreDocument(dm)
 	assert.Nil(t, err)
 
-	droot, err := m.CalculateDataRoot()
+	droot, err := m.DataRoot()
 	assert.Nil(t, err)
 
 	dm, err = m.PackCoreDocument()

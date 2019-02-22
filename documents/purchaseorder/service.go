@@ -54,7 +54,7 @@ func DefaultService(
 	}
 }
 
-// DeriveFromCoreDocumentModel takes a core document model and returns a purchase order
+// DeriveFromCoreDocument takes a core document model and returns a purchase order
 func (s service) DeriveFromCoreDocumentModel(coreDocModel *documents.CoreDocumentModel) (documents.Model, error) {
 	var model documents.Model = &PurchaseOrder{
 		CoreDocumentModel: coreDocModel,

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/any"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -30,8 +32,8 @@ const (
 	// SigningRootField represents the signature root property of a tree
 	SigningRootField = "signing_root"
 
-	// byteSize represents the size of identifiers, roots etc..
-	byteSize = 32
+	// idSize represents the size of identifiers, roots etc..
+	idSize = 32
 
 	// ErrZeroCollaborators error when no collaborators are passed
 	ErrZeroCollaborators = errors.Error("require at least one collaborator")
@@ -80,14 +82,21 @@ func (cd *CoreDocument) UnmarshalJSON(data []byte) error {
 
 // newCoreDocument returns a new CoreDocument.
 func newCoreDocument() *CoreDocument {
-	id := utils.RandomSlice(byteSize)
+	id := utils.RandomSlice(idSize)
 	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: id,
 		CurrentVersion:     id,
-		NextVersion:        utils.RandomSlice(byteSize),
+		NextVersion:        utils.RandomSlice(idSize),
 	}
 
 	return &CoreDocument{cd}
+}
+
+// NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
+func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
+	cd.EmbeddedDataSalts = nil
+	cd.EmbeddedData = nil
+	return &CoreDocument{document: cd}
 }
 
 // NewCoreDocumentWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
@@ -110,6 +119,36 @@ func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, er
 	return cd, nil
 }
 
+// ID returns the document identifier
+func (cd *CoreDocument) ID() []byte {
+	return cd.document.DocumentIdentifier
+}
+
+// CurrentVersion returns the current version of the document
+func (cd *CoreDocument) CurrentVersion() []byte {
+	return cd.document.CurrentVersion
+}
+
+// PreviousVersion returns the previous version of the document.
+func (cd *CoreDocument) PreviousVersion() []byte {
+	return cd.document.PreviousVersion
+}
+
+// NextVersion returns the next version of the document.
+func (cd *CoreDocument) NextVersion() []byte {
+	return cd.document.NextVersion
+}
+
+// PreviousDocumentRoot returns the document root of the previous version.
+func (cd *CoreDocument) PreviousDocumentRoot() []byte {
+	return cd.document.PreviousRoot
+}
+
+// AppendSignatures appends signatures to core document.
+func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
+	cd.document.Signatures = append(cd.document.Signatures, signs...)
+}
+
 // setSalts generate salts for core document.
 // This is no-op if the salts are already generated.
 func (cd *CoreDocument) setSalts() error {
@@ -129,11 +168,11 @@ func (cd *CoreDocument) setSalts() error {
 // PrepareNewVersion prepares the next version of the CoreDocument
 // Note: salts needs to be filled by the caller
 func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool) (*CoreDocument, error) {
-	if len(cd.document.DocumentRoot) != byteSize {
+	if len(cd.document.DocumentRoot) != idSize {
 		return nil, errors.New("Document root is invalid")
 	}
 
-	ucs, err := fetchUniqueAccounts(cd.document.Collaborators, collaborators)
+	ucs, err := fetchUniqueCollaborators(cd.document.Collaborators, collaborators)
 	if err != nil {
 		return nil, errors.New("failed to fetch new collaborators: %v", err)
 	}
@@ -181,7 +220,7 @@ func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity
 
 	// create a role for given collaborators
 	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(byteSize)
+	role.RoleKey = utils.RandomSlice(idSize)
 	for _, c := range collaborators {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
@@ -199,38 +238,10 @@ func (cd *CoreDocument) addNewRule(role *coredocumentpb.Role, action coredocumen
 	cd.document.ReadRules = append(cd.document.ReadRules, rule)
 }
 
-// fetchUniqueAccounts fetches the unique accounts that are not present in oldAccounts.
-func fetchUniqueAccounts(oldAccounts [][]byte, newAccounts []string) (uniqueAccounts []identity.CentID, err error) {
-	ocsm := make(map[string]struct{})
-	for _, c := range oldAccounts {
-		ocsm[hexutil.Encode(c)] = struct{}{}
-	}
-
-	var uc []string
-	for _, c := range newAccounts {
-		if _, ok := ocsm[c]; ok {
-			continue
-		}
-
-		uc = append(uc, c)
-	}
-
-	for _, c := range uc {
-		account, err := identity.CentIDFromString(c)
-		if err != nil {
-			return nil, err
-		}
-
-		uniqueAccounts = append(uniqueAccounts, account)
-	}
-
-	return uniqueAccounts, nil
-}
-
-// GenerateProofs takes document data tree and list to fields and generates proofs.
+// CreateProofs takes document data tree and list to fields and generates proofs.
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
 // errors out when the proof generation is failed on core Document tree.
-func (cd *CoreDocument) GenerateProofs(dataTree *proofs.DocumentTree, fields []string) (proofs []*proofspb.Proof, err error) {
+func (cd *CoreDocument) CreateProofs(dataTree *proofs.DocumentTree, fields []string) (proofs []*proofspb.Proof, err error) {
 	srpHashes, err := cd.getSigningRootProofHashes()
 	if err != nil {
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
@@ -279,7 +290,7 @@ func generateProofs(tree *proofs.DocumentTree, fields []string, appendHashes [][
 // getSigningRootProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DocumentRoot.
 // The returned proofs are appended to the proofs generated from the data tree and core document tree for a successful verification.
 func (cd *CoreDocument) getSigningRootProofHashes() (hashes [][]byte, err error) {
-	tree, err := cd.documentRootTree()
+	tree, err := cd.DocumentRootTree()
 	if err != nil {
 		return
 	}
@@ -292,9 +303,9 @@ func (cd *CoreDocument) getSigningRootProofHashes() (hashes [][]byte, err error)
 	return rootProof.SortedHashes, err
 }
 
-// documentRootTree returns the merkle tree for the document root.
-func (cd *CoreDocument) documentRootTree() (tree *proofs.DocumentTree, err error) {
-	if len(cd.document.SigningRoot) != byteSize {
+// DocumentRootTree returns the merkle tree for the document root.
+func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	if len(cd.document.SigningRoot) != idSize {
 		return nil, errors.New("signing root is invalid")
 	}
 
@@ -314,7 +325,7 @@ func (cd *CoreDocument) documentRootTree() (tree *proofs.DocumentTree, err error
 	sigLeafList := make([]proofs.LeafNode, len(cd.document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
 		Property: sigProperty.LengthProp(proofs.DefaultSaltsLengthSuffix),
-		Salt:     make([]byte, byteSize),
+		Salt:     make([]byte, idSize),
 		Value:    []byte(fmt.Sprintf("%d", len(cd.document.Signatures))),
 	}
 
@@ -356,7 +367,7 @@ func (cd *CoreDocument) documentRootTree() (tree *proofs.DocumentTree, err error
 
 // signingRootTree returns the merkle tree for the signing root.
 func (cd *CoreDocument) signingRootTree() (tree *proofs.DocumentTree, err error) {
-	if len(cd.document.DataRoot) != byteSize {
+	if len(cd.document.DataRoot) != idSize {
 		return nil, errors.New("data root is invalid")
 	}
 
@@ -429,6 +440,37 @@ func (cd *CoreDocument) documentTree() (tree *proofs.DocumentTree, err error) {
 	return tree, nil
 }
 
+// GetCollaborators returns the collaborators from the role with READ_SIGN ability.
+func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.CentID) (ids []identity.CentID, err error) {
+	exclude := make(map[string]struct{})
+	for _, id := range filterIDs {
+		exclude[id.String()] = struct{}{}
+	}
+
+	success := findRole(cd.document, func(_, _ int, role *coredocumentpb.Role) bool {
+		for _, c := range role.Collaborators {
+			var id identity.CentID
+			id, err = identity.ToCentID(c)
+			if err != nil {
+				return false
+			}
+
+			if _, ok := exclude[id.String()]; ok {
+				continue
+			}
+
+			ids = append(ids, id)
+		}
+
+		return true
+	}, coredocumentpb.Action_ACTION_READ_SIGN)
+	if !success {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
 func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
@@ -456,24 +498,49 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	return ids, nil
 }
 
-// calculateDocumentRoot calculates the document root of the core document.
-func (cd *CoreDocument) calculateDocumentRoot() error {
-	tree, err := cd.documentRootTree()
-	if err != nil {
-		return err
+// DocumentRoot returns the document root of the core document.
+// generates the root if not generated
+func (cd *CoreDocument) DocumentRoot() ([]byte, error) {
+	if len(cd.document.DocumentRoot) != idSize {
+		tree, err := cd.DocumentRootTree()
+		if err != nil {
+			return nil, err
+		}
+
+		cd.document.DocumentRoot = tree.RootHash()
 	}
 
-	cd.document.DocumentRoot = tree.RootHash()
-	return nil
+	return cd.document.DocumentRoot, nil
 }
 
-// calculateSigningRoot calculates the signing root of the core document
-func (cd *CoreDocument) calculateSigningRoot() error {
-	tree, err := cd.signingRootTree()
-	if err != nil {
-		return err
+// SigningRoot returns the signing root of the core document.
+// generates one if not generated.
+func (cd *CoreDocument) SigningRoot() ([]byte, error) {
+	if len(cd.document.SigningRoot) != idSize {
+		tree, err := cd.signingRootTree()
+		if err != nil {
+			return nil, err
+		}
+
+		cd.document.SigningRoot = tree.RootHash()
 	}
 
-	cd.document.SigningRoot = tree.RootHash()
-	return nil
+	return cd.document.SigningRoot, nil
+}
+
+func (cd *CoreDocument) PackCoreDocument(data *any.Any, salts []*coredocumentpb.DocumentSalt) coredocumentpb.CoreDocument {
+	// lets copy the value so that mutations on the returned doc wont be reflected on document we are holding
+	cdp := cd.document
+	cdp.EmbeddedData = data
+	cdp.EmbeddedDataSalts = salts
+	return cdp
+}
+
+// Signatures returns the copy of the signatures on the document.
+func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
+	for _, s := range cd.document.Signatures {
+		signatures = append(signatures, *s)
+	}
+
+	return signatures
 }

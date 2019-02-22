@@ -82,7 +82,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	dataRoot, err := model.CalculateDataRoot()
+	dataRoot, err := model.DataRoot()
 	if err != nil {
 		return mreq, err
 	}
@@ -109,7 +109,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, pfs, rootHash)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, docProofs.FieldProofs, rootHash)
 	if err != nil {
 		return mreq, err
 	}
@@ -189,7 +189,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		model, err = s.docSrv.DeriveFromCoreDocumentModel(ndm)
+		model, err = s.docSrv.DeriveFromCoreDocument(ndm)
 		if err != nil {
 			errOut <- err
 			return

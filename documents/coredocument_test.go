@@ -210,12 +210,12 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd := newCoreDocument()
 
 	// no signing root generated
-	_, err := cd.documentRootTree()
+	_, err := cd.DocumentRootTree()
 	assert.Error(t, err)
 
 	// successful document root generation
 	cd.document.SigningRoot = utils.RandomSlice(32)
-	tree, err := cd.documentRootTree()
+	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
 
 	//// Manually constructing the two node tree:
@@ -253,7 +253,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	assert.NoError(t, cd.calculateSigningRoot())
 	assert.NoError(t, cd.calculateDocumentRoot())
 
-	cdTree, err := cd.documentRootTree()
+	cdTree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -283,7 +283,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.fieldName, func(t *testing.T) {
-			p, err := cd.GenerateProofs(testTree, []string{test.fieldName})
+			p, err := cd.CreateProofs(testTree, []string{test.fieldName})
 			assert.NoError(t, err)
 			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
 			var l *proofs.LeafNode
