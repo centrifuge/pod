@@ -58,7 +58,7 @@ func deployIdentityContract(t *testing.T) *DID {
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.ToAddress(), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
 
-	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")
+	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
 	return did
 
 }

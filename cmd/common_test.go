@@ -72,7 +72,7 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err, "did should exists")
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), common.BytesToAddress(id), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
-	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")
+	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
 
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
