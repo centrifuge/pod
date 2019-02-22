@@ -603,18 +603,19 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
+func newRole() *coredocumentpb.Role {
+	role := new(coredocumentpb.Role)
+	rk := utils.RandomSlice(32)
+	role.RoleKey = rk[:]
+	return role
+}
+
 func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
 	if len(collabs) == 0 {
 		return nil
 	}
 	// create a role for given collaborators
-	role := new(coredocumentpb.Role)
-	cd := m.Document
-	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
-	if err != nil {
-		return err
-	}
-	role.RoleKey = rk[:]
+	role := newRole()
 	for _, c := range collabs {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
@@ -718,18 +719,12 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 
 // AddNFTToReadRules adds NFT token to the read rules of core document.
 func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID []byte) error {
-	cd := m.Document
 	nft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
 		return errors.New("failed to construct NFT: %v", err)
 	}
 
-	role := new(coredocumentpb.Role)
-	rk, err := utils.ConvertIntToByte32(len(cd.Roles))
-	if err != nil {
-		return err
-	}
-	role.RoleKey = rk[:]
+	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
 	cdSalts, _ := GenerateNewSalts(m.Document, "", nil)
@@ -890,10 +885,8 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 
 // AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
 func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payload documentpb.AccessTokenParams) (*CoreDocumentModel, error) {
-	role := new(coredocumentpb.Role)
-	rk := utils.RandomSlice(32)
-	role.RoleKey = rk[:]
-	at, err := m.assembleAccessToken(id, payload, rk[:])
+	role := newRole()
+	at, err := m.assembleAccessToken(id, payload, role.RoleKey)
 	if err != nil {
 		return nil, errors.New("failed to construct AT: %v", err)
 	}
