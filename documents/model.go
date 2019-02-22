@@ -67,6 +67,20 @@ type Model interface {
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (proofs []*proofspb.Proof, err error)
 
+	// CreateNFTProofs creates NFT proofs for minting.
+	CreateNFTProofs(
+		account identity.CentID,
+		registry common.Address,
+		tokenID []byte,
+		nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error)
+
+	// IsNFTMinted checks if there is any NFT minted for the registry given
+	IsNFTMinted(tr TokenRegistry, registry common.Address) bool
+
+	// AddNFT adds an NFT to the document.
+	// Note: The document should be anchored after successfully adding the NFT.
+	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error
+
 	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	GetCollaborators(filterIDs ...identity.CentID) ([]identity.CentID, error)

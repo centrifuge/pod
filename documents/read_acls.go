@@ -169,8 +169,8 @@ func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common
 	return err == nil
 }
 
-// GenerateNFTProofs generate proofs returns proofs for NFT minting.
-func (cd *CoreDocument) GenerateNFTProofs(
+// CreateNFTProofs generate proofs returns proofs for NFT minting.
+func (cd *CoreDocument) CreateNFTProofs(
 	account identity.CentID,
 	registry common.Address,
 	tokenID []byte,

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -271,38 +273,29 @@ func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err 
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
-func (p *PurchaseOrder) UnpackCoreDocument(coreDocModel *documents.CoreDocumentModel) error {
-	if coreDocModel == nil {
-		return errors.New("coredocmodel is nil %v", coreDocModel)
-	}
-	if coreDocModel.Document == nil {
-		return errors.New("core document provided is nil %v", coreDocModel.Document)
-	}
-
-	coreDoc := coreDocModel.Document
-	if coreDoc.EmbeddedData == nil ||
-		coreDoc.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
+func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+	if cd.EmbeddedData == nil ||
+		cd.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
-	poData := &purchaseorderpb.PurchaseOrderData{}
-	err := proto.Unmarshal(coreDoc.EmbeddedData.Value, poData)
+	poData := new(purchaseorderpb.PurchaseOrderData)
+	err := proto.Unmarshal(cd.EmbeddedData.Value, poData)
 	if err != nil {
 		return err
 	}
 
 	p.loadFromP2PProtobuf(poData)
-
-	if coreDoc.EmbeddedDataSalts == nil {
+	if cd.EmbeddedDataSalts == nil {
 		p.PurchaseOrderSalts, err = p.getPurchaseOrderSalts(poData)
 		if err != nil {
 			return err
 		}
 	} else {
-		p.PurchaseOrderSalts = documents.ConvertToProofSalts(coreDoc.EmbeddedDataSalts)
+		p.PurchaseOrderSalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
 	}
 
-	err = p.CoreDocumentModel.UnpackCoreDocument()
+	p.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return err
 
 }
@@ -363,4 +356,31 @@ func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof,
 // DocumentType returns the po document type.
 func (*PurchaseOrder) DocumentType() string {
 	return documenttypes.PurchaseOrderDataTypeUrl
+}
+
+// PrepareNewVersion prepares new version from the old invoice.
+func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurchaseorderpb.PurchaseOrderData, collaborators []string) error {
+	err := p.initPurchaseOrderFromData(data)
+	if err != nil {
+		return err
+	}
+
+	oldCD := old.(*PurchaseOrder).CoreDocument
+	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddNFT adds NFT to the Purchase Order.
+func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
+	cd, err := p.CoreDocument.AddNFT(grantReadAccess, registry, tokenID)
+	if err != nil {
+		return err
+	}
+
+	p.CoreDocument = cd
+	return nil
 }

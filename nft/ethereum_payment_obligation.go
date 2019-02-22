@@ -77,34 +77,28 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	coreDoc, err := model.PackCoreDocument()
-	if err != nil {
-		return mreq, err
-	}
-
-	dataRoot, err := model.DataRoot()
-	if err != nil {
-		return mreq, err
-	}
-
-	pfs, err := coreDoc.GetNFTProofs(
-		dataRoot,
-		cid,
+	pfs, err := model.CreateNFTProofs(cid,
 		req.RegistryAddress,
 		tokenID[:],
 		req.SubmitTokenProof,
 		req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof)
+
 	if err != nil {
 		return mreq, err
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
-	anchorID, err := anchors.ToAnchorID(coreDoc.Document.CurrentVersion)
+	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		return mreq, err
 	}
 
-	rootHash, err := anchors.ToDocumentRoot(coreDoc.Document.DocumentRoot)
+	dr, err := model.DocumentRoot()
+	if err != nil {
+		return mreq, err
+	}
+
+	rootHash, err := anchors.ToDocumentRoot(dr)
 	if err != nil {
 		return mreq, err
 	}
@@ -145,13 +139,9 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 		return nil, nil, err
 	}
 
-	dm, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// check if the nft is successfully minted already
-	if dm.IsNFTMinted(s, req.RegistryAddress) {
+
+	if model.IsNFTMinted(s, req.RegistryAddress) {
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
@@ -177,19 +167,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		dm, err := model.PackCoreDocument()
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		ndm, err := dm.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		model, err = s.docSrv.DeriveFromCoreDocument(ndm)
+		err = model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
 			errOut <- err
 			return

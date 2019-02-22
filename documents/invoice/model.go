@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -382,5 +384,16 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 		return err
 	}
 
+	return nil
+}
+
+// AddNFT adds NFT to the Invoice.
+func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
+	cd, err := i.CoreDocument.AddNFT(grantReadAccess, registry, tokenID)
+	if err != nil {
+		return err
+	}
+
+	i.CoreDocument = cd
 	return nil
 }
