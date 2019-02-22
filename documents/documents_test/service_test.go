@@ -3,7 +3,6 @@
 package documents_test
 
 import (
-	"math/big"
 	"os"
 	"testing"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -66,7 +64,7 @@ func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
 	idService := testingcommons.MockIdentityService{}
-	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
 	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
@@ -100,9 +98,11 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	if err != nil {
 		return nil, err
 	}
+
 	cds, err := documents.GenerateNewSalts(corDocMod.Document, "", nil)
 	assert.Nil(t, err)
 	corDocMod.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cds)
+
 	err = corDocMod.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, err
@@ -122,6 +122,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
 
 	cd.Signatures = append(cd.Signatures, sig)
+
 	err = corDocMod.CalculateDocumentRoot()
 	if err != nil {
 		return nil, err
@@ -180,18 +181,9 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 
 // Functions returns service mocks
 func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIdentityService, s documents.Service) testingcommons.MockIdentityService {
-	idkey := &ethid.EthereumIdentityKey{
-		Key:       key1Pub,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
 	anchorID, _ := anchors.ToAnchorID(i.CoreDocumentModel.Document.DocumentIdentifier)
 	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocumentModel.Document.DocumentRoot)
 	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	id := &testingcommons.MockID{}
-	centID, _ := identity.ToCentID(centIDBytes)
-	idService.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
 	return idService
 }
 

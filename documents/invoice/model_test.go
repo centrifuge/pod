@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -29,7 +29,7 @@ import (
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -59,7 +59,6 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
-		&ethid.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
@@ -108,23 +107,6 @@ func TestInvoice_InitCoreDocument_successful(t *testing.T) {
 	invoiceModel.CoreDocumentModel = dm
 	err := invoiceModel.UnpackCoreDocument(dm)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
-}
-
-func TestInvoice_InitCoreDocument_invalidCentId(t *testing.T) {
-	invoiceModel := &Invoice{}
-
-	dm := CreateCDWithEmbeddedInvoice(t, invoicepb.InvoiceData{
-		Recipient:   utils.RandomSlice(identity.CentIDLength + 1),
-		Sender:      utils.RandomSlice(identity.CentIDLength),
-		Payee:       utils.RandomSlice(identity.CentIDLength),
-		GrossAmount: 42,
-	})
-	invoiceModel.CoreDocumentModel = dm
-	err := invoiceModel.UnpackCoreDocument(dm)
-	assert.Nil(t, err)
-	assert.NotNil(t, invoiceModel.Sender)
-	assert.NotNil(t, invoiceModel.Payee)
-	assert.Nil(t, invoiceModel.Recipient)
 }
 
 func TestInvoice_CoreDocument_successful(t *testing.T) {
@@ -232,7 +214,8 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Nil(t, inv.ExtraData)
 
 	data.ExtraData = "0x010203020301"
-	data.Recipient = "0x010203040506"
+	recipientDID := testingidentity.GenerateRandomDID()
+	data.Recipient = recipientDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
@@ -240,7 +223,8 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Nil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
 
-	data.Sender = "0x010203060506"
+	senderDID := testingidentity.GenerateRandomDID()
+	data.Sender = senderDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
@@ -248,7 +232,8 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.NotNil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
 
-	data.Payee = "0x010203030405"
+	payeeDID := testingidentity.GenerateRandomDID()
+	data.Payee = payeeDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
@@ -268,9 +253,9 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	collabs = []string{collab1.String(), collab2.String()}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
-	assert.Equal(t, inv.Sender[:], []byte{1, 2, 3, 6, 5, 6})
-	assert.Equal(t, inv.Payee[:], []byte{1, 2, 3, 3, 4, 5})
-	assert.Equal(t, inv.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
+	assert.Equal(t, inv.Sender[:], senderDID[:])
+	assert.Equal(t, inv.Payee[:], payeeDID[:])
+	assert.Equal(t, inv.Recipient[:], recipientDID[:])
 	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 	assert.Equal(t, inv.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], collab1[:], collab2[:]})
 }

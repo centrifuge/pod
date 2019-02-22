@@ -7,13 +7,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -63,17 +61,14 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5]*anchors.CommitData
 	var doneList [5]chan bool
-	centrifugeId := utils.RandomSlice(identity.CentIDLength)
 
 	for ix := 0; ix < 5; ix++ {
 		currentAnchorId := utils.RandomByte32()
 		currentDocumentRoot := utils.RandomByte32()
-		centIdFixed, _ := identity.ToCentID(centrifugeId)
 		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 		h, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
-		cfg.Set("identityId", centIdFixed.String())
 		ctx := testingconfig.CreateAccountContext(t, cfg)
 		doneList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, documentProofs)
 		if err != nil {

@@ -9,7 +9,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
@@ -28,7 +27,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
 	ctx[storage.BootstrappedDB] = repo
 	ctx[transactions.BootstrappedService] = transactions.NewManager(&testingconfig.MockConfig{}, transactions.NewRepository(repo))
-	ctx[identity.BootstrappedIDService] = new(testingcommons.MockIDService)
 	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
 	ctx[ideth.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
 

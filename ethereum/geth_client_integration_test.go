@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -59,7 +60,7 @@ func TestMain(m *testing.M) {
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 	}
 

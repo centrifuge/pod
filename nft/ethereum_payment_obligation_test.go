@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/satori/go.uuid"
 
@@ -16,10 +18,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -172,7 +173,7 @@ func TestPaymentObligationService(t *testing.T) {
 				).Return(&types.Transaction{}, nil)
 				configMock := testingconfig.MockConfig{}
 				configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
-				cid := identity.RandomCentID()
+				cid := testingidentity.GenerateRandomDID()
 				configMock.On("GetIdentityID").Return(cid[:], nil)
 				configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
 				configMock.On("GetEthereumContextWaitTimeout").Return(time.Second)

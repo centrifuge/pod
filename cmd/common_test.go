@@ -25,7 +25,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -36,23 +35,22 @@ var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
-	var bootstappers = []bootstrap.TestBootstrapper{
+	var bootstrappers = []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		transactions.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		&ethid.Bootstrapper{},
-		&configstore.Bootstrapper{},
 		&ideth.Bootstrapper{},
+		&configstore.Bootstrapper{},
 		&queue.Starter{},
 	}
 
-	bootstrap.RunTestBootstrappers(bootstappers, ctx)
+	bootstrap.RunTestBootstrappers(bootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
-	bootstrap.RunTestTeardown(bootstappers)
+	bootstrap.RunTestTeardown(bootstrappers)
 	os.Exit(result)
 }
 

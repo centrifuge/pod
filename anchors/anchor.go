@@ -74,7 +74,7 @@ func RandomDocumentRoot() DocumentRoot {
 type PreCommitData struct {
 	AnchorID        AnchorID
 	SigningRoot     DocumentRoot
-	CentrifugeID    identity.CentID
+	CentrifugeID    identity.DID
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
@@ -107,7 +107,7 @@ func supportedSchemaVersion() uint {
 }
 
 // newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.DID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	return &PreCommitData{
 		AnchorID:        anchorID,
 		SigningRoot:     signingRoot,

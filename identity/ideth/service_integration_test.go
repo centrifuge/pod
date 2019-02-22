@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -89,7 +89,7 @@ func TestServiceAddKey_successful(t *testing.T) {
 
 func TestServiceAddKey_fail(t *testing.T) {
 	testKey := getTestKey()
-	did := testingutils.RandomDID()
+	did := testingidentity.GenerateRandomDID()
 	aCtx := getTestDIDContext(t, did)
 	idSrv := initIdentity()
 
@@ -201,9 +201,7 @@ func TestExists(t *testing.T) {
 	err := idSrv.Exists(aCtx, *did)
 	assert.Nil(t, err, "identity contract should exist")
 
-	did2 := testingutils.RandomDID()
-	assert.Nil(t, err)
-	err = idSrv.Exists(aCtx, did2)
+	err = idSrv.Exists(aCtx, testingidentity.GenerateRandomDID())
 	assert.Error(t, err, "identity contract should not exist")
 	resetDefaultCentID()
 
