@@ -188,7 +188,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_GenerateProofs(t *testing.T) {
 	po, err := createPurchaseOrder(t)
 	assert.Nil(t, err)
-	proof, err := po.GenerateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	proof, err := po.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := po.DocumentRootTree()
@@ -217,7 +217,7 @@ func TestPOModel_GenerateProofs(t *testing.T) {
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
 	poModel, err := createPurchaseOrder(t)
 	assert.Nil(t, err)
-	_, err = poModel.GenerateProofs([]string{"nonexisting"})
+	_, err = poModel.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
@@ -235,9 +235,9 @@ func createPurchaseOrder(t *testing.T) (*PurchaseOrder, error) {
 	po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), "0x010203040506")
 	_, err := po.DataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateSigningRoot()
+	_, err = po.SigningRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateDocumentRoot()
+	_, err = po.DocumentRoot()
 	assert.NoError(t, err)
 	return po, nil
 }
