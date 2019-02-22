@@ -153,7 +153,7 @@ func (r *hostManager) init(createConfig bool) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("CentID for %s is %s \n", name, i)
+		fmt.Printf("DID for %s is %s \n", name, i)
 		if createConfig {
 			_ = host.createAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 		}

@@ -4,10 +4,10 @@
 package testworld
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
+	"fmt"
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
@@ -40,12 +40,14 @@ func TestMain(m *testing.M) {
 	if c.Network == "testing" {
 		contractAddresses = getSmartContractAddresses()
 	}
+	fmt.Printf("contract addresses %+v\n", contractAddresses)
+
 	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses)
 	err = doctorFord.init(c.CreateHostConfigs)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("contract addresses %+v\n", contractAddresses)
+
 	result := m.Run()
 	doctorFord.stop()
 	os.Exit(result)

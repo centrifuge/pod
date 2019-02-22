@@ -2,7 +2,6 @@ package ideth
 
 import (
 	"context"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
