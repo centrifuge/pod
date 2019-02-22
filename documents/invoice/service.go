@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"

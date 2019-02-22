@@ -5,12 +5,13 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"os"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"os"
-	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 
@@ -73,7 +74,7 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-func updateDocument (t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
+func updateDocument(t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
 
 	dm = prepareDocumentForP2PHandler(t, dm)
 
@@ -113,7 +114,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	// Retrieve document from anchor repository with access token verification access type
 	docID := hexutil.Encode(dm.Document.DocumentIdentifier)
 	at := documentpb.AccessTokenParams{
-		Grantee: centrifugeId.String(),
+		Grantee:            centrifugeId.String(),
 		DocumentIdentifier: docID,
 	}
 	dm, err = dm.AddAccessTokenToReadRules(*idConfig, at)
@@ -428,20 +429,20 @@ func getDocumentRequestPeer(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentR
 func getDocumentRequestNft(dm *documents.CoreDocumentModel, registry common.Address, tokenID []byte) *p2ppb.GetDocumentRequest {
 	return &p2ppb.GetDocumentRequest{
 		DocumentIdentifier: dm.Document.DocumentIdentifier,
-		AccessType: p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
 		NftRegistryAddress: registry[:],
-		NftTokenId: tokenID,
+		NftTokenId:         tokenID,
 	}
 }
 
 func getDocumentRequestAccessToken(dm *documents.CoreDocumentModel, tokenID []byte) *p2ppb.GetDocumentRequest {
 	atr := &p2ppb.AccessTokenRequest{
 		DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
-		AccessTokenId: tokenID,
+		AccessTokenId:                tokenID,
 	}
 	return &p2ppb.GetDocumentRequest{
 		DocumentIdentifier: dm.Document.DocumentIdentifier,
-		AccessType: p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: atr,
 	}
 }
