@@ -50,7 +50,7 @@ func getTestDIDContext(t *testing.T, did id.DID) context.Context {
 }
 
 func deployIdentityContract(t *testing.T) *id.DID {
-	factory := ctx[BootstrappedDIDFactory].(identity.Factory)
+	factory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := factory.CreateIdentity(accountCtx)
 	assert.Nil(t, err, "create identity should be successful")

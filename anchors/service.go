@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/transactions"
 
@@ -12,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -95,25 +96,9 @@ func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{},
 	}
 }
 
-// TODO move func to utils or account
-func (s service) getDID(ctx context.Context) (did identity.DID, err error) {
-	tc, err := contextutil.Account(ctx)
-	if err != nil {
-		return did, err
-	}
-
-	addressByte, err := tc.GetIdentityID()
-	if err != nil {
-		return did, err
-	}
-	did = identity.NewDID(common.BytesToAddress(addressByte))
-	return did, nil
-
-}
-
 // CommitAnchor will send a commit transaction to Ethereum.
 func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error) {
-	did, err := s.getDID(ctx)
+	did, err := ideth.NewDIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

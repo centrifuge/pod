@@ -6,12 +6,12 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 
@@ -30,7 +30,7 @@ const (
 	// BootstrappedDIDService stores the id of the service
 	BootstrappedDIDService string = "BootstrappedDIDService"
 
-	// CentIDLength is the length in bytes of the CentrifugeID
+	// CentIDLength is the length in bytes of the DID
 	CentIDLength = 6
 
 	// KeyPurposeP2P represents a key used for p2p txns

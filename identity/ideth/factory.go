@@ -149,7 +149,7 @@ func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*id.D
 		return nil, err
 	}
 
-	identityFactory := ctx[BootstrappedDIDFactory].(id.Factory)
+	identityFactory := ctx[id.BootstrappedDIDFactory].(id.Factory)
 
 	did, err := identityFactory.CreateIdentity(tctx)
 	if err != nil {
