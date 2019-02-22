@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +27,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	repo := leveldb.NewLevelDBRepository(db)
 	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
 	ctx[storage.BootstrappedDB] = repo
-	ctx[transactions.BootstrappedService] = transactions.NewManager(&testingconfig.MockConfig{}, transactions.NewRepository(repo))
+	ctx[transactions.BootstrappedService] = txv1.NewManager(&testingconfig.MockConfig{}, txv1.NewRepository(repo))
 	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
 	ctx[ideth.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
 

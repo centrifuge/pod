@@ -41,16 +41,14 @@ func GenerateSigningKeyPair() (publicKey, privateKey []byte, err error) {
 }
 
 // Sign signs the message using private key
+// We do hash the message since it not recommended to use the message as is.
 func Sign(message []byte, privateKey []byte) (signature []byte, err error) {
-	return secp256k1.Sign(message, privateKey)
+	return secp256k1.Sign(Hash(message), privateKey)
 }
 
 // SignEthereum converts message to ethereum specific format and signs it.
 func SignEthereum(message []byte, privateKey []byte) (signature []byte, err error) {
-	// The hash is calculated in Ethereum in the following way
-	// keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
-	hash := SignHash(message)
-	return Sign(hash, privateKey)
+	return secp256k1.Sign(HashWithEthPrefix(message), privateKey)
 }
 
 // GetAddress returns the hex of first 20 bytes of the Keccak256 has of public keuy
@@ -84,7 +82,7 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 		sig[signatureVPosition] -= 27 // change V value to 0 or 1
 	}
 
-	pubKey, err := crypto.SigToPub(SignHash(msg), sig)
+	pubKey, err := crypto.SigToPub(HashWithEthPrefix(msg), sig)
 	if err != nil {
 		return false
 	}
@@ -93,14 +91,19 @@ func VerifySignatureWithAddress(address, sigHex string, msg []byte) bool {
 	return fromAddr == recoveredAddr
 }
 
-// SignHash returns the hash of the data.
+// HashWithEthPrefix returns the hash of the data.
 // The hash is calculated as
 // keccak256("\x19Ethereum Signed Message:\n"${message length}${message}).
 // for further details see
 // https://github.com/ethereum/go-ethereum/blob/55599ee95d4151a2502465e0afc7c47bd1acba77/internal/ethapi/api.go#L404
-func SignHash(data []byte) []byte {
+func HashWithEthPrefix(data []byte) []byte {
 	msg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d", len(data))
 	return crypto.Keccak256(append([]byte(msg), data...))
+}
+
+// Hash returns the hash result from Keccak256(data)
+func Hash(data []byte) []byte {
+	return crypto.Keccak256(data)
 }
 
 // VerifySignature verifies signature using the public key provided.
@@ -111,7 +114,7 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 		signature = signature[0:signatureRSFormatLen]
 	}
 	// the signature should have the 64 byte [R || S] format
-	return secp256k1.VerifySignature(publicKey, message, signature)
+	return secp256k1.VerifySignature(publicKey, Hash(message), signature)
 
 }
 

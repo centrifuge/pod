@@ -1,21 +1,17 @@
 // +build unit
 
-package transactions
+package txv1
 
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/centrifuge/go-centrifuge/storage"
-
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,6 +28,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[storage.BootstrappedDB] = leveldb.NewLevelDBRepository(db)
 	err = b.Bootstrap(ctx)
 	assert.Nil(t, err)
-	assert.NotNil(t, ctx[BootstrappedRepo])
-	assert.NotNil(t, ctx[BootstrappedService])
+	assert.NotNil(t, ctx[transactions.BootstrappedRepo])
+	assert.NotNil(t, ctx[transactions.BootstrappedService])
 }

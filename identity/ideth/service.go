@@ -15,14 +15,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/satori/go.uuid"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -138,7 +136,7 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 	}
 
 	log.Info("Add key to identity contract %s", did.ToAddress().String())
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for add key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -166,7 +164,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 		return err
 	}
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for add multi purpose key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -193,7 +191,7 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for revoke key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -209,8 +207,8 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 }
 
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
@@ -275,7 +273,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	// default: no ether should be send
 	value := big.NewInt(0)
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, uuid.Nil, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 	if err != nil {
 		return err
 	}

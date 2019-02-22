@@ -1,6 +1,6 @@
 // +build unit integration
 
-package transactions
+package txv1
 
 func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 	return b.Bootstrap(ctx)

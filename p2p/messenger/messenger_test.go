@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -28,7 +30,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -81,12 +82,11 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		transactions.Bootstrapper{},
+		txv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
-		transactions.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
