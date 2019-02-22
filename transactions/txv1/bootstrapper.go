@@ -1,20 +1,9 @@
-package transactions
+package txv1
 
 import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
-)
-
-const (
-	// ErrTransactionBootstrap error when bootstrap fails.
-	ErrTransactionBootstrap = errors.Error("failed to bootstrap transactions")
-
-	// BootstrappedRepo is the key mapped to transactions.Repository.
-	BootstrappedRepo = "BootstrappedRepo"
-
-	// BootstrappedService is the key to mapped transactions.Manager
-	BootstrappedService = "BootstrappedService"
+	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -29,13 +18,13 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	repo, ok := ctx[storage.BootstrappedDB].(storage.Repository)
 	if !ok {
-		return ErrTransactionBootstrap
+		return transactions.ErrTransactionBootstrap
 	}
 
 	txRepo := NewRepository(repo)
-	ctx[BootstrappedRepo] = txRepo
+	ctx[transactions.BootstrappedRepo] = txRepo
 
 	txSrv := NewManager(cfg, txRepo)
-	ctx[BootstrappedService] = txSrv
+	ctx[transactions.BootstrappedService] = txSrv
 	return nil
 }

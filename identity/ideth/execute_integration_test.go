@@ -31,7 +31,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -140,8 +139,8 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingidentity.GenerateRandomDID(), uuid.Nil, "Check TX add execute",
-		func(accountID id.DID, txID uuid.UUID, txMan transactions.Manager, errOut chan<- error) {
+	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingidentity.GenerateRandomDID(), transactions.NilTxID(), "Check TX add execute",
+		func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 			if err != nil {
 				errOut <- err
