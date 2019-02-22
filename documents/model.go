@@ -272,10 +272,10 @@ func (m *CoreDocumentModel) GetCoreDocumentTree() (tree *proofs.DocumentTree, er
 	if document.EmbeddedData == nil {
 		return nil, errors.New("EmbeddedData cannot be nil when generating signing tree")
 	}
-	parentProp := NewLeafProperty(CDTreePrefix, compactProperties(CDTreePrefix))
+	prefixProp := NewLeafProperty(CDTreePrefix, compactProperties(CDTreePrefix))
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
-		Property: parentProp.FieldProp(DocumentTypeField, binary.LittleEndian.Uint32(compactProperties(DocumentTypeField))),
+		Property: prefixProp.FieldProp(DocumentTypeField, binary.LittleEndian.Uint32(compactProperties(DocumentTypeField))),
 		Salt:     make([]byte, 32),
 		Value:    []byte(document.EmbeddedData.TypeUrl),
 	}
@@ -308,16 +308,16 @@ func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proof
 
 	// create the signing tree with data root and coredoc root as siblings
 	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(m.Document.CoredocumentSalts), SigningTreePrefix, compactProperties(SigningTreePrefix))
-	parentProp := NewLeafProperty(SigningTreePrefix, compactProperties(SigningTreePrefix))
+	prefixProp := NewLeafProperty(SigningTreePrefix, compactProperties(SigningTreePrefix))
 
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
-			Property: parentProp.FieldProp(DataRootField, binary.LittleEndian.Uint32(compactProperties(DataRootField))),
+			Property: prefixProp.FieldProp(DataRootField, binary.LittleEndian.Uint32(compactProperties(DataRootField))),
 			Hash:     dataRoot,
 			Hashed:   true,
 		},
 		{
-			Property: parentProp.FieldProp(CDRootField, binary.LittleEndian.Uint32(compactProperties(CDRootField))),
+			Property: prefixProp.FieldProp(CDRootField, binary.LittleEndian.Uint32(compactProperties(CDRootField))),
 			Hash:     coreDocTree.RootHash(),
 			Hashed:   true,
 		},
