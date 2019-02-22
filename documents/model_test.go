@@ -618,12 +618,17 @@ func TestCoreDocumentModel_IsNFTMinted(t *testing.T) {
 func TestCoreDocumentModel_IsAccountInRole(t *testing.T) {
 	dm := NewCoreDocModel()
 	account := identity.RandomCentID()
-	roleKey := make([]byte, 32, 32)
-	assert.False(t, dm.IsAccountInRole(roleKey, account))
+	assert.Len(t, dm.Document.Roles, 0)
 
 	err := dm.initReadRules([]identity.CentID{account})
+	dm.addCollaboratorsToReadSignRules([]identity.CentID{account})
+	roles := dm.Document.Roles
+	rk := roles[1].RoleKey
+	rk2 := roles[0].RoleKey
 	assert.NoError(t, err)
-	assert.True(t, dm.IsAccountInRole(roleKey, account))
+	assert.Len(t, dm.Document.Roles, 2)
+	assert.True(t, dm.IsAccountInRole(rk, account))
+	assert.True(t, dm.IsAccountInRole(rk2, account))
 }
 
 func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
@@ -644,7 +649,6 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
 	assert.Equal(t, "read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
 	assert.Equal(t, "read_rules[0].action", pfs[2])
 }
 
@@ -677,14 +681,15 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 	err = dm.initReadRules([]identity.CentID{account})
 	assert.NoError(t, err)
 
-	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, identity.RandomCentID())
+	role := dm.Document.Roles
+	pf, err = getRoleProofKey(dm.Document.Roles, role[0].RoleKey, identity.RandomCentID())
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
 	assert.Empty(t, pf)
 
-	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, account)
+	pf, err = getRoleProofKey(dm.Document.Roles, role[0].RoleKey, account)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
+	assert.Equal(t, fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(role[0].RoleKey)), pf)
 }
 
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
