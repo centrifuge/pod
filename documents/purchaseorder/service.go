@@ -234,8 +234,8 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	cd := dm.Document
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
-		cid := identity.NewDIDFromBytes(c)
-		collaborators[i] = cid.String()
+		DID := identity.NewDIDFromBytes(c)
+		collaborators[i] = DID.String()
 	}
 
 	h := &clientpopb.ResponseHeader{

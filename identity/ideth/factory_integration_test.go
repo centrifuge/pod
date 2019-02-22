@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 
 func TestCreateIdentity_successful(t *testing.T) {
 
-	factory := ctx[BootstrappedDIDFactory].(identity.Factory)
+	factory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 

@@ -108,35 +108,20 @@ func logTxHash(tx *types.Transaction) {
 	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
 }
 
-func (i service) getDID(ctx context.Context) (did id.DID, err error) {
-	tc, err := contextutil.Account(ctx)
-	if err != nil {
-		return did, err
-	}
-
-	addressByte, err := tc.GetIdentityID()
-	if err != nil {
-		return did, err
-	}
-	did = id.NewDID(common.BytesToAddress(addressByte))
-	return did, nil
-
-}
-
 // AddKey adds a key to identity contract
 func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
-	did, err := i.getDID(ctx)
+	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, did)
+	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Add key to identity contract %s", did.ToAddress().String())
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for add key",
+	log.Info("Add key to identity contract %s", DID.ToAddress().String())
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -154,17 +139,17 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 
 // AddMultiPurposeKey adds a key with multiple purposes
 func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
-	did, err := i.getDID(ctx)
+	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, did)
+	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
 		return err
 	}
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for add multi purpose key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -181,17 +166,17 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 
 // RevokeKey revokes an existing key in the smart contract
 func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
-	did, err := i.getDID(ctx)
+	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, did)
+	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
 		return err
 	}
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for revoke key",
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -261,11 +246,11 @@ func (i service) IsSignedWithPurpose(did id.DID, message [32]byte, signature []b
 
 // RawExecute calls the execute method on the identity contract
 func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) error {
-	did, err := i.getDID(ctx)
+	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
-	contract, opts, err := i.prepareTransaction(ctx, did)
+	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
 		return err
 	}
@@ -273,7 +258,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	// default: no ether should be send
 	value := big.NewInt(0)
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 	if err != nil {
 		return err
 	}
@@ -477,11 +462,26 @@ func (i service) ValidateSignature(signature *coredocumentpb.Signature, message 
 }
 
 // ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
-func ValidateCentrifugeIDBytes(givenCentID []byte, centrifugeID id.DID) error {
-	calcCentID := id.NewDIDFromBytes(givenCentID)
-	if !centrifugeID.Equal(calcCentID) {
+func ValidateCentrifugeIDBytes(givenDID []byte, DID id.DID) error {
+	calcCentID := id.NewDIDFromBytes(givenDID)
+	if !DID.Equal(calcCentID) {
 		return errors.New("provided bytes doesn't match centID")
 	}
 
 	return nil
+}
+
+// NewDIDFromContext returns DID from context.Account
+// TODO remove this function to identity/did.go as soon as IDConfig is removed otherwise there is a cyclic dep
+func NewDIDFromContext(ctx context.Context) (id.DID, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return id.DID{}, err
+	}
+
+	addressByte, err := tc.GetIdentityID()
+	if err != nil {
+		return id.DID{}, err
+	}
+	return id.NewDID(common.BytesToAddress(addressByte)), nil
 }

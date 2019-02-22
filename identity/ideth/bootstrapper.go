@@ -5,6 +5,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -20,12 +22,6 @@ import (
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
-
-// BootstrappedDIDFactory stores the id of the factory
-const BootstrappedDIDFactory string = "BootstrappedDIDFactory"
-
-// BootstrappedDIDService stores the id of the service
-const BootstrappedDIDService string = "BootstrappedDIDService"
 
 // Bootstrap initializes the factory contract
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
@@ -58,10 +54,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	factory := NewFactory(factoryContract, client, txManager, queueSrv, factoryAddress)
-	context[BootstrappedDIDFactory] = factory
+	context[identity.BootstrappedDIDFactory] = factory
 
 	service := NewService(client, txManager, queueSrv)
-	context[BootstrappedDIDService] = service
+	context[identity.BootstrappedDIDService] = service
 
 	return nil
 }
