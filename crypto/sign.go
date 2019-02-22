@@ -17,13 +17,11 @@ func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool
 	curveType = strings.ToLower(curveType)
 	switch curveType {
 	case CurveSecp256K1:
-		msg := make([]byte, MaxMsgLen)
-		copy(msg, message)
 		if ethereumSign {
-			return secp256k1.SignEthereum(msg, privateKey)
+			return secp256k1.SignEthereum(message, privateKey)
 		}
 
-		return secp256k1.Sign(msg, privateKey)
+		return secp256k1.Sign(message, privateKey)
 	case CurveEd25519:
 		return ed25519.Sign(privateKey, message), nil
 	default:

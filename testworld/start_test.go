@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/config"
 )
 

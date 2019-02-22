@@ -12,7 +12,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
-	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -51,7 +50,7 @@ func TestMain(m *testing.M) {
 	txMan := &testingtx.MockTxManager{}
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
-	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.Nil, done, nil)
+	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
 
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},

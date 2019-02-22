@@ -1,38 +1,33 @@
-package transactions
+package txv1
 
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 var log = logging.Logger("transaction")
 
-const (
-	// TxIDParam maps transaction ID in the kwargs.
-	TxIDParam = "transactionID"
-)
-
 // BaseTask holds the required details and helper functions for tasks to update transactions.
 // should be embedded into the task
 type BaseTask struct {
-	TxID uuid.UUID
+	TxID transactions.TxID
 
 	// state
-	TxManager Manager
+	TxManager transactions.Manager
 }
 
 // ParseTransactionID parses txID.
 func (b *BaseTask) ParseTransactionID(taskTypeName string, kwargs map[string]interface{}) error {
-	txID, ok := kwargs[TxIDParam].(string)
+	txID, ok := kwargs[transactions.TxIDParam].(string)
 	if !ok {
 		return errors.New("missing transaction ID")
 	}
 
 	var err error
-	b.TxID, err = uuid.FromString(txID)
+	b.TxID, err = transactions.FromString(txID)
 	if err != nil {
 		return errors.New("invalid transaction ID")
 	}
@@ -50,9 +45,9 @@ func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string
 	// TODO this TaskStatus map update assumes that a single transaction has only one execution of a certain task type, which can be wrong, use the taskID or another unique identifier instead.
 	if err != nil {
 		log.Errorf("Task %s failed for transaction: %v\n", taskTypeName, b.TxID.String())
-		return errors.AppendError(err, b.TxManager.UpdateTaskStatus(accountID, b.TxID, Failed, taskTypeName, err.Error()))
+		return errors.AppendError(err, b.TxManager.UpdateTaskStatus(accountID, b.TxID, transactions.Failed, taskTypeName, err.Error()))
 	}
 
 	log.Infof("Task %s successful for transaction:%v\n", taskTypeName, b.TxID.String())
-	return b.TxManager.UpdateTaskStatus(accountID, b.TxID, Success, taskTypeName, "")
+	return b.TxManager.UpdateTaskStatus(accountID, b.TxID, transactions.Success, taskTypeName, "")
 }

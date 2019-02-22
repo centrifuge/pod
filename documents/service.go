@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"github.com/centrifuge/go-centrifuge/transactions"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
@@ -58,10 +58,10 @@ type Service interface {
 	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
 
 	// Create validates and persists Model and returns a Updated model
-	Create(ctx context.Context, model Model) (Model, uuid.UUID, chan bool, error)
+	Create(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error)
 
 	// Update validates and updates the model and return the updated model
-	Update(ctx context.Context, model Model) (Model, uuid.UUID, chan bool, error)
+	Update(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error)
 }
 
 // service implements Service
@@ -306,19 +306,19 @@ func (s service) DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, erro
 	return srv.DeriveFromCoreDocumentModel(dm)
 }
 
-func (s service) Create(ctx context.Context, model Model) (Model, uuid.UUID, chan bool, error) {
+func (s service) Create(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error) {
 	srv, err := s.getService(model)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.New("failed to get service: %v", err)
+		return nil, transactions.NilTxID(), nil, errors.New("failed to get service: %v", err)
 	}
 
 	return srv.Create(ctx, model)
 }
 
-func (s service) Update(ctx context.Context, model Model) (Model, uuid.UUID, chan bool, error) {
+func (s service) Update(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error) {
 	srv, err := s.getService(model)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.New("failed to get service: %v", err)
+		return nil, transactions.NilTxID(), nil, errors.New("failed to get service: %v", err)
 	}
 
 	return srv.Update(ctx, model)

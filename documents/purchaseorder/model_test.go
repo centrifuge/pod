@@ -10,21 +10,12 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
-	"github.com/satori/go.uuid"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -32,13 +23,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var ctx = map[string]interface{}{}
@@ -52,7 +47,7 @@ func TestMain(m *testing.M) {
 	txMan := &testingtx.MockTxManager{}
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
-	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.Nil, done, nil)
+	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
 
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},

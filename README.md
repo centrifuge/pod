@@ -1,6 +1,7 @@
 # Centrifuge OS node 
 
 [![Build Status](https://travis-ci.com/centrifuge/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/centrifuge/go-centrifuge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/centrifuge/go-centrifuge)](https://goreportcard.com/report/github.com/centrifuge/go-centrifuge)
 
 `go-centrifuge` is the go implementation of the Centrifuge OS interacting with the peer to peer network and our Ethereum smart contracts. 
 

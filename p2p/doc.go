@@ -4,7 +4,8 @@ network to communicate about various protocol activities such as document consen
 
 Background
 
-In order to understand the design decisions behind the protocol one needs a quick background on libp2p and protobufs the tech stack used by the initial implementation of the protocol - `go-centrifuge`, though the wire protocol it self is independant of this stack.
+In order to understand the design decisions behind the protocol one needs a quick background on libp2p and protobufs the tech stack used by the initial implementation of the protocol - `go-centrifuge`, though the wire protocol it self is independent
+of this stack.
 
 - Libp2p protocol multiplexing
 
@@ -23,7 +24,7 @@ The Protocol
 
 1. Protocol Identifier
 
-Centrifuge wire protocol uses libp2p protocol multiplexing as a way to differenciate protocol versions as well as the centrifuge ID that a particular message is targetted at in the centrifuge node.
+Centrifuge wire protocol uses libp2p protocol multiplexing as a way to differentiate protocol versions as well as the centrifuge ID that a particular message is targeted at in the centrifuge node.
 i.e. at the start of the node protocol handlers are registered for each protocol version for each `centrifugeID` configured in the system. Given this requirement a centrifuge protocol identifier string must comply to the following format,
 `/centrifuge/<version>/<centrifugeIDHex>`
 Eg: `/centrifuge/0.0.1/0xf71876181dce`

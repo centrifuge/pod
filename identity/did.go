@@ -30,9 +30,6 @@ const (
 	// BootstrappedDIDService stores the id of the service
 	BootstrappedDIDService string = "BootstrappedDIDService"
 
-	// BootstrappedIDService is used as a key to map the configured ID Service through context.
-	BootstrappedIDService string = "BootstrappedIDService"
-
 	// CentIDLength is the length in bytes of the CentrifugeID
 	CentIDLength = 6
 

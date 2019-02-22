@@ -52,6 +52,7 @@ func (m mockModel) CalculateDataRoot() ([]byte, error) {
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
+
 	// pack failed
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
