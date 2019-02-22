@@ -188,11 +188,16 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	dm := prepareDocumentForP2PHandler(t, nil)
+	ed := dm.Document.EmbeddedData
+	edsalts := dm.Document.EmbeddedDataSalts
 	req := getSignatureRequest(dm)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
+	
+	dm.Document.EmbeddedData = ed
+	dm.Document.EmbeddedDataSalts = edsalts
 
 	req = getSignatureRequest(dm)
 	resp, err = handler.RequestDocumentSignature(ctxh, req)
@@ -298,12 +303,15 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 func TestHandler_SendAnchoredDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	centrifugeId := createIdentity(t)
-
 	dm := prepareDocumentForP2PHandler(t, nil)
+	ed := dm.Document.EmbeddedData
+	edsalts := dm.Document.EmbeddedDataSalts
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+	dm.Document.EmbeddedData = ed
+	dm.Document.EmbeddedDataSalts = edsalts
 
 	// Add signature received
 	doc := dm.Document
