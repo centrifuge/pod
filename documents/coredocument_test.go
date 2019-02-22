@@ -128,23 +128,23 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	cd.document.DocumentRoot = utils.RandomSlice(32)
+	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	ncd, err = cd.PrepareNewVersion(c, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
-	assert.Len(t, 2, len(ncd.document.Collaborators))
-	assert.Nil(t, ncd.document.CoredocumentSalts)
+	assert.Len(t, 2, len(ncd.Document.Collaborators))
+	assert.Nil(t, ncd.Document.CoredocumentSalts)
 
 	ncd, err = cd.PrepareNewVersion(c, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
-	assert.Len(t, 2, len(ncd.document.Collaborators))
-	assert.NotNil(t, ncd.document.CoredocumentSalts)
+	assert.Len(t, 2, len(ncd.Document.Collaborators))
+	assert.NotNil(t, ncd.Document.CoredocumentSalts)
 
-	assert.Equal(t, cd.document.NextVersion, ncd.document.CurrentVersion)
-	assert.Equal(t, cd.document.CurrentVersion, ncd.document.PreviousVersion)
-	assert.Equal(t, cd.document.DocumentIdentifier, ncd.document.DocumentIdentifier)
-	assert.Equal(t, cd.document.DocumentRoot, ncd.document.PreviousRoot)
+	assert.Equal(t, cd.Document.NextVersion, ncd.Document.CurrentVersion)
+	assert.Equal(t, cd.Document.CurrentVersion, ncd.Document.PreviousVersion)
+	assert.Equal(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
+	assert.Equal(t, cd.Document.DocumentRoot, ncd.Document.PreviousRoot)
 }
 
 func TestGetSigningProofHashes(t *testing.T) {
@@ -154,8 +154,8 @@ func TestGetSigningProofHashes(t *testing.T) {
 	}
 
 	cd := newCoreDocument()
-	cd.document.EmbeddedData = docAny
-	cd.document.DataRoot = utils.RandomSlice(32)
+	cd.Document.EmbeddedData = docAny
+	cd.Document.DataRoot = utils.RandomSlice(32)
 	err := cd.setSalts()
 	assert.NoError(t, err)
 
@@ -169,7 +169,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(hashes))
 
-	valid, err := proofs.ValidateProofSortedHashes(cd.document.SigningRoot, hashes, cd.document.DocumentRoot, sha256.New())
+	valid, err := proofs.ValidateProofSortedHashes(cd.Document.SigningRoot, hashes, cd.Document.DocumentRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -187,12 +187,12 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	assert.Error(t, err)
 
 	// no embed data
-	cd.document.DataRoot = utils.RandomSlice(32)
+	cd.Document.DataRoot = utils.RandomSlice(32)
 	_, err = cd.signingRootTree()
 	assert.Error(t, err)
 
 	// successful tree generation
-	cd.document.EmbeddedData = docAny
+	cd.Document.EmbeddedData = docAny
 	assert.NoError(t, cd.setSalts())
 	tree, err := cd.signingRootTree()
 	assert.Nil(t, err)
@@ -213,8 +213,8 @@ func TestGetDocumentRootTree(t *testing.T) {
 	_, err := cd.DocumentRootTree()
 	assert.Error(t, err)
 
-	// successful document root generation
-	cd.document.SigningRoot = utils.RandomSlice(32)
+	// successful Document root generation
+	cd.Document.SigningRoot = utils.RandomSlice(32)
 	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
 
@@ -226,7 +226,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	//assert.Equal(t, expectedRootHash[:], tree.RootHash())
 	_, leaf := tree.GetLeafByProperty("signing_root")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, leaf.Value, cd.document.SigningRoot)
+	assert.Equal(t, leaf.Value, cd.Document.SigningRoot)
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
@@ -246,10 +246,10 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 
 	cd := newCoreDocument()
-	cd.document.EmbeddedData = docAny
-	cd.document.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
+	cd.Document.EmbeddedData = docAny
+	cd.Document.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	assert.NoError(t, cd.setSalts())
-	cd.document.DataRoot = testTree.RootHash()
+	cd.Document.DataRoot = testTree.RootHash()
 	assert.NoError(t, cd.calculateSigningRoot())
 	assert.NoError(t, cd.calculateDocumentRoot())
 
@@ -293,7 +293,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 				_, l = testTree.GetLeafByProperty(test.fieldName)
 				assert.Contains(t, compactProps, l.Property.CompactName())
 			}
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.document.DocumentRoot, h)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.Document.DocumentRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		})
@@ -302,10 +302,10 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 
 func TestCoreDocument_setSalts(t *testing.T) {
 	cd := newCoreDocument()
-	assert.Nil(t, cd.document.CoredocumentSalts)
+	assert.Nil(t, cd.Document.CoredocumentSalts)
 
 	assert.NoError(t, cd.setSalts())
-	salts := cd.document.CoredocumentSalts
+	salts := cd.Document.CoredocumentSalts
 	assert.Nil(t, cd.setSalts())
-	assert.Equal(t, salts, cd.document.CoredocumentSalts)
+	assert.Equal(t, salts, cd.Document.CoredocumentSalts)
 }

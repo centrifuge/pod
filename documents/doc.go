@@ -1,15 +1,15 @@
 /*
-Package documents implements Centrifuge document models.
+Package documents implements Centrifuge Document models.
 
 Models
 
-The idea of having a model is to make the business functions of the document clearer and more readable. This also enables proper types and validations on the fields that require them. When an API call is received, the following list of transformations/steps needs to be executed on the request object.
+The idea of having a model is to make the business functions of the Document clearer and more readable. This also enables proper types and validations on the fields that require them. When an API call is received, the following list of transformations/steps needs to be executed on the request object.
 
-1. Model conversion: this would ensure that proper types are created for each of the fields of the input document plus handling basic level validations that does not require business level understanding of the document. eg: telephone numbers, IDs
+1. Model conversion: this would ensure that proper types are created for each of the fields of the input Document plus handling basic level validations that does not require business level understanding of the Document. eg: telephone numbers, IDs
 
-2. The converted model is updated using the existing document. After this there would be two versions of the document in the system old and the new
+2. The converted model is updated using the existing Document. After this there would be two versions of the Document in the system old and the new
 
-3. The two versions of the document are passed through a purpose specific validator chain that implements the following interface. (see chapter on validation)
+3. The two versions of the Document are passed through a purpose specific validator chain that implements the following interface. (see chapter on validation)
 
 Model Storage
 
@@ -64,7 +64,7 @@ There are three types of validators:
 
 2. **Internal Group Validations:** contain a collection of atomic validators but these are not grouped by purpose but elements that are reused in other validators (group or purpose validators)
 
-3. **Purpose Validators:** these validators are public and used by the application logic to validate a document. They should never be used inside of other validators. Code performing validation should always call a purpose validator but never an internal group directly.
+3. **Purpose Validators:** these validators are public and used by the application logic to validate a Document. They should never be used inside of other validators. Code performing validation should always call a purpose validator but never an internal group directly.
 
 
 	type interface Validator {
@@ -128,7 +128,7 @@ Services in the CentNode must deal with only specific Model object plus its rela
 
 Service Registry
 
-To locate a service that could handle operations for a given CoreDocument object a service registry needs to be developed. This would use the `coreDocument.EmbeddedData.TypeUrl` to map the document to the relevant service.
+To locate a service that could handle operations for a given CoreDocument object a service registry needs to be developed. This would use the `coreDocument.EmbeddedData.TypeUrl` to map the Document to the relevant service.
 
 
 	// in documents/registry.go

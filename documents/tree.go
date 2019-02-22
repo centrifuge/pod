@@ -29,7 +29,7 @@ func NewLeafProperty(literal string, compact []byte) proofs.Property {
 	return proofs.NewProperty(literal, compact...)
 }
 
-// GenerateNewSalts generates salts for new document
+// GenerateNewSalts generates salts for new Document
 func GenerateNewSalts(document proto.Message, prefix string, compactPrefix []byte) (*proofs.Salts, error) {
 	docSalts := new(proofs.Salts)
 	t := NewDefaultTreeWithPrefix(docSalts, prefix, compactPrefix)

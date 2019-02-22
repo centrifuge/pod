@@ -13,9 +13,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-var apiLog = logging.Logger("document-api")
+var apiLog = logging.Logger("Document-api")
 
-// grpcHandler handles all the common document related actions: proof generation
+// grpcHandler handles all the common Document related actions: proof generation
 type grpcHandler struct {
 	config   config.Service
 	registry *ServiceRegistry
@@ -36,7 +36,7 @@ func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProo
 
 	service, err := h.registry.LocateService(createDocumentProofEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for Document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
@@ -51,7 +51,7 @@ func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProo
 	return ConvertDocProofToClientFormat(proof)
 }
 
-// CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
+// CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the Document
 func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
 	apiLog.Infof("Document proof request %v", createDocumentProofForVersionEnvelope)
 	cctx, err := contextutil.Context(ctx, h.config)
@@ -61,7 +61,7 @@ func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDo
 
 	service, err := h.registry.LocateService(createDocumentProofForVersionEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for Document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)

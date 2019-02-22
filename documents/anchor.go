@@ -23,13 +23,13 @@ type AnchorProcessor interface {
 // updaterFunc is a wrapper that will be called to save the state of the model between processor steps
 type updaterFunc func(id []byte, model Model) error
 
-// AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
+// AnchorDocument add signature, requests signatures, anchors Document, and sends the anchored Document
 // to collaborators
 func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
 	id := model.CurrentVersion()
 	err := proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare document for signatures: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare Document for signatures: %v", err))
 	}
 
 	err = updater(id, model)
@@ -60,7 +60,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 	// TODO [TXManager] this function creates a child task in the queue which should be removed and called from the TxManger function
 	err = proc.AnchorDocument(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor document: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor Document: %v", err))
 	}
 
 	err = updater(id, model)
@@ -70,7 +70,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 
 	err = proc.SendDocument(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to send anchored document: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to send anchored Document: %v", err))
 	}
 
 	err = updater(id, model)

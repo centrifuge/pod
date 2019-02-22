@@ -14,26 +14,26 @@ import (
 type Model interface {
 	storage.Model
 
-	// ID returns the document identifier
+	// ID returns the Document identifier
 	ID() []byte
 
-	// CurrentVersion returns the current version identifier of the document
+	// CurrentVersion returns the current version identifier of the Document
 	CurrentVersion() []byte
 
-	// PreviousVersion returns the previous version identifier of the document
+	// PreviousVersion returns the previous version identifier of the Document
 	PreviousVersion() []byte
 
-	// NextVersion returns the next version identifier of the document.
+	// NextVersion returns the next version identifier of the Document.
 	NextVersion() []byte
 
-	// PackCoreDocument packs the implementing document into a core document
-	// Should only be called when the document is about to be put on wire.
+	// PackCoreDocument packs the implementing Document into a core Document
+	// Should only be called when the Document is about to be put on wire.
 	PackCoreDocument() (coredocumentpb.CoreDocument, error)
 
-	// UnpackCoreDocument takes a core document protobuf and loads the data into the model.
+	// UnpackCoreDocument takes a core Document protobuf and loads the data into the model.
 	UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 
-	// DocumentType returns the type of the document
+	// DocumentType returns the type of the Document
 	DocumentType() string
 
 	// DataRoot returns the data root of the model.
@@ -42,16 +42,16 @@ type Model interface {
 	// SigningRoot returns the signing root of the model.
 	SigningRoot() ([]byte, error)
 
-	// DocumentRoot returns the document root of the model.
+	// DocumentRoot returns the Document root of the model.
 	DocumentRoot() ([]byte, error)
 
-	// PreviousDocumentRoot returns the document root of the previous version.
+	// PreviousDocumentRoot returns the Document root of the previous version.
 	PreviousDocumentRoot() []byte
 
 	// AppendSignatures appends the signatures to the model.
 	AppendSignatures(signatures ...*coredocumentpb.Signature)
 
-	// Signatures returns a copy of the signatures on the document
+	// Signatures returns a copy of the signatures on the Document
 	Signatures() []coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
@@ -67,11 +67,11 @@ type Model interface {
 	// IsNFTMinted checks if there is any NFT minted for the registry given
 	IsNFTMinted(tr TokenRegistry, registry common.Address) bool
 
-	// AddNFT adds an NFT to the document.
-	// Note: The document should be anchored after successfully adding the NFT.
+	// AddNFT adds an NFT to the Document.
+	// Note: The Document should be anchored after successfully adding the NFT.
 	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error
 
-	// GetCollaborators returns the collaborators of this document.
+	// GetCollaborators returns the collaborators of this Document.
 	// filter ids should not be returned
 	GetCollaborators(filterIDs ...identity.CentID) ([]identity.CentID, error)
 }

@@ -32,13 +32,13 @@ func (s *ServiceRegistry) Register(serviceID string, service Service) error {
 	return nil
 }
 
-// LocateService will return the registered service for the embedded document type
+// LocateService will return the registered service for the embedded Document type
 func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
 	if s.services[serviceID] == nil {
-		return nil, errors.New("no service for core document type is registered")
+		return nil, errors.New("no service for core Document type is registered")
 	}
 	return s.services[serviceID], nil
 }

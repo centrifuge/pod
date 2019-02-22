@@ -317,11 +317,18 @@ func (p *PurchaseOrder) Type() reflect.Type {
 
 // DataRoot calculates the data root and sets the root to core document
 func (p *PurchaseOrder) DataRoot() ([]byte, error) {
+	if p.CoreDocument.DataRoot() != nil {
+		return p.CoreDocument.DataRoot(), nil
+	}
+
 	t, err := p.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return t.RootHash(), nil
+
+	dr := t.RootHash()
+	p.CoreDocument.SetDataRoot(dr)
+	return dr, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -350,7 +357,7 @@ func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof,
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return p.CoreDocument.CreateProofs(tree, fields)
+	return p.CoreDocument.CreateProofs(documenttypes.PurchaseOrderDataTypeUrl, tree, fields)
 }
 
 // DocumentType returns the po document type.
@@ -383,4 +390,18 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 
 	p.CoreDocument = cd
 	return nil
+}
+
+func (p *PurchaseOrder) SigningRoot() ([]byte, error) {
+	return p.CoreDocument.SigningRoot(documenttypes.PurchaseOrderDataTypeUrl)
+}
+
+func (p *PurchaseOrder) CreateNFTProofs(
+	account identity.CentID,
+	registry common.Address,
+	tokenID []byte,
+	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	return p.CoreDocument.CreateNFTProofs(
+		documenttypes.PurchaseOrderDataTypeUrl,
+		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }

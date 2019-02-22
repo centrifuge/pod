@@ -57,7 +57,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	err := dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	assert.Contains(t, err.Error(), "failed to pack core Document")
 
 	dm := NewCoreDocModel()
 	cd := dm.Document
@@ -84,7 +84,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model.On("DataRoot").Return(cd.DataRoot, nil)
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unpack the core document")
+	assert.Contains(t, err.Error(), "failed to unpack the core Document")
 	model.AssertExpectations(t)
 
 	// success
@@ -123,7 +123,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	err := dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	assert.Contains(t, err.Error(), "failed to pack core Document")
 
 	// validations failed
 	dm := NewCoreDocModel()
@@ -174,7 +174,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unpack core document")
+	assert.Contains(t, err.Error(), "failed to unpack core Document")
 
 	// success
 	c = p2pClient{}
@@ -199,7 +199,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	err := dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	assert.Contains(t, err.Error(), "failed to pack core Document")
 
 	// failed validations
 	dm := NewCoreDocModel()
@@ -237,7 +237,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unpack core document")
+	assert.Contains(t, err.Error(), "failed to unpack core Document")
 
 	// success
 	model = mockModel{}
@@ -279,7 +279,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	err := dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	assert.Contains(t, err.Error(), "failed to pack core Document")
 
 	// validations failed
 	model = mockModel{}
@@ -345,7 +345,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	err := dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	assert.Contains(t, err.Error(), "failed to pack core Document")
 
 	// failed validations
 	model = mockModel{}

@@ -197,6 +197,11 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 
 // DerivePurchaseOrderResponse returns po response from the model
 func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
+	data, err := s.DerivePurchaseOrderData(doc)
+	if err != nil {
+		return nil, err
+	}
+
 	cs, err := doc.GetCollaborators()
 	if err != nil {
 		return nil, err
@@ -211,11 +216,6 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		DocumentId:    hexutil.Encode(doc.ID()),
 		VersionId:     hexutil.Encode(doc.CurrentVersion()),
 		Collaborators: css,
-	}
-
-	data, err := s.DerivePurchaseOrderData(doc)
-	if err != nil {
-		return nil, err
 	}
 
 	return &clientpopb.PurchaseOrderResponse{
