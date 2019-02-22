@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -96,9 +96,24 @@ func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{},
 	}
 }
 
+// getDID returns DID from context.Account
+// TODO use did.NewDIDFromContext as soon as IDConfig is deleted
+func getDID(ctx context.Context) (identity.DID, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return identity.DID{}, err
+	}
+
+	addressByte, err := tc.GetIdentityID()
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return identity.NewDID(common.BytesToAddress(addressByte)), nil
+}
+
 // CommitAnchor will send a commit transaction to Ethereum.
 func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error) {
-	did, err := ideth.NewDIDFromContext(ctx)
+	did, err := getDID(ctx)
 	if err != nil {
 		return nil, err
 	}

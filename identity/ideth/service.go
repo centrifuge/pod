@@ -472,7 +472,7 @@ func ValidateCentrifugeIDBytes(givenDID []byte, DID id.DID) error {
 }
 
 // NewDIDFromContext returns DID from context.Account
-// TODO move this function to identity/did.go as soon as IDConfig is removed otherwise there is a cyclic dep
+// TODO remove this function to identity/did.go as soon as IDConfig is removed otherwise there is a cyclic dep
 func NewDIDFromContext(ctx context.Context) (id.DID, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {

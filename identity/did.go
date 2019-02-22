@@ -107,6 +107,20 @@ func NewDIDFromBytes(bAddr []byte) DID {
 	return DID(common.BytesToAddress(bAddr))
 }
 
+//// NewDIDFromContext returns DID from context.Account
+//func NewDIDFromContext(ctx context.Context) (DID, error) {
+//	tc, err := contextutil.Account(ctx)
+//	if err != nil {
+//		return DID{}, err
+//	}
+//
+//	addressByte, err := tc.GetIdentityID()
+//	if err != nil {
+//		return DID{}, err
+//	}
+//	return NewDID(common.BytesToAddress(addressByte)), nil
+//}
+
 // Factory is the interface for factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
