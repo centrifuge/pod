@@ -282,7 +282,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoiceModel_createProofs(t *testing.T) {
 	i, err := createMockInvoice(t)
 	assert.Nil(t, err)
-	proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.invoice_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.CoreDocumentModel.GetDocumentRootTree()

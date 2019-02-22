@@ -461,6 +461,10 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
 
+func GenerateCoreDocSalts(document proto.Message) (*proofs.Salts, error) {
+	return GenerateNewSalts(document, CDTreePrefix, compactProperties(CDTreePrefix))
+}
+
 // GenerateNewSalts generates salts for new document
 func GenerateNewSalts(document proto.Message, prefix string, compactPrefix []byte) (*proofs.Salts, error) {
 	docSalts := &proofs.Salts{}
@@ -503,7 +507,7 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 // setCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
 func (m *CoreDocumentModel) setCoreDocumentSalts() error {
 	if m.Document.CoredocumentSalts == nil {
-		pSalts, err := GenerateNewSalts(m.Document, CDTreePrefix, compactProperties(CDTreePrefix))
+		pSalts, err := GenerateCoreDocSalts(m.Document)
 		if err != nil {
 			return err
 		}

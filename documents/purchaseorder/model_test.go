@@ -254,7 +254,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	proof, err := poModel.CreateProofs([]string{"po.po_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := poModel.CoreDocumentModel.GetDocumentRootTree()

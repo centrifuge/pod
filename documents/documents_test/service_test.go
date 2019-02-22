@@ -98,7 +98,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	if err != nil {
 		return nil, err
 	}
-	cds, err := documents.GenerateNewSalts(corDocMod.Document, "", nil)
+	cds, err := documents.GenerateCoreDocSalts(corDocMod.Document)
 	assert.Nil(t, err)
 	corDocMod.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cds)
 	err = corDocMod.CalculateSigningRoot(dataRoot)
