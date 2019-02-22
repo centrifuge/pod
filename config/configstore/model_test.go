@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -268,7 +267,7 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
@@ -288,14 +287,14 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, nc.GetServerPort(), int(ncpb.ServerPort))
 	i, err := nc.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, hexutil.Encode(i), ncpb.MainIdentity.IdentityId)
+	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(ncpb.MainIdentity.IdentityId).Hex())
 
 	ncCopy := new(NodeConfig)
 	err = ncCopy.loadFromProtobuf(ncpb)
 	assert.NoError(t, err)
 	assert.Equal(t, ncpb.StoragePath, ncCopy.StoragePath)
 	assert.Equal(t, int(ncpb.ServerPort), ncCopy.ServerPort)
-	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
+	assert.Equal(t, ncpb.MainIdentity.IdentityId, common.HexToAddress(ncpb.MainIdentity.IdentityId).Hex())
 }
 
 func TestAccountProtobuf_validationFailures(t *testing.T) {
@@ -303,7 +302,7 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil)
+	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil)
 	c.On("GetP2PKeyPair").Return("pub", "priv")
 	c.On("GetSigningKeyPair").Return("pub", "priv")
 	c.On("GetEthAuthKeyPair").Return("pub", "priv")
@@ -362,7 +361,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
@@ -376,7 +375,8 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), accpb.ReceiveEventNotificationEndpoint)
 	i, err := tc.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, hexutil.Encode(i), accpb.IdentityId)
+
+	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(accpb.IdentityId).Hex())
 	_, priv := tc.GetSigningKeyPair()
 	assert.Equal(t, priv, accpb.SigningKeyPair.Pvt)
 
@@ -384,7 +384,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	err = tcCopy.loadFromProtobuf(accpb)
 	assert.NoError(t, err)
 	assert.Equal(t, accpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
-	assert.Equal(t, accpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
+	assert.Equal(t, common.HexToAddress(accpb.IdentityId).Hex(), common.BytesToAddress(tcCopy.IdentityID).Hex())
 	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
 }
 
@@ -400,7 +400,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetNumWorkers").Return(2).Once()
 	c.On("GetWorkerWaitTimeMS").Return(1).Once()
 	c.On("GetEthereumNodeURL").Return("dummyNode").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()

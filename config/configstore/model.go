@@ -359,7 +359,7 @@ func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string
 }
 
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
-	identityID := common.Hex2Bytes(data.MainIdentity.IdentityId)
+	identityID := common.HexToAddress(data.MainIdentity.IdentityId).Bytes()
 
 	nc.MainIdentity = Account{
 		EthereumAccount: &config.AccountConfig{
