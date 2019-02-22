@@ -461,6 +461,7 @@ func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
 
+// GenerateCoreDocSalts generates coredoc salts
 func GenerateCoreDocSalts(document proto.Message) (*proofs.Salts, error) {
 	return GenerateNewSalts(document, CDTreePrefix, compactProperties(CDTreePrefix))
 }
