@@ -92,7 +92,8 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *documents.CoreDocumentModel {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
-	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
+	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
+	assert.NoError(t, err)
 	m, err := docService.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
 
