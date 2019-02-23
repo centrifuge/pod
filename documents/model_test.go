@@ -453,26 +453,42 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 	assert.Len(t, cd.ReadRules, 0)
 	assert.Len(t, cd.Roles, 0)
 
-	// invalid access token payload
+	// invalid centID format
 	payload := documentpb.AccessTokenParams{
 		// invalid grantee format
 		Grantee:            "randomCentID",
 		DocumentIdentifier: "randomDocID",
 	}
 	_, err = m.AddAccessTokenToReadRules(*idConfig, payload)
-	assert.Error(t, err, "	failed to construct AT: hex string without 0x prefix")
-
-	// valid access token payload
-	id := idConfig.ID.String()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to construct AT: failed to decode id: hex string without 0x prefix")
+	// invalid centID length
+	invalidCentID := utils.RandomSlice(25)
 	payload = documentpb.AccessTokenParams{
-		Grantee:            id,
+		Grantee:            hexutil.Encode(invalidCentID),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
-	dm, err := m.AddAccessTokenToReadRules(*idConfig, payload)
-	assert.NoError(t, err)
-	assert.Len(t, dm.Document.ReadRules, 1)
-	assert.Equal(t, dm.Document.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ)
-	assert.Len(t, dm.Document.Roles, 1)
+	_, err = m.AddAccessTokenToReadRules(*idConfig, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to construct AT: invalid length byte slice provided for centID")
+	// invalid docID length
+	//id := idConfig.ID.String()
+	//invalidDocID := utils.RandomSlice(33)
+	//payload = documentpb.AccessTokenParams{
+	//	Grantee: id,
+	//	DocumentIdentifier: hexutil.Encode(invalidDocID),
+	//}
+	//assert.Error(t, err)
+	//assert.Contains(t, err.Error(), "failed to construct AT: identifier has an invalid length: [1 1 1 1 1 1]")
+	//payload = documentpb.AccessTokenParams{
+	//	Grantee:            idConfig.ID.String(),
+	//	DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
+	//}
+	//dm, err := m.AddAccessTokenToReadRules(*idConfig, payload)
+	//assert.NoError(t, err)
+	//assert.Len(t, dm.Document.ReadRules, 1)
+	//assert.Equal(t, dm.Document.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ)
+	//assert.Len(t, dm.Document.Roles, 1)
 }
 
 func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {

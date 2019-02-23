@@ -41,6 +41,9 @@ const (
 	nftByteCount = 52
 	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
 	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
+	//IDByteCount represents the byte length of valid identifiers
+	IDByteCount = 32
+
 
 	// ACLReadSign represents the read/sign action for ACLS
 	ACLReadSign = coredocumentpb.Action_ACTION_READ_SIGN
@@ -836,12 +839,19 @@ func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.Cen
 }
 
 // assembleTokenMessage assembles a token message
-func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) []byte {
+func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) ([]byte, error) {
+
+	tokenIdentifiers := [][]byte{ tokenIdentifier, roleID, docID }
+	for _, id := range tokenIdentifiers {
+		if len(id) != IDByteCount {
+			return nil, errors.New("valid identifier length: %v", id)
+		}
+	}
 	tm := append(tokenIdentifier, granterID...)
 	tm = append(tm, granteeID...)
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
-	return tm
+	return tm, nil
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
@@ -858,7 +868,11 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 	if err != nil {
 		return nil, err
 	}
-	tm := assembleTokenMessage(tokenIdentifier, granterID, granteeID[:], roleID[:], docID)
+
+	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID[:], roleID[:], docID)
+	if err != nil {
+		return nil, err
+	}
 
 	// fetch key pair from identity
 	privateKey := id.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey
@@ -921,7 +935,10 @@ func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentReq
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account identity.CentID) error {
 	// assemble token message from the token for validation
-	tm := assembleTokenMessage(token.Identifier, token.Granter, account[:], token.RoleIdentifier, token.DocumentIdentifier)
+	tm, err := assembleTokenMessage(token.Identifier, token.Granter, account[:], token.RoleIdentifier, token.DocumentIdentifier)
+	if err != nil {
+		return err
+	}
 	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
 	if !validated {
 		return errors.New("access token is invalid")
