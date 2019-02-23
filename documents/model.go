@@ -44,7 +44,6 @@ const (
 	//IDByteCount represents the byte length of valid identifiers
 	IDByteCount = 32
 
-
 	// ACLReadSign represents the read/sign action for ACLS
 	ACLReadSign = coredocumentpb.Action_ACTION_READ_SIGN
 	// ACLRead represents the read action for ACLS
@@ -841,7 +840,7 @@ func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.Cen
 // assembleTokenMessage assembles a token message
 func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) ([]byte, error) {
 
-	tokenIdentifiers := [][]byte{ tokenIdentifier, roleID, docID }
+	tokenIdentifiers := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range tokenIdentifiers {
 		if len(id) != IDByteCount {
 			return nil, errors.New("valid identifier length: %v", id)
