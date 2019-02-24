@@ -484,11 +484,12 @@ func (c *configuration) initializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
-// SmartContractAddresses encapsulates the smart contract addresses ne
+// SmartContractAddresses encapsulates the smart contract addresses
 type SmartContractAddresses struct {
 	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
 }
 
+// SmartContractBytecode encapsulates the smart contract bytecode
 type SmartContractBytecode struct {
 	IdentityFactoryBytecode, IdentityBytecode, AnchorRepositoryBytecode, PaymentObligationBytecode string
 }

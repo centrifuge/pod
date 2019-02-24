@@ -84,6 +84,7 @@ func (nc *NodeConfig) SetupSmartContractAddresses(network string, smartContractA
 	panic("irrelevant, NodeConfig#SetupSmartContractAddresses must not be used")
 }
 
+// SetupSmartContractBytecode refer the interface
 func (nc *NodeConfig) SetupSmartContractBytecode(network string, smartContractBytecode *config.SmartContractBytecode) {
 	panic("irrelevant, NodeConfig#SetupSmartContractBytecode must not be used")
 }
