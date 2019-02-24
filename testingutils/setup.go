@@ -1,4 +1,4 @@
-// +build integration unit cmd
+// +build integration unit cmd testworld
 
 package testingutils
 

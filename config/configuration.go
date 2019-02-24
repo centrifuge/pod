@@ -564,6 +564,13 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
 
+	if smartContractBytecode, ok := args["smartContractBytecode"].(*SmartContractBytecode); ok {
+		v.Set("networks."+network+".contractByteCode.identityFactory", smartContractBytecode.IdentityFactoryBytecode)
+		v.Set("networks."+network+".contractByteCode.identity", smartContractBytecode.IdentityBytecode)
+		v.Set("networks."+network+".contractByteCode.anchorRepository", smartContractBytecode.AnchorRepositoryBytecode)
+		v.Set("networks."+network+".contractByteCode.paymentObligation", smartContractBytecode.PaymentObligationBytecode)
+	}
+
 	v.SetConfigFile(targetDataDir + "/config.yaml")
 
 	err = v.WriteConfig()
