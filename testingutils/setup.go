@@ -1,4 +1,4 @@
-// +build integration unit cmd
+// +build integration unit cmd testworld
 
 package testingutils
 
@@ -60,6 +60,24 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		IdentityFactoryAddr:   getOpAddr(idFactoryAddrOp, dat),
 		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
 		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
+	}
+}
+
+// GetSmartContractBytecode finds migrated smart contract bytecode for localgeth
+func GetSmartContractBytecode() *config.SmartContractBytecode {
+	dat, err := findContractDeployJSON()
+	if err != nil {
+		panic(err)
+	}
+	idFactoryAddrOp := getOpForContract(".contracts.IdentityFactory.bytecode")
+	idAddrOp := getOpForContract(".contracts.Identity.bytecode")
+	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.bytecode")
+	payObAddrOp := getOpForContract(".contracts.PaymentObligation.bytecode")
+	return &config.SmartContractBytecode{
+		IdentityFactoryBytecode:   getOpAddr(idFactoryAddrOp, dat),
+		IdentityBytecode:          getOpAddr(idAddrOp, dat),
+		AnchorRepositoryBytecode:  getOpAddr(anchorRepoAddrOp, dat),
+		PaymentObligationBytecode: getOpAddr(payObAddrOp, dat),
 	}
 }
 
@@ -135,12 +153,20 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 	fmt.Printf("contract addresses %+v\n", sca)
 }
 
+// SetupSmartContractBytecode sets up smart contract addresses on provided config
+func SetupSmartContractBytecode(cfg config.Configuration, scb *config.SmartContractBytecode) {
+	network := cfg.Get("centrifugeNetwork").(string)
+	cfg.SetupSmartContractBytecode(network, scb)
+	fmt.Printf("contract bytecode %+v\n", scb)
+}
+
 // BuildIntegrationTestingContext sets up configuration for integration tests
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
 	RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
+	bytecodes := GetSmartContractBytecode()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
 	cfg.Set("keys.p2p.privateKey", fmt.Sprintf("%s/build/resources/p2pKey.key.pem", projDir))
@@ -149,6 +175,7 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	cfg.Set("keys.ethauth.publicKey", fmt.Sprintf("%s/build/resources/ethauth.pub.pem", projDir))
 	cfg.Set("keys.ethauth.privateKey", fmt.Sprintf("%s/build/resources/ethauth.key.pem", projDir))
 	SetupSmartContractAddresses(cfg, addresses)
+	SetupSmartContractBytecode(cfg, bytecodes)
 	cm := make(map[string]interface{})
 	cm[bootstrap.BootstrappedConfig] = cfg
 	return cm

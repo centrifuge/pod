@@ -60,6 +60,9 @@ type hostManager struct {
 	// contractAddresses are the addresses of centrifuge contracts on Ethereum
 	contractAddresses *config.SmartContractAddresses
 
+	// contractBytecode are the bytecode of centrifuge contracts on Ethereum
+	contractBytecode *config.SmartContractBytecode
+
 	// bernard is the bootnode for all the hosts
 	bernard *host
 
@@ -83,7 +86,8 @@ type hostManager struct {
 func newHostManager(
 	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string,
 	txPoolAccess bool,
-	smartContractAddrs *config.SmartContractAddresses) *hostManager {
+	smartContractAddrs *config.SmartContractAddresses,
+	smartContractBytecode *config.SmartContractBytecode) *hostManager {
 	return &hostManager{
 		ethNodeUrl:        ethNodeUrl,
 		accountKeyPath:    accountKeyPath,
@@ -92,6 +96,7 @@ func newHostManager(
 		network:           network,
 		txPoolAccess:      txPoolAccess,
 		contractAddresses: smartContractAddrs,
+		contractBytecode:  smartContractBytecode,
 		niceHosts:         make(map[string]*host),
 		tempHosts:         make(map[string]*host),
 	}
@@ -211,6 +216,7 @@ func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort,
 		createConfig,
 		multiAccount,
 		r.contractAddresses,
+		r.contractBytecode,
 	)
 }
 
@@ -228,19 +234,20 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr, p2pTimeout string
-	apiPort, p2pPort   int64
-	bootstrapNodes     []string
-	bootstrappedCtx    map[string]interface{}
-	txPoolAccess       bool
-	smartContractAddrs *config.SmartContractAddresses
-	config             config.Configuration
-	identity           identity.DID
-	idService          identity.ServiceDID
-	node               *node.Node
-	canc               context.CancelFunc
-	createConfig       bool
-	multiAccount       bool
-	accounts           []string
+	apiPort, p2pPort      int64
+	bootstrapNodes        []string
+	bootstrappedCtx       map[string]interface{}
+	txPoolAccess          bool
+	smartContractAddrs    *config.SmartContractAddresses
+	smartContractBytecode *config.SmartContractBytecode
+	config                config.Configuration
+	identity              identity.DID
+	idService             identity.ServiceDID
+	node                  *node.Node
+	canc                  context.CancelFunc
+	createConfig          bool
+	multiAccount          bool
+	accounts              []string
 }
 
 func newHost(
@@ -249,28 +256,30 @@ func newHost(
 	bootstraps []string,
 	txPoolAccess, createConfig, multiAccount bool,
 	smartContractAddrs *config.SmartContractAddresses,
+	smartContractBytecode *config.SmartContractBytecode,
 ) *host {
 	return &host{
-		name:               name,
-		ethNodeUrl:         ethNodeUrl,
-		accountKeyPath:     accountKeyPath,
-		accountPassword:    accountPassword,
-		network:            network,
-		apiPort:            apiPort,
-		p2pPort:            p2pPort,
-		p2pTimeout:         p2pTimeout,
-		bootstrapNodes:     bootstraps,
-		txPoolAccess:       txPoolAccess,
-		smartContractAddrs: smartContractAddrs,
-		dir:                fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
-		createConfig:       createConfig,
-		multiAccount:       multiAccount,
+		name:                  name,
+		ethNodeUrl:            ethNodeUrl,
+		accountKeyPath:        accountKeyPath,
+		accountPassword:       accountPassword,
+		network:               network,
+		apiPort:               apiPort,
+		p2pPort:               p2pPort,
+		p2pTimeout:            p2pTimeout,
+		bootstrapNodes:        bootstraps,
+		txPoolAccess:          txPoolAccess,
+		smartContractAddrs:    smartContractAddrs,
+		smartContractBytecode: smartContractBytecode,
+		dir:                   fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
+		createConfig:          createConfig,
+		multiAccount:          multiAccount,
 	}
 }
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.p2pTimeout, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.p2pTimeout, h.smartContractAddrs, h.smartContractBytecode)
 		if err != nil {
 			return err
 		}

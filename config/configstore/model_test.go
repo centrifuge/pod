@@ -59,6 +59,10 @@ func (m *mockConfig) SetupSmartContractAddresses(network string, smartContractAd
 	m.Called(network, smartContractAddresses)
 }
 
+func (m *mockConfig) SetupSmartContractBytecode(network string, smartContractBytecode *config.SmartContractBytecode) {
+	m.Called(network, smartContractBytecode)
+}
+
 func (m *mockConfig) Get(key string) interface{} {
 	args := m.Called(key)
 	return args.Get(0)

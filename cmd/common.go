@@ -38,7 +38,8 @@ func CreateConfig(
 	bootstraps []string,
 	txPoolAccess bool,
 	p2pConnectionTimeout string,
-	smartContractAddrs *config.SmartContractAddresses) error {
+	smartContractAddrs *config.SmartContractAddresses,
+	smartContractBytecode *config.SmartContractBytecode) error {
 
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
@@ -54,6 +55,9 @@ func CreateConfig(
 	}
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs
+	}
+	if smartContractBytecode != nil {
+		data["smartContractBytecode"] = smartContractBytecode
 	}
 	configFile, err := config.CreateConfigFile(data)
 	if err != nil {
@@ -83,21 +87,21 @@ func CreateConfig(
 	if err != nil {
 		return err
 	}
-	id, err := idFactory.CreateIdentity(ctxh)
+	DID, err := idFactory.CreateIdentity(ctxh)
 	if err != nil {
 		return err
 	}
 
 	acci := acc.(*configstore.Account)
-	acci.IdentityID = id[:]
+	acci.IdentityID = DID[:]
 
-	configFile.Set("identityId", id.String())
+	configFile.Set("identityId", DID.String())
 	err = configFile.WriteConfig()
 	if err != nil {
 		return err
 	}
-	cfg.Set("identityId", id.String())
-	log.Infof("Identity created [%s]", id.String())
+	cfg.Set("identityId", DID.String())
+	log.Infof("Identity created [%s]", DID.String())
 
 	err = idService.AddKeysForAccount(acci)
 	if err != nil {

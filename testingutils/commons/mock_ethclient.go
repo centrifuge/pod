@@ -5,6 +5,8 @@ package testingcommons
 import (
 	"net/url"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"context"
@@ -54,4 +56,9 @@ func (m *MockEthClient) TransactionByHash(ctx context.Context, txHash common.Has
 func (m *MockEthClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
 	args := m.Called(ctx, txHash)
 	return args.Get(0).(*types.Receipt), args.Error(1)
+}
+
+func (m *MockEthClient) GetContractBytecode(contractName config.ContractName) string {
+	args := m.Called(contractName)
+	return args.Get(0).(string)
 }

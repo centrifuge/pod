@@ -59,7 +59,8 @@ func TestCreateConfig(t *testing.T) {
 	dataDir := "testconfig"
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
 	scAddrs := testingutils.GetSmartContractAddresses()
-	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", 8028, 38202, nil, true, "", scAddrs)
+	scBytecode := testingutils.GetSmartContractBytecode()
+	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", 8028, 38202, nil, true, "", scAddrs, scBytecode)
 	assert.Nil(t, err, "Create Config should be successful")
 
 	// config exists
@@ -77,7 +78,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
-	idSrv := ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
+	idSrv := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	pk, _, err := secp256k1.GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))

@@ -42,6 +42,9 @@ const (
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
 
+	// Identity is the contract name for Identity
+	Identity ContractName = "identity"
+
 	// IdentityFactory is the contract name for IdentityFactory
 	IdentityFactory ContractName = "identityFactory"
 
@@ -53,8 +56,8 @@ const (
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
-func ContractNames() [4]ContractName {
-	return [4]ContractName{AnchorRepo, IdentityFactory, IdentityRegistry, PaymentObligation}
+func ContractNames() [5]ContractName {
+	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, PaymentObligation}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -66,6 +69,7 @@ type Configuration interface {
 	Set(key string, value interface{})
 	SetDefault(key string, value interface{})
 	SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses)
+	SetupSmartContractBytecode(network string, smartContractBytecode *SmartContractBytecode)
 	Get(key string) interface{}
 	GetString(key string) string
 	GetBool(key string) bool
@@ -480,9 +484,14 @@ func (c *configuration) initializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
-// SmartContractAddresses encapsulates the smart contract addresses ne
+// SmartContractAddresses encapsulates the smart contract addresses
 type SmartContractAddresses struct {
 	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
+}
+
+// SmartContractBytecode encapsulates the smart contract bytecode
+type SmartContractBytecode struct {
+	IdentityFactoryBytecode, IdentityBytecode, AnchorRepositoryBytecode, PaymentObligationBytecode string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -555,6 +564,13 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
 
+	if smartContractBytecode, ok := args["smartContractBytecode"].(*SmartContractBytecode); ok {
+		v.Set("networks."+network+".contractByteCode.identityFactory", smartContractBytecode.IdentityFactoryBytecode)
+		v.Set("networks."+network+".contractByteCode.identity", smartContractBytecode.IdentityBytecode)
+		v.Set("networks."+network+".contractByteCode.anchorRepository", smartContractBytecode.AnchorRepositoryBytecode)
+		v.Set("networks."+network+".contractByteCode.paymentObligation", smartContractBytecode.PaymentObligationBytecode)
+	}
+
 	v.SetConfigFile(targetDataDir + "/config.yaml")
 
 	err = v.WriteConfig()
@@ -568,4 +584,11 @@ func (c *configuration) SetupSmartContractAddresses(network string, smartContrac
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
+}
+
+func (c *configuration) SetupSmartContractBytecode(network string, smartContractBytecode *SmartContractBytecode) {
+	c.v.Set("networks."+network+".contractByteCode.identityFactory", smartContractBytecode.IdentityFactoryBytecode)
+	c.v.Set("networks."+network+".contractByteCode.identity", smartContractBytecode.IdentityBytecode)
+	c.v.Set("networks."+network+".contractByteCode.anchorRepository", smartContractBytecode.AnchorRepositoryBytecode)
+	c.v.Set("networks."+network+".contractByteCode.paymentObligation", smartContractBytecode.PaymentObligationBytecode)
 }

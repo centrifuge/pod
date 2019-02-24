@@ -131,9 +131,9 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, transactions.NilTxID(), nil, err
 	}
 
-	did := identity.NewDIDFromBytes(self.ID[:])
+	DID := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, DID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
