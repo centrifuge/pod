@@ -14,8 +14,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
@@ -57,8 +55,8 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	ctx[ideth.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
-	ctx[ideth.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)

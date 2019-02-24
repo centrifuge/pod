@@ -83,21 +83,21 @@ func CreateConfig(
 	if err != nil {
 		return err
 	}
-	id, err := idFactory.CreateIdentity(ctxh)
+	DID, err := idFactory.CreateIdentity(ctxh)
 	if err != nil {
 		return err
 	}
 
 	acci := acc.(*configstore.Account)
-	acci.IdentityID = id[:]
+	acci.IdentityID = DID[:]
 
-	configFile.Set("identityId", id.String())
+	configFile.Set("identityId", DID.String())
 	err = configFile.WriteConfig()
 	if err != nil {
 		return err
 	}
-	cfg.Set("identityId", id.String())
-	log.Infof("Identity created [%s]", id.String())
+	cfg.Set("identityId", DID.String())
+	log.Infof("Identity created [%s]", DID.String())
 
 	err = idService.AddKeysForAccount(acci)
 	if err != nil {

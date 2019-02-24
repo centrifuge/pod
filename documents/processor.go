@@ -232,8 +232,8 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 	}
 
 	for _, c := range extCollaborators {
-		cID := identity.NewDIDFromBytes(c)
-		erri := dp.Send(ctx, dm, cID)
+		DID := identity.NewDIDFromBytes(c)
+		erri := dp.Send(ctx, dm, DID)
 		if erri != nil {
 			err = errors.AppendError(err, erri)
 		}

@@ -74,7 +74,7 @@ func RandomDocumentRoot() DocumentRoot {
 type PreCommitData struct {
 	AnchorID        AnchorID
 	SigningRoot     DocumentRoot
-	CentrifugeID    identity.DID
+	DID             identity.DID
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
@@ -111,7 +111,7 @@ func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID 
 	return &PreCommitData{
 		AnchorID:        anchorID,
 		SigningRoot:     signingRoot,
-		CentrifugeID:    centrifugeID,
+		DID:             centrifugeID,
 		Signature:       signature,
 		ExpirationBlock: expirationBlock,
 		SchemaVersion:   supportedSchemaVersion(),

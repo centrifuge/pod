@@ -47,12 +47,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	did, err := p2pcommon.ExtractDID(protoc)
+	DID, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetAccount(did[:])
+	tc, err := srv.config.GetAccount(DID[:])
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}

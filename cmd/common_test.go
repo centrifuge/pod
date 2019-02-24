@@ -77,7 +77,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
-	idSrv := ctx[ideth.BootstrappedDIDService].(identity.ServiceDID)
+	idSrv := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	pk, _, err := secp256k1.GetEthAuthKey(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
