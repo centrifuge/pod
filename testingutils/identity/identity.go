@@ -7,11 +7,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 )
@@ -70,7 +68,7 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 }
 
 func GenerateRandomDID() identity.DID {
-	r := utils.RandomSlice(common.AddressLength)
+	r := utils.RandomSlice(identity.DIDLength)
 	return identity.NewDIDFromBytes(r)
 }
 

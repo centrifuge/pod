@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -58,8 +56,8 @@ func Test_getKey(t *testing.T) {
 
 func TestRepository(t *testing.T) {
 	cid := testingidentity.GenerateRandomDID()
-	bytes := utils.RandomSlice(common.AddressLength)
-	assert.Equal(t, common.AddressLength, copy(cid[:], bytes))
+	bytes := utils.RandomSlice(identity.DIDLength)
+	assert.Equal(t, identity.DIDLength, copy(cid[:], bytes))
 
 	repo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
 	tx := transactions.NewTransaction(cid, "Some transaction")

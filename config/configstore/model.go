@@ -309,12 +309,12 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 	return &configpb.ConfigData{
 		MainIdentity: &accountpb.AccountData{
 			EthAccount: &accountpb.EthereumAccount{
-				Address:  nc.MainIdentity.EthereumAccount.Address,
+				Address:  common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
 				Key:      nc.MainIdentity.EthereumAccount.Key,
 				Password: nc.MainIdentity.EthereumAccount.Password,
 			},
 			EthDefaultAccountName:            nc.MainIdentity.EthereumDefaultAccountName,
-			IdentityId:                       hexutil.Encode(nc.MainIdentity.IdentityID),
+			IdentityId:                       common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
 			ReceiveEventNotificationEndpoint: nc.MainIdentity.ReceiveEventNotificationEndpoint,
 			EthauthKeyPair: &accountpb.KeyPair{
 				Pub: nc.MainIdentity.EthAuthKeyPair.Pub,
@@ -364,7 +364,7 @@ func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string
 }
 
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
-	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
+	identityID := common.HexToAddress(data.MainIdentity.IdentityId).Bytes()
 
 	nc.MainIdentity = Account{
 		EthereumAccount: &config.AccountConfig{
@@ -673,7 +673,7 @@ func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 		},
 		EthDefaultAccountName:            acc.EthereumDefaultAccountName,
 		ReceiveEventNotificationEndpoint: acc.ReceiveEventNotificationEndpoint,
-		IdentityId:                       hexutil.Encode(acc.IdentityID),
+		IdentityId:                       common.BytesToAddress(acc.IdentityID).Hex(),
 		P2PKeyPair: &accountpb.KeyPair{
 			Pub: acc.P2PKeyPair.Pub,
 			Pvt: acc.P2PKeyPair.Priv,
