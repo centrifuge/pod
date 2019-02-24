@@ -49,6 +49,9 @@ const (
 // DID stores the identity address of the user
 type DID common.Address
 
+// DIDLength contains the length of a DID
+const DIDLength = common.AddressLength
+
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
 	return common.Address(d)

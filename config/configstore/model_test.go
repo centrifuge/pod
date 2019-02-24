@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
@@ -271,7 +273,7 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
@@ -306,7 +308,7 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
-	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil)
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil)
 	c.On("GetP2PKeyPair").Return("pub", "priv")
 	c.On("GetSigningKeyPair").Return("pub", "priv")
 	c.On("GetEthAuthKeyPair").Return("pub", "priv")
@@ -365,7 +367,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
@@ -404,7 +406,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetNumWorkers").Return(2).Once()
 	c.On("GetWorkerWaitTimeMS").Return(1).Once()
 	c.On("GetEthereumNodeURL").Return("dummyNode").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(common.AddressLength), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
