@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils"
+
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
@@ -31,16 +33,18 @@ func TestMain(m *testing.M) {
 	}
 	if c.RunPOAGeth {
 		// NOTE that we don't bring down geth automatically right now because this must only be used for local testing purposes
-		startPOAGeth()
+		testingutils.StartPOAGeth()
 	}
 	if c.RunMigrations {
-		runSmartContractMigrations()
+		testingutils.RunSmartContractMigrations()
 	}
 	var contractAddresses *config.SmartContractAddresses
+	var contractBytecode *config.SmartContractBytecode
 	if c.Network == "testing" {
-		contractAddresses = getSmartContractAddresses()
+		contractAddresses = testingutils.GetSmartContractAddresses()
+		contractBytecode = testingutils.GetSmartContractBytecode()
 	}
-	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses)
+	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses, contractBytecode)
 	err = doctorFord.init(c.CreateHostConfigs)
 	if err != nil {
 		panic(err)

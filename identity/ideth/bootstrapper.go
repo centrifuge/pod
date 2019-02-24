@@ -1,10 +1,6 @@
 package ideth
 
 import (
-	"io/ioutil"
-	"os"
-	"path"
-
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -17,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/savaki/jq"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -68,43 +63,4 @@ func bindFactory(factoryAddress common.Address, client ethereum.Client) (*Factor
 
 func getFactoryAddress(cfg config.Configuration) common.Address {
 	return cfg.GetContractAddress(config.IdentityFactory)
-}
-
-// TODO: store identity bytecode in config and remove func
-func getIdentityByteCode() string {
-	filePath := path.Join("deployments", "localgeth.json")
-	gp := os.Getenv("GOPATH")
-	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", filePath)
-	dat, err := ioutil.ReadFile(deployJSONFile)
-
-	if err != nil {
-		panic(err)
-	}
-
-	optByte, err := jq.Parse(".contracts.Identity.bytecode")
-	if err != nil {
-		panic(err)
-	}
-	byteCodeHex := getOpField(optByte, dat)
-	return byteCodeHex
-
-}
-
-// TODO: store identity bytecode in config and remove func
-func getOpField(addrOp jq.Op, dat []byte) string {
-	addr, err := addrOp.Apply(dat)
-	if err != nil {
-		panic(err)
-	}
-
-	// remove extra quotes inside the string
-	addrStr := string(addr)
-	if len(addrStr) > 0 && addrStr[0] == '"' {
-		addrStr = addrStr[1:]
-	}
-	if len(addrStr) > 0 && addrStr[len(addrStr)-1] == '"' {
-		addrStr = addrStr[:len(addrStr)-1]
-	}
-	return addrStr
 }

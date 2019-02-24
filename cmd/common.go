@@ -38,7 +38,8 @@ func CreateConfig(
 	bootstraps []string,
 	txPoolAccess bool,
 	p2pConnectionTimeout string,
-	smartContractAddrs *config.SmartContractAddresses) error {
+	smartContractAddrs *config.SmartContractAddresses,
+	smartContractBytecode *config.SmartContractBytecode) error {
 
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
@@ -54,6 +55,9 @@ func CreateConfig(
 	}
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs
+	}
+	if smartContractBytecode != nil {
+		data["smartContractBytecode"] = smartContractBytecode
 	}
 	configFile, err := config.CreateConfigFile(data)
 	if err != nil {

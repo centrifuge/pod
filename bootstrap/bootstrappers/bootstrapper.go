@@ -37,6 +37,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		txv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},

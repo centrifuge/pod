@@ -90,7 +90,8 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 	}
 
 	deployedContractByte := common.Bytes2Hex(contractCode)
-	identityContractByte := getIdentityByteCode()[2:] // remove 0x prefix
+	idbc := client.GetContractBytecode(config.Identity)
+	identityContractByte := idbc[2:] // remove 0x prefix
 	if deployedContractByte != identityContractByte {
 		return errors.New("deployed identity contract bytecode not correct")
 	}
