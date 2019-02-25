@@ -99,7 +99,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 		return nil, err
 	}
 
-	cds, err := documents.GenerateNewSalts(corDocMod.Document, "", nil)
+	cds, err := documents.GenerateCoreDocSalts(corDocMod.Document)
 	assert.Nil(t, err)
 	corDocMod.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cds)
 
@@ -198,7 +198,7 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.DocumentID)
 	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
@@ -247,7 +247,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.DocumentID)
 	assert.Equal(t, olderVersion, proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {

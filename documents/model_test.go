@@ -276,10 +276,10 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
-	_, leaf := tree.GetLeafByProperty("data_root")
+	_, leaf := tree.GetLeafByProperty(SigningTreePrefix + ".data_root")
 	assert.NotNil(t, leaf)
 
-	_, leaf = tree.GetLeafByProperty("cd_root")
+	_, leaf = tree.GetLeafByProperty(SigningTreePrefix + ".cd_root")
 	assert.NotNil(t, leaf)
 }
 
@@ -293,6 +293,28 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	assert.Nil(t, tree)
 }
 
+func TestCoreDocumentTree(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	cd.EmbeddedData = docAny
+	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
+	err := dm.setCoreDocumentSalts()
+	assert.NoError(t, err)
+	tree1, err := dm.GetCoreDocumentTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, tree1)
+	root1 := tree1.RootHash()
+
+	tree2, err := dm.GetCoreDocumentTree()
+	assert.NoError(t, err)
+	root2 := tree2.RootHash()
+	assert.Equal(t, root1, root2)
+}
+
 // TestGetDocumentRootTree tests that the documentroottree is properly calculated
 func TestGetDocumentRootTree(t *testing.T) {
 	dm := NewCoreDocModel()
@@ -301,7 +323,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	tree, err := dm.GetDocumentRootTree()
 
 	// Manually constructing the two node tree:
-	signaturesLengthLeaf := sha256.Sum256(append(append(compactProperties[SignaturesField], []byte{48}...), make([]byte, 32)...))
+	signaturesLengthLeaf := sha256.Sum256(append(append(compactProperties(SignaturesField), []byte{48}...), make([]byte, 32)...))
 	expectedRootHash := sha256.Sum256(append(dm.Document.SigningRoot, signaturesLengthLeaf[:]...))
 	assert.Nil(t, err)
 	assert.Equal(t, expectedRootHash[:], tree.RootHash())
@@ -332,7 +354,7 @@ func TestCreateProofs(t *testing.T) {
 	assert.NoError(t, err)
 	err = dm.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cdTree, err := dm.GetDocumentTree()
+	cdTree, err := dm.GetCoreDocumentTree()
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -345,7 +367,7 @@ func TestCreateProofs(t *testing.T) {
 			3,
 		},
 		{
-			"document_identifier",
+			CDTreePrefix + ".document_identifier",
 			true,
 			6,
 		},
@@ -355,7 +377,7 @@ func TestCreateProofs(t *testing.T) {
 			3,
 		},
 		{
-			"collaborators[0]",
+			CDTreePrefix + ".collaborators[0]",
 			true,
 			6,
 		},
@@ -368,9 +390,15 @@ func TestCreateProofs(t *testing.T) {
 			var l *proofs.LeafNode
 			if test.fromCoreDoc {
 				_, l = cdTree.GetLeafByProperty(test.fieldName)
+				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:4], cdTree.RootHash(), h)
+				assert.NoError(t, err)
+				assert.True(t, valid)
 			} else {
 				_, l = testTree.GetLeafByProperty(test.fieldName)
 				assert.Contains(t, compactProps, l.Property.CompactName())
+				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:1], testTree.RootHash(), h)
+				assert.NoError(t, err)
+				assert.True(t, valid)
 			}
 			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.DocumentRoot, h)
 			assert.NoError(t, err)
@@ -680,6 +708,9 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	// TODO: pending until NFT update
 	//assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
 	assert.Equal(t, "read_rules[0].action", pfs[2])
+	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
+	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
 }
 
 func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
@@ -697,10 +728,11 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 
 	pf, err = getNFTUniqueProofKey(ndm.Document.Nfts, registry)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
+
 	// TODO: pending NFT identity update
 	//dm := NewCoreDocModel()
 	//roleKey := make([]byte, 32, 32)

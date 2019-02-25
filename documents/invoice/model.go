@@ -21,7 +21,8 @@ import (
 
 const prefix string = "invoice"
 
-var compactPrefix = []byte{1, 0, 0, 0}
+// tree prefixes use the first byte of a 4 byte slice by convention
+func compactPrefix() []byte { return []byte{3, 0, 0, 0} }
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
@@ -257,7 +258,7 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 // getInvoiceSalts returns the invoice salts. Initialises if not present
 func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
 	if i.InvoiceSalts == nil {
-		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix)
+		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix())
 		if err != nil {
 			return nil, errors.New("getInvoiceSalts error %v", err)
 		}
@@ -373,7 +374,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
