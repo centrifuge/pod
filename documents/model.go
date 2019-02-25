@@ -45,8 +45,10 @@ func compactProperties(key string) []byte {
 		DocumentTypeField: {0, 0, 0, 100},
 		SignaturesField:   {0, 0, 0, 6},
 		SigningRootField:  {0, 0, 0, 10},
-		CDTreePrefix:      {0, 0, 0, 11},
-		SigningTreePrefix: {0, 0, 0, 12},
+
+		// tree prefixes use the first byte of a 4 byte slice by convention
+		CDTreePrefix:      {1, 0, 0, 0},
+		SigningTreePrefix: {2, 0, 0, 0},
 	}
 	return m[key]
 }
