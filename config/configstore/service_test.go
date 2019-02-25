@@ -14,7 +14,7 @@ import (
 )
 
 func TestService_GetConfig_NoConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
@@ -25,7 +25,7 @@ func TestService_GetConfig_NoConfig(t *testing.T) {
 }
 
 func TestService_GetConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
@@ -39,7 +39,7 @@ func TestService_GetConfig(t *testing.T) {
 }
 
 func TestService_GetAccount_NoAccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -50,7 +50,7 @@ func TestService_GetAccount_NoAccount(t *testing.T) {
 }
 
 func TestService_GetAccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -66,7 +66,7 @@ func TestService_GetAccount(t *testing.T) {
 }
 
 func TestService_CreateConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
@@ -82,7 +82,7 @@ func TestService_CreateConfig(t *testing.T) {
 }
 
 func TestService_Createaccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -103,7 +103,7 @@ func TestService_Createaccount(t *testing.T) {
 }
 
 func TestService_Updateaccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -130,7 +130,7 @@ func TestService_Updateaccount(t *testing.T) {
 }
 
 func TestService_Deleteaccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -155,7 +155,9 @@ func TestService_Deleteaccount(t *testing.T) {
 }
 
 func TestGenerateaccountKeys(t *testing.T) {
-	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, identity.RandomCentID())
+	DID, err := identity.NewDIDFromString("0xDcF1695B8a0df44c60825eCD0A8A833dA3875F13")
+	assert.NoError(t, err)
+	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, &DID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tc.EthAuthKeyPair)
 	_, err = os.Stat(tc.EthAuthKeyPair.Pub)

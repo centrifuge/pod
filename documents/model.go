@@ -202,7 +202,7 @@ func (m *CoreDocumentModel) prepareNewVersion(collaborators []string) (*CoreDocu
 // NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
 func NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
 	m := NewCoreDocModel()
-	ids, err := identity.CentIDsFromStrings(collaborators)
+	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
@@ -451,7 +451,7 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
-func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
+func (m *CoreDocumentModel) AccountCanRead(account identity.DID) bool {
 	// loop though read rules, check all the rules
 	return m.findRole(func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountInRole(role, account)
@@ -529,7 +529,7 @@ func (m *CoreDocumentModel) UnpackCoreDocument() error {
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
-func (m *CoreDocumentModel) initReadRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) initReadRules(collabs []identity.DID) error {
 	cd := m.Document
 	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
 		return nil
@@ -585,7 +585,7 @@ func (m *CoreDocumentModel) findRole(onRole func(rridx, ridx int, role *coredocu
 }
 
 // isAccountInRole returns the index of the collaborator and true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) (idx int, found bool) {
+func isAccountInRole(role *coredocumentpb.Role, account identity.DID) (idx int, found bool) {
 	for i, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
 			return i, true
@@ -612,7 +612,8 @@ func newRole() *coredocumentpb.Role {
 	return role
 }
 
-func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
+
+func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.DID) error {
 	if len(collabs) == 0 {
 		return nil
 	}
@@ -628,15 +629,17 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.C
 	return nil
 }
 
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
+func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
-		ocsm[hexutil.Encode(c)] = struct{}{}
+		cs := strings.ToLower(hexutil.Encode(c))
+		ocsm[cs] = struct{}{}
 	}
 
 	var uc []string
 	for _, c := range newCollabs {
-		if _, ok := ocsm[c]; ok {
+		cs := strings.ToLower(c)
+		if _, ok := ocsm[cs]; ok {
 			continue
 		}
 
@@ -644,7 +647,7 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	for _, c := range uc {
-		id, err := identity.CentIDFromString(c)
+		id, err := identity.NewDIDFromString(c)
 		if err != nil {
 			return nil, err
 		}
@@ -656,14 +659,11 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 }
 
 // GetExternalCollaborators returns collaborators of a document without the own centID.
-func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID) ([][]byte, error) {
+func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.DID) ([][]byte, error) {
 	var collabs [][]byte
 
 	for _, collab := range m.Document.Collaborators {
-		collabID, err := identity.ToCentID(collab)
-		if err != nil {
-			return nil, errors.New("failed to convert to CentID: %v", err)
-		}
+		collabID := identity.NewDIDFromBytes(collab)
 		if !selfCentID.Equal(collabID) {
 			collabs = append(collabs, collab)
 		}
@@ -673,7 +673,7 @@ func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID)
 }
 
 // NFTOwnerCanRead checks if the nft owner/account can read the document
-func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
+func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
 	if m.AccountCanRead(account) {
 		return nil
@@ -735,7 +735,7 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 }
 
 //ValidateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
-func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, peer identity.CentID) error {
+func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, peer identity.DID) error {
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
@@ -828,7 +828,7 @@ func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.N
 }
 
 // IsAccountInRole checks if the the account exists in the role provided
-func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.CentID) bool {
+func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.DID) bool {
 	role, err := getRole(roleKey, m.Document.Roles)
 	if err != nil {
 		return false
@@ -858,7 +858,7 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 	tokenIdentifier := utils.RandomSlice(32)
 	granterID := id.ID[:]
 	roleID := roleKey
-	granteeID, err := identity.CentIDFromString(payload.Grantee)
+	granteeID, err := identity.NewDIDFromString(payload.Grantee)
 	if err != nil {
 		return nil, err
 	}
@@ -911,7 +911,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 }
 
 // ATOwnerCanRead checks that the owner AT can read the document requested
-func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.CentID) error {
+func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.DID) error {
 	// check if the access token is present in read rules of the document indicated in the AT request
 	token, err := m.findAT(ACLRead, docReq.AccessTokenRequest.AccessTokenId)
 	if err != nil {
@@ -932,7 +932,7 @@ func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentReq
 }
 
 // validateAT validates that given access token against its signature
-func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account identity.CentID) error {
+func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account identity.DID) error {
 	// assemble token message from the token for validation
 	tm, err := assembleTokenMessage(token.Identifier, token.Granter, account[:], token.RoleIdentifier, token.DocumentIdentifier)
 	if err != nil {
@@ -984,7 +984,7 @@ func (m *CoreDocumentModel) findAT(action coredocumentpb.Action, tokenID []byte)
 // GetNFTProofs generate proofs required to mint an NFT
 func (m *CoreDocumentModel) GetNFTProofs(
 	dataRoot []byte,
-	account identity.CentID,
+	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
@@ -1071,7 +1071,7 @@ func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (
 	return fmt.Sprintf("nfts[%s]", key), nil
 }
 
-func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.CentID) (pk string, err error) {
+func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.DID) (pk string, err error) {
 	role, err := getRole(roleKey, roles)
 	if err != nil {
 		return pk, err

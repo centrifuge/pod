@@ -29,9 +29,9 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	m[bootstrap.BootstrappedConfig] = new(testingconfig.MockConfig)
 	m[config.BootstrappedConfigStorage] = cs
 	cs.On("GetConfig").Return(&configstore.NodeConfig{}, nil)
-	ids := new(testingcommons.MockIDService)
-	m[identity.BootstrappedIDService] = ids
-	m[documents.BootstrappedDocumentService] = documents.DefaultService(nil, nil, nil, documents.NewServiceRegistry())
+	ids := new(testingcommons.MockIdentityService)
+	m[identity.BootstrappedDIDService] = ids
+	m[documents.BootstrappedDocumentService] = documents.DefaultService(nil, nil, documents.NewServiceRegistry(), ids)
 
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)

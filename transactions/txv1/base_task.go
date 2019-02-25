@@ -37,7 +37,7 @@ func (b *BaseTask) ParseTransactionID(taskTypeName string, kwargs map[string]int
 }
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
-func (b *BaseTask) UpdateTransaction(accountID identity.CentID, taskTypeName string, err error) error {
+func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string, err error) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}

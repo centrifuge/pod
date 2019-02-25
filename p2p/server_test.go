@@ -33,7 +33,7 @@ import (
 
 var (
 	cfg       config.Service
-	idService identity.Service
+	idService identity.ServiceDID
 )
 
 func TestMain(m *testing.M) {
@@ -51,8 +51,9 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	idService = &testingcommons.MockIDService{}
-	ctx[identity.BootstrappedIDService] = idService
+	idService = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDService] = idService
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()

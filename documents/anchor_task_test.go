@@ -5,7 +5,7 @@ package documents
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -54,7 +54,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			kwargs: map[string]interface{}{
 				transactions.TxIDParam: transactions.NewTxID().String(),
 				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
-				AccountIDParam:         identity.RandomCentID().String(),
+				AccountIDParam:         testingidentity.GenerateRandomDID().String(),
 			},
 		},
 	}

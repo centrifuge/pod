@@ -47,12 +47,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	cid, err := p2pcommon.ExtractCID(protoc)
+	DID, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetAccount(cid[:])
+	tc, err := srv.config.GetAccount(DID[:])
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -61,11 +61,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
-	fromID, err := identity.ToCentID(envelope.Header.SenderId)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
-
+	fromID := identity.NewDIDFromBytes(envelope.Header.SenderId)
 	err = srv.handshakeValidator.Validate(envelope.Header, &fromID, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
@@ -185,10 +181,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	requesterCentID, err := identity.ToCentID(msg.Header.SenderId)
-	if err != nil {
-		return convertToErrorEnvelop(err)
-	}
+	requesterCentID := identity.NewDIDFromBytes(msg.Header.SenderId)
 
 	res, err := srv.GetDocument(ctx, m, requesterCentID)
 	if err != nil {
@@ -209,7 +202,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 }
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
-func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) (*p2ppb.GetDocumentResponse, error) {
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) (*p2ppb.GetDocumentResponse, error) {
 	// if the document request contains an access token request, check the document indicated by the delegating document identifier for the access token
 	if docReq.AccessTokenRequest != nil {
 		model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)

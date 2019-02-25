@@ -1,4 +1,4 @@
-package did
+package ideth
 
 import (
 	"context"
@@ -19,12 +19,8 @@ import (
 
 var log = logging.Logger("identity")
 
-// Factory is the interface for factory related interactions
-type Factory interface {
-	CreateIdentity(ctx context.Context) (id *DID, err error)
-}
-
 type factory struct {
+	factoryAddress  common.Address
 	factoryContract *FactoryContract
 	client          ethereum.Client
 	txManager       transactions.Manager
@@ -32,14 +28,13 @@ type factory struct {
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server) Factory {
-
-	return &factory{factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server, factoryAddress common.Address) id.Factory {
+	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
 }
 
 func (s *factory) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
 	// TODO: add blockNumber of the transaction which created the contract
-	return s.client.GetEthClient().NonceAt(ctx, getFactoryAddress(), nil)
+	return s.client.GetEthClient().NonceAt(ctx, s.factoryAddress, nil)
 }
 
 // CalculateCreatedAddress calculates the Ethereum address based on address and nonce
@@ -49,8 +44,8 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
 			errOut <- err
@@ -77,14 +72,13 @@ func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.Ce
 
 }
 
-func (s *factory) calculateIdentityAddress(ctx context.Context) (*common.Address, error) {
-	factoryAddress := getFactoryAddress()
-	nonce, err := s.getNonceAt(ctx, factoryAddress)
+func (s *factory) CalculateIdentityAddress(ctx context.Context) (*common.Address, error) {
+	nonce, err := s.getNonceAt(ctx, s.factoryAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	identityAddress := CalculateCreatedAddress(factoryAddress, nonce)
+	identityAddress := CalculateCreatedAddress(s.factoryAddress, nonce)
 	log.Infof("Calculated Address of the identity contract: 0x%x\n", identityAddress)
 	return &identityAddress, nil
 }
@@ -95,16 +89,15 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 		return err
 	}
 
-	deployedContractByte := common.Bytes2Hex(contractCode)
-	identityContractByte := getIdentityByteCode()[2:] // remove 0x prefix
-	if deployedContractByte != identityContractByte {
-		return errors.New("deployed identity contract bytecode not correct")
+	if len(contractCode) == 0 {
+		return errors.New("bytecode for deployed identity contract %s not correct", identityAddress.String())
 	}
+
 	return nil
 
 }
 
-func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
+func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -116,13 +109,14 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 		return nil, err
 	}
 
-	identityAddress, err := s.calculateIdentityAddress(ctx)
+	identityAddress, err := s.CalculateIdentityAddress(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO refactor randomCentID
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), transactions.NilTxID(), "Check TX for create identity status", s.createIdentityTX(opts))
+	createdDID := id.NewDID(*identityAddress)
+
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), createdDID, transactions.NilTxID(), "Check TX for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}
@@ -139,12 +133,11 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *DID, err error) {
 		return nil, err
 	}
 
-	createdDID := NewDID(*identityAddress)
 	return &createdDID, nil
 }
 
 // CreateIdentity creates an identity contract
-func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*DID, error) {
+func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*id.DID, error) {
 	tc, err := configstore.TempAccount(cfg.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {
 		return nil, err
@@ -155,7 +148,7 @@ func CreateIdentity(ctx map[string]interface{}, cfg config.Configuration) (*DID,
 		return nil, err
 	}
 
-	identityFactory := ctx[BootstrappedDIDFactory].(Factory)
+	identityFactory := ctx[id.BootstrappedDIDFactory].(id.Factory)
 
 	did, err := identityFactory.CreateIdentity(tctx)
 	if err != nil {

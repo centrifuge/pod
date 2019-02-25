@@ -43,7 +43,7 @@ type PurchaseOrder struct {
 	NetAmount          int64  // invoice amount excluding tax
 	TaxAmount          int64
 	TaxRate            int64
-	Recipient          *identity.CentID
+	Recipient          *identity.DID
 	Order              []byte
 	OrderContact       string
 	Comment            string
@@ -200,8 +200,10 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 	p.DeliveryDate = data.DeliveryDate
 	p.DateCreated = data.DateCreated
 
-	if recipient, err := identity.CentIDFromString(data.Recipient); err == nil {
-		p.Recipient = &recipient
+	if data.Recipient != "" {
+		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
+			p.Recipient = &recipient
+		}
 	}
 
 	if data.ExtraData != "" {
@@ -242,7 +244,8 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.DateCreated = data.DateCreated
 	p.ExtraData = data.ExtraData
 
-	if recipient, err := identity.ToCentID(data.Recipient); err == nil {
+	if data.Recipient != nil {
+		recipient := identity.NewDIDFromBytes(data.Recipient)
 		p.Recipient = &recipient
 	}
 }
