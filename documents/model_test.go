@@ -704,10 +704,6 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	pfs, err = getReadAccessProofKeys(ndm, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
-	assert.Equal(t, "read_rules[0].roles[0]", pfs[0])
-	// TODO: pending until NFT update
-	//assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
-	assert.Equal(t, "read_rules[0].action", pfs[2])
 	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
 	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
 	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
@@ -733,25 +729,27 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
 
-	// TODO: pending NFT identity update
-	//dm := NewCoreDocModel()
-	//roleKey := make([]byte, 32, 32)
-	//account := testingidentity.GenerateRandomDID()
-	//pf, err := getRoleProofKey(dm.Document.Roles, roleKey, account)
-	//assert.Error(t, err)
-	//assert.Empty(t, pf)
-	//
-	//err = dm.initReadRules([]identity.DID{account})
-	//assert.NoError(t, err)
-	//
-	//pf, err = getRoleProofKey(dm.Document.Roles, roleKey, testingidentity.GenerateRandomDID())
-	//assert.Error(t, err)
-	//assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
-	//assert.Empty(t, pf)
-	//
-	//pf, err = getRoleProofKey(dm.Document.Roles, roleKey, account)
-	//assert.NoError(t, err)
-	//assert.Equal(t, fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
+	dm := NewCoreDocModel()
+	rk := utils.RandomSlice(32)
+	account := testingidentity.GenerateRandomDID()
+	pf, err := getRoleProofKey(dm.Document.Roles, rk, account)
+	assert.Error(t, err)
+	assert.Empty(t, pf)
+
+	err = dm.initReadRules([]identity.DID{account})
+	assert.NoError(t, err)
+
+	role := dm.Document.Roles[0]
+	roleKey := role.RoleKey
+
+	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, testingidentity.GenerateRandomDID())
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
+	assert.Empty(t, pf)
+
+	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, account)
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
 }
 
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
