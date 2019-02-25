@@ -862,15 +862,16 @@ func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.DID
 }
 
 // assembleTokenMessage assembles a token message
-func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) ([]byte, error) {
+func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, granteeID identity.DID, roleID []byte, docID []byte) ([]byte, error) {
 	tokenIdentifiers := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range tokenIdentifiers {
 		if len(id) != IDByteCount {
 			return nil, errors.New("invalid identifier length")
 		}
 	}
-	tm := append(tokenIdentifier, granterID...)
-	tm = append(tm, granteeID...)
+
+	tm := append(tokenIdentifier, granterID[:]...)
+	tm = append(tm, granteeID[:]...)
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
 	return tm, nil
@@ -899,7 +900,7 @@ func (m *CoreDocumentModel) assembleAccessToken(ctx context.Context, payload doc
 		return nil, err
 	}
 
-	tm, err := assembleTokenMessage(tokenIdentifier, granterID[:], granteeID[:], roleID[:], docID)
+	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID[:], docID)
 	if err != nil {
 		return nil, err
 	}
@@ -966,7 +967,9 @@ func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentReq
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
-	tm, err := assembleTokenMessage(token.Identifier, token.Granter, requesterID, token.RoleIdentifier, token.DocumentIdentifier)
+	reqID := identity.NewDIDFromByte(requesterID)
+	granterID := identity.NewDIDFromByte(token.Granter)
+	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier)
 	if err != nil {
 		return err
 	}
