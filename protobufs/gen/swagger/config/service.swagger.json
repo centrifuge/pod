@@ -166,6 +166,12 @@
             "type": "string"
           }
         },
+        "smart_contract_bytecode": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "pprof_enabled": {
           "type": "boolean",
           "format": "boolean"

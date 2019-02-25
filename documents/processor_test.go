@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -22,7 +24,7 @@ import (
 
 func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
 	dp := DefaultProcessor(nil, nil, nil, cfg)
-	err := dp.Send(nil, nil, [identity.CentIDLength]byte{})
+	err := dp.Send(nil, nil, identity.DID{})
 	assert.Error(t, err, "should have thrown an error")
 }
 
@@ -48,7 +50,7 @@ func (m mockModel) CalculateDataRoot() ([]byte, error) {
 }
 
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 
 	// pack failed
@@ -114,8 +116,14 @@ func (p p2pClient) GetSignaturesForDocument(ctx context.Context, model *CoreDocu
 	return args.Error(0)
 }
 
+func (p p2pClient) SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+	args := p.Called(ctx, receiverID, in)
+	resp, _ := args.Get(0).(*p2ppb.AnchorDocumentResponse)
+	return resp, args.Get(1).(error)
+}
+
 func TestDefaultProcessor_RequestSignatures(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	// pack failed
@@ -192,7 +200,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 }
 
 func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	// pack failed
 	model := mockModel{}
@@ -257,9 +265,9 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *anchors.WatchCommit, err error) {
-	args := m.Called(anchorID, documentRoot, centID, documentProofs, signature)
-	c, _ := args.Get(0).(chan *anchors.WatchCommit)
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProofs [][32]byte) (done chan bool, err error) {
+	args := m.Called(anchorID, documentRoot, documentProofs)
+	c, _ := args.Get(0).(chan bool)
 	return c, args.Error(1)
 }
 
@@ -270,7 +278,7 @@ func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.Document
 }
 
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -291,7 +299,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pre anchor validation failed")
 
-	// get ID failed
+	// success
 	dm = NewCoreDocModel()
 	cd := dm.Document
 	cd.DataRoot = utils.RandomSlice(32)
@@ -301,32 +309,22 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	}
 	dm.setCoreDocumentSalts()
 	assert.Nil(t, dm.CalculateSigningRoot(cd.DataRoot))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(dm, nil).Times(5)
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
 	cd.Signatures = []*coredocumentpb.Signature{s}
 	assert.Nil(t, dm.CalculateDocumentRoot())
 	assert.Nil(t, err)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-	err = dp.AnchorDocument(context.Background(), model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "self value not found in the context")
 
-	// success
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Times(5)
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 
 	repo := mockRepo{}
-	ch := make(chan *anchors.WatchCommit, 1)
-	ch <- new(anchors.WatchCommit)
-	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
+	ch := make(chan bool, 1)
+	ch <- true
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -336,8 +334,8 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 }
 
 func TestDefaultProcessor_SendDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	srv := &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	// pack failed
@@ -382,10 +380,13 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	repo := mockRepo{}
 	repo.On("GetDocumentRootOf", mock.Anything).Return(docRoot, nil).Once()
 	dp.anchorRepository = repo
+	p2pc := p2pClient{}
+	p2pc.On("SendAnchoredDocument", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("not found")).Once()
+	dp.p2pClient = p2pc
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	repo.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
+	assert.Contains(t, err.Error(), "failed to send document to the node")
 }

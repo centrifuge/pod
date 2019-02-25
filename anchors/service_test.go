@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -29,15 +28,14 @@ func (m *mockAnchorRepo) Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoo
 }
 
 func TestCorrectCommitSignatureGen(t *testing.T) {
-	// hardcoded values are generated with centrifuge-ethereum-contracts
 	anchorID, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
 	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
-	centrifugeId, _ := hexutil.Decode("0x1851943e76d2")
-	correctCommitToSign := "0x15f9cb57608a7ef31428fd6b1cb7ea2002ab032211d882b920c1474334004d6b"
-	correctCommitSignature := "0xb4051d6d03c3bf39f4ec4ba949a91a358b0cacb4804b82ed2ba978d338f5e747770c00b63c8e50c1a7aa5ba629870b54c2068a56f8b43460aa47891c6635d36d01"
+	address, _ := hexutil.Decode("0x89b0a86583c4444acfd71b463e0d3c55ae1412a5")
+	correctCommitToSign := "0x004a050342f1edda2462288b9e0123a2e1bcc4f978efdc08c07bbf0c3ccc8ddd"
+	correctCommitSignature := "0x4a73286521114f528967674bae4ecdc6cc94789255495429a7f58ca3ef0158ae257dd02a0ccb71d817e480d06f60f640ec021ade2ff90fe601bb7a5f4ddc569700"
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 	anchorIDTyped, _ := ToAnchorID(anchorID)
-	centIdTyped, _ := identity.ToCentID(centrifugeId)
+	centIdTyped := identity.NewDIDFromByte(address)
 	docRootTyped, _ := ToDocumentRoot(documentRoot)
 	messageToSign := GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")
@@ -49,28 +47,23 @@ func TestGenerateAnchor(t *testing.T) {
 	currentAnchorID := utils.RandomByte32()
 	currentDocumentRoot := utils.RandomByte32()
 	documentProof := utils.RandomByte32()
-	centrifugeId := utils.RandomSlice(identity.CentIDLength)
-	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 
 	var documentProofs [][32]byte
 	documentProofs = append(documentProofs, documentProof)
-	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	messageToSign := GenerateCommitHash(currentAnchorID, centIdTyped, currentDocumentRoot)
-	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, centIdTyped, documentProofs, signature)
+	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, documentProofs)
 
 	anchorID, _ := ToAnchorID(currentAnchorID[:])
 	docRoot, _ := ToDocumentRoot(documentRoot32Bytes[:])
 
 	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
-	assert.Equal(t, commitData.CentrifugeID, centIdTyped, "Anchor should have the centrifuge id")
+
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
-	assert.Equal(t, commitData.Signature, signature, "Anchor should have the signature")
+
 }
 
 func TestGetDocumentRootOf(t *testing.T) {
@@ -80,9 +73,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetGethCallOpts").Return(nil)
-	ethRepo := newEthereumAnchorRepository(cfg, repo, nil, func() ethereum.Client {
-		return ethClient
-	})
+	ethRepo := newService(cfg, repo, nil, ethClient, nil)
 	docRoot := utils.RandomByte32()
 	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)

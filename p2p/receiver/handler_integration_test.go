@@ -5,8 +5,11 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 
@@ -21,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
@@ -29,7 +31,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -40,9 +41,11 @@ var (
 	handler    *receiver.Handler
 	anchorRepo anchors.AnchorRepository
 	cfg        config.Configuration
-	idService  identity.Service
+	idService  identity.ServiceDID
+	idFactory  identity.Factory
 	cfgService config.Service
 	docSrv     documents.Service
+	defaultDID identity.DID
 )
 
 func TestMain(m *testing.M) {
@@ -52,9 +55,10 @@ func TestMain(m *testing.M) {
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv)
-	testingidentity.CreateIdentityWithKeys(cfg, idService)
+	defaultDID = createIdentity(&testing.T{})
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -70,10 +74,16 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 }
 
 func TestHandler_GetDocumentSucceeds(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
 	centrifugeId := createIdentity(t)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = centrifugeId[:]
 
-	dm := prepareDocumentForP2PHandler(t, nil)
+	ctxh, err := contextutil.New(context.Background(), tc)
+	assert.Nil(t, err)
+
+	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)
@@ -87,19 +97,16 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	doc.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig(cfg)
 	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
-	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
+	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(dm)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, centrifugeId[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 
@@ -112,15 +119,19 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	tc, err := contextutil.Account(ctxh)
-	_, err = cfgService.CreateAccount(tc)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = centID[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.Nil(t, err)
+	_, err = cfgService.CreateAccount(acc)
 	assert.NoError(t, err)
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, centID)
 	req := getSignatureRequest(dm)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, req)
 
-	pub, _ := cfg.GetP2PKeyPair()
+	pub, _ := acc.GetP2PKeyPair()
 	publicKey, err := cented25519.GetPublicSigningKey(pub)
 	assert.NoError(t, err)
 	var bPk [32]byte
@@ -128,7 +139,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	peerID, err := cented25519.PublicKeyToP2PKey(bPk)
 	assert.NoError(t, err)
 
-	p2pResp, err := handler.HandleInterceptor(ctxh, peerID, p2pcommon.ProtocolForCID(centID), p2pEnv)
+	p2pResp, err := handler.HandleInterceptor(ctxh, peerID, p2pcommon.ProtocolForDID(&centID), p2pEnv)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, p2pResp, "must be non nil")
 	resp := resolveSignatureResponse(t, p2pResp)
@@ -140,7 +151,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, defaultDID)
 	doc := dm.Document
 	doc.SigningRoot = nil
 	req := getSignatureRequest(dm)
@@ -151,9 +162,15 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, defaultDID)
 	req := getSignatureRequest(dm)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.Nil(t, err)
+
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
@@ -166,7 +183,7 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, defaultDID)
 	req := getSignatureRequest(dm)
 	doc := dm.Document
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
@@ -179,7 +196,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	newDM, err := dm.PrepareNewVersion(nil)
 	assert.Nil(t, err)
 	updateDocumentForP2Phandler(t, newDM)
-	newDM = prepareDocumentForP2PHandler(t, newDM)
+	newDM = prepareDocumentForP2PHandler(t, newDM, defaultDID)
 	req = getSignatureRequest(newDM)
 	resp, err = handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
@@ -192,13 +209,13 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, defaultDID)
 	newDM, err := dm.PrepareNewVersion(nil)
 	assert.Nil(t, err)
 	newDoc := newDM.Document
 	assert.NotEqual(t, newDoc.DocumentIdentifier, newDoc.CurrentVersion)
 	updateDocumentForP2Phandler(t, newDM)
-	newDM = prepareDocumentForP2PHandler(t, newDM)
+	newDM = prepareDocumentForP2PHandler(t, newDM, defaultDID)
 	req := getSignatureRequest(newDM)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
@@ -210,7 +227,7 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, defaultDID)
 	doc := dm.Document
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
@@ -224,21 +241,19 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	centrifugeId := createIdentity(t)
 
-	dm := prepareDocumentForP2PHandler(t, nil)
+	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
 
 	// Anchor document
 	doc := dm.Document
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
-	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
+	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(dm)
 	anchorResp, err := handler.SendAnchoredDocument(ctx, anchorReq, idConfig.ID[:])
@@ -249,7 +264,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 
 func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, nil)
+	doc := prepareDocumentForP2PHandler(t, nil, defaultDID)
 	req := getAnchoredRequest(doc)
 	req.Document = nil
 	id, err := cfg.GetIdentityID()
@@ -260,10 +275,16 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
 	centrifugeId := createIdentity(t)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = centrifugeId[:]
 
-	dm := prepareDocumentForP2PHandler(t, nil)
+	ctxh, err := contextutil.New(context.Background(), tc)
+	assert.Nil(t, err)
+
+	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)
@@ -276,62 +297,63 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	doc.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig(cfg)
 	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
-	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centrifugeId, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, idConfig.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, centrifugeId, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, signature)
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
+	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorReq := getAnchoredRequest(dm)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, idConfig.ID[:])
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, centrifugeId[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)
 }
 
-func createIdentity(t *testing.T) identity.CentID {
+func createIdentity(t *testing.T) identity.DID {
 	// Create Identity
-	centrifugeId, _ := identity.ToCentID(utils.RandomSlice(identity.CentIDLength))
-	cfg.Set("identityId", centrifugeId.String())
-	id, confirmations, err := idService.CreateIdentity(testingconfig.CreateAccountContext(t, cfg), centrifugeId)
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(t, err)
+	tc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = didAddr.Bytes()
+
+	ctx, err := contextutil.New(context.Background(), tc)
+	assert.Nil(t, err)
+	did, err := idFactory.CreateIdentity(ctx)
 	assert.Nil(t, err, "should not error out when creating identity")
-	watchRegisteredIdentity := <-confirmations
-	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	assert.Equal(t, centrifugeId, watchRegisteredIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, did.String(), didAddr.String(), "Resulting Identity should have the same ID as the input")
 
 	idConfig, err := identity.GetIdentityConfig(cfg)
+	assert.NoError(t, err)
 	// Add Keys
-	pubKey := idConfig.Keys[identity.KeyPurposeP2P].PublicKey
-	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeP2P, pubKey)
+	pk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeP2P].PublicKey)
+	assert.NoError(t, err)
+	keyDID := identity.NewKey(pk, big.NewInt(identity.KeyPurposeP2P), big.NewInt(identity.KeyTypeECDSA))
+	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
-	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
-	watchReceivedIdentity := <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	sPubKey := idConfig.Keys[identity.KeyPurposeSigning].PublicKey
-	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeSigning, sPubKey)
+	sPk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
+	assert.NoError(t, err)
+	keyDID = identity.NewKey(sPk, big.NewInt(identity.KeyPurposeSigning), big.NewInt(identity.KeyTypeECDSA))
+	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
-	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
-	watchReceivedIdentity = <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	secPubKey := idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
-	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, secPubKey)
+	secPk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
+	assert.NoError(t, err)
+	keyDID = identity.NewKey(secPk, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(identity.KeyTypeECDSA))
+	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
-	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
-	watchReceivedIdentity = <-confirmations
-	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
 
-	return centrifugeId
+	return *did
 }
 
-func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel) *documents.CoreDocumentModel {
+func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel, did identity.DID) *documents.CoreDocumentModel {
 	idConfig, err := identity.GetIdentityConfig(cfg)
+	idConfig.ID = did
 	assert.Nil(t, err)
 	if dm == nil {
 		dm = testingdocuments.GenerateCoreDocumentModel()

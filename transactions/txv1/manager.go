@@ -23,7 +23,7 @@ type extendedManager interface {
 
 	// createTransaction only exposed for testing within package.
 	// DO NOT use this outside of the package, use ExecuteWithinTX to initiate a transaction with management.
-	createTransaction(accountID identity.CentID, desc string) (*transactions.Transaction, error)
+	createTransaction(accountID identity.DID, desc string) (*transactions.Transaction, error)
 }
 
 // NewManager returns a Manager implementation.
@@ -42,7 +42,7 @@ func (s *manager) GetDefaultTaskTimeout() time.Duration {
 	return s.config.GetEthereumContextWaitTimeout()
 }
 
-func (s *manager) UpdateTaskStatus(accountID identity.CentID, id transactions.TxID, status transactions.Status, taskName, message string) error {
+func (s *manager) UpdateTaskStatus(accountID identity.DID, id transactions.TxID, status transactions.Status, taskName, message string) error {
 	tx, err := s.GetTransaction(accountID, id)
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func (s *manager) UpdateTaskStatus(accountID identity.CentID, id transactions.Tx
 }
 
 // ExecuteWithinTX executes a transaction within a transaction.
-func (s *manager) ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID transactions.TxID, desc string, work func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, err chan<- error)) (txID transactions.TxID, done chan bool, err error) {
+func (s *manager) ExecuteWithinTX(ctx context.Context, accountID identity.DID, existingTxID transactions.TxID, desc string, work func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error)) (txID transactions.TxID, done chan bool, err error) {
 	t, err := s.repo.Get(accountID, existingTxID)
 	if err != nil {
 		t = transactions.NewTransaction(accountID, desc)
@@ -90,7 +90,7 @@ func (s *manager) ExecuteWithinTX(ctx context.Context, accountID identity.CentID
 				log.Error(e)
 			}
 		case <-ctx.Done():
-			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.CID, t.Description)
+			msg := fmt.Sprintf("Transaction %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.DID, t.Description)
 			log.Warningf(msg)
 			tempTx, err := s.repo.Get(accountID, t.ID)
 			if err != nil {
@@ -118,19 +118,19 @@ func (s *manager) saveTransaction(tx *transactions.Transaction) error {
 }
 
 // GetTransaction returns the transaction associated with identity and id.
-func (s *manager) GetTransaction(accountID identity.CentID, id transactions.TxID) (*transactions.Transaction, error) {
+func (s *manager) GetTransaction(accountID identity.DID, id transactions.TxID) (*transactions.Transaction, error) {
 	return s.repo.Get(accountID, id)
 }
 
 // createTransaction creates a new transaction and saves it to the DB.
-func (s *manager) createTransaction(accountID identity.CentID, desc string) (*transactions.Transaction, error) {
+func (s *manager) createTransaction(accountID identity.DID, desc string) (*transactions.Transaction, error) {
 	tx := transactions.NewTransaction(accountID, desc)
 	return tx, s.saveTransaction(tx)
 }
 
 // WaitForTransaction blocks until transaction status is moved from pending state.
 // Note: use it with caution as this will block.
-func (s *manager) WaitForTransaction(accountID identity.CentID, txID transactions.TxID) error {
+func (s *manager) WaitForTransaction(accountID identity.DID, txID transactions.TxID) error {
 	// TODO change this to use a pre-saved done channel from ExecuteWithinTX, instead of a for loop, may require significant refactoring to handle the case of restarted node
 	for {
 		resp, err := s.GetTransactionStatus(accountID, txID)
@@ -151,7 +151,7 @@ func (s *manager) WaitForTransaction(accountID identity.CentID, txID transaction
 }
 
 // GetTransactionStatus returns the transaction status associated with identity and id.
-func (s *manager) GetTransactionStatus(accountID identity.CentID, id transactions.TxID) (*transactionspb.TransactionStatusResponse, error) {
+func (s *manager) GetTransactionStatus(accountID identity.DID, id transactions.TxID) (*transactionspb.TransactionStatusResponse, error) {
 	tx, err := s.GetTransaction(accountID, id)
 	if err != nil {
 		return nil, err

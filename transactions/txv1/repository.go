@@ -21,7 +21,7 @@ func NewRepository(repo storage.Repository) transactions.Repository {
 
 // getKey appends identity with id.
 // With identity coming at first, we can even fetch transactions belonging to specific identity through prefix.
-func getKey(cid identity.CentID, id transactions.TxID) ([]byte, error) {
+func getKey(cid identity.DID, id transactions.TxID) ([]byte, error) {
 	if transactions.TxIDEqual(transactions.NilTxID(), id) {
 		return nil, errors.New("transaction ID is not valid")
 	}
@@ -30,7 +30,7 @@ func getKey(cid identity.CentID, id transactions.TxID) ([]byte, error) {
 }
 
 // Get returns the transaction associated with identity and id.
-func (r *txRepository) Get(cid identity.CentID, id transactions.TxID) (*transactions.Transaction, error) {
+func (r *txRepository) Get(cid identity.DID, id transactions.TxID) (*transactions.Transaction, error) {
 	key, err := getKey(cid, id)
 	if err != nil {
 		return nil, errors.NewTypedError(transactions.ErrKeyConstructionFailed, err)
@@ -46,7 +46,7 @@ func (r *txRepository) Get(cid identity.CentID, id transactions.TxID) (*transact
 
 // Save saves the transaction to the repository.
 func (r *txRepository) Save(tx *transactions.Transaction) error {
-	key, err := getKey(tx.CID, tx.ID)
+	key, err := getKey(tx.DID, tx.ID)
 	if err != nil {
 		return errors.NewTypedError(transactions.ErrKeyConstructionFailed, err)
 	}

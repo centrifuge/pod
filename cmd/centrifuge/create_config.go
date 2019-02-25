@@ -30,7 +30,7 @@ func init() {
 		Short: "Configures Node",
 		Long:  ``,
 		Run: func(c *cobra.Command, args []string) {
-			err := cmd.CreateConfigDeprecated(targetDataDir,
+			err := cmd.CreateConfig(targetDataDir,
 				ethNodeURL,
 				accountKeyPath,
 				accountPassword,
@@ -39,8 +39,7 @@ func init() {
 				p2pPort,
 				bootstraps,
 				txPoolAccess,
-				"",
-				nil)
+				"", nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
