@@ -167,7 +167,7 @@ func documentRootValidator() Validator {
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
 // Note: this needs to used only before Document is sent for signatures from the collaborators
-func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
+func readyForSignaturesValidator(id, priv, pub []byte) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		sr, err := model.SigningRoot()
 		if err != nil {
@@ -179,7 +179,7 @@ func readyForSignaturesValidator(centIDBytes, priv, pub []byte) Validator {
 			return errors.New("expecting only one signature")
 		}
 
-		s := crypto.Sign(centIDBytes, priv, pub, sr)
+		s := crypto.Sign(id, priv, pub, sr)
 		sh := signatures[0]
 		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
 			err = errors.AppendError(err, errors.New("entity ID mismatch"))
@@ -295,11 +295,11 @@ func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorReposi
 // signingRootValidator
 // readyForSignaturesValidator
 // should be called after sender signing the Document and before requesting the Document
-func PreSignatureRequestValidator(centIDBytes, priv, pub []byte) ValidatorGroup {
+func PreSignatureRequestValidator(id, priv, pub []byte) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
-		readyForSignaturesValidator(centIDBytes, priv, pub),
+		readyForSignaturesValidator(id, priv, pub),
 	}
 }
 

@@ -29,7 +29,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 	id := model.CurrentVersion()
 	err := proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare Document for signatures: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare document for signatures: %v", err))
 	}
 
 	err = updater(id, model)
@@ -60,7 +60,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 	// TODO [TXManager] this function creates a child task in the queue which should be removed and called from the TxManger function
 	err = proc.AnchorDocument(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor Document: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor document: %v", err))
 	}
 
 	err = updater(id, model)
@@ -70,7 +70,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 
 	err = proc.SendDocument(ctx, model)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to send anchored Document: %v", err))
+		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to send anchored document: %v", err))
 	}
 
 	err = updater(id, model)

@@ -132,13 +132,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	ncd, err = cd.PrepareNewVersion(c, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
-	assert.Len(t, 2, len(ncd.Document.Collaborators))
+	assert.Len(t, ncd.Document.Collaborators, 2)
 	assert.Nil(t, ncd.Document.CoredocumentSalts)
 
 	ncd, err = cd.PrepareNewVersion(c, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
-	assert.Len(t, 2, len(ncd.Document.Collaborators))
+	assert.Len(t, ncd.Document.Collaborators, 2)
 	assert.NotNil(t, ncd.Document.CoredocumentSalts)
 
 	assert.Equal(t, cd.Document.NextVersion, ncd.Document.CurrentVersion)
@@ -159,10 +159,10 @@ func TestGetSigningProofHashes(t *testing.T) {
 	err := cd.setSalts()
 	assert.NoError(t, err)
 
-	err = cd.calculateSigningRoot()
+	_, err = cd.SigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err)
 
-	err = cd.calculateDocumentRoot()
+	_, err = cd.DocumentRoot()
 	assert.Nil(t, err)
 
 	hashes, err := cd.getSigningRootProofHashes()
@@ -175,26 +175,17 @@ func TestGetSigningProofHashes(t *testing.T) {
 }
 
 func TestGetDocumentSigningTree(t *testing.T) {
-	docAny := &any.Any{
-		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value:   []byte{},
-	}
-
 	cd := newCoreDocument()
 
 	// no data root
-	_, err := cd.signingRootTree()
-	assert.Error(t, err)
-
-	// no embed data
-	cd.Document.DataRoot = utils.RandomSlice(32)
-	_, err = cd.signingRootTree()
+	_, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl)
 	assert.Error(t, err)
 
 	// successful tree generation
-	cd.Document.EmbeddedData = docAny
+
+	cd.Document.DataRoot = utils.RandomSlice(32)
 	assert.NoError(t, cd.setSalts())
-	tree, err := cd.signingRootTree()
+	tree, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
@@ -217,16 +208,9 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd.Document.SigningRoot = utils.RandomSlice(32)
 	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
-
-	//// Manually constructing the two node tree:
-	// TODO(ved): test case with signatures
-	//signaturesLengthLeaf := sha256.Sum256(append(append(compactProperties[SignaturesField], []byte{48}...), make([]byte, 32)...))
-	//expectedRootHash := sha256.Sum256(append(dm.Document.SigningRoot, signaturesLengthLeaf[:]...))
-	//assert.Nil(t, err)
-	//assert.Equal(t, expectedRootHash[:], tree.RootHash())
 	_, leaf := tree.GetLeafByProperty("signing_root")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, leaf.Value, cd.Document.SigningRoot)
+	assert.Equal(t, cd.Document.SigningRoot, leaf.Hash)
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
@@ -250,10 +234,12 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd.Document.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	assert.NoError(t, cd.setSalts())
 	cd.Document.DataRoot = testTree.RootHash()
-	assert.NoError(t, cd.calculateSigningRoot())
-	assert.NoError(t, cd.calculateDocumentRoot())
+	_, err = cd.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+	assert.NoError(t, err)
+	_, err = cd.DocumentRoot()
+	assert.NoError(t, err)
 
-	cdTree, err := cd.DocumentRootTree()
+	cdTree, err := cd.documentTree(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -283,7 +269,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.fieldName, func(t *testing.T) {
-			p, err := cd.CreateProofs(testTree, []string{test.fieldName})
+			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree, []string{test.fieldName})
 			assert.NoError(t, err)
 			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
 			var l *proofs.LeafNode

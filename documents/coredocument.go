@@ -193,13 +193,13 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 	}
 
 	ncd := &CoreDocument{Document: cdp}
-	cd.addCollaboratorsToReadSignRules(ucs)
+	ncd.addCollaboratorsToReadSignRules(ucs)
 
 	if !initSalts {
 		return ncd, nil
 	}
 
-	err = cd.setSalts()
+	err = ncd.setSalts()
 	if err != nil {
 		return nil, errors.New("failed to init salts: %v", err)
 	}

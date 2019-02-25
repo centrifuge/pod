@@ -33,7 +33,7 @@ func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, ve
 	return args.Get(0).(*documents.DocumentProof), args.Error(1)
 }
 
-func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
 	args := m.Called(cd)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
@@ -58,6 +58,11 @@ type MockModel struct {
 	mock.Mock
 }
 
+func (m *MockModel) CurrentVersion() []byte {
+	args := m.Called()
+	return args.Get(0).([]byte)
+}
+
 func (m *MockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
 	args := m.Called()
 	dm, _ := args.Get(0).(coredocumentpb.CoreDocument)
@@ -69,34 +74,3 @@ func (m *MockModel) JSON() ([]byte, error) {
 	data, _ := args.Get(0).([]byte)
 	return data, args.Error(1)
 }
-
-//func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documents.CoreDocumentModel {
-//	identifier := utils.RandomSlice(32)
-//	invData := &invoicepb.InvoiceData{}
-//	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
-//
-//	serializedInv, _ := proto.Marshal(invData)
-//	doc := &coredocumentpb.CoreDocument{
-//		Collaborators:      collaborators,
-//		DocumentIdentifier: identifier,
-//		CurrentVersion:     identifier,
-//		NextVersion:        utils.RandomSlice(32),
-//		EmbeddedData: &any.Any{
-//			TypeUrl: documenttypes.InvoiceDataTypeUrl,
-//			Value:   serializedInv,
-//		},
-//		EmbeddedDataSalts: documents.ConvertToProtoSalts(dataSalts),
-//	}
-//	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
-//	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
-//	dm := documents.NewCoreDocModel()
-//	mockModel := MockModel{
-//		CoreDocumentModel: dm,
-//	}
-//	dm.Document = doc
-//	return mockModel.CoreDocumentModel
-//}
-//
-//func GenerateCoreDocumentModel() *documents.CoreDocumentModel {
-//	return GenerateCoreDocumentModelWithCollaborators(nil)
-//}

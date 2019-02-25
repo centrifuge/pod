@@ -107,7 +107,6 @@ func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
 	assert.NoError(t, cd.addNFTToReadRules(registry, tokenID))
 	assert.Error(t, cd.NFTOwnerCanRead(tr, registry, tokenID, account))
-	assert.Contains(t, err, "failed to get owner of")
 	tr.AssertExpectations(t)
 
 	// not the same owner
@@ -187,7 +186,7 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
 	assert.Equal(t, "read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
+	assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(cd.Document.Roles[0].RoleKey)), pfs[1])
 	assert.Equal(t, "read_rules[0].action", pfs[2])
 }
 
@@ -218,6 +217,7 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 	assert.Empty(t, pf)
 
 	cd.initReadRules([]identity.CentID{account})
+	roleKey = cd.Document.Roles[0].RoleKey
 	pf, err = getRoleProofKey(cd.Document.Roles, roleKey, identity.RandomCentID())
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
@@ -240,13 +240,21 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.initReadRules([]identity.CentID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	cd, err = cd.AddNFT(true, registry, tokenID)
-	assert.NoError(t, err)
 	cd.Document.EmbeddedDataSalts = ConvertToProtoSalts(dataSalts)
 	assert.NoError(t, err)
 	assert.NoError(t, cd.setSalts())
-	assert.NoError(t, cd.calculateSigningRoot())
-	assert.NoError(t, cd.calculateDocumentRoot())
+	_, err = cd.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+	assert.NoError(t, err)
+	_, err = cd.DocumentRoot()
+	assert.NoError(t, err)
+	cd, err = cd.AddNFT(true, registry, tokenID)
+	assert.NoError(t, err)
+	cd.Document.DataRoot = utils.RandomSlice(32)
+	assert.NoError(t, cd.setSalts())
+	_, err = cd.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+	assert.NoError(t, err)
+	_, err = cd.DocumentRoot()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		registry       common.Address
@@ -297,7 +305,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	for _, c := range tests {
-		pfs, err := cd.CreateNFTProofs(account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
+		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
 			assert.Error(t, err)
 			continue

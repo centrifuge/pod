@@ -67,7 +67,12 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 
 // PrepareForSignatureRequests gets the core Document from the model, and adds the node's own signature
 func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
-	_, err := model.DataRoot()
+	self, err := contextutil.Self(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = model.DataRoot()
 	if err != nil {
 		return err
 	}
@@ -76,11 +81,6 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	sr, err := model.SigningRoot()
 	if err != nil {
 		return errors.New("failed to calculate signing root: %v", err)
-	}
-
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return err
 	}
 
 	model.AppendSignatures(identity.Sign(self, identity.KeyPurposeSigning, sr))
@@ -121,11 +121,6 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate signatures: %v", err)
-	}
-
-	_, err = model.DocumentRoot()
-	if err != nil {
-		return errors.New("failed to generate Document root: %v", err)
 	}
 
 	return nil

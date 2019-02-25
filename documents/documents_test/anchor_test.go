@@ -7,6 +7,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -21,8 +23,8 @@ type mockAnchorProcessor struct {
 	mock.Mock
 }
 
-func (m *mockAnchorProcessor) Send(ctx context.Context, coreDocumentModel *documents.CoreDocumentModel, recipient identity.CentID) (err error) {
-	args := m.Called(coreDocumentModel, ctx, recipient)
+func (m *mockAnchorProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.CentID) (err error) {
+	args := m.Called(ctx, cd, recipient)
 	return args.Error(0)
 }
 
@@ -65,33 +67,19 @@ func (m *mockAnchorProcessor) SendDocument(ctx context.Context, model documents.
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) GetDataProofHashes(coreDocument *coredocumentpb.CoreDocument) (hashes [][]byte, err error) {
-	args := m.Called(coreDocument)
-	return args.Get(0).([][]byte), args.Error(1)
-}
-
 func TestAnchorDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	updater := func(id []byte, model documents.Model) error {
 		return nil
 	}
 
-	// pack fails
-	m := &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(nil, errors.New("pack failed")).Once()
-	model, err := documents.AnchorDocument(ctxh, m, nil, updater)
-	m.AssertExpectations(t)
-	assert.Nil(t, model)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "pack failed")
-
 	// prepare fails
-	m = &testingdocuments.MockModel{}
-	dm := documents.NewCoreDocModel()
-	m.On("PackCoreDocument").Return(dm, nil).Once()
+	id := utils.RandomSlice(32)
+	m := &testingdocuments.MockModel{}
+	m.On("CurrentVersion").Return(id).Once()
 	proc := &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(errors.New("error")).Once()
-	model, err = documents.AnchorDocument(ctxh, m, proc, updater)
+	model, err := documents.AnchorDocument(ctxh, m, proc, updater)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, model)
@@ -100,7 +88,7 @@ func TestAnchorDocument(t *testing.T) {
 
 	// request signatures failed
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(dm, nil).Once()
+	m.On("CurrentVersion").Return(id).Once()
 	proc = &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctxh, m).Return(errors.New("error")).Once()
@@ -113,7 +101,7 @@ func TestAnchorDocument(t *testing.T) {
 
 	// prepare for anchoring fails
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(dm, nil).Once()
+	m.On("CurrentVersion").Return(id).Once()
 	proc = &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
@@ -127,7 +115,7 @@ func TestAnchorDocument(t *testing.T) {
 
 	// anchor fails
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(dm, nil).Once()
+	m.On("CurrentVersion").Return(id).Once()
 	proc = &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
@@ -142,7 +130,7 @@ func TestAnchorDocument(t *testing.T) {
 
 	// send failed
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(dm, nil).Once()
+	m.On("CurrentVersion").Return(id).Once()
 	proc = &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
@@ -158,7 +146,7 @@ func TestAnchorDocument(t *testing.T) {
 
 	// success
 	m = &testingdocuments.MockModel{}
-	m.On("PackCoreDocument").Return(dm, nil).Once()
+	m.On("CurrentVersion").Return(id).Once()
 	proc = &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
