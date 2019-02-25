@@ -98,7 +98,7 @@ func TxIDEqual(t1 TxID, t2 TxID) bool {
 // Transaction contains details of transaction.
 type Transaction struct {
 	ID          TxID
-	CID         identity.CentID
+	DID         identity.DID
 	Description string
 
 	// Status is the overall status of the transaction
@@ -128,10 +128,10 @@ func (t *Transaction) Type() reflect.Type {
 }
 
 // NewTransaction returns a new transaction with a pending state
-func NewTransaction(identity identity.CentID, description string) *Transaction {
+func NewTransaction(identity identity.DID, description string) *Transaction {
 	return &Transaction{
 		ID:          NewTxID(),
-		CID:         identity,
+		DID:         identity,
 		Description: description,
 		Status:      Pending,
 		TaskStatus:  make(map[string]Status),
@@ -147,16 +147,16 @@ type Config interface {
 // Manager is a manager for centrifuge transactions.
 type Manager interface {
 	// ExecuteWithinTX executes the given unit of work within a transaction
-	ExecuteWithinTX(ctx context.Context, accountID identity.CentID, existingTxID TxID, desc string, work func(accountID identity.CentID, txID TxID, txMan Manager, err chan<- error)) (txID TxID, done chan bool, err error)
-	GetTransaction(accountID identity.CentID, id TxID) (*Transaction, error)
-	UpdateTaskStatus(accountID identity.CentID, id TxID, status Status, taskName, message string) error
-	GetTransactionStatus(accountID identity.CentID, id TxID) (*transactionspb.TransactionStatusResponse, error)
-	WaitForTransaction(accountID identity.CentID, txID TxID) error
+	ExecuteWithinTX(ctx context.Context, accountID identity.DID, existingTxID TxID, desc string, work func(accountID identity.DID, txID TxID, txMan Manager, err chan<- error)) (txID TxID, done chan bool, err error)
+	GetTransaction(accountID identity.DID, id TxID) (*Transaction, error)
+	UpdateTaskStatus(accountID identity.DID, id TxID, status Status, taskName, message string) error
+	GetTransactionStatus(accountID identity.DID, id TxID) (*transactionspb.TransactionStatusResponse, error)
+	WaitForTransaction(accountID identity.DID, txID TxID) error
 	GetDefaultTaskTimeout() time.Duration
 }
 
 // Repository can be implemented by a type that handles storage for transactions.
 type Repository interface {
-	Get(cid identity.CentID, id TxID) (*Transaction, error)
+	Get(cid identity.DID, id TxID) (*Transaction, error)
 	Save(transaction *Transaction) error
 }

@@ -294,14 +294,17 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
-	idKeys := self.Keys[identity.KeyPurposeSigning]
-	rfsv := readyForSignaturesValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
+	account, _ := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
+	keys, err := account.GetKeys()
+	assert.Nil(t, err)
+	accID, err := account.GetIdentityID()
+	assert.NoError(t, err)
+	rfsv := readyForSignaturesValidator(accID, keys[identity.KeyPurposeSigning].PrivateKey, keys[identity.KeyPurposeSigning].PublicKey)
 
 	// fail getCoreDoc
 	model := mockModel{}
 	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
-	err := rfsv.Validate(nil, model)
+	err = rfsv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -334,10 +337,11 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// success
 	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := identity.GetIdentityConfig(cfg)
+
+	signature, err := account.SignMsg(cd.SigningRoot)
 	assert.Nil(t, err)
-	s = identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+
+	cd.Signatures = []*coredocumentpb.Signature{signature}
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Once()
 	err = rfsv.Validate(nil, model)
@@ -346,7 +350,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 }
 
 func TestValidator_signatureValidator(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	ssv := signaturesValidator(srv)
 
 	// fail getCoreDoc

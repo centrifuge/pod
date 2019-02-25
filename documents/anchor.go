@@ -10,7 +10,7 @@ import (
 // AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type AnchorProcessor interface {
-	Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.CentID) (err error)
+	Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.DID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
 	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error

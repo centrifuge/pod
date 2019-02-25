@@ -20,7 +20,7 @@ import (
 var (
 	key1Pub = []byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1    = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	id1     = []byte{1, 1, 1, 1, 1, 1}
+	id1     = []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 )
 
 func TestValidate_versionValidator(t *testing.T) {
@@ -74,9 +74,9 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_peerValidator(t *testing.T) {
-	cID, _ := identity.ToCentID(id1)
+	cID := identity.NewDIDFromBytes(id1)
 
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	sv := peerValidator(idService)
 
 	// Nil headers
@@ -93,19 +93,20 @@ func TestValidate_peerValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// Identity validation failure
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
 	err = sv.Validate(header, &cID, &defaultPID)
 	assert.Error(t, err)
 
 	// Success
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	err = sv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	cID, _ := identity.ToCentID(id1)
-	idService := &testingcommons.MockIDService{}
+	cID := identity.NewDIDFromBytes(id1)
+
+	idService := &testingcommons.MockIdentityService{}
 	hv := HandshakeValidator(cfg.GetNetworkID(), idService)
 
 	// Incompatible version network and wrong signature
@@ -128,14 +129,14 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Compatible version, network and wrong eth key
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
 	header.NetworkIdentifier = cfg.GetNetworkID()
 	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "key not linked to identity")
 
 	// Compatible version, network and signature
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
 }

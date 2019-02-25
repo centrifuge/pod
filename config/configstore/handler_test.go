@@ -15,7 +15,7 @@ import (
 )
 
 func TestGrpcHandler_GetConfigNoConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
@@ -27,7 +27,7 @@ func TestGrpcHandler_GetConfigNoConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_GetConfig(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterConfig(&NodeConfig{})
@@ -42,7 +42,7 @@ func TestGrpcHandler_GetConfig(t *testing.T) {
 }
 
 func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -54,7 +54,7 @@ func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
 }
 
 func TestGrpcHandler_GetAccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -74,7 +74,7 @@ func TestGrpcHandler_GetAccount(t *testing.T) {
 }
 
 func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -92,7 +92,7 @@ func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
 }
 
 func TestGrpcHandler_GetAllAccounts(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -117,7 +117,7 @@ func TestGrpcHandler_GetAllAccounts(t *testing.T) {
 }
 
 func TestGrpcHandler_CreateAccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})
@@ -148,7 +148,7 @@ func TestGrpcHandler_GenerateAccount(t *testing.T) {
 }
 
 func TestGrpcHandler_UpdateAccount(t *testing.T) {
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
 	assert.Nil(t, err)
 	repo.RegisterAccount(&Account{})

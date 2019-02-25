@@ -131,8 +131,9 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, transactions.NilTxID(), nil, err
 	}
 
+	DID := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, DID, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -160,8 +161,9 @@ func (s service) Update(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, transactions.NilTxID(), nil, err
 	}
 
+	did := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, dm.Document.CurrentVersion)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -177,10 +179,7 @@ func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.In
 	cd := dm.Document
 	collaborators := make([]string, len(cd.Collaborators))
 	for i, c := range cd.Collaborators {
-		cid, err := identity.ToCentID(c)
-		if err != nil {
-			return nil, errors.NewTypedError(documents.ErrDocumentCollaborator, err)
-		}
+		cid := identity.NewDIDFromBytes(c)
 		collaborators[i] = cid.String()
 	}
 

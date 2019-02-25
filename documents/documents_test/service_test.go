@@ -3,9 +3,10 @@
 package documents_test
 
 import (
-	"math/big"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -17,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -28,7 +28,7 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	cid         = identity.RandomCentID()
+	cid         = testingidentity.GenerateRandomDID()
 	centIDBytes = cid[:]
 	tenantID    = cid[:]
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
@@ -55,18 +55,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
-	poSrv := documents.DefaultService(nil, nil, nil, documents.NewServiceRegistry())
+	poSrv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
 	assert.Error(t, err)
 }
 
-func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
+func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
-	idService := testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idService := testingcommons.MockIdentityService{}
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry()), idService
+	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
 
 type mockAnchorRepo struct {
@@ -98,21 +98,21 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	if err != nil {
 		return nil, err
 	}
+
 	cds, err := documents.GenerateCoreDocSalts(corDocMod.Document)
 	assert.Nil(t, err)
 	corDocMod.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cds)
+
 	err = corDocMod.CalculateSigningRoot(dataRoot)
 	if err != nil {
 		return nil, err
 	}
-	centID, err := identity.ToCentID(centIDBytes)
-	assert.Nil(t, err)
 	signKey := identity.IDKey{
 		PublicKey:  key1Pub[:],
 		PrivateKey: key1,
 	}
 	idConfig := &identity.IDConfig{
-		ID: centID,
+		ID: cid,
 		Keys: map[int]identity.IDKey{
 			identity.KeyPurposeSigning: signKey,
 		},
@@ -122,6 +122,7 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
 
 	cd.Signatures = append(cd.Signatures, sig)
+
 	err = corDocMod.CalculateDocumentRoot()
 	if err != nil {
 		return nil, err
@@ -179,19 +180,10 @@ func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Inv
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIDService, s documents.Service) testingcommons.MockIDService {
-	idkey := &ethid.EthereumIdentityKey{
-		Key:       key1Pub,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
+func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIdentityService, s documents.Service) testingcommons.MockIdentityService {
 	anchorID, _ := anchors.ToAnchorID(i.CoreDocumentModel.Document.DocumentIdentifier)
 	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocumentModel.Document.DocumentRoot)
 	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	id := &testingcommons.MockID{}
-	centID, _ := identity.ToCentID(centIDBytes)
-	idService.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
 	return idService
 }
 
