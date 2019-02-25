@@ -117,9 +117,9 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID identity.DID) *documents.CoreDocumentModel {
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	idConfig.ID = localID
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	account, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
 	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
 	assert.NoError(t, err)
 	m, err := docService.DeriveFromCoreDocumentModel(dm)
@@ -134,7 +134,9 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID 
 	tree, err := dm.GetDocumentSigningTree(droot)
 	assert.NoError(t, err)
 	dm.Document.SigningRoot = tree.RootHash()
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
+
+	sig, err := account.SignMsg(dm.Document.SigningRoot)
+	assert.NoError(t, err)
 	dm.Document.Signatures = append(dm.Document.Signatures, sig)
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)

@@ -2,9 +2,12 @@ package documents
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -612,7 +615,6 @@ func newRole() *coredocumentpb.Role {
 	return role
 }
 
-
 func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.DID) error {
 	if len(collabs) == 0 {
 		return nil
@@ -748,7 +750,8 @@ func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequ
 			return errors.New("requester does not have access")
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-		err := m.accessTokenOwnerCanRead(docReq, peer)
+		reqID := peer[:]
+		err := m.accessTokenOwnerCanRead(docReq, reqID)
 		if err != nil {
 			return err
 		}
@@ -839,11 +842,10 @@ func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.DID
 
 // assembleTokenMessage assembles a token message
 func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []byte, roleID []byte, docID []byte) ([]byte, error) {
-
 	tokenIdentifiers := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range tokenIdentifiers {
 		if len(id) != IDByteCount {
-			return nil, errors.New("valid identifier length: %v", id)
+			return nil, errors.New("invalid identifier length")
 		}
 	}
 	tm := append(tokenIdentifier, granterID...)
@@ -854,9 +856,17 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID []byte, granteeID []
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload documentpb.AccessTokenParams, roleKey []byte) (*coredocumentpb.AccessToken, error) {
+func (m *CoreDocumentModel) assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams, roleKey []byte) (*coredocumentpb.AccessToken, error) {
+	account, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
 	tokenIdentifier := utils.RandomSlice(32)
-	granterID := id.ID[:]
+	id, err := account.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	granterID := identity.NewDIDFromByte(id)
 	roleID := roleKey
 	granteeID, err := identity.NewDIDFromString(payload.Grantee)
 	if err != nil {
@@ -868,38 +878,39 @@ func (m *CoreDocumentModel) assembleAccessToken(id identity.IDConfig, payload do
 		return nil, err
 	}
 
-	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID[:], roleID[:], docID)
+	tm, err := assembleTokenMessage(tokenIdentifier, granterID[:], granteeID[:], roleID[:], docID)
 	if err != nil {
 		return nil, err
 	}
 
 	// fetch key pair from identity
-	privateKey := id.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey
-	pubKey := id.Keys[identity.KeyPurposeEthMsgAuth].PublicKey
-
-	// sign the assembled access token message, return signature
-	sig, err := crypto.SignMessage(privateKey, tm, crypto.CurveSecp256K1, true)
+	// TODO: change to signing key pair once secp scheme is available
+	sig, err := account.SignMsg(tm)
+	if err != nil {
+		return nil, err
+	}
+	keys, err := account.GetKeys()
 	if err != nil {
 		return nil, err
 	}
 	// assemble the access token, appending the signature and public keys
 	at := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
-		Granter:            granterID,
+		Granter:            granterID[:],
 		Grantee:            granteeID[:],
 		RoleIdentifier:     roleID[:],
 		DocumentIdentifier: docID,
-		Signature:          sig,
-		Key:                pubKey,
+		Signature:          sig.Signature,
+		Key:                keys[identity.KeyPurposeSigning].PublicKey,
 	}
 	return at, nil
 
 }
 
 // AddAccessTokenToReadRules adds the AccessToken(s) to the read rules of the document
-func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payload documentpb.AccessTokenParams) (*CoreDocumentModel, error) {
+func (m *CoreDocumentModel) AddAccessTokenToReadRules(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocumentModel, error) {
 	role := newRole()
-	at, err := m.assembleAccessToken(id, payload, role.RoleKey)
+	at, err := m.assembleAccessToken(ctx, payload, role.RoleKey)
 	if err != nil {
 		return nil, errors.New("failed to construct AT: %v", err)
 	}
@@ -911,7 +922,7 @@ func (m *CoreDocumentModel) AddAccessTokenToReadRules(id identity.IDConfig, payl
 }
 
 // ATOwnerCanRead checks that the owner AT can read the document requested
-func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentRequest, account identity.DID) error {
+func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentRequest, requesterID []byte) error {
 	// check if the access token is present in read rules of the document indicated in the AT request
 	token, err := m.findAT(ACLRead, docReq.AccessTokenRequest.AccessTokenId)
 	if err != nil {
@@ -923,7 +934,7 @@ func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentReq
 	}
 	// validate the access token
 	// TODO: fetch public key from Ethereum chain
-	err = validateAT(token.Key, token, account)
+	err = validateAT(token.Key, token, requesterID)
 	if err != nil {
 		return err
 	}
@@ -932,9 +943,9 @@ func (m *CoreDocumentModel) accessTokenOwnerCanRead(docReq *p2ppb.GetDocumentReq
 }
 
 // validateAT validates that given access token against its signature
-func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, account identity.DID) error {
+func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
-	tm, err := assembleTokenMessage(token.Identifier, token.Granter, account[:], token.RoleIdentifier, token.DocumentIdentifier)
+	tm, err := assembleTokenMessage(token.Identifier, token.Granter, requesterID, token.RoleIdentifier, token.DocumentIdentifier)
 	if err != nil {
 		return err
 	}

@@ -78,9 +78,9 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-func updateDocument(t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.CentID, ctxh context.Context) {
+func updateDocument(t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.DID, ctxh context.Context) {
 
-	dm = prepareDocumentForP2PHandler(t, dm)
+	dm = prepareDocumentForP2PHandler(t, dm, centrifugeId)
 
 	ed := dm.Document.EmbeddedData
 	edsalts := dm.Document.EmbeddedDataSalts
@@ -104,7 +104,6 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	centrifugeId := createIdentity(t)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = centrifugeId[:]
-	idConfig, err := identity.GetIdentityConfig(cfg)
 	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{centrifugeId[:]})
 	assert.Nil(t, err)
 	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
@@ -127,7 +126,7 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 		Grantee:            centrifugeId.String(),
 		DocumentIdentifier: docID,
 	}
-	dm, err = dm.AddAccessTokenToReadRules(*idConfig, at)
+	dm, err = dm.AddAccessTokenToReadRules(ctxh, at)
 	assert.NoError(t, err)
 	dm, err = dm.PrepareNewVersion(nil)
 	assert.NoError(t, err)
