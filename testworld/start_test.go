@@ -39,12 +39,10 @@ func TestMain(m *testing.M) {
 		testingutils.RunSmartContractMigrations()
 	}
 	var contractAddresses *config.SmartContractAddresses
-	var contractBytecode *config.SmartContractBytecode
 	if c.Network == "testing" {
 		contractAddresses = testingutils.GetSmartContractAddresses()
-		contractBytecode = testingutils.GetSmartContractBytecode()
 	}
-	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses, contractBytecode)
+	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses)
 	err = doctorFord.init(c.CreateHostConfigs)
 	if err != nil {
 		panic(err)

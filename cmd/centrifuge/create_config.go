@@ -39,7 +39,7 @@ func init() {
 				p2pPort,
 				bootstraps,
 				txPoolAccess,
-				"", nil, nil)
+				"", nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,

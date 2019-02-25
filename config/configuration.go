@@ -69,7 +69,6 @@ type Configuration interface {
 	Set(key string, value interface{})
 	SetDefault(key string, value interface{})
 	SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses)
-	SetupSmartContractBytecode(network string, smartContractBytecode *SmartContractBytecode)
 	Get(key string) interface{}
 	GetString(key string) string
 	GetBool(key string) bool
@@ -99,7 +98,6 @@ type Configuration interface {
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
 	GetContractAddress(contractName ContractName) common.Address
-	GetContractBytecode(contractName ContractName) string
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
@@ -387,11 +385,6 @@ func (c *configuration) GetContractAddress(contractName ContractName) common.Add
 	return common.HexToAddress(c.GetContractAddressString(string(contractName)))
 }
 
-// GetContractBytecode returns the deployed contract address for a given contract.
-func (c *configuration) GetContractBytecode(contractName ContractName) string {
-	return c.GetString(c.GetNetworkKey(fmt.Sprintf("contractByteCode.%s", contractName)))
-}
-
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
 func (c *configuration) GetBootstrapPeers() []string {
 	return cast.ToStringSlice(c.get(c.GetNetworkKey("bootstrapPeers")))
@@ -489,11 +482,6 @@ type SmartContractAddresses struct {
 	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
 }
 
-// SmartContractBytecode encapsulates the smart contract bytecode
-type SmartContractBytecode struct {
-	IdentityFactoryBytecode, IdentityBytecode, AnchorRepositoryBytecode, PaymentObligationBytecode string
-}
-
 // CreateConfigFile creates minimum config file with arguments
 func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	targetDataDir := args["targetDataDir"].(string)
@@ -564,13 +552,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
 
-	if smartContractBytecode, ok := args["smartContractBytecode"].(*SmartContractBytecode); ok {
-		v.Set("networks."+network+".contractByteCode.identityFactory", smartContractBytecode.IdentityFactoryBytecode)
-		v.Set("networks."+network+".contractByteCode.identity", smartContractBytecode.IdentityBytecode)
-		v.Set("networks."+network+".contractByteCode.anchorRepository", smartContractBytecode.AnchorRepositoryBytecode)
-		v.Set("networks."+network+".contractByteCode.paymentObligation", smartContractBytecode.PaymentObligationBytecode)
-	}
-
 	v.SetConfigFile(targetDataDir + "/config.yaml")
 
 	err = v.WriteConfig()
@@ -584,11 +565,4 @@ func (c *configuration) SetupSmartContractAddresses(network string, smartContrac
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
-}
-
-func (c *configuration) SetupSmartContractBytecode(network string, smartContractBytecode *SmartContractBytecode) {
-	c.v.Set("networks."+network+".contractByteCode.identityFactory", smartContractBytecode.IdentityFactoryBytecode)
-	c.v.Set("networks."+network+".contractByteCode.identity", smartContractBytecode.IdentityBytecode)
-	c.v.Set("networks."+network+".contractByteCode.anchorRepository", smartContractBytecode.AnchorRepositoryBytecode)
-	c.v.Set("networks."+network+".contractByteCode.paymentObligation", smartContractBytecode.PaymentObligationBytecode)
 }

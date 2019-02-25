@@ -84,11 +84,6 @@ func (nc *NodeConfig) SetupSmartContractAddresses(network string, smartContractA
 	panic("irrelevant, NodeConfig#SetupSmartContractAddresses must not be used")
 }
 
-// SetupSmartContractBytecode refer the interface
-func (nc *NodeConfig) SetupSmartContractBytecode(network string, smartContractBytecode *config.SmartContractBytecode) {
-	panic("irrelevant, NodeConfig#SetupSmartContractBytecode must not be used")
-}
-
 // Get refer the interface
 func (nc *NodeConfig) Get(key string) interface{} {
 	panic("irrelevant, NodeConfig#Get must not be used")
@@ -227,11 +222,6 @@ func (nc *NodeConfig) GetContractAddressString(address string) string {
 // GetContractAddress refer the interface
 func (nc *NodeConfig) GetContractAddress(contractName config.ContractName) common.Address {
 	return nc.SmartContractAddresses[contractName]
-}
-
-// GetContractBytecode refer the interface
-func (nc *NodeConfig) GetContractBytecode(contractName config.ContractName) string {
-	return nc.SmartContractBytecode[contractName]
 }
 
 // GetBootstrapPeers refer the interface
@@ -488,7 +478,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		BootstrapPeers:                 c.GetBootstrapPeers(),
 		NetworkID:                      c.GetNetworkID(),
 		SmartContractAddresses:         extractSmartContractAddresses(c),
-		SmartContractBytecode:          extractSmartContractBytecode(c),
 		PprofEnabled:                   c.IsPProfEnabled(),
 	}
 }
@@ -498,15 +487,6 @@ func extractSmartContractAddresses(c config.Configuration) map[config.ContractNa
 	names := config.ContractNames()
 	for _, n := range names {
 		sms[n] = c.GetContractAddress(n)
-	}
-	return sms
-}
-
-func extractSmartContractBytecode(c config.Configuration) map[config.ContractName]string {
-	sms := make(map[config.ContractName]string)
-	names := config.ContractNames()
-	for _, n := range names {
-		sms[n] = c.GetContractBytecode(n)
 	}
 	return sms
 }

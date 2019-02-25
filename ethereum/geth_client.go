@@ -43,7 +43,6 @@ type Config interface {
 	GetEthereumMaxRetries() int
 	GetTxPoolAccessEnabled() bool
 	GetEthereumContextReadWaitTimeout() time.Duration
-	GetContractBytecode(contractName config.ContractName) string
 }
 
 // DefaultWaitForTransactionMiningContext returns context with timeout for write operations
@@ -81,9 +80,6 @@ type Client interface {
 
 	// TransactionReceipt return receipt of a transaction
 	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// GetContractBytecode returns bytecode for contract
-	GetContractBytecode(contractName config.ContractName) string
 }
 
 // gethClient implements Client for Ethereum
@@ -136,10 +132,6 @@ func GetClient() Client {
 	gcMu.RLock()
 	defer gcMu.RUnlock()
 	return gc
-}
-
-func (gc *gethClient) GetContractBytecode(contractName config.ContractName) string {
-	return gc.config.GetContractBytecode(contractName)
 }
 
 // defaultReadContext returns context with timeout for read operations
