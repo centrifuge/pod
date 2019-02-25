@@ -131,7 +131,6 @@ func TestHandler_GetDocumentSucceeds(t *testing.T) {
 	assert.NoError(t, err)
 	updateDocument(t, dm, centrifugeID, ctxh)
 
-	// TODO: will currently fail until identity v2
 	role := dm.Document.Roles[1]
 	token := role.AccessTokens[0]
 	accessTokenReq := getDocumentRequestAccessToken(dm, token.Identifier)

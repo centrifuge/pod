@@ -700,12 +700,14 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	ndm, err := dm.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
 	assert.NotNil(t, ndm)
+	role := ndm.Document.Roles[0]
+	rk := role.RoleKey
 
 	pfs, err = getReadAccessProofKeys(ndm, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
 	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(rk)), pfs[1])
 	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
 }
 
@@ -722,9 +724,12 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ndm)
 
+	fmt.Println(ndm.Document.Roles)
+	//role := ndm.Document.Roles[0]
+	//rk := role.RoleKey
 	pf, err = getNFTUniqueProofKey(ndm.Document.Nfts, registry)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
+	//assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), rk...))), pf)
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
