@@ -7,6 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/golang/protobuf/ptypes/any"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -101,30 +107,36 @@ func TestPurchaseOrder_JSON(t *testing.T) {
 	assert.Equal(t, cd, ncd)
 }
 
-//func TestPOModel_UnpackCoreDocument(t *testing.T) {
-//	var model = new(PurchaseOrder)
-//	var err error
-//
-//	// nil core doc
-//	err = model.UnpackCoreDocument(nil)
-//	assert.Error(t, err, "unpack must fail")
-//
-//	// embed data missing
-//	err = model.UnpackCoreDocument(new(documents.CoreDocumentModel))
-//	assert.Error(t, err, "unpack must fail due to missing embed data")
-//
-//	// successful
-//	coreDocumentModel := createCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
-//	model.CoreDocumentModel = coreDocumentModel
-//	err = model.UnpackCoreDocument(coreDocumentModel)
-//	assert.Nil(t, err, "valid core document with embedded purchase order shouldn't produce an error")
-//
-//	receivedCoreDocumentModel, err := model.PackCoreDocument()
-//	assert.Nil(t, err, "model should be able to return the core document with embedded purchase order")
-//
-//	assert.Equal(t, coreDocumentModel.Document.EmbeddedData, receivedCoreDocumentModel.Document.EmbeddedData, "embeddedData should be the same")
-//	assert.Equal(t, coreDocumentModel.Document.EmbeddedDataSalts, receivedCoreDocumentModel.Document.EmbeddedDataSalts, "embeddedDataSalt should be the same")
-//}
+func TestPO_UnpackCoreDocument(t *testing.T) {
+	var model = new(PurchaseOrder)
+	var err error
+
+	// embed data missing
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{})
+	assert.Error(t, err)
+
+	// embed data type is wrong
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{EmbeddedData: new(any.Any)})
+	assert.Error(t, err, "unpack must fail due to missing embed data")
+
+	// embed data is wrong
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{
+		EmbeddedData: &any.Any{
+			Value:   utils.RandomSlice(32),
+			TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+		},
+	})
+	assert.Error(t, err)
+
+	// successful
+	po, cd := createCDWithEmbeddedPO(t)
+	err = model.UnpackCoreDocument(cd)
+	assert.NoError(t, err)
+	assert.Equal(t, model.getClientData(), po.(*PurchaseOrder).getClientData())
+	assert.Equal(t, model.ID(), po.ID())
+	assert.Equal(t, model.CurrentVersion(), po.CurrentVersion())
+	assert.Equal(t, model.PreviousVersion(), po.PreviousVersion())
+}
 
 func TestPOModel_getClientData(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
@@ -187,31 +199,31 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_GenerateProofs(t *testing.T) {
 	po := createPurchaseOrder(t)
 	assert.NotNil(t, po)
-	//proof, err := po.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
-	//assert.Nil(t, err)
-	//assert.NotNil(t, proof)
-	//_, err = po.DocumentRootTree()
-	//assert.NoError(t, err)
+	proof, err := po.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	assert.Nil(t, err)
+	assert.NotNil(t, proof)
+	tree, err := po.DocumentRootTree()
+	assert.NoError(t, err)
 
-	//// Validate po_number
-	//valid, err := tree.ValidateProof(proof[0])
-	//assert.Nil(t, err)
-	//assert.True(t, valid)
-	//
-	//// Validate collaborators[0]
-	//valid, err = tree.ValidateProof(proof[1])
-	//assert.Nil(t, err)
-	//assert.True(t, valid)
-	//
-	//// Validate []byte value
-	//id, err := identity.ToCentID(proof[1].Value)
-	//assert.NoError(t, err)
-	//assert.True(t, po.CoreDocument.AccountCanRead(id))
-	//
-	//// Validate document_type
-	//valid, err = tree.ValidateProof(proof[2])
-	//assert.Nil(t, err)
-	//assert.True(t, valid)
+	// Validate po_number
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate collaborators[0]
+	valid, err = tree.ValidateProof(proof[1])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate []byte value
+	id, err := identity.ToCentID(proof[1].Value)
+	assert.NoError(t, err)
+	assert.True(t, po.CoreDocument.AccountCanRead(id))
+
+	// Validate document_type
+	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
 }
 
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {

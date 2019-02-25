@@ -7,6 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+
+	"github.com/golang/protobuf/ptypes/any"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -74,7 +80,7 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	inv := new(Invoice)
-	assert.Error(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String()))
+	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String()))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
@@ -103,31 +109,36 @@ func TestInvoice_JSON(t *testing.T) {
 	assert.Equal(t, cd, ncd)
 }
 
-// TODO validate Unpack and remove if required
-//func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
-//	var model = new(Invoice)
-//	var err error
-//
-//	// nil core doc
-//	err = model.UnpackCoreDocument(nil)
-//	assert.Error(t, err, "unpack must fail")
-//
-//	// embed data missing
-//	err = model.UnpackCoreDocument(new(documents.CoreDocumentModel))
-//	assert.Error(t, err, "unpack must fail due to missing embed data")
-//
-//	// successful
-//	coreDocumentModel := CreateCDWithEmbeddedInvoice(t, testingdocuments.CreateInvoiceData())
-//	model.CoreDocumentModel = coreDocumentModel
-//	err = model.UnpackCoreDocument(coreDocumentModel)
-//	assert.Nil(t, err, "valid core document with embedded invoice shouldn't produce an error")
-//
-//	receivedCoreDocumentModel, err := model.PackCoreDocument()
-//	assert.Nil(t, err, "model should be able to return the core document with embedded invoice")
-//
-//	assert.Equal(t, coreDocumentModel.Document.EmbeddedData, receivedCoreDocumentModel.Document.EmbeddedData, "embeddedData should be the same")
-//	assert.Equal(t, coreDocumentModel.Document.EmbeddedDataSalts, receivedCoreDocumentModel.Document.EmbeddedDataSalts, "embeddedDataSalt should be the same")
-//}
+func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
+	var model = new(Invoice)
+	var err error
+
+	// embed data missing
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{})
+	assert.Error(t, err)
+
+	// embed data type is wrong
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{EmbeddedData: new(any.Any)})
+	assert.Error(t, err, "unpack must fail due to missing embed data")
+
+	// embed data is wrong
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{
+		EmbeddedData: &any.Any{
+			Value:   utils.RandomSlice(32),
+			TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		},
+	})
+	assert.Error(t, err)
+
+	// successful
+	inv, cd := createCDWithEmbeddedInvoice(t)
+	err = model.UnpackCoreDocument(cd)
+	assert.NoError(t, err)
+	assert.Equal(t, model.getClientData(), inv.(*Invoice).getClientData())
+	assert.Equal(t, model.ID(), inv.ID())
+	assert.Equal(t, model.CurrentVersion(), inv.CurrentVersion())
+	assert.Equal(t, model.PreviousVersion(), inv.PreviousVersion())
+}
 
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
@@ -215,7 +226,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoice_GenerateProofs(t *testing.T) {
 	i, err := createInvoice(t)
 	assert.Nil(t, err)
-	proof, err := i.GenerateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.invoice_number", "collaborators[0]", "document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.CoreDocument.DocumentRootTree()
@@ -245,7 +256,7 @@ func TestInvoice_GenerateProofs(t *testing.T) {
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	i, err := createInvoice(t)
 	assert.Nil(t, err)
-	_, err = i.GenerateProofs([]string{"nonexisting"})
+	_, err = i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
@@ -269,9 +280,9 @@ func createInvoice(t *testing.T) (*Invoice, error) {
 	i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), "0x010203040506")
 	_, err := i.DataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	_, err = i.SigningRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentRoot()
+	_, err = i.DocumentRoot()
 	assert.NoError(t, err)
 	return i, nil
 }

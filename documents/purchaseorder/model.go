@@ -392,10 +392,13 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 	return nil
 }
 
+// SigningRoot returns the signing root of the document.
+// Calculates it if not generated yet.
 func (p *PurchaseOrder) SigningRoot() ([]byte, error) {
 	return p.CoreDocument.SigningRoot(documenttypes.PurchaseOrderDataTypeUrl)
 }
 
+// CreateNFTProofs creates proofs specific to NFT minting.
 func (p *PurchaseOrder) CreateNFTProofs(
 	account identity.CentID,
 	registry common.Address,

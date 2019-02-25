@@ -330,11 +330,18 @@ func (i *Invoice) Type() reflect.Type {
 
 // DataRoot calculates the data root and sets the root to core document
 func (i *Invoice) DataRoot() ([]byte, error) {
+	if i.CoreDocument.DataRoot() != nil {
+		return i.CoreDocument.DataRoot(), nil
+	}
+
 	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get document tree: %v", err)
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return t.RootHash(), nil
+
+	dr := t.RootHash()
+	i.CoreDocument.SetDataRoot(dr)
+	return dr, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -363,7 +370,7 @@ func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err e
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return i.CoreDocument.CreateProofs(tree, fields)
+	return i.CoreDocument.CreateProofs(documenttypes.InvoiceDataTypeUrl, tree, fields)
 }
 
 // DocumentType returns the invoice document type.
@@ -396,4 +403,21 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 	i.CoreDocument = cd
 	return nil
+}
+
+// SigningRoot returns the signing root of the document.
+// Calculates it if not generated yet.
+func (i *Invoice) SigningRoot() ([]byte, error) {
+	return i.CoreDocument.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+}
+
+// CreateNFTProofs creates proofs specific to NFT minting.
+func (i *Invoice) CreateNFTProofs(
+	account identity.CentID,
+	registry common.Address,
+	tokenID []byte,
+	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	return i.CoreDocument.CreateNFTProofs(
+		documenttypes.InvoiceDataTypeUrl,
+		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }

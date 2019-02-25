@@ -160,6 +160,11 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 
 // DeriveInvoiceResponse returns create response from invoice model
 func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
+	data, err := s.DeriveInvoiceData(model)
+	if err != nil {
+		return nil, err
+	}
+
 	cs, err := model.GetCollaborators()
 	if err != nil {
 		return nil, errors.New("failed to get collaborators: %v", err)
@@ -174,11 +179,6 @@ func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.
 		DocumentId:    hexutil.Encode(model.ID()),
 		VersionId:     hexutil.Encode(model.CurrentVersion()),
 		Collaborators: css,
-	}
-
-	data, err := s.DeriveInvoiceData(model)
-	if err != nil {
-		return nil, err
 	}
 
 	return &clientinvoicepb.InvoiceResponse{

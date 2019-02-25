@@ -107,16 +107,10 @@ type mockModel struct {
 	CoreDocument *coredocumentpb.CoreDocument
 }
 
-func (m *mockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
+func (m *mockModel) ID() []byte {
 	args := m.Called()
-	dm, _ := args.Get(0).(*documents.CoreDocumentModel)
-	return dm, args.Error(1)
-}
-
-func (m *mockModel) JSON() ([]byte, error) {
-	args := m.Called()
-	data, _ := args.Get(0).([]byte)
-	return data, args.Error(1)
+	id, _ := args.Get(0).([]byte)
+	return id
 }
 
 func TestGRPCHandler_Create_DeriveInvoiceResponse_fail(t *testing.T) {

@@ -26,9 +26,8 @@ import (
 )
 
 var (
-	cid         = identity.RandomCentID()
-	accountID   = cid[:]
-	centIDBytes = cid[:]
+	cid       = identity.RandomCentID()
+	accountID = cid[:]
 )
 
 type mockAnchorRepo struct {
@@ -224,7 +223,7 @@ func TestService_Create(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown document type")
 
-	// anchor fails
+	// success
 	po, err := poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
 	assert.Nil(t, err)
 	m, _, _, err = poSrv.Create(ctxh, po)
@@ -322,7 +321,6 @@ func TestService_Exists(t *testing.T) {
 
 	exists = poSrv.Exists(ctxh, utils.RandomSlice(32))
 	assert.False(t, exists, "purchase order should not exist")
-
 }
 
 func TestService_calculateDataRoot(t *testing.T) {
@@ -380,7 +378,7 @@ func testRepo() documents.Repository {
 
 func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), identity.RandomCentID().String())
+	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), cid.String())
 	assert.NoError(t, err)
 	_, err = po.DataRoot()
 	assert.NoError(t, err)
