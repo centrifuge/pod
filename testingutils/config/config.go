@@ -137,11 +137,6 @@ func (m *MockConfig) GetContractAddress(contractName config.ContractName) common
 	return args.Get(0).(common.Address)
 }
 
-func (m *MockConfig) GetContractBytecode(contractName config.ContractName) string {
-	args := m.Called()
-	return args.Get(0).(string)
-}
-
 func (m *MockConfig) GetBootstrapPeers() []string {
 	args := m.Called()
 	return args.Get(0).([]string)
