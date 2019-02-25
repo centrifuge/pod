@@ -57,7 +57,6 @@ const (
 	CDTreePrefix = "cd_tree"
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
-
 )
 
 func compactProperties(key string) []byte {
