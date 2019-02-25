@@ -8,19 +8,23 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -51,10 +55,12 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
+	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
@@ -67,36 +73,38 @@ func TestMain(m *testing.M) {
 }
 
 func Test_fetchUniqueCollaborators(t *testing.T) {
-
+	o1 := testingidentity.GenerateRandomDID()
+	o2 := testingidentity.GenerateRandomDID()
+	n1 := testingidentity.GenerateRandomDID()
 	tests := []struct {
 		old    [][]byte
 		new    []string
-		result []identity.CentID
+		result []identity.DID
 		err    bool
 	}{
 		{
-			new:    []string{"0x010203040506"},
-			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+			new:    []string{n1.String()},
+			result: []identity.DID{n1},
 		},
 
 		{
-			old:    [][]byte{{1, 2, 3, 2, 3, 1}},
-			new:    []string{"0x010203040506"},
-			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+			old:    [][]byte{o1[:]},
+			new:    []string{n1.String()},
+			result: []identity.DID{n1},
 		},
 
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
-			new: []string{"0x010203040506"},
+			old: [][]byte{o1[:], n1[:]},
+			new: []string{n1.String()},
 		},
 
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			old: [][]byte{o1[:], o2[:]},
 		},
 
 		// new collaborator with wrong format
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			old: [][]byte{o1[:], o2[:]},
 			new: []string{"0x0102030405"},
 			err: true,
 		},
@@ -128,9 +136,9 @@ func TestCoreDocumentModel_PrepareNewVersion(t *testing.T) {
 	assert.Nil(t, newDocModel)
 
 	// missing DocumentRoot
-	c1 := utils.RandomSlice(6)
-	c2 := utils.RandomSlice(6)
-	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	c1 := testingidentity.GenerateRandomDID()
+	c2 := testingidentity.GenerateRandomDID()
+	c := []string{c1.String(), c2.String()}
 	ndm, err := dm.PrepareNewVersion(c)
 	assert.NotNil(t, err)
 	assert.Nil(t, ndm)
@@ -164,7 +172,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrZeroCollaborators, err))
 
-	cs := []identity.CentID{identity.RandomCentID()}
+	cs := []identity.DID{testingidentity.GenerateRandomDID()}
 	err = dm.initReadRules(cs)
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
@@ -178,8 +186,7 @@ func TestReadACLs_initReadRules(t *testing.T) {
 
 func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	dm := NewCoreDocModel()
-	account, err := identity.CentIDFromString("0x010203040506")
-	assert.NoError(t, err)
+	account := testingidentity.GenerateRandomDID()
 
 	dm.Document.DocumentRoot = utils.RandomSlice(32)
 	ndm, err := dm.PrepareNewVersion([]string{account.String()})
@@ -189,7 +196,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	assert.NotNil(t, cd.Roles)
 
 	// account who cant access
-	rcid := identity.RandomCentID()
+	rcid := testingidentity.GenerateRandomDID()
 	assert.False(t, ndm.AccountCanRead(rcid))
 
 	// account can access
@@ -264,10 +271,10 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
-	_, leaf := tree.GetLeafByProperty("data_root")
+	_, leaf := tree.GetLeafByProperty(SigningTreePrefix + ".data_root")
 	assert.NotNil(t, leaf)
 
-	_, leaf = tree.GetLeafByProperty("cd_root")
+	_, leaf = tree.GetLeafByProperty(SigningTreePrefix + ".cd_root")
 	assert.NotNil(t, leaf)
 }
 
@@ -281,6 +288,28 @@ func TestGetDocumentSigningTree_EmptyEmbeddedData(t *testing.T) {
 	assert.Nil(t, tree)
 }
 
+func TestCoreDocumentTree(t *testing.T) {
+	dm := NewCoreDocModel()
+	cd := dm.Document
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+	cd.EmbeddedData = docAny
+	cd.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
+	err := dm.setCoreDocumentSalts()
+	assert.NoError(t, err)
+	tree1, err := dm.GetCoreDocumentTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, tree1)
+	root1 := tree1.RootHash()
+
+	tree2, err := dm.GetCoreDocumentTree()
+	assert.NoError(t, err)
+	root2 := tree2.RootHash()
+	assert.Equal(t, root1, root2)
+}
+
 // TestGetDocumentRootTree tests that the documentroottree is properly calculated
 func TestGetDocumentRootTree(t *testing.T) {
 	dm := NewCoreDocModel()
@@ -289,7 +318,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	tree, err := dm.GetDocumentRootTree()
 
 	// Manually constructing the two node tree:
-	signaturesLengthLeaf := sha256.Sum256(append(append(compactProperties[SignaturesField], []byte{48}...), make([]byte, 32)...))
+	signaturesLengthLeaf := sha256.Sum256(append(append(compactProperties(SignaturesField), []byte{48}...), make([]byte, 32)...))
 	expectedRootHash := sha256.Sum256(append(dm.Document.SigningRoot, signaturesLengthLeaf[:]...))
 	assert.Nil(t, err)
 	assert.Equal(t, expectedRootHash[:], tree.RootHash())
@@ -320,7 +349,7 @@ func TestCreateProofs(t *testing.T) {
 	assert.NoError(t, err)
 	err = dm.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cdTree, err := dm.GetDocumentTree()
+	cdTree, err := dm.GetCoreDocumentTree()
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -333,7 +362,7 @@ func TestCreateProofs(t *testing.T) {
 			3,
 		},
 		{
-			"document_identifier",
+			CDTreePrefix + ".document_identifier",
 			true,
 			6,
 		},
@@ -343,7 +372,7 @@ func TestCreateProofs(t *testing.T) {
 			3,
 		},
 		{
-			"collaborators[0]",
+			CDTreePrefix + ".collaborators[0]",
 			true,
 			6,
 		},
@@ -356,9 +385,15 @@ func TestCreateProofs(t *testing.T) {
 			var l *proofs.LeafNode
 			if test.fromCoreDoc {
 				_, l = cdTree.GetLeafByProperty(test.fieldName)
+				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:4], cdTree.RootHash(), h)
+				assert.NoError(t, err)
+				assert.True(t, valid)
 			} else {
 				_, l = testTree.GetLeafByProperty(test.fieldName)
 				assert.Contains(t, compactProps, l.Property.CompactName())
+				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:1], testTree.RootHash(), h)
+				assert.NoError(t, err)
+				assert.True(t, valid)
 			}
 			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.DocumentRoot, h)
 			assert.NoError(t, err)
@@ -386,7 +421,8 @@ func Test_addNFTToReadRules(t *testing.T) {
 	assert.Error(t, err)
 
 	dm.Document.DocumentRoot = utils.RandomSlice(32)
-	dm, err = dm.PrepareNewVersion([]string{"0x010203040506"})
+	dm, err = dm.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()})
+	assert.NoError(t, err)
 	cd := dm.Document
 	assert.NoError(t, err)
 	assert.Len(t, cd.ReadRules, 1)
@@ -404,10 +440,9 @@ func Test_addNFTToReadRules(t *testing.T) {
 func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	dm := NewCoreDocModel()
 	dm.Document.DocumentRoot = utils.RandomSlice(32)
-	account, err := identity.CentIDFromString("0x010203040506")
-	assert.NoError(t, err)
+	account := testingidentity.GenerateRandomDID()
 
-	dm, err = dm.PrepareNewVersion([]string{account.String()})
+	dm, err := dm.PrepareNewVersion([]string{account.String()})
 	assert.NoError(t, err)
 
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
@@ -417,7 +452,7 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 
 	// account not in read rules and nft missing
-	account, err = identity.CentIDFromString("0x010203040505")
+	account = testingidentity.GenerateRandomDID()
 	assert.NoError(t, err)
 	tokenID := utils.RandomSlice(32)
 	err = dm.NFTOwnerCanRead(registry, tokenID, account)
@@ -542,11 +577,11 @@ func TestCoreDocumentModel_IsNFTMinted(t *testing.T) {
 
 func TestCoreDocumentModel_IsAccountInRole(t *testing.T) {
 	dm := NewCoreDocModel()
-	account := identity.RandomCentID()
+	account := testingidentity.GenerateRandomDID()
 	roleKey := make([]byte, 32, 32)
 	assert.False(t, dm.IsAccountInRole(roleKey, account))
 
-	err := dm.initReadRules([]identity.CentID{account})
+	err := dm.initReadRules([]identity.DID{account})
 	assert.NoError(t, err)
 	assert.True(t, dm.IsAccountInRole(roleKey, account))
 }
@@ -568,9 +603,9 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	pfs, err = getReadAccessProofKeys(ndm, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
-	assert.Equal(t, "read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf("roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
-	assert.Equal(t, "read_rules[0].action", pfs[2])
+	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
+	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
 }
 
 func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
@@ -588,28 +623,28 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 
 	pf, err = getNFTUniqueProofKey(ndm.Document.Nfts, registry)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
 	dm := NewCoreDocModel()
 	roleKey := make([]byte, 32, 32)
-	account := identity.RandomCentID()
+	account := testingidentity.GenerateRandomDID()
 	pf, err := getRoleProofKey(dm.Document.Roles, roleKey, account)
 	assert.Error(t, err)
 	assert.Empty(t, pf)
 
-	err = dm.initReadRules([]identity.CentID{account})
+	err = dm.initReadRules([]identity.DID{account})
 	assert.NoError(t, err)
 
-	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, identity.RandomCentID())
+	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, testingidentity.GenerateRandomDID())
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
 	assert.Empty(t, pf)
 
 	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, account)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
 }
 
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
@@ -620,8 +655,8 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	dm.Document.EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
-	account := identity.RandomCentID()
-	assert.NoError(t, dm.initReadRules([]identity.CentID{account}))
+	account := testingidentity.GenerateRandomDID()
+	assert.NoError(t, dm.initReadRules([]identity.DID{account}))
 
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)

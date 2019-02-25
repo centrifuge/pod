@@ -70,6 +70,11 @@ func (m *MockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
 	return dm, args.Error(1)
 }
 
+func (m *MockModel) UnpackCoreDocument(model *documents.CoreDocumentModel) error {
+	args := m.Called(model)
+	return args.Error(0)
+}
+
 func (m *MockModel) JSON() ([]byte, error) {
 	args := m.Called()
 	data, _ := args.Get(0).([]byte)
@@ -93,7 +98,7 @@ func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documen
 		},
 		EmbeddedDataSalts: documents.ConvertToProtoSalts(dataSalts),
 	}
-	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
+	cdSalts, _ := documents.GenerateCoreDocSalts(doc)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	dm := documents.NewCoreDocModel()
 	mockModel := MockModel{

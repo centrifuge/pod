@@ -1,6 +1,6 @@
 // +build integration unit
 
-package ethid
+package ideth
 
 func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)

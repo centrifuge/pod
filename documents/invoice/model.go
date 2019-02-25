@@ -21,7 +21,8 @@ import (
 
 const prefix string = "invoice"
 
-var compactPrefix = []byte{1, 0, 0, 0}
+// tree prefixes use the first byte of a 4 byte slice by convention
+func compactPrefix() []byte { return []byte{3, 0, 0, 0} }
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
@@ -41,9 +42,9 @@ type Invoice struct {
 	NetAmount        int64  // invoice amount excluding tax
 	TaxAmount        int64
 	TaxRate          int64
-	Recipient        *identity.CentID
-	Sender           *identity.CentID
-	Payee            *identity.CentID
+	Recipient        *identity.DID
+	Sender           *identity.DID
+	Payee            *identity.DID
 	Comment          string
 	DueDate          *timestamp.Timestamp
 	DateCreated      *timestamp.Timestamp
@@ -185,16 +186,22 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.DueDate = data.DueDate
 	i.DateCreated = data.DateCreated
 
-	if recipient, err := identity.CentIDFromString(data.Recipient); err == nil {
-		i.Recipient = &recipient
+	if data.Recipient != "" {
+		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
+			i.Recipient = &recipient
+		}
 	}
 
-	if sender, err := identity.CentIDFromString(data.Sender); err == nil {
-		i.Sender = &sender
+	if data.Sender != "" {
+		if sender, err := identity.NewDIDFromString(data.Sender); err == nil {
+			i.Sender = &sender
+		}
 	}
 
-	if payee, err := identity.CentIDFromString(data.Payee); err == nil {
-		i.Payee = &payee
+	if data.Payee != "" {
+		if payee, err := identity.NewDIDFromString(data.Payee); err == nil {
+			i.Payee = &payee
+		}
 	}
 
 	if data.ExtraData != "" {
@@ -228,15 +235,18 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.TaxAmount = invoiceData.TaxAmount
 	i.TaxRate = invoiceData.TaxRate
 
-	if recipient, err := identity.ToCentID(invoiceData.Recipient); err == nil {
+	if invoiceData.Recipient != nil {
+		recipient := identity.NewDIDFromBytes(invoiceData.Recipient)
 		i.Recipient = &recipient
 	}
 
-	if sender, err := identity.ToCentID(invoiceData.Sender); err == nil {
+	if invoiceData.Sender != nil {
+		sender := identity.NewDIDFromBytes(invoiceData.Sender)
 		i.Sender = &sender
 	}
 
-	if payee, err := identity.ToCentID(invoiceData.Payee); err == nil {
+	if invoiceData.Payee != nil {
+		payee := identity.NewDIDFromBytes(invoiceData.Payee)
 		i.Payee = &payee
 	}
 
@@ -249,7 +259,7 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 // getInvoiceSalts returns the invoice salts. Initialises if not present
 func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
 	if i.InvoiceSalts == nil {
-		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix)
+		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix())
 		if err != nil {
 			return nil, errors.New("getInvoiceSalts error %v", err)
 		}
@@ -365,7 +375,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)

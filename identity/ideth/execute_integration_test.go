@@ -13,11 +13,15 @@ correct implementation.
 
 */
 
-package did
+package ideth
 
 import (
 	"context"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
+	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -35,11 +39,15 @@ func resetDefaultCentID() {
 	cfg.Set("identityId", "0x010101010101")
 }
 
+func getAnchorAddress(cfg config.Configuration) common.Address {
+	return cfg.GetContractAddress(config.AnchorRepo)
+}
+
 func TestExecute_successful(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 
 	// init params
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -59,7 +67,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 	aCtx := getTestDIDContext(t, *did)
 
 	idSrv := initIdentity()
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
@@ -77,7 +85,7 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
 	rootHash := utils.RandomSlice(32)
@@ -89,7 +97,7 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 }
 
 func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byte) {
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
 	// check if anchor has been added
@@ -103,7 +111,7 @@ func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byt
 // Checks the standard behaviour of the anchor contract
 func TestAnchorWithoutExecute_successful(t *testing.T) {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	anchorAddress := getAnchorAddress()
+	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)
 
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -131,9 +139,8 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	// TODO: did can be passed instead of randomCentID after CentID is DID
-	_, done, err := txManager.ExecuteWithinTX(context.Background(), id.RandomCentID(), transactions.NilTxID(), "Check TX add execute",
-		func(accountID id.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingidentity.GenerateRandomDID(), transactions.NilTxID(), "Check TX add execute",
+		func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 			if err != nil {
 				errOut <- err

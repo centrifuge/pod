@@ -45,7 +45,7 @@ type messenger interface {
 type peer struct {
 	disablePeerStore bool
 	config           config.Service
-	idService        identity.Service
+	idService        identity.ServiceDID
 	host             host.Host
 	handlerCreator   func() *receiver.Handler
 	mes              messenger
@@ -108,18 +108,15 @@ func (s *peer) initProtocols() error {
 		if err != nil {
 			return err
 		}
-		CID, err := identity.ToCentID(accID)
-		if err != nil {
-			return err
-		}
-		protocols = append(protocols, p2pcommon.ProtocolForCID(CID))
+		DID := identity.NewDIDFromBytes(accID)
+		protocols = append(protocols, p2pcommon.ProtocolForDID(&DID))
 	}
 	s.mes.Init(protocols...)
 	return nil
 }
 
-func (s *peer) InitProtocolForCID(CID identity.CentID) {
-	p := p2pcommon.ProtocolForCID(CID)
+func (s *peer) InitProtocolForDID(DID *identity.DID) {
+	p := p2pcommon.ProtocolForDID(DID)
 	s.mes.Init(p)
 }
 

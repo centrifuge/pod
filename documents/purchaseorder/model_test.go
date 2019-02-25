@@ -8,8 +8,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -19,12 +20,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -49,12 +49,12 @@ func TestMain(m *testing.M) {
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
 
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
-		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
@@ -63,12 +63,12 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", cid.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
@@ -105,17 +105,6 @@ func TestPO_InitCoreDocument_successful(t *testing.T) {
 	poModel.CoreDocumentModel = coreDocumentModel
 	err := poModel.UnpackCoreDocument(coreDocumentModel)
 	assert.Nil(t, err, "valid coredocumentmodel shouldn't produce an error")
-}
-
-func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
-	poModel := &PurchaseOrder{}
-
-	coreDocumentModel := CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
-		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
-	poModel.CoreDocumentModel = coreDocumentModel
-	err := poModel.UnpackCoreDocument(coreDocumentModel)
-	assert.Nil(t, err)
-	assert.Nil(t, poModel.Recipient)
 }
 
 func TestPO_CoreDocument_successful(t *testing.T) {
@@ -217,7 +206,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	assert.Nil(t, poModel.ExtraData)
 
 	data.ExtraData = "0x010203020301"
-	data.Recipient = "0x010203040506"
+	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
 
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
@@ -229,14 +218,20 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
-	collabs = []string{"0x010102040506", "0x010203020302"}
+	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.NoError(t, err)
+	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
+	assert.NoError(t, err)
+	collabs = []string{collab1.String(), collab2.String()}
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 
-	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
+	did, err := identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
+	assert.NoError(t, err)
+	assert.Equal(t, poModel.Recipient[:], did[:])
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 
-	assert.Equal(t, poModel.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
+	assert.Equal(t, poModel.CoreDocumentModel.Document.Collaborators, [][]byte{id.ID[:], collab1[:], collab2[:]})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
@@ -254,7 +249,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	proof, err := poModel.CreateProofs([]string{"po.po_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := poModel.CoreDocumentModel.GetDocumentRootTree()

@@ -4,16 +4,18 @@ package testingdocuments
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 )
 
 func CreateInvoiceData() invoicepb.InvoiceData {
+	recipient := testingidentity.GenerateRandomDID()
+	sender := testingidentity.GenerateRandomDID()
+	payee := testingidentity.GenerateRandomDID()
 	return invoicepb.InvoiceData{
-		Recipient:   utils.RandomSlice(identity.CentIDLength),
-		Sender:      utils.RandomSlice(identity.CentIDLength),
-		Payee:       utils.RandomSlice(identity.CentIDLength),
+		Recipient:   recipient[:],
+		Sender:      sender[:],
+		Payee:       payee[:],
 		GrossAmount: 42,
 	}
 }
@@ -21,13 +23,13 @@ func CreateInvoiceData() invoicepb.InvoiceData {
 func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {
 	return &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
-			Sender:      "0x010101010101",
-			Recipient:   "0x010203040506",
-			Payee:       "0x010203020406",
+			Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
+			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
+			Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
 			GrossAmount: 42,
 			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
-		Collaborators: []string{"0x010101010101"},
+		Collaborators: []string{testingidentity.GenerateRandomDID().String()},
 	}
 }

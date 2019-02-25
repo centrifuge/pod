@@ -3,6 +3,7 @@ package documents
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"strings"
 
@@ -31,14 +32,25 @@ const (
 	SignaturesField = "signatures"
 	// SigningRootField represents the signature root property of a tree
 	SigningRootField = "signing_root"
+	// CDTreePrefix is the human readable prefix for core doc tree props
+	CDTreePrefix = "cd_tree"
+	// SigningTreePrefix is the human readable prefix for signing tree props
+	SigningTreePrefix = "signing_tree"
 )
 
-var compactProperties = map[string][]byte{
-	CDRootField:       {0, 0, 0, 7},
-	DataRootField:     {0, 0, 0, 5},
-	DocumentTypeField: {0, 0, 0, 100},
-	SignaturesField:   {0, 0, 0, 6},
-	SigningRootField:  {0, 0, 0, 10},
+func compactProperties(key string) []byte {
+	m := map[string][]byte{
+		CDRootField:       {0, 0, 0, 7},
+		DataRootField:     {0, 0, 0, 5},
+		DocumentTypeField: {0, 0, 0, 100},
+		SignaturesField:   {0, 0, 0, 6},
+		SigningRootField:  {0, 0, 0, 10},
+
+		// tree prefixes use the first byte of a 4 byte slice by convention
+		CDTreePrefix:      {1, 0, 0, 0},
+		SigningTreePrefix: {2, 0, 0, 0},
+	}
+	return m[key]
 }
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
@@ -191,7 +203,7 @@ func (m *CoreDocumentModel) prepareNewVersion(collaborators []string) (*CoreDocu
 // NewWithCollaborators generates new core document, adds collaborators, adds read rules and fills salts
 func (m *CoreDocumentModel) NewWithCollaborators(collaborators []string) (*CoreDocumentModel, error) {
 	dm := NewCoreDocModel()
-	ids, err := identity.CentIDsFromStrings(collaborators)
+	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborator: %v", err)
 	}
@@ -218,7 +230,7 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	cdtree, err := m.GetDocumentTree()
+	cdtree, err := m.GetCoreDocumentTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -250,10 +262,10 @@ func (m *CoreDocumentModel) CreateProofs(dataTree *proofs.DocumentTree, fields [
 	return proofs, nil
 }
 
-// GetDocumentTree returns the merkle tree for the coredoc root
-func (m *CoreDocumentModel) GetDocumentTree() (tree *proofs.DocumentTree, err error) {
+// GetCoreDocumentTree returns the merkle tree for the coredoc root
+func (m *CoreDocumentModel) GetCoreDocumentTree() (tree *proofs.DocumentTree, err error) {
 	document := m.Document
-	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
+	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(m.Document.CoredocumentSalts), CDTreePrefix, compactProperties(CDTreePrefix))
 	err = tree.AddLeavesFromDocument(document)
 	if err != nil {
 		return nil, err
@@ -262,9 +274,10 @@ func (m *CoreDocumentModel) GetDocumentTree() (tree *proofs.DocumentTree, err er
 	if document.EmbeddedData == nil {
 		return nil, errors.New("EmbeddedData cannot be nil when generating signing tree")
 	}
+	prefixProp := NewLeafProperty(CDTreePrefix, compactProperties(CDTreePrefix))
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
-		Property: NewLeafProperty(DocumentTypeField, compactProperties[DocumentTypeField]),
+		Property: prefixProp.FieldProp(DocumentTypeField, binary.LittleEndian.Uint32(compactProperties(DocumentTypeField))),
 		Salt:     make([]byte, 32),
 		Value:    []byte(document.EmbeddedData.TypeUrl),
 	}
@@ -290,21 +303,23 @@ func (m *CoreDocumentModel) GetDocumentTree() (tree *proofs.DocumentTree, err er
 // GetDocumentSigningTree returns the merkle tree for the signing root
 func (m *CoreDocumentModel) GetDocumentSigningTree(dataRoot []byte) (tree *proofs.DocumentTree, err error) {
 	// coredoc tree
-	coreDocTree, err := m.GetDocumentTree()
+	coreDocTree, err := m.GetCoreDocumentTree()
 	if err != nil {
 		return nil, err
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = NewDefaultTree(ConvertToProofSalts(m.Document.CoredocumentSalts))
+	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(m.Document.CoredocumentSalts), SigningTreePrefix, compactProperties(SigningTreePrefix))
+	prefixProp := NewLeafProperty(SigningTreePrefix, compactProperties(SigningTreePrefix))
+
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
-			Property: NewLeafProperty(DataRootField, compactProperties[DataRootField]),
+			Property: prefixProp.FieldProp(DataRootField, binary.LittleEndian.Uint32(compactProperties(DataRootField))),
 			Hash:     dataRoot,
 			Hashed:   true,
 		},
 		{
-			Property: NewLeafProperty(CDRootField, compactProperties[CDRootField]),
+			Property: prefixProp.FieldProp(CDRootField, binary.LittleEndian.Uint32(compactProperties(CDRootField))),
 			Hash:     coreDocTree.RootHash(),
 			Hashed:   true,
 		},
@@ -328,13 +343,13 @@ func (m *CoreDocumentModel) GetDocumentRootTree() (tree *proofs.DocumentTree, er
 	tree = NewDefaultTree(ConvertToProofSalts(document.CoredocumentSalts))
 
 	// The first leave added is the signing_root
-	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: NewLeafProperty(SigningRootField, compactProperties[SigningRootField])})
+	err = tree.AddLeaf(proofs.LeafNode{Hash: document.SigningRoot, Hashed: true, Property: NewLeafProperty(SigningRootField, compactProperties(SigningRootField))})
 	if err != nil {
 		return nil, err
 	}
 
 	// For every signature we create a LeafNode
-	sigProperty := NewLeafProperty(SignaturesField, compactProperties[SignaturesField])
+	sigProperty := NewLeafProperty(SignaturesField, compactProperties(SignaturesField))
 	sigLeafList := make([]proofs.LeafNode, len(document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
 		Property: sigProperty.LengthProp(proofs.DefaultSaltsLengthSuffix),
@@ -398,7 +413,7 @@ func (m *CoreDocumentModel) getDataProofHashes(dataRoot []byte) (hashes [][]byte
 		return
 	}
 
-	signingProof, err := tree.CreateProof("data_root")
+	signingProof, err := tree.CreateProof(SigningTreePrefix + ".data_root")
 	if err != nil {
 		return
 	}
@@ -440,12 +455,17 @@ func (m *CoreDocumentModel) CalculateSigningRoot(dataRoot []byte) error {
 
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
-func (m *CoreDocumentModel) AccountCanRead(account identity.CentID) bool {
+func (m *CoreDocumentModel) AccountCanRead(account identity.DID) bool {
 	// loop though read rules, check all the rules
 	return m.findRole(func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountInRole(role, account)
 		return found
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
+}
+
+// GenerateCoreDocSalts generates coredoc salts
+func GenerateCoreDocSalts(document proto.Message) (*proofs.Salts, error) {
+	return GenerateNewSalts(document, CDTreePrefix, compactProperties(CDTreePrefix))
 }
 
 // GenerateNewSalts generates salts for new document
@@ -490,7 +510,7 @@ func ConvertToProofSalts(protoSalts []*coredocumentpb.DocumentSalt) *proofs.Salt
 // setCoreDocumentSalts creates a new coredocument.Salts and fills it in case that is not initialized yet
 func (m *CoreDocumentModel) setCoreDocumentSalts() error {
 	if m.Document.CoredocumentSalts == nil {
-		pSalts, err := GenerateNewSalts(m.Document, "", nil)
+		pSalts, err := GenerateCoreDocSalts(m.Document)
 		if err != nil {
 			return err
 		}
@@ -518,7 +538,7 @@ func (m *CoreDocumentModel) UnpackCoreDocument() error {
 // initReadRules initiates the read rules for a given CoreDocumentModel.
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
-func (m *CoreDocumentModel) initReadRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) initReadRules(collabs []identity.DID) error {
 	cd := m.Document
 	if len(cd.Roles) > 0 && len(cd.ReadRules) > 0 {
 		return nil
@@ -574,7 +594,7 @@ func (m *CoreDocumentModel) findRole(onRole func(rridx, ridx int, role *coredocu
 }
 
 // isAccountInRole returns the index of the collaborator and true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.CentID) (idx int, found bool) {
+func isAccountInRole(role *coredocumentpb.Role, account identity.DID) (idx int, found bool) {
 	for i, id := range role.Collaborators {
 		if bytes.Equal(id, account[:]) {
 			return i, true
@@ -594,7 +614,7 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.CentID) error {
+func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.DID) error {
 	if len(collabs) == 0 {
 		return nil
 	}
@@ -616,15 +636,17 @@ func (m *CoreDocumentModel) addCollaboratorsToReadSignRules(collabs []identity.C
 	return nil
 }
 
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
+func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
-		ocsm[hexutil.Encode(c)] = struct{}{}
+		cs := strings.ToLower(hexutil.Encode(c))
+		ocsm[cs] = struct{}{}
 	}
 
 	var uc []string
 	for _, c := range newCollabs {
-		if _, ok := ocsm[c]; ok {
+		cs := strings.ToLower(c)
+		if _, ok := ocsm[cs]; ok {
 			continue
 		}
 
@@ -632,7 +654,7 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	for _, c := range uc {
-		id, err := identity.CentIDFromString(c)
+		id, err := identity.NewDIDFromString(c)
 		if err != nil {
 			return nil, err
 		}
@@ -644,14 +666,11 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 }
 
 // GetExternalCollaborators returns collaborators of a document without the own centID.
-func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID) ([][]byte, error) {
+func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.DID) ([][]byte, error) {
 	var collabs [][]byte
 
 	for _, collab := range m.Document.Collaborators {
-		collabID, err := identity.ToCentID(collab)
-		if err != nil {
-			return nil, errors.New("failed to convert to CentID: %v", err)
-		}
+		collabID := identity.NewDIDFromBytes(collab)
 		if !selfCentID.Equal(collabID) {
 			collabs = append(collabs, collab)
 		}
@@ -661,7 +680,7 @@ func (m *CoreDocumentModel) GetExternalCollaborators(selfCentID identity.CentID)
 }
 
 // NFTOwnerCanRead checks if the nft owner/account can read the document
-func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.CentID) error {
+func (m *CoreDocumentModel) NFTOwnerCanRead(registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
 	if m.AccountCanRead(account) {
 		return nil
@@ -730,7 +749,7 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 }
 
 //ValidateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
-func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
+func (m *CoreDocumentModel) ValidateDocumentAccess(docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) error {
 	// checks which access type is relevant for the request
 	switch docReq.GetAccessType() {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
@@ -822,7 +841,7 @@ func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.N
 }
 
 // IsAccountInRole checks if the the account exists in the role provided
-func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.CentID) bool {
+func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.DID) bool {
 	role, err := getRole(roleKey, m.Document.Roles)
 	if err != nil {
 		return false
@@ -835,7 +854,7 @@ func (m *CoreDocumentModel) IsAccountInRole(roleKey []byte, account identity.Cen
 // GetNFTProofs generate proofs required to mint an NFT
 func (m *CoreDocumentModel) GetNFTProofs(
 	dataRoot []byte,
-	account identity.CentID,
+	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
@@ -864,7 +883,7 @@ func (m *CoreDocumentModel) GetNFTProofs(
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}
 
-	cdtree, err := m.GetDocumentTree()
+	cdtree, err := m.GetCoreDocumentTree()
 	if err != nil {
 		return nil, errors.New("failed to generate document tree: %v", err)
 	}
@@ -906,9 +925,9 @@ func getReadAccessProofKeys(m *CoreDocumentModel, registry common.Address, token
 	}
 
 	return []string{
-		fmt.Sprintf("read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
-		fmt.Sprintf("roles[%s].nfts[%d]", hexutil.Encode(rk), nftIdx), // proof that role with nft exists
-		fmt.Sprintf("read_rules[%d].action", rridx),                   // proof that this read rule has read access
+		fmt.Sprintf(CDTreePrefix+".read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
+		fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[%d]", hexutil.Encode(rk), nftIdx), // proof that role with nft exists
+		fmt.Sprintf(CDTreePrefix+".read_rules[%d].action", rridx),                   // proof that this read rule has read access
 	}, nil
 }
 
@@ -919,10 +938,10 @@ func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (
 	}
 
 	key := hexutil.Encode(nft.RegistryId)
-	return fmt.Sprintf("nfts[%s]", key), nil
+	return fmt.Sprintf(CDTreePrefix+".nfts[%s]", key), nil
 }
 
-func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.CentID) (pk string, err error) {
+func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.DID) (pk string, err error) {
 	role, err := getRole(roleKey, roles)
 	if err != nil {
 		return pk, err
@@ -933,5 +952,5 @@ func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account ident
 		return pk, ErrNFTRoleMissing
 	}
 
-	return fmt.Sprintf("roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx), nil
+	return fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx), nil
 }

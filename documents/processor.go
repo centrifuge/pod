@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -27,19 +26,19 @@ type Client interface {
 	GetSignaturesForDocument(ctx context.Context, model *CoreDocumentModel) error
 
 	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, receiverID identity.CentID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
 type defaultProcessor struct {
-	identityService  identity.Service
+	identityService  identity.ServiceDID
 	p2pClient        Client
 	anchorRepository anchors.AnchorRepository
 	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.Service, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
+func DefaultProcessor(idService identity.ServiceDID, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
 	return defaultProcessor{
 		identityService:  idService,
 		p2pClient:        p2pClient,
@@ -49,7 +48,7 @@ func DefaultProcessor(idService identity.Service, p2pClient Client, repository a
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.CentID) (err error) {
+func (dp defaultProcessor) Send(ctx context.Context, coreDocModel *CoreDocumentModel, recipient identity.DID) (err error) {
 	if coreDocModel == nil {
 		return errors.New("passed coreDocModel is nil")
 	}
@@ -192,24 +191,19 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return err
-	}
-
-	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, self.ID, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
-	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, self.ID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
-	if err != nil {
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+
+	isDone := <-done
+
+	if !isDone {
 		return errors.New("failed to commit anchor: %v", err)
 	}
 
-	<-confirmations
 	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", cd.DocumentIdentifier, cd.CurrentVersion, cd.NextVersion, cd.DocumentRoot)
 	return nil
 }
@@ -238,13 +232,8 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 	}
 
 	for _, c := range extCollaborators {
-		cID, erri := identity.ToCentID(c)
-		if erri != nil {
-			err = errors.AppendError(err, erri)
-			continue
-		}
-
-		erri = dp.Send(ctx, dm, cID)
+		DID := identity.NewDIDFromBytes(c)
+		erri := dp.Send(ctx, dm, DID)
 		if erri != nil {
 			err = errors.AppendError(err, erri)
 		}

@@ -13,6 +13,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -22,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -81,14 +82,14 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		txv1.Bootstrapper{},
+		&queue.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
-		txv1.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	idService := &testingcommons.MockIDService{}
-	ctx[identity.BootstrappedIDService] = idService
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()

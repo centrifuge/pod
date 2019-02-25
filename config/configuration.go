@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
@@ -41,6 +42,9 @@ const (
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
 
+	// Identity is the contract name for Identity
+	Identity ContractName = "identity"
+
 	// IdentityFactory is the contract name for IdentityFactory
 	IdentityFactory ContractName = "identityFactory"
 
@@ -52,8 +56,8 @@ const (
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
-func ContractNames() [4]ContractName {
-	return [4]ContractName{AnchorRepo, IdentityFactory, IdentityRegistry, PaymentObligation}
+func ContractNames() [5]ContractName {
+	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, PaymentObligation}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -116,7 +120,8 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-
+	GetKeys() (map[int]IDKey, error)
+	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
@@ -140,6 +145,18 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+}
+
+// IDKey represents a key pair
+type IDKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
+}
+
+// IDKeys holds key of an identity
+type IDKeys struct {
+	ID   []byte
+	Keys map[int]IDKey
 }
 
 // configuration holds the configuration details for the node.
@@ -460,9 +477,9 @@ func (c *configuration) initializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
-// SmartContractAddresses encapsulates the smart contract addresses ne
+// SmartContractAddresses encapsulates the smart contract addresses
 type SmartContractAddresses struct {
-	IdentityFactoryAddr, IdentityRegistryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
+	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -531,7 +548,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
 		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-		v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
 		v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
@@ -547,7 +563,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-	c.v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
 	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 }
