@@ -392,7 +392,7 @@ func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentMode
 		Value:   serializedInv,
 	}
 	doc.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
-	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
+	cdSalts, _ := documents.GenerateCoreDocSalts(doc)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 }
 

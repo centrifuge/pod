@@ -98,7 +98,7 @@ func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documen
 		},
 		EmbeddedDataSalts: documents.ConvertToProtoSalts(dataSalts),
 	}
-	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
+	cdSalts, _ := documents.GenerateCoreDocSalts(doc)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	dm := documents.NewCoreDocModel()
 	mockModel := MockModel{
