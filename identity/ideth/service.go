@@ -354,6 +354,12 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 	if err != nil {
 		return err
 	}
+	fmt.Println("req key", key)
+	fmt.Println("Purpose", purpose)
+	fmt.Println("Keys", keys)
+
+	keyss, err := contract.GetKeysByPurpose(opts, big.NewInt(2))
+	fmt.Println("Keys", keyss)
 
 	for _, p := range keys.Purposes {
 		if p.Cmp(big.NewInt(purpose)) == 0 {

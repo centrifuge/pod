@@ -27,7 +27,7 @@ func generateKeys(config config.Configuration) {
 	signPub, signPvt := config.GetSigningKeyPair()
 	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
 	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, "ed25519")
-	crypto.GenerateSigningKeyPair(signPub, signPvt, "ed25519")
+	crypto.GenerateSigningKeyPair(signPub, signPvt, "secp256k1")
 	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, "secp256k1")
 }
 
