@@ -264,7 +264,7 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.S
 	return i.InvoiceSalts, nil
 }
 
-// PackCoreDocument packs the Invoice into a Core Document
+// PackCoreDocument packs the Invoice into a CoreDocument
 // If the, Invoice is new, it creates a valid identifiers
 func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	invData := i.createP2PProtobuf()
