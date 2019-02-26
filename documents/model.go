@@ -208,10 +208,6 @@ func (m *CoreDocumentModel) prepareNewVersion(collaborators []string) (*CoreDocu
 	// copy over token registry
 	ndm.TokenRegistry = m.TokenRegistry
 
-	// copy over embedded data
-	ncd.EmbeddedData = ocd.EmbeddedData
-	ncd.EmbeddedDataSalts = ocd.EmbeddedDataSalts
-
 	return ndm, nil
 }
 

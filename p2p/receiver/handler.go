@@ -115,8 +115,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 	if sigReq.Document == nil {
 		return nil, errors.New("nil core document")
 	}
-	doc := sigReq.Document
-	dm.Document = doc
+	dm.Document = sigReq.Document
 	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)

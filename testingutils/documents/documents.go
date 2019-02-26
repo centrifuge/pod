@@ -114,7 +114,7 @@ func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) (*docume
 	}
 	dm.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
 
-	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
+	cdSalts, _ := documents.GenerateCoreDocSalts(dm.Document)
 	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	mockModel := MockModel{
 		CoreDocumentModel: dm,
