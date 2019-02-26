@@ -153,12 +153,12 @@ func TestPaymentObligationService(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIDService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
-				coreDocModel := documents.NewCoreDocModel()
-				coreDoc := coreDocModel.Document
-				coreDoc.DocumentRoot = utils.RandomSlice(32)
-				proof := getDummyProof(coreDoc)
+				cd, err := documents.NewCoreDocumentWithCollaborators(nil)
+				assert.NoError(t, err)
+				cd.Document.DocumentRoot = utils.RandomSlice(32)
+				proof := getDummyProof(&cd.Document)
 				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocumentModel: coreDocModel}, nil)
+				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIDService{}

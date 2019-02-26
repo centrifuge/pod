@@ -115,6 +115,10 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+	if sigReq == nil || sigReq.Document == nil {
+		return nil, errors.New("nil document provided")
+	}
+
 	model, err := srv.docSrv.DeriveFromCoreDocument(*sigReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)

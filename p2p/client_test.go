@@ -6,23 +6,22 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/golang/protobuf/proto"
-
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-protocol"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/golang/protobuf/proto"
+	libp2pPeer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -47,8 +46,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
 
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
-	coreDoc := coreDocModel.Document
+	_, cd := createCDWithEmbeddedPO(t)
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
@@ -56,11 +54,11 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
+	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(nil, errors.New("some error"))
-	resp, err := testClient.getSignatureForDocument(ctx, *coreDocModel, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
@@ -73,18 +71,17 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	idService := getIDMocks(centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
-	coreDoc := coreDocModel.Document
+	_, cd := createCDWithEmbeddedPO(t)
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
 
-	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
+	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
-	resp, err := testClient.getSignatureForDocument(ctx, *coreDocModel, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
@@ -96,8 +93,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	idService := getIDMocks(centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
-	coreDoc := coreDocModel.Document
+	_, cd := createCDWithEmbeddedPO(t)
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
@@ -105,14 +101,14 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
 
-	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
+	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
 	randomBytes := utils.RandomSlice(identity.CentIDLength)
 	signature := &coredocumentpb.Signature{EntityId: randomBytes, PublicKey: utils.RandomSlice(32)}
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForCID(centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
-	resp, err := testClient.getSignatureForDocument(ctx, *coreDocModel, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
 
 	m.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
@@ -149,4 +145,19 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	}
 
 	return &protocolpb.P2PEnvelope{Body: reqB}
+}
+
+func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+	po := new(purchaseorder.PurchaseOrder)
+	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), identity.RandomCentID().String())
+	assert.NoError(t, err)
+	_, err = po.DataRoot()
+	assert.NoError(t, err)
+	_, err = po.SigningRoot()
+	assert.NoError(t, err)
+	_, err = po.DocumentRoot()
+	assert.NoError(t, err)
+	cd, err := po.PackCoreDocument()
+	assert.NoError(t, err)
+	return po, cd
 }

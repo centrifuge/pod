@@ -76,7 +76,6 @@ func TestMain(m *testing.M) {
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{}
-
 	resp, err := handler.RequestDocumentSignature(context.Background(), req)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
@@ -171,21 +170,22 @@ func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
 	id, _ := cfg.GetIdentityID()
 	resp, err := handler.HandleInterceptor(context.Background(), defaultPID, protocol.ID(hexutil.Encode(id)), p2pEnv)
 	assert.Error(t, err, "must return error")
-	assert.Contains(t, err.Error(), "nil core document")
+	assert.Contains(t, err.Error(), "nil document provided")
 	assert.Nil(t, resp, "must be nil")
 }
 
 func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	dm := documents.NewCoreDocModel()
-	req := &p2ppb.AnchorDocumentRequest{Document: dm.Document}
+	cd, err := documents.NewCoreDocumentWithCollaborators(nil)
+	assert.NoError(t, err)
+	req := &p2ppb.AnchorDocumentRequest{Document: &cd.Document}
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, req)
 	assert.NoError(t, err)
 
 	id, _ := cfg.GetIdentityID()
 	resp, err := handler.HandleInterceptor(context.Background(), defaultPID, protocol.ID(hexutil.Encode(id)), p2pEnv)
 	assert.Error(t, err, "must return error")
-	assert.Contains(t, err.Error(), "core document is nil")
+	assert.Contains(t, err.Error(), "core Document embed data is nil")
 	assert.Nil(t, resp, "must be nil")
 }
 
