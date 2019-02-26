@@ -748,8 +748,9 @@ func (m *CoreDocumentModel) AddNFTToReadRules(registry common.Address, tokenID [
 	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
 	m.addNewRule(role, coredocumentpb.Action_ACTION_READ)
-	cdSalts, _ := GenerateNewSalts(m.Document, "", nil)
-	m.Document.CoredocumentSalts = ConvertToProtoSalts(cdSalts)
+	if err := m.setCoreDocumentSalts(); err != nil {
+		return errors.New("failed to generate CoreDocumentSalts")
+	}
 	return nil
 }
 
