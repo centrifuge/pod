@@ -503,6 +503,7 @@ func (cd *CoreDocument) CalculateSigningRoot(docType string) ([]byte, error) {
 	return cd.Document.SigningRoot, nil
 }
 
+// PackCoreDocument prepares the document into a core document.
 func (cd *CoreDocument) PackCoreDocument(data *any.Any, salts []*coredocumentpb.DocumentSalt) coredocumentpb.CoreDocument {
 	// lets copy the value so that mutations on the returned doc wont be reflected on Document we are holding
 	cdp := cd.Document
