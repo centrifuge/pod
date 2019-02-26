@@ -565,7 +565,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	err = dm.accessTokenOwnerCanRead(dr, granteeID[:])
 	assert.Error(t, err, "access token not found")
 	// valid access token
-	// TODO: this will always fail until identity v2
+	// TODO: this will always fail until validation for signatures is secp
 	//tr = &p2ppb.AccessTokenRequest{
 	//	DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
 	//	AccessTokenId:                at.Identifier,
@@ -724,12 +724,9 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ndm)
 
-	fmt.Println(ndm.Document.Roles)
-	//role := ndm.Document.Roles[0]
-	//rk := role.RoleKey
 	pf, err = getNFTUniqueProofKey(ndm.Document.Nfts, registry)
 	assert.NoError(t, err)
-	//assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), rk...))), pf)
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {

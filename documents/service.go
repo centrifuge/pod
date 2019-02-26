@@ -184,7 +184,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
 
-	doc := *docModel.Document
+	doc := docModel.Document
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
 	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
