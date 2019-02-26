@@ -5,6 +5,7 @@ package p2p_test
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"os"
 	"testing"
 
@@ -117,9 +118,9 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID identity.DID) *documents.CoreDocumentModel {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	account, err := contextutil.Account(ctx)
-	assert.NoError(t, err)
+	idConfig, err := identity.GetIdentityConfig(cfg)
+	assert.Nil(t, err)
+	idConfig.ID = localID
 	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
 	assert.NoError(t, err)
 	m, err := docService.DeriveFromCoreDocumentModel(dm)
@@ -135,9 +136,10 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID 
 	assert.NoError(t, err)
 	dm.Document.SigningRoot = tree.RootHash()
 
-	sig, err := account.SignMsg(dm.Document.SigningRoot)
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
 	assert.NoError(t, err)
-	dm.Document.Signatures = append(dm.Document.Signatures, sig)
+	dm.Document.Signatures = []*coredocumentpb.Signature{sig}
+
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	dm.Document.DocumentRoot = tree.RootHash()

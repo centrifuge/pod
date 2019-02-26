@@ -5,13 +5,13 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"math/big"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -281,7 +281,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	centrifugeId := createIdentity(t)
-
 	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
 
 	// Anchor document
@@ -397,8 +396,9 @@ func createIdentity(t *testing.T) identity.DID {
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel, did identity.DID) *documents.CoreDocumentModel {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	account, err := contextutil.Account(ctx)
+	idConfig, err := identity.GetIdentityConfig(cfg)
+	idConfig.ID = did
+	assert.Nil(t, err)
 	assert.NoError(t, err)
 	if dm == nil {
 		dm, err = testingdocuments.GenerateCoreDocumentModel()
@@ -417,8 +417,7 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel,
 	tree, err := dm.GetDocumentSigningTree(droot)
 	assert.NoError(t, err)
 	doc := dm.Document
-	doc.SigningRoot = tree.RootHash()
-	sig, err := account.SignMsg(dm.Document.SigningRoot)
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
 	doc.Signatures = []*coredocumentpb.Signature{sig}
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
@@ -443,11 +442,13 @@ func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentMode
 }
 
 func getAnchoredRequest(dm *documents.CoreDocumentModel) *p2ppb.AnchorDocumentRequest {
-	return &p2ppb.AnchorDocumentRequest{Document: dm.Document}
+	doc := *dm.Document
+	return &p2ppb.AnchorDocumentRequest{Document: &doc}
 }
 
 func getSignatureRequest(dm *documents.CoreDocumentModel) *p2ppb.SignatureRequest {
-	return &p2ppb.SignatureRequest{Document: dm.Document}
+	doc := *dm.Document
+	return &p2ppb.SignatureRequest{Document: &doc}
 }
 
 func getDocumentRequestPeer(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
