@@ -45,6 +45,12 @@ func (m *mockModel) DocumentRoot() ([]byte, error) {
 	return dr, args.Error(1)
 }
 
+func (m *mockModel) PreviousDocumentRoot() []byte {
+	args := m.Called()
+	dr, _ := args.Get(0).([]byte)
+	return dr
+}
+
 func (m *mockModel) AppendSignatures(sigs ...*coredocumentpb.Signature) {
 	m.Called(sigs)
 	m.sigs = sigs
@@ -52,17 +58,26 @@ func (m *mockModel) AppendSignatures(sigs ...*coredocumentpb.Signature) {
 
 func (m *mockModel) ID() []byte {
 	args := m.Called()
-	return args.Get(0).([]byte)
+	id, _ := args.Get(0).([]byte)
+	return id
 }
 
 func (m *mockModel) CurrentVersion() []byte {
 	args := m.Called()
-	return args.Get(0).([]byte)
+	id, _ := args.Get(0).([]byte)
+	return id
 }
 
 func (m *mockModel) NextVersion() []byte {
 	args := m.Called()
-	return args.Get(0).([]byte)
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *mockModel) PreviousVersion() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
 }
 
 func (m *mockModel) Signatures() []coredocumentpb.Signature {
