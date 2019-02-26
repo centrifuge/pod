@@ -550,7 +550,7 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning].PrivateKey, msg, crypto.CurveSecp256K1, true)
+	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning].PrivateKey, msg, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}

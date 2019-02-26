@@ -250,7 +250,7 @@ func readyForSignaturesValidator(didBytes, priv, pub []byte) Validator {
 			return errors.New("expecting only one signature")
 		}
 
-		s, err := crypto.SignMessage(priv, cd.SigningRoot, crypto.CurveSecp256K1, true)
+		s, err := crypto.SignMessage(priv, cd.SigningRoot, crypto.CurveSecp256K1)
 		if err != nil {
 			return err
 		}

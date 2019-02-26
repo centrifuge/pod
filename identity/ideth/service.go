@@ -455,7 +455,11 @@ func (i service) ValidateSignature(signature *coredocumentpb.Signature, message 
 		return err
 	}
 
-	return crypto.VerifySignature(signature.PublicKey, message, signature.Signature)
+	if !crypto.VerifyMessage(signature.PublicKey, message, signature.Signature, crypto.CurveSecp256K1) {
+		return errors.New("error when validating signature")
+	}
+
+	return nil
 }
 
 // ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes

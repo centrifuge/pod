@@ -22,7 +22,7 @@ var (
 )
 
 func TestSign(t *testing.T) {
-	sig, err := SignMessage(key1, key1Pub, CurveSecp256K1, true)
+	sig, err := SignMessage(key1, key1Pub, CurveSecp256K1)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, sig)
 	assert.Len(t, sig, 65)
@@ -34,17 +34,8 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 	message := key1Pub
 	signature := utils.RandomSlice(32)
 	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pubKey)))
-	err := VerifySignature(pk32[:], message, signature)
-	assert.NotNil(t, err, "must be not nil")
-	assert.Contains(t, err.Error(), "invalid signature")
-}
-
-func TestValidateSignature_success(t *testing.T) {
-	pubKey := key1Pub
-	message := key1Pub
-	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pubKey)))
-	err := VerifySignature(pk32[:], message, signature)
-	assert.Nil(t, err, "must be nil")
+	valid := VerifyMessage(pk32[:], message, signature, CurveSecp256K1)
+	assert.False(t, valid, "must be false")
 }
 
 func TestSignMessage(t *testing.T) {
@@ -58,9 +49,10 @@ func TestSignMessage(t *testing.T) {
 	assert.Nil(t, err)
 	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
 	assert.Nil(t, err)
-	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, false)
+	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1)
 	assert.Nil(t, err)
-	correct := VerifyMessage(publicKey, testMsg, signature, CurveSecp256K1, false)
+	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(publicKey)))
+	correct := VerifyMessage(pk32[:], testMsg, signature, CurveSecp256K1)
 
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
@@ -77,7 +69,7 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
 	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
-	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1, true)
+	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1)
 	assert.Nil(t, err)
 
 	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
@@ -92,7 +84,8 @@ func TestSignAndVerifyMessageEthereum(t *testing.T) {
 	fmt.Println("signature:", hexutil.Encode(signature))
 	fmt.Println("Generated Signature can also be verified at https://etherscan.io/verifySig")
 
-	correct := VerifyMessage(publicKey, testMsg, signature, CurveSecp256K1, true)
+	pk32 := utils.AddressTo32Bytes(common.HexToAddress(address))
+	correct := VerifyMessage(pk32[:], testMsg, signature, CurveSecp256K1)
 
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)
