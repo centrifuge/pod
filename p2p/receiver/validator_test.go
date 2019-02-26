@@ -17,7 +17,7 @@ import (
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 )
 
-var id1 = []byte{1, 1, 1, 1, 1, 1}
+var id1 = []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 
 func TestValidate_versionValidator(t *testing.T) {
 	vv := versionValidator()
