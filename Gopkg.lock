@@ -57,14 +57,14 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:4542fc4bb0f0bab4d9fad7bf85ca7152cf706eb0ccb1f501899f625af6865d34"
+  digest = "1:bedc0b304fccce285e74ebae57d61c4b190b1a420b0c07afb1d4c2da56d164b8"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
+  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
 
 [[projects]]
-  digest = "1:dfe1a0223d1205b5d387f9409d72e88877c7470c79930dd00da6d63f4b0af963"
+  digest = "1:3dfab93e13cbc54458ddd94ac88c0f01eb724b28a7dd3eef5923903d1fe71cef"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,7 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "5615ef01001f185e1ecbe10eb9604b5eeaae0b04"
+  revision = "3e3292cf89ce246d64863fa28ac1f4cb4e57dd3e"
 
 [[projects]]
   digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
@@ -848,13 +848,6 @@
   version = "v1.8.0"
 
 [[projects]]
-  digest = "1:bedc0b304fccce285e74ebae57d61c4b190b1a420b0c07afb1d4c2da56d164b8"
-  name = "github.com/manuelpolzhofer/centrifuge-ethereum-contracts"
-  packages = ["."]
-  pruneopts = "T"
-  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
-
-[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -1545,10 +1538,10 @@
     "github.com/libp2p/go-libp2p-peerstore",
     "github.com/libp2p/go-libp2p-protocol",
     "github.com/magiconair/properties/assert",
-    "github.com/manuelpolzhofer/centrifuge-ethereum-contracts",
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
+    "github.com/pkg/errors",
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",

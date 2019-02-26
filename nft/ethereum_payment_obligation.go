@@ -35,7 +35,7 @@ type Config interface {
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
 	cfg             Config
-	identityService identity.Service
+	identityService identity.ServiceDID
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
@@ -47,7 +47,7 @@ type ethereumPaymentObligation struct {
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func newEthereumPaymentObligation(
 	cfg Config,
-	identityService identity.Service,
+	identityService identity.ServiceDID,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
@@ -66,7 +66,7 @@ func newEthereumPaymentObligation(
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.CentID, req MintNFTRequest) (mreq MintRequest, err error) {
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
@@ -123,10 +123,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 		return nil, nil, err
 	}
 
-	cid, err := identity.ToCentID(cidBytes)
-	if err != nil {
-		return nil, nil, err
-	}
+	cid := identity.NewDIDFromBytes(cidBytes)
 
 	if !req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
 		return nil, nil, errors.New("enable grant_nft_access to generate Read Access Proof")
@@ -158,8 +155,8 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 	}, done, nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 		tc, err := contextutil.Account(ctx)
 		if err != nil {
 			errOut <- err
@@ -180,7 +177,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 
 		isDone := <-done
 		if !isDone {
-			// some problem occured in a child task
+			// some problem occurred in a child task
 			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
 			return
 		}

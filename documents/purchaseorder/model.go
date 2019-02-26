@@ -23,7 +23,8 @@ import (
 
 const prefix string = "po"
 
-var compactPrefix = []byte{2, 0, 0, 0}
+// tree prefixes use the first byte of a 4 byte slice by convention
+func compactPrefix() []byte { return []byte{4, 0, 0, 0} }
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
@@ -45,7 +46,7 @@ type PurchaseOrder struct {
 	NetAmount          int64  // invoice amount excluding tax
 	TaxAmount          int64
 	TaxRate            int64
-	Recipient          *identity.CentID
+	Recipient          *identity.DID
 	Order              []byte
 	OrderContact       string
 	Comment            string
@@ -188,8 +189,10 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 	p.DeliveryDate = data.DeliveryDate
 	p.DateCreated = data.DateCreated
 
-	if recipient, err := identity.CentIDFromString(data.Recipient); err == nil {
-		p.Recipient = &recipient
+	if data.Recipient != "" {
+		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
+			p.Recipient = &recipient
+		}
 	}
 
 	if data.ExtraData != "" {
@@ -230,7 +233,8 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.DateCreated = data.DateCreated
 	p.ExtraData = data.ExtraData
 
-	if recipient, err := identity.ToCentID(data.Recipient); err == nil {
+	if data.Recipient != nil {
+		recipient := identity.NewDIDFromBytes(data.Recipient)
 		p.Recipient = &recipient
 	}
 }
@@ -238,7 +242,7 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
 func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
 	if p.PurchaseOrderSalts == nil {
-		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix)
+		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix())
 		if err != nil {
 			return nil, errors.New("getPOSalts error %v", err)
 		}
@@ -331,7 +335,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -393,7 +397,7 @@ func (p *PurchaseOrder) CalculateSigningRoot() ([]byte, error) {
 
 // CreateNFTProofs creates proofs specific to NFT minting.
 func (p *PurchaseOrder) CreateNFTProofs(
-	account identity.CentID,
+	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {

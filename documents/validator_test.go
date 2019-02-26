@@ -242,14 +242,17 @@ func TestValidator_documentRootValidator(t *testing.T) {
 }
 
 func TestValidator_selfSignatureValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
-	idKeys := self.Keys[identity.KeyPurposeSigning]
-	rfsv := readyForSignaturesValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
+	account, _ := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
+	keys, err := account.GetKeys()
+	assert.Nil(t, err)
+	accID, err := account.GetIdentityID()
+	assert.NoError(t, err)
+	rfsv := readyForSignaturesValidator(accID, keys[identity.KeyPurposeSigning].PrivateKey, keys[identity.KeyPurposeSigning].PublicKey)
 
 	// fail to get signing root
 	model := new(mockModel)
 	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
-	err := rfsv.Validate(nil, model)
+	err = rfsv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
 
@@ -292,7 +295,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 }
 
 func TestValidator_signatureValidator(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	ssv := signaturesValidator(srv)
 
 	// fail to get signing root
@@ -322,7 +325,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
-	srv = new(testingcommons.MockIDService)
+	srv = new(testingcommons.MockIdentityService)
 	srv.On("ValidateSignature", s, sr).Return(errors.New("error")).Once()
 	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
@@ -336,7 +339,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
-	srv = new(testingcommons.MockIDService)
+	srv = new(testingcommons.MockIdentityService)
 	srv.On("ValidateSignature", s, sr).Return(nil).Once()
 	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)

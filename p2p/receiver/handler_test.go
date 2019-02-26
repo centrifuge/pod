@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -39,7 +41,7 @@ var (
 	handler       *Handler
 	registry      *documents.ServiceRegistry
 	cfg           config.Configuration
-	mockIDService *testingcommons.MockIDService
+	mockIDService *testingcommons.MockIdentityService
 	defaultPID    libp2pPeer.ID
 )
 
@@ -58,17 +60,18 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
+	mockIDService = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDService] = mockIDService
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	docSrv := documents.DefaultService(nil, nil, nil, registry)
-	mockIDService = &testingcommons.MockIDService{}
+	docSrv := documents.DefaultService(nil, nil, registry, mockIDService)
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
-	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	handler = New(cfgService, HandshakeValidator(cfg.GetNetworkID(), mockIDService), docSrv)
+	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	handler = New(cfgService, HandshakeValidator(cfg.GetNetworkID(), mockIDService), docSrv, new(testingdocuments.MockRegistry))
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -101,7 +104,7 @@ func TestHandler_HandleInterceptor_CentIDNotHex(t *testing.T) {
 	assert.NoError(t, err)
 	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), p2pEnv)
 	assert.Error(t, err, "must return error")
-	assert.Contains(t, err.Error(), "hex string without 0x prefix")
+	assert.Equal(t, err, identity.ErrMalformedAddress)
 	assert.Nil(t, resp, "must be nil")
 }
 
@@ -109,7 +112,7 @@ func TestHandler_HandleInterceptor_TenantNotFound(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
 	assert.NoError(t, err)
-	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("0x001100110011"), p2pEnv)
+	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("0x89b0a86583c4442acfd71b463e0d3c55ae1412a5"), p2pEnv)
 	assert.Error(t, err, "must return error")
 	assert.Contains(t, err.Error(), "model not found in db")
 	assert.Nil(t, resp, "must be nil")
@@ -210,7 +213,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 	}
 
 	id, _ := cfg.GetIdentityID()
-	centID, _ := identity.ToCentID(id)
+	centID := identity.NewDIDFromBytes(id)
 	for _, c := range tests {
 		err := HandshakeValidator(cfg.GetNetworkID(), mockIDService).Validate(c.header, &centID, &defaultPID)
 		if err != nil {

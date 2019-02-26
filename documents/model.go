@@ -59,7 +59,7 @@ type Model interface {
 
 	// CreateNFTProofs creates NFT proofs for minting.
 	CreateNFTProofs(
-		account identity.CentID,
+		account identity.DID,
 		registry common.Address,
 		tokenID []byte,
 		nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error)
@@ -73,7 +73,16 @@ type Model interface {
 
 	// GetCollaborators returns the collaborators of this Document.
 	// filter ids should not be returned
-	GetCollaborators(filterIDs ...identity.CentID) ([]identity.CentID, error)
+	GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)
+
+	// AccountCanRead returns true if the account can read the document
+	AccountCanRead(account identity.DID) bool
+
+	// NFTOwnerCanRead returns error if the NFT cannot read the document.
+	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
+
+	// ATOwnerCanRead returns error if the NFT cannot read the document.
+	ATOwnerCanRead(tokenID, docID []byte, account identity.DID) (err error)
 }
 
 // TokenRegistry defines NFT related functions.

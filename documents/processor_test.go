@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -89,9 +90,9 @@ func (m *mockModel) Signatures() []coredocumentpb.Signature {
 	return ss
 }
 
-func (m *mockModel) GetCollaborators(filterIDs ...identity.CentID) ([]identity.CentID, error) {
+func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
 	args := m.Called(filterIDs)
-	cids, _ := args.Get(0).([]identity.CentID)
+	cids, _ := args.Get(0).([]identity.DID)
 	return cids, args.Error(1)
 }
 
@@ -102,8 +103,9 @@ func (m *mockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
 }
 
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
+
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// failed to get self
@@ -149,20 +151,20 @@ type p2pClient struct {
 	Client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, error) {
+func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, error) {
 	args := p.Called(ctx, model)
 	sigs, _ := args.Get(0).([]*coredocumentpb.Signature)
 	return sigs, args.Error(1)
 }
 
-func (p p2pClient) SendAnchoredDocument(ctx context.Context, receiverID identity.CentID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (p *p2pClient) SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	args := p.Called(ctx, receiverID, in)
 	resp, _ := args.Get(0).(*p2ppb.AnchorDocumentResponse)
 	return resp, args.Error(1)
 }
 
 func TestDefaultProcessor_RequestSignatures(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -197,7 +199,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
-	c := p2pClient{}
+	c := new(p2pClient)
 	c.On("GetSignaturesForDocument", ctxh, model).Return(nil, errors.New("failed to get signatures")).Once()
 	dp.p2pClient = c
 	err = dp.RequestSignatures(ctxh, model)
@@ -215,7 +217,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("Signatures").Return()
 	model.On("AppendSignatures", []*coredocumentpb.Signature{sig}).Return().Once()
 	model.sigs = append(model.sigs, sig)
-	c = p2pClient{}
+	c = new(p2pClient)
 	c.On("GetSignaturesForDocument", ctxh, model).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 	dp.p2pClient = c
 	err = dp.RequestSignatures(ctxh, model)
@@ -225,7 +227,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 }
 
 func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
@@ -245,7 +247,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(errors.New("validation failed")).Once()
 	dp.identityService = srv
 	err = dp.PrepareForAnchoring(model)
@@ -261,7 +263,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	err = dp.PrepareForAnchoring(model)
@@ -275,9 +277,9 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *anchors.WatchCommit, err error) {
-	args := m.Called(anchorID, documentRoot, centID, documentProofs, signature)
-	c, _ := args.Get(0).(chan *anchors.WatchCommit)
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProofs [][32]byte) (done chan bool, err error) {
+	args := m.Called(anchorID, documentRoot, documentProofs)
+	c, _ := args.Get(0).(chan bool)
 	return c, args.Error(1)
 }
 
@@ -288,7 +290,7 @@ func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.Document
 }
 
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	self, err := contextutil.Self(ctxh)
@@ -308,7 +310,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(nil, errors.New("error"))
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	err = dp.AnchorDocument(ctxh, model)
@@ -326,13 +328,13 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
-	ch := make(chan *anchors.WatchCommit, 1)
-	ch <- new(anchors.WatchCommit)
-	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
+	ch := make(chan bool, 1)
+	ch <- true
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -342,7 +344,8 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 }
 
 func TestDefaultProcessor_SendDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	self, err := contextutil.Self(ctxh)
@@ -364,7 +367,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
@@ -389,7 +392,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
@@ -409,10 +412,10 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return([]identity.CentID{identity.RandomCentID()}, nil).Once()
+	model.On("GetCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil).Once()
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
@@ -426,7 +429,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 
 	// send failed
 	cd := coredocumentpb.CoreDocument{}
-	cid := identity.RandomCentID()
+	did := testingidentity.GenerateRandomDID()
 	model = new(mockModel)
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
@@ -434,16 +437,16 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return([]identity.CentID{cid}, nil).Once()
+	model.On("GetCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
 	repo.On("GetDocumentRootOf", aid).Return(dr, nil).Once()
-	client := p2pClient{}
-	client.On("SendAnchoredDocument", mock.Anything, cid, mock.Anything).Return(nil, errors.New("error")).Once()
+	client := new(p2pClient)
+	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
 	dp.anchorRepository = repo
 	dp.p2pClient = client
 	err = dp.SendDocument(ctxh, model)
@@ -461,16 +464,16 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return([]identity.CentID{cid}, nil).Once()
+	model.On("GetCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIDService{}
+	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
 	repo.On("GetDocumentRootOf", aid).Return(dr, nil).Once()
-	client = p2pClient{}
-	client.On("SendAnchoredDocument", mock.Anything, cid, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
+	client = new(p2pClient)
+	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
 	dp.anchorRepository = repo
 	dp.p2pClient = client
 	err = dp.SendDocument(ctxh, model)

@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -28,19 +27,19 @@ type Client interface {
 	GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, error)
 
 	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, receiverID identity.CentID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
 type defaultProcessor struct {
-	identityService  identity.Service
+	identityService  identity.ServiceDID
 	p2pClient        Client
 	anchorRepository anchors.AnchorRepository
 	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.Service, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
+func DefaultProcessor(idService identity.ServiceDID, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
 	return defaultProcessor{
 		identityService:  idService,
 		p2pClient:        p2pClient,
@@ -50,12 +49,12 @@ func DefaultProcessor(idService identity.Service, p2pClient Client, repository a
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.CentID) (err error) {
+func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (err error) {
 	log.Infof("sending document %x to recipient %x", cd.DocumentIdentifier, id)
-	c, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
+	ctx, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
 	defer cancel()
 
-	resp, err := dp.p2pClient.SendAnchoredDocument(c, id, &p2ppb.AnchorDocumentRequest{Document: &cd})
+	resp, err := dp.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: &cd})
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
@@ -148,25 +147,20 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return err
-	}
-
-	// generate message authentication code for the anchor call
-	mac, err := secp256k1.SignEthereum(anchors.GenerateCommitHash(anchorID, self.ID, rootHash), self.Keys[identity.KeyPurposeEthMsgAuth].PrivateKey)
 	if err != nil {
 		return errors.New("failed to generate ethereum MAC: %v", err)
 	}
 
-	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), dr)
-	confirmations, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, self.ID, [][anchors.DocumentProofLength]byte{utils.RandomByte32()}, mac)
-	if err != nil {
+	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+
+	isDone := <-done
+
+	if !isDone {
 		return errors.New("failed to commit anchor: %v", err)
 	}
 
-	<-confirmations
-	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), dr)
+	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
 	return nil
 }
 

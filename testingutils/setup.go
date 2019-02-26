@@ -1,4 +1,4 @@
-// +build integration unit cmd
+// +build integration unit cmd testworld
 
 package testingutils
 
@@ -54,12 +54,10 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 	idFactoryAddrOp := getOpForContract(".contracts.IdentityFactory.address")
-	idRegistryAddrOp := getOpForContract(".contracts.IdentityRegistry.address")
 	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.address")
 	payObAddrOp := getOpForContract(".contracts.PaymentObligation.address")
 	return &config.SmartContractAddresses{
 		IdentityFactoryAddr:   getOpAddr(idFactoryAddrOp, dat),
-		IdentityRegistryAddr:  getOpAddr(idRegistryAddrOp, dat),
 		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
 		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
 	}

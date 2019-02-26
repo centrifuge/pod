@@ -1,6 +1,6 @@
 // +build integration
 
-package did
+package ideth
 
 import (
 	"context"
@@ -9,12 +9,15 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -25,6 +28,9 @@ var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
+
+	ctx = testingutils.BuildIntegrationTestingContext()
+
 	var bootstappers = []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -32,7 +38,7 @@ func TestMain(m *testing.M) {
 		txv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		&ethid.Bootstrapper{},
+		&Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&Bootstrapper{},
 		&queue.Starter{},
@@ -46,7 +52,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateIdentity_successful(t *testing.T) {
-	factory := ctx[BootstrappedDIDFactory].(Factory)
+
+	factory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -58,6 +65,6 @@ func TestCreateIdentity_successful(t *testing.T) {
 	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.ToAddress(), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
 
-	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be arround 3378 bytes")
+	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
 
 }

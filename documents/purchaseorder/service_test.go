@@ -5,11 +5,12 @@ package purchaseorder
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -26,7 +27,7 @@ import (
 )
 
 var (
-	cid       = identity.RandomCentID()
+	cid       = testingidentity.GenerateRandomDID()
 	accountID = cid[:]
 )
 
@@ -41,15 +42,15 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	return docRoot, args.Error(1)
 }
 
-func getServiceWithMockedLayers() (*testingcommons.MockIDService, Service) {
-	idService := &testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service) {
+	idService := &testingcommons.MockIdentityService{}
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, idService, mockAnchor, documents.NewServiceRegistry())
+	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
 	return idService, DefaultService(docSrv, repo, queueSrv, txManager)
 }
 
@@ -69,7 +70,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	data.OrderAmount = 100
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
-	collab := hexutil.Encode(utils.RandomSlice(6))
+	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
 		Identifier:    hexutil.Encode(po.ID()),
 		Collaborators: []string{collab},
@@ -128,7 +129,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
-		Recipient: "0x010203040506",
+		Recipient: "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
 		ExtraData: "some data",
 		Currency:  "EUR",
 	}
@@ -148,7 +149,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// success
-	wantCollab := identity.RandomCentID()
+	wantCollab := testingidentity.GenerateRandomDID()
 	payload.Collaborators = []string{wantCollab.String()}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
@@ -209,7 +210,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	po, ok := m.(*PurchaseOrder)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, po.Recipient.String(), "0x010203040506")
+	assert.Equal(t, po.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
 	assert.Equal(t, po.OrderAmount, int64(42))
 }
 
@@ -273,7 +274,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Equal(t, []string{cid.String(), "0x010101010101"}, r.Header.Collaborators)
+	assert.Equal(t, []string{cid.String(), payload.Collaborators[0]}, r.Header.Collaborators)
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {

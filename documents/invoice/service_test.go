@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -17,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	cid       = identity.RandomCentID()
-	accountID = cid[:]
+	cid         = testingidentity.GenerateRandomDID()
+	centIDBytes = cid[:]
+	accountID   = cid[:]
 )
 
 type mockAnchorRepo struct {
@@ -41,15 +42,17 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	return docRoot, args.Error(1)
 }
 
-func getServiceWithMockedLayers() (testingcommons.MockIDService, Service) {
-	idService := testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(centIDBytes, nil)
+	idService := testingcommons.MockIdentityService{}
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry())
+	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService)
 	return idService, DefaultService(
 		docSrv,
 		repo,
@@ -82,7 +85,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	data.GrossAmount = 100
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
-	collab := hexutil.Encode(utils.RandomSlice(6))
+	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
 		Identifier:    hexutil.Encode(model.ID()),
 		Collaborators: []string{collab},
@@ -141,9 +144,12 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
-		Recipient: "0x010203040506",
-		ExtraData: "some data",
-		Currency:  "EUR",
+		Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
+		Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
+		Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
+		GrossAmount: 42,
+		ExtraData:   "some data",
+		Currency:    "EUR",
 	}
 
 	payload.Identifier = hexutil.Encode(old.ID())
@@ -160,7 +166,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// success
-	wantCollab := identity.RandomCentID()
+	wantCollab := testingidentity.GenerateRandomDID()
+
 	payload.Collaborators = []string{wantCollab.String()}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
@@ -221,7 +228,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	inv, ok := m.(*Invoice)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, inv.Recipient.String(), "0x010203040506")
+	assert.Equal(t, inv.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
 	assert.Equal(t, inv.GrossAmount, int64(42))
 }
 
@@ -279,7 +286,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	payload := testingdocuments.CreateInvoicePayload()
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Equal(t, []string{cid.String(), "0x010101010101"}, r.Header.Collaborators)
+	assert.Contains(t, r.Header.Collaborators, cid.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {

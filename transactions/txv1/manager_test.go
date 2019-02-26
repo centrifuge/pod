@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -21,9 +23,9 @@ func (mockConfig) GetEthereumContextWaitTimeout() time.Duration {
 }
 
 func TestService_ExecuteWithinTX_happy(t *testing.T) {
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
-	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "", func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
 		err <- nil
 	})
 	<-done
@@ -35,9 +37,9 @@ func TestService_ExecuteWithinTX_happy(t *testing.T) {
 }
 
 func TestService_ExecuteWithinTX_err(t *testing.T) {
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
-	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "", func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
 		err <- errors.New("dummy")
 	})
 	<-done
@@ -49,10 +51,10 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 }
 
 func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
 	ctx, canc := context.WithCancel(context.Background())
-	tid, done, err := srv.ExecuteWithinTX(ctx, cid, transactions.NilTxID(), "", func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+	tid, done, err := srv.ExecuteWithinTX(ctx, cid, transactions.NilTxID(), "", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
 		// doing nothing
 	})
 	canc()
@@ -69,7 +71,7 @@ func TestService_GetTransaction(t *testing.T) {
 	repo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
 	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	bytes := utils.RandomSlice(identity.CentIDLength)
 	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
 	txn := transactions.NewTransaction(cid, "Some transaction")
@@ -109,23 +111,23 @@ func TestService_GetTransaction(t *testing.T) {
 
 func TestService_CreateTransaction(t *testing.T) {
 	srv := ctx[transactions.BootstrappedService].(extendedManager)
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 	tx, err := srv.createTransaction(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, cid.String(), tx.CID.String())
+	assert.Equal(t, cid.String(), tx.DID.String())
 }
 
 func TestService_WaitForTransaction(t *testing.T) {
 	srv := ctx[transactions.BootstrappedService].(extendedManager)
 	repo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
-	cid := identity.RandomCentID()
+	cid := testingidentity.GenerateRandomDID()
 
 	// failed
 	tx, err := srv.createTransaction(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, cid.String(), tx.CID.String())
+	assert.Equal(t, cid.String(), tx.DID.String())
 	tx.Status = transactions.Failed
 	assert.NoError(t, repo.Save(tx))
 	assert.Error(t, srv.WaitForTransaction(cid, tx.ID))

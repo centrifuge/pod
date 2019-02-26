@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -14,12 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func enqueueJob(t *testing.T, txHash string) (transactions.Manager, identity.CentID, transactions.TxID, chan bool) {
+func enqueueJob(t *testing.T, txHash string) (transactions.Manager, identity.DID, transactions.TxID, chan bool) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 
-	cid := identity.RandomCentID()
-	tx, done, err := txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Check TX status", func(accountID identity.CentID, txID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
+	cid := testingidentity.GenerateRandomDID()
+	tx, done, err := txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Check TX status", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
 		result, err := queueSrv.EnqueueJob(ethereum.EthTXStatusTaskName, map[string]interface{}{
 			transactions.TxIDParam:           txID.String(),
 			ethereum.TransactionAccountParam: cid.String(),

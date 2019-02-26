@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -33,7 +35,7 @@ import (
 
 var (
 	cfg       config.Service
-	idService identity.Service
+	idService identity.ServiceDID
 )
 
 func TestMain(m *testing.M) {
@@ -51,8 +53,9 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	idService = &testingcommons.MockIDService{}
-	ctx[identity.BootstrappedIDService] = idService
+	idService = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDService] = idService
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
@@ -69,7 +72,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfgMock, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil)
+		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil, new(testingdocuments.MockRegistry))
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)

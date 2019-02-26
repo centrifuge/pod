@@ -2,7 +2,9 @@ package documents
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
+	"strings"
 
 	"github.com/golang/protobuf/ptypes/any"
 
@@ -39,14 +41,27 @@ const (
 
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
+
+	// CDTreePrefix is the human readable prefix for core doc tree props
+	CDTreePrefix = "cd_tree"
+
+	// SigningTreePrefix is the human readable prefix for signing tree props
+	SigningTreePrefix = "signing_tree"
 )
 
-var compactProperties = map[string][]byte{
-	CDRootField:       {0, 0, 0, 7},
-	DataRootField:     {0, 0, 0, 5},
-	DocumentTypeField: {0, 0, 0, 100},
-	SignaturesField:   {0, 0, 0, 6},
-	SigningRootField:  {0, 0, 0, 10},
+func compactProperties(key string) []byte {
+	m := map[string][]byte{
+		CDRootField:       {0, 0, 0, 7},
+		DataRootField:     {0, 0, 0, 5},
+		DocumentTypeField: {0, 0, 0, 100},
+		SignaturesField:   {0, 0, 0, 6},
+		SigningRootField:  {0, 0, 0, 10},
+
+		// tree prefixes use the first byte of a 4 byte slice by convention
+		CDTreePrefix:      {1, 0, 0, 0},
+		SigningTreePrefix: {2, 0, 0, 0},
+	}
+	return m[key]
 }
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
@@ -76,7 +91,7 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 // NewCoreDocumentWithCollaborators generates new core Document, adds collaborators, adds read rules and fills salts
 func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, error) {
 	cd := newCoreDocument()
-	ids, err := identity.CentIDsFromStrings(collaborators)
+	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborators: %v", err)
 	}
@@ -130,7 +145,7 @@ func (cd *CoreDocument) setSalts() error {
 		return nil
 	}
 
-	pSalts, err := GenerateNewSalts(&cd.Document, "", nil)
+	pSalts, err := GenerateNewSalts(&cd.Document, CDTreePrefix, compactProperties(CDTreePrefix))
 	if err != nil {
 		return err
 	}
@@ -187,7 +202,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 // addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
 // The operation is no-op if no collaborators is provided.
 // The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
-func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.CentID) {
+func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
 	if len(collaborators) == 0 {
 		return
 	}
@@ -237,7 +252,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 
 	// generate proofs from cdTree. fail if any proofs are missed after this
 	pfs, missedPfs := generateProofs(cdTree, missedPfs, append([][]byte{dataRoot}, srpHashes...))
-	if len(missedPfs) != 0 {
+	if len(missedPfs) > 0 {
 		return nil, errors.New("failed to generate proofs for %v", missedPfs)
 	}
 
@@ -284,25 +299,24 @@ func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error
 	}
 
 	tree = NewDefaultTree(ConvertToProofSalts(cd.Document.CoredocumentSalts))
+
 	// The first leave added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
 		Hash:     cd.Document.SigningRoot,
 		Hashed:   true,
-		Property: NewLeafProperty(SigningRootField, compactProperties[SigningRootField]),
-	})
+		Property: NewLeafProperty(SigningRootField, compactProperties(SigningRootField))})
 	if err != nil {
 		return nil, err
 	}
 
 	// For every signature we create a LeafNode
-	sigProperty := NewLeafProperty(SignaturesField, compactProperties[SignaturesField])
+	sigProperty := NewLeafProperty(SignaturesField, compactProperties(SignaturesField))
 	sigLeafList := make([]proofs.LeafNode, len(cd.Document.Signatures)+1)
 	sigLengthNode := proofs.LeafNode{
 		Property: sigProperty.LengthProp(proofs.DefaultSaltsLengthSuffix),
 		Salt:     make([]byte, idSize),
 		Value:    []byte(fmt.Sprintf("%d", len(cd.Document.Signatures))),
 	}
-
 	h := sha256.New()
 	err = sigLengthNode.HashNode(h, true)
 	if err != nil {
@@ -351,15 +365,17 @@ func (cd *CoreDocument) signingRootTree(docType string) (tree *proofs.DocumentTr
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = NewDefaultTree(ConvertToProofSalts(cd.Document.CoredocumentSalts))
+	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(cd.Document.CoredocumentSalts), SigningTreePrefix, compactProperties(SigningTreePrefix))
+	prefixProp := NewLeafProperty(SigningTreePrefix, compactProperties(SigningTreePrefix))
+
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
-			Property: NewLeafProperty(DataRootField, compactProperties[DataRootField]),
+			Property: prefixProp.FieldProp(DataRootField, binary.LittleEndian.Uint32(compactProperties(DataRootField))),
 			Hash:     cd.Document.DataRoot,
 			Hashed:   true,
 		},
 		{
-			Property: NewLeafProperty(CDRootField, compactProperties[CDRootField]),
+			Property: prefixProp.FieldProp(CDRootField, binary.LittleEndian.Uint32(compactProperties(CDRootField))),
 			Hash:     cdTree.RootHash(),
 			Hashed:   true,
 		},
@@ -379,15 +395,16 @@ func (cd *CoreDocument) signingRootTree(docType string) (tree *proofs.DocumentTr
 
 // documentTree returns the merkle tree of the core Document.
 func (cd *CoreDocument) documentTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree = NewDefaultTree(ConvertToProofSalts(cd.Document.CoredocumentSalts))
+	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(cd.Document.CoredocumentSalts), CDTreePrefix, compactProperties(CDTreePrefix))
 	err = tree.AddLeavesFromDocument(&cd.Document)
 	if err != nil {
 		return nil, err
 	}
 
-	// Adding Document type as it is an excluded field in the tree
+	prefixProp := NewLeafProperty(CDTreePrefix, compactProperties(CDTreePrefix))
+	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
-		Property: NewLeafProperty(DocumentTypeField, compactProperties[DocumentTypeField]),
+		Property: prefixProp.FieldProp(DocumentTypeField, binary.LittleEndian.Uint32(compactProperties(DocumentTypeField))),
 		Salt:     make([]byte, 32),
 		Value:    []byte(docType),
 	}
@@ -408,21 +425,18 @@ func (cd *CoreDocument) documentTree(docType string) (tree *proofs.DocumentTree,
 	}
 
 	return tree, nil
+
 }
 
 // GetCollaborators returns the collaborators from the role with READ_SIGN ability.
-func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.CentID) (ids []identity.CentID, err error) {
+func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (ids []identity.DID, err error) {
 	exclude := make(map[string]struct{})
 	for _, id := range filterIDs {
 		exclude[id.String()] = struct{}{}
 	}
 
 	for _, c := range cd.Document.Collaborators {
-		id, err := identity.ToCentID(c)
-		if err != nil {
-			return nil, err
-		}
-
+		id := identity.NewDIDFromBytes(c)
 		if _, ok := exclude[id.String()]; ok {
 			continue
 		}
@@ -433,15 +447,17 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.CentID) (ids []id
 	return ids, nil
 }
 
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.CentID, err error) {
+func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
-		ocsm[hexutil.Encode(c)] = struct{}{}
+		cs := strings.ToLower(hexutil.Encode(c))
+		ocsm[cs] = struct{}{}
 	}
 
 	var uc []string
 	for _, c := range newCollabs {
-		if _, ok := ocsm[c]; ok {
+		cs := strings.ToLower(c)
+		if _, ok := ocsm[cs]; ok {
 			continue
 		}
 
@@ -449,7 +465,7 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	}
 
 	for _, c := range uc {
-		id, err := identity.CentIDFromString(c)
+		id, err := identity.NewDIDFromString(c)
 		if err != nil {
 			return nil, err
 		}

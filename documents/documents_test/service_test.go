@@ -4,7 +4,6 @@ package documents_test
 
 import (
 	"context"
-	"math/big"
 	"os"
 	"testing"
 
@@ -18,11 +17,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -30,7 +29,7 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	cid         = identity.RandomCentID()
+	cid         = testingidentity.GenerateRandomDID()
 	centIDBytes = cid[:]
 	tenantID    = cid[:]
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
@@ -57,19 +56,19 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
-	poSrv := documents.DefaultService(nil, nil, nil, documents.NewServiceRegistry())
+	poSrv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
 
 	// self failed
 	err := poSrv.ReceiveAnchoredDocument(context.Background(), nil, nil)
 	assert.Error(t, err)
 }
 
-func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIDService) {
+func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
-	idService := testingcommons.MockIDService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idService := testingcommons.MockIdentityService{}
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(repo, &idService, mockAnchor, documents.NewServiceRegistry()), idService
+	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
 
 type mockAnchorRepo struct {
@@ -86,22 +85,13 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 }
 
 // Functions returns service mocks
-func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommons.MockIDService) testingcommons.MockIDService {
-	idkey := &ethid.EthereumIdentityKey{
-		Key:       key1Pub,
-		Purposes:  []*big.Int{big.NewInt(identity.KeyPurposeSigning)},
-		RevokedAt: big.NewInt(0),
-	}
+func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommons.MockIdentityService) testingcommons.MockIdentityService {
 	anchorID, _ := anchors.ToAnchorID(i.ID())
 	dr, err := i.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	docRoot, err := anchors.ToDocumentRoot(dr)
 	assert.NoError(t, err)
 	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	id := &testingcommons.MockID{}
-	centID, _ := identity.ToCentID(centIDBytes)
-	idService.On("LookupIdentityForID", centID).Return(id, nil).Once()
-	id.On("FetchKey", key1Pub[:]).Return(idkey, nil).Once()
 	return idService
 }
 
@@ -115,7 +105,7 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, i.ID(), proof.DocumentID)
 	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
@@ -158,7 +148,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, i.ID(), proof.DocumentID)
 	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {

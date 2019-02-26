@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -21,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,10 +46,12 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
-	ctx[identity.BootstrappedIDService] = &testingcommons.MockIDService{}
+	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
@@ -61,36 +64,38 @@ func TestMain(m *testing.M) {
 }
 
 func Test_fetchUniqueCollaborators(t *testing.T) {
-
+	o1 := testingidentity.GenerateRandomDID()
+	o2 := testingidentity.GenerateRandomDID()
+	n1 := testingidentity.GenerateRandomDID()
 	tests := []struct {
 		old    [][]byte
 		new    []string
-		result []identity.CentID
+		result []identity.DID
 		err    bool
 	}{
 		{
-			new:    []string{"0x010203040506"},
-			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+			new:    []string{n1.String()},
+			result: []identity.DID{n1},
 		},
 
 		{
-			old:    [][]byte{{1, 2, 3, 2, 3, 1}},
-			new:    []string{"0x010203040506"},
-			result: []identity.CentID{{1, 2, 3, 4, 5, 6}},
+			old:    [][]byte{o1[:]},
+			new:    []string{n1.String()},
+			result: []identity.DID{n1},
 		},
 
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
-			new: []string{"0x010203040506"},
+			old: [][]byte{o1[:], n1[:]},
+			new: []string{n1.String()},
 		},
 
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			old: [][]byte{o1[:], o2[:]},
 		},
 
 		// new collaborator with wrong format
 		{
-			old: [][]byte{{1, 2, 3, 2, 3, 1}, {1, 2, 3, 4, 5, 6}},
+			old: [][]byte{o1[:], o2[:]},
 			new: []string{"0x0102030405"},
 			err: true,
 		},
@@ -120,9 +125,9 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Nil(t, ncd)
 
 	// missing DocumentRoot
-	c1 := utils.RandomSlice(6)
-	c2 := utils.RandomSlice(6)
-	c := []string{hexutil.Encode(c1), hexutil.Encode(c2)}
+	c1 := testingidentity.GenerateRandomDID()
+	c2 := testingidentity.GenerateRandomDID()
+	c := []string{c1.String(), c2.String()}
 	ncd, err = cd.PrepareNewVersion(c, false)
 	assert.Error(t, err)
 	assert.Nil(t, ncd)
@@ -189,10 +194,10 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
-	_, leaf := tree.GetLeafByProperty("data_root")
+	_, leaf := tree.GetLeafByProperty(SigningTreePrefix + ".data_root")
 	assert.NotNil(t, leaf)
 
-	_, leaf = tree.GetLeafByProperty("cd_root")
+	_, leaf = tree.GetLeafByProperty(SigningTreePrefix + ".cd_root")
 	assert.NotNil(t, leaf)
 }
 
@@ -252,7 +257,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			3,
 		},
 		{
-			"document_identifier",
+			CDTreePrefix + ".document_identifier",
 			true,
 			6,
 		},
@@ -262,7 +267,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			3,
 		},
 		{
-			"collaborators[0]",
+			CDTreePrefix + ".collaborators[0]",
 			true,
 			6,
 		},
@@ -275,9 +280,15 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			var l *proofs.LeafNode
 			if test.fromCoreDoc {
 				_, l = cdTree.GetLeafByProperty(test.fieldName)
+				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:4], cdTree.RootHash(), h)
+				assert.NoError(t, err)
+				assert.True(t, valid)
 			} else {
 				_, l = testTree.GetLeafByProperty(test.fieldName)
 				assert.Contains(t, compactProps, l.Property.CompactName())
+				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:1], testTree.RootHash(), h)
+				assert.NoError(t, err)
+				assert.True(t, valid)
 			}
 			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.Document.DocumentRoot, h)
 			assert.NoError(t, err)

@@ -70,9 +70,9 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_peerValidator(t *testing.T) {
-	cID, _ := identity.ToCentID(id1)
+	cID := identity.NewDIDFromBytes(id1)
 
-	idService := &testingcommons.MockIDService{}
+	idService := &testingcommons.MockIdentityService{}
 	sv := peerValidator(idService)
 
 	// Nil headers
@@ -89,19 +89,20 @@ func TestValidate_peerValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// Identity validation failure
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
 	err = sv.Validate(header, &cID, &defaultPID)
 	assert.Error(t, err)
 
 	// Success
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	err = sv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	cID, _ := identity.ToCentID(id1)
-	idService := &testingcommons.MockIDService{}
+	cID := identity.NewDIDFromBytes(id1)
+
+	idService := &testingcommons.MockIdentityService{}
 	hv := HandshakeValidator(cfg.GetNetworkID(), idService)
 
 	// Incompatible version network and wrong signature
@@ -124,14 +125,14 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Compatible version, network and wrong eth key
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
 	header.NetworkIdentifier = cfg.GetNetworkID()
 	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "key not linked to identity")
 
 	// Compatible version, network and signature
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	err = hv.Validate(header, &cID, &defaultPID)
 	assert.NoError(t, err)
 }

@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -29,7 +31,8 @@ import (
 
 var registry *documents.ServiceRegistry
 var cfg config.Configuration
-var idService identity.Service
+var idService identity.ServiceDID
+var idFactory identity.Factory
 var payOb nft.PaymentObligation
 var txManager transactions.Manager
 var tokenRegistry documents.TokenRegistry
@@ -38,7 +41,8 @@ func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
@@ -48,10 +52,18 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, string, documents.Service, identity.CentID) {
+func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, string, documents.Service, identity.DID) {
 	// create identity
 	log.Debug("Create Identity for Testing")
-	cid := testingidentity.CreateIdentityWithKeys(cfg, idService)
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(t, err)
+	did := identity.NewDID(*didAddr)
+	tc, err := configstore.TempAccount("", cfg)
+	assert.NoError(t, err)
+	tcr := tc.(*configstore.Account)
+	tcr.IdentityID = did[:]
+	cid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	assert.NoError(t, err)
 
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
@@ -84,7 +96,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	return ctx, id, registry, depositAddr, invSrv, cid
 }
 
-func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.CentID, registry common.Address) nft.TokenID {
+func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
 	resp, done, err := payOb.MintNFT(ctx, req)
 	assert.Nil(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
