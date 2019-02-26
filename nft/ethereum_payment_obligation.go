@@ -296,6 +296,10 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
 
+	// TODO remove later
+	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
+	//log.Info(json.MarshalIndent(proof, "", "  "))
+
 	for i, p := range proofspb {
 		values[i] = p.Value
 		salt32, err := utils.SliceToByte32(p.Salt)
