@@ -136,7 +136,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 	}
 
 	// check if the nft is successfully minted already
-
 	if model.IsNFTMinted(s, req.RegistryAddress) {
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}

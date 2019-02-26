@@ -22,8 +22,8 @@ import (
 
 const prefix string = "invoice"
 
-// tree prefixes use the first byte of a 4 byte slice by convention
-func compactPrefix() []byte { return []byte{3, 0, 0, 0} }
+// tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
+func compactPrefix() []byte { return []byte{0, 1, 0, 0} }
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {

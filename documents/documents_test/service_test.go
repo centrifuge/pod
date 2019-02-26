@@ -105,7 +105,7 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, i.ID(), proof.DocumentID)
 	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
@@ -148,7 +148,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, i.ID(), proof.DocumentID)
 	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {

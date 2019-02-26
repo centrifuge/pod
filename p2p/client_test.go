@@ -6,8 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -19,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -66,7 +65,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 
 func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-	assert.Nil(t, err, "centrifugeId not initialized correctly ")
+	assert.NoError(t, err)
 
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
