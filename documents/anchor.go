@@ -23,7 +23,7 @@ type AnchorProcessor interface {
 // updaterFunc is a wrapper that will be called to save the state of the model between processor steps
 type updaterFunc func(id []byte, model Model) error
 
-// AnchorDocument add signature, requests signatures, anchors Document, and sends the anchored Document
+// AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
 func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
 	id := model.CurrentVersion()

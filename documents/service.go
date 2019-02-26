@@ -22,7 +22,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-// DocumentProof is a value to represent a Document and its field proofs
+// DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
 	DocumentID  []byte
 	VersionID   []byte
@@ -30,31 +30,31 @@ type DocumentProof struct {
 	FieldProofs []*proofspb.Proof
 }
 
-// Service provides an interface for functions common to all Document types
+// Service provides an interface for functions common to all document types
 type Service interface {
 
-	// GetCurrentVersion reads a Document from the database
+	// GetCurrentVersion reads a document from the database
 	GetCurrentVersion(ctx context.Context, documentID []byte) (Model, error)
 
-	// Exists checks if a Document exists
+	// Exists checks if a document exists
 	Exists(ctx context.Context, documentID []byte) bool
 
-	// GetVersion reads a Document from the database
+	// GetVersion reads a document from the database
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error)
 
-	// DeriveFromCoreDocument derives a model given the core Document.
+	// DeriveFromCoreDocument derives a model given the core document.
 	DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, error)
 
-	// CreateProofs creates proofs for the latest version Document given the fields
+	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
 
-	// CreateProofsForVersion creates proofs for a particular version of the Document given the fields
+	// CreateProofsForVersion creates proofs for a particular version of the document given the fields
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
-	// RequestDocumentSignature Validates and Signs Document received over the p2p layer
+	// RequestDocumentSignature Validates and Signs document received over the p2p layer
 	RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error)
 
-	// ReceiveAnchoredDocument receives a new anchored Document over the p2p layer, validates and updates the Document in DB
+	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
 
 	// Create validates and persists Model and returns a Updated model
@@ -73,7 +73,7 @@ type service struct {
 	registry         *ServiceRegistry
 }
 
-var srvLog = logging.Logger("Document-service")
+var srvLog = logging.Logger("document-service")
 
 // DefaultService returns the default implementation of the service
 func DefaultService(
@@ -167,7 +167,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.New("failed to get signing root: %v", err)
 	}
 
-	srvLog.Infof("Document received %x with signing root %x", model.ID(), sr)
+	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
 	if !ok {
 		return nil, errors.NewTypedError(ErrDocumentSigning, errors.New("missing signing key"))
@@ -177,7 +177,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 	model.AppendSignatures(sig)
 
 	tenantID := idConf.ID[:]
-	// Logic for receiving version n (n > 1) of the Document for the first time
+	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
 	if !s.repo.Exists(tenantID, model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
 		err = s.repo.Create(tenantID, model.ID(), model)
@@ -191,7 +191,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	srvLog.Infof("signed Document %x with version %x", model.ID(), model.CurrentVersion())
+	srvLog.Infof("signed document %x with version %x", model.ID(), model.CurrentVersion())
 	return sig, nil
 }
 
@@ -254,7 +254,7 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 
 func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, error) {
 	if cd.EmbeddedData == nil {
-		return nil, errors.New("core Document embed data is nil")
+		return nil, errors.New("core document embed data is nil")
 	}
 
 	srv, err := s.registry.LocateService(cd.EmbeddedData.TypeUrl)

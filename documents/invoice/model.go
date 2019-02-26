@@ -4,19 +4,16 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
-	"github.com/centrifuge/go-centrifuge/documents"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -264,8 +261,7 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.S
 	return i.InvoiceSalts, nil
 }
 
-// PackCoreDocument packs the Invoice into a CoreDocument
-// If the, Invoice is new, it creates a valid identifiers
+// PackCoreDocument packs the Invoice into a CoreDocument.
 func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	invData := i.createP2PProtobuf()
 	data, err := proto.Marshal(invData)
@@ -274,7 +270,7 @@ func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error)
 	}
 
 	embedData := &any.Any{
-		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		TypeUrl: i.DocumentType(),
 		Value:   data,
 	}
 
@@ -286,10 +282,10 @@ func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error)
 	return i.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
 }
 
-// UnpackCoreDocument unpacks the core document into Invoice
+// UnpackCoreDocument unpacks the core document into Invoice.
 func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 	if cd.EmbeddedData == nil ||
-		cd.EmbeddedData.TypeUrl != documenttypes.InvoiceDataTypeUrl {
+		cd.EmbeddedData.TypeUrl != i.DocumentType() {
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
@@ -370,7 +366,7 @@ func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err e
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return i.CoreDocument.CreateProofs(documenttypes.InvoiceDataTypeUrl, tree, fields)
+	return i.CoreDocument.CreateProofs(i.DocumentType(), tree, fields)
 }
 
 // DocumentType returns the invoice document type.
@@ -408,7 +404,7 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 // SigningRoot returns the signing root of the document.
 // Calculates it if not generated yet.
 func (i *Invoice) SigningRoot() ([]byte, error) {
-	return i.CoreDocument.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+	return i.CoreDocument.SigningRoot(i.DocumentType())
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -418,6 +414,6 @@ func (i *Invoice) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 	return i.CoreDocument.CreateNFTProofs(
-		documenttypes.InvoiceDataTypeUrl,
+		i.DocumentType(),
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }

@@ -143,9 +143,7 @@ type Service interface {
 	// AddKeyFromConfig adds a key previously generated and indexed in the configuration file to the identity specified in such config file TODO: not part of the service anymore
 	AddKeyFromConfig(config Config, purpose int) error
 
-	// ValidateSignature validates a signature on a message based on identity data
-	// TODO: add purpose parameter
-	// TODO(ved): signature should not be a pointer
+	// ValidateSignature validates a signature on a message based on identity data TODO: add purpose parameter
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
 }
 

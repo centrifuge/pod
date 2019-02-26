@@ -44,7 +44,7 @@ func (vf ValidatorFunc) Validate(old, new Model) error {
 	return vf(old, new)
 }
 
-// UpdateVersionValidator validates if the new core Document is properly derived from old one
+// UpdateVersionValidator validates if the new core document is properly derived from old one
 func UpdateVersionValidator() Validator {
 	return ValidatorFunc(func(old, new Model) error {
 		if old == nil || new == nil {
@@ -53,7 +53,7 @@ func UpdateVersionValidator() Validator {
 
 		dr, err := old.DocumentRoot()
 		if err != nil {
-			return errors.New("failed to get previous version Document root: %v", err)
+			return errors.New("failed to get previous version document root: %v", err)
 		}
 		checks := []struct {
 			name string
@@ -103,11 +103,11 @@ func UpdateVersionValidator() Validator {
 	})
 }
 
-// baseValidator validates the core Document basic fields like identifier, versions, and salts
+// baseValidator validates the core document basic fields like identifier, versions, and salts
 func baseValidator() Validator {
 	return ValidatorFunc(func(_, model Model) (err error) {
 		if utils.IsEmptyByteSlice(model.ID()) {
-			err = errors.AppendError(err, errors.New("Document identifier not set"))
+			err = errors.AppendError(err, errors.New("document identifier not set"))
 		}
 
 		if utils.IsEmptyByteSlice(model.CurrentVersion()) {
@@ -146,17 +146,17 @@ func signingRootValidator() Validator {
 	})
 }
 
-// documentRootValidator checks the existence of Document root
-// recalculates the Document root and compares with existing one
+// documentRootValidator checks the existence of document root
+// recalculates the document root and compares with existing one
 func documentRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		dr, err := model.DocumentRoot()
 		if err != nil {
-			return errors.New("failed to get Document root: %v", err)
+			return errors.New("failed to get document root: %v", err)
 		}
 
 		if len(dr) != idSize {
-			return errors.New("Document root is invalid")
+			return errors.New("document root is invalid")
 		}
 
 		return nil
@@ -166,7 +166,7 @@ func documentRootValidator() Validator {
 // readyForSignaturesValidator validates self signature
 // re-calculates the signature and compares with existing one
 // assumes signing_root is already generated and verified
-// Note: this needs to used only before Document is sent for signatures from the collaborators
+// Note: this needs to used only before document is sent for signatures from the collaborators
 func readyForSignaturesValidator(id, priv, pub []byte) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		sr, err := model.SigningRoot()
@@ -197,7 +197,7 @@ func readyForSignaturesValidator(id, priv, pub []byte) Validator {
 	})
 }
 
-// signaturesValidator validates all the signatures in the core Document
+// signaturesValidator validates all the signatures in the core document
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
@@ -225,8 +225,8 @@ func signaturesValidator(idService identity.Service) Validator {
 	})
 }
 
-// anchoredValidator checks if the Document root matches the one on chain with specific anchorID
-// assumes Document root is generated and verified
+// anchoredValidator checks if the document root matches the one on chain with specific anchorID
+// assumes document root is generated and verified
 func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
@@ -236,21 +236,21 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 
 		dr, err := model.DocumentRoot()
 		if err != nil {
-			return errors.New("failed to get Document root: %v", err)
+			return errors.New("failed to get document root: %v", err)
 		}
 
 		docRoot, err := anchors.ToDocumentRoot(dr)
 		if err != nil {
-			return errors.New("failed to get Document root: %v", err)
+			return errors.New("failed to get document root: %v", err)
 		}
 
 		gotRoot, err := repo.GetDocumentRootOf(anchorID)
 		if err != nil {
-			return errors.New("failed to get Document root from chain: %v", err)
+			return errors.New("failed to get document root from chain: %v", err)
 		}
 
 		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {
-			return errors.New("mismatched Document roots")
+			return errors.New("mismatched document roots")
 		}
 
 		return nil
@@ -261,7 +261,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 // base validator
 // signing root validator
 // signatures validator
-// should be used when node receives a Document requesting for signature
+// should be used when node receives a document requesting for signature
 func SignatureRequestValidator(idService identity.Service) ValidatorGroup {
 	return PostSignatureRequestValidator(idService)
 }
@@ -269,7 +269,7 @@ func SignatureRequestValidator(idService identity.Service) ValidatorGroup {
 // PreAnchorValidator is a validator group with following validators
 // base validator
 // signing root validator
-// Document root validator
+// document root validator
 // signatures validator
 // should be called before pre anchoring
 func PreAnchorValidator(idService identity.Service) ValidatorGroup {
@@ -282,7 +282,7 @@ func PreAnchorValidator(idService identity.Service) ValidatorGroup {
 // PostAnchoredValidator is a validator group with following validators
 // PreAnchorValidator
 // anchoredValidator
-// should be called after anchoring the Document/when received anchored Document
+// should be called after anchoring the document/when received anchored document
 func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
 		PreAnchorValidator(idService),
@@ -294,7 +294,7 @@ func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorReposi
 // baseValidator
 // signingRootValidator
 // readyForSignaturesValidator
-// should be called after sender signing the Document and before requesting the Document
+// should be called after sender signing the document and before requesting the document
 func PreSignatureRequestValidator(id, priv, pub []byte) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),

@@ -368,7 +368,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get Document root")
+	assert.Contains(t, err.Error(), "failed to get document root")
 
 	// invalid doc root
 	model = new(mockModel)
@@ -377,7 +377,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get Document root")
+	assert.Contains(t, err.Error(), "failed to get document root")
 
 	// failed to get docRoot from chain
 	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -392,7 +392,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get Document root from chain")
+	assert.Contains(t, err.Error(), "failed to get document root from chain")
 
 	// mismatched doc roots
 	docRoot := anchors.RandomDocumentRoot()
@@ -406,7 +406,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "mismatched Document roots")
+	assert.Contains(t, err.Error(), "mismatched document roots")
 
 	// success
 	r = &mockRepo{}

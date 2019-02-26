@@ -13,9 +13,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-var apiLog = logging.Logger("Document-api")
+var apiLog = logging.Logger("document-api")
 
-// grpcHandler handles all the common Document related actions: proof generation
+// grpcHandler handles all the common document related actions: proof generation
 type grpcHandler struct {
 	config   config.Service
 	registry *ServiceRegistry
@@ -28,7 +28,7 @@ func GRPCHandler(config config.Service, registry *ServiceRegistry) documentpb.Do
 
 // CreateDocumentProof creates precise proofs for the given fields
 func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProofEnvelope *documentpb.CreateDocumentProofRequest) (*documentpb.DocumentProof, error) {
-	apiLog.Infof("Document proof request %v", createDocumentProofEnvelope)
+	apiLog.Infof("document proof request %v", createDocumentProofEnvelope)
 	cctx, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
@@ -36,7 +36,7 @@ func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProo
 
 	service, err := h.registry.LocateService(createDocumentProofEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for Document type")
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofEnvelope.Identifier)
@@ -51,9 +51,9 @@ func (h grpcHandler) CreateDocumentProof(ctx context.Context, createDocumentProo
 	return ConvertDocProofToClientFormat(proof)
 }
 
-// CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the Document
+// CreateDocumentProofForVersion creates precise proofs for the given fields for the given version of the document
 func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDocumentProofForVersionEnvelope *documentpb.CreateDocumentProofForVersionRequest) (*documentpb.DocumentProof, error) {
-	apiLog.Infof("Document proof request %v", createDocumentProofForVersionEnvelope)
+	apiLog.Infof("document proof request %v", createDocumentProofForVersionEnvelope)
 	cctx, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		return &documentpb.DocumentProof{}, err
@@ -61,7 +61,7 @@ func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDo
 
 	service, err := h.registry.LocateService(createDocumentProofForVersionEnvelope.Type)
 	if err != nil {
-		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for Document type")
+		return &documentpb.DocumentProof{}, centerrors.Wrap(err, "could not locate service for document type")
 	}
 
 	identifier, err := hexutil.Decode(createDocumentProofForVersionEnvelope.Identifier)

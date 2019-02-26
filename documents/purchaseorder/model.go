@@ -4,20 +4,17 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
-	"github.com/centrifuge/go-centrifuge/documents"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/centerrors"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -260,7 +257,7 @@ func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err 
 	}
 
 	embedData := &any.Any{
-		TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+		TypeUrl: p.DocumentType(),
 		Value:   data,
 	}
 
@@ -275,7 +272,7 @@ func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
 func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 	if cd.EmbeddedData == nil ||
-		cd.EmbeddedData.TypeUrl != documenttypes.PurchaseOrderDataTypeUrl {
+		cd.EmbeddedData.TypeUrl != p.DocumentType() {
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
@@ -357,7 +354,7 @@ func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof,
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return p.CoreDocument.CreateProofs(documenttypes.PurchaseOrderDataTypeUrl, tree, fields)
+	return p.CoreDocument.CreateProofs(p.DocumentType(), tree, fields)
 }
 
 // DocumentType returns the po document type.
@@ -395,7 +392,7 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 // SigningRoot returns the signing root of the document.
 // Calculates it if not generated yet.
 func (p *PurchaseOrder) SigningRoot() ([]byte, error) {
-	return p.CoreDocument.SigningRoot(documenttypes.PurchaseOrderDataTypeUrl)
+	return p.CoreDocument.SigningRoot(p.DocumentType())
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -405,6 +402,6 @@ func (p *PurchaseOrder) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 	return p.CoreDocument.CreateNFTProofs(
-		documenttypes.PurchaseOrderDataTypeUrl,
+		p.DocumentType(),
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }

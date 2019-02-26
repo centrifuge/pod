@@ -19,7 +19,7 @@ const (
 	// BootstrappedDocumentRepository is the key to the database repository of documents
 	BootstrappedDocumentRepository = "BootstrappedDocumentRepository"
 
-	// BootstrappedDocumentService is the key to bootstrapped Document service
+	// BootstrappedDocumentService is the key to bootstrapped document service
 	BootstrappedDocumentService = "BootstrappedDocumentService"
 )
 
@@ -74,7 +74,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	repo, ok := ctx[BootstrappedDocumentRepository].(Repository)
 	if !ok {
-		return errors.New("Document repository not initialised")
+		return errors.New("document repository not initialised")
 	}
 
 	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)

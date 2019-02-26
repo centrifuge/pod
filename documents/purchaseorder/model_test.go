@@ -7,12 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/golang/protobuf/ptypes/any"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -21,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ethid"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
@@ -33,6 +30,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

@@ -49,33 +49,10 @@ var compactProperties = map[string][]byte{
 	SigningRootField:  {0, 0, 0, 10},
 }
 
-// CoreDocument holds the protobuf coredocument.
+// CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
-	// TODO(ved) find a way to hide this
 	Document coredocumentpb.CoreDocument
 }
-
-//// jsonCD is an intermediate Document type used for marshalling and un-marshaling CoreDocument to/from json.
-//type jsonCD struct {
-//	CoreDocument coredocumentpb.CoreDocument `json:"core_document"`
-//}
-//
-//// MarshalJSON returns a JSON formatted representation of the CoreDocument
-//func (cd *CoreDocument) MarshalJSON() ([]byte, error) {
-//	return json.Marshal(jsonCD{CoreDocument: cd.Document})
-//}
-//
-//// UnmarshalJSON loads the json formatted CoreDocument.
-//func (cd *CoreDocument) UnmarshalJSON(data []byte) error {
-//	jcd := new(jsonCD)
-//	err := json.Unmarshal(data, jcd)
-//	if err != nil {
-//		return err
-//	}
-//
-//	cd.Document = jcd.CoreDocument
-//	return nil
-//}
 
 // newCoreDocument returns a new CoreDocument.
 func newCoreDocument() *CoreDocument {

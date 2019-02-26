@@ -88,7 +88,7 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	}, nil
 }
 
-// RunTask anchors the Document.
+// RunTask anchors the document.
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	log.Infof("starting anchor task for transaction: %s\n", d.TxID)
 	defer func() {
@@ -113,13 +113,13 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
 		return d.modelSaveFunc(d.accountID[:], id, model)
 	}); err != nil {
-		return false, errors.New("failed to anchor Document: %v", err)
+		return false, errors.New("failed to anchor document: %v", err)
 	}
 
 	return true, nil
 }
 
-// InitDocumentAnchorTask enqueues a new Document anchor task for a given combination of accountID/modelID/txID.
+// InitDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
 func InitDocumentAnchorTask(txMan transactions.Manager, tq queue.TaskQueuer, accountID identity.CentID, modelID []byte, txID transactions.TxID) (queue.TaskResult, error) {
 	params := map[string]interface{}{
 		transactions.TxIDParam: txID.String(),
@@ -140,9 +140,9 @@ func InitDocumentAnchorTask(txMan transactions.Manager, tq queue.TaskQueuer, acc
 	return tr, nil
 }
 
-// CreateAnchorTransaction creates a transaction for anchoring a Document using transaction manager
+// CreateAnchorTransaction creates a transaction for anchoring a document using transaction manager
 func CreateAnchorTransaction(txMan transactions.Manager, tq queue.TaskQueuer, self identity.CentID, txID transactions.TxID, documentID []byte) (transactions.TxID, chan bool, error) {
-	txID, done, err := txMan.ExecuteWithinTX(context.Background(), self, txID, "anchor Document", func(accountID identity.CentID, TID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
+	txID, done, err := txMan.ExecuteWithinTX(context.Background(), self, txID, "anchor document", func(accountID identity.CentID, TID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
 		tr, err := InitDocumentAnchorTask(txMan, tq, accountID, documentID, TID)
 		if err != nil {
 			errChan <- err

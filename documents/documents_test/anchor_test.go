@@ -7,14 +7,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/documents"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
