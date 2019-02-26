@@ -22,7 +22,7 @@ import (
 
 const prefix string = "po"
 
-// tree prefixes specific to documents use the second byte of a 4 byte slice by convention
+// tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
