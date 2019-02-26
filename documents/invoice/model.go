@@ -155,8 +155,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-
-	i.CoreDocumentModel, err = i.CoreDocumentModel.NewWithCollaborators(collaborators)
+	i.CoreDocumentModel, err = documents.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}

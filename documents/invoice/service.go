@@ -79,6 +79,9 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 	}
 
 	invoiceModel := new(Invoice)
+	if invoiceModel.CoreDocumentModel == nil {
+		invoiceModel.CoreDocumentModel = documents.NewCoreDocModel()
+	}
 	err = invoiceModel.InitInvoiceInput(payload, id.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)

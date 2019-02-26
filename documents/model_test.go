@@ -8,6 +8,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -461,7 +466,8 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	tr := mockRegistry{}
 	tr.On("OwnerOf", registry, tokenID).Return(nil, errors.New("failed to get owner of")).Once()
 	dm.TokenRegistry = tr
-	dm.AddNFTToReadRules(registry, tokenID)
+	err = dm.AddNFTToReadRules(registry, tokenID)
+	assert.NoError(t, err)
 	err = dm.NFTOwnerCanRead(registry, tokenID, account)
 	assert.Error(t, err)
 	assert.Contains(t, err, "failed to get owner of")
@@ -474,6 +480,99 @@ func TestReadAccessValidator_NFTOwnerCanRead(t *testing.T) {
 	err = dm.NFTOwnerCanRead(registry, tokenID, account)
 	assert.Error(t, err)
 	tr.AssertExpectations(t)
+}
+
+func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
+	m := NewCoreDocModel()
+	m.Document.DocumentRoot = utils.RandomSlice(32)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	account, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+
+	cd := m.Document
+	assert.Len(t, cd.ReadRules, 0)
+	assert.Len(t, cd.Roles, 0)
+
+	// invalid centID format
+	payload := documentpb.AccessTokenParams{
+		// invalid grantee format
+		Grantee:            "randomCentID",
+		DocumentIdentifier: "randomDocID",
+	}
+	_, err = m.AddAccessTokenToReadRules(ctx, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to construct AT: malformed address provided")
+	// invalid centID length
+	invalidCentID := utils.RandomSlice(25)
+	payload = documentpb.AccessTokenParams{
+		Grantee:            hexutil.Encode(invalidCentID),
+		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
+	}
+	_, err = m.AddAccessTokenToReadRules(ctx, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to construct AT: malformed address provided")
+	// invalid docID length
+	id, err := account.GetIdentityID()
+	assert.NoError(t, err)
+	invalidDocID := utils.RandomSlice(33)
+	payload = documentpb.AccessTokenParams{
+		Grantee:            hexutil.Encode(id),
+		DocumentIdentifier: hexutil.Encode(invalidDocID),
+	}
+
+	_, err = m.AddAccessTokenToReadRules(ctx, payload)
+	assert.Contains(t, err.Error(), "failed to construct AT: invalid identifier length")
+	// valid
+	payload = documentpb.AccessTokenParams{
+		Grantee:            hexutil.Encode(id),
+		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
+	}
+	_, err = m.AddAccessTokenToReadRules(ctx, payload)
+	assert.NoError(t, err)
+	assert.Len(t, m.Document.ReadRules, 1)
+	assert.Equal(t, m.Document.ReadRules[0].Action, ACLRead)
+	assert.Len(t, m.Document.Roles, 1)
+}
+
+func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	account, _ := contextutil.Account(ctx)
+	m := NewCoreDocModel()
+	m.Document.DocumentRoot = utils.RandomSlice(32)
+	id, err := account.GetIdentityID()
+	granteeID := identity.NewDIDFromByte(id)
+	assert.NoError(t, err)
+	payload := documentpb.AccessTokenParams{
+		Grantee:            hexutil.Encode(granteeID[:]),
+		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
+	}
+	dm, err := m.AddAccessTokenToReadRules(ctx, payload)
+	assert.NoError(t, err)
+	dm.Document.DocumentRoot = utils.RandomSlice(32)
+	docRoles := dm.Document.GetRoles()
+	at := docRoles[0].AccessTokens[0]
+	assert.NotNil(t, at)
+	// wrong token identifier
+	tr := &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessTokenId:                []byte("randomtokenID"),
+	}
+	dr := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: m.Document.DocumentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: tr,
+	}
+	err = dm.accessTokenOwnerCanRead(dr, granteeID[:])
+	assert.Error(t, err, "access token not found")
+	// valid access token
+	// TODO: this will always fail until validation for signatures is secp
+	//tr = &p2ppb.AccessTokenRequest{
+	//	DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
+	//	AccessTokenId:                at.Identifier,
+	//}
+	//dr.AccessTokenRequest = tr
+	//err = dm.accessTokenOwnerCanRead(dr, granteeID[:])
+	//assert.NoError(t, err)
 }
 
 func TestGetCoreDocumentSalts(t *testing.T) {
@@ -583,7 +682,9 @@ func TestCoreDocumentModel_IsAccountInRole(t *testing.T) {
 
 	err := dm.initReadRules([]identity.DID{account})
 	assert.NoError(t, err)
-	assert.True(t, dm.IsAccountInRole(roleKey, account))
+	roles := dm.Document.Roles
+	rk := roles[0].RoleKey
+	assert.True(t, dm.IsAccountInRole(rk, account))
 }
 
 func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
@@ -599,12 +700,14 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	ndm, err := dm.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
 	assert.NotNil(t, ndm)
+	role := ndm.Document.Roles[0]
+	rk := role.RoleKey
 
 	pfs, err = getReadAccessProofKeys(ndm, registry, tokenID)
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
 	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(make([]byte, 32, 32))), pfs[1])
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(rk)), pfs[1])
 	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
 }
 
@@ -627,15 +730,19 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
+
 	dm := NewCoreDocModel()
-	roleKey := make([]byte, 32, 32)
+	rk := utils.RandomSlice(32)
 	account := testingidentity.GenerateRandomDID()
-	pf, err := getRoleProofKey(dm.Document.Roles, roleKey, account)
+	pf, err := getRoleProofKey(dm.Document.Roles, rk, account)
 	assert.Error(t, err)
 	assert.Empty(t, pf)
 
 	err = dm.initReadRules([]identity.DID{account})
 	assert.NoError(t, err)
+
+	role := dm.Document.Roles[0]
+	roleKey := role.RoleKey
 
 	pf, err = getRoleProofKey(dm.Document.Roles, roleKey, testingidentity.GenerateRandomDID())
 	assert.Error(t, err)

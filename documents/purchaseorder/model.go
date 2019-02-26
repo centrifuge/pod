@@ -159,7 +159,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	p.CoreDocumentModel, err = p.CoreDocumentModel.NewWithCollaborators(collaborators)
+	p.CoreDocumentModel, err = documents.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
