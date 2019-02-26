@@ -106,7 +106,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to validate model for signature request: %v", err)
 	}
 
-	signs, err := dp.p2pClient.GetSignaturesForDocument(ctx, model)
+	sigs, err := dp.p2pClient.GetSignaturesForDocument(ctx, model)
 	if err != nil {
 		return errors.New("failed to collect signatures from the collaborators: %v", err)
 	}
