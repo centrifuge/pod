@@ -18,8 +18,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
