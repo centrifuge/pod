@@ -109,7 +109,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, pfs, rootHash)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, docProofs.FieldProofs, rootHash)
 	if err != nil {
 		return mreq, err
 	}
@@ -318,6 +318,10 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
+
+	// TODO remove later
+	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
+	//log.Info(json.MarshalIndent(proof, "", "  "))
 
 	for i, p := range proofspb {
 		values[i] = p.Value
