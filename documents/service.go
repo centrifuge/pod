@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
@@ -170,7 +169,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 }
 
 func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error) {
-	idConf, err := contextutil.Self(ctx)
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
@@ -187,18 +186,20 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 	doc := docModel.Document
 	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
 
-	idKeys, ok := idConf.Keys[identity.KeyPurposeSigning]
-	if !ok {
-		return nil, errors.NewTypedError(ErrDocumentSigning, errors.New("missing signing key"))
+	tenantID, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
 	}
-	sig := crypto.Sign(idConf.ID[:], idKeys.PrivateKey, idKeys.PublicKey, doc.SigningRoot)
+
+	sig, err := acc.SignMsg(doc.SigningRoot)
+	if err != nil {
+		return nil, err
+	}
 	doc.Signatures = append(doc.Signatures, sig)
 	err = model.UnpackCoreDocument(docModel)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentUnPackingCoreDocument, err)
 	}
-
-	tenantID := idConf.ID[:]
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
@@ -218,11 +219,16 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 }
 
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error {
-	idConf, err := contextutil.Self(ctx)
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return ErrDocumentConfigAccountID
 	}
 
+	idBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return err
+	}
+	DID := identity.NewDIDFromBytes(idBytes)
 	if model == nil {
 		return errors.New("no model given")
 	}
@@ -239,7 +245,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
 	doc := docModel.Document
-	err = s.repo.Update(idConf.ID[:], doc.CurrentVersion, model)
+	err = s.repo.Update(DID[:], doc.CurrentVersion, model)
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -247,9 +253,9 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
-		AccountId:    idConf.ID.String(),
+		AccountId:    DID.String(),
 		FromId:       hexutil.Encode(senderID),
-		ToId:         idConf.ID.String(),
+		ToId:         DID.String(),
 		Recorded:     ts,
 		DocumentType: doc.EmbeddedData.TypeUrl,
 		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
@@ -262,19 +268,27 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 }
 
 func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	idConf, err := contextutil.Self(ctx)
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return false
 	}
-	return s.repo.Exists(idConf.ID[:], documentID)
+	idBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return false
+	}
+	return s.repo.Exists(idBytes, documentID)
 }
 
 func (s service) getVersion(ctx context.Context, documentID, version []byte) (Model, error) {
-	idConf, err := contextutil.Self(ctx)
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-	model, err := s.repo.Get(idConf.ID[:], version)
+	idBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	model, err := s.repo.Get(idBytes, version)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
 	}

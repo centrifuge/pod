@@ -7,6 +7,10 @@ import (
 	"flag"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -133,7 +137,14 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID 
 	tree, err := dm.GetDocumentSigningTree(droot)
 	assert.NoError(t, err)
 	dm.Document.SigningRoot = tree.RootHash()
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
+	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, dm.Document.SigningRoot, crypto.CurveSecp256K1, true)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  idConfig.ID[:],
+		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
 	dm.Document.Signatures = append(dm.Document.Signatures, sig)
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)

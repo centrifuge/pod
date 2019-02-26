@@ -118,14 +118,14 @@ func VerifySignature(publicKey, message, signature []byte) bool {
 
 }
 
-// GetEthAuthKey returns the public and private keys as byte array
-func GetEthAuthKey(pub, priv string) (public, private []byte, err error) {
-	privateKey, err := GetPrivateEthAuthKey(priv)
+// GetSigningKeyPair returns the public and private keys as byte array
+func GetSigningKeyPair(pub, priv string) (public, private []byte, err error) {
+	privateKey, err := GetPrivateSigningKey(priv)
 	if err != nil {
 		return nil, nil, errors.New("failed to read private key: %v", err)
 	}
 
-	publicKey, err := GetPublicEthAuthKey(pub)
+	publicKey, err := GetPublicSigningKey(pub)
 	if err != nil {
 		return nil, nil, errors.New("failed to read public key: %v", err)
 	}
@@ -133,8 +133,8 @@ func GetEthAuthKey(pub, priv string) (public, private []byte, err error) {
 	return publicKey, privateKey, nil
 }
 
-// GetPrivateEthAuthKey returns the private key from the file
-func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
+// GetPrivateSigningKey returns the private key from the file
+func GetPrivateSigningKey(fileName string) (key []byte, err error) {
 	key, err = utils.ReadKeyFromPemFile(fileName, utils.PrivateKey)
 	if err != nil {
 		return nil, err
@@ -142,8 +142,8 @@ func GetPrivateEthAuthKey(fileName string) (key []byte, err error) {
 	return key, nil
 }
 
-// GetPublicEthAuthKey returns the public key from the file
-func GetPublicEthAuthKey(fileName string) (key []byte, err error) {
+// GetPublicSigningKey returns the public key from the file
+func GetPublicSigningKey(fileName string) (key []byte, err error) {
 	key, err = utils.ReadKeyFromPemFile(fileName, utils.PublicKey)
 	if err != nil {
 		return nil, err

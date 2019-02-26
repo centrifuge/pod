@@ -585,9 +585,13 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestPreSignatureRequestValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
-	idKeys := self.Keys[identity.KeyPurposeSigning]
-	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
+	acc, _ := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
+	idBytes, err := acc.GetIdentityID()
+	assert.NoError(t, err)
+	keys, err := acc.GetKeys()
+	assert.NoError(t, err)
+	idKeys := keys[identity.KeyPurposeSigning]
+	psv := PreSignatureRequestValidator(idBytes, idKeys.PrivateKey, idKeys.PublicKey)
 	assert.Len(t, psv, 3)
 }
 

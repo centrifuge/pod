@@ -2,12 +2,11 @@ package crypto
 
 import (
 	"strings"
-	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -30,24 +29,12 @@ func SignMessage(privateKey, message []byte, curveType string, ethereumSign bool
 
 }
 
-// VerifySignature verifies the signature using ed25519
+// VerifySignature verifies the signature using secp256k1
 func VerifySignature(pubKey, message, signature []byte) error {
-	valid := ed25519.Verify(pubKey, message, signature)
+	valid := secp256k1.VerifySignatureWithAddress(common.BytesToAddress(pubKey).String(), hexutil.Encode(signature), message)
 	if !valid {
 		return errors.New("invalid signature")
 	}
 
 	return nil
-}
-
-// Sign the document with the private key and return the signature along with the public key for the verification
-// assumes that signing root for the document is generated
-// Deprecated
-func Sign(didBytes []byte, privateKey []byte, pubKey []byte, payload []byte) *coredocumentpb.Signature {
-	return &coredocumentpb.Signature{
-		EntityId:  didBytes,
-		PublicKey: pubKey,
-		Signature: ed25519.Sign(privateKey, payload),
-		Timestamp: utils.ToTimestamp(time.Now().UTC()),
-	}
 }

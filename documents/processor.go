@@ -88,12 +88,14 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
+	self, err := contextutil.Account(ctx)
 	if err != nil {
 		return err
 	}
-
-	sig := identity.Sign(self, identity.KeyPurposeSigning, cd.SigningRoot)
+	sig, err := self.SignMsg(cd.SigningRoot)
+	if err != nil {
+		return err
+	}
 	cd.Signatures = append(cd.Signatures, sig)
 
 	err = model.UnpackCoreDocument(dm)
@@ -112,17 +114,27 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to pack core document: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return err
 	}
 
-	idKeys, ok := self.Keys[identity.KeyPurposeSigning]
+	idBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return err
+	}
+
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return err
+	}
+
+	idKeys, ok := keys[identity.KeyPurposeSigning]
 	if !ok {
 		return errors.New("missing keys for signing")
 	}
 
-	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
+	psv := PreSignatureRequestValidator(idBytes, idKeys.PrivateKey, idKeys.PublicKey)
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)

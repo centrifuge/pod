@@ -5,6 +5,9 @@ package documents
 import (
 	"context"
 	"testing"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 
@@ -13,13 +16,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/crypto/ed25519"
 )
 
 func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
@@ -103,7 +105,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Len(t, cd.Signatures, 1)
 	sig := cd.Signatures[0]
 	self, _ := contextutil.Self(ctxh)
-	assert.True(t, ed25519.Verify(self.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
+	assert.NoError(t, crypto.VerifySignature(self.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
 }
 
 type p2pClient struct {
@@ -237,8 +239,15 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
-	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	s, err := crypto.SignMessage(c.Keys[identity.KeyPurposeSigning].PrivateKey, cd.SigningRoot, crypto.CurveSecp256K1, true)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  c.ID[:],
+		PublicKey: c.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
+	cd.Signatures = []*coredocumentpb.Signature{sig}
 	assert.Nil(t, err)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	dp = DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
@@ -311,8 +320,15 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Nil(t, dm.CalculateSigningRoot(cd.DataRoot))
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
-	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	s, err := crypto.SignMessage(c.Keys[identity.KeyPurposeSigning].PrivateKey, cd.SigningRoot, crypto.CurveSecp256K1, true)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  c.ID[:],
+		PublicKey: c.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
+	cd.Signatures = []*coredocumentpb.Signature{sig}
 	assert.Nil(t, dm.CalculateDocumentRoot())
 	assert.Nil(t, err)
 
@@ -371,8 +387,15 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("PackCoreDocument").Return(dm, nil).Times(6)
 	c, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
-	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.Signatures = []*coredocumentpb.Signature{s}
+	s, err := crypto.SignMessage(c.Keys[identity.KeyPurposeSigning].PrivateKey, cd.SigningRoot, crypto.CurveSecp256K1, true)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  c.ID[:],
+		PublicKey: c.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
+	cd.Signatures = []*coredocumentpb.Signature{sig}
 	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	assert.Nil(t, dm.CalculateDocumentRoot())
 	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)

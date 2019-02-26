@@ -3,8 +3,12 @@
 package documents_test
 
 import (
+	"context"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
@@ -17,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -82,7 +85,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	return docRoot, args.Error(1)
 }
 
-func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, error) {
+func createAnchoredMockDocument(t *testing.T, ctx context.Context, skipSave bool) (*invoice.Invoice, error) {
 	cdm := documents.NewCoreDocModel()
 	i := &invoice.Invoice{
 		InvoiceNumber:     "test_invoice",
@@ -107,19 +110,17 @@ func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, 
 	if err != nil {
 		return nil, err
 	}
-	signKey := identity.IDKey{
-		PublicKey:  key1Pub[:],
-		PrivateKey: key1,
-	}
-	idConfig := &identity.IDConfig{
-		ID: cid,
-		Keys: map[int]identity.IDKey{
-			identity.KeyPurposeSigning: signKey,
-		},
+
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	cd := corDocMod.Document
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
+	sig, err := acc.SignMsg(cd.SigningRoot)
+	if err != nil {
+		return nil, err
+	}
 
 	cd.Signatures = append(cd.Signatures, sig)
 
@@ -189,9 +190,9 @@ func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIdentit
 
 func TestService_CreateProofs(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, err := createAnchoredMockDocument(t, ctxh, false)
+	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	proof, err := service.CreateProofs(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
@@ -202,13 +203,18 @@ func TestService_CreateProofs(t *testing.T) {
 }
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
+	acc, err := configstore.NewAccount("", cfg)
+	assert.Nil(t, err)
+	tacc := acc.(*configstore.Account)
+	tacc.IdentityID = tenantID
+	ctxh, err := contextutil.New(context.Background(), tacc)
+	assert.Nil(t, err)
+	i, err := createAnchoredMockDocument(t, ctxh, false)
 	assert.Nil(t, err)
 	i.CoreDocumentModel.Document.SigningRoot = nil
 	err = testRepo().Update(tenantID, i.CoreDocumentModel.Document.CurrentVersion, i)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = service.CreateProofs(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, []string{"invoice.invoice_number"})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "signing root missing")
@@ -216,10 +222,10 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, err := createAnchoredMockDocument(t, ctxh, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = service.CreateProofs(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
@@ -235,13 +241,13 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 
 func TestService_CreateProofsForVersion(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, err := createAnchoredMockDocument(t, ctxh, false)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	olderVersion := i.CoreDocumentModel.Document.CurrentVersion
 	i, err = updatedAnchoredMockDocument(t, i)
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	proof, err := service.CreateProofsForVersion(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.DocumentID)
@@ -252,11 +258,11 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, true)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, err := createAnchoredMockDocument(t, ctxh, true)
 	assert.Nil(t, err)
 	idService = mockSignatureCheck(i, idService, service)
 	i.CoreDocumentModel.Document.SigningRoot = nil
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	signature, err := service.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
@@ -264,10 +270,10 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, err := createAnchoredMockDocument(t, ctxh, false)
 	s, _ := getServiceWithMockedLayers()
 	assert.Nil(t, err)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = s.CreateProofsForVersion(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))

@@ -250,17 +250,20 @@ func readyForSignaturesValidator(didBytes, priv, pub []byte) Validator {
 			return errors.New("expecting only one signature")
 		}
 
-		s := crypto.Sign(didBytes, priv, pub, cd.SigningRoot)
+		s, err := crypto.SignMessage(priv, cd.SigningRoot, crypto.CurveSecp256K1, true)
+		if err != nil {
+			return err
+		}
 		sh := cd.Signatures[0]
-		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
+		if !utils.IsSameByteSlice(didBytes, sh.EntityId) {
 			err = errors.AppendError(err, NewError("cd_entity_id", "entity ID mismatch"))
 		}
 
-		if !utils.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
+		if !utils.IsSameByteSlice(pub, sh.PublicKey) {
 			err = errors.AppendError(err, NewError("cd_public_key", "public key mismatch"))
 		}
 
-		if !utils.IsSameByteSlice(s.Signature, sh.Signature) {
+		if !utils.IsSameByteSlice(s, sh.Signature) {
 			err = errors.AppendError(err, NewError("cd_signature", "signature mismatch"))
 		}
 
