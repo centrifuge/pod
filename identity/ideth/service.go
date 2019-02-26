@@ -354,12 +354,6 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 	if err != nil {
 		return err
 	}
-	fmt.Println("req key", key)
-	fmt.Println("Purpose", purpose)
-	fmt.Println("Keys", keys)
-
-	keyss, err := contract.GetKeysByPurpose(opts, big.NewInt(2))
-	fmt.Println("Keys", keyss)
 
 	for _, p := range keys.Purposes {
 		if p.Cmp(big.NewInt(purpose)) == 0 {
@@ -410,7 +404,6 @@ func getKeyPairsFromAccount(acc config.Account) (map[int]id.KeyDID, error) {
 		return nil, err
 	}
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-
 	keys[id.KeyPurposeSigning] = id.NewKey(address32Bytes, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
 
 	// KeyPurposeEthMsgAuth

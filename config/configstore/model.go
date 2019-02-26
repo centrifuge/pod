@@ -588,7 +588,7 @@ func (acc *Account) GetKeys() (idKeys map[int]config.IDKey, err error) {
 
 	//secp256k1 keys
 	if _, ok := acc.keys[identity.KeyPurposeSigning]; !ok {
-		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetEthAuthKeyPair())
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
 		if err != nil {
 			return idKeys, err
 		}
