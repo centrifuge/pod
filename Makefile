@@ -22,10 +22,10 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
-clean: ##remove old vendor folder
-        @echo 'Cleaning the old vendor/ folder'
-        @rm -rf vendor/
-        @echo 'Done with "clean"'
+clean: ##clean vendor's folder. Should be run before a make install
+	@echo 'cleaning previous /vendor folder'
+	@rm -rf vendor/
+	@echo 'done cleaning'
 
 install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
@@ -64,7 +64,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go get -u github.com/jteeuwen/go-bindata/...
 
 install: ## Builds and Install binary for development
-install: clean install-deps vendorinstall
+install: install-deps vendorinstall
 	@go install ./cmd/centrifuge/...
 
 install-xgo: ## Install XGO
