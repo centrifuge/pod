@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 
@@ -38,7 +42,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/ed25519"
 )
 
 var (
@@ -150,7 +153,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
 	doc := dm.Document
-	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), doc.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
@@ -195,7 +198,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), doc.SigningRoot), "signature must be valid")
 	//Update document
 	newDM, err := dm.PrepareNewVersion(nil)
 	assert.Nil(t, err)
@@ -208,7 +211,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig = resp.Signature
 	newDoc := newDM.Document
-	assert.True(t, ed25519.Verify(sig.PublicKey, newDoc.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), newDoc.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
@@ -226,7 +229,7 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, newDoc.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), newDoc.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
@@ -239,7 +242,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, doc.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), doc.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {

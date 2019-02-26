@@ -134,7 +134,7 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 		Pub:  ePub,
 		Priv: ePriv,
 	}
-	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveEd25519)
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
