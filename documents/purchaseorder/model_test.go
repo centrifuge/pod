@@ -189,7 +189,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")
 
-	dr, err := poModel.DataRoot()
+	dr, err := poModel.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
 	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
@@ -242,11 +242,11 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po := new(PurchaseOrder)
 	po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), "0x010203040506")
-	_, err := po.DataRoot()
+	_, err := po.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.SigningRoot()
+	_, err = po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	_, err = po.DocumentRoot()
+	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	return po
 }

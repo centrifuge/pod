@@ -162,7 +162,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	sr, err := model.SigningRoot()
+	sr, err := model.CalculateSigningRoot()
 	if err != nil {
 		return nil, errors.New("failed to get signing root: %v", err)
 	}

@@ -159,10 +159,10 @@ func TestGetSigningProofHashes(t *testing.T) {
 	err := cd.setSalts()
 	assert.NoError(t, err)
 
-	_, err = cd.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err)
 
-	_, err = cd.DocumentRoot()
+	_, err = cd.CalculateDocumentRoot()
 	assert.Nil(t, err)
 
 	hashes, err := cd.getSigningRootProofHashes()
@@ -234,9 +234,9 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd.Document.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	assert.NoError(t, cd.setSalts())
 	cd.Document.DataRoot = testTree.RootHash()
-	_, err = cd.SigningRoot(documenttypes.InvoiceDataTypeUrl)
+	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
-	_, err = cd.DocumentRoot()
+	_, err = cd.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
 	cdTree, err := cd.documentTree(documenttypes.InvoiceDataTypeUrl)

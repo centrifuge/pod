@@ -51,7 +51,7 @@ func UpdateVersionValidator() Validator {
 			return errors.New("need both the old and new model")
 		}
 
-		dr, err := old.DocumentRoot()
+		dr, err := old.CalculateDocumentRoot()
 		if err != nil {
 			return errors.New("failed to get previous version document root: %v", err)
 		}
@@ -133,7 +133,7 @@ func baseValidator() Validator {
 // signingRootValidator checks the existence of signing root
 func signingRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		sr, err := model.SigningRoot()
+		sr, err := model.CalculateSigningRoot()
 		if err != nil {
 			return errors.New("failed to get signing root: %v", err)
 		}
@@ -150,7 +150,7 @@ func signingRootValidator() Validator {
 // recalculates the document root and compares with existing one
 func documentRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		dr, err := model.DocumentRoot()
+		dr, err := model.CalculateDocumentRoot()
 		if err != nil {
 			return errors.New("failed to get document root: %v", err)
 		}
@@ -169,7 +169,7 @@ func documentRootValidator() Validator {
 // Note: this needs to used only before document is sent for signatures from the collaborators
 func readyForSignaturesValidator(id, priv, pub []byte) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		sr, err := model.SigningRoot()
+		sr, err := model.CalculateSigningRoot()
 		if err != nil {
 			return errors.New("failed to generate signing root: %v", err)
 		}
@@ -203,7 +203,7 @@ func readyForSignaturesValidator(id, priv, pub []byte) Validator {
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
 func signaturesValidator(idService identity.Service) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		sr, err := model.SigningRoot()
+		sr, err := model.CalculateSigningRoot()
 		if err != nil {
 			return errors.New("failed to get signing root: %v", err)
 		}
@@ -234,7 +234,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 			return errors.New("failed to get anchorID: %v", err)
 		}
 
-		dr, err := model.DocumentRoot()
+		dr, err := model.CalculateDocumentRoot()
 		if err != nil {
 			return errors.New("failed to get document root: %v", err)
 		}

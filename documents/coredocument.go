@@ -460,18 +460,14 @@ func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []i
 	return ids, nil
 }
 
-// DocumentRoot returns the Document root of the core Document.
-// generates the root if not generated
-func (cd *CoreDocument) DocumentRoot() ([]byte, error) {
-	if len(cd.Document.DocumentRoot) != idSize {
-		tree, err := cd.DocumentRootTree()
-		if err != nil {
-			return nil, err
-		}
-
-		cd.Document.DocumentRoot = tree.RootHash()
+// CalculateDocumentRoot calculates the Document root of the core Document.
+func (cd *CoreDocument) CalculateDocumentRoot() ([]byte, error) {
+	tree, err := cd.DocumentRootTree()
+	if err != nil {
+		return nil, err
 	}
 
+	cd.Document.DocumentRoot = tree.RootHash()
 	return cd.Document.DocumentRoot, nil
 }
 
@@ -480,23 +476,14 @@ func (cd *CoreDocument) SetDataRoot(dr []byte) {
 	cd.Document.DataRoot = dr
 }
 
-// DataRoot return the data root of the Document.
-func (cd *CoreDocument) DataRoot() []byte {
-	return cd.Document.DataRoot
-}
-
-// SigningRoot returns the signing root of the core Document.
-// generates one if not generated.
-func (cd *CoreDocument) SigningRoot(docType string) ([]byte, error) {
-	if len(cd.Document.SigningRoot) != idSize {
-		tree, err := cd.signingRootTree(docType)
-		if err != nil {
-			return nil, err
-		}
-
-		cd.Document.SigningRoot = tree.RootHash()
+// CalculateSigningRoot calculates the signing root of the core Document.
+func (cd *CoreDocument) CalculateSigningRoot(docType string) ([]byte, error) {
+	tree, err := cd.signingRootTree(docType)
+	if err != nil {
+		return nil, err
 	}
 
+	cd.Document.SigningRoot = tree.RootHash()
 	return cd.Document.SigningRoot, nil
 }
 

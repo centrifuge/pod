@@ -52,7 +52,7 @@ Validations should be done depending on the situation. The below table is an exa
 	|---------------------------|---------------------|---------------------|--------------------------------|-------------------------------|
 	| Client Submission         |                     |                     | yes                            | yes                           |
 	| Signature Request         | yes                 |                     |                                |                               |
-	| Receive Anchored document | yes                 | yes                 |                                | yes                           |
+	| Receive Anchored Document | yes                 | yes                 |                                | yes                           |
 	| Store in DB               | yes                 | only if set         |                                | yes                           |
 
 
@@ -145,17 +145,17 @@ Every service should be able to `register` itself at the `ServiceRegistry` if it
 The registry should be thread safe.
 
 
-A Sample Flow for Handling document Signature Requests
+A Sample Flow for Handling Document Signature Requests
 
 The following is an example modification of `Handler.RequestDocumentSignature` to show the usage of `Registry`, `Service` and `Model` interactions.
 
 	func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	service, err := registry.LocateService(sigReq.document)
+	service, err := registry.LocateService(sigReq.Document)
 	if err != nil {
 	return nil, err
 	}
 
-	model, err := service.DeriveWithCD(sigReq.document)
+	model, err := service.DeriveWithCD(sigReq.Document)
 	if err != nil {
 	return nil, err
 	}

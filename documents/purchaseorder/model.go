@@ -312,12 +312,8 @@ func (p *PurchaseOrder) Type() reflect.Type {
 	return reflect.TypeOf(p)
 }
 
-// DataRoot calculates the data root and sets the root to core document
-func (p *PurchaseOrder) DataRoot() ([]byte, error) {
-	if p.CoreDocument.DataRoot() != nil {
-		return p.CoreDocument.DataRoot(), nil
-	}
-
+// CalculateDataRoot calculates the data root and sets the root to core document
+func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 	t, err := p.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
@@ -389,10 +385,10 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 	return nil
 }
 
-// SigningRoot returns the signing root of the document.
+// CalculateSigningRoot returns the signing root of the document.
 // Calculates it if not generated yet.
-func (p *PurchaseOrder) SigningRoot() ([]byte, error) {
-	return p.CoreDocument.SigningRoot(p.DocumentType())
+func (p *PurchaseOrder) CalculateSigningRoot() ([]byte, error) {
+	return p.CoreDocument.CalculateSigningRoot(p.DocumentType())
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.

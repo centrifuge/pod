@@ -286,7 +286,6 @@ func createIdentity(t *testing.T) identity.CentID {
 	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
 	watchReceivedIdentity = <-confirmations
 	assert.Equal(t, centrifugeId, watchReceivedIdentity.Identity.CentID(), "Resulting Identity should have the same ID as the input")
-
 	return centrifugeId
 }
 
@@ -299,13 +298,13 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		err = po.InitPurchaseOrderInput(payalod, idConfig.ID.String())
 		assert.NoError(t, err)
 	}
-	_, err = po.DataRoot()
+	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.SigningRoot()
+	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, sr)
 	po.AppendSignatures(sig)
-	_, err = po.DocumentRoot()
+	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)

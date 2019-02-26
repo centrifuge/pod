@@ -71,13 +71,13 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	_, err = model.DataRoot()
+	_, err = model.CalculateDataRoot()
 	if err != nil {
 		return err
 	}
 
 	// calculate the signing root
-	sr, err := model.SigningRoot()
+	sr, err := model.CalculateSigningRoot()
 	if err != nil {
 		return errors.New("failed to calculate signing root: %v", err)
 	}
@@ -133,7 +133,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("pre anchor validation failed: %v", err)
 	}
 
-	dr, err := model.DocumentRoot()
+	dr, err := model.CalculateDocumentRoot()
 	if err != nil {
 		return errors.New("failed to get document root: %v", err)
 	}

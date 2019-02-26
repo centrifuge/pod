@@ -101,13 +101,13 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	po := new(purchaseorder.PurchaseOrder)
 	err = po.InitPurchaseOrderInput(payalod, idConfig.ID.String())
 	assert.NoError(t, err)
-	_, err = po.DataRoot()
+	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.SigningRoot()
+	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, sr)
 	po.AppendSignatures(sig)
-	_, err = po.DocumentRoot()
+	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	return po
 }

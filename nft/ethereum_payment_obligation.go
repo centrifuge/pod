@@ -82,7 +82,6 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		tokenID[:],
 		req.SubmitTokenProof,
 		req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof)
-
 	if err != nil {
 		return mreq, err
 	}
@@ -93,7 +92,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	dr, err := model.DocumentRoot()
+	dr, err := model.CalculateDocumentRoot()
 	if err != nil {
 		return mreq, err
 	}

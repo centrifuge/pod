@@ -27,19 +27,19 @@ type mockModel struct {
 	sigs []*coredocumentpb.Signature
 }
 
-func (m *mockModel) DataRoot() ([]byte, error) {
+func (m *mockModel) CalculateDataRoot() ([]byte, error) {
 	args := m.Called()
 	dr, _ := args.Get(0).([]byte)
 	return dr, args.Error(1)
 }
 
-func (m *mockModel) SigningRoot() ([]byte, error) {
+func (m *mockModel) CalculateSigningRoot() ([]byte, error) {
 	args := m.Called()
 	sr, _ := args.Get(0).([]byte)
 	return sr, args.Error(1)
 }
 
-func (m *mockModel) DocumentRoot() ([]byte, error) {
+func (m *mockModel) CalculateDocumentRoot() ([]byte, error) {
 	args := m.Called()
 	dr, _ := args.Get(0).([]byte)
 	return dr, args.Error(1)
@@ -113,7 +113,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 	// failed data root
 	model := new(mockModel)
-	model.On("DataRoot").Return(nil, errors.New("failed data root")).Once()
+	model.On("CalculateDataRoot").Return(nil, errors.New("failed data root")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -121,8 +121,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 	// failed signing root
 	model = new(mockModel)
-	model.On("DataRoot").Return(utils.RandomSlice(32), nil).Once()
-	model.On("SigningRoot").Return(nil, errors.New("failed signing root")).Once()
+	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateSigningRoot").Return(nil, errors.New("failed signing root")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -131,8 +131,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// success
 	sr := utils.RandomSlice(32)
 	model = new(mockModel)
-	model.On("DataRoot").Return(utils.RandomSlice(32), nil).Once()
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("AppendSignatures", mock.Anything).Return().Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
@@ -182,7 +182,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("ID").Return([]byte{})
 	model.On("CurrentVersion").Return([]byte{})
 	model.On("NextVersion").Return([]byte{})
-	model.On("SigningRoot").Return(nil, errors.New("error"))
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -194,7 +194,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
 	c := p2pClient{}
@@ -211,7 +211,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("AppendSignatures", []*coredocumentpb.Signature{sig}).Return().Once()
 	model.sigs = append(model.sigs, sig)
@@ -242,7 +242,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIDService{}
@@ -258,7 +258,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIDService{}
@@ -304,9 +304,9 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(nil, errors.New("error"))
+	model.On("CalculateDocumentRoot").Return(nil, errors.New("error"))
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIDService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
@@ -322,9 +322,9 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(utils.RandomSlice(32), nil)
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIDService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
@@ -360,9 +360,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(utils.RandomSlice(32), nil)
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIDService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
@@ -384,9 +384,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(dr[:], nil)
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIDService{}
@@ -406,9 +406,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(dr[:], nil)
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetCollaborators", mock.Anything).Return([]identity.CentID{identity.RandomCentID()}, nil).Once()
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	model.sigs = append(model.sigs, sig)
@@ -431,9 +431,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(dr[:], nil)
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetCollaborators", mock.Anything).Return([]identity.CentID{cid}, nil).Once()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.sigs = append(model.sigs, sig)
@@ -458,9 +458,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("SigningRoot").Return(sr, nil)
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
-	model.On("DocumentRoot").Return(dr[:], nil)
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetCollaborators", mock.Anything).Return([]identity.CentID{cid}, nil).Once()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.sigs = append(model.sigs, sig)

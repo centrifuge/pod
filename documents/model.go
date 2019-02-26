@@ -36,14 +36,14 @@ type Model interface {
 	// DocumentType returns the type of the Document
 	DocumentType() string
 
-	// DataRoot returns the data root of the model.
-	DataRoot() ([]byte, error)
+	// CalculateDataRoot calculates the data root of the model.
+	CalculateDataRoot() ([]byte, error)
 
-	// SigningRoot returns the signing root of the model.
-	SigningRoot() ([]byte, error)
+	// CalculateSigningRoot calculates the signing root of the model.
+	CalculateSigningRoot() ([]byte, error)
 
-	// DocumentRoot returns the Document root of the model.
-	DocumentRoot() ([]byte, error)
+	// CalculateDocumentRoot returns the Document root of the model.
+	CalculateDocumentRoot() ([]byte, error)
 
 	// PreviousDocumentRoot returns the Document root of the previous version.
 	PreviousDocumentRoot() []byte

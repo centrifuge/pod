@@ -324,12 +324,8 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// DataRoot calculates the data root and sets the root to core document
-func (i *Invoice) DataRoot() ([]byte, error) {
-	if i.CoreDocument.DataRoot() != nil {
-		return i.CoreDocument.DataRoot(), nil
-	}
-
+// CalculateDataRoot calculates the data root and sets the root to core document.
+func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 	t, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
@@ -401,10 +397,9 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 	return nil
 }
 
-// SigningRoot returns the signing root of the document.
-// Calculates it if not generated yet.
-func (i *Invoice) SigningRoot() ([]byte, error) {
-	return i.CoreDocument.SigningRoot(i.DocumentType())
+// CalculateSigningRoot calculates the signing root of the document.
+func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
+	return i.CoreDocument.CalculateSigningRoot(i.DocumentType())
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.

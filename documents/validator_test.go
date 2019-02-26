@@ -128,13 +128,13 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "need both the old and new model")
 
 	old := new(mockModel)
-	old.On("DocumentRoot").Return(nil, errors.New("errors")).Once()
+	old.On("CalculateDocumentRoot").Return(nil, errors.New("errors")).Once()
 	err = uvv.Validate(old, new(mockModel))
 	assert.Error(t, err)
 	old.AssertExpectations(t)
 
 	old = new(mockModel)
-	old.On("DocumentRoot").Return(utils.RandomSlice(32), nil).Once()
+	old.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	old.On("ID").Return(nil).Once()
 	old.On("CurrentVersion").Return(nil).Once()
 	old.On("NextVersion").Return(nil).Once()
@@ -155,7 +155,7 @@ func TestUpdateVersionValidator(t *testing.T) {
 	di := utils.RandomSlice(32)
 	cv := utils.RandomSlice(32)
 	nv := utils.RandomSlice(32)
-	old.On("DocumentRoot").Return(dpr, nil).Once()
+	old.On("CalculateDocumentRoot").Return(dpr, nil).Once()
 	old.On("ID").Return(di).Once()
 	old.On("CurrentVersion").Return(pv).Once()
 	old.On("NextVersion").Return(cv).Once()
@@ -196,21 +196,21 @@ func TestValidator_signingRootValidator(t *testing.T) {
 
 	// failed to get signing root
 	model := new(mockModel)
-	model.On("SigningRoot").Return(nil, errors.New("error")).Once()
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
 	err := sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
 
 	// invalid signing root
 	model = new(mockModel)
-	model.On("SigningRoot").Return(utils.RandomSlice(30), nil).Once()
+	model.On("CalculateSigningRoot").Return(utils.RandomSlice(30), nil).Once()
 	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
 
 	// success
 	model = new(mockModel)
-	model.On("SigningRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateSigningRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = sv.Validate(nil, model)
 	assert.NoError(t, err)
 	model.AssertExpectations(t)
@@ -221,21 +221,21 @@ func TestValidator_documentRootValidator(t *testing.T) {
 
 	// failed to get document root
 	model := new(mockModel)
-	model.On("DocumentRoot").Return(nil, errors.New("error")).Once()
+	model.On("CalculateDocumentRoot").Return(nil, errors.New("error")).Once()
 	err := dv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
 
 	// invalid signing root
 	model = new(mockModel)
-	model.On("DocumentRoot").Return(utils.RandomSlice(30), nil).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(30), nil).Once()
 	err = dv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
 
 	// success
 	model = new(mockModel)
-	model.On("DocumentRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = dv.Validate(nil, model)
 	assert.NoError(t, err)
 	model.AssertExpectations(t)
@@ -248,7 +248,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 
 	// fail to get signing root
 	model := new(mockModel)
-	model.On("SigningRoot").Return(nil, errors.New("error")).Once()
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
 	err := rfsv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
@@ -256,7 +256,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	// signature length mismatch
 	sr := utils.RandomSlice(32)
 	model = new(mockModel)
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	err = rfsv.Validate(nil, model)
 	assert.Error(t, err)
@@ -270,7 +270,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 		PublicKey: utils.RandomSlice(32),
 	}
 	model = new(mockModel)
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
 	err = rfsv.Validate(nil, model)
@@ -283,7 +283,7 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 	assert.Nil(t, err)
 	s = identity.Sign(c, identity.KeyPurposeSigning, sr)
 	model = new(mockModel)
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
 	err = rfsv.Validate(nil, model)
@@ -297,7 +297,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// fail to get signing root
 	model := new(mockModel)
-	model.On("SigningRoot").Return(nil, errors.New("error")).Once()
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
 	err := ssv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
@@ -305,7 +305,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// signature length mismatch
 	sr := utils.RandomSlice(32)
 	model = new(mockModel)
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -319,7 +319,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 		PublicKey: utils.RandomSlice(32),
 	}
 	model = new(mockModel)
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
 	srv = new(testingcommons.MockIDService)
@@ -333,7 +333,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// success
 	model = new(mockModel)
-	model.On("SigningRoot").Return(sr, nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
 	srv = new(testingcommons.MockIDService)
@@ -364,7 +364,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// failed docRoot
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
-	model.On("DocumentRoot").Return(nil, errors.New("error")).Once()
+	model.On("CalculateDocumentRoot").Return(nil, errors.New("error")).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -373,7 +373,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// invalid doc root
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
-	model.On("DocumentRoot").Return(utils.RandomSlice(30), nil).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(30), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -387,7 +387,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("DocumentRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -401,7 +401,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("DocumentRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -414,7 +414,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("DocumentRoot").Return(docRoot[:], nil).Once()
+	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
