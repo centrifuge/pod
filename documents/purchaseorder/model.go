@@ -22,7 +22,8 @@ import (
 
 const prefix string = "po"
 
-var compactPrefix = []byte{2, 0, 0, 0}
+// tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
+func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
@@ -158,7 +159,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	p.CoreDocumentModel, err = p.CoreDocumentModel.NewWithCollaborators(collaborators)
+	p.CoreDocumentModel, err = documents.NewWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -253,7 +254,7 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 // getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
 func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
 	if p.PurchaseOrderSalts == nil {
-		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix)
+		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix())
 		if err != nil {
 			return nil, errors.New("getPOSalts error %v", err)
 		}
@@ -358,7 +359,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix)
+	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)

@@ -124,7 +124,8 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID 
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.Nil(t, err)
 	idConfig.ID = localID
-	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
+	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
+	assert.NoError(t, err)
 	m, err := docService.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
 
@@ -137,6 +138,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID 
 	tree, err := dm.GetDocumentSigningTree(droot)
 	assert.NoError(t, err)
 	dm.Document.SigningRoot = tree.RootHash()
+
 	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, dm.Document.SigningRoot, crypto.CurveSecp256K1, true)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
@@ -145,7 +147,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte, localID 
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
-	dm.Document.Signatures = append(dm.Document.Signatures, sig)
+	dm.Document.Signatures = []*coredocumentpb.Signature{sig}
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	dm.Document.DocumentRoot = tree.RootHash()

@@ -11,15 +11,19 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
@@ -80,48 +84,87 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	assert.Nil(t, resp, "must be nil")
 }
 
-func TestHandler_GetDocumentSucceeds(t *testing.T) {
-	tc, err := configstore.NewAccount("", cfg)
-	assert.Nil(t, err)
-	centrifugeId := createIdentity(t)
-	acc := tc.(*configstore.Account)
-	acc.IdentityID = centrifugeId[:]
+func updateDocument(t *testing.T, dm *documents.CoreDocumentModel, centrifugeId identity.DID, ctxh context.Context) {
 
-	ctxh, err := contextutil.New(context.Background(), tc)
-	assert.Nil(t, err)
+	dm = prepareDocumentForP2PHandler(t, dm, centrifugeId)
 
-	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
+	ed := dm.Document.EmbeddedData
+	edsalts := dm.Document.EmbeddedDataSalts
+
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
+	assert.NoError(t, err)
+	dm.Document.EmbeddedData = ed
+	dm.Document.EmbeddedDataSalts = edsalts
 
 	// Add signature received
-	doc := dm.Document
-	doc.Signatures = append(doc.Signatures, resp.Signature)
+	dm.Document.Signatures = append(dm.Document.Signatures, resp.Signature)
 	tree, err := dm.GetDocumentRootTree()
 	assert.NoError(t, err)
-	doc.DocumentRoot = tree.RootHash()
+	dm.Document.DocumentRoot = tree.RootHash()
 
-	// Anchor document
-	anchorIDTyped, _ := anchors.ToAnchorID(doc.CurrentVersion)
-	docRootTyped, _ := anchors.ToDocumentRoot(doc.DocumentRoot)
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	cdSalts, _ := documents.GenerateNewSalts(dm.Document, "", nil)
+	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
+}
+
+func TestHandler_GetDocumentSucceeds(t *testing.T) {
+	// generate identity for testing
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(t, err)
+	did := identity.NewDID(*didAddr)
+	tc, err := configstore.TempAccount("", cfg)
+	assert.NoError(t, err)
+	tcr := tc.(*configstore.Account)
+	tcr.IdentityID = did[:]
+	cid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	assert.NoError(t, err)
+
+	// generate initial core doc with collaborators
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	dm, err := testingdocuments.GenerateCoreDocumentModelWithCollaborators([][]byte{cid[:]})
 	assert.Nil(t, err)
 
-	watchCommittedAnchor := <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	updateDocument(t, dm, cid, ctxh)
 
-	anchorReq := getAnchoredRequest(dm)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, anchorReq, centrifugeId[:])
+	// Retrieve document from repository with requester verification access type
+	getReq := getDocumentRequestPeer(dm)
+	getDocResp, err := handler.GetDocument(ctxh, getReq, cid)
 	assert.Nil(t, err)
-	assert.NotNil(t, anchorResp, "must be non nil")
+	assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
 
-	// Retrieve document from anchor repository with document_identifier
-	getReq := getGetDocumentRequest(dm)
-	getDocResp, err := handler.GetDocument(ctxh, getReq, centrifugeId)
+	// Retrieve document from repository with access token verification access type
+	// TODO : will fail until signature validation scheme is changed
+	//docID := hexutil.Encode(dm.Document.DocumentIdentifier)
+	//at := documentpb.AccessTokenParams{
+	//	Grantee:            cid.String(),
+	//	DocumentIdentifier: docID,
+	//}
+	//dm, err = dm.AddAccessTokenToReadRules(ctxh, at)
+	//assert.NoError(t, err)
+	//dm, err = dm.PrepareNewVersion(nil)
+	//assert.NoError(t, err)
+	//updateDocument(t, dm, cid, ctxh)
+	//
+	//role := dm.Document.Roles[1]
+	//token := role.AccessTokens[0]
+	//accessTokenReq := getDocumentRequestAccessToken(dm, token.Identifier)
+	//getDocResp, err = handler.GetDocument(ctxh, accessTokenReq, cid)
+	//assert.Nil(t, err)
+	//assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
+
+	// Retrieve document from repository with nft verification access type
+	// TODO: will currently always work because token owner is a collaborator
+	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	tokenID := utils.RandomSlice(32)
+	err = dm.AddNFTToReadRules(registry, tokenID)
+	dm, err = dm.PrepareNewVersion(nil)
+	assert.NoError(t, err)
+	updateDocument(t, dm, cid, ctxh)
+
+	nftReq := getDocumentRequestNft(dm, registry, tokenID)
+	getDocResp, err = handler.GetDocument(ctxh, nftReq, cid)
 	assert.Nil(t, err)
-	assert.ObjectsAreEqual(getDocResp.Document, doc)
+	assert.ObjectsAreEqual(getDocResp.Document, dm.Document)
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
@@ -170,6 +213,8 @@ func TestHandler_RequestDocumentSignature_verification_fail(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	dm := prepareDocumentForP2PHandler(t, nil, defaultDID)
+	ed := dm.Document.EmbeddedData
+	edsalts := dm.Document.EmbeddedDataSalts
 	req := getSignatureRequest(dm)
 	tc, err := configstore.NewAccount("", cfg)
 	assert.Nil(t, err)
@@ -181,6 +226,9 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
+
+	dm.Document.EmbeddedData = ed
+	dm.Document.EmbeddedDataSalts = edsalts
 
 	req = getSignatureRequest(dm)
 	resp, err = handler.RequestDocumentSignature(ctxh, req)
@@ -247,7 +295,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	centrifugeId := createIdentity(t)
-
 	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
 
 	// Anchor document
@@ -292,10 +339,14 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	dm := prepareDocumentForP2PHandler(t, nil, centrifugeId)
+	ed := dm.Document.EmbeddedData
+	edsalts := dm.Document.EmbeddedDataSalts
 	req := getSignatureRequest(dm)
 	resp, err := handler.RequestDocumentSignature(ctxh, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+	dm.Document.EmbeddedData = ed
+	dm.Document.EmbeddedDataSalts = edsalts
 
 	// Add signature received
 	doc := dm.Document
@@ -361,11 +412,11 @@ func createIdentity(t *testing.T) identity.DID {
 func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel, did identity.DID) *documents.CoreDocumentModel {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	idConfig.ID = did
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	if dm == nil {
-		dm = testingdocuments.GenerateCoreDocumentModel()
+		dm, err = testingdocuments.GenerateCoreDocumentModel()
+		assert.Nil(t, err)
 	}
-
 	m, err := docSrv.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
 
@@ -375,9 +426,9 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel,
 	dm, err = m.PackCoreDocument()
 	assert.NoError(t, err)
 
+	doc := dm.Document
 	tree, err := dm.GetDocumentSigningTree(droot)
 	assert.NoError(t, err)
-	doc := dm.Document
 	doc.SigningRoot = tree.RootHash()
 	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, doc.SigningRoot, crypto.CurveSecp256K1, true)
 	assert.NoError(t, err)
@@ -387,7 +438,7 @@ func prepareDocumentForP2PHandler(t *testing.T, dm *documents.CoreDocumentModel,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
-	doc.Signatures = append(doc.Signatures, sig)
+	doc.Signatures = []*coredocumentpb.Signature{sig}
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 	doc.DocumentRoot = tree.RootHash()
@@ -406,7 +457,7 @@ func updateDocumentForP2Phandler(t *testing.T, model *documents.CoreDocumentMode
 		Value:   serializedInv,
 	}
 	doc.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
-	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
+	cdSalts, _ := documents.GenerateCoreDocSalts(doc)
 	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 }
 
@@ -420,9 +471,32 @@ func getSignatureRequest(dm *documents.CoreDocumentModel) *p2ppb.SignatureReques
 	return &p2ppb.SignatureRequest{Document: &doc}
 }
 
-func getGetDocumentRequest(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
-	doc := dm.Document
-	return &p2ppb.GetDocumentRequest{DocumentIdentifier: doc.DocumentIdentifier}
+func getDocumentRequestPeer(dm *documents.CoreDocumentModel) *p2ppb.GetDocumentRequest {
+	return &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+}
+
+func getDocumentRequestNft(dm *documents.CoreDocumentModel, registry common.Address, tokenID []byte) *p2ppb.GetDocumentRequest {
+	return &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftRegistryAddress: registry[:],
+		NftTokenId:         tokenID,
+	}
+}
+
+func getDocumentRequestAccessToken(dm *documents.CoreDocumentModel, tokenID []byte) *p2ppb.GetDocumentRequest {
+	atr := &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessTokenId:                tokenID,
+	}
+	return &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: dm.Document.DocumentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: atr,
+	}
 }
 
 func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2ppb.SignatureResponse {

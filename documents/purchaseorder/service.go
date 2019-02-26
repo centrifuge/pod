@@ -163,6 +163,9 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpop
 	}
 
 	po := new(PurchaseOrder)
+	if po.CoreDocumentModel == nil {
+		po.CoreDocumentModel = documents.NewCoreDocModel()
+	}
 	err = po.InitPurchaseOrderInput(payload, idConf.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)

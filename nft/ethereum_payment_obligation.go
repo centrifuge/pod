@@ -200,7 +200,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 
 		isDone := <-done
 		if !isDone {
-			// some problem occured in a child task
+			// some problem occurred in a child task
 			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
 			return
 		}

@@ -2,14 +2,16 @@ package testingdocuments
 
 import (
 	"context"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -81,33 +83,50 @@ func (m *MockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
-func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) *documents.CoreDocumentModel {
-	identifier := utils.RandomSlice(32)
-	invData := &invoicepb.InvoiceData{}
-	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
-
-	serializedInv, _ := proto.Marshal(invData)
-	doc := &coredocumentpb.CoreDocument{
-		Collaborators:      collaborators,
-		DocumentIdentifier: identifier,
-		CurrentVersion:     identifier,
-		NextVersion:        utils.RandomSlice(32),
-		EmbeddedData: &any.Any{
-			TypeUrl: documenttypes.InvoiceDataTypeUrl,
-			Value:   serializedInv,
-		},
-		EmbeddedDataSalts: documents.ConvertToProtoSalts(dataSalts),
+func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) (*documents.CoreDocumentModel, error) {
+	dueDate := time.Now().Add(4 * 24 * time.Hour)
+	invData := &invoicepb.InvoiceData{
+		InvoiceNumber: "2132131",
+		GrossAmount:   123,
+		NetAmount:     123,
+		Currency:      "EUR",
+		DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
 	}
-	cdSalts, _ := documents.GenerateNewSalts(doc, "", nil)
-	doc.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
-	dm := documents.NewCoreDocModel()
+	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
+	serializedInv, _ := proto.Marshal(invData)
+	var dm *documents.CoreDocumentModel
+	if collaborators != nil {
+		var collabs []string
+		for _, c := range collaborators {
+			encoded := hexutil.Encode(c)
+			collabs = append(collabs, encoded)
+		}
+		m, err := documents.NewWithCollaborators(collabs)
+		if err != nil {
+			return nil, err
+		}
+		dm = m
+	} else {
+		dm = documents.NewCoreDocModel()
+	}
+	dm.Document.EmbeddedData = &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   serializedInv,
+	}
+	dm.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
+
+	cdSalts, _ := documents.GenerateCoreDocSalts(dm.Document)
+	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
 	mockModel := MockModel{
 		CoreDocumentModel: dm,
 	}
-	dm.Document = doc
-	return mockModel.CoreDocumentModel
+	return mockModel.CoreDocumentModel, nil
 }
 
-func GenerateCoreDocumentModel() *documents.CoreDocumentModel {
-	return GenerateCoreDocumentModelWithCollaborators(nil)
+func GenerateCoreDocumentModel() (*documents.CoreDocumentModel, error) {
+	dm, err := GenerateCoreDocumentModelWithCollaborators(nil)
+	if err != nil {
+		return nil, err
+	}
+	return dm, nil
 }

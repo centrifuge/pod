@@ -202,8 +202,33 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
 func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) (*p2ppb.GetDocumentResponse, error) {
+	// if the document request contains an access token request, check the document indicated by the delegating document identifier for the access token
+	if docReq.AccessTokenRequest != nil {
+		model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
+		if err != nil {
+			return nil, err
+		}
+		dm, err := model.PackCoreDocument()
+		if err != nil {
+			return nil, err
+		}
+		err = dm.ValidateDocumentAccess(docReq, requesterCentID)
+		if err != nil {
+			return nil, err
+		}
+		// if the access token passes validation, return the requested document indicated in the parent GetDocumentRequest
+		reqModel, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
+		if err != nil {
+			return nil, err
+		}
+		reqDm, err := reqModel.PackCoreDocument()
+		if err != nil {
+			return nil, err
+		}
+		return &p2ppb.GetDocumentResponse{Document: reqDm.Document}, nil
+	}
+	// if the document request requires NFT or Peer validation, validate the request based on the document identifier in the GetDocumentRequest
 	model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
-
 	if err != nil {
 		return nil, err
 	}
@@ -211,10 +236,11 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 	if err != nil {
 		return nil, err
 	}
-	//err = dm.ValidateDocumentAccess(docReq, requesterCentID)
-	//if err != nil {
-	//	return nil, err
-	//}
+	err = dm.ValidateDocumentAccess(docReq, requesterCentID)
+	if err != nil {
+		return nil, err
+	}
+	// return requested document if validation checks pass
 	return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
 }
 

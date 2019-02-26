@@ -51,7 +51,8 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	idService := getIDMocks(ctx, centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
+	coreDocModel, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	coreDoc := coreDocModel.Document
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")
@@ -76,7 +77,8 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	idService := getIDMocks(ctx, centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
+	coreDocModel, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	coreDoc := coreDocModel.Document
 
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: coreDoc})
@@ -100,7 +102,8 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	idService := getIDMocks(ctx, centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	coreDocModel := testingdocuments.GenerateCoreDocumentModel()
+	coreDocModel, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	coreDoc := coreDocModel.Document
 
 	assert.Nil(t, err, "centrifugeId not initialized correctly ")

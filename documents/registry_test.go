@@ -13,9 +13,10 @@ import (
 func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
-	dm := testingdocuments.GenerateCoreDocumentModel()
+	dm, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	documentType := dm.Document.EmbeddedData.TypeUrl
-	err := registry.Register(documentType, a)
+	err = registry.Register(documentType, a)
 	assert.Nil(t, err, "register didn't work with unused id")
 
 	b, err := registry.LocateService(documentType)
@@ -26,11 +27,12 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 func TestRegistry_Register_invalidId(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	a := &testingdocuments.MockService{}
-	dm := testingdocuments.GenerateCoreDocumentModel()
+	dm, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	cd := dm.Document
 	cd.EmbeddedData.TypeUrl = "testID_1"
 
-	err := registry.Register(cd.EmbeddedData.TypeUrl, a)
+	err = registry.Register(cd.EmbeddedData.TypeUrl, a)
 	assert.Nil(t, err, "register didn't work with unused id")
 
 	err = registry.Register(cd.EmbeddedData.TypeUrl, a)
@@ -42,10 +44,11 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 
 func TestRegistry_LocateService_invalid(t *testing.T) {
 	registry := documents.NewServiceRegistry()
-	dm := testingdocuments.GenerateCoreDocumentModel()
+	dm, err := testingdocuments.GenerateCoreDocumentModel()
+	assert.NoError(t, err)
 	cd := dm.Document
 	cd.EmbeddedData.TypeUrl = "testID_2"
 	documentType := cd.EmbeddedData.TypeUrl
-	_, err := registry.LocateService(documentType)
+	_, err = registry.LocateService(documentType)
 	assert.Error(t, err, "should throw an error because no services is registered")
 }

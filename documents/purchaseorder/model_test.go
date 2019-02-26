@@ -115,7 +115,8 @@ func TestPO_CoreDocument_successful(t *testing.T) {
 
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
 	poModel.CoreDocumentModel = coreDocumentModel
-	poModel.UnpackCoreDocument(coreDocumentModel)
+	err := poModel.UnpackCoreDocument(coreDocumentModel)
+	assert.NoError(t, err)
 
 	returnedCoreDocumentModel, err := poModel.PackCoreDocument()
 	assert.Nil(t, err, "transformation from purchase order to CoreDoc failed")
@@ -141,7 +142,8 @@ func TestPO_JSON(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
 	coreDocumentModel := CreateCDWithEmbeddedPO(t, poData)
 	poModel.CoreDocumentModel = coreDocumentModel
-	poModel.UnpackCoreDocument(coreDocumentModel)
+	err := poModel.UnpackCoreDocument(coreDocumentModel)
+	assert.NoError(t, err)
 
 	jsonBytes, err := poModel.JSON()
 	assert.Nil(t, err, "marshal to json didn't work correctly")
@@ -249,7 +251,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_createProofs(t *testing.T) {
 	poModel, err := createMockPurchaseOrder(t)
 	assert.Nil(t, err)
-	proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+	proof, err := poModel.CreateProofs([]string{"po.po_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := poModel.CoreDocumentModel.GetDocumentRootTree()
@@ -310,6 +312,7 @@ func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, error) {
 	if err != nil {
 		return nil, err
 	}
-	poModel.UnpackCoreDocument(corDocModel)
+	err = poModel.UnpackCoreDocument(corDocModel)
+	assert.NoError(t, err)
 	return poModel, nil
 }
