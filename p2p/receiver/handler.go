@@ -160,6 +160,10 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
+	if docReq == nil || docReq.Document == nil {
+		return nil, errors.New("nil document provided")
+	}
+
 	model, err := srv.docSrv.DeriveFromCoreDocument(*docReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)

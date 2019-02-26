@@ -56,7 +56,7 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
-	// document repository errors
+	// Document repository errors
 
 	// ErrDocumentRepositoryModelNotRegistered must be used when the model hasn't been registered in the database repository
 	ErrDocumentRepositoryModelNotRegistered = errors.Error("document model hasn't been registered in the database repository")

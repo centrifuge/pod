@@ -75,8 +75,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.Nil(t, err)
 
 	// get ID
-	id, err := modelUpdated.ID()
-	assert.Nil(t, err, "should not error out when getting invoice ID")
+	id := modelUpdated.ID()
 	// call mint
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
@@ -114,9 +113,8 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	tokenID := mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
-	md, err := doc.PackCoreDocument()
+	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
-	cd := md.Document
 	assert.Len(t, cd.Roles, 2)
 	assert.Len(t, cd.Roles[1].Nfts, 1)
 	newNFT := cd.Roles[1].Nfts[0]
@@ -173,7 +171,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	if grantAccess {
 		roleCount++
 	}
-	assert.Len(t, cd.Document.Roles, roleCount)
+	assert.Len(t, cd.Roles, roleCount)
 }
 
 func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
