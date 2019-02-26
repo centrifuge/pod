@@ -20,7 +20,7 @@ import (
 type anchorRepositoryContract interface {
 	PreCommit(opts *bind.TransactOpts, _anchorID *big.Int, signingRoot [32]byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, anchorID *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
-	Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error)
+	GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct { AnchorId *big.Int; DocumentRoot [32]byte }, error)
 }
 
 type service struct {
@@ -39,7 +39,8 @@ func newService(config Config, anchorContract anchorRepositoryContract, queue *q
 func (s *service) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := s.client.GetGethCallOpts(false)
-	return s.anchorRepositoryContract.Commits(opts, anchorID.BigInt())
+	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())
+	return r.DocumentRoot, err
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract

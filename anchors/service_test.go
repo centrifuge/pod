@@ -21,10 +21,17 @@ type mockAnchorRepo struct {
 	anchorRepositoryContract
 }
 
-func (m *mockAnchorRepo) Commits(opts *bind.CallOpts, anchorID *big.Int) (docRoot [32]byte, err error) {
+func (m *mockAnchorRepo) GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct { AnchorId *big.Int; DocumentRoot [32]byte }, error) {
 	args := m.Called(opts, anchorID)
-	docRoot, _ = args.Get(0).([32]byte)
-	return docRoot, args.Error(1)
+	type Response struct {
+		AnchorId *big.Int
+		DocumentRoot [32]byte
+	}
+	r := Response{}
+	dr := args.Get(0).([32]byte)
+	r.DocumentRoot = dr
+
+	return r, args.Error(1)
 }
 
 func TestCorrectCommitSignatureGen(t *testing.T) {
@@ -75,7 +82,7 @@ func TestGetDocumentRootOf(t *testing.T) {
 	ethClient.On("GetGethCallOpts").Return(nil)
 	ethRepo := newService(cfg, repo, nil, ethClient, nil)
 	docRoot := utils.RandomByte32()
-	repo.On("Commits", mock.Anything, mock.Anything).Return(docRoot, nil)
+	repo.On("GetAnchorById", mock.Anything, mock.Anything).Return(docRoot, nil)
 	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)
 	repo.AssertExpectations(t)
 	assert.Nil(t, err)
