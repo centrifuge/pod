@@ -3,28 +3,29 @@
 package testworld
 
 import (
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestHost_Signature(t *testing.T) {
 	t.Parallel()
-	eve := doctorFord.getHostTestSuite(t, "Eve")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-
-	edp := eve.host.anchorProcessor
+	eve := doctorFord.getHostTestSuite(t, "Eve")
 
 	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
 	coredoc := prepareCoreDocument(t, collaborators, eve)
 
-	err := edp.Send(ectxh, coredoc, bob.id)
-	assert.Nil(t, err)
+	err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(coredoc.Document.Signatures))
 }
 
 func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite) *documents.CoreDocumentModel {
@@ -48,6 +49,10 @@ func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite
 
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
 	dm.Document.Signatures = append(dm.Document.Signatures, sig)
+
+	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
+	dm.Document.Signatures = append(dm.Document.Signatures, s)
+
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
 
