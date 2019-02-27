@@ -8,19 +8,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,6 +30,7 @@ import (
 
 var registry *documents.ServiceRegistry
 var cfg config.Configuration
+var cfgService config.Service
 var idService identity.ServiceDID
 var idFactory identity.Factory
 var payOb nft.PaymentObligation
@@ -44,6 +44,7 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
 	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
 	tokenRegistry = ctx[nft.BootstrappedPayObService].(documents.TokenRegistry)
@@ -62,13 +63,16 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]
+	_, err = cfgService.CreateAccount(tcr)
+	assert.NoError(t, err)
 	cid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
 	assert.NoError(t, err)
 
 	// create invoice (anchor)
 	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting invoice service")
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	ctx, err := contextutil.New(context.Background(), tcr)
+	assert.NoError(t, err)
 	invSrv := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
@@ -87,8 +91,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.Nil(t, err)
 
 	// get ID
-	id, err := modelUpdated.ID()
-	assert.Nil(t, err, "should not error out when getting invoice ID")
+	id := modelUpdated.ID()
 	// call mint
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
@@ -126,9 +129,8 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	tokenID := mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
-	md, err := doc.PackCoreDocument()
+	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
-	cd := md.Document
 	assert.Len(t, cd.Roles, 2)
 	assert.Len(t, cd.Roles[1].Nfts, 1)
 	newNFT := cd.Roles[1].Nfts[0]
@@ -171,7 +173,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "cd_tree.next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,
@@ -185,7 +187,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	if grantAccess {
 		roleCount++
 	}
-	assert.Len(t, cd.Document.Roles, roleCount)
+	assert.Len(t, cd.Roles, roleCount)
 }
 
 func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
@@ -210,7 +212,6 @@ func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
 			grantAccess:     true,
 			readAccessProof: true,
 		},
-
 		{
 			grantAccess:     true,
 			tokenProof:      true,

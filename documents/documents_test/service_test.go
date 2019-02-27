@@ -3,10 +3,9 @@
 package documents_test
 
 import (
+	"context"
 	"os"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -21,6 +20,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -56,8 +57,9 @@ func TestMain(m *testing.M) {
 
 func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
 	poSrv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := poSrv.ReceiveAnchoredDocument(ctxh, nil, nil)
+
+	// self failed
+	err := poSrv.ReceiveAnchoredDocument(context.Background(), nil, nil)
 	assert.Error(t, err)
 }
 
@@ -82,145 +84,48 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	return docRoot, args.Error(1)
 }
 
-func createAnchoredMockDocument(t *testing.T, skipSave bool) (*invoice.Invoice, error) {
-	cdm := documents.NewCoreDocModel()
-	i := &invoice.Invoice{
-		InvoiceNumber:     "test_invoice",
-		GrossAmount:       60,
-		CoreDocumentModel: cdm,
-	}
-	dataRoot, err := i.CalculateDataRoot()
-	if err != nil {
-		return nil, err
-	}
-	// get the coreDoc for the invoice
-	corDocMod, err := i.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-
-	cds, err := documents.GenerateCoreDocSalts(corDocMod.Document)
-	assert.Nil(t, err)
-	corDocMod.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cds)
-
-	err = corDocMod.CalculateSigningRoot(dataRoot)
-	if err != nil {
-		return nil, err
-	}
-	signKey := identity.IDKey{
-		PublicKey:  key1Pub[:],
-		PrivateKey: key1,
-	}
-	idConfig := &identity.IDConfig{
-		ID: cid,
-		Keys: map[int]identity.IDKey{
-			identity.KeyPurposeSigning: signKey,
-		},
-	}
-
-	cd := corDocMod.Document
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, cd.SigningRoot)
-
-	cd.Signatures = append(cd.Signatures, sig)
-
-	err = corDocMod.CalculateDocumentRoot()
-	if err != nil {
-		return nil, err
-	}
-	err = i.UnpackCoreDocument(corDocMod)
-	if err != nil {
-		return nil, err
-	}
-
-	if !skipSave {
-		err = testRepo().Create(tenantID, i.CoreDocumentModel.Document.CurrentVersion, i)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return i, nil
-}
-
-func updatedAnchoredMockDocument(t *testing.T, i *invoice.Invoice) (*invoice.Invoice, error) {
-	i.GrossAmount = 50
-	dataRoot, err := i.CalculateDataRoot()
-	if err != nil {
-		return nil, err
-	}
-	// get the coreDoc for the invoice
-	corDocModel, err := i.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-	// hacky update to version
-	corDoc := corDocModel.Document
-	corDoc.CurrentVersion = corDoc.NextVersion
-	corDoc.NextVersion = utils.RandomSlice(32)
-	if err != nil {
-		return nil, err
-	}
-	err = corDocModel.CalculateSigningRoot(dataRoot)
-	if err != nil {
-		return nil, err
-	}
-	err = corDocModel.CalculateDocumentRoot()
-	if err != nil {
-		return nil, err
-	}
-	err = i.UnpackCoreDocument(corDocModel)
-	if err != nil {
-		return nil, err
-	}
-	err = testRepo().Create(tenantID, i.CoreDocumentModel.Document.CurrentVersion, i)
-	if err != nil {
-		return nil, err
-	}
-	return i, nil
-}
-
 // Functions returns service mocks
-func mockSignatureCheck(i *invoice.Invoice, idService testingcommons.MockIdentityService, s documents.Service) testingcommons.MockIdentityService {
-	anchorID, _ := anchors.ToAnchorID(i.CoreDocumentModel.Document.DocumentIdentifier)
-	docRoot, _ := anchors.ToDocumentRoot(i.CoreDocumentModel.Document.DocumentRoot)
+func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommons.MockIdentityService) testingcommons.MockIdentityService {
+	anchorID, _ := anchors.ToAnchorID(i.ID())
+	dr, err := i.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	docRoot, err := anchors.ToDocumentRoot(dr)
+	assert.NoError(t, err)
 	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
 	return idService
 }
 
 func TestService_CreateProofs(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
+	i, _ := createCDWithEmbeddedInvoice(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	idService = mockSignatureCheck(i, idService, service)
-	proof, err := service.CreateProofs(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, []string{"invoice.invoice_number"})
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
+	proof, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.DocumentID)
-	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.VersionID)
+	assert.Equal(t, i.ID(), proof.DocumentID)
+	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	i.CoreDocumentModel.Document.SigningRoot = nil
-	err = testRepo().Update(tenantID, i.CoreDocumentModel.Document.CurrentVersion, i)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, service)
+	i, _ := createCDWithEmbeddedInvoice(t, false)
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
+	i.(*invoice.Invoice).Document.DataRoot = nil
+	i.(*invoice.Invoice).Document.SigningRoot = nil
+	assert.Nil(t, testRepo().Update(tenantID, i.CurrentVersion(), i))
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, err = service.CreateProofs(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, []string{"invoice.invoice_number"})
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "signing root missing")
+	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get signing root")
 }
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, service)
+	i, _ := createCDWithEmbeddedInvoice(t, false)
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, err = service.CreateProofs(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, []string{"invalid_field"})
+	_, err := service.CreateProofs(ctxh, i.CurrentVersion(), []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
 }
@@ -235,27 +140,23 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 
 func TestService_CreateProofsForVersion(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, false)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, service)
-	olderVersion := i.CoreDocumentModel.Document.CurrentVersion
-	i, err = updatedAnchoredMockDocument(t, i)
-	assert.Nil(t, err)
+	i, _ := createCDWithEmbeddedInvoice(t, false)
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	proof, err := service.CreateProofsForVersion(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, olderVersion, []string{"invoice.invoice_number"})
+	proof, err := service.CreateProofsForVersion(ctxh, i.ID(), i.CurrentVersion(), []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
-	assert.Equal(t, i.CoreDocumentModel.Document.DocumentIdentifier, proof.DocumentID)
-	assert.Equal(t, olderVersion, proof.VersionID)
+	assert.Equal(t, i.ID(), proof.DocumentID)
+	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, err := createAnchoredMockDocument(t, true)
-	assert.Nil(t, err)
-	idService = mockSignatureCheck(i, idService, service)
-	i.CoreDocumentModel.Document.SigningRoot = nil
+	i, _ := createCDWithEmbeddedInvoice(t, true)
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
+	i.(*invoice.Invoice).Document.DataRoot = nil
+	i.(*invoice.Invoice).Document.SigningRoot = nil
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	signature, err := service.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
@@ -264,11 +165,10 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
-	i, err := createAnchoredMockDocument(t, false)
+	i, _ := createCDWithEmbeddedInvoice(t, false)
 	s, _ := getServiceWithMockedLayers()
-	assert.Nil(t, err)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, err = s.CreateProofsForVersion(ctxh, i.CoreDocumentModel.Document.DocumentIdentifier, utils.RandomSlice(32), []string{"invoice.invoice_number"})
+	_, err := s.CreateProofsForVersion(ctxh, i.ID(), utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }
@@ -292,18 +192,15 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			next = nonExistingVersion
 		}
 
-		cd := &coredocumentpb.CoreDocument{
+		cd := coredocumentpb.CoreDocument{
 			DocumentIdentifier: documentIdentifier,
 			CurrentVersion:     version,
 			NextVersion:        next,
 		}
 
 		inv := &invoice.Invoice{
-			GrossAmount: int64(i + 1),
-			CoreDocumentModel: &documents.CoreDocumentModel{
-				Document:      cd,
-				TokenRegistry: nil,
-			},
+			GrossAmount:  int64(i + 1),
+			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 		}
 
 		err := testRepo().Create(tenantID, version, inv)
@@ -316,13 +213,8 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	model, err := service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.Nil(t, err)
-
-	dm, err := model.PackCoreDocument()
-	cd := dm.Document
-	assert.Nil(t, err)
-
-	assert.Equal(t, cd.CurrentVersion, currentVersion, "should return latest version")
-	assert.Equal(t, cd.NextVersion, nonExistingVersion, "latest version should have a non existing id as nextVersion ")
+	assert.Equal(t, model.CurrentVersion(), currentVersion, "should return latest version")
+	assert.Equal(t, model.NextVersion(), nonExistingVersion, "latest version should have a non existing id as nextVersion ")
 
 }
 
@@ -330,16 +222,13 @@ func TestService_GetVersion_successful(t *testing.T) {
 	service, _ := getServiceWithMockedLayers()
 	documentIdentifier := utils.RandomSlice(32)
 	currentVersion := utils.RandomSlice(32)
-	cd := &coredocumentpb.CoreDocument{
+	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     currentVersion,
 	}
 	inv := &invoice.Invoice{
-		GrossAmount: 60,
-		CoreDocumentModel: &documents.CoreDocumentModel{
-			cd,
-			nil,
-		},
+		GrossAmount:  60,
+		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
@@ -349,11 +238,8 @@ func TestService_GetVersion_successful(t *testing.T) {
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.Nil(t, err)
 
-	dm, err := mod.PackCoreDocument()
-	assert.Nil(t, err)
-
-	assert.Equal(t, documentIdentifier, dm.Document.DocumentIdentifier, "should be same document Identifier")
-	assert.Equal(t, currentVersion, dm.Document.CurrentVersion, "should be same version")
+	assert.Equal(t, documentIdentifier, mod.ID(), "should be same document Identifier")
+	assert.Equal(t, currentVersion, mod.CurrentVersion(), "should be same version")
 }
 
 func TestService_GetCurrentVersion_error(t *testing.T) {
@@ -365,17 +251,14 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
-	cd := &coredocumentpb.CoreDocument{
+	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     documentIdentifier,
 	}
 
 	inv := &invoice.Invoice{
-		GrossAmount: 60,
-		CoreDocumentModel: &documents.CoreDocumentModel{
-			cd,
-			nil,
-		},
+		GrossAmount:  60,
+		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
 	err = testRepo().Create(tenantID, documentIdentifier, inv)
@@ -397,16 +280,13 @@ func TestService_GetVersion_error(t *testing.T) {
 	_, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
-	cd := &coredocumentpb.CoreDocument{
+	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     currentVersion,
 	}
 	inv := &invoice.Invoice{
-		GrossAmount: 60,
-		CoreDocumentModel: &documents.CoreDocumentModel{
-			cd,
-			nil,
-		},
+		GrossAmount:  60,
+		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 	err = testRepo().Create(tenantID, currentVersion, inv)
 	assert.Nil(t, err)
@@ -441,16 +321,13 @@ func TestService_Exists(t *testing.T) {
 	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 
-	cd := &coredocumentpb.CoreDocument{
+	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     documentIdentifier,
 	}
 	inv := &invoice.Invoice{
-		GrossAmount: 60,
-		CoreDocumentModel: &documents.CoreDocumentModel{
-			cd,
-			nil,
-		},
+		GrossAmount:  60,
+		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
 	err = testRepo().Create(tenantID, documentIdentifier, inv)
@@ -461,4 +338,38 @@ func TestService_Exists(t *testing.T) {
 	exists = service.Exists(ctxh, utils.RandomSlice(32))
 	assert.False(t, exists, "document should not exist")
 
+}
+
+func createCDWithEmbeddedInvoice(t *testing.T, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
+	i := new(invoice.Invoice)
+	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid.String())
+	assert.NoError(t, err)
+	_, err = i.CalculateDataRoot()
+	assert.NoError(t, err)
+	sr, err := i.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	signKey := identity.IDKey{
+		PublicKey:  key1Pub[:],
+		PrivateKey: key1,
+	}
+	idConfig := &identity.IDConfig{
+		ID: cid,
+		Keys: map[int]identity.IDKey{
+			identity.KeyPurposeSigning: signKey,
+		},
+	}
+
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, sr)
+	i.AppendSignatures(sig)
+	_, err = i.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	cd, err := i.PackCoreDocument()
+	assert.NoError(t, err)
+
+	if !skipSave {
+		err = testRepo().Create(tenantID, i.CurrentVersion(), i)
+		assert.NoError(t, err)
+	}
+	return i, cd
 }
