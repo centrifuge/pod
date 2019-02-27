@@ -140,6 +140,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	dm := NewCoreDocModel()
 	model = mockModel{}
 	model.On("PackCoreDocument").Return(dm, nil).Times(4)
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)

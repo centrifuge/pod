@@ -338,7 +338,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 // signatures validator
 // should be used when node receives a document requesting for signature
 func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
-	return PostSignatureRequestValidator(idService)
+	return SignatureValidator(idService)
 }
 
 // PreAnchorValidator is a validator group with following validators
@@ -349,7 +349,7 @@ func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
 // should be called before pre anchoring
 func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
-		PostSignatureRequestValidator(idService),
+		SignatureValidator(idService),
 		documentRootValidator(),
 	}
 }
@@ -365,25 +365,12 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	}
 }
 
-// PreSignatureRequestValidator is a validator group with following validators
-// baseValidator
-// signingRootValidator
-// readyForSignaturesValidator
-// should be called after sender signing the document and before requesting the document
-func PreSignatureRequestValidator(centIDBytes, priv, pub []byte) ValidatorGroup {
-	return ValidatorGroup{
-		baseValidator(),
-		signingRootValidator(),
-		readyForSignaturesValidator(centIDBytes, priv, pub),
-	}
-}
-
-// PostSignatureRequestValidator is a validator group with following validators
+// SignatureValidator is a validator group with following validators
 // baseValidator
 // signingRootValidator
 // signaturesValidator
-// should be called after the signature collection/before preparing for anchoring
-func PostSignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
+// should be called after sender signing the document, before requesting the document and after signature collection
+func SignatureValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),

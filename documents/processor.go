@@ -114,27 +114,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to pack core document: %v", err)
 	}
 
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return err
-	}
-
-	idBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return err
-	}
-
-	keys, err := acc.GetKeys()
-	if err != nil {
-		return err
-	}
-
-	idKeys, ok := keys[identity.KeyPurposeSigning]
-	if !ok {
-		return errors.New("missing keys for signing")
-	}
-
-	psv := PreSignatureRequestValidator(idBytes, idKeys.PrivateKey, idKeys.PublicKey)
+	psv := SignatureValidator(dp.identityService)
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)
@@ -160,7 +140,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 		return errors.New("failed to pack core document: %v", err)
 	}
 
-	psv := PostSignatureRequestValidator(dp.identityService)
+	psv := SignatureValidator(dp.identityService)
 	err = psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate signatures: %v", err)
