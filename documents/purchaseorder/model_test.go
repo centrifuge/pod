@@ -205,7 +205,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_GenerateProofs(t *testing.T) {
 	po := createPurchaseOrder(t)
 	assert.NotNil(t, po)
-	proof, err := po.CreateProofs([]string{"po.po_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
+	proof, err := po.CreateProofs([]string{"po.po_number", documents.CDTreePrefix + ".next_version", documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := po.DocumentRootTree()
@@ -216,14 +216,13 @@ func TestPOModel_GenerateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate collaborators[0]
+	// Validate next_version
 	valid, err = tree.ValidateProof(proof[1])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	id := identity.NewDIDFromBytes(proof[1].Value)
-	assert.True(t, po.CoreDocument.AccountCanRead(id))
+	assert.Equal(t, po.NextVersion(), proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])

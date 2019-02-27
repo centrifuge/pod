@@ -130,11 +130,6 @@ type Factory interface {
 	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
-// NewDIDFromByte returns a DID based on a byte slice
-func NewDIDFromByte(did []byte) DID {
-	return DID(common.BytesToAddress(did))
-}
-
 // ServiceDID interface contains the methods to interact with the identity contract
 type ServiceDID interface {
 	// AddKey adds a key to identity contract

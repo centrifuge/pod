@@ -63,19 +63,6 @@ func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role 
 	return false
 }
 
-// GetExternalCollaborators returns collaborators of a Document without the own centID.
-func (cd *CoreDocument) GetExternalCollaborators(self identity.DID) ([][]byte, error) {
-	var cs [][]byte
-	for _, c := range cd.Document.Collaborators {
-		id := identity.NewDIDFromBytes(c)
-		if !self.Equal(id) {
-			cs = append(cs, c)
-		}
-	}
-
-	return cs, nil
-}
-
 // NFTOwnerCanRead checks if the nft owner/account can read the Document
 func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
@@ -348,8 +335,8 @@ func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.Acce
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
-	reqID := identity.NewDIDFromByte(requesterID)
-	granterID := identity.NewDIDFromByte(token.Granter)
+	reqID := identity.NewDIDFromBytes(requesterID)
+	granterID := identity.NewDIDFromBytes(token.Granter)
 	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier)
 	if err != nil {
 		return err
@@ -417,7 +404,7 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 	if err != nil {
 		return nil, err
 	}
-	granterID := identity.NewDIDFromByte(id)
+	granterID := identity.NewDIDFromBytes(id)
 	roleID := roleKey
 	granteeID, err := identity.NewDIDFromString(payload.Grantee)
 	if err != nil {

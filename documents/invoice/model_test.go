@@ -231,7 +231,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 func TestInvoice_GenerateProofs(t *testing.T) {
 	i, err := createInvoice(t)
 	assert.Nil(t, err)
-	proof, err := i.CreateProofs([]string{"invoice.invoice_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.invoice_number", documents.CDTreePrefix + ".next_version", documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.CoreDocument.DocumentRootTree()
@@ -242,14 +242,13 @@ func TestInvoice_GenerateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate collaborators[0]
+	// Validate next_version
 	valid, err = tree.ValidateProof(proof[1])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	id := identity.NewDIDFromBytes(proof[1].Value)
-	assert.True(t, i.CoreDocument.AccountCanRead(id))
+	assert.Equal(t, i.NextVersion(), proof[1].Value)
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
