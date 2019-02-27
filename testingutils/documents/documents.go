@@ -2,16 +2,10 @@ package testingdocuments
 
 import (
 	"context"
-	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -40,7 +34,7 @@ func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, ve
 	return args.Get(0).(*documents.DocumentProof), args.Error(1)
 }
 
-func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
 	args := m.Called(cd)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
@@ -63,17 +57,21 @@ func (m *MockService) Exists(ctx context.Context, documentID []byte) bool {
 type MockModel struct {
 	documents.Model
 	mock.Mock
-	CoreDocumentModel *documents.CoreDocumentModel
 }
 
-func (m *MockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
+func (m *MockModel) CurrentVersion() []byte {
 	args := m.Called()
-	dm, _ := args.Get(0).(*documents.CoreDocumentModel)
+	return args.Get(0).([]byte)
+}
+
+func (m *MockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
+	args := m.Called()
+	dm, _ := args.Get(0).(coredocumentpb.CoreDocument)
 	return dm, args.Error(1)
 }
 
-func (m *MockModel) UnpackCoreDocument(model *documents.CoreDocumentModel) error {
-	args := m.Called(model)
+func (m *MockModel) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+	args := m.Called(cd)
 	return args.Error(0)
 }
 
@@ -83,50 +81,12 @@ func (m *MockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
-func GenerateCoreDocumentModelWithCollaborators(collaborators [][]byte) (*documents.CoreDocumentModel, error) {
-	dueDate := time.Now().Add(4 * 24 * time.Hour)
-	invData := &invoicepb.InvoiceData{
-		InvoiceNumber: "2132131",
-		GrossAmount:   123,
-		NetAmount:     123,
-		Currency:      "EUR",
-		DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
-	}
-	dataSalts, _ := documents.GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
-	serializedInv, _ := proto.Marshal(invData)
-	var dm *documents.CoreDocumentModel
-	if collaborators != nil {
-		var collabs []string
-		for _, c := range collaborators {
-			encoded := hexutil.Encode(c)
-			collabs = append(collabs, encoded)
-		}
-		m, err := documents.NewWithCollaborators(collabs)
-		if err != nil {
-			return nil, err
-		}
-		dm = m
-	} else {
-		dm = documents.NewCoreDocModel()
-	}
-	dm.Document.EmbeddedData = &any.Any{
-		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value:   serializedInv,
-	}
-	dm.Document.EmbeddedDataSalts = documents.ConvertToProtoSalts(dataSalts)
-
-	cdSalts, _ := documents.GenerateCoreDocSalts(dm.Document)
-	dm.Document.CoredocumentSalts = documents.ConvertToProtoSalts(cdSalts)
-	mockModel := MockModel{
-		CoreDocumentModel: dm,
-	}
-	return mockModel.CoreDocumentModel, nil
+type MockRegistry struct {
+	mock.Mock
 }
 
-func GenerateCoreDocumentModel() (*documents.CoreDocumentModel, error) {
-	dm, err := GenerateCoreDocumentModelWithCollaborators(nil)
-	if err != nil {
-		return nil, err
-	}
-	return dm, nil
+func (m MockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
 }

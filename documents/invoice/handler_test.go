@@ -6,16 +6,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/transactions"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -107,16 +104,10 @@ type mockModel struct {
 	CoreDocument *coredocumentpb.CoreDocument
 }
 
-func (m *mockModel) PackCoreDocument() (*documents.CoreDocumentModel, error) {
+func (m *mockModel) ID() []byte {
 	args := m.Called()
-	dm, _ := args.Get(0).(*documents.CoreDocumentModel)
-	return dm, args.Error(1)
-}
-
-func (m *mockModel) JSON() ([]byte, error) {
-	args := m.Called()
-	data, _ := args.Get(0).([]byte)
-	return data, args.Error(1)
+	id, _ := args.Get(0).([]byte)
+	return id
 }
 
 func TestGRPCHandler_Create_DeriveInvoiceResponse_fail(t *testing.T) {

@@ -41,8 +41,8 @@ type Service interface {
 	// GetVersion reads a document from the database
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error)
 
-	// DeriveFromCoreDocumentModel derives a model given the core document model
-	DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, error)
+	// DeriveFromCoreDocument derives a model given the core document.
+	DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
@@ -89,33 +89,18 @@ func DefaultService(
 	}
 }
 
-func getIDs(model Model) ([]byte, []byte, error) {
-	dm, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, nil, err
-	}
-	cd := dm.Document
-
-	return cd.DocumentIdentifier, cd.NextVersion, nil
-
-}
-
 func (s service) searchVersion(ctx context.Context, m Model) (Model, error) {
-	id, next, err := getIDs(m)
+	id, next := m.ID(), m.NextVersion()
+	if !s.Exists(ctx, next) {
+		// at the latest locally known version
+		return m, nil
+	}
+
+	m, err := s.getVersion(ctx, id, next)
 	if err != nil {
 		return nil, err
 	}
-
-	if s.Exists(ctx, next) {
-		nm, err := s.getVersion(ctx, id, next)
-		if err != nil {
-
-			return nil, err
-		}
-		return s.searchVersion(ctx, nm)
-	}
-
-	return m, nil
+	return s.searchVersion(ctx, m)
 
 }
 
@@ -144,17 +129,15 @@ func (s service) createProofs(model Model, fields []string) (*DocumentProof, err
 	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
+
 	proofs, err := model.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentProof, err)
 	}
-	coreDocModel, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, errors.New("creating proofs failed while packing core document")
-	}
+
 	return &DocumentProof{
-		DocumentID:  coreDocModel.Document.DocumentIdentifier,
-		VersionID:   coreDocModel.Document.CurrentVersion,
+		DocumentID:  model.ID(),
+		VersionID:   model.CurrentVersion(),
 		FieldProofs: proofs,
 	}, nil
 
@@ -178,43 +161,39 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	docModel, err := model.PackCoreDocument()
+	sr, err := model.CalculateSigningRoot()
 	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
+		return nil, errors.New("failed to get signing root: %v", err)
 	}
 
-	doc := docModel.Document
-	srvLog.Infof("coredoc received %x with signing root %x", doc.DocumentIdentifier, doc.SigningRoot)
+	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 
 	tenantID, err := acc.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
-	sig, err := acc.SignMsg(doc.SigningRoot)
+	sig, err := acc.SignMsg(sr)
 	if err != nil {
 		return nil, err
 	}
-	doc.Signatures = append(doc.Signatures, sig)
-	err = model.UnpackCoreDocument(docModel)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentUnPackingCoreDocument, err)
-	}
+	model.AppendSignatures(sig)
 
 	// Logic for receiving version n (n > 1) of the document for the first time
-	if !s.repo.Exists(tenantID, doc.DocumentIdentifier) && !utils.IsSameByteSlice(doc.DocumentIdentifier, doc.CurrentVersion) {
-		err = s.repo.Create(tenantID, doc.DocumentIdentifier, model)
+	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
+	if !s.repo.Exists(tenantID, model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
+		err = s.repo.Create(tenantID, model.ID(), model)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(tenantID, doc.CurrentVersion, model)
+	err = s.repo.Create(tenantID, model.CurrentVersion(), model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	srvLog.Infof("signed coredoc %x with version %x", doc.DocumentIdentifier, doc.CurrentVersion)
+	srvLog.Infof("signed document %x with version %x", model.ID(), model.CurrentVersion())
 	return sig, nil
 }
 
@@ -237,15 +216,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	docModel, err := model.PackCoreDocument()
-	if err != nil {
-		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
-	}
-	if docModel.Document == nil {
-		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
-	}
-	doc := docModel.Document
-	err = s.repo.Update(did[:], doc.CurrentVersion, model)
+	err = s.repo.Update(did[:], model.CurrentVersion(), model)
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -257,8 +228,8 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		FromId:       hexutil.Encode(senderID),
 		ToId:         did.String(),
 		Recorded:     ts,
-		DocumentType: doc.EmbeddedData.TypeUrl,
-		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
+		DocumentType: model.DocumentType(),
+		DocumentId:   hexutil.Encode(model.ID()),
 	}
 
 	// Async until we add queuing
@@ -293,31 +264,24 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
 	}
 
-	dm, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-	cd := dm.Document
-	if !bytes.Equal(cd.DocumentIdentifier, documentID) {
+	if !bytes.Equal(model.ID(), documentID) {
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, errors.New("version is not valid for this identifier"))
 	}
+
 	return model, nil
 }
 
-func (s service) DeriveFromCoreDocumentModel(dm *CoreDocumentModel) (Model, error) {
-	if dm == nil {
-		return nil, errors.New("no core doc model passed")
-	}
-	if dm.Document == nil || dm.Document.EmbeddedData == nil {
-		return nil, errors.New("core document is nil")
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, error) {
+	if cd.EmbeddedData == nil {
+		return nil, errors.New("core document embed data is nil")
 	}
 
-	srv, err := s.registry.LocateService(dm.Document.EmbeddedData.TypeUrl)
+	srv, err := s.registry.LocateService(cd.EmbeddedData.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return srv.DeriveFromCoreDocumentModel(dm)
+	return srv.DeriveFromCoreDocument(cd)
 }
 
 func (s service) Create(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error) {
@@ -339,11 +303,5 @@ func (s service) Update(ctx context.Context, model Model) (Model, transactions.T
 }
 
 func (s service) getService(model Model) (Service, error) {
-	dm, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-	cd := dm.Document
-
-	return s.registry.LocateService(cd.EmbeddedData.TypeUrl)
+	return s.registry.LocateService(model.DocumentType())
 }

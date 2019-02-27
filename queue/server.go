@@ -13,8 +13,7 @@ import (
 
 // Constants are commonly used by all the tasks through kwargs.
 const (
-	BlockHeightParam string = "BlockHeight"
-	TimeoutParam     string = "Timeout"
+	TimeoutParam string = "Timeout"
 )
 
 var log = logging.Logger("queue-server")
@@ -91,6 +90,8 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 
 // RegisterTaskType registers a task type on the queue server
 func (qs *Server) RegisterTaskType(name string, task interface{}) {
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	qs.taskTypes = append(qs.taskTypes, task.(TaskType))
 }
 
@@ -134,17 +135,6 @@ func GetDuration(key interface{}) (time.Duration, error) {
 		return time.Duration(0), errors.New("Could not parse interface to float64")
 	}
 	return time.Duration(f64), nil
-}
-
-// ParseBlockHeight parses blockHeight interface param to uint64
-func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[BlockHeightParam]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			return uint64(bhf), nil
-		}
-	}
-	return 0, errors.New("value can not be parsed")
 }
 
 // TaskQueuer can be implemented by any queueing system

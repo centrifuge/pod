@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -23,17 +24,20 @@ type Handler struct {
 	config             config.Service
 	handshakeValidator ValidatorGroup
 	docSrv             documents.Service
+	tokenRegistry      documents.TokenRegistry
 }
 
 // New returns an implementation of P2PServiceServer
 func New(
 	config config.Service,
 	handshakeValidator ValidatorGroup,
-	docSrv documents.Service) *Handler {
+	docSrv documents.Service,
+	tokenRegistry documents.TokenRegistry) *Handler {
 	return &Handler{
 		config:             config,
 		handshakeValidator: handshakeValidator,
 		docSrv:             docSrv,
+		tokenRegistry:      tokenRegistry,
 	}
 }
 
@@ -111,12 +115,11 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
-	dm := new(documents.CoreDocumentModel)
-	if sigReq.Document == nil {
-		return nil, errors.New("nil core document")
+	if sigReq == nil || sigReq.Document == nil {
+		return nil, errors.New("nil document provided")
 	}
-	dm.Document = sigReq.Document
-	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
+
+	model, err := srv.docSrv.DeriveFromCoreDocument(*sigReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -157,9 +160,11 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
 func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
-	dm := new(documents.CoreDocumentModel)
-	dm.Document = docReq.Document
-	model, err := srv.docSrv.DeriveFromCoreDocumentModel(dm)
+	if docReq == nil || docReq.Document == nil {
+		return nil, errors.New("nil document provided")
+	}
+
+	model, err := srv.docSrv.DeriveFromCoreDocument(*docReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -201,47 +206,56 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 }
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
-func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.DID) (*p2ppb.GetDocumentResponse, error) {
-	// if the document request contains an access token request, check the document indicated by the delegating document identifier for the access token
-	if docReq.AccessTokenRequest != nil {
-		model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
-		if err != nil {
-			return nil, err
-		}
-		dm, err := model.PackCoreDocument()
-		if err != nil {
-			return nil, err
-		}
-		err = dm.ValidateDocumentAccess(docReq, requesterCentID)
-		if err != nil {
-			return nil, err
-		}
-		// if the access token passes validation, return the requested document indicated in the parent GetDocumentRequest
-		reqModel, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
-		if err != nil {
-			return nil, err
-		}
-		reqDm, err := reqModel.PackCoreDocument()
-		if err != nil {
-			return nil, err
-		}
-		return &p2ppb.GetDocumentResponse{Document: reqDm.Document}, nil
-	}
-	// if the document request requires NFT or Peer validation, validate the request based on the document identifier in the GetDocumentRequest
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requester identity.DID) (*p2ppb.GetDocumentResponse, error) {
 	model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}
-	dm, err := model.PackCoreDocument()
+
+	if srv.validateDocumentAccess(ctx, docReq, model, requester) != nil {
+		return nil, err
+	}
+
+	cd, err := model.PackCoreDocument()
 	if err != nil {
 		return nil, err
 	}
-	err = dm.ValidateDocumentAccess(docReq, requesterCentID)
-	if err != nil {
-		return nil, err
+
+	return &p2ppb.GetDocumentResponse{Document: &cd}, nil
+}
+
+// validateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
+func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.GetDocumentRequest, m documents.Model, peer identity.DID) error {
+	// checks which access type is relevant for the request
+	switch docReq.AccessType {
+	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
+		if !m.AccountCanRead(peer) {
+			return errors.New("requester does not have access")
+		}
+	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
+		registry := common.BytesToAddress(docReq.NftRegistryAddress)
+		if m.NFTOwnerCanRead(srv.tokenRegistry, registry, docReq.NftTokenId, peer) != nil {
+			return errors.New("requester does not have access")
+		}
+	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
+		// check the document indicated by the delegating document identifier for the access token
+		if docReq.AccessTokenRequest == nil {
+			return errors.New("access token request is nil")
+		}
+
+		m, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
+		if err != nil {
+			return err
+		}
+
+		err = m.ATOwnerCanRead(docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("invalid access type")
 	}
-	// return requested document if validation checks pass
-	return &p2ppb.GetDocumentResponse{Document: dm.Document}, nil
+	return nil
 }
 
 func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {

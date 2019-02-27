@@ -3,10 +3,10 @@ package invoice
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -54,17 +54,15 @@ func DefaultService(
 	}
 }
 
-// DeriveFromCoreDocumentModel takes a core document model and returns an invoice
-func (s service) DeriveFromCoreDocumentModel(dm *documents.CoreDocumentModel) (documents.Model, error) {
-	var model documents.Model = &Invoice{
-		CoreDocumentModel: dm,
-	}
-	err := model.UnpackCoreDocument(dm)
+// DeriveFromCoreDocument takes a core document model and returns an invoice
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+	inv := new(Invoice)
+	err := inv.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	return model, nil
+	return inv, nil
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
@@ -79,9 +77,6 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 	}
 
 	invoiceModel := new(Invoice)
-	if invoiceModel.CoreDocumentModel == nil {
-		invoiceModel.CoreDocumentModel = documents.NewCoreDocModel()
-	}
 	err = invoiceModel.InitInvoiceInput(payload, id.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
@@ -109,7 +104,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], inv.CoreDocumentModel.Document.CurrentVersion, inv)
+	err = s.repo.Create(self.ID[:], inv.CurrentVersion(), inv)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -129,14 +124,8 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, transactions.NilTxID(), nil, err
 	}
 
-	dm, err := inv.PackCoreDocument()
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
-	}
-
-	DID := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, DID, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, inv.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -144,57 +133,51 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	dm, err := inv.PackCoreDocument()
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-	old, err := s.GetCurrentVersion(ctx, dm.Document.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(ctx, new.ID())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	inv, err = s.validateAndPersist(ctx, old, inv, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
 
-	did := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
-	return inv, txID, done, nil
+	return new, txID, done, nil
 }
 
 // DeriveInvoiceResponse returns create response from invoice model
-func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
-	dm, err := doc.PackCoreDocument()
+func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
+	data, err := s.DeriveInvoiceData(model)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, err
 	}
-	cd := dm.Document
-	collaborators := make([]string, len(cd.Collaborators))
-	for i, c := range cd.Collaborators {
-		cid := identity.NewDIDFromBytes(c)
-		collaborators[i] = cid.String()
+
+	cs, err := model.GetCollaborators()
+	if err != nil {
+		return nil, errors.New("failed to get collaborators: %v", err)
+	}
+
+	var css []string
+	for _, c := range cs {
+		css = append(css, c.String())
 	}
 
 	h := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
-		VersionId:     hexutil.Encode(cd.CurrentVersion),
-		Collaborators: collaborators,
-	}
-
-	data, err := s.DeriveInvoiceData(doc)
-	if err != nil {
-		return nil, err
+		DocumentId:    hexutil.Encode(model.ID()),
+		VersionId:     hexutil.Encode(model.CurrentVersion()),
+		Collaborators: css,
 	}
 
 	return &clientinvoicepb.InvoiceResponse{
@@ -231,28 +214,11 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 		return nil, err
 	}
 
-	// load invoice data
 	inv := new(Invoice)
-	err = inv.initInvoiceFromData(payload.Data)
+	err = inv.PrepareNewVersion(old, payload.Data, payload.Collaborators)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load invoice from data: %v", err))
+		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load invoice from data: %v", err))
 	}
 
-	// update core document
-	oldDM, err := old.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	idConf, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, documents.ErrDocumentConfigAccountID
-	}
-
-	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
-	inv.CoreDocumentModel, err = oldDM.PrepareNewVersion(collaborators)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
-	}
 	return inv, nil
 }
