@@ -21,7 +21,7 @@ type anchorRepositoryContract interface {
 	PreCommit(opts *bind.TransactOpts, _anchorID *big.Int, signingRoot [32]byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, anchorID *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
 	GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct {
-		AnchorId     *big.Int
+		AnchorID     *big.Int
 		DocumentRoot [32]byte
 	}, error)
 }
