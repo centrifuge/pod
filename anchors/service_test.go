@@ -21,10 +21,13 @@ type mockAnchorRepo struct {
 	anchorRepositoryContract
 }
 
-func (m *mockAnchorRepo) GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct { AnchorId *big.Int; DocumentRoot [32]byte }, error) {
+func (m *mockAnchorRepo) GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct {
+	AnchorId     *big.Int
+	DocumentRoot [32]byte
+}, error) {
 	args := m.Called(opts, anchorID)
 	type Response struct {
-		AnchorId *big.Int
+		AnchorId     *big.Int
 		DocumentRoot [32]byte
 	}
 	r := Response{}
