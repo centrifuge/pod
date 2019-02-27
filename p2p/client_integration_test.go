@@ -68,7 +68,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 	acci.IdentityID = defaultDID[:]
 	ctxh, err := contextutil.New(context.Background(), acci)
 	assert.Nil(t, err)
-	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	assert.NotNil(t, signs)
@@ -81,7 +81,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
 	ctxh, err := contextutil.New(context.Background(), acci)
-	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	// one signature would be missing
@@ -91,7 +91,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID}, defaultDID)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	cd, err := dm.PackCoreDocument()
 	assert.NoError(t, err)
 	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: &cd})
