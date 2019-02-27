@@ -20,12 +20,10 @@ import (
 type anchorRepositoryContract interface {
 	PreCommit(opts *bind.TransactOpts, _anchorID *big.Int, signingRoot [32]byte, expirationBlock *big.Int) (*types.Transaction, error)
 	Commit(opts *bind.TransactOpts, anchorID *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
-	GetAnchorById(opts *bind.CallOpts, anchorId *big.Int) (GetAnchorByIdResponse, error)
-}
-
-type GetAnchorByIdResponse struct {
-	AnchorID     *big.Int
-	DocumentRoot [32]byte
+	GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct {
+		AnchorID     *big.Int
+		DocumentRoot [32]byte
+	}, error)
 }
 
 type service struct {
