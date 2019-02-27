@@ -161,7 +161,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 		return nil, errors.New("Document root is invalid")
 	}
 
-	ucs, err := fetchUniqueCollaborators(cd.Document.Collaborators, collaborators)
+	ucs, err := fetchNewUniqueCollaborators(cd.Document.Collaborators, collaborators)
 	if err != nil {
 		return nil, errors.New("failed to fetch new collaborators: %v", err)
 	}
@@ -447,7 +447,8 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (ids []ident
 	return ids, nil
 }
 
-func fetchUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
+// fetchNewUniqueCollaborators returns the unique collaborators from newCollabs in reference to oldCollabs.
+func fetchNewUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
 	ocsm := make(map[string]struct{})
 	for _, c := range oldCollabs {
 		cs := strings.ToLower(hexutil.Encode(c))

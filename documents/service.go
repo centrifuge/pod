@@ -93,7 +93,7 @@ func DefaultService(
 func (s service) searchVersion(ctx context.Context, m Model) (Model, error) {
 	id, next := m.ID(), m.NextVersion()
 	if !s.Exists(ctx, next) {
-		// at the latest version
+		// at the latest locally known version
 		return m, nil
 	}
 

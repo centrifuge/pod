@@ -102,7 +102,7 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		uc, err := fetchUniqueCollaborators(c.old, c.new)
+		uc, err := fetchNewUniqueCollaborators(c.old, c.new)
 		if err != nil {
 			if c.err {
 				continue
