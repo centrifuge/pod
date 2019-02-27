@@ -13,9 +13,7 @@ import (
 func VerifyMessage(publicKey, message []byte, signature []byte, curveType string) bool {
 	switch curveType {
 	case CurveSecp256K1:
-		signatureBytes := make([]byte, len(signature))
-		copy(signatureBytes, signature)
-		return secp256k1.VerifySignatureWithAddress(common.BytesToAddress(publicKey).String(), hexutil.Encode(signatureBytes), message)
+		return secp256k1.VerifySignatureWithAddress(common.BytesToAddress(publicKey).String(), hexutil.Encode(signature), message)
 	case CurveEd25519:
 		return ed25519.VerifySignature(publicKey, message, signature)
 	default:

@@ -3,15 +3,12 @@
 package crypto
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +35,13 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 	assert.False(t, valid, "must be false")
 }
 
-func TestSignMessage(t *testing.T) {
+func TestSignMessageUnsupportedType(t *testing.T) {
+	sig, err := SignMessage(key1, key1Pub, "rsa")
+	assert.Error(t, err)
+	assert.Empty(t, sig)
+}
+
+func TestSignMessageSecp256k1(t *testing.T) {
 
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
@@ -60,32 +63,20 @@ func TestSignMessage(t *testing.T) {
 	assert.True(t, correct, "signature or verification didn't work correctly")
 }
 
-func TestSignAndVerifyMessageEthereum(t *testing.T) {
+func TestSignMessageEd25519(t *testing.T) {
 
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
-	testMsg := []byte("Centrifuge likes Ethereum")
+	testMsg := []byte("test")
 
-	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
+	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveEd25519)
 	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
 	assert.Nil(t, err)
-	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1)
+	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
 	assert.Nil(t, err)
-
-	publicKey, _ := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
-	address := secp256k1.GetAddress(publicKey)
-
-	fmt.Println("privateKey: ", hexutil.Encode(privateKey))
-	fmt.Println("publicKey: ", hexutil.Encode(publicKey))
-	fmt.Println("address:", address)
-	fmt.Println("msg:", string(testMsg[:]))
-	fmt.Println("msg in hex:", hexutil.Encode(testMsg))
-	fmt.Println("hash of msg: ", hexutil.Encode(secp256k1.HashWithEthPrefix(testMsg)))
-	fmt.Println("signature:", hexutil.Encode(signature))
-	fmt.Println("Generated Signature can also be verified at https://etherscan.io/verifySig")
-
-	pk32 := utils.AddressTo32Bytes(common.HexToAddress(address))
-	correct := VerifyMessage(pk32[:], testMsg, signature, CurveSecp256K1)
+	signature, err := SignMessage(privateKey, testMsg, CurveEd25519)
+	assert.Nil(t, err)
+	correct := VerifyMessage(publicKey, testMsg, signature, CurveEd25519)
 
 	os.Remove(publicKeyFile)
 	os.Remove(privateKeyFile)

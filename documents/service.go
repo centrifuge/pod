@@ -228,7 +228,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 	if err != nil {
 		return err
 	}
-	DID := identity.NewDIDFromBytes(idBytes)
+	did := identity.NewDIDFromBytes(idBytes)
 	if model == nil {
 		return errors.New("no model given")
 	}
@@ -245,7 +245,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentPackingCoreDocument, err)
 	}
 	doc := docModel.Document
-	err = s.repo.Update(DID[:], doc.CurrentVersion, model)
+	err = s.repo.Update(did[:], doc.CurrentVersion, model)
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -253,9 +253,9 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 	ts, _ := ptypes.TimestampProto(time.Now().UTC())
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
-		AccountId:    DID.String(),
+		AccountId:    did.String(),
 		FromId:       hexutil.Encode(senderID),
-		ToId:         DID.String(),
+		ToId:         did.String(),
 		Recorded:     ts,
 		DocumentType: doc.EmbeddedData.TypeUrl,
 		DocumentId:   hexutil.Encode(doc.DocumentIdentifier),
