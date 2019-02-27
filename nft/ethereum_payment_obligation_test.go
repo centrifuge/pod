@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -20,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -154,12 +153,12 @@ func TestPaymentObligationService(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
-				coreDocModel := documents.NewCoreDocModel()
-				coreDoc := coreDocModel.Document
-				coreDoc.DocumentRoot = utils.RandomSlice(32)
-				proof := getDummyProof(coreDoc)
+				cd, err := documents.NewCoreDocumentWithCollaborators(nil)
+				assert.NoError(t, err)
+				cd.Document.DocumentRoot = utils.RandomSlice(32)
+				proof := getDummyProof(&cd.Document)
 				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocumentModel: coreDocModel}, nil)
+				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				paymentObligationMock := &MockPaymentObligation{}
 				idServiceMock := testingcommons.MockIdentityService{}

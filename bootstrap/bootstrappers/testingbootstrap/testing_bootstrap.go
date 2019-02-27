@@ -35,12 +35,12 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	&configstore.Bootstrapper{},
 	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
-	p2p.Bootstrapper{},
 	&invoice.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
-	documents.PostBootstrapper{},
 	&nft.Bootstrapper{},
 	&queue.Starter{},
+	p2p.Bootstrapper{},
+	documents.PostBootstrapper{},
 }
 
 func TestFunctionalEthereumBootstrap() map[string]interface{} {

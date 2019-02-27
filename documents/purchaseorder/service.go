@@ -3,10 +3,10 @@ package purchaseorder
 import (
 	"context"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -54,17 +54,15 @@ func DefaultService(
 	}
 }
 
-// DeriveFromCoreDocumentModel takes a core document model and returns a purchase order
-func (s service) DeriveFromCoreDocumentModel(coreDocModel *documents.CoreDocumentModel) (documents.Model, error) {
-	var model documents.Model = &PurchaseOrder{
-		CoreDocumentModel: coreDocModel,
-	}
-	err := model.UnpackCoreDocument(coreDocModel)
+// DeriveFromCoreDocument takes a core document model and returns a purchase order
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+	po := new(PurchaseOrder)
+	err := po.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	return model, nil
+	return po, nil
 }
 
 // validateAndPersist validates the document, and persists to DB
@@ -86,7 +84,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], po.CoreDocumentModel.Document.CurrentVersion, po)
+	err = s.repo.Create(self.ID[:], po.CurrentVersion(), po)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -106,14 +104,8 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, transactions.NilTxID(), nil, err
 	}
 
-	dm, err := po.PackCoreDocument()
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
-	}
-
-	did := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, po.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, nil
 	}
@@ -121,34 +113,28 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	dm, err := po.PackCoreDocument()
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	old, err := s.GetCurrentVersion(ctx, dm.Document.DocumentIdentifier)
+	old, err := s.GetCurrentVersion(ctx, new.ID())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	po, err = s.validateAndPersist(ctx, old, po, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
 
-	did := identity.NewDIDFromBytes(self.ID[:])
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, did, txID, dm.Document.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
-	return po, txID, done, nil
+	return new, txID, done, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
@@ -163,9 +149,6 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpop
 	}
 
 	po := new(PurchaseOrder)
-	if po.CoreDocumentModel == nil {
-		po.CoreDocumentModel = documents.NewCoreDocModel()
-	}
 	err = po.InitPurchaseOrderInput(payload, idConf.ID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
@@ -193,26 +176,9 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 
 	// load purchase order data
 	po := new(PurchaseOrder)
-	err = po.initPurchaseOrderFromData(payload.Data)
+	err = po.PrepareNewVersion(old, payload.Data, payload.Collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
-	}
-
-	// update core document
-	oldDM, err := old.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	idConf, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, documents.ErrDocumentConfigAccountID
-	}
-
-	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
-	po.CoreDocumentModel, err = oldDM.PrepareNewVersion(collaborators)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
 
 	return po, nil
@@ -230,26 +196,25 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 
 // DerivePurchaseOrderResponse returns po response from the model
 func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
-	dm, err := doc.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-	cd := dm.Document
-	collaborators := make([]string, len(cd.Collaborators))
-	for i, c := range cd.Collaborators {
-		DID := identity.NewDIDFromBytes(c)
-		collaborators[i] = DID.String()
-	}
-
-	h := &clientpopb.ResponseHeader{
-		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
-		VersionId:     hexutil.Encode(cd.CurrentVersion),
-		Collaborators: collaborators,
-	}
-
 	data, err := s.DerivePurchaseOrderData(doc)
 	if err != nil {
 		return nil, err
+	}
+
+	cs, err := doc.GetCollaborators()
+	if err != nil {
+		return nil, err
+	}
+
+	var css []string
+	for _, c := range cs {
+		css = append(css, c.String())
+	}
+
+	h := &clientpopb.ResponseHeader{
+		DocumentId:    hexutil.Encode(doc.ID()),
+		VersionId:     hexutil.Encode(doc.CurrentVersion()),
+		Collaborators: css,
 	}
 
 	return &clientpopb.PurchaseOrderResponse{

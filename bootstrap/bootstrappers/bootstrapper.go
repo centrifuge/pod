@@ -41,12 +41,12 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		p2p.Bootstrapper{},
 		api.Bootstrapper{},
-		documents.PostBootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},
+		p2p.Bootstrapper{},
+		documents.PostBootstrapper{},
 	}
 }
 
