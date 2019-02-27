@@ -190,11 +190,11 @@ func (_AnchorContract *AnchorContractCallerSession) Commits(arg0 *big.Int) ([32]
 //
 // Solidity: function getAnchorById(_anchorId uint256) constant returns(anchorId uint256, documentRoot bytes32)
 func (_AnchorContract *AnchorContractCaller) GetAnchorById(opts *bind.CallOpts, _anchorId *big.Int) (struct {
-	AnchorID     *big.Int
+	AnchorId     *big.Int
 	DocumentRoot [32]byte
 }, error) {
 	ret := new(struct {
-		AnchorID     *big.Int
+		AnchorId     *big.Int
 		DocumentRoot [32]byte
 	})
 	out := ret
@@ -204,9 +204,9 @@ func (_AnchorContract *AnchorContractCaller) GetAnchorById(opts *bind.CallOpts, 
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(_anchorId uint256) constant returns(anchorId uint256, documentRoot bytes32)
+// Solidity: function getAnchorById(_anchorId uint256) constant returns(anchorID uint256, documentRoot bytes32)
 func (_AnchorContract *AnchorContractSession) GetAnchorById(_anchorId *big.Int) (struct {
-	AnchorID     *big.Int
+	AnchorId     *big.Int
 	DocumentRoot [32]byte
 }, error) {
 	return _AnchorContract.Contract.GetAnchorById(&_AnchorContract.CallOpts, _anchorId)
@@ -214,9 +214,9 @@ func (_AnchorContract *AnchorContractSession) GetAnchorById(_anchorId *big.Int) 
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(_anchorId uint256) constant returns(anchorId uint256, documentRoot bytes32)
+// Solidity: function getAnchorById(_anchorId uint256) constant returns(anchorID uint256, documentRoot bytes32)
 func (_AnchorContract *AnchorContractCallerSession) GetAnchorById(_anchorId *big.Int) (struct {
-	AnchorID     *big.Int
+	AnchorId     *big.Int
 	DocumentRoot [32]byte
 }, error) {
 	return _AnchorContract.Contract.GetAnchorById(&_AnchorContract.CallOpts, _anchorId)
