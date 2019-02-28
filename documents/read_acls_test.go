@@ -4,8 +4,9 @@ package documents
 
 import (
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 

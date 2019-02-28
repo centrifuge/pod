@@ -348,7 +348,7 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 	return nil
 }
 
-func (cd *CoreDocument) FindAT(tokenID []byte) (at *coredocumentpb.AccessToken, err error){
+func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, err error) {
 	// check if the access token is present in read rules of the document indicated in the AT request
 	found := findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		at, err = isATInRole(role, tokenID)
@@ -363,13 +363,13 @@ func (cd *CoreDocument) FindAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 		return at, errors.New("access token not found")
 	}
 
-		return at, nil
+	return at, nil
 }
 
 // ATOwnerCanRead checks that the owner AT can read the document requested
 func (cd *CoreDocument) ATOwnerCanRead(ctx context.Context, idService identity.ServiceDID, tokenID, docID []byte, account identity.DID) (err error) {
 	//find access token in Roles
-	at, err := cd.FindAT(tokenID)
+	at, err := cd.findAT(tokenID)
 	if err != nil {
 		return err
 	}
