@@ -111,7 +111,7 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 		return errors.New("failed to construct NFT: %v", err)
 	}
 
-	role := &coredocumentpb.Role{RoleKey: utils.RandomSlice(32)}
+	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
 	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
 	return cd.setSalts()
@@ -381,8 +381,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 		return nil, err
 	}
 
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(32)
+	role := newRole()
 	at, err := assembleAccessToken(ctx, payload, role.RoleKey)
 	if err != nil {
 		return nil, errors.New("failed to construct access token: %v", err)
@@ -461,4 +460,9 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
 	return tm, nil
+}
+
+// newRole returns a new role with random role key
+func newRole() *coredocumentpb.Role {
+	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(32)}
 }

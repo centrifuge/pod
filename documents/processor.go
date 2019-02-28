@@ -177,7 +177,7 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 		return err
 	}
 
-	cs, err := model.GetSignCollaborators(self.ID)
+	cs, err := model.GetSignerCollaborators(self.ID)
 	if err != nil {
 		return errors.New("get external collaborators failed: %v", err)
 	}

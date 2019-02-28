@@ -324,8 +324,7 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
 
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(32)
+	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
 	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
 
@@ -356,8 +355,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
 
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(32)
+	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
 	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
 
@@ -379,27 +377,26 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	ids := []string{id1.String()}
 	cd, err := NewCoreDocumentWithCollaborators(ids)
 	assert.NoError(t, err)
-	cs, err := cd.GetSignCollaborators()
+	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Equal(t, cs[0], id1)
 
-	cs, err = cd.GetSignCollaborators(id1)
+	cs, err = cd.GetSignerCollaborators(id1)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
 
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(32)
+	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
 	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
 
-	cs, err = cd.GetSignCollaborators()
+	cs, err = cd.GetSignerCollaborators()
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
 	assert.NotContains(t, cs, id2)
 
-	cs, err = cd.GetSignCollaborators(id2)
+	cs, err = cd.GetSignerCollaborators(id2)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)

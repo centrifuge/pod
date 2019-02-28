@@ -423,9 +423,9 @@ func (cd *CoreDocument) documentTree(docType string) (tree *proofs.DocumentTree,
 
 }
 
-// GetSignCollaborators returns the collaborators excluding the filteredIDs
+// GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read_Sign permissions.
-func (cd *CoreDocument) GetSignCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
 	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {
 		return nil, err
