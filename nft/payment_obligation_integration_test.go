@@ -120,6 +120,8 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 
 func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	regAddr := registry.String()
+	log.Info(regAddr)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
@@ -196,23 +198,6 @@ func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{
-		{
-			grantAccess: true,
-		},
-
-		{
-			tokenProof: true,
-		},
-
-		{
-			grantAccess: true,
-			tokenProof:  true,
-		},
-
-		{
-			grantAccess:     true,
-			readAccessProof: true,
-		},
 		{
 			grantAccess:     true,
 			tokenProof:      true,

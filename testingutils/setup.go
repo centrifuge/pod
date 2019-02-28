@@ -56,23 +56,32 @@ func RunSmartContractMigrations() {
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
 func GetSmartContractAddresses() *config.SmartContractAddresses {
-	dat, err := findContractDeployJSON()
+	iddat, err := findContractDeployJSON("IdentityFactory.json")
 	if err != nil {
 		panic(err)
 	}
-	idFactoryAddrOp := getOpForContract(".contracts.IdentityFactory.address")
-	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.address")
-	payObAddrOp := getOpForContract(".contracts.PaymentObligation.address")
+
+	ancdat, err := findContractDeployJSON("AnchorRepository.json")
+	if err != nil {
+		panic(err)
+	}
+
+	payobdat, err := findContractDeployJSON("PaymentObligation.json")
+	if err != nil {
+		panic(err)
+	}
+
+	addrOp := getOpForContract(".networks.8383.address")
 	return &config.SmartContractAddresses{
-		IdentityFactoryAddr:   getOpAddr(idFactoryAddrOp, dat),
-		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
-		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
+		IdentityFactoryAddr:   getOpAddr(addrOp, iddat),
+		AnchorRepositoryAddr:  getOpAddr(addrOp, ancdat),
+		PaymentObligationAddr: getOpAddr(addrOp, payobdat),
 	}
 }
 
-func findContractDeployJSON() ([]byte, error) {
+func findContractDeployJSON(file string) ([]byte, error) {
 	projDir := GetProjectDir()
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "zos.dev-8383.json")
+	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "build", "contracts", file)
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
 		return nil, err
