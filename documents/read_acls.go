@@ -86,7 +86,6 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 		return errors.New("failed to get NFT owner: %v", err)
 	}
 
-	// TODO(ved): this will always fail until we roll out identity v2 with CentID type as common.Address
 	if !bytes.Equal(owner.Bytes(), account[:]) {
 		return errors.New("account (%v) not owner of the NFT", account.String())
 	}

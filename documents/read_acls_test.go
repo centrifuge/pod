@@ -6,20 +6,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -121,7 +118,11 @@ func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	assert.Error(t, cd.NFTOwnerCanRead(tr, registry, tokenID, account))
 	tr.AssertExpectations(t)
 
-	// TODO(ved): add a successful test once identity v2 is complete
+	// same owner
+	owner = account.ToAddress()
+	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
+	assert.NoError(t, cd.NFTOwnerCanRead(tr, registry, tokenID, account))
+	tr.AssertExpectations(t)
 }
 
 func TestCoreDocumentModel_AddNFT(t *testing.T) {
