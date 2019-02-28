@@ -46,7 +46,7 @@ const (
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
 
-	// SignaturesPrefix is the human readable prefix for signing tree props
+	// SignaturesTreePrefix is the human readable prefix for signing tree props
 	SignaturesTreePrefix = "signatures_tree"
 )
 
@@ -59,8 +59,8 @@ func compactProperties(key string) []byte {
 		SigningRootField:  {0, 0, 0, 10},
 
 		// tree prefixes use the first byte of a 4 byte slice by convention
-		CDTreePrefix:      {1, 0, 0, 0},
-		SigningTreePrefix: {2, 0, 0, 0},
+		CDTreePrefix:         {1, 0, 0, 0},
+		SigningTreePrefix:    {2, 0, 0, 0},
 		SignaturesTreePrefix: {3, 0, 0, 0},
 	}
 	return m[key]
@@ -184,6 +184,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
 		Nfts:               cd.Document.Nfts,
+		SignatureData:      new(coredocumentpb.SignatureData),
 	}
 
 	ncd := &CoreDocument{Document: cdp}

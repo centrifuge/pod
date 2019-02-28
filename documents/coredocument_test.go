@@ -5,9 +5,10 @@ package documents
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -194,10 +195,10 @@ func TestGetSignaturesTree(t *testing.T) {
 	cd.Document.EmbeddedData = docAny
 	cd.Document.DataRoot = utils.RandomSlice(32)
 	sig := &coredocumentpb.Signature{
-		SignerId: utils.RandomSlice(identity.DIDLength),
-		PublicKey: utils.RandomSlice(32),
+		SignerId:    utils.RandomSlice(identity.DIDLength),
+		PublicKey:   utils.RandomSlice(32),
 		SignatureId: utils.RandomSlice(52),
-		Signature: utils.RandomSlice(32),
+		Signature:   utils.RandomSlice(32),
 	}
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 	err := cd.setSalts()
@@ -207,7 +208,7 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, signatureTree)
 
-	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix+".signatures.length")
+	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
 	assert.Equal(t, 0, lengthIdx)
 	assert.NotNil(t, lengthLeaf)
 	assert.Equal(t, SignaturesTreePrefix+".signatures.length", lengthLeaf.Property.ReadableName())
@@ -217,7 +218,7 @@ func TestGetSignaturesTree(t *testing.T) {
 	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
 	assert.NotNil(t, signerLeaf)
 	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId , []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
+	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
 	assert.Equal(t, sig.SignerId, signerLeaf.Value)
 }
 
@@ -248,10 +249,10 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd := newCoreDocument()
 
 	sig := &coredocumentpb.Signature{
-		SignerId: utils.RandomSlice(identity.DIDLength),
-		PublicKey: utils.RandomSlice(32),
+		SignerId:    utils.RandomSlice(identity.DIDLength),
+		PublicKey:   utils.RandomSlice(32),
 		SignatureId: utils.RandomSlice(52),
-		Signature: utils.RandomSlice(32),
+		Signature:   utils.RandomSlice(32),
 	}
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 
@@ -272,7 +273,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	_, signerLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
 	assert.NotNil(t, signerLeaf)
 	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId , []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
+	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
 	assert.Equal(t, sig.SignerId, signerLeaf.Value)
 }
 

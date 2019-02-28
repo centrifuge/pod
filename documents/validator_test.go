@@ -3,8 +3,9 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/identity"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/stretchr/testify/mock"
 

@@ -561,10 +561,11 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	}
 
 	return &coredocumentpb.Signature{
-		SignerId:  did,
-		PublicKey: keys[identity.KeyPurposeSigning].PublicKey,
-		Signature: signature,
-		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+		SignatureId: append(did, keys[identity.KeyPurposeSigning].PublicKey...),
+		SignerId:    did,
+		PublicKey:   keys[identity.KeyPurposeSigning].PublicKey,
+		Signature:   signature,
+		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}, nil
 }
 
