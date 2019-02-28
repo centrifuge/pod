@@ -92,6 +92,11 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
+	nextAnchorID, err := anchors.ToAnchorID(model.NextVersion())
+	if err != nil {
+		return mreq, err
+	}
+
 	dr, err := model.CalculateDocumentRoot()
 	if err != nil {
 		return mreq, err
@@ -102,7 +107,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, docProofs.FieldProofs, rootHash)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs, rootHash)
 	if err != nil {
 		return mreq, err
 	}
@@ -199,8 +204,9 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-			requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID,
+			requestData.TokenURI, requestData.AnchorID, requestData.NextAnchorId, requestData.Props, requestData.Values,
+			requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
@@ -253,8 +259,11 @@ type MintRequest struct {
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
 	AnchorID *big.Int
 
-	// MerkleRoot is the root hash of the merkle proof/doc
-	MerkleRoot [32]byte
+	// NextAnchorId is the next ID of the document, when updated
+	NextAnchorId *big.Int
+
+	// Props contains the compact props for readRole and tokenRole
+	Props [][]byte
 
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
 	Values [][]byte
@@ -267,30 +276,35 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
+func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
 	proofData, err := createProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
 
 	return MintRequest{
-		To:         to,
-		TokenID:    tokenID.BigInt(),
-		TokenURI:   tokenID.URI(),
-		AnchorID:   anchorID.BigInt(),
-		MerkleRoot: rootHash,
-		Values:     proofData.Values,
-		Salts:      proofData.Salts,
-		Proofs:     proofData.Proofs}, nil
+		To:           to,
+		TokenID:      tokenID.BigInt(),
+		TokenURI:     tokenID.URI(),
+		AnchorID:     anchorID.BigInt(),
+		NextAnchorId: nextAnchorID.BigInt(),
+		Props:        proofData.Props,
+		Values:       proofData.Values,
+		Salts:        proofData.Salts,
+		Proofs:       proofData.Proofs}, nil
 }
 
 type proofData struct {
+	Props  [][]byte
 	Values [][]byte
 	Salts  [][32]byte
 	Proofs [][][32]byte
 }
 
 func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
+	readRoleIndex := 5
+	tokenRoleIndex := 6
+	var props = make([][]byte, 2) // props are only required for readRole.property, tokenRole.property
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
@@ -298,8 +312,13 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	// TODO remove later
 	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
 	//log.Info(json.MarshalIndent(proof, "", "  "))
-
 	for i, p := range proofspb {
+		if i == readRoleIndex {
+			props[0] = p.GetCompactName()
+		}
+		if i == tokenRoleIndex {
+			props[1] = p.GetCompactName()
+		}
 		values[i] = p.Value
 		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
@@ -314,7 +333,7 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 		proofs[i] = property
 	}
 
-	return &proofData{Values: values, Salts: salts, Proofs: proofs}, nil
+	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
 }
 
 func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
