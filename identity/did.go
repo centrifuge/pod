@@ -11,7 +11,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 
@@ -284,14 +283,15 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 	}
 	keys[KeyPurposeP2P] = IDKey{PublicKey: pk, PrivateKey: sk}
 
-	pk, sk, err = ed25519.GetSigningKeyPair(config.GetSigningKeyPair())
+	pk, sk, err = secp256k1.GetSigningKeyPair(config.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
-	keys[KeyPurposeSigning] = IDKey{PublicKey: pk, PrivateKey: sk}
+	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	keys[KeyPurposeSigning] = IDKey{PublicKey: pk32[:], PrivateKey: sk}
 
 	//secp256k1 keys
-	pk, sk, err = secp256k1.GetEthAuthKey(config.GetEthAuthKeyPair())
+	pk, sk, err = secp256k1.GetSigningKeyPair(config.GetEthAuthKeyPair())
 	if err != nil {
 		return nil, err
 	}
@@ -302,11 +302,4 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 	keys[KeyPurposeEthMsgAuth] = IDKey{PublicKey: pubKey, PrivateKey: sk}
 
 	return &IDConfig{ID: centID, Keys: keys}, nil
-}
-
-// Sign the document with the private key and return the signature along with the public key for the verification
-// assumes that signing root for the document is generated
-// Deprecated
-func Sign(idConfig *IDConfig, purpose int, payload []byte) *coredocumentpb.Signature {
-	return crypto.Sign(idConfig.ID[:], idConfig.Keys[purpose].PrivateKey, idConfig.Keys[purpose].PublicKey, payload)
 }

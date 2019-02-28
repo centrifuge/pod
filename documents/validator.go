@@ -2,7 +2,6 @@ package documents
 
 import (
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -163,40 +162,6 @@ func documentRootValidator() Validator {
 	})
 }
 
-// readyForSignaturesValidator validates self signature
-// re-calculates the signature and compares with existing one
-// assumes signing_root is already generated and verified
-// Note: this needs to used only before document is sent for signatures from the collaborators
-func readyForSignaturesValidator(id, priv, pub []byte) Validator {
-	return ValidatorFunc(func(_, model Model) error {
-		sr, err := model.CalculateSigningRoot()
-		if err != nil {
-			return errors.New("failed to generate signing root: %v", err)
-		}
-
-		signatures := model.Signatures()
-		if len(signatures) != 1 {
-			return errors.New("expecting only one signature")
-		}
-
-		s := crypto.Sign(id, priv, pub, sr)
-		sh := signatures[0]
-		if !utils.IsSameByteSlice(s.EntityId, sh.EntityId) {
-			err = errors.AppendError(err, errors.New("entity ID mismatch"))
-		}
-
-		if !utils.IsSameByteSlice(s.PublicKey, sh.PublicKey) {
-			err = errors.AppendError(err, errors.New("public key mismatch"))
-		}
-
-		if !utils.IsSameByteSlice(s.Signature, sh.Signature) {
-			err = errors.AppendError(err, errors.New("signature mismatch"))
-		}
-
-		return err
-	})
-}
-
 // signaturesValidator validates all the signatures in the core document
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
@@ -262,7 +227,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 // signatures validator
 // should be used when node receives a document requesting for signature
 func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
-	return PostSignatureRequestValidator(idService)
+	return SignatureValidator(idService)
 }
 
 // PreAnchorValidator is a validator group with following validators
@@ -273,7 +238,7 @@ func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
 // should be called before pre anchoring
 func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
-		PostSignatureRequestValidator(idService),
+		SignatureValidator(idService),
 		documentRootValidator(),
 	}
 }
@@ -289,25 +254,12 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	}
 }
 
-// PreSignatureRequestValidator is a validator group with following validators
-// baseValidator
-// signingRootValidator
-// readyForSignaturesValidator
-// should be called after sender signing the document and before requesting the document
-func PreSignatureRequestValidator(id, priv, pub []byte) ValidatorGroup {
-	return ValidatorGroup{
-		baseValidator(),
-		signingRootValidator(),
-		readyForSignaturesValidator(id, priv, pub),
-	}
-}
-
-// PostSignatureRequestValidator is a validator group with following validators
+// SignatureValidator is a validator group with following validators
 // baseValidator
 // signingRootValidator
 // signaturesValidator
-// should be called after the signature collection/before preparing for anchoring
-func PostSignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
+// should be called after sender signing the document, before requesting the document and after signature collection
+func SignatureValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),

@@ -354,7 +354,7 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 	if err != nil {
 		return err
 	}
-	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1)
 	if !validated {
 		return errors.New("access token is invalid")
 	}

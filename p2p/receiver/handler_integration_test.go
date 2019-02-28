@@ -8,10 +8,17 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -31,7 +38,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/ed25519"
 )
 
 var (
@@ -97,7 +103,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	resp := resolveSignatureResponse(t, p2pResp)
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, cd.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
@@ -120,8 +126,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, cd.SigningRoot, sig.Signature), "signature must be valid")
-
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 	//Update document
 	po, cd = updateDocumentForP2Phandler(t, po)
 	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
@@ -129,7 +134,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig = resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, cd.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
@@ -142,7 +147,7 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, cd.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
@@ -153,7 +158,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, ed25519.Verify(sig.PublicKey, cd.SigningRoot, sig.Signature), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 }
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
@@ -275,7 +280,14 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, sr)
+	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  idConfig.ID[:],
+		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
 	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)

@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/crypto/ed25519"
 )
 
 type mockModel struct {
@@ -143,7 +142,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Len(t, model.sigs, 1)
 	sig := model.sigs[0]
 	self, _ := contextutil.Self(ctxh)
-	assert.True(t, ed25519.Verify(self.Keys[identity.KeyPurposeSigning].PublicKey, sr, sig.Signature))
+	assert.True(t, crypto.VerifyMessage(self.Keys[identity.KeyPurposeSigning].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
 }
 
 type p2pClient struct {
@@ -168,18 +167,13 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
-	// failed to get self
-	err := dp.RequestSignatures(context.Background(), nil)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrSelfNotFound, err))
-
-	self, err := contextutil.Self(ctxh)
+	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	keys := self.Keys[identity.KeyPurposeSigning]
-	sig := crypto.Sign(self.ID[:], keys.PrivateKey, keys.PublicKey, sr)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
-	// validations failed
+	// data validations failed
 	model := new(mockModel)
 	model.On("ID").Return([]byte{})
 	model.On("CurrentVersion").Return([]byte{})
@@ -189,7 +183,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
-	// failed signature collection
+	// key validation failed
 	model = new(mockModel)
 	id := utils.RandomSlice(32)
 	next := utils.RandomSlice(32)
@@ -200,6 +194,23 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("Signatures").Return()
 	model.sigs = append(model.sigs, sig)
 	c := new(p2pClient)
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("cannot validate key")).Once()
+	err = dp.RequestSignatures(ctxh, model)
+	model.AssertExpectations(t)
+	c.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot validate key")
+
+	// failed signature collection
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.sigs = append(model.sigs, sig)
+	c = new(p2pClient)
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	c.On("GetSignaturesForDocument", ctxh, model).Return(nil, errors.New("failed to get signatures")).Once()
 	dp.p2pClient = c
 	err = dp.RequestSignatures(ctxh, model)
@@ -231,11 +242,11 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	self, err := contextutil.Self(ctxh)
+	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	keys := self.Keys[identity.KeyPurposeSigning]
-	sig := crypto.Sign(self.ID[:], keys.PrivateKey, keys.PublicKey, sr)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
 	// validation failed
 	model := new(mockModel)
@@ -293,11 +304,11 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	self, err := contextutil.Self(ctxh)
+	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	keys := self.Keys[identity.KeyPurposeSigning]
-	sig := crypto.Sign(self.ID[:], keys.PrivateKey, keys.PublicKey, sr)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
 	// validations failed
 	id := utils.RandomSlice(32)
@@ -348,11 +359,11 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	self, err := contextutil.Self(ctxh)
+	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	keys := self.Keys[identity.KeyPurposeSigning]
-	sig := crypto.Sign(self.ID[:], keys.PrivateKey, keys.PublicKey, sr)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
 	// validations failed
 	id := utils.RandomSlice(32)

@@ -7,6 +7,10 @@ import (
 	"flag"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -134,7 +138,14 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, sr)
+	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  idConfig.ID[:],
+		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
 	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)

@@ -65,7 +65,7 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
 func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
-	self, err := contextutil.Self(ctx)
+	self, err := contextutil.Account(ctx)
 	if err != nil {
 		return err
 	}
@@ -81,25 +81,21 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	model.AppendSignatures(identity.Sign(self, identity.KeyPurposeSigning, sr))
+	sig, err := self.SignMsg(sr)
+	if err != nil {
+		return err
+	}
+
+	model.AppendSignatures(sig)
+
 	return nil
 }
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
 func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
-	self, err := contextutil.Self(ctx)
-	if err != nil {
-		return err
-	}
-
-	idKeys, ok := self.Keys[identity.KeyPurposeSigning]
-	if !ok {
-		return errors.New("missing keys for signing")
-	}
-
-	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
-	err = psv.Validate(nil, model)
+	psv := SignatureValidator(dp.identityService)
+	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)
 	}
@@ -115,7 +111,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
-	psv := PostSignatureRequestValidator(dp.identityService)
+	psv := SignatureValidator(dp.identityService)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate signatures: %v", err)
