@@ -333,7 +333,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	cd := newCoreDocument()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	id, err := account.GetIdentityID()
-	granteeID := identity.NewDIDFromByte(id)
+	granteeID := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
 	payload := documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),

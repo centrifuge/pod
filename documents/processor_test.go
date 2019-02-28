@@ -95,6 +95,12 @@ func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID,
 	return cids, args.Error(1)
 }
 
+func (m *mockModel) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+	args := m.Called(filterIDs)
+	cids, _ := args.Get(0).([]identity.DID)
+	return cids, args.Error(1)
+}
+
 func (m *mockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
 	args := m.Called()
 	cd, _ := args.Get(0).(coredocumentpb.CoreDocument)
@@ -401,7 +407,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
+	model.On("GetSignerCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
@@ -423,7 +429,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil).Once()
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil).Once()
 	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
@@ -448,7 +454,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
@@ -475,7 +481,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
 	model.On("PackCoreDocument").Return(cd, nil).Once()
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
