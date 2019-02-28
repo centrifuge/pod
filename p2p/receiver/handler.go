@@ -25,6 +25,7 @@ type Handler struct {
 	handshakeValidator ValidatorGroup
 	docSrv             documents.Service
 	tokenRegistry      documents.TokenRegistry
+	srvDID				identity.ServiceDID
 }
 
 // New returns an implementation of P2PServiceServer
@@ -32,12 +33,14 @@ func New(
 	config config.Service,
 	handshakeValidator ValidatorGroup,
 	docSrv documents.Service,
-	tokenRegistry documents.TokenRegistry) *Handler {
+	tokenRegistry documents.TokenRegistry,
+	srvDID identity.ServiceDID) *Handler {
 	return &Handler{
 		config:             config,
 		handshakeValidator: handshakeValidator,
 		docSrv:             docSrv,
 		tokenRegistry:      tokenRegistry,
+		srvDID: srvDID,
 	}
 }
 
@@ -248,7 +251,7 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return err
 		}
 
-		err = m.ATOwnerCanRead(docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		err = m.ATOwnerCanRead(ctx, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
 		if err != nil {
 			return err
 		}

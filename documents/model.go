@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"context"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -86,7 +87,7 @@ type Model interface {
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
 	// ATOwnerCanRead returns error if the NFT cannot read the document.
-	ATOwnerCanRead(tokenID, docID []byte, account identity.DID) (err error)
+	ATOwnerCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, account identity.DID) (err error)
 }
 
 // TokenRegistry defines NFT related functions.

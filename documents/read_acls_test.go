@@ -4,6 +4,7 @@ package documents
 
 import (
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -324,12 +325,12 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 			assert.True(t, valid)
 		}
 	}
-
 }
 
 func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, _ := contextutil.Account(ctx)
+	srv := new(testingcommons.MockIdentityService)
 	cd := newCoreDocument()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	id, err := account.GetIdentityID()
@@ -355,17 +356,21 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: tr,
 	}
-	err = ncd.ATOwnerCanRead(dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATOwnerCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.Error(t, err, "access token not found")
-	// valid access token
-	// TODO: this will always fail until validation for signatures is secp
-	//tr = &p2ppb.AccessTokenRequest{
-	//	DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
-	//	AccessTokenId:                at.Identifier,
-	//}
-	//dr.AccessTokenRequest = tr
-	//err = dm.accessTokenOwnerCanRead(dr, granteeID[:])
-	//assert.NoError(t, err)
+	// invalid signing key
+	tr = &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: ncd.Document.DocumentIdentifier,
+		AccessTokenId:                at.Identifier,
+	}
+	dr.AccessTokenRequest = tr
+	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	err = ncd.ATOwnerCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	assert.Error(t, err)
+	// valid signing key
+	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	err = ncd.ATOwnerCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	assert.NoError(t, err)
 }
 
 func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {

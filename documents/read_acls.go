@@ -348,11 +348,9 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 	return nil
 }
 
-// ATOwnerCanRead checks that the owner AT can read the document requested
-func (cd *CoreDocument) ATOwnerCanRead(tokenID, docID []byte, account identity.DID) (err error) {
+func (cd *CoreDocument) FindAT(tokenID []byte) (at *coredocumentpb.AccessToken, err error){
 	// check if the access token is present in read rules of the document indicated in the AT request
-	var at *coredocumentpb.AccessToken
-	findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	found := findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		at, err = isATInRole(role, tokenID)
 		if err != nil {
 			return false
@@ -361,16 +359,29 @@ func (cd *CoreDocument) ATOwnerCanRead(tokenID, docID []byte, account identity.D
 		return true
 	}, coredocumentpb.Action_ACTION_READ)
 
+	if !found {
+		return at, errors.New("access token not found")
+	}
+
+		return at, nil
+}
+
+// ATOwnerCanRead checks that the owner AT can read the document requested
+func (cd *CoreDocument) ATOwnerCanRead(ctx context.Context, idService identity.ServiceDID, tokenID, docID []byte, account identity.DID) (err error) {
+	//find access token in Roles
+	at, err := cd.FindAT(tokenID)
 	if err != nil {
 		return err
 	}
-
 	// check if the requested document is the document indicated in the access token
 	if !bytes.Equal(at.DocumentIdentifier, docID) {
 		return errors.New("the document requested does not match the document to which the access token grants access")
 	}
 	// validate the access token
-	// TODO: fetch public key from Ethereum chain
+	err = idService.ValidateKey(ctx, account, at.Key, identity.KeyPurposeSigning)
+	if err != nil {
+		return err
+	}
 	return validateAT(at.Key, at, account[:])
 }
 
@@ -421,7 +432,6 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 	}
 
 	// fetch key pair from identity
-	// TODO: change to signing key pair once secp scheme is available
 	sig, err := account.SignMsg(tm)
 	if err != nil {
 		return nil, err
