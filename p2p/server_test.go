@@ -11,20 +11,19 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
-
-	"github.com/centrifuge/go-centrifuge/ethereum"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +31,7 @@ import (
 
 var (
 	cfg       config.Service
-	idService identity.Service
+	idService identity.ServiceDID
 )
 
 func TestMain(m *testing.M) {
@@ -40,22 +39,23 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
-		transactions.Bootstrapper{},
+		txv1.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	idService = &testingcommons.MockIDService{}
-	ctx[identity.BootstrappedIDService] = idService
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	idService = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDService] = idService
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
@@ -68,7 +68,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfgMock, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil)
+		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil, new(testingdocuments.MockRegistry))
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)

@@ -5,15 +5,12 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/satori/go.uuid"
 )
 
 // Service defines specific functions for invoice
@@ -57,15 +54,15 @@ func DefaultService(
 	}
 }
 
-// DeriveFromCoreDocument unpacks the core document into a model
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	var model documents.Model = new(Invoice)
-	err := model.UnpackCoreDocument(cd)
+// DeriveFromCoreDocument takes a core document model and returns an invoice
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+	inv := new(Invoice)
+	err := inv.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	return model, nil
+	return inv, nil
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
@@ -107,7 +104,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], inv.CoreDocument.CurrentVersion, inv)
+	err = s.repo.Create(self.ID[:], inv.CurrentVersion(), inv)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -116,85 +113,71 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	inv, err = s.validateAndPersist(ctx, nil, inv, CreateValidator())
 	if err != nil {
-		return nil, uuid.Nil, nil, err
-	}
-
-	cd, err := inv.PackCoreDocument()
-	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, inv.CurrentVersion())
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 	return inv, txID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, inv documents.Model) (documents.Model, uuid.UUID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	self, err := contextutil.Self(ctx)
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	cd, err := inv.PackCoreDocument()
+	old, err := s.GetCurrentVersion(ctx, new.ID())
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
 	if err != nil {
-		return nil, uuid.Nil, nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
-	}
-
-	inv, err = s.validateAndPersist(ctx, old, inv, UpdateValidator())
-	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, cd.CurrentVersion)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, new.CurrentVersion())
 	if err != nil {
-		return nil, uuid.Nil, nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
-	return inv, txID, done, nil
+	return new, txID, done, nil
 }
 
 // DeriveInvoiceResponse returns create response from invoice model
-func (s service) DeriveInvoiceResponse(doc documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
-	cd, err := doc.PackCoreDocument()
+func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.InvoiceResponse, error) {
+	data, err := s.DeriveInvoiceData(model)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, err
 	}
 
-	collaborators := make([]string, len(cd.Collaborators))
-	for i, c := range cd.Collaborators {
-		cid, err := identity.ToCentID(c)
-		if err != nil {
-			return nil, errors.NewTypedError(documents.ErrDocumentCollaborator, err)
-		}
-		collaborators[i] = cid.String()
+	cs, err := model.GetCollaborators()
+	if err != nil {
+		return nil, errors.New("failed to get collaborators: %v", err)
+	}
+
+	var css []string
+	for _, c := range cs {
+		css = append(css, c.String())
 	}
 
 	h := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
-		VersionId:     hexutil.Encode(cd.CurrentVersion),
-		Collaborators: collaborators,
-	}
-
-	data, err := s.DeriveInvoiceData(doc)
-	if err != nil {
-		return nil, err
+		DocumentId:    hexutil.Encode(model.ID()),
+		VersionId:     hexutil.Encode(model.CurrentVersion()),
+		Collaborators: css,
 	}
 
 	return &clientinvoicepb.InvoiceResponse{
@@ -231,28 +214,10 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 		return nil, err
 	}
 
-	// load invoice data
 	inv := new(Invoice)
-	err = inv.initInvoiceFromData(payload.Data)
+	err = inv.PrepareNewVersion(old, payload.Data, payload.Collaborators)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load invoice from data: %v", err))
-	}
-
-	// update core document
-	oldCD, err := old.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	idConf, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, documents.ErrDocumentConfigAccountID
-	}
-
-	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
-	inv.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load invoice from data: %v", err))
 	}
 
 	return inv, nil

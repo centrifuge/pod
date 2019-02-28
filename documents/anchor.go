@@ -11,7 +11,7 @@ import (
 // AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type AnchorProcessor interface {
-	Send(ctx context.Context, coreDocument *coredocumentpb.CoreDocument, recipient identity.CentID) (err error)
+	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
 	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error
@@ -25,13 +25,8 @@ type updaterFunc func(id []byte, model Model) error
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
 func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
-	cd, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, err
-	}
-
-	id := cd.CurrentVersion
-	err = proc.PrepareForSignatureRequests(ctx, model)
+	id := model.CurrentVersion()
+	err := proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare document for signatures: %v", err))
 	}

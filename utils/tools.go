@@ -22,7 +22,7 @@ func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
 	return false
 }
 
-// SliceToByte32 converts a 32 byte slice to an array. Will thorw error if the slice is too long
+// SliceToByte32 converts a 32 byte slice to an array. Will throw error if the slice is too long
 func SliceToByte32(in []byte) (out [32]byte, err error) {
 	if len(in) > 32 {
 		return [32]byte{}, errors.New("input exceeds length of 32")

@@ -4,49 +4,44 @@ package purchaseorder
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
-	"reflect"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
-	"github.com/satori/go.uuid"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var configService config.Service
+var defaultDID = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -55,14 +50,14 @@ func TestMain(m *testing.M) {
 	txMan := &testingtx.MockTxManager{}
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
-	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(uuid.Nil, done, nil)
-
-	ibootstappers := []bootstrap.TestBootstrapper{
+	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
+	ctx[nft.BootstrappedPayObService] = new(testingdocuments.MockRegistry)
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&queue.Bootstrapper{},
-		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
@@ -71,121 +66,78 @@ func TestMain(m *testing.M) {
 		&Bootstrapper{},
 		&queue.Starter{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", cid.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
-func TestPO_FromCoreDocuments_invalidParameter(t *testing.T) {
-	poModel := &PurchaseOrder{}
+func TestPurchaseOrder_PackCoreDocument(t *testing.T) {
+	id, err := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	assert.NoError(t, err)
 
-	emptyCoreDocument := &coredocumentpb.CoreDocument{}
-	err := poModel.UnpackCoreDocument(emptyCoreDocument)
-	assert.Error(t, err, "it should not be possible to init a empty core document")
+	po := new(PurchaseOrder)
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String()))
 
-	err = poModel.UnpackCoreDocument(nil)
-	assert.Error(t, err, "it should not be possible to init a empty core document")
-
-	invalidEmbeddedData := &any.Any{TypeUrl: "invalid"}
-	coreDocument := &coredocumentpb.CoreDocument{EmbeddedData: invalidEmbeddedData}
-	err = poModel.UnpackCoreDocument(coreDocument)
-	assert.Error(t, err, "it should not be possible to init invalid typeUrl")
-
+	cd, err := po.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd.EmbeddedData)
+	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
-func TestPO_InitCoreDocument_successful(t *testing.T) {
-	poModel := &PurchaseOrder{}
+func TestPurchaseOrder_JSON(t *testing.T) {
+	po := new(PurchaseOrder)
+	id, err := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	assert.NoError(t, err)
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String()))
 
-	poData := testingdocuments.CreatePOData()
-
-	coreDocument := CreateCDWithEmbeddedPO(t, poData)
-	err := poModel.UnpackCoreDocument(coreDocument)
-	assert.Nil(t, err, "valid coredocument shouldn't produce an error")
-}
-
-func TestPO_InitCoreDocument_invalidCentId(t *testing.T) {
-	poModel := &PurchaseOrder{}
-
-	coreDocument := CreateCDWithEmbeddedPO(t, purchaseorderpb.PurchaseOrderData{
-		Recipient: utils.RandomSlice(identity.CentIDLength + 1)})
-
-	err := poModel.UnpackCoreDocument(coreDocument)
-	assert.Nil(t, err)
-	assert.Nil(t, poModel.Recipient)
-}
-
-func TestPO_CoreDocument_successful(t *testing.T) {
-	poModel := &PurchaseOrder{}
-
-	//init model with a CoreDoc
-	poData := testingdocuments.CreatePOData()
-
-	coreDocument := CreateCDWithEmbeddedPO(t, poData)
-	poModel.UnpackCoreDocument(coreDocument)
-
-	returnedCoreDocument, err := poModel.PackCoreDocument()
-	assert.Nil(t, err, "transformation from purchase order to CoreDoc failed")
-
-	assert.Equal(t, coreDocument.EmbeddedData, returnedCoreDocument.EmbeddedData, "embeddedData should be the same")
-	assert.Equal(t, coreDocument.EmbeddedDataSalts, returnedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
-}
-
-func TestPO_ModelInterface(t *testing.T) {
-	var i interface{} = &PurchaseOrder{}
-	_, ok := i.(documents.Model)
-	assert.True(t, ok, "model interface not implemented correctly for purchaseOrder model")
-}
-
-func TestPO_Type(t *testing.T) {
-	var model documents.Model
-	model = &PurchaseOrder{}
-	assert.Equal(t, model.Type(), reflect.TypeOf(&PurchaseOrder{}), "purchaseOrder Type not correct")
-}
-
-func TestPO_JSON(t *testing.T) {
-	poModel := &PurchaseOrder{}
-	poData := testingdocuments.CreatePOData()
-	coreDocument := CreateCDWithEmbeddedPO(t, poData)
-	poModel.UnpackCoreDocument(coreDocument)
-
-	jsonBytes, err := poModel.JSON()
+	cd, err := po.PackCoreDocument()
+	assert.NoError(t, err)
+	jsonBytes, err := po.JSON()
 	assert.Nil(t, err, "marshal to json didn't work correctly")
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
-	err = poModel.FromJSON(jsonBytes)
+	po = new(PurchaseOrder)
+	err = po.FromJSON(jsonBytes)
 	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
 
-	receivedCoreDocument, err := poModel.PackCoreDocument()
-	assert.Nil(t, err, "JSON unmarshal damaged purchase order variables")
-	assert.Equal(t, receivedCoreDocument.EmbeddedData, coreDocument.EmbeddedData, "JSON unmarshal damaged purchase order variables")
+	ncd, err := po.PackCoreDocument()
+	assert.Nil(t, err, "JSON unmarshal damaged invoice variables")
+	assert.Equal(t, cd, ncd)
 }
 
-func TestPOModel_UnpackCoreDocument(t *testing.T) {
-	var model documents.Model = new(PurchaseOrder)
+func TestPO_UnpackCoreDocument(t *testing.T) {
+	var model = new(PurchaseOrder)
 	var err error
 
-	// nil core doc
-	err = model.UnpackCoreDocument(nil)
-	assert.Error(t, err, "unpack must fail")
-
 	// embed data missing
-	err = model.UnpackCoreDocument(new(coredocumentpb.CoreDocument))
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{})
+	assert.Error(t, err)
+
+	// embed data type is wrong
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{EmbeddedData: new(any.Any)})
 	assert.Error(t, err, "unpack must fail due to missing embed data")
 
+	// embed data is wrong
+	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{
+		EmbeddedData: &any.Any{
+			Value:   utils.RandomSlice(32),
+			TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+		},
+	})
+	assert.Error(t, err)
+
 	// successful
-	coreDocument := CreateCDWithEmbeddedPO(t, testingdocuments.CreatePOData())
-	err = model.UnpackCoreDocument(coreDocument)
-	assert.Nil(t, err, "valid core document with embedded purchase order shouldn't produce an error")
-
-	receivedCoreDocument, err := model.PackCoreDocument()
-	assert.Nil(t, err, "model should be able to return the core document with embedded purchase order")
-
-	assert.Equal(t, coreDocument.EmbeddedData, receivedCoreDocument.EmbeddedData, "embeddedData should be the same")
-	assert.Equal(t, coreDocument.EmbeddedDataSalts, receivedCoreDocument.EmbeddedDataSalts, "embeddedDataSalt should be the same")
+	po, cd := createCDWithEmbeddedPO(t)
+	err = model.UnpackCoreDocument(cd)
+	assert.NoError(t, err)
+	assert.Equal(t, model.getClientData(), po.(*PurchaseOrder).getClientData())
+	assert.Equal(t, model.ID(), po.ID())
+	assert.Equal(t, model.CurrentVersion(), po.CurrentVersion())
+	assert.Equal(t, model.PreviousVersion(), po.PreviousVersion())
 }
 
 func TestPOModel_getClientData(t *testing.T) {
@@ -214,7 +166,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	assert.Nil(t, poModel.ExtraData)
 
 	data.ExtraData = "0x010203020301"
-	data.Recipient = "0x010203040506"
+	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
 
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
 	assert.Nil(t, err)
@@ -226,14 +178,18 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
-	collabs = []string{"0x010102040506", "0x010203020302"}
+	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.NoError(t, err)
+	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
+	assert.NoError(t, err)
+	collabs = []string{collab1.String(), collab2.String()}
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
 	assert.Nil(t, err, "must be nil")
 
-	assert.Equal(t, poModel.Recipient[:], []byte{1, 2, 3, 4, 5, 6})
+	did, err := identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
+	assert.NoError(t, err)
+	assert.Equal(t, poModel.Recipient[:], did[:])
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
-
-	assert.Equal(t, poModel.CoreDocument.Collaborators, [][]byte{id.ID[:], {1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
@@ -248,27 +204,31 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	assert.False(t, utils.IsEmptyByteSlice(dr))
 	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
-func TestPOModel_createProofs(t *testing.T) {
-	poModel, corDoc, err := createMockPurchaseOrder(t)
-	assert.Nil(t, err)
-	corDoc, proof, err := poModel.CreateProofs([]string{"po.po_number", "collaborators[0]", "document_type"})
+
+func TestPOModel_CreateProofs(t *testing.T) {
+	po := createPurchaseOrder(t)
+	assert.NotNil(t, po)
+	rk := po.Document.Roles[0].RoleKey
+	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
+	proof, err := po.CreateProofs([]string{"po.po_number", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	assert.NotNil(t, corDoc)
-	tree, _ := coredocument.GetDocumentRootTree(corDoc)
+	tree, err := po.DocumentRootTree()
+	assert.NoError(t, err)
 
 	// Validate po_number
 	valid, err := tree.ValidateProof(proof[0])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate collaborators[0]
+	// Validate roles collaborators
 	valid, err = tree.ValidateProof(proof[1])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	assert.Equal(t, poModel.CoreDocument.Collaborators[0], proof[1].Value)
+	acc := identity.NewDIDFromBytes(proof[1].Value)
+	assert.True(t, po.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -277,9 +237,8 @@ func TestPOModel_createProofs(t *testing.T) {
 }
 
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
-	poModel, _, err := createMockPurchaseOrder(t)
-	assert.Nil(t, err)
-	_, _, err = poModel.CreateProofs([]string{"nonexisting"})
+	poModel := createPurchaseOrder(t)
+	_, err := poModel.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
@@ -292,27 +251,15 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "po.po_number", leaf.Property.ReadableName())
 }
 
-func createMockPurchaseOrder(t *testing.T) (*PurchaseOrder, *coredocumentpb.CoreDocument, error) {
-	poModel := &PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2, Currency: "USD", CoreDocument: coredocument.New()}
-	poModel.CoreDocument.Collaborators = [][]byte{{1, 1, 2, 4, 5, 6}, {1, 2, 3, 2, 3, 2}}
-	dataRoot, err := poModel.CalculateDataRoot()
-	if err != nil {
-		return nil, nil, err
-	}
-	// get the coreDoc for the purchaseOrder
-	corDoc, err := poModel.PackCoreDocument()
-	if err != nil {
-		return nil, nil, err
-	}
-	assert.Nil(t, coredocument.FillSalts(corDoc))
-	err = coredocument.CalculateSigningRoot(corDoc, dataRoot)
-	if err != nil {
-		return nil, nil, err
-	}
-	err = coredocument.CalculateDocumentRoot(corDoc)
-	if err != nil {
-		return nil, nil, err
-	}
-	poModel.UnpackCoreDocument(corDoc)
-	return poModel, corDoc, nil
+func createPurchaseOrder(t *testing.T) *PurchaseOrder {
+	po := new(PurchaseOrder)
+	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), defaultDID.String())
+	assert.NoError(t, err)
+	_, err = po.CalculateDataRoot()
+	assert.NoError(t, err)
+	_, err = po.CalculateSigningRoot()
+	assert.NoError(t, err)
+	_, err = po.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	return po
 }

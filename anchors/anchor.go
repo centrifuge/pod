@@ -74,7 +74,7 @@ func RandomDocumentRoot() DocumentRoot {
 type PreCommitData struct {
 	AnchorID        AnchorID
 	SigningRoot     DocumentRoot
-	CentrifugeID    identity.CentID
+	DID             identity.DID
 	Signature       []byte
 	ExpirationBlock *big.Int
 	SchemaVersion   uint
@@ -85,9 +85,7 @@ type CommitData struct {
 	BlockHeight    uint64
 	AnchorID       AnchorID
 	DocumentRoot   DocumentRoot
-	CentrifugeID   identity.CentID
 	DocumentProofs [][DocumentProofLength]byte
-	Signature      []byte
 	SchemaVersion  uint
 }
 
@@ -109,11 +107,11 @@ func supportedSchemaVersion() uint {
 }
 
 // newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.DID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
 	return &PreCommitData{
 		AnchorID:        anchorID,
 		SigningRoot:     signingRoot,
-		CentrifugeID:    centrifugeID,
+		DID:             centrifugeID,
 		Signature:       signature,
 		ExpirationBlock: expirationBlock,
 		SchemaVersion:   supportedSchemaVersion(),
@@ -121,19 +119,17 @@ func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID 
 }
 
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (commitData *CommitData) {
 	return &CommitData{
 		BlockHeight:    blockHeight,
 		AnchorID:       anchorID,
 		DocumentRoot:   documentRoot,
-		CentrifugeID:   centrifugeID,
 		DocumentProofs: documentProofs,
-		Signature:      signature,
 	}
 }
 
 // GenerateCommitHash generates Keccak256 message from AnchorID, CentID, DocumentRoot
-func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.CentID, documentRoot DocumentRoot) []byte {
+func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.DID, documentRoot DocumentRoot) []byte {
 	msg := append(anchorID[:], documentRoot[:]...)
 	msg = append(msg, centrifugeID[:]...)
 	return crypto.Keccak256(msg)

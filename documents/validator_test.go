@@ -3,22 +3,18 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/identity"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/stretchr/testify/mock"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -133,95 +129,66 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "need both the old and new model")
 
-	// old model pack core doc fail
-	old := mockModel{}
-	newM := mockModel{}
-	old.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err = uvv.Validate(old, newM)
+	old := new(mockModel)
+	old.On("CalculateDocumentRoot").Return(nil, errors.New("errors")).Once()
+	err = uvv.Validate(old, new(mockModel))
+	assert.Error(t, err)
 	old.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to fetch old core document")
 
-	// newM model pack core doc fail
-	oldCD := coredocument.New()
-	oldCD.DocumentRoot = utils.RandomSlice(32)
-	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	newM.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err = uvv.Validate(old, newM)
+	old = new(mockModel)
+	old.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
+	old.On("ID").Return(nil).Once()
+	old.On("CurrentVersion").Return(nil).Once()
+	old.On("NextVersion").Return(nil).Once()
+	nm := new(mockModel)
+	nm.On("ID").Return(utils.RandomSlice(32)).Once()
+	nm.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	nm.On("NextVersion").Return(utils.RandomSlice(32)).Once()
+	nm.On("PreviousVersion").Return(utils.RandomSlice(32)).Once()
+	nm.On("PreviousDocumentRoot").Return(utils.RandomSlice(32)).Once()
+	err = uvv.Validate(old, nm)
+	assert.Error(t, err)
 	old.AssertExpectations(t)
-	newM.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to fetch new core document")
+	nm.AssertExpectations(t)
 
-	// mismatched identifiers
-	newCD := coredocument.New()
-	newCD.NextVersion = nil
-	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	newM.On("PackCoreDocument").Return(newCD, nil).Once()
-	err = uvv.Validate(old, newM)
+	old = new(mockModel)
+	dpr := utils.RandomSlice(32)
+	pv := utils.RandomSlice(32)
+	di := utils.RandomSlice(32)
+	cv := utils.RandomSlice(32)
+	nv := utils.RandomSlice(32)
+	old.On("CalculateDocumentRoot").Return(dpr, nil).Once()
+	old.On("ID").Return(di).Once()
+	old.On("CurrentVersion").Return(pv).Once()
+	old.On("NextVersion").Return(cv).Once()
+	nm = new(mockModel)
+	nm.On("ID").Return(di).Once()
+	nm.On("CurrentVersion").Return(cv).Once()
+	nm.On("NextVersion").Return(nv).Once()
+	nm.On("PreviousVersion").Return(pv).Once()
+	nm.On("PreviousDocumentRoot").Return(dpr).Once()
+	err = uvv.Validate(old, nm)
+	assert.NoError(t, err)
 	old.AssertExpectations(t)
-	newM.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Equal(t, 5, errors.Len(err))
+	nm.AssertExpectations(t)
 
-	// success
-	newCD, err = coredocument.PrepareNewVersion(*oldCD, nil)
-	assert.Nil(t, err)
-	old.On("PackCoreDocument").Return(oldCD, nil).Once()
-	newM.On("PackCoreDocument").Return(newCD, nil).Once()
-	err = uvv.Validate(old, newM)
-	old.AssertExpectations(t)
-	newM.AssertExpectations(t)
-	assert.Nil(t, err)
-}
-
-func Test_getCoreDocument(t *testing.T) {
-	// nil document
-	cd, err := getCoreDocument(nil)
-	assert.Error(t, err)
-	assert.Nil(t, cd)
-
-	// pack core document fail
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
-	cd, err = getCoreDocument(model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Nil(t, cd)
-
-	// success
-	model = mockModel{}
-	cd = coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	got, err := getCoreDocument(model)
-	model.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, cd, got)
 }
 
 func TestValidator_baseValidator(t *testing.T) {
 	bv := baseValidator()
 
-	// fail getCoreDocument
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
+	model := new(mockModel)
+	model.On("ID").Return(nil).Times(2)
+	model.On("CurrentVersion").Return(nil).Times(2)
+	model.On("NextVersion").Return(nil).Times(3)
 	err := bv.Validate(nil, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
-
-	// failed validator
-	model = mockModel{}
-	cd := coredocument.New()
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = bv.Validate(nil, model)
-	assert.Error(t, err)
-	assert.Equal(t, "cd_salts : Required field", errors.GetErrs(err)[0].Error())
 
 	// success
-	model = mockModel{}
-	cd.DataRoot = utils.RandomSlice(32)
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model = new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32)).Times(2)
+	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Times(2)
+	model.On("NextVersion").Return(utils.RandomSlice(32)).Times(3)
 	err = bv.Validate(nil, model)
 	assert.Nil(t, err)
 }
@@ -229,178 +196,169 @@ func TestValidator_baseValidator(t *testing.T) {
 func TestValidator_signingRootValidator(t *testing.T) {
 	sv := signingRootValidator()
 
-	// fail getCoreDoc
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
+	// failed to get signing root
+	model := new(mockModel)
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
 	err := sv.Validate(nil, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
+	model.AssertExpectations(t)
 
-	// missing signing_root
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	// invalid signing root
+	model = new(mockModel)
+	model.On("CalculateSigningRoot").Return(utils.RandomSlice(30), nil).Once()
 	err = sv.Validate(nil, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "signing root missing")
-
-	// mismatch signing roots
-	cd.SigningRoot = utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value:   []byte{},
-	}
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "signing root mismatch")
 
 	// success
-	tree, err := coredocument.GetDocumentSigningTree(cd, cd.DataRoot)
-	assert.Nil(t, err)
-	cd.SigningRoot = tree.RootHash()
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	model = new(mockModel)
+	model.On("CalculateSigningRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = sv.Validate(nil, model)
+	assert.NoError(t, err)
 	model.AssertExpectations(t)
-	assert.Nil(t, err)
 }
 
 func TestValidator_documentRootValidator(t *testing.T) {
 	dv := documentRootValidator()
 
-	// fail getCoreDoc
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
+	// failed to get document root
+	model := new(mockModel)
+	model.On("CalculateDocumentRoot").Return(nil, errors.New("error")).Once()
 	err := dv.Validate(nil, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
+	model.AssertExpectations(t)
 
-	// missing document root
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	// invalid signing root
+	model = new(mockModel)
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(30), nil).Once()
 	err = dv.Validate(nil, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document root missing")
-
-	// mismatch signing roots
-	cd.DocumentRoot = utils.RandomSlice(32)
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = dv.Validate(nil, model)
 	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document root mismatch")
 
 	// success
-	tree, err := coredocument.GetDocumentRootTree(cd)
-	assert.Nil(t, err)
-	cd.DocumentRoot = tree.RootHash()
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model = new(mockModel)
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = dv.Validate(nil, model)
+	assert.NoError(t, err)
 	model.AssertExpectations(t)
-	assert.Nil(t, err)
 }
 
-func TestValidator_selfSignatureValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
-	idKeys := self.Keys[identity.KeyPurposeSigning]
-	rfsv := readyForSignaturesValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
+func TestValidator_SignatureValidator(t *testing.T) {
+	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
+	assert.NoError(t, err)
+	idService := new(testingcommons.MockIdentityService)
+	sv := SignatureValidator(idService)
 
-	// fail getCoreDoc
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
-	err := rfsv.Validate(nil, model)
-	model.AssertExpectations(t)
+	// fail to get signing root
+	model := new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
+	err = sv.Validate(nil, model)
 	assert.Error(t, err)
+	model.AssertExpectations(t)
 
 	// signature length mismatch
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = rfsv.Validate(nil, model)
-	model.AssertExpectations(t)
+	sr := utils.RandomSlice(32)
+	model = new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return().Once()
+	err = sv.Validate(nil, model)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expecting only one signature")
+	model.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "atleast one signature expected")
 
 	// mismatch
-	cd.SigningRoot = utils.RandomSlice(32)
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
 		SignerId:  utils.RandomSlice(6),
 		PublicKey: utils.RandomSlice(32),
 	}
-	cd.SignatureData.Signatures = append(cd.SignatureData.Signatures, s)
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = rfsv.Validate(nil, model)
+
+	idService = new(testingcommons.MockIdentityService)
+	sv = SignatureValidator(idService)
+	model = new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
+	model.On("Signatures").Return().Once()
+	model.sigs = append(model.sigs, s)
+	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Equal(t, 3, errors.Len(err))
+	assert.Equal(t, 1, errors.Len(err))
 
 	// success
-	cd.SigningRoot = utils.RandomSlice(32)
-	c, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	s = identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = rfsv.Validate(nil, model)
+	s, err = account.SignMsg(sr)
+	assert.NoError(t, err)
+	model = new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
+	model.On("Signatures").Return().Once()
+	model.sigs = append(model.sigs, s)
+	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestValidator_signatureValidator(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	ssv := signaturesValidator(srv)
 
-	// fail getCoreDoc
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("err")).Once()
+	// fail to get signing root
+	model := new(mockModel)
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
 	err := ssv.Validate(nil, model)
-	model.AssertExpectations(t)
 	assert.Error(t, err)
+	model.AssertExpectations(t)
 
 	// signature length mismatch
-	cd := coredocument.New()
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	sr := utils.RandomSlice(32)
+	model = new(mockModel)
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("Signatures").Return().Once()
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "atleast one signature expected")
 
 	// failed validation
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("fail")).Once()
-	s := &coredocumentpb.Signature{SignerId: utils.RandomSlice(7)}
-	cd.SignatureData.Signatures = append(cd.SignatureData.Signatures, s)
+	s := &coredocumentpb.Signature{
+		Signature: utils.RandomSlice(32),
+		SignerId:  utils.RandomSlice(identity.DIDLength),
+		PublicKey: utils.RandomSlice(32),
+	}
+	model = new(mockModel)
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("Signatures").Return().Once()
+	model.sigs = append(model.sigs, s)
+	srv = new(testingcommons.MockIdentityService)
+	srv.On("ValidateSignature", s, sr).Return(errors.New("error")).Once()
+	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "signature verification failed")
+	assert.Contains(t, err.Error(), "verification failed")
 
 	// success
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-	cd.SigningRoot = utils.RandomSlice(32)
-	cd.SignatureData.Signatures = []*coredocumentpb.Signature{{}}
-
+	model = new(mockModel)
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("Signatures").Return().Once()
+	model.sigs = append(model.sigs, s)
+	srv = new(testingcommons.MockIdentityService)
+	srv.On("ValidateSignature", s, sr).Return(nil).Once()
+	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -415,24 +373,27 @@ func TestPreAnchorValidator(t *testing.T) {
 func TestValidator_anchoredValidator(t *testing.T) {
 	av := anchoredValidator(mockRepo{})
 
-	// fail get core document
-	err := av.Validate(nil, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get core document")
-
 	// failed anchorID
-	model := &mockModel{}
-	cd := &coredocumentpb.CoreDocument{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	err = av.Validate(nil, model)
+	model := new(mockModel)
+	model.On("CurrentVersion").Return(nil).Once()
+	err := av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get anchorID")
 
 	// failed docRoot
-	model = &mockModel{}
-	cd.CurrentVersion = utils.RandomSlice(32)
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	model.On("CalculateDocumentRoot").Return(nil, errors.New("error")).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get document root")
+
+	// invalid doc root
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(30), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -443,11 +404,10 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Nil(t, err)
 	r := &mockRepo{}
 	av = anchoredValidator(r)
-	cd.CurrentVersion = anchorID[:]
 	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
-	cd.DocumentRoot = utils.RandomSlice(32)
-	model = &mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(anchorID[:]).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -459,9 +419,9 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r = &mockRepo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	cd.DocumentRoot = utils.RandomSlice(32)
-	model = &mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(anchorID[:]).Once()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -472,143 +432,18 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r = &mockRepo{}
 	av = anchoredValidator(r)
 	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
-	cd.DocumentRoot = docRoot[:]
-	model = &mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(anchorID[:]).Once()
+	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
 	assert.Nil(t, err)
 }
 
-var (
-	id1 = utils.RandomSlice(32)
-	id2 = utils.RandomSlice(32)
-	id3 = utils.RandomSlice(32)
-	id4 = utils.RandomSlice(32)
-	id5 = utils.RandomSlice(32)
-)
-
-func TestValidate_baseValidator(t *testing.T) {
-	tests := []struct {
-		doc *coredocumentpb.CoreDocument
-		key string
-	}{
-		// empty salts in document
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id4,
-				DataRoot:           id5,
-			},
-			key: "[cd_salts : Required field]",
-		},
-
-		// salts wrong length previous root
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id4,
-				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
-					{Value: id1},
-					{Value: id2},
-					{Value: id3},
-					{Value: id5[5:]},
-				},
-			},
-			key: "[cd_salts : Required field]",
-		},
-
-		// repeated identifiers
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id3,
-				DataRoot:           id5,
-				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
-					{Value: id1},
-					{Value: id2},
-					{Value: id3},
-					{Value: id5},
-				},
-			},
-			key: "[cd_overall : Identifier re-used]",
-		},
-
-		// repeated identifiers
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id2,
-				DataRoot:           id5,
-				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
-					{Value: id1},
-					{Value: id2},
-					{Value: id3},
-					{Value: id5},
-				},
-			},
-			key: "[cd_overall : Identifier re-used]",
-		},
-
-		// All okay
-		{
-			doc: &coredocumentpb.CoreDocument{
-				DocumentRoot:       id1,
-				DocumentIdentifier: id2,
-				CurrentVersion:     id3,
-				NextVersion:        id4,
-				DataRoot:           id5,
-				CoredocumentSalts: []*coredocumentpb.DocumentSalt{
-					{Value: id1},
-					{Value: id2},
-					{Value: id3},
-					{Value: id5},
-				},
-			},
-		},
-	}
-
-	baseValidator := baseValidator()
-
-	for _, c := range tests {
-		model := mockModel{}
-		model.On("PackCoreDocument", mock.Anything).Return(c.doc, nil).Once()
-
-		err := baseValidator.Validate(nil, &model)
-		if c.key == "" {
-			assert.Nil(t, err)
-			continue
-		}
-
-		assert.Equal(t, c.key, err.Error())
-
-	}
-}
-
 func TestPostAnchoredValidator(t *testing.T) {
 	pav := PostAnchoredValidator(nil, nil)
 	assert.Len(t, pav, 2)
-}
-
-func TestPreSignatureRequestValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
-	idKeys := self.Keys[identity.KeyPurposeSigning]
-	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
-	assert.Len(t, psv, 3)
-}
-
-func TestPostSignatureRequestValidator(t *testing.T) {
-	psv := PostSignatureRequestValidator(nil)
-	assert.Len(t, psv, 3)
 }
 
 func TestSignatureRequestValidator(t *testing.T) {

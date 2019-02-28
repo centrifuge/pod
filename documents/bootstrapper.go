@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 )
 
 const (
@@ -35,17 +36,18 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	repo := NewDBRepository(ldb)
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
-	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(repo, idService, anchorRepo, registry)
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	if !ok {
+		return errors.New("identity service not initialized")
+	}
+
+	ctx[BootstrappedDocumentService] = DefaultService(repo, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -76,9 +78,9 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedIDService].(identity.Service)
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	if !ok {
-		return errors.New("identity service not initialised")
+		return errors.New("identity service not initialized")
 	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
@@ -93,11 +95,11 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
 	anchorTask := &documentAnchorTask{
-		BaseTask: transactions.BaseTask{
+		BaseTask: txv1.BaseTask{
 			TxManager: txMan,
 		},
 		config:        cfgService,
-		processor:     DefaultProcessor(idService, p2pClient, anchorRepo, cfg),
+		processor:     DefaultProcessor(didService, p2pClient, anchorRepo, cfg),
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}

@@ -1,11 +1,8 @@
 package receiver
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/coredocument"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -20,14 +17,14 @@ import (
 // Validator defines method that must be implemented by any validator type.
 type Validator interface {
 	// Validate validates p2p requests
-	Validate(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error
+	Validate(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error
 }
 
 // ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup []Validator
 
 // Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) (errs error) {
+func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) (errs error) {
 	for _, v := range group {
 		if err := v.Validate(header, centID, peerID); err != nil {
 			errs = errors.AppendError(errs, err)
@@ -38,16 +35,16 @@ func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *identity.Cent
 
 // ValidatorFunc implements Validator and can be used as a adaptor for functions
 // with specific function signature
-type ValidatorFunc func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error
+type ValidatorFunc func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error
 
 // Validate passes the arguments to the underlying validator
 // function and returns the results
-func (vf ValidatorFunc) Validate(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+func (vf ValidatorFunc) Validate(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
 	return vf(header, centID, peerID)
 }
 
 func versionValidator() Validator {
-	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
@@ -59,7 +56,7 @@ func versionValidator() Validator {
 }
 
 func networkValidator(networkID uint32) Validator {
-	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
@@ -70,8 +67,8 @@ func networkValidator(networkID uint32) Validator {
 	})
 }
 
-func peerValidator(idService identity.Service) Validator {
-	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.CentID, peerID *libp2pPeer.ID) error {
+func peerValidator(idService identity.ServiceDID) Validator {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
@@ -92,41 +89,17 @@ func peerValidator(idService identity.Service) Validator {
 		if err != nil {
 			return err
 		}
-		return idService.ValidateKey(*centID, idKey, identity.KeyPurposeP2P)
+		return idService.ValidateKey(context.Background(), *centID, idKey, int64(identity.KeyPurposeP2P))
 	})
 }
 
 // HandshakeValidator validates the p2p handshake details
-func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorGroup {
+func HandshakeValidator(networkID uint32, idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),
 		peerValidator(idService),
 	}
-}
-
-// DocumentAccessValidator validates the GetDocument request against the AccessType indicated in the request
-func DocumentAccessValidator(doc *coredocumentpb.CoreDocument, docReq *p2ppb.GetDocumentRequest, requesterCentID identity.CentID) error {
-	av := coredocument.AccountValidator()
-	// checks which access type is relevant for the request
-	switch docReq.GetAccessType() {
-	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
-		if !av.AccountCanRead(doc, requesterCentID) {
-			return errors.New("requester does not have access")
-		}
-	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
-		registry := common.BytesToAddress(docReq.NftRegistryAddress)
-		if av.NFTOwnerCanRead(doc, registry, docReq.NftTokenId, requesterCentID) != nil {
-			return errors.New("requester does not have access")
-		}
-	//// case AccessTokenValidation
-	// case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
-	//
-	// case p2ppb.AccessType_ACCESS_TYPE_INVALID:
-	default:
-		return errors.New("invalid access type ")
-	}
-	return nil
 }
 
 func incompatibleNetworkError(configNetwork uint32, nodeNetwork uint32) error {

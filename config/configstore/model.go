@@ -6,6 +6,13 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
@@ -53,6 +60,7 @@ type NodeConfig struct {
 	BootstrapPeers                 []string
 	NetworkID                      uint32
 	SmartContractAddresses         map[config.ContractName]common.Address
+	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
 }
 
@@ -291,12 +299,12 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 	return &configpb.ConfigData{
 		MainIdentity: &accountpb.AccountData{
 			EthAccount: &accountpb.EthereumAccount{
-				Address:  nc.MainIdentity.EthereumAccount.Address,
+				Address:  common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
 				Key:      nc.MainIdentity.EthereumAccount.Key,
 				Password: nc.MainIdentity.EthereumAccount.Password,
 			},
 			EthDefaultAccountName:            nc.MainIdentity.EthereumDefaultAccountName,
-			IdentityId:                       hexutil.Encode(nc.MainIdentity.IdentityID),
+			IdentityId:                       common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
 			ReceiveEventNotificationEndpoint: nc.MainIdentity.ReceiveEventNotificationEndpoint,
 			EthauthKeyPair: &accountpb.KeyPair{
 				Pub: nc.MainIdentity.EthAuthKeyPair.Pub,
@@ -325,6 +333,7 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 		NetworkId:                 nc.NetworkID,
 		PprofEnabled:              nc.PprofEnabled,
 		SmartContractAddresses:    convertAddressesToStringMap(nc.SmartContractAddresses),
+		SmartContractBytecode:     convertBytecodeToStringMap(nc.SmartContractBytecode),
 	}
 }
 
@@ -336,8 +345,16 @@ func convertAddressesToStringMap(addresses map[config.ContractName]common.Addres
 	return m
 }
 
+func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string]string {
+	m := make(map[string]string)
+	for k, v := range bcode {
+		m[string(k)] = v
+	}
+	return m
+}
+
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
-	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
+	identityID := common.HexToAddress(data.MainIdentity.IdentityId).Bytes()
 
 	nc.MainIdentity = Account{
 		EthereumAccount: &config.AccountConfig{
@@ -381,6 +398,10 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	if err != nil {
 		return err
 	}
+	nc.SmartContractBytecode, err = convertStringMapToSmartContractBytecode(data.SmartContractBytecode)
+	if err != nil {
+		return err
+	}
 	nc.PprofEnabled = data.PprofEnabled
 	return nil
 }
@@ -393,6 +414,14 @@ func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[conf
 		} else {
 			return nil, errors.New("provided smart contract address %s is invalid", v)
 		}
+	}
+	return m, nil
+}
+
+func convertStringMapToSmartContractBytecode(bcode map[string]string) (map[config.ContractName]string, error) {
+	m := make(map[config.ContractName]string)
+	for k, v := range bcode {
+		m[config.ContractName(k)] = v
 	}
 	return m, nil
 }
@@ -472,6 +501,7 @@ type Account struct {
 	SigningKeyPair                   KeyPair
 	EthAuthKeyPair                   KeyPair
 	P2PKeyPair                       KeyPair
+	keys                             map[int]config.IDKey
 }
 
 // GetEthereumAccount gets EthereumAccount
@@ -514,6 +544,83 @@ func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 	return acc.EthereumContextWaitTimeout
 }
 
+// SignMsg signs a message with the signing key
+func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning].PrivateKey, msg, crypto.CurveSecp256K1)
+	if err != nil {
+		return nil, err
+	}
+
+	did, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+
+	return &coredocumentpb.Signature{
+		SignerId:  did,
+		PublicKey: keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: signature,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}, nil
+}
+
+// GetKeys returns the keys of an account
+// TODO remove GetKeys and add signing methods to account
+func (acc *Account) GetKeys() (idKeys map[int]config.IDKey, err error) {
+	if acc.keys == nil {
+		acc.keys = map[int]config.IDKey{}
+	}
+
+	if _, ok := acc.keys[identity.KeyPurposeP2P]; !ok {
+		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+
+		acc.keys[identity.KeyPurposeP2P] = config.IDKey{
+			PublicKey:  pk,
+			PrivateKey: sk}
+	}
+
+	//secp256k1 keys
+	if _, ok := acc.keys[identity.KeyPurposeSigning]; !ok {
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+
+		acc.keys[identity.KeyPurposeSigning] = config.IDKey{
+			PublicKey:  address32Bytes[:],
+			PrivateKey: sk}
+	}
+
+	if _, ok := acc.keys[identity.KeyPurposeEthMsgAuth]; !ok {
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetEthAuthKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+
+		acc.keys[identity.KeyPurposeEthMsgAuth] = config.IDKey{
+			PublicKey:  address32Bytes[:],
+			PrivateKey: sk}
+	}
+
+	id, err := acc.GetIdentityID()
+	if err != nil {
+		return idKeys, err
+	}
+	acc.IdentityID = id
+
+	return acc.keys, nil
+
+}
+
 // ID Get the ID of the document represented by this model
 func (acc *Account) ID() []byte {
 	return acc.IdentityID
@@ -547,7 +654,7 @@ func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 		},
 		EthDefaultAccountName:            acc.EthereumDefaultAccountName,
 		ReceiveEventNotificationEndpoint: acc.ReceiveEventNotificationEndpoint,
-		IdentityId:                       hexutil.Encode(acc.IdentityID),
+		IdentityId:                       common.BytesToAddress(acc.IdentityID).Hex(),
 		P2PKeyPair: &accountpb.KeyPair{
 			Pub: acc.P2PKeyPair.Pub,
 			Pvt: acc.P2PKeyPair.Priv,

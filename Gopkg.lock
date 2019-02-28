@@ -57,14 +57,14 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:4542fc4bb0f0bab4d9fad7bf85ca7152cf706eb0ccb1f501899f625af6865d34"
+  digest = "1:bedc0b304fccce285e74ebae57d61c4b190b1a420b0c07afb1d4c2da56d164b8"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
+  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
 
 [[projects]]
-  digest = "1:adc37edbde2bbfc93db479123b3a430bac76ae94c545fa24fcf10a682cf56a1c"
+  digest = "1:cbd470f7058dc9d981c8e49413fb03cbd71f5158fe3de260da11c9c6bf6545aa"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,7 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "cba4352f4e63f131ad1c186998ad7026aa3be985"
+  revision = "49563faefd1ff137c5cd45303bfcb3e46a2431f3"
   source = "github.com/mikiquantum/centrifuge-protobufs"
 
 [[projects]]
@@ -849,13 +849,6 @@
   version = "v1.8.0"
 
 [[projects]]
-  digest = "1:bedc0b304fccce285e74ebae57d61c4b190b1a420b0c07afb1d4c2da56d164b8"
-  name = "github.com/manuelpolzhofer/centrifuge-ethereum-contracts"
-  packages = ["."]
-  pruneopts = "T"
-  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
-
-[[projects]]
   digest = "1:c658e84ad3916da105a761660dcaeb01e63416c8ec7bc62256a9b411a05fcd67"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -1520,6 +1513,7 @@
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
     "github.com/gogo/protobuf/io",
+    "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
@@ -1545,10 +1539,10 @@
     "github.com/libp2p/go-libp2p-peerstore",
     "github.com/libp2p/go-libp2p-protocol",
     "github.com/magiconair/properties/assert",
-    "github.com/manuelpolzhofer/centrifuge-ethereum-contracts",
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
+    "github.com/pkg/errors",
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",

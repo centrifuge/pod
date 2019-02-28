@@ -1,5 +1,3 @@
-// +build integration unit
-
 package testingdocuments
 
 import (
@@ -7,6 +5,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -35,7 +34,7 @@ func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, ve
 	return args.Get(0).(*documents.DocumentProof), args.Error(1)
 }
 
-func (m *MockService) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
 	args := m.Called(cd)
 	return args.Get(0).(documents.Model), args.Error(1)
 }
@@ -58,17 +57,36 @@ func (m *MockService) Exists(ctx context.Context, documentID []byte) bool {
 type MockModel struct {
 	documents.Model
 	mock.Mock
-	CoreDocument *coredocumentpb.CoreDocument
 }
 
-func (m *MockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (m *MockModel) CurrentVersion() []byte {
 	args := m.Called()
-	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
-	return cd, args.Error(1)
+	return args.Get(0).([]byte)
+}
+
+func (m *MockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
+	args := m.Called()
+	dm, _ := args.Get(0).(coredocumentpb.CoreDocument)
+	return dm, args.Error(1)
+}
+
+func (m *MockModel) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+	args := m.Called(cd)
+	return args.Error(0)
 }
 
 func (m *MockModel) JSON() ([]byte, error) {
 	args := m.Called()
 	data, _ := args.Get(0).([]byte)
 	return data, args.Error(1)
+}
+
+type MockRegistry struct {
+	mock.Mock
+}
+
+func (m MockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
 }

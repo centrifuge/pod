@@ -7,101 +7,148 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/crypto/ed25519"
 )
-
-func TestCoreDocumentProcessor_SendNilDocument(t *testing.T) {
-	dp := DefaultProcessor(nil, nil, nil, cfg)
-	err := dp.Send(nil, nil, [identity.CentIDLength]byte{})
-	assert.Error(t, err, "should have thrown an error")
-}
 
 type mockModel struct {
 	mock.Mock
 	Model
+	sigs []*coredocumentpb.Signature
 }
 
-func (m mockModel) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
+func (m *mockModel) CalculateDataRoot() ([]byte, error) {
 	args := m.Called()
-	cd, _ := args.Get(0).(*coredocumentpb.CoreDocument)
+	dr, _ := args.Get(0).([]byte)
+	return dr, args.Error(1)
+}
+
+func (m *mockModel) CalculateSigningRoot() ([]byte, error) {
+	args := m.Called()
+	sr, _ := args.Get(0).([]byte)
+	return sr, args.Error(1)
+}
+
+func (m *mockModel) CalculateDocumentRoot() ([]byte, error) {
+	args := m.Called()
+	dr, _ := args.Get(0).([]byte)
+	return dr, args.Error(1)
+}
+
+func (m *mockModel) PreviousDocumentRoot() []byte {
+	args := m.Called()
+	dr, _ := args.Get(0).([]byte)
+	return dr
+}
+
+func (m *mockModel) AppendSignatures(sigs ...*coredocumentpb.Signature) {
+	m.Called(sigs)
+	m.sigs = sigs
+}
+
+func (m *mockModel) ID() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *mockModel) CurrentVersion() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *mockModel) NextVersion() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *mockModel) PreviousVersion() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *mockModel) Signatures() []coredocumentpb.Signature {
+	m.Called()
+	var ss []coredocumentpb.Signature
+	for _, s := range m.sigs {
+		ss = append(ss, *s)
+	}
+	return ss
+}
+
+func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+	args := m.Called(filterIDs)
+	cids, _ := args.Get(0).([]identity.DID)
+	return cids, args.Error(1)
+}
+
+func (m *mockModel) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+	args := m.Called(filterIDs)
+	cids, _ := args.Get(0).([]identity.DID)
+	return cids, args.Error(1)
+}
+
+func (m *mockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
+	args := m.Called()
+	cd, _ := args.Get(0).(coredocumentpb.CoreDocument)
 	return cd, args.Error(1)
 }
 
-func (m mockModel) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
-	args := m.Called(cd)
-	return args.Error(0)
-}
-
-func (m mockModel) CalculateDataRoot() ([]byte, error) {
-	args := m.Called()
-	return args.Get(0).([]byte), args.Error(1)
-}
-
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	// pack failed
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := dp.PrepareForSignatureRequests(ctxh, model)
-	model.AssertExpectations(t)
+
+	// failed to get self
+	err := dp.PrepareForSignatureRequests(context.Background(), nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	assert.True(t, errors.IsOfType(contextutil.ErrSelfNotFound, err))
 
-	cd := new(coredocumentpb.CoreDocument)
-	model = mockModel{}
-
-	// failed to get id
-	pub, _ := cfg.GetSigningKeyPair()
-	cfg.Set("keys.signing.publicKey", "wrong path")
-	cd = coredocument.New()
-	cd.DataRoot = utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: "some type",
-		Value:   []byte("some data"),
-	}
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	cfg.Set("keys.signing.publicKey", pub)
-	ctxh = testingconfig.CreateAccountContext(t, cfg)
-
-	// failed unpack
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	// failed data root
+	model := new(mockModel)
+	model.On("CalculateDataRoot").Return(nil, errors.New("failed data root")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unpack the core document")
 	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed data root")
+
+	// failed signing root
+	model = new(mockModel)
+	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateSigningRoot").Return(nil, errors.New("failed signing root")).Once()
+	err = dp.PrepareForSignatureRequests(ctxh, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed signing root")
 
 	// success
-	cd.SignatureData.Signatures = nil
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("UnpackCoreDocument", cd).Return(nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	sr := utils.RandomSlice(32)
+	model = new(mockModel)
+	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
+	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("AppendSignatures", mock.Anything).Return().Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
-	assert.NotNil(t, cd.SignatureData.Signatures)
-	assert.Len(t, cd.SignatureData.Signatures, 1)
-	sig := cd.SignatureData.Signatures[0]
+	assert.NotNil(t, model.sigs)
+	assert.Len(t, model.sigs, 1)
+	sig := model.sigs[0]
 	self, _ := contextutil.Self(ctxh)
-	assert.True(t, ed25519.Verify(self.Keys[identity.KeyPurposeSigning].PublicKey, cd.SigningRoot, sig.Signature))
+	assert.True(t, crypto.VerifyMessage(self.Keys[identity.KeyPurposeSigning].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
 }
 
 type p2pClient struct {
@@ -109,81 +156,87 @@ type p2pClient struct {
 	Client
 }
 
-func (p p2pClient) GetSignaturesForDocument(ctx context.Context, doc *coredocumentpb.CoreDocument) error {
-	args := p.Called(ctx, doc)
-	return args.Error(0)
+func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, error) {
+	args := p.Called(ctx, model)
+	sigs, _ := args.Get(0).([]*coredocumentpb.Signature)
+	return sigs, args.Error(1)
+}
+
+func (p *p2pClient) SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+	args := p.Called(ctx, receiverID, in)
+	resp, _ := args.Get(0).(*p2ppb.AnchorDocumentResponse)
+	return resp, args.Error(1)
 }
 
 func TestDefaultProcessor_RequestSignatures(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	// pack failed
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err := dp.RequestSignatures(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
 
-	// validations failed
-	cd := new(coredocumentpb.CoreDocument)
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
+	self, err := contextutil.Account(ctxh)
+	assert.NoError(t, err)
+	sr := utils.RandomSlice(32)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
+
+	// data validations failed
+	model := new(mockModel)
+	model.On("ID").Return([]byte{})
+	model.On("CurrentVersion").Return([]byte{})
+	model.On("NextVersion").Return([]byte{})
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to validate model for signature request")
+
+	// key validation failed
+	model = new(mockModel)
+	id := utils.RandomSlice(32)
+	next := utils.RandomSlice(32)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.sigs = append(model.sigs, sig)
+	c := new(p2pClient)
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("cannot validate key")).Once()
+	err = dp.RequestSignatures(ctxh, model)
+	model.AssertExpectations(t)
+	c.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot validate key")
 
 	// failed signature collection
-	cd = coredocument.New()
-	cd.DataRoot = utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: "some type",
-		Value:   []byte("some data"),
-	}
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("UnpackCoreDocument", cd).Return(nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	err = dp.PrepareForSignatureRequests(ctxh, model)
-	assert.Nil(t, err)
-	model.AssertExpectations(t)
-	c := p2pClient{}
-	c.On("GetSignaturesForDocument", ctxh, cd).Return(errors.New("error")).Once()
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.sigs = append(model.sigs, sig)
+	c = new(p2pClient)
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	c.On("GetSignaturesForDocument", ctxh, model).Return(nil, errors.New("failed to get signatures")).Once()
 	dp.p2pClient = c
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to collect signatures from the collaborators")
-
-	// unpack fail
-	c = p2pClient{}
-	c.On("GetSignaturesForDocument", ctxh, cd).Return(nil).Once()
-	dp.p2pClient = c
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	err = dp.RequestSignatures(ctxh, model)
-	model.AssertExpectations(t)
-	c.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unpack core document")
+	assert.Contains(t, err.Error(), "failed to get signatures")
 
 	// success
-	c = p2pClient{}
-	c.On("GetSignaturesForDocument", ctxh, cd).Return(nil).Once()
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("AppendSignatures", []*coredocumentpb.Signature{sig}).Return().Once()
+	model.sigs = append(model.sigs, sig)
+	c = new(p2pClient)
+	c.On("GetSignaturesForDocument", ctxh, model).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 	dp.p2pClient = c
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("UnpackCoreDocument", cd).Return(nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
 	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
@@ -191,63 +244,49 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 }
 
 func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	// pack failed
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err := dp.PrepareForAnchoring(model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
 
-	// failed validations
-	cd := new(coredocumentpb.CoreDocument)
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	err = dp.PrepareForAnchoring(model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to validate signatures")
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	self, err := contextutil.Account(ctxh)
+	assert.NoError(t, err)
+	sr := utils.RandomSlice(32)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
-	// failed unpack
-	cd = coredocument.New()
-	cd.DataRoot = utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: "some type",
-		Value:   []byte("some data"),
-	}
-	assert.Nil(t, coredocument.FillSalts(cd))
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	err = coredocument.CalculateSigningRoot(cd, cd.DataRoot)
-	assert.Nil(t, err)
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("UnpackCoreDocument", cd).Return(errors.New("error")).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	c, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
-	assert.Nil(t, err)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
-	dp = DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
+	// validation failed
+	model := new(mockModel)
+	id := utils.RandomSlice(32)
+	next := utils.RandomSlice(32)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(errors.New("validation failed")).Once()
+	dp.identityService = srv
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unpack core document")
 
 	// success
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(4)
-	model.On("UnpackCoreDocument", cd).Return(nil).Once()
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.NotNil(t, cd.DocumentRoot)
+	assert.NoError(t, err)
 }
 
 type mockRepo struct {
@@ -255,9 +294,9 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, centID identity.CentID, documentProofs [][32]byte, signature []byte) (confirmations <-chan *anchors.WatchCommit, err error) {
-	args := m.Called(anchorID, documentRoot, centID, documentProofs, signature)
-	c, _ := args.Get(0).(chan *anchors.WatchCommit)
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProofs [][32]byte) (done chan bool, err error) {
+	args := m.Called(anchorID, documentRoot, documentProofs)
+	c, _ := args.Get(0).(chan bool)
 	return c, args.Error(1)
 }
 
@@ -268,62 +307,51 @@ func (m mockRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.Document
 }
 
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
+	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	// pack failed
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err := dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	self, err := contextutil.Account(ctxh)
+	assert.NoError(t, err)
+	sr := utils.RandomSlice(32)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
 	// validations failed
-	model = mockModel{}
-	cd := new(coredocumentpb.CoreDocument)
-	model.On("PackCoreDocument").Return(cd, nil).Times(5)
+	id := utils.RandomSlice(32)
+	next := utils.RandomSlice(32)
+	model := new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(nil, errors.New("error"))
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
 	err = dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "pre anchor validation failed")
-
-	// get ID failed
-	cd = coredocument.New()
-	cd.DataRoot = utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: "some type",
-		Value:   []byte("some data"),
-	}
-	assert.Nil(t, coredocument.FillSalts(cd))
-	assert.Nil(t, coredocument.CalculateSigningRoot(cd, cd.DataRoot))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	c, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
-	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
-	assert.Nil(t, err)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-	err = dp.AnchorDocument(context.Background(), model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "self value not found in the context")
+	assert.Contains(t, err.Error(), "pre anchor validation failed")
 
 	// success
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(5)
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
 	repo := mockRepo{}
-	ch := make(chan *anchors.WatchCommit, 1)
-	ch <- new(anchors.WatchCommit)
-	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
+	ch := make(chan bool, 1)
+	ch <- true
+	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -333,55 +361,142 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 }
 
 func TestDefaultProcessor_SendDocument(t *testing.T) {
-	srv := &testingcommons.MockIDService{}
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	srv := &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	// pack failed
-	model := mockModel{}
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	err := dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to pack core document")
+	self, err := contextutil.Account(ctxh)
+	assert.NoError(t, err)
+	sr := utils.RandomSlice(32)
+	sig, err := self.SignMsg(sr)
+	assert.NoError(t, err)
 
-	// failed validations
-	model = mockModel{}
-	cd := new(coredocumentpb.CoreDocument)
-	model.On("PackCoreDocument").Return(cd, nil).Times(6)
-	err = dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "post anchor validations failed")
-
-	// failed send
-	cd = coredocument.New()
-	cd.DataRoot = utils.RandomSlice(32)
-	cd.EmbeddedData = &any.Any{
-		TypeUrl: "some type",
-		Value:   []byte("some data"),
-	}
-	cd.Collaborators = [][]byte{[]byte("some id")}
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	assert.Nil(t, coredocument.FillSalts(cd))
-	assert.Nil(t, coredocument.CalculateSigningRoot(cd, cd.DataRoot))
-	model = mockModel{}
-	model.On("PackCoreDocument").Return(cd, nil).Times(6)
-	c, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	s := identity.Sign(c, identity.KeyPurposeSigning, cd.SigningRoot)
-	cd.SignatureData.Signatures = []*coredocumentpb.Signature{s}
-	model.On("CalculateDataRoot").Return(cd.DataRoot, nil)
-	assert.Nil(t, coredocument.CalculateDocumentRoot(cd))
-	docRoot, err := anchors.ToDocumentRoot(cd.DocumentRoot)
-	assert.Nil(t, err)
+	// validations failed
+	id := utils.RandomSlice(32)
+	aid, err := anchors.ToAnchorID(id)
+	assert.NoError(t, err)
+	next := utils.RandomSlice(32)
+	model := new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
 	repo := mockRepo{}
-	repo.On("GetDocumentRootOf", mock.Anything).Return(docRoot, nil).Once()
+	repo.On("GetDocumentRootOf", aid).Return(nil, errors.New("error"))
 	dp.anchorRepository = repo
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	repo.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid length byte slice provided for centID")
+	assert.Contains(t, err.Error(), "post anchor validations failed")
+
+	// get collaborators failed
+	dr, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetDocumentRootOf", aid).Return(dr, nil).Once()
+	dp.anchorRepository = repo
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// pack core document failed
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil).Once()
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetDocumentRootOf", aid).Return(dr, nil).Once()
+	dp.anchorRepository = repo
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// send failed
+	cd := coredocumentpb.CoreDocument{}
+	did := testingidentity.GenerateRandomDID()
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetDocumentRootOf", aid).Return(dr, nil).Once()
+	client := new(p2pClient)
+	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
+	dp.anchorRepository = repo
+	dp.p2pClient = client
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	client.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// successful
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil).Once()
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetDocumentRootOf", aid).Return(dr, nil).Once()
+	client = new(p2pClient)
+	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
+	dp.anchorRepository = repo
+	dp.p2pClient = client
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	client.AssertExpectations(t)
+	assert.NoError(t, err)
 }

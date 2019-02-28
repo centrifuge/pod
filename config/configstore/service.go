@@ -23,17 +23,18 @@ const (
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
-	InitProtocolForCID(CID identity.CentID)
+	InitProtocolForDID(DID *identity.DID)
 }
 
 type service struct {
 	repo                 repository
-	idService            identity.Service
+	idFactory            identity.Factory
+	idService            identity.ServiceDID
 	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service
-func DefaultService(repository repository, idService identity.Service) config.Service {
+func DefaultService(repository repository, idService identity.ServiceDID) config.Service {
 	return &service{repo: repository, idService: idService}
 }
 
@@ -81,51 +82,39 @@ func (s service) GenerateAccount() (config.Account, error) {
 		return nil, err
 	}
 
-	id, confirmations, err := s.idService.CreateIdentity(ctx, identity.RandomCentID())
-	if err != nil {
-		return nil, err
-	}
-	<-confirmations
-
-	CID := id.CentID()
-	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), CID)
+	DID, err := s.idFactory.CreateIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeP2P)
+	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), DID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeSigning)
+	err = s.idService.AddKeysForAccount(acc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeEthMsgAuth)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.repo.CreateAccount(CID[:], acc)
+	err = s.repo.CreateAccount(DID[:], acc)
 	if err != nil {
 		return nil, err
 	}
 
 	// initiate network handling
-	s.protocolSetterFinder().InitProtocolForCID(CID)
+	s.protocolSetterFinder().InitProtocolForDID(DID)
 	return acc, nil
 }
 
 // generateAccountKeys generates signing and ethauth keys
-func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*Account, error) {
-	acc.IdentityID = CID[:]
-	sPub, err := createKeyPath(keystore, CID, signingPubKeyName)
+func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Account, error) {
+	acc.IdentityID = DID[:]
+	sPub, err := createKeyPath(keystore, DID, signingPubKeyName)
 	if err != nil {
 		return nil, err
 	}
-	sPriv, err := createKeyPath(keystore, CID, signingPrivKeyName)
+	sPriv, err := createKeyPath(keystore, DID, signingPrivKeyName)
 	if err != nil {
 		return nil, err
 	}
@@ -133,11 +122,11 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 		Pub:  sPub,
 		Priv: sPriv,
 	}
-	ePub, err := createKeyPath(keystore, CID, ethAuthPubKeyName)
+	ePub, err := createKeyPath(keystore, DID, ethAuthPubKeyName)
 	if err != nil {
 		return nil, err
 	}
-	ePriv, err := createKeyPath(keystore, CID, ethAuthPrivKeyName)
+	ePriv, err := createKeyPath(keystore, DID, ethAuthPrivKeyName)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +134,7 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 		Pub:  ePub,
 		Priv: ePriv,
 	}
-	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveEd25519)
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
@@ -156,8 +145,8 @@ func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*A
 	return acc, nil
 }
 
-func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (string, error) {
-	tdir := fmt.Sprintf("%s/%s", keyStorepath, CID.String())
+func createKeyPath(keyStorepath string, DID *identity.DID, keyName string) (string, error) {
+	tdir := fmt.Sprintf("%s/%s", keyStorepath, DID.String())
 	// create account specific key dir
 	if _, err := os.Stat(tdir); os.IsNotExist(err) {
 		err := os.MkdirAll(tdir, os.ModePerm)

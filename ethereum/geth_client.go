@@ -11,20 +11,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/queue"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 const (
@@ -202,8 +199,8 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 
 // QueueEthTXStatusTask starts a new queuing transaction check task.
 func QueueEthTXStatusTask(
-	accountID identity.CentID,
-	txID uuid.UUID,
+	accountID identity.DID,
+	txID transactions.TxID,
 	txHash common.Hash,
 	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
 	return queuer.EnqueueJobWithMaxTries(EthTXStatusTaskName, map[string]interface{}{

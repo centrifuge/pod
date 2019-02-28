@@ -25,8 +25,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestPublicKeyToP2PKey(t *testing.T) {
-	expectedPeerId := "12D3KooWHSED5BoCN6ogf6e5Wk1H3pH63mT2Emki7wTTaAGD6bw8"
-	publicKey, err := GetPublicSigningKey("../../build/resources/signingKey.pub.pem")
+	expectedPeerId := "12D3KooWABdZBiW2MQyvqufkpKK45gkicbBtsaJU42mUAo4bVbTQ"
+	publicKey, err := GetPublicSigningKey("../../build/resources/p2pKey.pub.pem")
 	assert.Nil(t, err)
 
 	var bPk [32]byte
