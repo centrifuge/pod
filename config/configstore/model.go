@@ -546,12 +546,11 @@ func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 
 // SignMsg signs a message with the signing key
 func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
-	//TODO change signing keys to curve ed25519
 	keys, err := acc.GetKeys()
 	if err != nil {
 		return nil, err
 	}
-	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning].PrivateKey, msg, crypto.CurveEd25519, true)
+	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning].PrivateKey, msg, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
@@ -587,19 +586,21 @@ func (acc *Account) GetKeys() (idKeys map[int]config.IDKey, err error) {
 			PrivateKey: sk}
 	}
 
+	//secp256k1 keys
 	if _, ok := acc.keys[identity.KeyPurposeSigning]; !ok {
-		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
 		if err != nil {
 			return idKeys, err
 		}
+		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+
 		acc.keys[identity.KeyPurposeSigning] = config.IDKey{
-			PublicKey:  pk,
+			PublicKey:  address32Bytes[:],
 			PrivateKey: sk}
 	}
 
-	//secp256k1 keys
 	if _, ok := acc.keys[identity.KeyPurposeEthMsgAuth]; !ok {
-		pk, sk, err := secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetEthAuthKeyPair())
 		if err != nil {
 			return idKeys, err
 		}

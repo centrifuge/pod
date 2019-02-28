@@ -78,7 +78,7 @@ func TestCreateConfig(t *testing.T) {
 	// Keys exists
 	// type KeyPurposeEthMsgAuth
 	idSrv := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
-	pk, _, err := secp256k1.GetEthAuthKey(cfg.GetEthAuthKeyPair())
+	pk, _, err := secp256k1.GetSigningKeyPair(cfg.GetEthAuthKeyPair())
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 	assert.Nil(t, err)
@@ -97,11 +97,11 @@ func TestCreateConfig(t *testing.T) {
 	assert.Equal(t, big.NewInt(identity.KeyPurposeP2P), response.Purposes[0], "purpose should be P2P")
 
 	// type KeyPurposeSigning
-	pk, _, err = ed25519.GetSigningKeyPair(cfg.GetSigningKeyPair())
+	pk, _, err = secp256k1.GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Nil(t, err)
-	pk32, err = utils.SliceToByte32(pk)
+	address32Bytes = utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 	assert.Nil(t, err)
-	response, _ = idSrv.GetKey(accountId, pk32)
+	response, _ = idSrv.GetKey(accountId, address32Bytes)
 	assert.NotNil(t, response)
 	assert.Equal(t, big.NewInt(identity.KeyPurposeSigning), response.Purposes[0], "purpose should be Signing")
 

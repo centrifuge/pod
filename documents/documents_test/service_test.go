@@ -12,11 +12,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -97,8 +97,8 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 
 func TestService_CreateProofs(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, _ := createCDWithEmbeddedInvoice(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	proof, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
@@ -109,12 +109,12 @@ func TestService_CreateProofs(t *testing.T) {
 }
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, _ := createCDWithEmbeddedInvoice(t, false)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
 	assert.Nil(t, testRepo().Update(tenantID, i.CurrentVersion(), i))
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get signing root")
@@ -122,9 +122,9 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, _ := createCDWithEmbeddedInvoice(t, false)
-	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	_, err := service.CreateProofs(ctxh, i.CurrentVersion(), []string{"invalid_field"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
@@ -140,9 +140,9 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 
 func TestService_CreateProofsForVersion(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, _ := createCDWithEmbeddedInvoice(t, false)
-	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	proof, err := service.CreateProofsForVersion(ctxh, i.ID(), i.CurrentVersion(), []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.ID(), proof.DocumentID)
@@ -153,11 +153,11 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
-	i, _ := createCDWithEmbeddedInvoice(t, true)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, true)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	signature, err := service.RequestDocumentSignature(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
@@ -165,9 +165,9 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
-	i, _ := createCDWithEmbeddedInvoice(t, false)
-	s, _ := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	s, _ := getServiceWithMockedLayers()
 	_, err := s.CreateProofsForVersion(ctxh, i.ID(), utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
@@ -340,7 +340,7 @@ func TestService_Exists(t *testing.T) {
 
 }
 
-func createCDWithEmbeddedInvoice(t *testing.T, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(invoice.Invoice)
 	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid.String())
 	assert.NoError(t, err)
@@ -349,18 +349,12 @@ func createCDWithEmbeddedInvoice(t *testing.T, skipSave bool) (documents.Model, 
 	sr, err := i.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	signKey := identity.IDKey{
-		PublicKey:  key1Pub[:],
-		PrivateKey: key1,
-	}
-	idConfig := &identity.IDConfig{
-		ID: cid,
-		Keys: map[int]identity.IDKey{
-			identity.KeyPurposeSigning: signKey,
-		},
-	}
+	acc, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
 
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, sr)
+	sig, err := acc.SignMsg(sr)
+	assert.NoError(t, err)
+
 	i.AppendSignatures(sig)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)

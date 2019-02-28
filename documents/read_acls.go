@@ -63,19 +63,6 @@ func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role 
 	return false
 }
 
-// GetExternalCollaborators returns collaborators of a Document without the own centID.
-func (cd *CoreDocument) GetExternalCollaborators(self identity.DID) ([][]byte, error) {
-	var cs [][]byte
-	for _, c := range cd.Document.Collaborators {
-		id := identity.NewDIDFromBytes(c)
-		if !self.Equal(id) {
-			cs = append(cs, c)
-		}
-	}
-
-	return cs, nil
-}
-
 // NFTOwnerCanRead checks if the nft owner/account can read the Document
 func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
@@ -124,7 +111,7 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 		return errors.New("failed to construct NFT: %v", err)
 	}
 
-	role := &coredocumentpb.Role{RoleKey: utils.RandomSlice(32)}
+	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
 	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
 	return cd.setSalts()
@@ -348,13 +335,13 @@ func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.Acce
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
-	reqID := identity.NewDIDFromByte(requesterID)
-	granterID := identity.NewDIDFromByte(token.Granter)
+	reqID := identity.NewDIDFromBytes(requesterID)
+	granterID := identity.NewDIDFromBytes(token.Granter)
 	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier)
 	if err != nil {
 		return err
 	}
-	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1, true)
+	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1)
 	if !validated {
 		return errors.New("access token is invalid")
 	}
@@ -394,8 +381,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 		return nil, err
 	}
 
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(32)
+	role := newRole()
 	at, err := assembleAccessToken(ctx, payload, role.RoleKey)
 	if err != nil {
 		return nil, errors.New("failed to construct access token: %v", err)
@@ -417,7 +403,7 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 	if err != nil {
 		return nil, err
 	}
-	granterID := identity.NewDIDFromByte(id)
+	granterID := identity.NewDIDFromBytes(id)
 	roleID := roleKey
 	granteeID, err := identity.NewDIDFromString(payload.Grantee)
 	if err != nil {
@@ -474,4 +460,9 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
 	return tm, nil
+}
+
+// newRole returns a new role with random role key
+func newRole() *coredocumentpb.Role {
+	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(32)}
 }

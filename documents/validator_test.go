@@ -5,11 +5,12 @@ package documents
 import (
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -241,30 +242,35 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	model.AssertExpectations(t)
 }
 
-func TestValidator_selfSignatureValidator(t *testing.T) {
-	account, _ := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
-	keys, err := account.GetKeys()
-	assert.Nil(t, err)
-	accID, err := account.GetIdentityID()
+func TestValidator_SignatureValidator(t *testing.T) {
+	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	assert.NoError(t, err)
-	rfsv := readyForSignaturesValidator(accID, keys[identity.KeyPurposeSigning].PrivateKey, keys[identity.KeyPurposeSigning].PublicKey)
+	idService := new(testingcommons.MockIdentityService)
+	sv := SignatureValidator(idService)
 
 	// fail to get signing root
 	model := new(mockModel)
-	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
-	err = rfsv.Validate(nil, model)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
+	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
 
 	// signature length mismatch
 	sr := utils.RandomSlice(32)
 	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return().Once()
-	err = rfsv.Validate(nil, model)
+	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
-	assert.Contains(t, err.Error(), "expecting only one signature")
+	assert.Contains(t, err.Error(), "atleast one signature expected")
 
 	// mismatch
 	s := &coredocumentpb.Signature{
@@ -272,24 +278,34 @@ func TestValidator_selfSignatureValidator(t *testing.T) {
 		EntityId:  utils.RandomSlice(6),
 		PublicKey: utils.RandomSlice(32),
 	}
+
+	idService = new(testingcommons.MockIdentityService)
+	sv = SignatureValidator(idService)
 	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
-	err = rfsv.Validate(nil, model)
+	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Equal(t, 3, errors.Len(err))
+	assert.Equal(t, 1, errors.Len(err))
 
 	// success
-	c, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	s = identity.Sign(c, identity.KeyPurposeSigning, sr)
+	s, err = account.SignMsg(sr)
+	assert.NoError(t, err)
 	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
-	err = rfsv.Validate(nil, model)
+	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.NoError(t, err)
 }
@@ -427,18 +443,6 @@ func TestValidator_anchoredValidator(t *testing.T) {
 func TestPostAnchoredValidator(t *testing.T) {
 	pav := PostAnchoredValidator(nil, nil)
 	assert.Len(t, pav, 2)
-}
-
-func TestPreSignatureRequestValidator(t *testing.T) {
-	self, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
-	idKeys := self.Keys[identity.KeyPurposeSigning]
-	psv := PreSignatureRequestValidator(self.ID[:], idKeys.PrivateKey, idKeys.PublicKey)
-	assert.Len(t, psv, 3)
-}
-
-func TestPostSignatureRequestValidator(t *testing.T) {
-	psv := PostSignatureRequestValidator(nil)
-	assert.Len(t, psv, 3)
 }
 
 func TestSignatureRequestValidator(t *testing.T) {

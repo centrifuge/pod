@@ -4,6 +4,7 @@ package invoice
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
@@ -40,6 +41,7 @@ import (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var configService config.Service
+var defaultDID = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -228,10 +230,12 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
 }
 
-func TestInvoice_GenerateProofs(t *testing.T) {
+func TestInvoice_CreateProofs(t *testing.T) {
 	i, err := createInvoice(t)
 	assert.Nil(t, err)
-	proof, err := i.CreateProofs([]string{"invoice.invoice_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
+	rk := i.Document.Roles[0].RoleKey
+	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
+	proof, err := i.CreateProofs([]string{"invoice.invoice_number", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.CoreDocument.DocumentRootTree()
@@ -242,14 +246,14 @@ func TestInvoice_GenerateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate collaborators[0]
+	// Validate roles
 	valid, err = tree.ValidateProof(proof[1])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	id := identity.NewDIDFromBytes(proof[1].Value)
-	assert.True(t, i.CoreDocument.AccountCanRead(id))
+	acc := identity.NewDIDFromBytes(proof[1].Value)
+	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -281,7 +285,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 
 func createInvoice(t *testing.T) (*Invoice, error) {
 	i := new(Invoice)
-	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), defaultDID.String())
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)

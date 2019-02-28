@@ -397,25 +397,22 @@ func getKeyPairsFromAccount(acc config.Account) (map[int]id.KeyDID, error) {
 	}
 	keys[id.KeyPurposeP2P] = id.NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
 
-	// KeyPurposeSigning
-	pk, _, err = ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pk32, err = utils.SliceToByte32(pk)
-	if err != nil {
-		return nil, err
-	}
-	keys[id.KeyPurposeSigning] = id.NewKey(pk32, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
-
 	// secp256k1 keys
+	// KeyPurposeSigning
+	pk, _, err = secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	keys[id.KeyPurposeSigning] = id.NewKey(address32Bytes, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
+
 	// KeyPurposeEthMsgAuth
-	pk, _, err = secp256k1.GetEthAuthKey(acc.GetEthAuthKeyPair())
+	pk, _, err = secp256k1.GetSigningKeyPair(acc.GetEthAuthKeyPair())
 	if err != nil {
 		return nil, err
 	}
 
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	address32Bytes = utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 	keys[id.KeyPurposeEthMsgAuth] = id.NewKey(address32Bytes, big.NewInt(id.KeyPurposeEthMsgAuth), big.NewInt(id.KeyTypeECDSA))
 
 	return keys, nil
@@ -458,7 +455,11 @@ func (i service) ValidateSignature(signature *coredocumentpb.Signature, message 
 		return err
 	}
 
-	return crypto.VerifySignature(signature.PublicKey, message, signature.Signature)
+	if !crypto.VerifyMessage(signature.PublicKey, message, signature.Signature, crypto.CurveSecp256K1) {
+		return errors.New("error when validating signature")
+	}
+
+	return nil
 }
 
 // ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
