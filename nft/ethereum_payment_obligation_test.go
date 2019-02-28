@@ -178,7 +178,6 @@ func TestPaymentObligationService(t *testing.T) {
 				configMock.On("GetReceiveEventNotificationEndpoint").Return("")
 				configMock.On("GetP2PKeyPair").Return("", "")
 				configMock.On("GetSigningKeyPair").Return("", "")
-				configMock.On("GetEthAuthKeyPair").Return("", "")
 				queueSrv := new(testingutils.MockQueue)
 				txMan := &testingtx.MockTxManager{}
 				txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything,

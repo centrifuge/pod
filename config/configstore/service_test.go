@@ -159,9 +159,9 @@ func TestGenerateaccountKeys(t *testing.T) {
 	assert.NoError(t, err)
 	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, &DID)
 	assert.Nil(t, err)
-	assert.NotNil(t, tc.EthAuthKeyPair)
-	_, err = os.Stat(tc.EthAuthKeyPair.Pub)
+	assert.NotNil(t, tc.SigningKeyPair)
+	_, err = os.Stat(tc.SigningKeyPair.Pub)
 	assert.False(t, os.IsNotExist(err))
-	_, err = os.Stat(tc.EthAuthKeyPair.Priv)
+	_, err = os.Stat(tc.SigningKeyPair.Priv)
 	assert.False(t, os.IsNotExist(err))
 }

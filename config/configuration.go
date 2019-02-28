@@ -108,7 +108,6 @@ type Configuration interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -120,7 +119,7 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-	GetKeys() (map[int]IDKey, error)
+	GetKeys() (map[string]IDKey, error)
 	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
@@ -128,7 +127,6 @@ type Account interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
 
 	// CreateProtobuf creates protobuf
@@ -414,11 +412,6 @@ func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
 }
 
-// GetEthAuthKeyPair returns ethereum key pair.
-func (c *configuration) GetEthAuthKeyPair() (pub, priv string) {
-	return c.GetString("keys.ethauth.publicKey"), c.GetString("keys.ethauth.privateKey")
-}
-
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
@@ -537,8 +530,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ethereum.accounts.main.password", accountPassword)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
-	v.Set("keys.ethauth.privateKey", targetDataDir+"/ethauth.key.pem")
-	v.Set("keys.ethauth.publicKey", targetDataDir+"/ethauth.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
 

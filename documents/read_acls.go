@@ -454,7 +454,7 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 		RoleIdentifier:     roleID[:],
 		DocumentIdentifier: docID,
 		Signature:          sig.Signature,
-		Key:                keys[identity.KeyPurposeSigning].PublicKey,
+		Key:                keys[identity.KeyPurposeSigning().Name].PublicKey,
 	}
 
 	return at, nil

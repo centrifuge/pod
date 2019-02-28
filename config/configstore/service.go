@@ -17,8 +17,6 @@ import (
 const (
 	signingPubKeyName  = "signingKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
-	ethAuthPubKeyName  = "ethauth.pub.pem"
-	ethAuthPrivKeyName = "ethauth.key.pem"
 )
 
 // ProtocolSetter sets the protocol on host for the centID
@@ -107,7 +105,7 @@ func (s service) GenerateAccount() (config.Account, error) {
 	return acc, nil
 }
 
-// generateAccountKeys generates signing and ethauth keys
+// generateAccountKeys generates signing keys
 func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Account, error) {
 	acc.IdentityID = DID[:]
 	sPub, err := createKeyPath(keystore, DID, signingPubKeyName)
@@ -122,26 +120,11 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 		Pub:  sPub,
 		Priv: sPriv,
 	}
-	ePub, err := createKeyPath(keystore, DID, ethAuthPubKeyName)
-	if err != nil {
-		return nil, err
-	}
-	ePriv, err := createKeyPath(keystore, DID, ethAuthPrivKeyName)
-	if err != nil {
-		return nil, err
-	}
-	acc.EthAuthKeyPair = KeyPair{
-		Pub:  ePub,
-		Priv: ePriv,
-	}
 	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
-	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, crypto.CurveSecp256K1)
-	if err != nil {
-		return nil, err
-	}
+
 	return acc, nil
 }
 
