@@ -39,12 +39,19 @@ func RunSmartContractMigrations() {
 	if isRunningOnCI {
 		return
 	}
+
+	var err error
 	projDir := GetProjectDir()
 	migrationScript := path.Join(projDir, "build", "scripts", "migrate.sh")
-	_, err := exec.Command(migrationScript, projDir).Output()
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < 3; i++ {
+		log.Infof("Trying to migrate contracts for the %d th time", i)
+		_, err = exec.Command(migrationScript, projDir).Output()
+		if err == nil {
+			return
+		}
 	}
+	// trying 3 times to migrate didnt work
+	log.Fatal(err)
 }
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
@@ -65,7 +72,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 
 func findContractDeployJSON() ([]byte, error) {
 	projDir := GetProjectDir()
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "deployments", "localgeth.json")
+	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "zos.dev-8383.json")
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
 		return nil, err

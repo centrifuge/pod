@@ -11,7 +11,6 @@ import (
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
-	t.SkipNow()
 	t.Parallel()
 	tests := []struct {
 		name                                     string
@@ -117,7 +116,6 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 }
 
 func TestPaymentObligationMint_errors(t *testing.T) {
-	t.SkipNow()
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	tests := []struct {

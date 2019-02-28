@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -47,6 +48,11 @@ func ToAnchorID(bytes []byte) (AnchorID, error) {
 // BigInt returns anchorID in bigInt form
 func (a *AnchorID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(a[:])
+}
+
+// String returns anchorID in string form
+func (a *AnchorID) String() string {
+	return hexutil.Encode(a[:])
 }
 
 // DocumentRoot type is byte array of length DocumentRootLength

@@ -44,7 +44,7 @@ func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string
 
 	// TODO this TaskStatus map update assumes that a single transaction has only one execution of a certain task type, which can be wrong, use the taskID or another unique identifier instead.
 	if err != nil {
-		log.Errorf("Task %s failed for transaction: %v\n", taskTypeName, b.TxID.String())
+		log.Errorf("Task %s failed for transaction: %v with error: %s\n", taskTypeName, b.TxID.String(), err.Error())
 		return errors.AppendError(err, b.TxManager.UpdateTaskStatus(accountID, b.TxID, transactions.Failed, taskTypeName, err.Error()))
 	}
 

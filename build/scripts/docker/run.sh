@@ -28,6 +28,7 @@ DEFAULT_DATADIR=/tmp/centrifuge_data_${API_PORT}.leveldb
 API_DATADIR=${API_DATADIR:-$DEFAULT_DATADIR}
 DEFAULT_CONFIGDIR="${HOME}/centrifuge/cent-api-${API_PORT}"
 API_CONFIGDIR=${API_CONFIGDIR:-$DEFAULT_CONFIGDIR}
+TARGETGASLIMIT=${TARGETGASLIMIT:-"9000000"}
 
 ADDITIONAL_CMD="${@:2}"
 
@@ -64,7 +65,7 @@ case "$mode" in
     cp $local_dir/../test-dependencies/test-ethereum/*.json ${ETH_DATADIR}/${NETWORK_ID}/keystore
     IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} RPC_PORT=$RPC_PORT API=$API \
     WS_PORT=$WS_PORT CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS=$CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS \
-    docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
+    TARGETGASLIMIT=$TARGETGASLIMIT docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
   ;;
   centapi)
     CENT_MODE=$CENT_MODE ADDITIONAL_CMD=$ADDITIONAL_CMD API_DATADIR=$API_DATADIR API_CONFIGDIR=$API_CONFIGDIR \

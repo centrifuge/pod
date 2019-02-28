@@ -142,7 +142,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
 
-	log.Info("Add Anchor to Commit %s from did:%s", anchorID.BigInt().String(), did.ToAddress().String())
+	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
 	_, done, err := s.txManager.ExecuteWithinTX(ctx, did, uuid, "Check TX for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProofs))
 	if err != nil {
