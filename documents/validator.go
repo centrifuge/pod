@@ -210,7 +210,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 
 		gotRoot, err := repo.GetDocumentRootOf(anchorID)
 		if err != nil {
-			return errors.New("failed to get document root from chain: %v", err)
+			return errors.New("failed to get document root for anchor %s from chain: %v", anchorID.String(), err)
 		}
 
 		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {

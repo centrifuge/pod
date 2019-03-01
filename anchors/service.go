@@ -18,9 +18,9 @@ import (
 )
 
 type anchorRepositoryContract interface {
-	PreCommit(opts *bind.TransactOpts, _anchorID *big.Int, signingRoot [32]byte, expirationBlock *big.Int) (*types.Transaction, error)
-	Commit(opts *bind.TransactOpts, anchorID *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
-	GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct {
+	PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte) (*types.Transaction, error)
+	Commit(opts *bind.TransactOpts, anchorId *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
+	GetAnchorById(opts *bind.CallOpts, id *big.Int) (struct {
 		AnchorId     *big.Int
 		DocumentRoot [32]byte
 	}, error)
@@ -142,7 +142,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
 
-	log.Info("Add Anchor to Commit %s from did:%s", anchorID.BigInt().String(), did.ToAddress().String())
+	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
 	_, done, err := s.txManager.ExecuteWithinTX(ctx, did, uuid, "Check TX for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProofs))
 	if err != nil {

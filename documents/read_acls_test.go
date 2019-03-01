@@ -193,8 +193,8 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
 	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(cd.Document.Roles[0].RoleKey)), pfs[1])
-	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
+	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[1])
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(cd.Document.Roles[0].RoleKey)), pfs[2])
 }
 
 func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
