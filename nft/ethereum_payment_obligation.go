@@ -206,7 +206,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, nextAnchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
 		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID,
-			requestData.TokenURI, requestData.AnchorID, requestData.NextAnchorId, requestData.Props, requestData.Values,
+			requestData.TokenURI, requestData.AnchorID, requestData.NextAnchorID, requestData.Props, requestData.Values,
 			requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
@@ -214,14 +214,14 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
-			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorId.Bytes()), requestData.To.String(), ethTX.Hash().String(), ethTX.Nonce(), ethTX.CheckNonce())
+			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String(), ethTX.Hash().String(), ethTX.Nonce(), ethTX.CheckNonce())
 		log.Infof("Transfer pending: %s\n", ethTX.Hash().String())
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
 		log.Debugf("TokenURI: %s", requestData.TokenURI)
 		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID.Bytes()))
-		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorId.Bytes()))
+		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
 		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
 		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
 		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
@@ -270,8 +270,8 @@ type MintRequest struct {
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
 	AnchorID *big.Int
 
-	// NextAnchorId is the next ID of the document, when updated
-	NextAnchorId *big.Int
+	// NextAnchorID is the next ID of the document, when updated
+	NextAnchorID *big.Int
 
 	// Props contains the compact props for readRole and tokenRole
 	Props [][]byte
@@ -298,7 +298,7 @@ func NewMintRequest(model documents.Model, tokenID TokenID, to common.Address, a
 		TokenID:      tokenID.BigInt(),
 		TokenURI:     tokenID.URI(),
 		AnchorID:     anchorID.BigInt(),
-		NextAnchorId: nextAnchorID.BigInt(),
+		NextAnchorID: nextAnchorID.BigInt(),
 		Props:        proofData.Props,
 		Values:       proofData.Values,
 		Salts:        proofData.Salts,
