@@ -21,6 +21,10 @@ type mockAnchorProcessor struct {
 	mock.Mock
 }
 
+func (m *mockAnchorProcessor) PreAnchorDocument(ctx context.Context, model documents.Model) error {
+	panic("implement me")
+}
+
 func (m *mockAnchorProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error) {
 	args := m.Called(ctx, cd, recipient)
 	return args.Error(0)

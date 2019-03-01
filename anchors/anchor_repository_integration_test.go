@@ -4,8 +4,11 @@ package anchors_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"os"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -31,13 +34,63 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestCommitAnchor_Integration(t *testing.T) {
+func TestPreCommitAnchor_Integration(t *testing.T) {
 	anchorID := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	preCommitAnchor(t, anchorID, signingRoot)
+	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
+	assert.True(t, valid)
+}
+
+func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
+	anchorIDPreImage := utils.RandomSlice(32)
+	h := sha256.New()
+	_, err := h.Write(anchorIDPreImage)
+	assert.NoError(t, err)
+	var anchorID []byte
+	anchorID = h.Sum(anchorID)
+	proofStr := []string{"0xec4f7c791a848bfae2d45e815090e96cc2a7f9a9b851074162812d687883c2b1"}
+	signingRootStr := "0x5b5e0bf237698cc39fdc052063aa8f445d28ef295c089754009f5f91dc66a686"
+	documentRootStr := "0x91410b6658b692d1cb0b68aceabfe2b0020d4c6bd0bca9dbecae0c43c326ab34"
+
+	signingRoot, err := hexutil.Decode(signingRootStr)
+	assert.NoError(t, err)
+
+	documentRoot, err := hexutil.Decode(documentRootStr)
+	assert.NoError(t, err)
+
+	proof, err := hexutil.Decode(proofStr[0])
+	assert.NoError(t, err)
+
+	var proofB [32]byte
+	copy(proofB[:], proof)
+
+	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	preCommitAnchor(t, anchorID, signingRoot)
+	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
+	assert.True(t, valid)
+
+	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
+	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB})
+	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
+	assert.Nil(t, err)
+	assert.Equal(t, docRootTyped, gotDocRoot)
+}
+
+func TestCommitAnchor_Integration(t *testing.T) {
+	anchorIDPreImage := utils.RandomSlice(32)
+	h := sha256.New()
+	_, err := h.Write(anchorIDPreImage)
+	assert.NoError(t, err)
+	var anchorID []byte
+	anchorID = h.Sum(anchorID)
 	documentRoot := utils.RandomSlice(32)
 
 	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	commitAnchor(t, anchorID, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
@@ -55,7 +108,19 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 	assert.True(t, isDone, "isDone should be true")
 
 	assert.Nil(t, err)
+}
 
+func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
+	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	done, err := anchorRepo.PreCommitAnchor(ctx, anchorIDTyped, docRootTyped)
+
+	isDone := <-done
+
+	assert.True(t, isDone, "isDone should be true")
+	assert.Nil(t, err)
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {

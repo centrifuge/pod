@@ -5,18 +5,14 @@ package testworld
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
-
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
-
 	"testing"
-
 	"time"
 
-	"net/http"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"

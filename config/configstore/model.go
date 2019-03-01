@@ -269,6 +269,11 @@ func (nc *NodeConfig) GetEthAuthKeyPair() (pub, priv string) {
 	return nc.MainIdentity.EthAuthKeyPair.Pub, nc.MainIdentity.EthAuthKeyPair.Priv
 }
 
+// GetPrecommitEnabled refer the interface
+func (nc *NodeConfig) GetPrecommitEnabled() bool {
+	return nc.MainIdentity.PrecommitEnabled
+}
+
 // IsPProfEnabled refer the interface
 func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
@@ -502,6 +507,12 @@ type Account struct {
 	EthAuthKeyPair                   KeyPair
 	P2PKeyPair                       KeyPair
 	keys                             map[int]config.IDKey
+	PrecommitEnabled                 bool
+}
+
+// GetPrecommitEnabled gets the enable pre commit value
+func (acc *Account) GetPrecommitEnabled() bool {
+	return acc.PrecommitEnabled
 }
 
 // GetEthereumAccount gets EthereumAccount
@@ -728,6 +739,7 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
+		PrecommitEnabled:                 c.GetPrecommitEnabled(),
 	}, nil
 }
 
@@ -745,5 +757,6 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
+		PrecommitEnabled:                 c.GetPrecommitEnabled(),
 	}, nil
 }

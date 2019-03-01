@@ -120,6 +120,36 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 	return nil
 }
 
+// PreAnchorDocument pre-commits a document
+func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
+	signingRoot, err := model.CalculateSigningRoot()
+	if err != nil {
+		return err
+	}
+
+	anchorID, err := anchors.ToAnchorID(model.NextVersion())
+	if err != nil {
+		return err
+	}
+
+	sRoot, err := anchors.ToDocumentRoot(signingRoot)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
+
+	isDone := <-done
+
+	if !isDone {
+		return errors.New("failed to pre-commit anchor: %v", err)
+	}
+
+	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	return nil
+}
+
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
 	pav := PreAnchorValidator(dp.identityService)

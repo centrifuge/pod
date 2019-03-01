@@ -109,6 +109,7 @@ type Configuration interface {
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
+	GetPrecommitEnabled() bool
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -130,6 +131,7 @@ type Account interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
+	GetPrecommitEnabled() bool
 
 	// CreateProtobuf creates protobuf
 	CreateProtobuf() (*accountpb.AccountData, error)
@@ -422,6 +424,11 @@ func (c *configuration) GetEthAuthKeyPair() (pub, priv string) {
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
+}
+
+// GetPrecommitEnabled returns true if precommit for anchors is enabled
+func (c *configuration) GetPrecommitEnabled() bool {
+	return c.GetBool("anchoring.precommit")
 }
 
 // LoadConfiguration loads the configuration from the given file.

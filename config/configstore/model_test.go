@@ -24,6 +24,11 @@ type mockConfig struct {
 	mock.Mock
 }
 
+func (m *mockConfig) GetPrecommitEnabled() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
 func (m *mockConfig) Type() reflect.Type {
 	args := m.Called()
 	return args.Get(0).(reflect.Type)
@@ -269,6 +274,7 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	c.On("GetPrecommitEnabled").Return(true).Once()
 	_, err := NewAccount("name", c)
 	assert.NoError(t, err)
 	c.AssertExpectations(t)
@@ -304,6 +310,7 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv")
 	c.On("GetEthAuthKeyPair").Return("pub", "priv")
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
+	c.On("GetPrecommitEnabled").Return(true)
 	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
@@ -363,6 +370,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	c.On("GetPrecommitEnabled").Return(true).Once()
 	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
