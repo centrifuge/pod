@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	handler = New(cfgService, HandshakeValidator(cfg.GetNetworkID(), mockIDService), docSrv, new(testingdocuments.MockRegistry))
+	handler = New(cfgService, HandshakeValidator(cfg.GetNetworkID(), mockIDService), docSrv, new(testingdocuments.MockRegistry), mockIDService)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
