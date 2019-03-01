@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
-	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry))
+	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
 	defaultDID = createIdentity(&testing.T{})
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()

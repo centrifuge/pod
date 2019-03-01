@@ -37,9 +37,6 @@ const (
 	// idSize represents the size of identifiers, roots etc..
 	idSize = 32
 
-	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
-	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
-
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
 
