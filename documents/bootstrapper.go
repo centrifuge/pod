@@ -97,7 +97,8 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialized")
 	}
 
-	ctx[BootstrappedAnchorProcessor] = DefaultProcessor(didService, p2pClient, anchorRepo, cfg)
+	dp := DefaultProcessor(didService, p2pClient, anchorRepo, cfg)
+	ctx[BootstrappedAnchorProcessor] = dp
 
 	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
 	anchorTask := &documentAnchorTask{
@@ -105,7 +106,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 			TxManager: txMan,
 		},
 		config:        cfgService,
-		processor:     ctx[BootstrappedAnchorProcessor].(AnchorProcessor),
+		processor:     dp,
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}

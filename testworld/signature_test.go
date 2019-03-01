@@ -10,10 +10,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+	"math/big"
 	"testing"
 )
 
-func TestHost_Signature(t *testing.T) {
+func TestHost_FakedSignature(t *testing.T) {
 	t.Parallel()
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -21,14 +22,37 @@ func TestHost_Signature(t *testing.T) {
 	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, eve)
+	coredoc := prepareCoreDocument(t, collaborators, eve, false)
 
 	err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(coredoc.Document.Signatures))
+}
+
+func TestHost_RevokedSigningKey(t *testing.T) {
+	t.Parallel()
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
+
+	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
+
+	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, big.NewInt(identity.KeyPurposeSigning))
+	assert.NoError(t, err)
+
+	// Revoke Key
+	eve.host.idService.RevokeKey(ectxh, keys[0])
+	response, err := eve.host.idService.GetKey(eve.id, keys[0])
+	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
+
+	collaborators := [][]byte{bob.id[:]}
+	coredoc := prepareCoreDocument(t, collaborators, eve, true)
+
+	err = eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(coredoc.Document.Signatures))
 }
 
-func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite) *documents.CoreDocumentModel {
+func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite, useRevokedKey bool) *documents.CoreDocumentModel {
 	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
 	m, err := hts.host.docSrv.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
@@ -44,14 +68,18 @@ func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite
 
 	dm.Document.SigningRoot = tree.RootHash()
 
-	idConfig, err := identity.GetIdentityConfig(hts.host.config)
-	assert.Nil(t, err)
+	var sig *coredocumentpb.Signature
 
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
+	if useRevokedKey {
+		idConfig, err := identity.GetIdentityConfig(hts.host.config)
+		assert.Nil(t, err)
+
+		sig = identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
+	} else {
+		sig = &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
+	}
+
 	dm.Document.Signatures = append(dm.Document.Signatures, sig)
-
-	s := &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
-	dm.Document.Signatures = append(dm.Document.Signatures, s)
 
 	tree, err = dm.GetDocumentRootTree()
 	assert.NoError(t, err)
