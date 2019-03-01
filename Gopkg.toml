@@ -32,7 +32,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  revision = "33c46d6fffa366e64fc48aff3a8a173a86eaebf6"
+  revision = "cd4b6655ffbf1c44bb3ddd639a5f46b18bc258d3"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"

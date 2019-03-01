@@ -4,6 +4,7 @@
 package ideth
 
 import (
+	"math/big"
 	"strings"
 
 	ethereum "github.com/ethereum/go-ethereum"
@@ -14,8 +15,20 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 )
 
+// Reference imports to suppress errors if they are not otherwise used.
+var (
+	_ = big.NewInt
+	_ = strings.NewReader
+	_ = ethereum.NotFound
+	_ = abi.U256
+	_ = bind.Bind
+	_ = common.Big1
+	_ = types.BloomLookup
+	_ = event.NewSubscription
+)
+
 // FactoryContractABI is the input ABI used to generate the binding from.
-const FactoryContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityCreated\",\"type\":\"event\",\"signature\":\"0xac993fde3b9423ff59e4a23cded8e89074c9c8740920d1d870f586ba7c5c8cf0\"},{\"constant\":false,\"inputs\":[],\"name\":\"createIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0x59d21ad9\"},{\"constant\":false,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"createIdentityFor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"signature\":\"0xa480f9f7\"}]"
+const FactoryContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityCreated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[],\"name\":\"createIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"createIdentityFor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // FactoryContract is an auto generated Go binding around an Ethereum contract.
 type FactoryContract struct {
@@ -182,21 +195,21 @@ func (_FactoryContract *FactoryContractTransactorSession) CreateIdentity() (*typ
 
 // CreateIdentityFor is a paid mutator transaction binding the contract method 0xa480f9f7.
 //
-// Solidity: function createIdentityFor(owner address) returns()
+// Solidity: function createIdentityFor(address owner) returns()
 func (_FactoryContract *FactoryContractTransactor) CreateIdentityFor(opts *bind.TransactOpts, owner common.Address) (*types.Transaction, error) {
 	return _FactoryContract.contract.Transact(opts, "createIdentityFor", owner)
 }
 
 // CreateIdentityFor is a paid mutator transaction binding the contract method 0xa480f9f7.
 //
-// Solidity: function createIdentityFor(owner address) returns()
+// Solidity: function createIdentityFor(address owner) returns()
 func (_FactoryContract *FactoryContractSession) CreateIdentityFor(owner common.Address) (*types.Transaction, error) {
 	return _FactoryContract.Contract.CreateIdentityFor(&_FactoryContract.TransactOpts, owner)
 }
 
 // CreateIdentityFor is a paid mutator transaction binding the contract method 0xa480f9f7.
 //
-// Solidity: function createIdentityFor(owner address) returns()
+// Solidity: function createIdentityFor(address owner) returns()
 func (_FactoryContract *FactoryContractTransactorSession) CreateIdentityFor(owner common.Address) (*types.Transaction, error) {
 	return _FactoryContract.Contract.CreateIdentityFor(&_FactoryContract.TransactOpts, owner)
 }
@@ -276,7 +289,7 @@ type FactoryContractIdentityCreated struct {
 
 // FilterIdentityCreated is a free log retrieval operation binding the contract event 0xac993fde3b9423ff59e4a23cded8e89074c9c8740920d1d870f586ba7c5c8cf0.
 //
-// Solidity: e IdentityCreated(identity indexed address)
+// Solidity: event IdentityCreated(address indexed identity)
 func (_FactoryContract *FactoryContractFilterer) FilterIdentityCreated(opts *bind.FilterOpts, identity []common.Address) (*FactoryContractIdentityCreatedIterator, error) {
 
 	var identityRule []interface{}
@@ -293,7 +306,7 @@ func (_FactoryContract *FactoryContractFilterer) FilterIdentityCreated(opts *bin
 
 // WatchIdentityCreated is a free log subscription operation binding the contract event 0xac993fde3b9423ff59e4a23cded8e89074c9c8740920d1d870f586ba7c5c8cf0.
 //
-// Solidity: e IdentityCreated(identity indexed address)
+// Solidity: event IdentityCreated(address indexed identity)
 func (_FactoryContract *FactoryContractFilterer) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *FactoryContractIdentityCreated, identity []common.Address) (event.Subscription, error) {
 
 	var identityRule []interface{}
