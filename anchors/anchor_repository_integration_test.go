@@ -51,7 +51,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	var anchorID []byte
 	anchorID = h.Sum(anchorID)
-	proofStr := []string{"0xec4f7c791a848bfae2d45e815090e96cc2a7f9a9b851074162812d687883c2b1"}
+	proofStr := "0xec4f7c791a848bfae2d45e815090e96cc2a7f9a9b851074162812d687883c2b1"
 	signingRootStr := "0x5b5e0bf237698cc39fdc052063aa8f445d28ef295c089754009f5f91dc66a686"
 	documentRootStr := "0x91410b6658b692d1cb0b68aceabfe2b0020d4c6bd0bca9dbecae0c43c326ab34"
 
@@ -61,7 +61,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	documentRoot, err := hexutil.Decode(documentRootStr)
 	assert.NoError(t, err)
 
-	proof, err := hexutil.Decode(proofStr[0])
+	proof, err := hexutil.Decode(proofStr)
 	assert.NoError(t, err)
 
 	var proofB [32]byte
