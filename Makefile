@@ -27,6 +27,11 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
+clean: ##clean vendor's folder. Should be run before a make install
+	@echo 'cleaning previous /vendor folder'
+	@rm -rf vendor/
+	@echo 'done cleaning'
+
 install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
