@@ -8,7 +8,7 @@ eval "$cleanup"
 
 status=$?
 
-output="go test -coverprofile=profile.out -covermode=atomic -tags=testworld github.com/centrifuge/go-centrifuge/testworld 2>&1"
+output="go test -coverprofile=profile.out -covermode=atomic -tags=testworld github.com/centrifuge/go-centrifuge/testworld 2>&1 -v"
 eval "$output" | while IFS= read -r line; do printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done
 if [ ${PIPESTATUS[0]} -ne 0 ]; then
   status=1
