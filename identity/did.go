@@ -6,14 +6,12 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -32,18 +30,30 @@ const (
 	KeyTypeECDSA = 1
 )
 
-// KeyPurposeP2PDiscovery is calculated out of Hex(sha256("CENTRIFUGE@P2P_DISCOVERY"))
-func KeyPurposeP2PDiscovery() *Purpose {
-	hashed := "88dbd1f0b244e515ab5aee93b5dee6a2d8e326576a583822635a27e52e5b591e"
-	v, _ := new(big.Int).SetString(hashed, 16)
-	return &Purpose{Name: "P2P_DISCOVERY", HexValue: hashed, Value: v}
+var (
+	// KeyPurposeP2PDiscovery purpose
+	KeyPurposeP2PDiscovery Purpose
+	// KeyPurposeSigning purpose
+	KeyPurposeSigning Purpose
+)
+
+func init() {
+	KeyPurposeP2PDiscovery = getKeyPurposeP2PDiscovery()
+	KeyPurposeSigning = getKeyPurposeSigning()
 }
 
-// KeyPurposeSigning is calculated out of Hex(sha256("CENTRIFUGE@SIGNING"))
-func KeyPurposeSigning() *Purpose {
+// getKeyPurposeP2PDiscovery is calculated out of Hex(sha256("CENTRIFUGE@P2P_DISCOVERY"))
+func getKeyPurposeP2PDiscovery() Purpose {
+	hashed := "88dbd1f0b244e515ab5aee93b5dee6a2d8e326576a583822635a27e52e5b591e"
+	v, _ := new(big.Int).SetString(hashed, 16)
+	return Purpose{Name: "P2P_DISCOVERY", HexValue: hashed, Value: v}
+}
+
+// getKeyPurposeSigning is calculated out of Hex(sha256("CENTRIFUGE@SIGNING"))
+func getKeyPurposeSigning() Purpose {
 	hashed := "774a43710604e3ce8db630136980a6ba5a65b5e6686ee51009ed5f3fded6ea7e"
 	v, _ := new(big.Int).SetString(hashed, 16)
-	return &Purpose{Name: "SIGNING", HexValue: hashed, Value: v}
+	return Purpose{Name: "SIGNING", HexValue: hashed, Value: v}
 }
 
 // Purpose contains the different representation of purpose along the code
@@ -288,14 +298,14 @@ func GetIdentityConfig(config Config) (*IDConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	keys[KeyPurposeP2PDiscovery().Name] = IDKey{PublicKey: pk, PrivateKey: sk}
+	keys[KeyPurposeP2PDiscovery.Name] = IDKey{PublicKey: pk, PrivateKey: sk}
 
 	pk, sk, err = secp256k1.GetSigningKeyPair(config.GetSigningKeyPair())
 	if err != nil {
 		return nil, err
 	}
 	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[KeyPurposeSigning().Name] = IDKey{PublicKey: pk32[:], PrivateKey: sk}
+	keys[KeyPurposeSigning.Name] = IDKey{PublicKey: pk32[:], PrivateKey: sk}
 
 	return &IDConfig{ID: centID, Keys: keys}, nil
 }

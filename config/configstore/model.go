@@ -526,7 +526,7 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning().Name].PrivateKey, msg, crypto.CurveSecp256K1)
+	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning.Name].PrivateKey, msg, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
@@ -538,7 +538,7 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 
 	return &coredocumentpb.Signature{
 		EntityId:  did,
-		PublicKey: keys[identity.KeyPurposeSigning().Name].PublicKey,
+		PublicKey: keys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: signature,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}, nil
@@ -551,26 +551,26 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 		acc.keys = map[string]config.IDKey{}
 	}
 
-	if _, ok := acc.keys[identity.KeyPurposeP2PDiscovery().Name]; !ok {
+	if _, ok := acc.keys[identity.KeyPurposeP2PDiscovery.Name]; !ok {
 		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
 		if err != nil {
 			return idKeys, err
 		}
 
-		acc.keys[identity.KeyPurposeP2PDiscovery().Name] = config.IDKey{
+		acc.keys[identity.KeyPurposeP2PDiscovery.Name] = config.IDKey{
 			PublicKey:  pk,
 			PrivateKey: sk}
 	}
 
 	//secp256k1 keys
-	if _, ok := acc.keys[identity.KeyPurposeSigning().Name]; !ok {
+	if _, ok := acc.keys[identity.KeyPurposeSigning.Name]; !ok {
 		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
 		if err != nil {
 			return idKeys, err
 		}
 		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 
-		acc.keys[identity.KeyPurposeSigning().Name] = config.IDKey{
+		acc.keys[identity.KeyPurposeSigning.Name] = config.IDKey{
 			PublicKey:  address32Bytes[:],
 			PrivateKey: sk}
 	}

@@ -235,7 +235,7 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
 
 	p2pKey := utils.RandomByte32()
 
-	testKey := id.NewKey(p2pKey, identity.KeyPurposeP2PDiscovery().Value, utils.ByteSliceToBigInt([]byte{123}))
+	testKey := id.NewKey(p2pKey, identity.KeyPurposeP2PDiscovery.Value, utils.ByteSliceToBigInt([]byte{123}))
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	url, err := idSrv.GetClientP2PURL(*did)

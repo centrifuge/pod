@@ -245,15 +245,15 @@ func createIdentity(t *testing.T) identity.DID {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.NoError(t, err)
 	// Add Keys
-	pk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeP2PDiscovery().Name].PublicKey)
+	pk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeP2PDiscovery.Name].PublicKey)
 	assert.NoError(t, err)
-	keyDID := identity.NewKey(pk, identity.KeyPurposeP2PDiscovery().Value, big.NewInt(identity.KeyTypeECDSA))
+	keyDID := identity.NewKey(pk, identity.KeyPurposeP2PDiscovery.Value, big.NewInt(identity.KeyTypeECDSA))
 	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
-	sPk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeSigning().Name].PublicKey)
+	sPk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeSigning.Name].PublicKey)
 	assert.NoError(t, err)
-	keyDID = identity.NewKey(sPk, identity.KeyPurposeSigning().Value, big.NewInt(identity.KeyTypeECDSA))
+	keyDID = identity.NewKey(sPk, identity.KeyPurposeSigning.Value, big.NewInt(identity.KeyTypeECDSA))
 	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
@@ -274,11 +274,11 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning().Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
 		EntityId:  idConfig.ID[:],
-		PublicKey: idConfig.Keys[identity.KeyPurposeSigning().Name].PublicKey,
+		PublicKey: idConfig.Keys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}

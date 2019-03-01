@@ -138,11 +138,11 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning().Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
 		EntityId:  idConfig.ID[:],
-		PublicKey: idConfig.Keys[identity.KeyPurposeSigning().Name].PublicKey,
+		PublicKey: idConfig.Keys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
