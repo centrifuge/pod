@@ -77,7 +77,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 	}, coredocumentpb.Action_ACTION_READ)
 
 	if !found {
-		return errors.New("nft not found in the Document")
+		return ErrNftNotFound
 	}
 
 	// get the owner of the NFT
@@ -164,7 +164,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
 	if len(cd.Document.DataRoot) != idSize {
-		return nil, errors.New("data root is invalid")
+		return nil, ErrDataRootInvalid
 	}
 
 	var pfKeys []string
@@ -214,7 +214,7 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	nft = append(nft, tokenID...)
 
 	if len(nft) != nftByteCount {
-		return nil, errors.New("byte length mismatch")
+		return nil, ErrNftByteLength
 	}
 
 	return nft, nil
@@ -279,7 +279,7 @@ func getReadAccessProofKeys(cd coredocumentpb.CoreDocument, registry common.Addr
 func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (pk string, err error) {
 	nft := getStoredNFT(nfts, registry.Bytes())
 	if nft == nil {
-		return pk, errors.New("nft is missing from the Document")
+		return pk, ErrNftNotFound
 	}
 
 	key := hexutil.Encode(nft.RegistryId)
@@ -332,7 +332,7 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 	}
 	validated := crypto.VerifyMessage(publicKey, tm, token.Signature, crypto.CurveSecp256K1)
 	if !validated {
-		return errors.New("access token is invalid")
+		return ErrAccessTokenInvalid
 	}
 	return nil
 }
@@ -344,7 +344,7 @@ func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 			return at, nil
 		}
 	}
-	return at, errors.New("access token not found")
+	return at, ErrAccessTokenNotFound
 }
 
 // ATGranteeCanRead checks that the grantee of the access token can read the document requested
@@ -358,16 +358,16 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 	granteeID := identity.NewDIDFromBytes(at.Grantee)
 	// check that the peer requesting access is the same identity as the access token grantee
 	if !requesterID.Equal(granteeID) {
-		return errors.New("requester is not the same as the access token grantee")
+		return ErrRequesterNotGrantee
 	}
 	// check that the granter of the access token is a collaborator on the document
 	verified := cd.AccountCanRead(granterID)
 	if !verified {
-		return errors.New("access token granter is not a collaborator on this document")
+		return ErrGranterNotCollab
 	}
 	// check if the requested document is the document indicated in the access token
 	if !bytes.Equal(at.DocumentIdentifier, docID) {
-		return errors.New("the document requested does not match the document to which the access token grants access")
+		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
 	err = idService.ValidateKey(ctx, granterID, at.Key, identity.KeyPurposeSigning)
@@ -452,7 +452,7 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 	ids := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range ids {
 		if len(id) != idSize {
-			return nil, errors.New("invalid identifier length")
+			return nil, ErrInvalidIDLength
 		}
 	}
 
