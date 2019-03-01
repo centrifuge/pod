@@ -42,6 +42,7 @@ func getAnchorAddress(cfg config.Configuration) common.Address {
 }
 
 func TestExecute_successful(t *testing.T) {
+	t.SkipNow()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
