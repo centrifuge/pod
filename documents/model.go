@@ -87,8 +87,8 @@ type Model interface {
 	// NFTOwnerCanRead returns error if the NFT cannot read the document.
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
-	// ATOwnerCanRead returns error if the NFT cannot read the document.
-	ATOwnerCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, account identity.DID) (err error)
+	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
+	ATGranteeCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
 }
 
 // TokenRegistry defines NFT related functions.

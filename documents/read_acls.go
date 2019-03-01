@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -321,16 +320,6 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-// isATInRole checks if the given access token is part of the core document role.
-func isATInRole(role *coredocumentpb.Role, tokenID []byte) (*coredocumentpb.AccessToken, error) {
-	for _, a := range role.AccessTokens {
-		if bytes.Equal(tokenID, a.Identifier) {
-			return a, nil
-		}
-	}
-	return nil, errors.New("access token not found")
-}
-
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
@@ -348,62 +337,63 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 }
 
 func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, err error) {
-	// check if the access token is present in read rules of the document indicated in the AT request
-	found := findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		at, err = isATInRole(role, tokenID)
-		if err != nil {
-			return false
+	// check if the access token is present on the document indicated in the AT request
+	for _, at := range cd.Document.AccessTokens {
+		if bytes.Equal(tokenID, at.Identifier) {
+			return at, nil
 		}
-
-		return true
-	}, coredocumentpb.Action_ACTION_READ)
-
-	if !found {
-		return at, errors.New("access token not found")
 	}
-
-	return at, nil
+	return at, errors.New("access token not found")
 }
 
-// ATOwnerCanRead checks that the owner AT can read the document requested
-func (cd *CoreDocument) ATOwnerCanRead(ctx context.Context, idService identity.ServiceDID, tokenID, docID []byte, account identity.DID) (err error) {
-	//find access token in Roles
+// ATGranteeCanRead checks that the grantee of the access token can read the document requested
+func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity.ServiceDID, tokenID, docID []byte, requesterID identity.DID) (err error) {
+	// find the access token
 	at, err := cd.findAT(tokenID)
 	if err != nil {
 		return err
+	}
+	granterID := identity.NewDIDFromBytes(at.Granter)
+	granteeID := identity.NewDIDFromBytes(at.Grantee)
+	// check that the peer requesting access is the same identity as the access token grantee
+	if !requesterID.Equal(granteeID) {
+		return errors.New("requester is not the same as the access token grantee")
+	}
+	// check that the granter of the access token is a collaborator on the document
+	verified := cd.AccountCanRead(granterID)
+	if !verified {
+		return errors.New("access token granter is not a collaborator on this document")
 	}
 	// check if the requested document is the document indicated in the access token
 	if !bytes.Equal(at.DocumentIdentifier, docID) {
 		return errors.New("the document requested does not match the document to which the access token grants access")
 	}
-	// validate the access token
-	err = idService.ValidateKey(ctx, account, at.Key, identity.KeyPurposeSigning)
+	// validate that the public key of the granter is the public key that has been used to sign the access token
+	err = idService.ValidateKey(ctx, granterID, at.Key, identity.KeyPurposeSigning)
 	if err != nil {
 		return err
 	}
-	return validateAT(at.Key, at, account[:])
+	return validateAT(at.Key, at, granteeID[:])
 }
 
-// AddAccessToken adds the AccessToken to the read rules of the document
+// AddAccessToken adds the AccessToken to the document
 func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, false)
 	if err != nil {
 		return nil, err
 	}
 
-	role := newRole()
-	at, err := assembleAccessToken(ctx, payload, role.RoleKey)
+	at, err := assembleAccessToken(ctx, payload)
 	if err != nil {
 		return nil, errors.New("failed to construct access token: %v", err)
 	}
 
-	role.AccessTokens = append(role.AccessTokens, at)
-	ncd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	ncd.Document.AccessTokens = append(ncd.Document.AccessTokens, at)
 	return ncd, ncd.setSalts()
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams, roleKey []byte) (*coredocumentpb.AccessToken, error) {
+func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
 	account, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -414,7 +404,8 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 		return nil, err
 	}
 	granterID := identity.NewDIDFromBytes(id)
-	roleID := roleKey
+	// TODO: this roleID will be specified later with field level read access
+	roleID := utils.RandomSlice(32)
 	granteeID, err := identity.NewDIDFromString(payload.Grantee)
 	if err != nil {
 		return nil, err

@@ -333,11 +333,14 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, _ := contextutil.Account(ctx)
 	srv := new(testingcommons.MockIdentityService)
-	cd := newCoreDocument()
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	id, err := account.GetIdentityID()
-	granteeID := identity.NewDIDFromBytes(id)
+	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
+	granterID := identity.NewDIDFromBytes(id)
+	assert.NoError(t, err)
+	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()})
+	assert.NoError(t, err)
+	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	payload := documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
 		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
@@ -345,8 +348,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	ncd, err := cd.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
 	ncd.Document.DocumentRoot = utils.RandomSlice(32)
-	docRoles := ncd.Document.GetRoles()
-	at := docRoles[0].AccessTokens[0]
+	at := ncd.Document.AccessTokens[0]
 	assert.NotNil(t, at)
 	// wrong token identifier
 	tr := &p2ppb.AccessTokenRequest{
@@ -358,7 +360,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: tr,
 	}
-	err = ncd.ATOwnerCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.Error(t, err, "access token not found")
 	// invalid signing key
 	tr = &p2ppb.AccessTokenRequest{
@@ -367,15 +369,15 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	}
 	dr.AccessTokenRequest = tr
 	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
-	err = ncd.ATOwnerCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.Error(t, err)
-	// valid signing key
+	// valid key
 	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	err = ncd.ATOwnerCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.NoError(t, err)
 }
 
-func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
+func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	m := newCoreDocument()
 	m.Document.DocumentRoot = utils.RandomSlice(32)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
@@ -383,8 +385,7 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 	assert.NoError(t, err)
 
 	cd := m.Document
-	assert.Len(t, cd.ReadRules, 0)
-	assert.Len(t, cd.Roles, 0)
+	assert.Len(t, cd.AccessTokens, 0)
 
 	// invalid centID format
 	payload := documentpb.AccessTokenParams{
@@ -423,7 +424,5 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 
 	ncd, err := m.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
-	assert.Len(t, ncd.Document.ReadRules, 1)
-	assert.Equal(t, ncd.Document.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ)
-	assert.Len(t, ncd.Document.Roles, 1)
+	assert.Len(t, ncd.Document.AccessTokens, 1)
 }
