@@ -2,7 +2,9 @@ package ideth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"strings"
 
@@ -381,17 +383,51 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
+func getEthereumAccountAddress(acc config.Account) ([]byte, error) {
+	var ethAddr struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
+	if err != nil {
+		return nil, err
+	}
+	return hexutil.Decode("0x"+ethAddr.Address)
+}
+
+func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.KeyDID, error) {
+	keys := map[string]id.KeyDID{}
+	for k, v := range accKeys {
+		pk32, err := utils.SliceToByte32(v.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		keys[k] = id.NewKey(pk32, id.KeyPurposeAction.Value, big.NewInt(id.KeyTypeECDSA))
+	}
+	return keys, nil
+}
+
 func getKeyPairsFromAccount(acc config.Account) (map[string]id.KeyDID, error) {
 	keys := map[string]id.KeyDID{}
 	var pk []byte
 
-	// ed25519 keys
-	// KeyPurposeP2P
-	pk, _, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
+	// KeyPurposeAction
+	pk, err := getEthereumAccountAddress(acc)
 	if err != nil {
 		return nil, err
 	}
-	pk32, err := utils.SliceToByte32(pk)
+	pk32, err := utils.ByteArrayTo32BytesLeftPadded(pk)
+	if err != nil {
+		return nil, err
+	}
+	keys[id.KeyPurposeAction.Name] = id.NewKey(pk32, id.KeyPurposeAction.Value, big.NewInt(id.KeyTypeECDSA))
+
+	// ed25519 keys
+	// KeyPurposeP2P
+	pk, _, err = ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
+	if err != nil {
+		return nil, err
+	}
+	pk32, err = utils.SliceToByte32(pk)
 	if err != nil {
 		return nil, err
 	}
@@ -416,10 +452,21 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 		return err
 	}
 
+	idKeys, err := acc.GetKeys()
+	if err != nil {
+		return err
+	}
+
 	keys, err := getKeyPairsFromAccount(acc)
 	if err != nil {
 		return err
 	}
+
+	err = i.AddKey(tctx, keys[id.KeyPurposeAction.Name])
+	if err != nil {
+		return err
+	}
+
 	err = i.AddKey(tctx, keys[id.KeyPurposeP2PDiscovery.Name])
 	if err != nil {
 		return err

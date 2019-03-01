@@ -5,10 +5,25 @@ package identity
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestManagementPurpose(t *testing.T) {
+	b32, err := utils.ByteArrayTo32BytesLeftPadded([]byte{1})
+	assert.NoError(t, err)
+	mgmtHex := hex.EncodeToString(b32[:])
+	assert.Equal(t, KeyPurposeManagement.HexValue, mgmtHex)
+}
+
+func TestActionPurpose(t *testing.T) {
+	b32, err := utils.ByteArrayTo32BytesLeftPadded([]byte{2})
+	assert.NoError(t, err)
+	actionHex := hex.EncodeToString(b32[:])
+	assert.Equal(t, KeyPurposeAction.HexValue, actionHex)
+}
 
 func TestP2PDiscoveryPurposeHash(t *testing.T) {
 	h := sha256.New()
@@ -28,6 +43,20 @@ func TestSigningPurposeHash(t *testing.T) {
 	assert.Len(t, hb, 32)
 	p2pHex := hex.EncodeToString(hb)
 	assert.Equal(t, KeyPurposeSigning.HexValue, p2pHex)
+}
+
+func TestKeyPurposeManagement(t *testing.T) {
+	purpose := KeyPurposeManagement
+	assert.Equal(t, "MANAGEMENT", purpose.Name)
+	assert.Equal(t, "0000000000000000000000000000000000000000000000000000000000000001", purpose.HexValue)
+	assert.Equal(t, "1", purpose.Value.String())
+}
+
+func TestKeyPurposeAction(t *testing.T) {
+	purpose := KeyPurposeAction
+	assert.Equal(t, "ACTION", purpose.Name)
+	assert.Equal(t, "0000000000000000000000000000000000000000000000000000000000000002", purpose.HexValue)
+	assert.Equal(t, "2", purpose.Value.String())
 }
 
 func TestKeyPurposeP2PDiscovery(t *testing.T) {

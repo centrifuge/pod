@@ -74,7 +74,7 @@ func CreateConfig(
 	// create keys locally
 	generateKeys(cfg)
 
-	acc, err := configstore.TempAccount("", cfg)
+	acc, err := configstore.TempAccount("main", cfg)
 	if err != nil {
 		return err
 	}

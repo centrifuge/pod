@@ -544,11 +544,36 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	}, nil
 }
 
+func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
+	var ethAddr struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
+	if err != nil {
+		return nil, err
+	}
+	return hexutil.Decode("0x"+ethAddr.Address)
+}
+
 // GetKeys returns the keys of an account
 // TODO remove GetKeys and add signing methods to account
 func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 	if acc.keys == nil {
 		acc.keys = map[string]config.IDKey{}
+	}
+
+	if _, ok := acc.keys[identity.KeyPurposeAction.Name]; !ok {
+		pk, err := acc.getEthereumAccountAddress()
+		if err != nil {
+			return idKeys, err
+		}
+		address32Bytes, err := utils.ByteArrayTo32BytesLeftPadded(pk)
+		if err != nil {
+			return idKeys, err
+		}
+		acc.keys[identity.KeyPurposeAction.Name] = config.IDKey{
+			PublicKey:  address32Bytes[:],
+		}
 	}
 
 	if _, ok := acc.keys[identity.KeyPurposeP2PDiscovery.Name]; !ok {
@@ -665,12 +690,15 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 
 // NewAccount creates a new Account instance with configs
 func NewAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
+	if ethAccountName == "" {
+		return nil, errors.New("ethAccountName not provided")
+	}
 	id, err := c.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 	acc, err := c.GetEthereumAccount(ethAccountName)
-	if err != nil && ethAccountName != "" {
+	if err != nil {
 		return nil, err
 	}
 	return &Account{
@@ -686,8 +714,11 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 
 // TempAccount creates a new Account without id validation, Must only be used for account creation.
 func TempAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
+	if ethAccountName == "" {
+		return nil, errors.New("ethAccountName not provided")
+	}
 	acc, err := c.GetEthereumAccount(ethAccountName)
-	if err != nil && ethAccountName != "" {
+	if err != nil {
 		return nil, err
 	}
 	return &Account{

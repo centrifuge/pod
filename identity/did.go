@@ -2,7 +2,9 @@ package identity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"time"
 
@@ -31,15 +33,35 @@ const (
 )
 
 var (
-	// KeyPurposeP2PDiscovery purpose
+	// KeyPurposeManagement purpose stores the management key to interact with the ERC725 identity contract
+	KeyPurposeManagement Purpose
+	// KeyPurposeAction purpose stores the action key to interact with the ERC725 identity contract
+	KeyPurposeAction Purpose
+	// KeyPurposeP2PDiscovery purpose stores the action key to interact with the ERC725 identity contract
 	KeyPurposeP2PDiscovery Purpose
-	// KeyPurposeSigning purpose
+	// KeyPurposeSigning purpose stores the action key to interact with the ERC725 identity contract
 	KeyPurposeSigning Purpose
 )
 
 func init() {
+	KeyPurposeManagement = getKeyPurposeManagement()
+	KeyPurposeAction = getKeyPurposeAction()
 	KeyPurposeP2PDiscovery = getKeyPurposeP2PDiscovery()
 	KeyPurposeSigning = getKeyPurposeSigning()
+}
+
+// getKeyPurposeManagement is calculated out of Hex(leftPadding(1,32))
+func getKeyPurposeManagement() Purpose {
+	enc := "0000000000000000000000000000000000000000000000000000000000000001"
+	v, _ := new(big.Int).SetString(enc, 16)
+	return Purpose{Name: "MANAGEMENT", HexValue: enc, Value: v}
+}
+
+// getKeyPurposeAction is calculated out of Hex(leftPadding(2,32))
+func getKeyPurposeAction() Purpose {
+	enc := "0000000000000000000000000000000000000000000000000000000000000002"
+	v, _ := new(big.Int).SetString(enc, 16)
+	return Purpose{Name: "ACTION", HexValue: enc, Value: v}
 }
 
 // getKeyPurposeP2PDiscovery is calculated out of Hex(sha256("CENTRIFUGE@P2P_DISCOVERY"))
@@ -61,6 +83,10 @@ type Purpose struct {
 	Name     string
 	HexValue string
 	Value    *big.Int
+}
+
+func GetPurposeByName(name string) Purpose {
+
 }
 
 // DID stores the identity address of the user
@@ -281,6 +307,17 @@ type Config interface {
 type IDConfig struct {
 	ID   DID
 	Keys map[string]IDKey
+}
+
+func getEthereumAccountAddress(acc config.Account) ([]byte, error) {
+	var ethAddr struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
+	if err != nil {
+		return nil, err
+	}
+	return hexutil.Decode("0x"+ethAddr.Address)
 }
 
 // GetIdentityConfig returns the identity and keys associated with the node.

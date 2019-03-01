@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -296,8 +297,8 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var proofs = make([][][32]byte, len(proofspb))
 
 	// TODO remove later
-	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	//log.Info(json.MarshalIndent(proof, "", "  "))
+	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
+	log.Info(json.MarshalIndent(proof, "", "  "))
 
 	for i, p := range proofspb {
 		values[i] = p.Value

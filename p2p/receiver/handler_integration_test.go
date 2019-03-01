@@ -245,6 +245,8 @@ func createIdentity(t *testing.T) identity.DID {
 	idConfig, err := identity.GetIdentityConfig(cfg)
 	assert.NoError(t, err)
 	// Add Keys
+
+
 	pk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeP2PDiscovery.Name].PublicKey)
 	assert.NoError(t, err)
 	keyDID := identity.NewKey(pk, identity.KeyPurposeP2PDiscovery.Value, big.NewInt(identity.KeyTypeECDSA))

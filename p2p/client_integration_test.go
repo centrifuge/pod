@@ -47,7 +47,8 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
-	tc, _ := configstore.TempAccount("", cfg)
+	tc, err := configstore.TempAccount("main", cfg)
+	assert.NoError(&testing.T{}, err)
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(&testing.T{}, err)
 	acc := tc.(*configstore.Account)
@@ -103,7 +104,7 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(t, err)
 	did := identity.NewDID(*didAddr)
-	tc, err := configstore.TempAccount("", cfg)
+	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]
