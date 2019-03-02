@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -322,8 +323,9 @@ func createProofData(model documents.Model, proofspb []*proofspb.Proof) (*proofD
 	var proofs = make([][][32]byte, len(proofspb))
 
 	// TODO remove later
-	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	//log.Info(json.MarshalIndent(proof, "", "  "))
+	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: model.CurrentVersion(), FieldProofs: proofspb})
+	log.Info(json.MarshalIndent(proof, "", "  "))
+
 	for i, p := range proofspb {
 		if i == readRoleIndex {
 			props[0] = p.GetCompactName()

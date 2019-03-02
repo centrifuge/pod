@@ -78,6 +78,8 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
+			Sender:        did.String(),
+			InvoiceStatus: "unpaid",
 			InvoiceNumber: "2132131",
 			GrossAmount:   123,
 			NetAmount:     123,
@@ -126,7 +128,7 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
 		SubmitTokenProof:         true,
