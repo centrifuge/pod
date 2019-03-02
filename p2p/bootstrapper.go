@@ -42,7 +42,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, idService: idService, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, tokenRegistry)
+		return receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, tokenRegistry, idService)
 	}}
 	return nil
 }
