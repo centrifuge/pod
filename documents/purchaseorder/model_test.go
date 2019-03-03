@@ -73,11 +73,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestPurchaseOrder_PackCoreDocument(t *testing.T) {
-	id, err := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 
 	po := new(PurchaseOrder)
-	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String()))
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String()))
 
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
@@ -87,9 +88,10 @@ func TestPurchaseOrder_PackCoreDocument(t *testing.T) {
 
 func TestPurchaseOrder_JSON(t *testing.T) {
 	po := new(PurchaseOrder)
-	id, err := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String()))
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String()))
 
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
@@ -149,14 +151,17 @@ func TestPOModel_getClientData(t *testing.T) {
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
+	assert.NoError(t, err)
+
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrder)
-	err := poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, poModel.Recipient)
@@ -165,14 +170,14 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	data.ExtraData = "0x010203020301"
 	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
 
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, id.ID.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, poModel.ExtraData)
 	assert.NotNil(t, poModel.Recipient)
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -180,19 +185,21 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Nil(t, err, "must be nil")
 
-	did, err := identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
+	did, err = identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
 	assert.NoError(t, err)
 	assert.Equal(t, poModel.Recipient[:], did[:])
 	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
+	assert.NoError(t, err)
 	poModel := new(PurchaseOrder)
-	err := poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), id.ID.String())
+	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")
 

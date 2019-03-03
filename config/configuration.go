@@ -151,12 +151,6 @@ type IDKey struct {
 	PrivateKey []byte
 }
 
-// IDKeys holds key of an identity
-type IDKeys struct {
-	ID   []byte
-	Keys map[int]IDKey
-}
-
 // configuration holds the configuration details for the node.
 type configuration struct {
 	mu         sync.RWMutex

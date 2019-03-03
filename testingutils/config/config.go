@@ -167,7 +167,7 @@ func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Contex
 }
 
 func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 
 	contextHeader, err := contextutil.New(ctx, tc)

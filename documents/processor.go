@@ -168,12 +168,12 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 		return errors.New("post anchor validations failed: %v", err)
 	}
 
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return err
 	}
 
-	cs, err := model.GetCollaborators(self.ID)
+	cs, err := model.GetCollaborators(selfDID)
 	if err != nil {
 		return errors.New("get external collaborators failed: %v", err)
 	}

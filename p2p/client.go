@@ -221,12 +221,12 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 		return nil, err
 	}
 
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.New("failed to get self ID")
 	}
 
-	cs, err := model.GetCollaborators(self.ID)
+	cs, err := model.GetCollaborators(selfDID)
 	if err != nil {
 		return nil, errors.New("failed to get external collaborators")
 	}

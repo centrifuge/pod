@@ -552,7 +552,7 @@ func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return hexutil.Decode("0x"+ethAddr.Address)
+	return hexutil.Decode("0x" + ethAddr.Address)
 }
 
 // GetKeys returns the keys of an account
@@ -562,6 +562,7 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 		acc.keys = map[string]config.IDKey{}
 	}
 
+	// KeyPurposeAction
 	if _, ok := acc.keys[identity.KeyPurposeAction.Name]; !ok {
 		pk, err := acc.getEthereumAccountAddress()
 		if err != nil {
@@ -572,10 +573,11 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 			return idKeys, err
 		}
 		acc.keys[identity.KeyPurposeAction.Name] = config.IDKey{
-			PublicKey:  address32Bytes[:],
+			PublicKey: address32Bytes[:],
 		}
 	}
 
+	// KeyPurposeP2PDiscovery
 	if _, ok := acc.keys[identity.KeyPurposeP2PDiscovery.Name]; !ok {
 		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
 		if err != nil {
@@ -587,7 +589,7 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 			PrivateKey: sk}
 	}
 
-	//secp256k1 keys
+	// KeyPurposeSigning
 	if _, ok := acc.keys[identity.KeyPurposeSigning.Name]; !ok {
 		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
 		if err != nil {

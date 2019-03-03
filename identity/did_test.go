@@ -5,8 +5,9 @@ package identity
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/stretchr/testify/assert"
 )

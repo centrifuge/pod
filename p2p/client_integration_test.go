@@ -123,9 +123,13 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) documents.Model {
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	idConfig.ID = defaultDID
-	assert.Nil(t, err)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accCfg, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	acc := accCfg.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	accKeys, err := acc.GetKeys()
+	assert.NoError(t, err)
 	payalod := testingdocuments.CreatePOPayload()
 	var cs []string
 	for _, c := range collaborators {
@@ -133,17 +137,17 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	}
 	payalod.Collaborators = cs
 	po := new(purchaseorder.PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payalod, idConfig.ID.String())
+	err = po.InitPurchaseOrderInput(payalod, defaultDID.String())
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		EntityId:  idConfig.ID[:],
-		PublicKey: idConfig.Keys[identity.KeyPurposeSigning.Name].PublicKey,
+		EntityId:  defaultDID[:],
+		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}

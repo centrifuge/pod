@@ -2,16 +2,13 @@ package identity
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -86,7 +83,18 @@ type Purpose struct {
 }
 
 func GetPurposeByName(name string) Purpose {
-
+	switch name {
+	case "MANAGEMENT":
+		return getKeyPurposeManagement()
+	case "ACTION":
+		return getKeyPurposeAction()
+	case "P2P_DISCOVERY":
+		return getKeyPurposeP2PDiscovery()
+	case "SIGNING":
+		return getKeyPurposeSigning()
+	default:
+		return Purpose{}
+	}
 }
 
 // DID stores the identity address of the user
@@ -300,49 +308,4 @@ type Config interface {
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
-}
-
-// IDConfig holds information about the identity
-// Deprecated
-type IDConfig struct {
-	ID   DID
-	Keys map[string]IDKey
-}
-
-func getEthereumAccountAddress(acc config.Account) ([]byte, error) {
-	var ethAddr struct {
-		Address string `json:"address"`
-	}
-	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
-	if err != nil {
-		return nil, err
-	}
-	return hexutil.Decode("0x"+ethAddr.Address)
-}
-
-// GetIdentityConfig returns the identity and keys associated with the node.
-func GetIdentityConfig(config Config) (*IDConfig, error) {
-	centIDBytes, err := config.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-	centID := NewDIDFromBytes(centIDBytes)
-
-	//ed25519 keys
-	keys := map[string]IDKey{}
-
-	pk, sk, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	keys[KeyPurposeP2PDiscovery.Name] = IDKey{PublicKey: pk, PrivateKey: sk}
-
-	pk, sk, err = secp256k1.GetSigningKeyPair(config.GetSigningKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[KeyPurposeSigning.Name] = IDKey{PublicKey: pk32[:], PrivateKey: sk}
-
-	return &IDConfig{ID: centID, Keys: keys}, nil
 }

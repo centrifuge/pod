@@ -2,9 +2,7 @@ package ideth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"strings"
 
@@ -13,7 +11,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -383,17 +380,6 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
-func getEthereumAccountAddress(acc config.Account) ([]byte, error) {
-	var ethAddr struct {
-		Address string `json:"address"`
-	}
-	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
-	if err != nil {
-		return nil, err
-	}
-	return hexutil.Decode("0x"+ethAddr.Address)
-}
-
 func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.KeyDID, error) {
 	keys := map[string]id.KeyDID{}
 	for k, v := range accKeys {
@@ -401,47 +387,8 @@ func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.
 		if err != nil {
 			return nil, err
 		}
-		keys[k] = id.NewKey(pk32, id.KeyPurposeAction.Value, big.NewInt(id.KeyTypeECDSA))
+		keys[k] = id.NewKey(pk32, id.GetPurposeByName(k).Value, big.NewInt(id.KeyTypeECDSA))
 	}
-	return keys, nil
-}
-
-func getKeyPairsFromAccount(acc config.Account) (map[string]id.KeyDID, error) {
-	keys := map[string]id.KeyDID{}
-	var pk []byte
-
-	// KeyPurposeAction
-	pk, err := getEthereumAccountAddress(acc)
-	if err != nil {
-		return nil, err
-	}
-	pk32, err := utils.ByteArrayTo32BytesLeftPadded(pk)
-	if err != nil {
-		return nil, err
-	}
-	keys[id.KeyPurposeAction.Name] = id.NewKey(pk32, id.KeyPurposeAction.Value, big.NewInt(id.KeyTypeECDSA))
-
-	// ed25519 keys
-	// KeyPurposeP2P
-	pk, _, err = ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pk32, err = utils.SliceToByte32(pk)
-	if err != nil {
-		return nil, err
-	}
-	keys[id.KeyPurposeP2PDiscovery.Name] = id.NewKey(pk32, id.KeyPurposeP2PDiscovery.Value, big.NewInt(id.KeyTypeECDSA))
-
-	// secp256k1 keys
-	// KeyPurposeSigning
-	pk, _, err = secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[id.KeyPurposeSigning.Name] = id.NewKey(address32Bytes, id.KeyPurposeSigning.Value, big.NewInt(id.KeyTypeECDSA))
-
 	return keys, nil
 }
 
@@ -452,12 +399,12 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 		return err
 	}
 
-	idKeys, err := acc.GetKeys()
+	accKeys, err := acc.GetKeys()
 	if err != nil {
 		return err
 	}
 
-	keys, err := getKeyPairsFromAccount(acc)
+	keys, err := convertAccountKeysToKeyDID(accKeys)
 	if err != nil {
 		return err
 	}
