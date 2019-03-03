@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/golang/protobuf/ptypes/any"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -226,12 +224,6 @@ func (cd *CoreDocument) addNewRule(role *coredocumentpb.Role, action coredocumen
 // errors out when the proof generation is failed on core Document tree.
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (proofs []*proofspb.Proof, err error) {
 	srpHashes, err := cd.getSigningRootProofHashes()
-	shash := []string{}
-	for _, v := range srpHashes {
-		shash = append(shash, hexutil.Encode(v))
-	}
-	log.Info(shash)
-
 	if err != nil {
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}

@@ -6,8 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -100,10 +98,6 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
 	_, cd := createCDWithEmbeddedPO(t)
 
-	r1 := hexutil.Encode(cd.SigningRoot)
-	r2 := hexutil.Encode(cd.DocumentRoot)
-	log.Info(r1, r2)
-
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -158,7 +152,6 @@ func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreD
 	_, err = po.CalculateSigningRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateDocumentRoot()
-	po.CreateProofs([]string{})
 	assert.NoError(t, err)
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)

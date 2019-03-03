@@ -51,9 +51,9 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	var anchorID []byte
 	anchorID = h.Sum(anchorID)
-	proofStr := "0xec4f7c791a848bfae2d45e815090e96cc2a7f9a9b851074162812d687883c2b1"
-	signingRootStr := "0x5b5e0bf237698cc39fdc052063aa8f445d28ef295c089754009f5f91dc66a686"
-	documentRootStr := "0x91410b6658b692d1cb0b68aceabfe2b0020d4c6bd0bca9dbecae0c43c326ab34"
+	proofStr := []string{"0x73bb733279cd232d72732afad693f80510e71262738b1205a061a1c34497e49c", "0x408b2caa80ace6ac3a37be957235011c0053f0a561f5a8dcf66d223bfffccecb"}
+	signingRootStr := "0x6ae9e6cc91cded82896d2439942fd42412b5a2ff5fd45bbed0f5a20de0b962c2"
+	documentRootStr := "0xf5c8f866f4acf2e2e74a803f86cd2a7ac9285721259b172ef121417e886ca22a"
 
 	signingRoot, err := hexutil.Decode(signingRootStr)
 	assert.NoError(t, err)
@@ -61,11 +61,16 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	documentRoot, err := hexutil.Decode(documentRootStr)
 	assert.NoError(t, err)
 
-	proof, err := hexutil.Decode(proofStr)
+	proof1, err := hexutil.Decode(proofStr[0])
 	assert.NoError(t, err)
 
-	var proofB [32]byte
-	copy(proofB[:], proof)
+	proof2, err := hexutil.Decode(proofStr[1])
+	assert.NoError(t, err)
+
+	var proofB1 [32]byte
+	copy(proofB1[:], proof1)
+	var proofB2 [32]byte
+	copy(proofB2[:], proof2)
 
 	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
 	preCommitAnchor(t, anchorID, signingRoot)
@@ -73,7 +78,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	assert.True(t, valid)
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB})
+	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB1, proofB2})
 	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
@@ -128,14 +133,23 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var doneList [5]chan bool
 
 	for ix := 0; ix < 5; ix++ {
-		currentAnchorId := utils.RandomByte32()
+		anchorIDPreImage := utils.RandomSlice(32)
+		anchorIDPreImageID, err := anchors.ToAnchorID(anchorIDPreImage)
+		assert.NoError(t, err)
+		h := sha256.New()
+		_, err = h.Write(anchorIDPreImage)
+		assert.NoError(t, err)
+		var cAnchorId []byte
+		cAnchorId = h.Sum(cAnchorId)
+		currentAnchorId, err := anchors.ToAnchorID(cAnchorId)
+		assert.NoError(t, err)
 		currentDocumentRoot := utils.RandomByte32()
 		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
-		h, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
+		hd, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
-		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
+		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
 		ctx := testingconfig.CreateAccountContext(t, cfg)
-		doneList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, documentProofs)
+		doneList[ix], err = anchorRepo.CommitAnchor(ctx, anchorIDPreImageID, currentDocumentRoot, documentProofs)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
 		}
