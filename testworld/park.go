@@ -371,6 +371,7 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 	}
 	// create 3 accounts
 	for i := 0; i < 3; i++ {
+		log.Infof("creating account %d for host %s", i, h.name)
 		res := generateAccount(e, h.identity.String(), http.StatusOK)
 		res.Value("identity_id").String().NotEmpty()
 	}
