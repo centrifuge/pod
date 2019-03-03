@@ -54,8 +54,6 @@ type Invoice struct {
 	DueDate          *timestamp.Timestamp
 	DateCreated      *timestamp.Timestamp
 	ExtraData        []byte
-
-	InvoiceSalts *proofs.Salts
 }
 
 // getClientData returns the client data from the invoice model
@@ -264,19 +262,6 @@ func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.ExtraData = invoiceData.ExtraData
 }
 
-// getInvoiceSalts returns the invoice salts. Initialises if not present
-func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
-	if i.InvoiceSalts == nil {
-		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix())
-		if err != nil {
-			return nil, errors.New("getInvoiceSalts error %v", err)
-		}
-		i.InvoiceSalts = invoiceSalts
-	}
-
-	return i.InvoiceSalts, nil
-}
-
 // PackCoreDocument packs the Invoice into a CoreDocument.
 func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	invData := i.createP2PProtobuf()
@@ -289,13 +274,7 @@ func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error)
 		TypeUrl: i.DocumentType(),
 		Value:   data,
 	}
-
-	salts, err := i.getInvoiceSalts(invData)
-	if err != nil {
-		return cd, errors.New("couldn't get InvoiceSalts: %v", err)
-	}
-
-	return i.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
+	return i.CoreDocument.PackCoreDocument(embedData), nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice.
@@ -312,15 +291,6 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 	}
 
 	i.loadFromP2PProtobuf(invoiceData)
-	if cd.EmbeddedDataSalts == nil {
-		i.InvoiceSalts, err = i.getInvoiceSalts(invoiceData)
-		if err != nil {
-			return err
-		}
-	} else {
-		i.InvoiceSalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
-	}
-
 	i.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return nil
 }
@@ -342,7 +312,7 @@ func (i *Invoice) Type() reflect.Type {
 
 // CalculateDataRoot calculates the data root and sets the root to core document.
 func (i *Invoice) CalculateDataRoot() ([]byte, error) {
-	t, err := i.getDocumentDataTree()
+	t, err := i.getDocumentDataTree(true)
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
@@ -353,13 +323,15 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
-func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+func (i *Invoice) getDocumentDataTree(mutable bool) (tree *proofs.DocumentTree, err error) {
 	invProto := i.createP2PProtobuf()
-	salts, err := i.getInvoiceSalts(invProto)
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
+	if i.CoreDocument == nil {
+		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
+	}
+	t := documents.NewDefaultTreeWithPrefix(&i.CoreDocument.Document, prefix, compactPrefix(), mutable)
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -373,7 +345,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 
 // CreateProofs generates proofs for given fields.
 func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := i.getDocumentDataTree()
+	tree, err := i.getDocumentDataTree(false)
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -394,7 +366,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
+	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
 	if err != nil {
 		return err
 	}

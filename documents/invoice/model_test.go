@@ -87,7 +87,6 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
-	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestInvoice_JSON(t *testing.T) {
@@ -230,22 +229,26 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	m := new(Invoice)
 	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String())
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
 	dr, err := m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
 }
 
 func TestInvoice_CreateProofs(t *testing.T) {
 	i := createInvoice(t)
 	rk := i.Document.Roles[0].RoleKey
-	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := i.CreateProofs([]string{"invoice.invoice_number", pf, documents.CDTreePrefix + ".document_type"})
+	cbpf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
+	proof_fields := []string{"invoice.invoice_number", cbpf, documents.CDTreePrefix + ".document_type"}
+	fmt.Println("Fields", proof_fields)
+	proof, err := i.CreateProofs(proof_fields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	if err != nil {
+		return
+	}
+
+	tree, err := i.CoreDocument.DocumentRootTree(false)
 	assert.NoError(t, err)
 
 	// Validate invoice_number
@@ -280,12 +283,14 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
-	i := Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
-	tree, err := i.getDocumentDataTree()
+	i, _ := createInvoice(t)
+	i.InvoiceNumber = "321321"
+	tree, err := i.getDocumentDataTree(true)
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
+	assert.Equal(t, []byte(i.InvoiceNumber), leaf.Value)
 }
 
 func createInvoice(t *testing.T) *Invoice {

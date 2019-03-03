@@ -135,13 +135,13 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 	role.Nfts = append(role.Nfts, nft)
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-	return cd.setSalts()
+	return nil
 }
 
 // AddNFT returns a new CoreDocument model with nft added to the Core Document. If grantReadAccess is true, the nft is added
 // to the read rules.
 func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, false, nil)
+	ncd, err := cd.PrepareNewVersion(nil, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
@@ -163,7 +163,7 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 		}
 	}
 
-	return ncd, ncd.setSalts()
+	return ncd, nil
 }
 
 // IsNFTMinted checks if the there is an NFT that is minted against this Document in the given registry.
@@ -213,7 +213,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}
 
-	cdTree, err := cd.documentTree(docType)
+	cdTree, err := cd.documentTree(docType, false)
 	if err != nil {
 		return nil, errors.New("failed to generate core Document tree: %v", err)
 	}
@@ -398,7 +398,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 
 // AddAccessToken adds the AccessToken to the document
 func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, false, nil)
+	ncd, err := cd.PrepareNewVersion(nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +409,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 	}
 
 	ncd.Document.AccessTokens = append(ncd.Document.AccessTokens, at)
-	return ncd, ncd.setSalts()
+	return ncd, nil
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received

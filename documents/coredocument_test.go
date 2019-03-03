@@ -121,7 +121,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
 	c := []string{c1.String(), c2.String()}
-	ncd, err := cd.PrepareNewVersion(c, false, nil)
+	ncd, err := cd.PrepareNewVersion(c, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Document root is invalid")
 	assert.Nil(t, ncd)
@@ -129,13 +129,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	//collaborators need to be hex string
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	collabs := []string{"some ID"}
-	ncd, err = cd.PrepareNewVersion(collabs, false, nil)
+	ncd, err = cd.PrepareNewVersion(collabs, nil)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	ncd, err = cd.PrepareNewVersion(c, false, nil)
+	ncd, err = cd.PrepareNewVersion(c, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err := ncd.GetCollaborators()
@@ -150,7 +150,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	expectedNextVersion = h.Sum(expectedNextVersion)
 	assert.Equal(t, expectedNextVersion, ncd.Document.NextVersion)
 
-	ncd, err = cd.PrepareNewVersion(c, true, nil)
+	ncd, err = cd.PrepareNewVersion(c, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err = ncd.GetCollaborators()
@@ -249,18 +249,19 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// no data root
-	_, err = cd.signingRootTree(documenttypes.InvoiceDataTypeUrl)
+	_, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl, false)
 	assert.Error(t, err)
 
 	// successful tree generation
-
 	cd.Document.DataRoot = utils.RandomSlice(32)
-	assert.NoError(t, cd.setSalts())
-	tree, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl)
+	tree, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl, true)
 	assert.Nil(t, err)
 	assert.NotNil(t, tree)
 
 	_, leaf := tree.GetLeafByProperty(SigningTreePrefix + ".data_root")
+	for _, l := range tree.GetLeaves() {
+		fmt.Printf("P: %s V: %v", l.Property.ReadableName(), l.Value)
+	}
 	assert.NotNil(t, leaf)
 
 	_, leaf = tree.GetLeafByProperty(SigningTreePrefix + ".cd_root")
@@ -281,12 +282,12 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 
 	// no signing root generated
-	_, err = cd.DocumentRootTree()
+	_, err := cd.DocumentRootTree(false)
 	assert.Error(t, err)
 
 	// successful Document root generation
 	cd.Document.SigningRoot = utils.RandomSlice(32)
-	tree, err := cd.DocumentRootTree()
+	tree, err := cd.DocumentRootTree(true)
 	assert.NoError(t, err)
 	_, leaf := tree.GetLeafByProperty(SigningRootField)
 	assert.NotNil(t, leaf)
@@ -301,7 +302,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
-	testTree := NewDefaultTreeWithPrefix(nil, "prefix", []byte{1, 0, 0, 0})
+	testTree := NewDefaultTreeWithPrefix(nil, "prefix", []byte{1, 0, 0, 0}, false)
 	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
 	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
@@ -318,14 +319,13 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	cd.Document.EmbeddedData = docAny
-	assert.NoError(t, cd.setSalts())
 	cd.Document.DataRoot = testTree.RootHash()
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
-	cdTree, err := cd.documentTree(documenttypes.InvoiceDataTypeUrl)
+	cdTree, err := cd.documentTree(documenttypes.InvoiceDataTypeUrl, false)
 	assert.NoError(t, err)
 	tests := []struct {
 		fieldName   string
@@ -376,17 +376,6 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			assert.True(t, valid)
 		})
 	}
-}
-
-func TestCoreDocument_setSalts(t *testing.T) {
-	cd, err := newCoreDocument()
-	assert.NoError(t, err)
-	assert.Nil(t, cd.Document.CoredocumentSalts)
-
-	assert.NoError(t, cd.setSalts())
-	salts := cd.Document.CoredocumentSalts
-	assert.Nil(t, cd.setSalts())
-	assert.Equal(t, salts, cd.Document.CoredocumentSalts)
 }
 
 func TestCoreDocument_getCollaborators(t *testing.T) {

@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -47,7 +46,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false, nil)
+	ncd, err := cd.PrepareNewVersion([]string{account.String()}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd.Document.ReadRules)
 	assert.NotNil(t, ncd.Document.Roles)
@@ -79,14 +78,12 @@ func TestCoreDocument_addNFTToReadRules(t *testing.T) {
 	tokenID := utils.RandomSlice(34)
 	err = cd.addNFTToReadRules(registry, tokenID)
 	assert.Error(t, err)
-	assert.Nil(t, cd.Document.CoredocumentSalts)
 	assert.Nil(t, cd.Document.ReadRules)
 	assert.Nil(t, cd.Document.Roles)
 
 	tokenID = utils.RandomSlice(32)
 	err = cd.addNFTToReadRules(registry, tokenID)
 	assert.NoError(t, err)
-	assert.NotNil(t, cd.Document.CoredocumentSalts)
 	assert.Len(t, cd.Document.ReadRules, 1)
 	assert.Equal(t, cd.Document.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ)
 	assert.Len(t, cd.Document.Roles, 1)
@@ -247,26 +244,20 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	invData := &invoicepb.InvoiceData{}
-	dataSalts, err := GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 	assert.NoError(t, err)
-
 	cd.Document.DataRoot = utils.RandomSlice(32)
 	cd.Document.EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
 	account := testingidentity.GenerateRandomDID()
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	cd.Document.EmbeddedDataSalts = ConvertToProtoSalts(dataSalts)
-	assert.NoError(t, err)
-	assert.NoError(t, cd.setSalts())
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
+	_, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
 	cd.Document.DataRoot = utils.RandomSlice(32)
-	assert.NoError(t, cd.setSalts())
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot()
@@ -317,7 +308,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree()
+	tree, err := cd.DocumentRootTree(false)
 	assert.NoError(t, err)
 
 	for _, c := range tests {
