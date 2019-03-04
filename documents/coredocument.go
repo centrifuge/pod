@@ -174,6 +174,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
 		Nfts:               cd.Document.Nfts,
+		AccessTokens:       cd.Document.AccessTokens,
 	}
 
 	ncd := &CoreDocument{Document: cdp}
