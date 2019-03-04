@@ -24,7 +24,7 @@ type Config interface {
 type Client interface {
 
 	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, error)
+	GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, []error, error)
 
 	// after all signatures are collected the sender sends the document including the signatures
 	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
@@ -100,7 +100,8 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 		return errors.New("failed to validate model for signature request: %v", err)
 	}
 
-	signs, err := dp.p2pClient.GetSignaturesForDocument(ctx, model)
+	// we ignore signature collection errors and anchor anyways
+	signs, _, err := dp.p2pClient.GetSignaturesForDocument(ctx, model)
 	if err != nil {
 		return errors.New("failed to collect signatures from the collaborators: %v", err)
 	}
