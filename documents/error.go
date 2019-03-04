@@ -56,6 +56,9 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
+	// ErrDataRootInvalid must be used when the data root is invalid
+	ErrDataRootInvalid = errors.Error("data root is invalid")
+
 	// Document repository errors
 
 	// ErrDocumentRepositoryModelNotRegistered must be used when the model hasn't been registered in the database repository
@@ -75,6 +78,35 @@ const (
 
 	// ErrDocumentRepositoryModelDoesntExist must be used when document repository does not find an existing model for an update
 	ErrDocumentRepositoryModelDoesntExist = errors.Error("document repository did not find an existing model for an update")
+
+	// Read ACL errors
+
+	// ErrNftNotFound must be used when the NFT is not found in the document
+	ErrNftNotFound = errors.Error("nft not found in the Document")
+
+	// ErrNftByteLength must be used when there is a byte length mismatch
+	ErrNftByteLength = errors.Error("byte length mismatch")
+
+	// ErrAccessTokenInvalid must be used when the access token is invalid
+	ErrAccessTokenInvalid = errors.Error("access token is invalid")
+
+	// ErrAccessTokenNotFound must be used when the access token was not found
+	ErrAccessTokenNotFound = errors.Error("access token not found")
+
+	// ErrRequesterNotGrantee must be used when the document requester is not the grantee of the access token
+	ErrRequesterNotGrantee = errors.Error("requester is not the same as the access token grantee")
+
+	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
+	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
+
+	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
+	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
+
+	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
+	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
+
+	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
+	ErrInvalidIDLength = errors.Error("invalid identifier length")
 )
 
 // Error wraps an error with specific key

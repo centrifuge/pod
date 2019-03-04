@@ -37,7 +37,6 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			switch test.testType {
 			case multiHost:
 				addExternalCollaborator(t, test.docType)
