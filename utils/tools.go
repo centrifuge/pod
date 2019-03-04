@@ -189,3 +189,16 @@ func ConvertIntToByte32(n int) ([32]byte, error) {
 func ConvertByte32ToInt(nb [32]byte) int {
 	return int(binary.BigEndian.Uint64(nb[:]))
 }
+
+func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
+	var property [][32]byte
+	for _, hash := range sortedHashes {
+		hash32, err := SliceToByte32(hash)
+		if err != nil {
+			return nil, err
+		}
+		property = append(property, hash32)
+	}
+
+	return property, nil
+}

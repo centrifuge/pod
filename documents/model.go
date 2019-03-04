@@ -22,6 +22,9 @@ type Model interface {
 	// CurrentVersion returns the current version identifier of the Document
 	CurrentVersion() []byte
 
+	// CurrentVersionPreimage returns the current version pre-image of the Document. This is intended to hide the next version of an updated version of the document.
+	CurrentVersionPreimage() []byte
+
 	// PreviousVersion returns the previous version identifier of the Document
 	PreviousVersion() []byte
 
@@ -46,6 +49,9 @@ type Model interface {
 
 	// CalculateDocumentRoot returns the Document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
+
+	// GetSigningRootProof get the proof for signing root of the model.
+	GetSigningRootProof() (hashes [][]byte, err error)
 
 	// PreviousDocumentRoot returns the Document root of the previous version.
 	PreviousDocumentRoot() []byte

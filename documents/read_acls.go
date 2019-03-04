@@ -186,7 +186,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 		pfKeys = append(pfKeys, pks...)
 	}
 
-	signingRootProofHashes, err := cd.getSigningRootProofHashes()
+	signingRootProofHashes, err := cd.GetSigningRootProof()
 	if err != nil {
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}

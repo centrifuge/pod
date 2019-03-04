@@ -4,13 +4,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 // Config defines required methods required for the documents package.
@@ -127,7 +128,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 		return err
 	}
 
-	anchorID, err := anchors.ToAnchorID(model.NextVersion())
+	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		return err
 	}
@@ -168,17 +169,23 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get document root: %v", err)
 	}
 
-	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
+	anchorID, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
 	if err != nil {
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
+	signingRootProof, err := model.GetSigningRootProof()
 	if err != nil {
-		return errors.New("failed to generate ethereum MAC: %v", err)
+		return errors.New("failed to get signing root proof: %v", err)
+	}
+
+	signingRootProofHashes, err := utils.ConvertProofForEthereum(signingRootProof)
+	if err != nil {
+		return errors.New("failed to get signing root proof in ethereum format: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, signingRootProofHashes)
 
 	isDone := <-done
 

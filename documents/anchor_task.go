@@ -112,7 +112,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 
 	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
 		return d.modelSaveFunc(d.accountID[:], id, model)
-	}); err != nil {
+	}, tc.GetPrecommitEnabled()); err != nil {
 		return false, errors.New("failed to anchor document: %v", err)
 	}
 
