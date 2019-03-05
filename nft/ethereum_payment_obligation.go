@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
 	"time"
 
@@ -93,6 +92,11 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
+	nextAnchorID, err := anchors.ToAnchorID(model.NextVersion())
+	if err != nil {
+		return mreq, err
+	}
+
 	dr, err := model.CalculateDocumentRoot()
 	if err != nil {
 		return mreq, err
@@ -103,7 +107,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, docProofs.FieldProofs, rootHash)
+	requestData, err := NewMintRequest(model, tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs, rootHash)
 	if err != nil {
 		return mreq, err
 	}
@@ -200,16 +204,28 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-			requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
+		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, nextAnchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID,
+			requestData.TokenURI, requestData.AnchorID, requestData.NextAnchorID, requestData.Props, requestData.Values,
+			requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
-			requestData.TokenID, requestData.AnchorID, requestData.To.String(), ethTX.Hash().String(), ethTX.Nonce(), ethTX.CheckNonce())
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
+			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String(), ethTX.Hash().String(), ethTX.Nonce(), ethTX.CheckNonce())
 		log.Infof("Transfer pending: %s\n", ethTX.Hash().String())
+
+		log.Debugf("To: %s", requestData.To.String())
+		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
+		log.Debugf("TokenURI: %s", requestData.TokenURI)
+		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID.Bytes()))
+		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
+		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
+		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
+		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
+		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
 
 		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
 		if err != nil {
@@ -254,8 +270,11 @@ type MintRequest struct {
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
 	AnchorID *big.Int
 
-	// MerkleRoot is the root hash of the merkle proof/doc
-	MerkleRoot [32]byte
+	// NextAnchorID is the next ID of the document, when updated
+	NextAnchorID *big.Int
+
+	// Props contains the compact props for readRole and tokenRole
+	Props [][]byte
 
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
 	Values [][]byte
@@ -268,40 +287,59 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
-	proofData, err := createProofData(proofs)
+func NewMintRequest(model documents.Model, tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
+	proofData, err := createProofData(model, proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
 
 	return MintRequest{
-		To:         to,
-		TokenID:    tokenID.BigInt(),
-		TokenURI:   tokenID.URI(),
-		AnchorID:   anchorID.BigInt(),
-		MerkleRoot: rootHash,
-		Values:     proofData.Values,
-		Salts:      proofData.Salts,
-		Proofs:     proofData.Proofs}, nil
+		To:           to,
+		TokenID:      tokenID.BigInt(),
+		TokenURI:     tokenID.URI(),
+		AnchorID:     anchorID.BigInt(),
+		NextAnchorID: nextAnchorID.BigInt(),
+		Props:        proofData.Props,
+		Values:       proofData.Values,
+		Salts:        proofData.Salts,
+		Proofs:       proofData.Proofs}, nil
 }
 
 type proofData struct {
+	Props  [][]byte
 	Values [][]byte
 	Salts  [][32]byte
 	Proofs [][][32]byte
 }
 
-func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	var values = make([][]byte, len(proofspb))
+func createProofData(model documents.Model, proofspb []*proofspb.Proof) (*proofData, error) {
+	// TODO cleanup hard coded indexes using the model props
+	readRoleIndex := 5
+	tokenRoleIndex := 7
+	var props = make([][]byte, 2)  // props are only required for readRole.property, tokenRole.property
+	var values = make([][]byte, 4) // values are only required for readRole.Value
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
 
 	// TODO remove later
-	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	log.Info(json.MarshalIndent(proof, "", "  "))
-
+	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
+	//log.Info(json.MarshalIndent(proof, "", "  "))
 	for i, p := range proofspb {
-		values[i] = p.Value
+		if i == readRoleIndex {
+			props[0] = p.GetCompactName()
+		}
+		if i == tokenRoleIndex {
+			props[1] = p.GetCompactName()
+		}
+
+		if i < 3 {
+			values[i] = p.Value
+		}
+
+		if i == readRoleIndex {
+			values[3] = p.Value
+		}
+
 		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
 			return nil, err
@@ -315,7 +353,7 @@ func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 		proofs[i] = property
 	}
 
-	return &proofData{Values: values, Salts: salts, Proofs: proofs}, nil
+	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
 }
 
 func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
@@ -333,4 +371,36 @@ func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
 
 func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
+}
+
+// Following are utility methods for nft parameter debugging purposes (Don't remove)
+
+func byteSlicetoString(s [][]byte) string {
+	str := "["
+
+	for i := 0; i < len(s); i++ {
+		str += "\"" + hexutil.Encode(s[i]) + "\",\n"
+	}
+	str += "]"
+	return str
+}
+
+func byte32SlicetoString(s [][32]byte) string {
+	str := "["
+
+	for i := 0; i < len(s); i++ {
+		str += "\"" + hexutil.Encode(s[i][:]) + "\",\n"
+	}
+	str += "]"
+	return str
+}
+
+func byteByte32SlicetoString(s [][][32]byte) string {
+	str := "["
+
+	for i := 0; i < len(s); i++ {
+		str += "\"" + byte32SlicetoString(s[i]) + "\",\n"
+	}
+	str += "]"
+	return str
 }

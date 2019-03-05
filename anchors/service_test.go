@@ -45,7 +45,7 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 	correctCommitSignature := "0x4a73286521114f528967674bae4ecdc6cc94789255495429a7f58ca3ef0158ae257dd02a0ccb71d817e480d06f60f640ec021ade2ff90fe601bb7a5f4ddc569700"
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 	anchorIDTyped, _ := ToAnchorID(anchorID)
-	centIdTyped := identity.NewDIDFromByte(address)
+	centIdTyped := identity.NewDIDFromBytes(address)
 	docRootTyped, _ := ToDocumentRoot(documentRoot)
 	messageToSign := GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")

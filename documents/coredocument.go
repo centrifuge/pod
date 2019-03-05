@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
@@ -35,9 +34,6 @@ const (
 
 	// idSize represents the size of identifiers, roots etc..
 	idSize = 32
-
-	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
-	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
 
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
@@ -96,10 +92,6 @@ func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, er
 		return nil, errors.New("failed to decode collaborators: %v", err)
 	}
 
-	for i := range ids {
-		cd.Document.Collaborators = append(cd.Document.Collaborators, ids[i][:])
-	}
-
 	cd.initReadRules(ids)
 	if err := cd.setSalts(); err != nil {
 		return nil, err
@@ -155,30 +147,30 @@ func (cd *CoreDocument) setSalts() error {
 }
 
 // PrepareNewVersion prepares the next version of the CoreDocument
-// Note: salts needs to be filled by the caller
+// if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
 		return nil, errors.New("Document root is invalid")
 	}
 
-	ucs, err := fetchNewUniqueCollaborators(cd.Document.Collaborators, collaborators)
+	cs, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
-		return nil, errors.New("failed to fetch new collaborators: %v", err)
+		return nil, err
 	}
 
-	cs := cd.Document.Collaborators
-	for _, c := range ucs {
-		c := c
-		cs = append(cs, c[:])
+	// get all the old collaborators
+	oldCs, err := cd.GetCollaborators()
+	if err != nil {
+		return nil, err
 	}
 
+	ucs := filterCollaborators(cs, oldCs...)
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		PreviousVersion:    cd.Document.CurrentVersion,
 		CurrentVersion:     cd.Document.NextVersion,
 		NextVersion:        utils.RandomSlice(32),
 		PreviousRoot:       cd.Document.DocumentRoot,
-		Collaborators:      cs,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
 		Nfts:               cd.Document.Nfts,
@@ -428,53 +420,68 @@ func (cd *CoreDocument) documentTree(docType string) (tree *proofs.DocumentTree,
 
 }
 
-// GetCollaborators returns the collaborators from the role with READ_SIGN ability.
-func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (ids []identity.DID, err error) {
-	exclude := make(map[string]struct{})
-	for _, id := range filterIDs {
-		exclude[id.String()] = struct{}{}
+// GetSignerCollaborators returns the collaborators excluding the filteredIDs
+// returns collaborators with Read_Sign permissions.
+func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, c := range cd.Document.Collaborators {
-		id := identity.NewDIDFromBytes(c)
-		if _, ok := exclude[id.String()]; ok {
-			continue
+	return filterCollaborators(cs, filterIDs...), nil
+}
+
+// GetCollaborators returns the collaborators excluding the filteredIDs
+// returns collaborators with Read and Read_Sign permissions.
+func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN, coredocumentpb.Action_ACTION_READ)
+	if err != nil {
+		return nil, err
+	}
+
+	return filterCollaborators(cs, filterIDs...), nil
+}
+
+// getCollaborators returns all the collaborators who belongs to the actions passed.
+func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
+	findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+		if len(role.Collaborators) < 1 {
+			return false
 		}
 
-		ids = append(ids, id)
+		for _, c := range role.Collaborators {
+			// TODO(ved): we should ideally check the address length of 20
+			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
+			ids = append(ids, identity.NewDIDFromBytes(c))
+		}
+
+		return false
+	}, actions...)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return ids, nil
 }
 
-// fetchNewUniqueCollaborators returns the unique collaborators from newCollabs in reference to oldCollabs.
-func fetchNewUniqueCollaborators(oldCollabs [][]byte, newCollabs []string) (ids []identity.DID, err error) {
-	ocsm := make(map[string]struct{})
-	for _, c := range oldCollabs {
-		cs := strings.ToLower(hexutil.Encode(c))
-		ocsm[cs] = struct{}{}
+// filterCollaborators removes the filterIDs if any from cs and returns the result
+func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filteredIDs []identity.DID) {
+	filter := make(map[string]struct{})
+	for _, c := range filterIDs {
+		cs := strings.ToLower(c.String())
+		filter[cs] = struct{}{}
 	}
 
-	var uc []string
-	for _, c := range newCollabs {
-		cs := strings.ToLower(c)
-		if _, ok := ocsm[cs]; ok {
+	for _, id := range cs {
+		if _, ok := filter[strings.ToLower(id.String())]; ok {
 			continue
 		}
 
-		uc = append(uc, c)
+		filteredIDs = append(filteredIDs, id)
 	}
 
-	for _, c := range uc {
-		id, err := identity.NewDIDFromString(c)
-		if err != nil {
-			return nil, err
-		}
-
-		ids = append(ids, id)
-	}
-
-	return ids, nil
+	return filteredIDs
 }
 
 // CalculateDocumentRoot calculates the Document root of the core Document.

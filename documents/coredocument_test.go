@@ -7,19 +7,20 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -66,49 +67,41 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 	o2 := testingidentity.GenerateRandomDID()
 	n1 := testingidentity.GenerateRandomDID()
 	tests := []struct {
-		old    [][]byte
-		new    []string
+		old    []identity.DID
+		new    []identity.DID
 		result []identity.DID
-		err    bool
 	}{
+		// when old cs are nil
 		{
-			new:    []string{n1.String()},
-			result: []identity.DID{n1},
+			new: []identity.DID{n1},
 		},
 
 		{
-			old:    [][]byte{o1[:]},
-			new:    []string{n1.String()},
-			result: []identity.DID{n1},
+			old:    []identity.DID{o1, o2},
+			result: []identity.DID{o1, o2},
 		},
 
 		{
-			old: [][]byte{o1[:], n1[:]},
-			new: []string{n1.String()},
+			old:    []identity.DID{o1},
+			new:    []identity.DID{n1},
+			result: []identity.DID{o1},
 		},
 
 		{
-			old: [][]byte{o1[:], o2[:]},
+			old:    []identity.DID{o1, n1},
+			new:    []identity.DID{n1},
+			result: []identity.DID{o1},
 		},
 
-		// new collaborator with wrong format
 		{
-			old: [][]byte{o1[:], o2[:]},
-			new: []string{"0x0102030405"},
-			err: true,
+			old:    []identity.DID{o1, n1},
+			new:    []identity.DID{o2},
+			result: []identity.DID{o1, n1},
 		},
 	}
 
 	for _, c := range tests {
-		uc, err := fetchNewUniqueCollaborators(c.old, c.new)
-		if err != nil {
-			if c.err {
-				continue
-			}
-
-			t.Fatal(err)
-		}
-
+		uc := filterCollaborators(c.old, c.new...)
 		assert.Equal(t, c.result, uc)
 	}
 }
@@ -116,32 +109,42 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd := newCoreDocument()
 
-	//collaborators need to be hex string
-	collabs := []string{"some ID"}
-	ncd, err := cd.PrepareNewVersion(collabs, false)
-	assert.Error(t, err)
-	assert.Nil(t, ncd)
-
 	// missing DocumentRoot
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
 	c := []string{c1.String(), c2.String()}
-	ncd, err = cd.PrepareNewVersion(c, false)
+	ncd, err := cd.PrepareNewVersion(c, false)
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Document root is invalid")
+	assert.Nil(t, ncd)
+
+	//collaborators need to be hex string
+	cd.Document.DocumentRoot = utils.RandomSlice(32)
+	collabs := []string{"some ID"}
+	ncd, err = cd.PrepareNewVersion(collabs, false)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	ncd, err = cd.PrepareNewVersion(c, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
-	assert.Len(t, ncd.Document.Collaborators, 2)
+	cs, err := ncd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, cs, 2)
+	assert.Contains(t, cs, c1)
+	assert.Contains(t, cs, c2)
 	assert.Nil(t, ncd.Document.CoredocumentSalts)
 
 	ncd, err = cd.PrepareNewVersion(c, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
-	assert.Len(t, ncd.Document.Collaborators, 2)
+	cs, err = ncd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, cs, 2)
+	assert.Contains(t, cs, c1)
+	assert.Contains(t, cs, c2)
 	assert.NotNil(t, ncd.Document.CoredocumentSalts)
 
 	assert.Equal(t, cd.Document.NextVersion, ncd.Document.CurrentVersion)
@@ -234,7 +237,6 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 
 	cd := newCoreDocument()
 	cd.Document.EmbeddedData = docAny
-	cd.Document.Collaborators = [][]byte{utils.RandomSlice(32), utils.RandomSlice(32)}
 	assert.NoError(t, cd.setSalts())
 	cd.Document.DataRoot = testTree.RootHash()
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
@@ -265,7 +267,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			3,
 		},
 		{
-			CDTreePrefix + ".collaborators[0]",
+			CDTreePrefix + ".next_version",
 			true,
 			6,
 		},
@@ -303,4 +305,97 @@ func TestCoreDocument_setSalts(t *testing.T) {
 	salts := cd.Document.CoredocumentSalts
 	assert.Nil(t, cd.setSalts())
 	assert.Equal(t, salts, cd.Document.CoredocumentSalts)
+}
+
+func TestCoreDocument_getCollaborators(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	id2 := testingidentity.GenerateRandomDID()
+	ids := []string{id1.String()}
+	cd, err := NewCoreDocumentWithCollaborators(ids)
+	assert.NoError(t, err)
+	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, cs[0], id1)
+
+	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 0)
+
+	role := newRole()
+	role.Collaborators = append(role.Collaborators, id2[:])
+	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+
+	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, cs[0], id2)
+
+	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 2)
+	assert.Contains(t, cs, id1)
+	assert.Contains(t, cs, id2)
+}
+
+func TestCoreDocument_GetCollaborators(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	id2 := testingidentity.GenerateRandomDID()
+	ids := []string{id1.String()}
+	cd, err := NewCoreDocumentWithCollaborators(ids)
+	assert.NoError(t, err)
+	cs, err := cd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, cs[0], id1)
+
+	cs, err = cd.GetCollaborators(id1)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 0)
+
+	role := newRole()
+	role.Collaborators = append(role.Collaborators, id2[:])
+	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+
+	cs, err = cd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, cs, 2)
+	assert.Contains(t, cs, id1)
+	assert.Contains(t, cs, id2)
+
+	cs, err = cd.GetCollaborators(id2)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Contains(t, cs, id1)
+}
+
+func TestCoreDocument_GetSignCollaborators(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	id2 := testingidentity.GenerateRandomDID()
+	ids := []string{id1.String()}
+	cd, err := NewCoreDocumentWithCollaborators(ids)
+	assert.NoError(t, err)
+	cs, err := cd.GetSignerCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Equal(t, cs[0], id1)
+
+	cs, err = cd.GetSignerCollaborators(id1)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 0)
+
+	role := newRole()
+	role.Collaborators = append(role.Collaborators, id2[:])
+	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+
+	cs, err = cd.GetSignerCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Contains(t, cs, id1)
+	assert.NotContains(t, cs, id2)
+
+	cs, err = cd.GetSignerCollaborators(id2)
+	assert.NoError(t, err)
+	assert.Len(t, cs, 1)
+	assert.Contains(t, cs, id1)
 }

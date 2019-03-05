@@ -212,28 +212,28 @@ func (s *peer) getSignatureAsync(ctx context.Context, cd coredocumentpb.CoreDocu
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature, verifies them, and returns those signatures.
-func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Model) (signatures []*coredocumentpb.Signature, err error) {
+func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Model) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
 	nc, err := s.config.GetConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, errors.New("failed to get self ID")
+		return nil, nil, errors.New("failed to get self ID")
 	}
 
-	cs, err := model.GetCollaborators(selfDID)
+	cs, err := model.GetSignerCollaborators(selfDID)
 	if err != nil {
-		return nil, errors.New("failed to get external collaborators")
+		return nil, nil, errors.New("failed to get external collaborators")
 	}
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return nil, errors.New("failed to pack core document: %v", err)
+		return nil, nil, errors.New("failed to pack core document: %v", err)
 	}
 
 	var count int
@@ -250,15 +250,15 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 
 	for _, resp := range responses {
 		if resp.err != nil {
-			// this error is ignored since we would still anchor the document
-			log.Error(resp.err)
+			log.Warning(resp.err)
+			signatureCollectionErrors = append(signatureCollectionErrors, resp.err)
 			continue
 		}
 
 		signatures = append(signatures, resp.resp.Signature)
 	}
 
-	return signatures, nil
+	return signatures, signatureCollectionErrors, nil
 }
 
 func convertClientError(recv *p2ppb.Envelope) error {

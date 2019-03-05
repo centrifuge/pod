@@ -10,14 +10,13 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -70,7 +69,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 	ctxh, err := contextutil.New(context.Background(), acci)
 	assert.Nil(t, err)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	signs, err := client.GetSignaturesForDocument(ctxh, dm)
+	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	assert.NotNil(t, signs)
 }
@@ -83,7 +82,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	acci.IdentityID = defaultDID[:]
 	ctxh, err := contextutil.New(context.Background(), acci)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	signs, err := client.GetSignaturesForDocument(ctxh, dm)
+	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	// one signature would be missing
 	assert.Equal(t, 0, len(signs))

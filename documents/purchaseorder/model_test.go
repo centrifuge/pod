@@ -4,6 +4,7 @@ package purchaseorder
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -39,6 +41,7 @@ import (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var configService config.Service
+var defaultDID = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -209,10 +212,12 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
 
-func TestPOModel_GenerateProofs(t *testing.T) {
+func TestPOModel_CreateProofs(t *testing.T) {
 	po := createPurchaseOrder(t)
 	assert.NotNil(t, po)
-	proof, err := po.CreateProofs([]string{"po.po_number", documents.CDTreePrefix + ".collaborators[0]", documents.CDTreePrefix + ".document_type"})
+	rk := po.Document.Roles[0].RoleKey
+	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
+	proof, err := po.CreateProofs([]string{"po.po_number", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := po.DocumentRootTree()
@@ -223,14 +228,14 @@ func TestPOModel_GenerateProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate collaborators[0]
+	// Validate roles collaborators
 	valid, err = tree.ValidateProof(proof[1])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	id := identity.NewDIDFromBytes(proof[1].Value)
-	assert.True(t, po.CoreDocument.AccountCanRead(id))
+	acc := identity.NewDIDFromBytes(proof[1].Value)
+	assert.True(t, po.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -255,7 +260,7 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 
 func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), defaultDID.String())
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)

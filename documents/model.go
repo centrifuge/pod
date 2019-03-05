@@ -1,6 +1,8 @@
 package documents
 
 import (
+	"context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -73,7 +75,11 @@ type Model interface {
 
 	// GetCollaborators returns the collaborators of this Document.
 	// filter ids should not be returned
+	// Note: returns all the collaborators with Read and Read_Sign permission
 	GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)
+
+	// GetSignerCollaborators works like GetCollaborators except it returns only those with Read_Sign permission.
+	GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)
 
 	// AccountCanRead returns true if the account can read the document
 	AccountCanRead(account identity.DID) bool
@@ -81,8 +87,8 @@ type Model interface {
 	// NFTOwnerCanRead returns error if the NFT cannot read the document.
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
-	// ATOwnerCanRead returns error if the NFT cannot read the document.
-	ATOwnerCanRead(tokenID, docID []byte, account identity.DID) (err error)
+	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
+	ATGranteeCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
 }
 
 // TokenRegistry defines NFT related functions.

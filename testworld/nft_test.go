@@ -6,38 +6,39 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
-	t.SkipNow()
 	t.Parallel()
 	tests := []struct {
 		name                                     string
 		grantAccess, tokenProof, readAccessProof bool
 	}{
-		{
-			name:        "grant access",
-			grantAccess: true,
-		},
-
-		{
-			name:       "token proof",
-			tokenProof: true,
-		},
-
-		{
-			name:        "grant access and token proof",
-			grantAccess: true,
-			tokenProof:  true,
-		},
-
-		{
-			name:            "grant access and read access proof",
-			grantAccess:     true,
-			readAccessProof: true,
-		},
+		//{
+		//	name:        "grant access",
+		//	grantAccess: true,
+		//},
+		//
+		//{
+		//	name:       "token proof",
+		//	tokenProof: true,
+		//},
+		//
+		//{
+		//	name:        "grant access and token proof",
+		//	grantAccess: true,
+		//	tokenProof:  true,
+		//},
+		//
+		//{
+		//	name:            "grant access and read access proof",
+		//	grantAccess:     true,
+		//	readAccessProof: true,
+		//},
 
 		{
 			name:            "grant access, token proof and read access proof",
@@ -100,7 +101,7 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 			"identifier":                docIdentifier,
 			"registryAddress":           doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", "next_version"},
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,
@@ -117,7 +118,6 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 }
 
 func TestPaymentObligationMint_errors(t *testing.T) {
-	t.SkipNow()
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	tests := []struct {
