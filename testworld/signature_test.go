@@ -3,7 +3,6 @@
 package testworld
 
 import (
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -16,13 +15,16 @@ import (
 
 func TestHost_FakedSignature(t *testing.T) {
 	t.Parallel()
+
+	// Hosts
+	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
 	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, eve, false)
+	coredoc := prepareCoreDocument(t, collaborators, alice)
 
 	err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
 	assert.NoError(t, err)
@@ -45,14 +47,16 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, eve, true)
+	coredoc := prepareCoreDocument(t, collaborators, eve)
 
 	err = eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(coredoc.Document.Signatures))
+
+	// TODO: Validate signatures before and after
 }
 
-func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite, useRevokedKey bool) *documents.CoreDocumentModel {
+func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite) *documents.CoreDocumentModel {
 	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
 	m, err := hts.host.docSrv.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
@@ -68,16 +72,10 @@ func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite
 
 	dm.Document.SigningRoot = tree.RootHash()
 
-	var sig *coredocumentpb.Signature
+	idConfig, err := identity.GetIdentityConfig(hts.host.config)
+	assert.Nil(t, err)
 
-	if useRevokedKey {
-		idConfig, err := identity.GetIdentityConfig(hts.host.config)
-		assert.Nil(t, err)
-
-		sig = identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
-	} else {
-		sig = &coredocumentpb.Signature{EntityId: utils.RandomSlice(7)}
-	}
+	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
 
 	dm.Document.Signatures = append(dm.Document.Signatures, sig)
 
