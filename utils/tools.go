@@ -7,7 +7,6 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -191,6 +190,7 @@ func ConvertByte32ToInt(nb [32]byte) int {
 	return int(binary.BigEndian.Uint64(nb[:]))
 }
 
+// ConvertProofForEthereum converts a proof to 32 byte format needed by ethereum
 func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
 	var property [][32]byte
 	for _, hash := range sortedHashes {
@@ -204,6 +204,7 @@ func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
 	return property, nil
 }
 
+// GenerateHashPair generates a preimage and hash pair
 func GenerateHashPair(preimageSize int) (preimage, hash []byte, err error) {
 	preimage = RandomSlice(preimageSize)
 	h := sha256.New()
@@ -212,5 +213,5 @@ func GenerateHashPair(preimageSize int) (preimage, hash []byte, err error) {
 		return []byte{}, []byte{}, err
 	}
 	hash = h.Sum(hash)
-	return
+	return preimage, hash, nil
 }

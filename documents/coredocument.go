@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/any"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -113,7 +112,7 @@ func (cd *CoreDocument) CurrentVersion() []byte {
 	return cd.Document.CurrentVersion
 }
 
-// CurrentVersion returns the current version of the Document
+// CurrentVersionPreimage returns the current version preimage of the Document
 func (cd *CoreDocument) CurrentVersionPreimage() []byte {
 	return cd.Document.CurrentPreimage
 }
