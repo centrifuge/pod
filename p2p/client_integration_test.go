@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
-	acc, err := configstore.NewAccount("", cfg)
+	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
@@ -76,7 +76,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
-	acc, err := configstore.NewAccount("", cfg)
+	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]

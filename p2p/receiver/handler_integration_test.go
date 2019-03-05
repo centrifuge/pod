@@ -78,7 +78,7 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = centID[:]

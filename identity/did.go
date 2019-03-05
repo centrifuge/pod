@@ -27,6 +27,11 @@ const (
 
 	// KeyTypeECDSA has the value one in the ERC725 identity contract
 	KeyTypeECDSA = 1
+
+	keyPurposeMgmt         = "MANAGEMENT"
+	keyPurposeAction       = "ACTION"
+	keyPurposeP2PDiscovery = "P2P_DISCOVERY"
+	keyPurposeSigning      = "SIGNING"
 )
 
 var (
@@ -51,28 +56,28 @@ func init() {
 func getKeyPurposeManagement() Purpose {
 	enc := "0000000000000000000000000000000000000000000000000000000000000001"
 	v, _ := new(big.Int).SetString(enc, 16)
-	return Purpose{Name: "MANAGEMENT", HexValue: enc, Value: v}
+	return Purpose{Name: keyPurposeMgmt, HexValue: enc, Value: v}
 }
 
 // getKeyPurposeAction is calculated out of Hex(leftPadding(2,32))
 func getKeyPurposeAction() Purpose {
 	enc := "0000000000000000000000000000000000000000000000000000000000000002"
 	v, _ := new(big.Int).SetString(enc, 16)
-	return Purpose{Name: "ACTION", HexValue: enc, Value: v}
+	return Purpose{Name: keyPurposeAction, HexValue: enc, Value: v}
 }
 
 // getKeyPurposeP2PDiscovery is calculated out of Hex(sha256("CENTRIFUGE@P2P_DISCOVERY"))
 func getKeyPurposeP2PDiscovery() Purpose {
 	hashed := "88dbd1f0b244e515ab5aee93b5dee6a2d8e326576a583822635a27e52e5b591e"
 	v, _ := new(big.Int).SetString(hashed, 16)
-	return Purpose{Name: "P2P_DISCOVERY", HexValue: hashed, Value: v}
+	return Purpose{Name: keyPurposeP2PDiscovery, HexValue: hashed, Value: v}
 }
 
 // getKeyPurposeSigning is calculated out of Hex(sha256("CENTRIFUGE@SIGNING"))
 func getKeyPurposeSigning() Purpose {
 	hashed := "774a43710604e3ce8db630136980a6ba5a65b5e6686ee51009ed5f3fded6ea7e"
 	v, _ := new(big.Int).SetString(hashed, 16)
-	return Purpose{Name: "SIGNING", HexValue: hashed, Value: v}
+	return Purpose{Name: keyPurposeSigning, HexValue: hashed, Value: v}
 }
 
 // Purpose contains the different representation of purpose along the code
@@ -82,15 +87,16 @@ type Purpose struct {
 	Value    *big.Int
 }
 
+// GetPurposeByName retrieves the Purpose by name
 func GetPurposeByName(name string) Purpose {
 	switch name {
-	case "MANAGEMENT":
+	case keyPurposeMgmt:
 		return getKeyPurposeManagement()
-	case "ACTION":
+	case keyPurposeAction:
 		return getKeyPurposeAction()
-	case "P2P_DISCOVERY":
+	case keyPurposeP2PDiscovery:
 		return getKeyPurposeP2PDiscovery()
-	case "SIGNING":
+	case keyPurposeSigning:
 		return getKeyPurposeSigning()
 	default:
 		return Purpose{}
