@@ -83,7 +83,7 @@ func (i *MockIdentityService) Exists(ctx context.Context, did identity.DID) erro
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (i *MockIdentityService) ValidateKey(ctx context.Context, did identity.DID, key []byte, purpose int64) error {
+func (i *MockIdentityService) ValidateKey(ctx context.Context, did identity.DID, key []byte, purpose *big.Int) error {
 	args := i.Called(ctx, did, key, purpose)
 	return args.Error(0)
 }

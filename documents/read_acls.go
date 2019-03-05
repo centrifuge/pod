@@ -370,7 +370,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	err = idService.ValidateKey(ctx, granterID, at.Key, identity.KeyPurposeSigning)
+	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value))
 	if err != nil {
 		return err
 	}
@@ -441,7 +441,7 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 		RoleIdentifier:     roleID[:],
 		DocumentIdentifier: docID,
 		Signature:          sig.Signature,
-		Key:                keys[identity.KeyPurposeSigning].PublicKey,
+		Key:                keys[identity.KeyPurposeSigning.Name].PublicKey,
 	}
 
 	return at, nil

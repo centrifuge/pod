@@ -72,8 +72,8 @@ func TestService_GetTransaction(t *testing.T) {
 	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
 
 	cid := testingidentity.GenerateRandomDID()
-	bytes := utils.RandomSlice(identity.CentIDLength)
-	assert.Equal(t, identity.CentIDLength, copy(cid[:], bytes))
+	bytes := utils.RandomSlice(identity.DIDLength)
+	assert.Equal(t, identity.DIDLength, copy(cid[:], bytes))
 	txn := transactions.NewTransaction(cid, "Some transaction")
 
 	// no transaction

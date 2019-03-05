@@ -25,10 +25,8 @@ var log = logging.Logger("centrifuge-cmd")
 func generateKeys(config config.Configuration) {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
 	signPub, signPvt := config.GetSigningKeyPair()
-	ethAuthPub, ethAuthPvt := config.GetEthAuthKeyPair()
 	crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519)
 	crypto.GenerateSigningKeyPair(signPub, signPvt, crypto.CurveSecp256K1)
-	crypto.GenerateSigningKeyPair(ethAuthPub, ethAuthPvt, crypto.CurveSecp256K1)
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
@@ -76,7 +74,7 @@ func CreateConfig(
 	// create keys locally
 	generateKeys(cfg)
 
-	acc, err := configstore.TempAccount("", cfg)
+	acc, err := configstore.TempAccount("main", cfg)
 	if err != nil {
 		return err
 	}
