@@ -346,7 +346,7 @@ func createProofData(model documents.Model, proofspb []*proofspb.Proof) (*proofD
 		}
 
 		salts[i] = salt32
-		property, err := convertProofProperty(p.SortedHashes)
+		property, err := utils.ConvertProofForEthereum(p.SortedHashes)
 		if err != nil {
 			return nil, err
 		}
@@ -354,19 +354,6 @@ func createProofData(model documents.Model, proofspb []*proofspb.Proof) (*proofD
 	}
 
 	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
-}
-
-func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
-	var property [][32]byte
-	for _, hash := range sortedHashes {
-		hash32, err := utils.SliceToByte32(hash)
-		if err != nil {
-			return nil, err
-		}
-		property = append(property, hash32)
-	}
-
-	return property, nil
 }
 
 func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {

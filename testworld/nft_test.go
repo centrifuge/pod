@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/stretchr/testify/assert"
 )
 

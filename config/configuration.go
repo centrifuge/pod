@@ -108,6 +108,7 @@ type Configuration interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
+	GetPrecommitEnabled() bool
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -128,6 +129,7 @@ type Account interface {
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
+	GetPrecommitEnabled() bool
 
 	// CreateProtobuf creates protobuf
 	CreateProtobuf() (*accountpb.AccountData, error)
@@ -411,6 +413,11 @@ func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
 }
 
+// GetPrecommitEnabled returns true if precommit for anchors is enabled
+func (c *configuration) GetPrecommitEnabled() bool {
+	return c.GetBool("anchoring.precommit")
+}
+
 // LoadConfiguration loads the configuration from the given file.
 func LoadConfiguration(configFile string) Configuration {
 	cfg := &configuration{configFile: configFile, mu: sync.RWMutex{}}
@@ -481,6 +488,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
+	preCommitEnabled := args["preCommitEnabled"].(bool)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -510,6 +518,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
 	v.Set("accounts.keystore", targetDataDir+"/accounts")
+	v.Set("anchoring.precommit", preCommitEnabled)
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
