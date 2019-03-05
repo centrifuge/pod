@@ -89,13 +89,9 @@ func ByteArrayTo32BytesLeftPadded(in []byte) ([32]byte, error) {
 	if len(in) > 32 {
 		return byte32, errors.New("incorrect input length %d should be 32", len(in))
 	}
-	if len(in) == 0 {
-		return byte32, nil
-	}
-	for i := 1; i <= len(in); i++ {
-		byte32[32-i] = in[len(in)-i]
-	}
-	return byte32, nil
+	padLength := 32 - len(in)
+	out := append(make([]byte, padLength, padLength), in...)
+	return SliceToByte32(out)
 }
 
 // RandomSlice returns a randomly filled byte array with length of given size

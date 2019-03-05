@@ -71,13 +71,13 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 		return nil, documents.ErrDocumentNil
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	invoiceModel := new(Invoice)
-	err = invoiceModel.InitInvoiceInput(payload, selfDID.String())
+	err = invoiceModel.InitInvoiceInput(payload, did.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

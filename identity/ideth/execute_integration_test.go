@@ -55,7 +55,7 @@ func TestExecute_successful(t *testing.T) {
 
 	//add action key
 	actionKey := utils.AddressTo32Bytes(common.HexToAddress(actionAddress))
-	key := id.NewKey(actionKey, id.KeyPurposeAction.Value, utils.ByteSliceToBigInt([]byte{123}))
+	key := id.NewKey(actionKey, &(id.KeyPurposeAction.Value), utils.ByteSliceToBigInt([]byte{123}))
 	err = idSrv.AddKey(aCtx, key)
 	assert.Nil(t, err)
 
