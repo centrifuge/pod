@@ -19,6 +19,23 @@ import (
 	"time"
 )
 
+func TestHost_ValidSignature(t *testing.T) {
+	t.Parallel()
+
+	// Hosts
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	ctxh := testingconfig.CreateAccountContext(t, alice.host.config)
+
+	collaborators := [][]byte{bob.id[:]}
+	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, alice.host.config)
+	assert.Equal(t, 1, len(dm.Signatures()))
+
+	signatures, _, _ := alice.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	assert.Equal(t, 1, len(signatures))
+}
+
 func TestHost_FakedSignature(t *testing.T) {
 	t.Parallel()
 
@@ -27,14 +44,14 @@ func TestHost_FakedSignature(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id.String(), alice.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, alice.host.config)
 
-	signs, _, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(signs))
+	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	assert.Error(t, signatureErrors[0], "Signature verification failed error")
+	assert.Equal(t, 0, len(signatures))
 }
 
 func TestHost_RevokedSigningKey(t *testing.T) {
@@ -42,28 +59,26 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, big.NewInt(identity.KeyPurposeSigning))
 	assert.NoError(t, err)
 
 	// Revoke Key
-	eve.host.idService.RevokeKey(ectxh, keys[0])
+	eve.host.idService.RevokeKey(ctxh, keys[0])
 	response, err := eve.host.idService.GetKey(eve.id, keys[0])
-	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
+	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id.String(), eve.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, eve.host.config)
 
-	signs, _, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
-	assert.NoError(t, err)
-
-	// TODO: Validate signatures before and after
-	assert.Equal(t, 2, len(signs))
+	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	assert.Error(t, signatureErrors[0], "Signature verification failed error")
+	assert.Equal(t, 0, len(signatures))
 }
 
 // Helper Methods
-func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID string, config config.Configuration) documents.Model {
+func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, config config.Configuration) documents.Model {
 	payload := testingdocuments.CreatePOPayload()
 	var cs []string
 	for _, c := range collaborators {
@@ -72,7 +87,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID st
 	payload.Collaborators = cs
 
 	po := new(purchaseorder.PurchaseOrder)
-	err := po.InitPurchaseOrderInput(payload, identityDID)
+	err := po.InitPurchaseOrderInput(payload, identityDID.String())
 	assert.NoError(t, err)
 
 	_, err = po.CalculateDataRoot()
@@ -86,7 +101,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID st
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
-		EntityId:  []byte(identityDID),
+		EntityId:  identityDID[:],
 		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
