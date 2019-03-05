@@ -49,14 +49,13 @@ func TestExecute_successful(t *testing.T) {
 
 	// add node Ethereum address as a action key
 	// only an action key can use the execute method
-	actionPurpose := utils.ByteSliceToBigInt([]byte{2})
 	ethAccount, err := cfg.GetEthereumAccount(cfg.GetEthereumDefaultAccountName())
 	assert.Nil(t, err)
 	actionAddress := ethAccount.Address
 
 	//add action key
 	actionKey := utils.AddressTo32Bytes(common.HexToAddress(actionAddress))
-	key := id.NewKey(actionKey, actionPurpose, utils.ByteSliceToBigInt([]byte{123}))
+	key := id.NewKey(actionKey, &(id.KeyPurposeAction.Value), utils.ByteSliceToBigInt([]byte{123}))
 	err = idSrv.AddKey(aCtx, key)
 	assert.Nil(t, err)
 

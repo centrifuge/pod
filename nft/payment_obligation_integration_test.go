@@ -59,7 +59,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(t, err)
 	did := identity.NewDID(*didAddr)
-	tc, err := configstore.TempAccount("", cfg)
+	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]

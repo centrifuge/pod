@@ -154,14 +154,12 @@ func updateKeys(c config.Configuration) config.Configuration {
 	n.MainIdentity.P2PKeyPair.Priv = "../build/resources/p2pKey.key.pem"
 	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
 	n.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
-	n.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"
-	n.MainIdentity.EthAuthKeyPair.Priv = "../build/resources/ethauth.key.pem"
 	return c
 }
 
 func mockmockConfigStore(n config.Configuration) *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
 	mockConfigStore.On("GetConfig").Return(n, nil)
-	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.CentIDLength)}}, nil)
+	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.DIDLength)}}, nil)
 	return mockConfigStore
 }

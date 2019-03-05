@@ -76,11 +76,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestInvoice_PackCoreDocument(t *testing.T) {
-	id, err := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 
 	inv := new(Invoice)
-	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String()))
+	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String()))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
@@ -90,9 +91,10 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 
 func TestInvoice_JSON(t *testing.T) {
 	inv := new(Invoice)
-	id, err := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String()))
+	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String()))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
@@ -154,7 +156,10 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
+	assert.NoError(t, err)
+
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
 		Sender:    "some number",
@@ -163,7 +168,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 		ExtraData: "some data",
 	}
 	inv := new(Invoice)
-	err := inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
 	assert.Nil(t, inv.Recipient)
@@ -174,7 +179,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	data.ExtraData = "0x010203020301"
 	recipientDID := testingidentity.GenerateRandomDID()
 	data.Recipient = recipientDID.String()
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -183,7 +188,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	senderDID := testingidentity.GenerateRandomDID()
 	data.Sender = senderDID.String()
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -192,7 +197,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	payeeDID := testingidentity.GenerateRandomDID()
 	data.Payee = payeeDID.String()
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, id.ID.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
@@ -201,7 +206,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -209,7 +214,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, id.ID.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], senderDID[:])
 	assert.Equal(t, inv.Payee[:], payeeDID[:])
@@ -218,9 +223,11 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	id, _ := contextutil.Self(testingconfig.CreateAccountContext(t, cfg))
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctx)
+	assert.NoError(t, err)
 	m := new(Invoice)
-	err := m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), id.ID.String())
+	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String())
 	assert.Nil(t, err, "Init must pass")
 	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 

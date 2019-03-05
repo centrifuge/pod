@@ -46,7 +46,8 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
-	tc, _ := configstore.TempAccount("", cfg)
+	tc, err := configstore.TempAccount("main", cfg)
+	assert.NoError(&testing.T{}, err)
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(&testing.T{}, err)
 	acc := tc.(*configstore.Account)
@@ -61,7 +62,7 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
-	acc, err := configstore.NewAccount("", cfg)
+	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
@@ -75,7 +76,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
-	acc, err := configstore.NewAccount("", cfg)
+	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
@@ -102,7 +103,7 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(t, err)
 	did := identity.NewDID(*didAddr)
-	tc, err := configstore.TempAccount("", cfg)
+	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]
@@ -121,9 +122,13 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) documents.Model {
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	idConfig.ID = defaultDID
-	assert.Nil(t, err)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accCfg, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	acc := accCfg.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	accKeys, err := acc.GetKeys()
+	assert.NoError(t, err)
 	payalod := testingdocuments.CreatePOPayload()
 	var cs []string
 	for _, c := range collaborators {
@@ -131,17 +136,17 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	}
 	payalod.Collaborators = cs
 	po := new(purchaseorder.PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payalod, idConfig.ID.String())
+	err = po.InitPurchaseOrderInput(payalod, defaultDID.String())
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		EntityId:  idConfig.ID[:],
-		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		EntityId:  defaultDID[:],
+		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}

@@ -71,13 +71,13 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 		return nil, documents.ErrDocumentNil
 	}
 
-	id, err := contextutil.Self(ctx)
+	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	invoiceModel := new(Invoice)
-	err = invoiceModel.InitInvoiceInput(payload, id.ID.String())
+	err = invoiceModel.InitInvoiceInput(payload, did.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -87,7 +87,7 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 
 // validateAndPersist validates the document, calculates the data root, and persists to DB
 func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -104,7 +104,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], inv.CurrentVersion(), inv)
+	err = s.repo.Create(selfDID[:], inv.CurrentVersion(), inv)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -114,7 +114,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
 func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -125,7 +125,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, inv.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, inv.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -134,7 +134,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 
 // Update finds the old document, validates the new version and persists the updated document
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -150,7 +150,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, new.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}

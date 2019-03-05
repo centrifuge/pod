@@ -78,7 +78,7 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	centID := createIdentity(t)
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = centID[:]
@@ -163,20 +163,21 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
 
 	// Anchor document
-	idConfig, err := identity.GetIdentityConfig(cfg)
+	accDID, err := contextutil.AccountDID(ctx)
+	assert.NoError(t, err)
 	anchorIDTyped, _ := anchors.ToAnchorID(cd.CurrentVersion)
 	docRootTyped, _ := anchors.ToDocumentRoot(cd.DocumentRoot)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
 	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
 
-	anchorResp, err := handler.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: &cd}, idConfig.ID[:])
+	anchorResp, err := handler.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: &cd}, accDID[:])
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelUpdateKeyNotFound.Error())
 	assert.Nil(t, anchorResp)
@@ -192,7 +193,7 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument(t *testing.T) {
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	centrifugeId := createIdentity(t)
 	acc := tc.(*configstore.Account)
@@ -231,7 +232,7 @@ func createIdentity(t *testing.T) identity.DID {
 	// Create Identity
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(t, err)
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = didAddr.Bytes()
@@ -242,24 +243,18 @@ func createIdentity(t *testing.T) identity.DID {
 	assert.Nil(t, err, "should not error out when creating identity")
 	assert.Equal(t, did.String(), didAddr.String(), "Resulting Identity should have the same ID as the input")
 
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	assert.NoError(t, err)
 	// Add Keys
-	pk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeP2P].PublicKey)
+	accKeys, err := tc.GetKeys()
 	assert.NoError(t, err)
-	keyDID := identity.NewKey(pk, big.NewInt(identity.KeyPurposeP2P), big.NewInt(identity.KeyTypeECDSA))
+	pk, err := utils.SliceToByte32(accKeys[identity.KeyPurposeP2PDiscovery.Name].PublicKey)
+	assert.NoError(t, err)
+	keyDID := identity.NewKey(pk, &(identity.KeyPurposeP2PDiscovery.Value), big.NewInt(identity.KeyTypeECDSA))
 	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
-	sPk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeSigning].PublicKey)
+	sPk, err := utils.SliceToByte32(accKeys[identity.KeyPurposeSigning.Name].PublicKey)
 	assert.NoError(t, err)
-	keyDID = identity.NewKey(sPk, big.NewInt(identity.KeyPurposeSigning), big.NewInt(identity.KeyTypeECDSA))
-	err = idService.AddKey(ctx, keyDID)
-	assert.Nil(t, err, "should not error out when adding key to identity")
-
-	secPk, err := utils.SliceToByte32(idConfig.Keys[identity.KeyPurposeEthMsgAuth].PublicKey)
-	assert.NoError(t, err)
-	keyDID = identity.NewKey(secPk, big.NewInt(identity.KeyPurposeEthMsgAuth), big.NewInt(identity.KeyTypeECDSA))
+	keyDID = identity.NewKey(sPk, &(identity.KeyPurposeSigning.Value), big.NewInt(identity.KeyTypeECDSA))
 	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
@@ -267,24 +262,28 @@ func createIdentity(t *testing.T) identity.DID {
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	idConfig.ID = defaultDID
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accCfg, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	acc := accCfg.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	accKeys, err := acc.GetKeys()
+	assert.NoError(t, err)
 	if po == nil {
 		payload := testingdocuments.CreatePOPayload()
 		po = new(purchaseorder.PurchaseOrder)
-		err = po.InitPurchaseOrderInput(payload, idConfig.ID.String())
+		err = po.InitPurchaseOrderInput(payload, defaultDID.String())
 		assert.NoError(t, err)
 	}
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		EntityId:  idConfig.ID[:],
-		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		EntityId:  defaultDID[:],
+		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}

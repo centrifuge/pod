@@ -147,8 +147,11 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NotNil(t, model.sigs)
 	assert.Len(t, model.sigs, 1)
 	sig := model.sigs[0]
-	self, _ := contextutil.Self(ctxh)
-	assert.True(t, crypto.VerifyMessage(self.Keys[identity.KeyPurposeSigning].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
+	self, err := contextutil.Account(ctxh)
+	assert.NoError(t, err)
+	keys, err := self.GetKeys()
+	assert.NoError(t, err)
+	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
 }
 
 type p2pClient struct {
