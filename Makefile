@@ -73,12 +73,13 @@ abigen-install: ## Installs ABIGEN from vendor
 abigen-install: vendorinstall
 	go-vendorinstall github.com/ethereum/go-ethereum/cmd/abigen
 
-gen-go-abi-bindings: ## Generates GO ABI Bindings
-gen-go-abi-bindings: abigen-install
-	abigen --abi id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
-	abigen --abi ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract.go
-	abigen --abi po.abi --pkg nft --type EthereumPaymentObligationContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/ethereum_payment_obligation_contract.go
-	abigen --abi idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
+gen-abi-bindings: ## Generates GO ABI Bindings
+gen-abi-bindings: install-deps abigen-install
+	./build/scripts/migrate.sh
+#	@abigen --abi id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract_aux.go
+#	@abigen --abi ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract_aux.go
+#	@abigen --abi po.abi --pkg nft --type EthereumPaymentObligationContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/ethereum_payment_obligation_contract_aux.go
+#	@abigen --abi idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract_aux.go
 
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
