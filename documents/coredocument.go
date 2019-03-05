@@ -177,6 +177,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 		PreviousRoot:       cd.Document.DocumentRoot,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
+		TransitionRules:    cd.Document.TransitionRules,
 		Nfts:               cd.Document.Nfts,
 	}
 

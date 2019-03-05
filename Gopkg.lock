@@ -57,14 +57,14 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:36cbc3e655bd69044d0486115b9e7747db4ae15f0a6e03d851c4bf1408d83ac7"
+  digest = "1:2c70a1d77e70fac05b6ad9216a8304424ddedae03a1cd9eb7d5c2adb20bbedf8"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "d269f08e89bd195f158787d2ea59274810abc943"
+  revision = "cd4b6655ffbf1c44bb3ddd639a5f46b18bc258d3"
 
 [[projects]]
-  digest = "1:2c4a539f3864c786d38c0640026095c0074738edc741539153075847ef700651"
+  digest = "1:d356ff1419f848de543d6b2f6d95a9a2a38e5f630465c41e043704157aa9cdf3"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,7 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "60b99786660ed260414645278f43159ba3d2d9d5"
+  revision = "b5992325667104a35db388db0ef0cbf4b0c2bf03"
 
 [[projects]]
   digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
