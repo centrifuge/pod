@@ -166,7 +166,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 
 	// Anchor document
 	idConfig, err := identity.GetIdentityConfig(cfg)
-	anchorIDTyped, _ := anchors.ToAnchorID(cd.CurrentVersion)
+	anchorIDTyped, _ := anchors.ToAnchorID(cd.CurrentPreimage)
 	docRootTyped, _ := anchors.ToDocumentRoot(cd.DocumentRoot)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
@@ -212,7 +212,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	po.Document.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, _ := anchors.ToAnchorID(po.Document.CurrentVersion)
+	anchorIDTyped, _ := anchors.ToAnchorID(po.Document.CurrentPreimage)
 	docRootTyped, _ := anchors.ToDocumentRoot(po.Document.DocumentRoot)
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)

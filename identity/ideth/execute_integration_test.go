@@ -58,16 +58,19 @@ func TestExecute_successful(t *testing.T) {
 	actionKey := utils.AddressTo32Bytes(common.HexToAddress(actionAddress))
 	key := id.NewKey(actionKey, actionPurpose, utils.ByteSliceToBigInt([]byte{123}))
 	err = idSrv.AddKey(aCtx, key)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// init params
-	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
+	preimage, hashed, err := utils.GenerateHashPair(32)
+	assert.NoError(t, err)
+	testAnchorIdPreimage, _ := anchors.ToAnchorID(preimage)
+	testAnchorId, _ := anchors.ToAnchorID(hashed)
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
 	// call execute
-	err = idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
+	err = idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorIdPreimage.BigInt(), testRootHash, proofs)
 	assert.Nil(t, err, "Execute method calls should be successful")
 
 	checkAnchor(t, testAnchorId, rootHash)
@@ -126,12 +129,15 @@ func TestAnchorWithoutExecute_successful(t *testing.T) {
 	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)
 
-	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
+	preimage, hashed, err := utils.GenerateHashPair(32)
+	assert.NoError(t, err)
+	testAnchorIdPreimage, _ := anchors.ToAnchorID(preimage)
+	testAnchorId, _ := anchors.ToAnchorID(hashed)
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
 	//commit without execute method
-	commitAnchorWithoutExecute(t, anchorContract, testAnchorId, testRootHash)
+	commitAnchorWithoutExecute(t, anchorContract, testAnchorIdPreimage, testRootHash)
 
 	opts, _ := client.GetGethCallOpts(false)
 	result, err := anchorContract.GetAnchorById(opts, testAnchorId.BigInt())

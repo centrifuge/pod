@@ -545,26 +545,15 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 		cd.CurrentVersion = prevCD.NextVersion
 		cd.CurrentPreimage = prevCD.NextPreimage
 	} else {
-		cd.CurrentPreimage, cd.CurrentVersion, err = generateHashPair()
+		cd.CurrentPreimage, cd.CurrentVersion, err = utils.GenerateHashPair(idSize)
 		cd.DocumentIdentifier = cd.CurrentVersion
 		if err != nil {
 			return err
 		}
 	}
-	cd.NextPreimage, cd.NextVersion, err = generateHashPair()
+	cd.NextPreimage, cd.NextVersion, err = utils.GenerateHashPair(idSize)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func generateHashPair() (preimage, hash []byte, err error) {
-	preimage = utils.RandomSlice(idSize)
-	h := sha256.New()
-	_, err = h.Write(preimage)
-	if err != nil {
-		return []byte{}, []byte{}, err
-	}
-	hash = h.Sum(hash)
-	return
 }

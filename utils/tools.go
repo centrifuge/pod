@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
 
@@ -201,4 +202,15 @@ func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
 	}
 
 	return property, nil
+}
+
+func GenerateHashPair(preimageSize int) (preimage, hash []byte, err error) {
+	preimage = RandomSlice(preimageSize)
+	h := sha256.New()
+	_, err = h.Write(preimage)
+	if err != nil {
+		return []byte{}, []byte{}, err
+	}
+	hash = h.Sum(hash)
+	return
 }
