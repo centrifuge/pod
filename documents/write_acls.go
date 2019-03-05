@@ -6,10 +6,18 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 )
 
+// changedField holds the compact property, old and new value of the field that is changed
+// if the old is nil, then it is a set operation
+// if new is nil, then it is an unset operation
+// if both old and new are set, then it is an edit operation
+type changedField struct {
+	property, old, new []byte
+}
+
 // getChangedFields takes two document trees and returns the compact value of the fields that are changed in new tree.
 // properties may have been added to the new tree or removed from the new tree. Either case, since the new tree is different from old,
 // that is considered a change
-func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields [][]byte) {
+func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []changedField) {
 	oldProps := oldTree.PropertyOrder()
 	newProps := newTree.PropertyOrder()
 
@@ -32,9 +40,13 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 		_, ol := oldTree.GetLeafByProperty(p.ReadableName())
 		_, nl := newTree.GetLeafByProperty(p.ReadableName())
 
-		if ol == nil || nl == nil {
-			// this is the property from new tree, add it changed fields
-			changedFields = append(changedFields, p.CompactName())
+		if ol == nil {
+			changedFields = append(changedFields, newChangedField(p, nl, false))
+			continue
+		}
+
+		if nl == nil {
+			changedFields = append(changedFields, newChangedField(p, ol, true))
 			continue
 		}
 
@@ -46,9 +58,29 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 		}
 
 		if !bytes.Equal(ov, nv) {
-			changedFields = append(changedFields, p.CompactName())
+			changedFields = append(changedFields, changedField{
+				property: p.CompactName(),
+				old:      ov,
+				new:      nv,
+			})
 		}
 	}
 
 	return changedFields
+}
+
+func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changedField {
+	v := leaf.Value
+	if leaf.Hashed {
+		v = leaf.Hash
+	}
+
+	cf := changedField{property: p.CompactName()}
+	if old {
+		cf.old = v
+		return cf
+	}
+
+	cf.new = v
+	return cf
 }

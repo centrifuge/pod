@@ -4,6 +4,8 @@ package documents
 
 import (
 	"crypto/sha256"
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
@@ -46,6 +49,15 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 }
 
+func testExpectedProps(t *testing.T, cf []changedField, eprops map[string]struct{}) {
+	for _, f := range cf {
+		_, ok := eprops[hexutil.Encode(f.property)]
+		if !ok {
+			assert.Failf(t, "", "expected %x property to be present", f.property)
+		}
+	}
+}
+
 func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc := newCoreDocument()
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
@@ -64,6 +76,18 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	newTree := getTree(t, &ndoc.Document)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 7)
+	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	eprops := map[string]struct{}{
+		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 16}): {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
+	}
+
+	testExpectedProps(t, cf, eprops)
 
 	// prepare new version with out new collaborators
 	// this should only change
@@ -79,6 +103,13 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 4)
+	eprops = map[string]struct{}{
+		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 16}): {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+	}
+	testExpectedProps(t, cf, eprops)
 
 	// test with different document
 	// this will change
@@ -95,6 +126,18 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 8)
+	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	eprops = map[string]struct{}{
+		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 16}): {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
+	}
+	testExpectedProps(t, cf, eprops)
 
 	// add different roles and read rules and check
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
@@ -104,6 +147,20 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 8)
+	fmt.Println(cf)
+	rprop = append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	rprop2 := append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	eprops = map[string]struct{}{
+		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 16}): {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
+	}
+	testExpectedProps(t, cf, eprops)
 }
 
 func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
@@ -125,21 +182,41 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 
 	// updated doc
-	dueDate, err = ptypes.TimestampProto(time.Now().Add(30 * time.Minute))
-	assert.NoError(t, err)
 	ndoc := &invoicepb.InvoiceData{
-		InvoiceNumber: doc.InvoiceNumber,
+		InvoiceNumber: "123456", // updated
 		SenderName:    doc.SenderName,
 		RecipientName: doc.RecipientName,
 		DateCreated:   doc.DateCreated,
-		DueDate:       dueDate, // updated
-		Currency:      "EUR",   // new field
+		DueDate:       doc.DueDate,
+		Currency:      "EUR", // new field
 	}
 
 	oldTree = getTree(t, doc)
 	newTree = getTree(t, ndoc)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 2)
+	eprops := map[string]changedField{
+		hexutil.Encode([]byte{0, 0, 0, 1}): {
+			property: []byte{0, 0, 0, 1},
+			old:      []byte{49, 50, 51, 52, 53},
+			new:      []byte{49, 50, 51, 52, 53, 54},
+		},
+
+		hexutil.Encode([]byte{0, 0, 0, 13}): {
+			property: []byte{0, 0, 0, 13},
+			old:      []byte{},
+			new:      []byte{69, 85, 82},
+		},
+	}
+
+	for _, f := range cf {
+		ef, ok := eprops[hexutil.Encode(f.property)]
+		if !ok {
+			t.Fatalf("expected %x property change", f.property)
+		}
+
+		assert.True(t, reflect.DeepEqual(f, ef))
+	}
 
 	// completely new doc
 	// this should give 5 property changes
@@ -148,6 +225,14 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	newTree = getTree(t, ndoc)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 5)
+	eprps := map[string]struct{}{
+		hexutil.Encode([]byte{0, 0, 0, 1}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 8}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 23}): {},
+		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+	}
+	testExpectedProps(t, cf, eprps)
 }
 
 func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
