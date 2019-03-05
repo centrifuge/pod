@@ -3,15 +3,20 @@
 package testworld
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+	"time"
 )
 
 func TestHost_FakedSignature(t *testing.T) {
@@ -25,11 +30,11 @@ func TestHost_FakedSignature(t *testing.T) {
 	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, eve.host.docSrv, alice.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id.String(), alice.host.config)
 
-	err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
+	signs, _, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(coredoc.Document.Signatures))
+	assert.Equal(t, 0, len(signs))
 }
 
 func TestHost_RevokedSigningKey(t *testing.T) {
@@ -48,41 +53,48 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, eve.host.docSrv, eve.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id.String(), eve.host.config)
 
-	err = eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
+	signs, _, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
 	assert.NoError(t, err)
 
 	// TODO: Validate signatures before and after
-	assert.Equal(t, 2, len(coredoc.Document.Signatures))
+	assert.Equal(t, 2, len(signs))
 }
 
-func prepareCoreDocument(t *testing.T, collaborators [][]byte, docSrv documents.Service, config config.Configuration) *documents.CoreDocumentModel {
-	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
-	m, err := docSrv.DeriveFromCoreDocumentModel(dm)
-	assert.Nil(t, err)
+// Helper Methods
+func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID string, config config.Configuration) documents.Model {
+	payload := testingdocuments.CreatePOPayload()
+	var cs []string
+	for _, c := range collaborators {
+		cs = append(cs, hexutil.Encode(c))
+	}
+	payload.Collaborators = cs
 
-	droot, err := m.CalculateDataRoot()
-	assert.Nil(t, err)
-
-	dm, err = m.PackCoreDocument()
+	po := new(purchaseorder.PurchaseOrder)
+	err := po.InitPurchaseOrderInput(payload, identityDID)
 	assert.NoError(t, err)
 
-	tree, err := dm.GetDocumentSigningTree(droot)
+	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 
-	dm.Document.SigningRoot = tree.RootHash()
+	sr, err := po.CalculateSigningRoot()
+	assert.NoError(t, err)
 
 	idConfig, err := identity.GetIdentityConfig(config)
-	assert.Nil(t, err)
-
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
-
-	dm.Document.Signatures = append(dm.Document.Signatures, sig)
-
-	tree, err = dm.GetDocumentRootTree()
+	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
-	dm.Document.DocumentRoot = tree.RootHash()
-	return dm
+	sig := &coredocumentpb.Signature{
+		EntityId:  []byte(identityDID),
+		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
+	po.AppendSignatures(sig)
+
+	_, err = po.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	return po
 }

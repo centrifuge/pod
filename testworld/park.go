@@ -240,9 +240,9 @@ type host struct {
 	createConfig       bool
 	multiAccount       bool
 	accounts           []string
-	p2pClient		   documents.Client
-	anchorProcessor	   documents.AnchorProcessor
-	docSrv	   		   documents.Service
+	p2pClient          documents.Client
+	anchorProcessor    documents.AnchorProcessor
+	docSrv             documents.Service
 }
 
 func newHost(
