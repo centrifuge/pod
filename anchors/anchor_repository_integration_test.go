@@ -37,7 +37,8 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 	anchorID := utils.RandomSlice(32)
 	signingRoot := utils.RandomSlice(32)
 
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
 	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
 	assert.True(t, valid)
@@ -71,7 +72,8 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	var proofB2 [32]byte
 	copy(proofB2[:], proof2)
 
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
 	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
 	assert.True(t, valid)
@@ -92,7 +94,8 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	anchorID = h.Sum(anchorID)
 	documentRoot := utils.RandomSlice(32)
 
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
@@ -101,7 +104,8 @@ func TestCommitAnchor_Integration(t *testing.T) {
 }
 
 func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs [][32]byte) {
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
@@ -115,7 +119,8 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs []
 }
 
 func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
