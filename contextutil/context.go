@@ -34,15 +34,6 @@ func WithTX(ctx context.Context, txID transactions.TxID) context.Context {
 	return context.WithValue(ctx, tx, txID)
 }
 
-// Self returns Self CentID.
-func Self(ctx context.Context) (*identity.IDConfig, error) {
-	tc, ok := ctx.Value(self).(config.Account)
-	if !ok {
-		return nil, ErrSelfNotFound
-	}
-	return identity.GetIdentityConfig(tc)
-}
-
 // TX returns current txID
 func TX(ctx context.Context) transactions.TxID {
 	tid, ok := ctx.Value(tx).(transactions.TxID)
@@ -50,6 +41,19 @@ func TX(ctx context.Context) transactions.TxID {
 		return transactions.NilTxID()
 	}
 	return tid
+}
+
+// AccountDID extracts the AccountConfig DID from the given context value
+func AccountDID(ctx context.Context) (identity.DID, error) {
+	acc, err := Account(ctx)
+	if err != nil {
+		return identity.DID{}, err
+	}
+	didBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return identity.NewDIDFromBytes(didBytes), nil
 }
 
 // Account extracts the TenanConfig from the given context value

@@ -335,7 +335,5 @@ func updateKeys(c config.Configuration) config.Configuration {
 	n := c.(*configstore.NodeConfig)
 	n.MainIdentity.SigningKeyPair.Pub = "../../build/resources/signingKey.pub.pem"
 	n.MainIdentity.SigningKeyPair.Priv = "../../build/resources/signingKey.key.pem"
-	n.MainIdentity.EthAuthKeyPair.Pub = "../../build/resources/ethauth.pub.pem"
-	n.MainIdentity.EthAuthKeyPair.Priv = "../../build/resources/ethauth.key.pem"
 	return c
 }

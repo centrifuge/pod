@@ -87,6 +87,5 @@ message AccountData {
   string receive_event_notification_endpoint = 3;
   string identity_id = 4;
   KeyPair signing_key_pair = 5;
-  KeyPair ethauth_key_pair = 6;
   KeyPair p2p_key_pair = 7;
 }

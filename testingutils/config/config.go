@@ -164,11 +164,6 @@ func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
-func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
-	args := m.Called()
-	return args.Get(0).(string), args.Get(1).(string)
-}
-
 func (m *MockConfig) GetPrecommitEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
@@ -179,7 +174,7 @@ func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Contex
 }
 
 func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 
 	contextHeader, err := contextutil.New(ctx, tc)

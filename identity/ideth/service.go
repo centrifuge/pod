@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
@@ -298,7 +297,7 @@ func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([][32]byte, err
 
 // CurrentP2PKey returns the latest P2P key
 func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
-	keys, err := i.GetKeysByPurpose(did, big.NewInt(id.KeyPurposeP2P))
+	keys, err := i.GetKeysByPurpose(did, &(id.KeyPurposeP2PDiscovery.Value))
 	if err != nil {
 		return ret, err
 	}
@@ -337,7 +336,7 @@ func (i service) Exists(ctx context.Context, did id.DID) error {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpose int64) error {
+func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpose *big.Int) error {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return err
@@ -354,7 +353,7 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 	}
 
 	for _, p := range keys.Purposes {
-		if p.Cmp(big.NewInt(purpose)) == 0 {
+		if p.Cmp(purpose) == 0 {
 			return nil
 		}
 	}
@@ -379,40 +378,16 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
-func getKeyPairsFromAccount(acc config.Account) (map[int]id.KeyDID, error) {
-	keys := map[int]id.KeyDID{}
-	var pk []byte
-
-	// ed25519 keys
-	// KeyPurposeP2P
-	pk, _, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
-	if err != nil {
-		return nil, err
+func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.KeyDID, error) {
+	keys := map[string]id.KeyDID{}
+	for k, v := range accKeys {
+		pk32, err := utils.SliceToByte32(v.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		v := id.GetPurposeByName(k).Value
+		keys[k] = id.NewKey(pk32, &v, big.NewInt(id.KeyTypeECDSA))
 	}
-	pk32, err := utils.SliceToByte32(pk)
-	if err != nil {
-		return nil, err
-	}
-	keys[id.KeyPurposeP2P] = id.NewKey(pk32, big.NewInt(id.KeyPurposeP2P), big.NewInt(id.KeyTypeECDSA))
-
-	// secp256k1 keys
-	// KeyPurposeSigning
-	pk, _, err = secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[id.KeyPurposeSigning] = id.NewKey(address32Bytes, big.NewInt(id.KeyPurposeSigning), big.NewInt(id.KeyTypeECDSA))
-
-	// KeyPurposeEthMsgAuth
-	pk, _, err = secp256k1.GetSigningKeyPair(acc.GetEthAuthKeyPair())
-	if err != nil {
-		return nil, err
-	}
-
-	address32Bytes = utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[id.KeyPurposeEthMsgAuth] = id.NewKey(address32Bytes, big.NewInt(id.KeyPurposeEthMsgAuth), big.NewInt(id.KeyTypeECDSA))
-
 	return keys, nil
 }
 
@@ -423,24 +398,31 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 		return err
 	}
 
-	keys, err := getKeyPairsFromAccount(acc)
-	if err != nil {
-		return err
-	}
-	err = i.AddKey(tctx, keys[id.KeyPurposeP2P])
+	accKeys, err := acc.GetKeys()
 	if err != nil {
 		return err
 	}
 
-	err = i.AddKey(tctx, keys[id.KeyPurposeSigning])
+	keys, err := convertAccountKeysToKeyDID(accKeys)
 	if err != nil {
 		return err
 	}
 
-	err = i.AddKey(tctx, keys[id.KeyPurposeEthMsgAuth])
+	err = i.AddKey(tctx, keys[id.KeyPurposeAction.Name])
 	if err != nil {
 		return err
 	}
+
+	err = i.AddKey(tctx, keys[id.KeyPurposeP2PDiscovery.Name])
+	if err != nil {
+		return err
+	}
+
+	err = i.AddKey(tctx, keys[id.KeyPurposeSigning.Name])
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -448,7 +430,7 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
 	centID := id.NewDIDFromBytes(signature.EntityId)
 
-	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, id.KeyPurposeSigning)
+	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, &(id.KeyPurposeSigning.Value))
 	if err != nil {
 		return err
 	}

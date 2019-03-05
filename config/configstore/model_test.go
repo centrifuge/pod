@@ -252,11 +252,6 @@ func (m *mockConfig) GetSigningKeyPair() (pub, priv string) {
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
-func (m *mockConfig) GetEthAuthKeyPair() (pub, priv string) {
-	args := m.Called()
-	return args.Get(0).(string), args.Get(1).(string)
-}
-
 func TestNewNodeConfig(t *testing.T) {
 	c := createMockConfig()
 	NewNodeConfig(c)
@@ -272,7 +267,6 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	c.On("GetPrecommitEnabled").Return(true).Once()
 	_, err := NewAccount("name", c)
@@ -308,7 +302,6 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil)
 	c.On("GetP2PKeyPair").Return("pub", "priv")
 	c.On("GetSigningKeyPair").Return("pub", "priv")
-	c.On("GetEthAuthKeyPair").Return("pub", "priv")
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
 	c.On("GetPrecommitEnabled").Return(true)
 	tc, err := NewAccount("name", c)
@@ -352,12 +345,6 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	assert.Error(t, err)
 	accpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
 
-	// Nil EthauthKeyPair
-	ethAuthKey := proto.Clone(accpb.EthauthKeyPair)
-	accpb.EthauthKeyPair = nil
-	err = tco.loadFromProtobuf(accpb)
-	assert.Error(t, err)
-	accpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
 }
 
 func TestAccountConfigProtobuf(t *testing.T) {
@@ -368,7 +355,6 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	c.On("GetPrecommitEnabled").Return(true).Once()
 	tc, err := NewAccount("name", c)
@@ -408,7 +394,6 @@ func createMockConfig() *mockConfig {
 	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	c.On("GetEthereumAccount", "dummyAcc").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
