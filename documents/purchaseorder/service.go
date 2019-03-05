@@ -67,7 +67,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 
 // validateAndPersist validates the document, and persists to DB
 func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -84,7 +84,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], po.CurrentVersion(), po)
+	err = s.repo.Create(selfDID[:], po.CurrentVersion(), po)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -94,7 +94,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 
 // Create validates, persists, and anchors a purchase order
 func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -105,7 +105,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, po.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, nil
 	}
@@ -114,7 +114,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 
 // Update validates, persists, and anchors a new version of purchase order
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	self, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -130,7 +130,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, self.ID, txID, new.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -143,13 +143,13 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpop
 		return nil, documents.ErrDocumentNil
 	}
 
-	idConf, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payload, idConf.ID.String())
+	err = po.InitPurchaseOrderInput(payload, selfDID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

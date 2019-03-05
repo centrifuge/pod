@@ -42,11 +42,22 @@ func getAnchorAddress(cfg config.Configuration) common.Address {
 }
 
 func TestExecute_successful(t *testing.T) {
-	t.SkipNow()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
 	anchorAddress := getAnchorAddress(cfg)
+
+	// add node Ethereum address as a action key
+	// only an action key can use the execute method
+	ethAccount, err := cfg.GetEthereumAccount(cfg.GetEthereumDefaultAccountName())
+	assert.Nil(t, err)
+	actionAddress := ethAccount.Address
+
+	//add action key
+	actionKey := utils.AddressTo32Bytes(common.HexToAddress(actionAddress))
+	key := id.NewKey(actionKey, &(id.KeyPurposeAction.Value), utils.ByteSliceToBigInt([]byte{123}))
+	err = idSrv.AddKey(aCtx, key)
+	assert.Nil(t, err)
 
 	// init params
 	testAnchorId, _ := anchors.ToAnchorID(utils.RandomSlice(32))
@@ -54,7 +65,8 @@ func TestExecute_successful(t *testing.T) {
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
+	// call execute
+	err = idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Nil(t, err, "Execute method calls should be successful")
 
 	checkAnchor(t, testAnchorId, rootHash)

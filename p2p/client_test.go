@@ -101,7 +101,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	randomBytes := utils.RandomSlice(identity.CentIDLength)
+	randomBytes := utils.RandomSlice(identity.DIDLength)
 	signature := &coredocumentpb.Signature{EntityId: randomBytes, PublicKey: utils.RandomSlice(32)}
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 

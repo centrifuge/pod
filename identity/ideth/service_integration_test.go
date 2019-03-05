@@ -41,8 +41,6 @@ func initIdentity() id.ServiceDID {
 
 func getTestDIDContext(t *testing.T, did id.DID) context.Context {
 	cfg.Set("identityId", did.ToAddress().String())
-	cfg.Set("keys.ethauth.publicKey", "../../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../../build/resources/ethauth.key.pem")
 	aCtx := testingconfig.CreateAccountContext(t, cfg)
 
 	return aCtx
@@ -217,13 +215,13 @@ func TestValidateKey(t *testing.T) {
 
 	key32 := testKey.GetKey()
 
-	var purpose int64
-	purpose = 123 // test purpose
+	var purpose *big.Int
+	purpose = big.NewInt(123) // test purpose
 
 	err := idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose)
 	assert.Nil(t, err, "key with purpose should exist")
 
-	purpose = 1 //false purpose
+	purpose = big.NewInt(1) //false purpose
 	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose)
 	assert.Error(t, err, "key with purpose should not exist")
 	resetDefaultCentID()
@@ -237,7 +235,7 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
 
 	p2pKey := utils.RandomByte32()
 
-	testKey := id.NewKey(p2pKey, utils.ByteSliceToBigInt([]byte{identity.KeyPurposeP2P}), utils.ByteSliceToBigInt([]byte{123}))
+	testKey := id.NewKey(p2pKey, &(identity.KeyPurposeP2PDiscovery.Value), utils.ByteSliceToBigInt([]byte{123}))
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	url, err := idSrv.GetClientP2PURL(*did)

@@ -143,32 +143,3 @@ func TestGetAddress(t *testing.T) {
 	address := GetAddress(publicKey)
 	assert.Equal(t, address, correctAddress, "address is not correctly calculated from public key")
 }
-
-func TestGetEthAuthKeyFromConfig(t *testing.T) {
-	pub := cfg.Get("keys.ethauth.publicKey")
-	pri := cfg.Get("keys.ethauth.privateKey")
-
-	// bad public key path
-	cfg.Set("keys.ethauth.publicKey", "bad path")
-	pubK, priK, err := GetSigningKeyPair(cfg.GetEthAuthKeyPair())
-	assert.Error(t, err)
-	assert.Nil(t, priK)
-	assert.Nil(t, pubK)
-	assert.Contains(t, err.Error(), "failed to read public key")
-	cfg.Set("keys.ethauth.publicKey", pub)
-
-	// bad private key path
-	cfg.Set("keys.ethauth.privateKey", "bad path")
-	pubK, priK, err = GetSigningKeyPair(cfg.GetEthAuthKeyPair())
-	assert.Error(t, err)
-	assert.Nil(t, priK)
-	assert.Nil(t, pubK)
-	assert.Contains(t, err.Error(), "failed to read private key")
-	cfg.Set("keys.ethauth.privateKey", pri)
-
-	// success
-	pubK, priK, err = GetSigningKeyPair(cfg.GetEthAuthKeyPair())
-	assert.Nil(t, err)
-	assert.NotNil(t, pubK)
-	assert.NotNil(t, priK)
-}
