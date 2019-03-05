@@ -1,6 +1,7 @@
 package configstore
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"reflect"
@@ -552,7 +553,7 @@ func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return hexutil.Decode("0x" + ethAddr.Address)
+	return hex.DecodeString(ethAddr.Address)
 }
 
 // GetKeys returns the keys of an account

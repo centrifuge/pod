@@ -83,7 +83,7 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 	response, _ := idSrv.GetKey(accountId, pk32)
 	assert.NotNil(t, response)
-	assert.Equal(t, identity.KeyPurposeP2PDiscovery.Value, response.Purposes[0], "purpose should be P2P")
+	assert.Equal(t, &(identity.KeyPurposeP2PDiscovery.Value), response.Purposes[0], "purpose should be P2P")
 
 	// type KeyPurposeSigning
 	pk, _, err = secp256k1.GetSigningKeyPair(cfg.GetSigningKeyPair())
@@ -92,7 +92,7 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 	response, _ = idSrv.GetKey(accountId, address32Bytes)
 	assert.NotNil(t, response)
-	assert.Equal(t, identity.KeyPurposeSigning.Value, response.Purposes[0], "purpose should be Signing")
+	assert.Equal(t, &(identity.KeyPurposeSigning.Value), response.Purposes[0], "purpose should be Signing")
 
 	err = exec.Command("rm", "-rf", dataDir).Run()
 	assert.Nil(t, err, "removing testconfig folder should be successful")

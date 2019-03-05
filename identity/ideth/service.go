@@ -299,7 +299,7 @@ func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([][32]byte, err
 
 // CurrentP2PKey returns the latest P2P key
 func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
-	keys, err := i.GetKeysByPurpose(did, id.KeyPurposeP2PDiscovery.Value)
+	keys, err := i.GetKeysByPurpose(did, &(id.KeyPurposeP2PDiscovery.Value))
 	if err != nil {
 		return ret, err
 	}
@@ -387,7 +387,8 @@ func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.
 		if err != nil {
 			return nil, err
 		}
-		keys[k] = id.NewKey(pk32, id.GetPurposeByName(k).Value, big.NewInt(id.KeyTypeECDSA))
+		v := id.GetPurposeByName(k).Value
+		keys[k] = id.NewKey(pk32, &v, big.NewInt(id.KeyTypeECDSA))
 	}
 	return keys, nil
 }
@@ -431,7 +432,7 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
 	centID := id.NewDIDFromBytes(signature.EntityId)
 
-	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, id.KeyPurposeSigning.Value)
+	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, &(id.KeyPurposeSigning.Value))
 	if err != nil {
 		return err
 	}

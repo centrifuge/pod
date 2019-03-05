@@ -38,13 +38,13 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 	if err != nil {
 		return identity.DID{}, nil
 	}
-	keys, err := idService.GetKeysByPurpose(*did, identity.KeyPurposeSigning.Value)
+	keys, err := idService.GetKeysByPurpose(*did, &(identity.KeyPurposeSigning.Value))
 	ctx, cancel = defaultWaitForTransactionMiningContext(contextTimeout)
 	ctxh, _ = contextutil.New(ctx, acc)
 	defer cancel()
 	if err != nil || len(keys) == 0 {
 		pk, _ := utils.SliceToByte32(idKeys[identity.KeyPurposeSigning.Name].PublicKey)
-		keyDID := identity.NewKey(pk, identity.KeyPurposeSigning.Value, big.NewInt(identity.KeyTypeECDSA))
+		keyDID := identity.NewKey(pk, &(identity.KeyPurposeSigning.Value), big.NewInt(identity.KeyTypeECDSA))
 		err = idService.AddKey(ctxh, keyDID)
 		if err != nil {
 			return identity.DID{}, nil
