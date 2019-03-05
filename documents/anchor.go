@@ -37,9 +37,11 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 		return nil, err
 	}
 
-	err = proc.PreAnchorDocument(ctx, model)
-	if err != nil {
-		return nil, err
+	if preAnchor {
+		err = proc.PreAnchorDocument(ctx, model)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = proc.RequestSignatures(ctx, model)

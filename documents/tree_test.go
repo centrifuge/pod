@@ -9,7 +9,8 @@ import (
 )
 
 func TestConvertToProofAndProtoSalts(t *testing.T) {
-	cd, _ := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.Error(t, err)
 	salts, err := GenerateNewSalts(&cd.Document, "", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, salts)

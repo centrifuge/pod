@@ -26,3 +26,6 @@ keys:
   ethauth:
     publicKey: ../../build/resources/ethauth.pub.pem
     privateKey: ../../build/resources/ethauth.key.pem
+
+anchoring:
+  precommit: true
