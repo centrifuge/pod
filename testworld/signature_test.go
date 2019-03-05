@@ -5,6 +5,7 @@ package testworld
 import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -24,7 +25,7 @@ func TestHost_FakedSignature(t *testing.T) {
 	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, alice)
+	coredoc := prepareCoreDocument(t, collaborators, eve.host.docSrv, alice.host.config)
 
 	err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
 	assert.NoError(t, err)
@@ -47,18 +48,18 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
 
 	collaborators := [][]byte{bob.id[:]}
-	coredoc := prepareCoreDocument(t, collaborators, eve)
+	coredoc := prepareCoreDocument(t, collaborators, eve.host.docSrv, eve.host.config)
 
 	err = eve.host.p2pClient.GetSignaturesForDocument(ectxh, coredoc)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(coredoc.Document.Signatures))
 
 	// TODO: Validate signatures before and after
+	assert.Equal(t, 2, len(coredoc.Document.Signatures))
 }
 
-func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite) *documents.CoreDocumentModel {
+func prepareCoreDocument(t *testing.T, collaborators [][]byte, docSrv documents.Service, config config.Configuration) *documents.CoreDocumentModel {
 	dm := testingdocuments.GenerateCoreDocumentModelWithCollaborators(collaborators)
-	m, err := hts.host.docSrv.DeriveFromCoreDocumentModel(dm)
+	m, err := docSrv.DeriveFromCoreDocumentModel(dm)
 	assert.Nil(t, err)
 
 	droot, err := m.CalculateDataRoot()
@@ -72,7 +73,7 @@ func prepareCoreDocument(t *testing.T, collaborators [][]byte, hts hostTestSuite
 
 	dm.Document.SigningRoot = tree.RootHash()
 
-	idConfig, err := identity.GetIdentityConfig(hts.host.config)
+	idConfig, err := identity.GetIdentityConfig(config)
 	assert.Nil(t, err)
 
 	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, dm.Document.SigningRoot)
