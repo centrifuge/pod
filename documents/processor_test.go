@@ -168,10 +168,10 @@ type p2pClient struct {
 	Client
 }
 
-func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, error) {
+func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, []error, error) {
 	args := p.Called(ctx, model)
 	sigs, _ := args.Get(0).([]*coredocumentpb.Signature)
-	return sigs, args.Error(1)
+	return sigs, nil, args.Error(1)
 }
 
 func (p *p2pClient) SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
