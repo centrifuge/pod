@@ -169,7 +169,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get document root: %v", err)
 	}
 
-	anchorID, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
+	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
 	if err != nil {
 		return errors.New("failed to get anchor ID: %v", err)
 	}
@@ -185,7 +185,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, signingRootProofHashes)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootProofHashes)
 
 	isDone := <-done
 

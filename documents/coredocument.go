@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -545,13 +546,13 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 		cd.CurrentVersion = prevCD.NextVersion
 		cd.CurrentPreimage = prevCD.NextPreimage
 	} else {
-		cd.CurrentPreimage, cd.CurrentVersion, err = utils.GenerateHashPair(idSize)
+		cd.CurrentPreimage, cd.CurrentVersion, err = crypto.GenerateHashPair(idSize)
 		cd.DocumentIdentifier = cd.CurrentVersion
 		if err != nil {
 			return err
 		}
 	}
-	cd.NextPreimage, cd.NextVersion, err = utils.GenerateHashPair(idSize)
+	cd.NextPreimage, cd.NextVersion, err = crypto.GenerateHashPair(idSize)
 	if err != nil {
 		return err
 	}

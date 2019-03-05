@@ -22,6 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -60,7 +61,7 @@ func TestExecute_successful(t *testing.T) {
 	assert.NoError(t, err)
 
 	// init params
-	preimage, hashed, err := utils.GenerateHashPair(32)
+	preimage, hashed, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
 	testAnchorIdPreimage, _ := anchors.ToAnchorID(preimage)
 	testAnchorId, _ := anchors.ToAnchorID(hashed)
@@ -128,7 +129,7 @@ func TestAnchorWithoutExecute_successful(t *testing.T) {
 	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)
 
-	preimage, hashed, err := utils.GenerateHashPair(32)
+	preimage, hashed, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
 	testAnchorIdPreimage, _ := anchors.ToAnchorID(preimage)
 	testAnchorId, _ := anchors.ToAnchorID(hashed)
