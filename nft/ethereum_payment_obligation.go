@@ -97,17 +97,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
-	dr, err := model.CalculateDocumentRoot()
-	if err != nil {
-		return mreq, err
-	}
-
-	rootHash, err := anchors.ToDocumentRoot(dr)
-	if err != nil {
-		return mreq, err
-	}
-
-	requestData, err := NewMintRequest(model, tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs, rootHash)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -287,8 +277,8 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(model documents.Model, tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (MintRequest, error) {
-	proofData, err := createProofData(model, proofs)
+func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, proofs []*proofspb.Proof) (MintRequest, error) {
+	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
@@ -312,44 +302,28 @@ type proofData struct {
 	Proofs [][][32]byte
 }
 
-func createProofData(model documents.Model, proofspb []*proofspb.Proof) (*proofData, error) {
-	// TODO cleanup hard coded indexes using the model props
-	readRoleIndex := 5
-	tokenRoleIndex := 7
-	var props = make([][]byte, 2)  // props are only required for readRole.property, tokenRole.property
-	var values = make([][]byte, 4) // values are only required for readRole.Value
+func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
+	var props = make([][]byte, len(proofspb))
+	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
 
 	// TODO remove later
 	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
 	//log.Info(json.MarshalIndent(proof, "", "  "))
+
 	for i, p := range proofspb {
-		if i == readRoleIndex {
-			props[0] = p.GetCompactName()
-		}
-		if i == tokenRoleIndex {
-			props[1] = p.GetCompactName()
-		}
-
-		if i < 3 {
-			values[i] = p.Value
-		}
-
-		if i == readRoleIndex {
-			values[3] = p.Value
-		}
-
 		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
 			return nil, err
 		}
-
-		salts[i] = salt32
 		property, err := utils.ConvertProofForEthereum(p.SortedHashes)
 		if err != nil {
 			return nil, err
 		}
+		props[i] = p.GetCompactName()
+		values[i] = p.Value
+		salts[i] = salt32
 		proofs[i] = property
 	}
 

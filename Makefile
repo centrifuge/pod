@@ -75,11 +75,17 @@ abigen-install: vendorinstall
 
 gen-abi-bindings: ## Generates GO ABI Bindings
 gen-abi-bindings: install-deps abigen-install
-	./build/scripts/migrate.sh
-#	@abigen --abi id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract_aux.go
-#	@abigen --abi ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract_aux.go
-#	@abigen --abi po.abi --pkg nft --type EthereumPaymentObligationContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/ethereum_payment_obligation_contract_aux.go
-#	@abigen --abi idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract_aux.go
+	$(eval CONTRACTS_VERSION := $(shell cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/package.json | jq -r '.version'))
+	npm install --prefix tmp/contracts @centrifuge/ethereum-contracts@${CONTRACTS_VERSION}
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/PaymentObligation.json | jq '.abi' > tmp/contracts/po.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
+	@abigen --abi tmp/contracts/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
+	@abigen --abi tmp/contracts/ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract.go
+	@abigen --abi tmp/contracts/po.abi --pkg nft --type EthereumPaymentObligationContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/ethereum_payment_obligation_contract.go
+	@abigen --abi tmp/contracts/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
+	@rm -Rf ./tmp
 
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
