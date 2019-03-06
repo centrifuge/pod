@@ -247,7 +247,7 @@ func TestValidateKey_revoked(t *testing.T) {
 
 	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, nil)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "for purpose [123] has been revoked.")
+		assert.Contains(t, err.Error(), "for purpose [123] has been revoked before latest block")
 	}
 
 	beforeRevocation := time.Now().Add(-20 * time.Second)
