@@ -31,8 +31,8 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 		Currency: "EUR",
 	}
 
-	oldTree := getTree(t, &ocd)
-	newTree := getTree(t, &ncd)
+	oldTree := getTree(t, &ocd, "", nil)
+	newTree := getTree(t, &ncd, "", nil)
 
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	// cf length should be len(ocd) and len(ncd) = 30 changed field
@@ -44,15 +44,15 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	ocd := cd.Document
-	oldTree := getTree(t, &ocd)
-	newTree := getTree(t, &ocd)
+	oldTree := getTree(t, &ocd, "", nil)
+	newTree := getTree(t, &ocd, "", nil)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 0)
 
 	// check hashed field
 	ocd.PreviousRoot = utils.RandomSlice(32)
-	oldTree = getTree(t, &ocd)
-	newTree = getTree(t, &ocd)
+	oldTree = getTree(t, &ocd, "", nil)
+	newTree = getTree(t, &ocd, "", nil)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 0)
 }
@@ -83,8 +83,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	// read_rules.roles
 	// read_rules.action
-	oldTree := getTree(t, &doc.Document)
-	newTree := getTree(t, &ndoc.Document)
+	oldTree := getTree(t, &doc.Document, "", nil)
+	newTree := getTree(t, &ndoc.Document, "", nil)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 9)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -112,8 +112,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err = doc.PrepareNewVersion(nil, true)
 	assert.NoError(t, err)
-	oldTree = getTree(t, &doc.Document)
-	newTree = getTree(t, &ndoc.Document)
+	oldTree = getTree(t, &doc.Document, "", nil)
+	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 6)
 	eprops = map[string]struct{}{
@@ -138,8 +138,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc = ndoc
 	ndoc, err = newCoreDocument()
 	assert.NoError(t, err)
-	oldTree = getTree(t, &doc.Document)
-	newTree = getTree(t, &ndoc.Document)
+	oldTree = getTree(t, &doc.Document, "", nil)
+	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 10)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -161,8 +161,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
 	assert.NoError(t, err)
-	oldTree = getTree(t, &doc.Document)
-	newTree = getTree(t, &ndoc.Document)
+	oldTree = getTree(t, &doc.Document, "", nil)
+	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 10)
 	fmt.Println(cf)
@@ -196,8 +196,8 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 		DueDate:       dueDate,
 	}
 
-	oldTree := getTree(t, doc)
-	newTree := getTree(t, doc)
+	oldTree := getTree(t, doc, "", nil)
+	newTree := getTree(t, doc, "", nil)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 0)
 
@@ -211,8 +211,8 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 		Currency:      "EUR", // new field
 	}
 
-	oldTree = getTree(t, doc)
-	newTree = getTree(t, ndoc)
+	oldTree = getTree(t, doc, "", nil)
+	newTree = getTree(t, ndoc, "", nil)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 2)
 	eprops := map[string]changedField{
@@ -241,8 +241,8 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	// completely new doc
 	// this should give 5 property changes
 	ndoc = new(invoicepb.InvoiceData)
-	oldTree = getTree(t, doc)
-	newTree = getTree(t, ndoc)
+	oldTree = getTree(t, doc, "", nil)
+	newTree = getTree(t, ndoc, "", nil)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 5)
 	eprps := map[string]struct{}{
@@ -255,8 +255,16 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	testExpectedProps(t, cf, eprps)
 }
 
-func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
+func getTree(t *testing.T, doc proto.Message, prefix string, compact []byte) *proofs.DocumentTree {
+	var prop proofs.Property
+	if prefix != "" {
+		prop = proofs.Property{
+			Text:    prefix,
+			Compact: compact,
+		}
+	}
 	tr := proofs.NewDocumentTree(proofs.TreeOptions{
+		ParentPrefix:      prop,
 		CompactProperties: true,
 		EnableHashSorting: true,
 		SaltsLengthSuffix: proofs.DefaultSaltsLengthSuffix,
@@ -302,7 +310,7 @@ func createTransitionRules(t *testing.T, doc *CoreDocument, id identity.DID, fie
 	return role, rule
 }
 
-func TestWriteACLs_validateTransitions_core_document(t *testing.T) {
+func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, string) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
@@ -314,6 +322,7 @@ func TestWriteACLs_validateTransitions_core_document(t *testing.T) {
 	createTransitionRules(t, doc, id1, compactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
 	// id2 will have write access to only identifiers
+	// id2 is the bad actor
 	fields := [][]byte{
 		{0, 0, 0, 4},
 		{0, 0, 0, 3},
@@ -326,6 +335,12 @@ func TestWriteACLs_validateTransitions_core_document(t *testing.T) {
 	for _, f := range fields {
 		createTransitionRules(t, doc, id2, append(compactProperties(CDTreePrefix), f...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	}
+
+	return doc, id1, id2, docType
+}
+
+func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
+	doc, id1, id2, docType := prepareDocument(t)
 
 	// prepare a new version of the document with out collaborators
 	ndoc, err := doc.PrepareNewVersion(nil, true)
@@ -351,5 +366,139 @@ func TestWriteACLs_validateTransitions_core_document(t *testing.T) {
 	// 1. update to roles
 	// 2. update to read_rules
 	// 3. update to read_rules action
-	assert.Equal(t, errors.Len(err), 3)
+	assert.Equal(t, 3, errors.Len(err))
+
+	// check with some random collaborator who has no permission at all
+	err = doc.AccountCanUpdate(ndoc, testingidentity.GenerateRandomDID(), docType)
+	assert.Error(t, err)
+	// error should all have field changes
+	// all the identifier changes = 6
+	// role changes = 1
+	// read_rule changes = 2
+	// total = 9
+	assert.Equal(t, 9, errors.Len(err))
+}
+
+func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
+	doc, id1, id2, docType := prepareDocument(t)
+
+	// update nfts alone check for validation
+	// this should only change nfts
+	registry := testingidentity.GenerateRandomDID()
+	ndoc, err := doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	// if id1 changed it, it should be okay
+	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+
+	// if id2  made the change, it should error out with one invalid transition
+	err = doc.AccountCanUpdate(ndoc, id2, docType)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	// add a specific rule that allow id2 to update specific nft registry
+	field := append(registry.ToAddress().Bytes(), make([]byte, 12, 12)...)
+	field = append(compactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
+	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	// if id1 changed it, it should be okay
+	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+
+	// if id2 should be okay since we added a specific registry
+	assert.NoError(t, doc.AccountCanUpdate(ndoc, id2, docType))
+
+	// id2 went rogue and updated nft for different registry
+	registry2 := testingidentity.GenerateRandomDID()
+	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
+	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	// if id1 changed it, it should be okay
+	assert.NoError(t, ndoc.AccountCanUpdate(ndoc1, id1, docType))
+
+	// if id2 is allowed to change only nft with specific registry
+	// this should trigger 1 error
+	err = ndoc.AccountCanUpdate(ndoc1, id2, docType)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	// add a rule for id2 that will allow any nft update
+	field = append(compactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
+	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+
+	ndoc1.Document.DocumentRoot = utils.RandomSlice(32)
+	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	// id1 change should be fine
+	assert.NoError(t, ndoc1.AccountCanUpdate(ndoc2, id1, docType))
+
+	// id2 change should be fine since id2 has a rule allowing nft update
+	assert.NoError(t, ndoc1.AccountCanUpdate(ndoc2, id2, docType))
+
+	// now make a change that will trigger read rules and roles as well
+	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	// id1 change should be fine
+	assert.NoError(t, ndoc1.AccountCanUpdate(ndoc2, id1, docType))
+
+	// id2 change will be invalid since with grant access, roles and read_rules will be updated
+	// this will lead to 3 errors
+	// 1. roles
+	// 2. read_rules.roles
+	// 3. read_rules.action
+	err = ndoc1.AccountCanUpdate(ndoc2, id2, docType)
+	assert.Error(t, err)
+	assert.Equal(t, 3, errors.Len(err))
+}
+
+func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
+	oldTree := getTree(t, doc1, prefix, compact)
+	newTree := getTree(t, doc2, prefix, compact)
+
+	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	rules := cd.transitionRulesFor(id)
+	return validateTransitions(rules, cf)
+}
+
+func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
+	doc, id1, id2, _ := prepareDocument(t)
+	inv := invoicepb.InvoiceData{
+		InvoiceNumber: "1234556",
+		Currency:      "EUR",
+		GrossAmount:   1234,
+		SenderName:    "john doe",
+		Comment:       "Some comment",
+	}
+
+	prefix, compact := "invoice", []byte{0, 1, 0, 0}
+	// add rules to id1 to update anything on the invoice
+	createTransitionRules(t, doc, id1, compact, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+
+	// id2 can only update comment on invoice and nothing else
+	createTransitionRules(t, doc, id2, append(compact, []byte{0, 0, 0, 21}...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+
+	inv2 := inv
+	inv2.GrossAmount = 12340
+
+	// check if id1 made the update
+	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))
+
+	// id2 should fail since it can only change comment
+	// errors should be 1
+	err := testInvoiceChange(t, doc, id2, &inv, &inv2, prefix, compact)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	inv2 = inv
+	inv2.Comment = "new comment"
+
+	// check if id1 made the update
+	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))
+
+	// id2 update should go through since the update was to comment
+	assert.NoError(t, testInvoiceChange(t, doc, id2, &inv, &inv2, prefix, compact))
 }
