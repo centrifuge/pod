@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/any"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -66,15 +66,14 @@ type CoreDocument struct {
 }
 
 // newCoreDocument returns a new CoreDocument.
-func newCoreDocument() *CoreDocument {
-	id := utils.RandomSlice(idSize)
-	cd := coredocumentpb.CoreDocument{
-		DocumentIdentifier: id,
-		CurrentVersion:     id,
-		NextVersion:        utils.RandomSlice(idSize),
+func newCoreDocument() (*CoreDocument, error) {
+	cd := coredocumentpb.CoreDocument{}
+	err := populateVersions(&cd, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	return &CoreDocument{cd}
+	return &CoreDocument{cd}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -86,7 +85,11 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 
 // NewCoreDocumentWithCollaborators generates new core Document, adds collaborators, adds read rules and fills salts
 func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, error) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	if err != nil {
+		return nil, errors.New("failed to create coredoc: %v", err)
+	}
+
 	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborators: %v", err)
@@ -108,6 +111,11 @@ func (cd *CoreDocument) ID() []byte {
 // CurrentVersion returns the current version of the Document
 func (cd *CoreDocument) CurrentVersion() []byte {
 	return cd.Document.CurrentVersion
+}
+
+// CurrentVersionPreimage returns the current version preimage of the Document
+func (cd *CoreDocument) CurrentVersionPreimage() []byte {
+	return cd.Document.CurrentPreimage
 }
 
 // PreviousVersion returns the previous version of the Document.
@@ -167,13 +175,16 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 	ucs := filterCollaborators(cs, oldCs...)
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
-		PreviousVersion:    cd.Document.CurrentVersion,
-		CurrentVersion:     cd.Document.NextVersion,
-		NextVersion:        utils.RandomSlice(32),
 		PreviousRoot:       cd.Document.DocumentRoot,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
+		TransitionRules:    cd.Document.TransitionRules,
 		Nfts:               cd.Document.Nfts,
+	}
+
+	err = populateVersions(&cdp, &cd.Document)
+	if err != nil {
+		return nil, err
 	}
 
 	ncd := &CoreDocument{Document: cdp}
@@ -223,7 +234,7 @@ func (cd *CoreDocument) addNewRule(role *coredocumentpb.Role, action coredocumen
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
 // errors out when the proof generation is failed on core Document tree.
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (proofs []*proofspb.Proof, err error) {
-	srpHashes, err := cd.getSigningRootProofHashes()
+	srpHashes, err := cd.GetSigningRootProof()
 	if err != nil {
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}
@@ -268,9 +279,9 @@ func generateProofs(tree *proofs.DocumentTree, fields []string, appendHashes [][
 	return proofs, missedProofs
 }
 
-// getSigningRootProofHashes returns the hashes needed to create a proof for fields from SigningRoot to DocumentRoot.
+// GetSigningRootProof returns the hashes needed to create a proof for fields from SigningRoot to DocumentRoot.
 // The returned proofs are appended to the proofs generated from the data tree and core Document tree for a successful verification.
-func (cd *CoreDocument) getSigningRootProofHashes() (hashes [][]byte, err error) {
+func (cd *CoreDocument) GetSigningRootProof() (hashes [][]byte, err error) {
 	tree, err := cd.DocumentRootTree()
 	if err != nil {
 		return
@@ -527,4 +538,23 @@ func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
 	}
 
 	return signatures
+}
+
+func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {
+	if prevCD != nil {
+		cd.PreviousVersion = prevCD.CurrentVersion
+		cd.CurrentVersion = prevCD.NextVersion
+		cd.CurrentPreimage = prevCD.NextPreimage
+	} else {
+		cd.CurrentPreimage, cd.CurrentVersion, err = crypto.GenerateHashPair(idSize)
+		cd.DocumentIdentifier = cd.CurrentVersion
+		if err != nil {
+			return err
+		}
+	}
+	cd.NextPreimage, cd.NextVersion, err = crypto.GenerateHashPair(idSize)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -121,6 +121,36 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 	return nil
 }
 
+// PreAnchorDocument pre-commits a document
+func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
+	signingRoot, err := model.CalculateSigningRoot()
+	if err != nil {
+		return err
+	}
+
+	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
+	if err != nil {
+		return err
+	}
+
+	sRoot, err := anchors.ToDocumentRoot(signingRoot)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
+
+	isDone := <-done
+
+	if !isDone {
+		return errors.New("failed to pre-commit anchor: %v", err)
+	}
+
+	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	return nil
+}
+
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
 	pav := PreAnchorValidator(dp.identityService)
@@ -139,17 +169,23 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get document root: %v", err)
 	}
 
-	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
+	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
 	if err != nil {
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
+	signingRootProof, err := model.GetSigningRootProof()
 	if err != nil {
-		return errors.New("failed to generate ethereum MAC: %v", err)
+		return errors.New("failed to get signing root proof: %v", err)
+	}
+
+	signingRootProofHashes, err := utils.ConvertProofForEthereum(signingRootProof)
+	if err != nil {
+		return errors.New("failed to get signing root proof in ethereum format: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorID, rootHash, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootProofHashes)
 
 	isDone := <-done
 

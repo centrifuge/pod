@@ -66,6 +66,12 @@ func (m *MockModel) CurrentVersion() []byte {
 	return args.Get(0).([]byte)
 }
 
+func (m *MockModel) CurrentVersionPreimage() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
 func (m *MockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
 	args := m.Called()
 	dm, _ := args.Get(0).(coredocumentpb.CoreDocument)

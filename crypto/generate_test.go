@@ -3,6 +3,7 @@
 package crypto
 
 import (
+	"crypto/sha256"
 	"os"
 	"testing"
 
@@ -55,4 +56,14 @@ func TestGenerateSigningKeyPairED25519(t *testing.T) {
 	publicKey, privateKey := GenerateKeyFilesForTest(t, curve)
 	assert.Equal(t, len(publicKey), PublicKeyED25519Len, "public key length not correct")
 	assert.Equal(t, len(privateKey), PrivateKeyED25519Len, "private key length not correct")
+}
+
+func TestGenerateHashPair(t *testing.T) {
+	pre, hash, err := GenerateHashPair(32)
+	assert.NoError(t, err)
+	h := sha256.New()
+	h.Write(pre)
+	var expectedHash []byte
+	expectedHash = h.Sum(expectedHash)
+	assert.Equal(t, expectedHash, hash)
 }
