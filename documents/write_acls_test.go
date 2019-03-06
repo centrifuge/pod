@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -263,4 +264,29 @@ func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
 	assert.NoError(t, tree.AddLeavesFromDocument(doc))
 	assert.NoError(t, tree.Generate())
 	return tree
+}
+
+func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
+	doc, err := newCoreDocument()
+	assert.NoError(t, err)
+	id := testingidentity.GenerateRandomDID()
+	rules := doc.transitionRulesFor(id)
+	assert.Len(t, rules, 0)
+
+	// add roles and rules
+	role := newRole()
+	role.Collaborators = append(role.Collaborators, id[:])
+	rule := &coredocumentpb.TransitionRule{
+		RuleKey: utils.RandomSlice(32),
+		Roles:   [][]byte{role.RoleKey},
+	}
+	doc.Document.TransitionRules = append(doc.Document.TransitionRules, rule)
+	doc.Document.Roles = append(doc.Document.Roles, role)
+	rules = doc.transitionRulesFor(id)
+	assert.Len(t, rules, 1)
+	assert.Equal(t, *rule, rules[0])
+
+	// wrong id
+	rules = doc.transitionRulesFor(testingidentity.GenerateRandomDID())
+	assert.Len(t, rules, 0)
 }

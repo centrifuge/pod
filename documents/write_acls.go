@@ -3,6 +3,8 @@ package documents
 import (
 	"bytes"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
 
@@ -83,4 +85,49 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 
 	cf.new = v
 	return cf
+}
+
+// transitionRulesFor returns all the transition rules for the account.
+func (cd *CoreDocument) transitionRulesFor(account identity.DID) (rules []coredocumentpb.TransitionRule) {
+	for _, rule := range cd.Document.TransitionRules {
+		for _, rk := range rule.Roles {
+			role, err := getRole(rk, cd.Document.Roles)
+			if err != nil {
+				continue
+			}
+
+			if _, ok := isAccountInRole(role, account); !ok {
+				continue
+			}
+
+			rules = append(rules, coredocumentpb.TransitionRule{
+				RuleKey:   copyBytes(rule.RuleKey),
+				Roles:     copyByteSlice(rule.Roles),
+				MatchType: rule.MatchType,
+				Field:     copyBytes(rule.Field),
+				Action:    rule.Action,
+			})
+		}
+	}
+
+	return rules
+}
+
+func copyBytes(data []byte) []byte {
+	if data == nil {
+		return nil
+	}
+
+	nb := make([]byte, len(data), len(data))
+	copy(nb, data)
+	return nb
+}
+
+func copyByteSlice(data [][]byte) [][]byte {
+	nbs := make([][]byte, len(data), len(data))
+	for i, b := range data {
+		nbs[i] = copyBytes(b)
+	}
+
+	return nbs
 }
