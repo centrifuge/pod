@@ -5,6 +5,7 @@ package documents
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"reflect"
 	"testing"
 	"time"
@@ -263,4 +264,21 @@ func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
 	assert.NoError(t, tree.AddLeavesFromDocument(doc))
 	assert.NoError(t, tree.Generate())
 	return tree
+}
+
+func TestReadACLs_initTransitionRules(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	cd.initTransitionRules(nil)
+	assert.Nil(t, cd.Document.Roles)
+	assert.Nil(t, cd.Document.TransitionRules)
+
+	collab := []identity.DID{testingidentity.GenerateRandomDID()}
+	cd.initTransitionRules(collab)
+	assert.Len(t, cd.Document.TransitionRules, 1)
+	assert.Len(t, cd.Document.Roles, 1)
+
+	cd.initTransitionRules(collab)
+	assert.Len(t, cd.Document.TransitionRules, 1)
+	assert.Len(t, cd.Document.Roles, 1)
 }

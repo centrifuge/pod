@@ -88,6 +88,10 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 	return cf
 }
 
+// initTransitionRules initiates the transition rules for a given CoreDocumentModel.
+// Collaborators are given default edit capability over all fields of the CoreDocument.
+// if the rules are created already, this is a no-op.
+// if collaborators are empty, it is a no-op
 func (cd *CoreDocument) initTransitionRules(collaborators []identity.DID) {
 	if len(cd.Document.Roles) > 0 && len(cd.Document.TransitionRules) > 0 {
 		return
@@ -98,6 +102,8 @@ func (cd *CoreDocument) initTransitionRules(collaborators []identity.DID) {
 	cd.addCollaboratorsToTransitionRules(collaborators)
 }
 
+// addCollaboratorsToTransitionRules adds the given collaborators to a new transition rule which defaults to
+// granting edit capability over all fields of the document.
 func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identity.DID) {
 	role := cd.addCollaboratorsToNewRole(collaborators)
 	if role == nil {
@@ -106,8 +112,9 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identi
 	cd.addNewTransitionRule(role, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, []byte(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 }
 
-
+// addNewTransitionRule creates a new transition rule with the given parameters.
 func (cd *CoreDocument) addNewTransitionRule(role *coredocumentpb.Role, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) {
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	rule := new(coredocumentpb.TransitionRule)
 	rule.RuleKey = utils.RandomSlice(32)
 	rule.Roles = append(rule.Roles, role.RoleKey)

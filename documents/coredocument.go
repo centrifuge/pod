@@ -96,6 +96,7 @@ func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, er
 	}
 
 	cd.initReadRules(ids)
+	cd.initTransitionRules(ids)
 	if err := cd.setSalts(); err != nil {
 		return nil, err
 	}
@@ -190,6 +191,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
+	ncd.addCollaboratorsToTransitionRules(ucs)
 
 	if !initSalts {
 		return ncd, nil
@@ -209,7 +211,6 @@ func newRole() *coredocumentpb.Role {
 }
 
 // addCollaboratorsToNewRole creates a new Role and adds the given collaborators to this Role.
-// This new Role is then appended to the list of Roles for the CoreDocument.
 // The Role is then returned.
 // The operation returns a nil Role if no collaborators are provided.
 func (cd *CoreDocument) addCollaboratorsToNewRole(collaborators []identity.DID) *coredocumentpb.Role {
@@ -223,7 +224,6 @@ func (cd *CoreDocument) addCollaboratorsToNewRole(collaborators []identity.DID) 
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
-	cd.Document.Roles = append(cd.Document.Roles, role)
 	return role
 }
 
