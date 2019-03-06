@@ -4,13 +4,13 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -203,32 +203,28 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 	return ncd, nil
 }
 
-// addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
-// The operation is no-op if no collaborators is provided.
-// The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
-func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
+// newRole returns a new role with random role key
+func newRole() *coredocumentpb.Role {
+	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(idSize)}
+}
+
+// addCollaboratorsToNewRole creates a new Role and adds the given collaborators to this Role.
+// This new Role is then appended to the list of Roles for the CoreDocument.
+// The Role is then returned.
+// The operation returns a nil Role if no collaborators are provided.
+func (cd *CoreDocument) addCollaboratorsToNewRole(collaborators []identity.DID) *coredocumentpb.Role {
 	if len(collaborators) == 0 {
-		return
+		return nil
 	}
 
 	// create a role for given collaborators
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(idSize)
+	role := newRole()
 	for _, c := range collaborators {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
-
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
-}
-
-// addNewRule creates a new rule as per the role and action.
-func (cd *CoreDocument) addNewRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
 	cd.Document.Roles = append(cd.Document.Roles, role)
-	rule := new(coredocumentpb.ReadRule)
-	rule.Roles = append(rule.Roles, role.RoleKey)
-	rule.Action = action
-	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
+	return role
 }
 
 // CreateProofs takes Document data tree and list to fields and generates proofs.

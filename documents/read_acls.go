@@ -33,6 +33,25 @@ func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
 	cd.addCollaboratorsToReadSignRules(collaborators)
 }
 
+// addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
+// The operation is no-op if no collaborators are provided.
+// The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
+func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
+	role := cd.addCollaboratorsToNewRole(collaborators)
+	if role == nil {
+		return
+	}
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
+}
+
+// addNewRule creates a new rule as per the role and action.
+func (cd *CoreDocument) addNewReadRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
+	rule := new(coredocumentpb.ReadRule)
+	rule.Roles = append(rule.Roles, role.RoleKey)
+	rule.Action = action
+	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
+}
+
 // findRole calls OnRole for every role that matches the actions passed in
 func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
 	am := make(map[int32]struct{})
@@ -112,7 +131,7 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 
 	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 	return cd.setSalts()
 }
 
@@ -461,9 +480,4 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
 	return tm, nil
-}
-
-// newRole returns a new role with random role key
-func newRole() *coredocumentpb.Role {
-	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(32)}
 }

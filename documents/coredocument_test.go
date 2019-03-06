@@ -347,7 +347,7 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
 	assert.NoError(t, err)
@@ -378,7 +378,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -409,7 +409,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetSignerCollaborators()
 	assert.NoError(t, err)

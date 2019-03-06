@@ -2,6 +2,9 @@ package documents
 
 import (
 	"bytes"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/precise-proofs/proofs"
 )
@@ -83,4 +86,33 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 
 	cf.new = v
 	return cf
+}
+
+func (cd *CoreDocument) initTransitionRules(collaborators []identity.DID) {
+	if len(cd.Document.Roles) > 0 && len(cd.Document.TransitionRules) > 0 {
+		return
+	}
+	if len(collaborators) < 0 {
+		return
+	}
+	cd.addCollaboratorsToTransitionRules(collaborators)
+}
+
+func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identity.DID) {
+	role := cd.addCollaboratorsToNewRole(collaborators)
+	if role == nil {
+		return
+	}
+	cd.addNewTransitionRule(role, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, []byte(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+}
+
+
+func (cd *CoreDocument) addNewTransitionRule(role *coredocumentpb.Role, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) {
+	rule := new(coredocumentpb.TransitionRule)
+	rule.RuleKey = utils.RandomSlice(32)
+	rule.Roles = append(rule.Roles, role.RoleKey)
+	rule.MatchType = matchType
+	rule.Action = action
+	rule.Field = field
+	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
 }
