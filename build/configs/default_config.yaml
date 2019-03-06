@@ -27,10 +27,10 @@ networks:
     ethereumNetworkId: 4
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses: 
-      identityFactory: "0x5a24967ffd48a2a1c83dd8535db8dbd9da166c36"
+      identityFactory: "0x1b05047e8118a6daf444f2245660f5d3f4620a9d"
       identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
-      anchorRepository: "0x5e4ad4716863216b93cf32e12d69fcf17725b53d"
-      paymentObligation: "0x6bd3f53071d9f89fcc5901596b74c3bd1c791074"
+      anchorRepository: "0xe98b0c6dd9026743f73667efaf8a950d0d8f49d2"
+      paymentObligation: "0xbc1ae72fbb6a20825f5136ccba0e83d6b8e7849d"
 
   # Kovan test network
   bernalheights:
@@ -51,10 +51,10 @@ networks:
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x2fd5ff89defb25a0a7eb2fe2d1eec02187b56e13"
+      identityFactory: "0x966168018e40c41874d86cedfbc80ee6bb8a5764"
       identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
-      anchorRepository: "0xebfd8e3a60805d402cdb064cb5bb79d242811d2c"
-      paymentObligation: "0xf9339d9311ba288c7688092fb823f82d31564ffb"
+      anchorRepository: "0xf77110dd6e28b2ca751370a6f820eb2774db3810"
+      paymentObligation: "0x277129ce2fb7207c0f0e4a60d2d0b5f8cfa0bbbb"
 
   # Ropsten test network
   dogpatch:
@@ -68,10 +68,10 @@ networks:
     ethereumNetworkId: 3
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x9f92f00a3d57d7f316e2ca28996df5291850e8ac"
+      identityFactory: "0x8a54c47d66521e6fdcdf31c421e0612154df846b"
       identityRegistry: "0x55160B12091c41E7C41f0BA5Ae925a0426c4aAEA"
-      anchorRepository: "0xf6d6a3ef92e991ee6b7fa18c2702a5326082aad9"
-      paymentObligation: "0x437055dbdf45283de4a6e9e09b90e043a48c2db1"
+      anchorRepository: "0xf622748701c125ed2231ccf3fcfb7a2b01fa8355"
+      paymentObligation: "0xdd47aea747c2204d244051363ee40bc2b52bc9df"
 
 # Data Storage
 storage:
