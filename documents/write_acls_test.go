@@ -218,12 +218,14 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	eprops := map[string]changedField{
 		hexutil.Encode([]byte{0, 0, 0, 1}): {
 			property: []byte{0, 0, 0, 1},
+			name:     "invoice_number",
 			old:      []byte{49, 50, 51, 52, 53},
 			new:      []byte{49, 50, 51, 52, 53, 54},
 		},
 
 		hexutil.Encode([]byte{0, 0, 0, 13}): {
 			property: []byte{0, 0, 0, 13},
+			name:     "currency",
 			old:      []byte{},
 			new:      []byte{69, 85, 82},
 		},
