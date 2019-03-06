@@ -15,6 +15,7 @@ type AnchorProcessor interface {
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
 	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error
+	PreAnchorDocument(ctx context.Context, model Model) error
 	AnchorDocument(ctx context.Context, model Model) error
 	SendDocument(ctx context.Context, model Model) error
 }
@@ -24,7 +25,7 @@ type updaterFunc func(id []byte, model Model) error
 
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
-func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc) (Model, error) {
+func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc, preAnchor bool) (Model, error) {
 	id := model.CurrentVersion()
 	err := proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
@@ -34,6 +35,13 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 	err = updater(id, model)
 	if err != nil {
 		return nil, err
+	}
+
+	if preAnchor {
+		err = proc.PreAnchorDocument(ctx, model)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = proc.RequestSignatures(ctx, model)

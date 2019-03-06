@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -199,4 +198,18 @@ func ConvertIntToByte32(n int) ([32]byte, error) {
 // ConvertByte32ToInt converts a fixed length byte array into int with BigEndian order
 func ConvertByte32ToInt(nb [32]byte) int {
 	return int(binary.BigEndian.Uint64(nb[:]))
+}
+
+// ConvertProofForEthereum converts a proof to 32 byte format needed by ethereum
+func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
+	var property [][32]byte
+	for _, hash := range sortedHashes {
+		hash32, err := SliceToByte32(hash)
+		if err != nil {
+			return nil, err
+		}
+		property = append(property, hash32)
+	}
+
+	return property, nil
 }

@@ -26,7 +26,8 @@ import (
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.initReadRules(nil)
 	assert.Nil(t, cd.Document.Roles)
 	assert.Nil(t, cd.Document.ReadRules)
@@ -42,7 +43,8 @@ func TestReadACLs_initReadRules(t *testing.T) {
 }
 
 func TestReadAccessValidator_AccountCanRead(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false)
@@ -69,12 +71,13 @@ func (m mockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.A
 }
 
 func TestCoreDocument_addNFTToReadRules(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 
 	// wrong registry or token format
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(34)
-	err := cd.addNFTToReadRules(registry, tokenID)
+	err = cd.addNFTToReadRules(registry, tokenID)
 	assert.Error(t, err)
 	assert.Nil(t, cd.Document.CoredocumentSalts)
 	assert.Nil(t, cd.Document.ReadRules)
@@ -126,7 +129,8 @@ func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 }
 
 func TestCoreDocumentModel_AddNFT(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
@@ -135,7 +139,7 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Nil(t, cd.Document.ReadRules)
 	assert.Nil(t, cd.Document.Roles)
 
-	cd, err := cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
 	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
@@ -159,14 +163,15 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 }
 
 func TestCoreDocument_IsNFTMinted(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	assert.False(t, cd.IsNFTMinted(nil, registry))
 
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	tokenID := utils.RandomSlice(32)
 	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
-	cd, err := cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 
 	tr := new(mockRegistry)
@@ -176,7 +181,8 @@ func TestCoreDocument_IsNFTMinted(t *testing.T) {
 }
 
 func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
 
@@ -198,7 +204,8 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 }
 
 func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	pf, err := getNFTUniqueProofKey(cd.Document.Nfts, registry)
 	assert.Error(t, err)
@@ -216,7 +223,8 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	roleKey := make([]byte, 32, 32)
 	account := testingidentity.GenerateRandomDID()
 	pf, err := getRoleProofKey(cd.Document.Roles, roleKey, account)
@@ -236,7 +244,8 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 }
 
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	invData := &invoicepb.InvoiceData{}
 	dataSalts, err := GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 	assert.NoError(t, err)
@@ -378,7 +387,8 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 }
 
 func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
-	m := newCoreDocument()
+	m, err := newCoreDocument()
+	assert.NoError(t, err)
 	m.Document.DocumentRoot = utils.RandomSlice(32)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, err := contextutil.Account(ctx)

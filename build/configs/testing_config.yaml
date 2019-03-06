@@ -23,3 +23,6 @@ keys:
   signing:
     publicKey: ../../build/resources/signingKey.pub.pem
     privateKey: ../../build/resources/signingKey.key.pem
+
+anchoring:
+  precommit: true

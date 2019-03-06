@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"crypto/sha256"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -33,4 +34,16 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (
 		return err
 	}
 	return nil
+}
+
+// GenerateHashPair generates a preimage and hash pair. This is useful in a commit reveal scheme such as what we use for anchor pre-commit > commit flow.
+func GenerateHashPair(preimageSize int) (preimage, hash []byte, err error) {
+	preimage = utils.RandomSlice(preimageSize)
+	h := sha256.New()
+	_, err = h.Write(preimage)
+	if err != nil {
+		return []byte{}, []byte{}, err
+	}
+	hash = h.Sum(hash)
+	return preimage, hash, nil
 }
