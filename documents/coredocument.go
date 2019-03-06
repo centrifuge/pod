@@ -180,6 +180,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 		ReadRules:          cd.Document.ReadRules,
 		TransitionRules:    cd.Document.TransitionRules,
 		Nfts:               cd.Document.Nfts,
+		AccessTokens:       cd.Document.AccessTokens,
 	}
 
 	err = populateVersions(&cdp, &cd.Document)
