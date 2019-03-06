@@ -365,6 +365,7 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
+	id3 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
 	cd, err := NewCoreDocumentWithCollaborators(ids)
 	assert.NoError(t, err)
@@ -391,6 +392,10 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
+
+	role2 := newRole()
+	role2.Collaborators = append(role.Collaborators, id3[:])
+	cd.addNewTransitionRule(role2, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, []byte(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 }
 
 func TestCoreDocument_GetSignCollaborators(t *testing.T) {
@@ -423,3 +428,4 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
 }
+

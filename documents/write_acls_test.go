@@ -75,16 +75,22 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// previous_version
 	// next_version
 	// previous_root
-	// roles
+	// roles ++
 	// current pre image
 	// next pre image
 	// read_rules.roles
 	// read_rules.action
+	// transition_rules.RuleKey
+	// transition_rules.Roles
+	// transition_rules.MatchType
+	// transition_rules.Action
+	// transition_rules.Field
 	oldTree := getTree(t, &doc.Document)
 	newTree := getTree(t, &ndoc.Document)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 9)
+	assert.Len(t, cf, 15)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	rprop2 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops := map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
@@ -95,6 +101,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                            {},
 	}
 
 	testExpectedProps(t, cf, eprops)
@@ -130,8 +137,9 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// previous version
 	// next version
 	// previous_root
-	// roles (new doc will have empty role while old one has one role)
+	// roles (new doc will have empty role while old one has two roles)
 	// read_rules (new doc will have empty read_rules while old one has read_rules)
+	// transition_rules
 	doc = ndoc
 	ndoc, err = newCoreDocument()
 	assert.NoError(t, err)
@@ -164,7 +172,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	assert.Len(t, cf, 10)
 	fmt.Println(cf)
 	rprop = append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
-	rprop2 := append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
