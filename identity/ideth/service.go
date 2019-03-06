@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -336,7 +337,7 @@ func (i service) Exists(ctx context.Context, did id.DID) error {
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpose *big.Int) error {
+func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpose *big.Int, validateAt *time.Time) error {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return err
@@ -347,12 +348,37 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 		return err
 	}
 
-	keys, err := contract.GetKey(opts, key32)
+	ethKey, err := contract.GetKey(opts, key32)
 	if err != nil {
 		return err
 	}
 
-	for _, p := range keys.Purposes {
+	// if revoked
+	if ethKey.RevokedAt.Cmp(big.NewInt(0)) > 0 {
+		// if a specific time for validation is provided then we validate if a revoked key was revoked before the provided time
+		if validateAt != nil {
+			revokedAtBlock, err := i.client.GetEthClient().BlockByNumber(ctx, ethKey.RevokedAt)
+			if err != nil {
+				return err
+			}
+
+			if big.NewInt(validateAt.Unix()).Cmp(revokedAtBlock.Time()) > 0 {
+				return errors.New("the given key [%x] for purpose [%s] has been revoked before provided time %s.", key, purpose.String(), validateAt.String())
+			}
+		} else {
+			// else check if the revocation block number is before the latest block number from Ethereum
+			latest, err := i.client.GetEthClient().BlockByNumber(ctx, nil)
+			if err != nil {
+				return err
+			}
+
+			if ethKey.RevokedAt.Cmp(big.NewInt(0)) > 0 && ethKey.RevokedAt.Cmp(latest.Number()) <= 0 {
+				return errors.New("the given key [%x] for purpose [%s] has been revoked.", key, purpose.String())
+			}
+		}
+	}
+
+	for _, p := range ethKey.Purposes {
 		if p.Cmp(purpose) == 0 {
 			return nil
 		}
@@ -430,7 +456,8 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
 	centID := id.NewDIDFromBytes(signature.EntityId)
 
-	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, &(id.KeyPurposeSigning.Value))
+	sigTime := time.Unix(signature.Timestamp.Seconds, int64(signature.Timestamp.Nanos))
+	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, &(id.KeyPurposeSigning.Value), &sigTime)
 	if err != nil {
 		return err
 	}
