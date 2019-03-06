@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
@@ -14,6 +15,7 @@ import (
 // if both old and new are set, then it is an edit operation
 type changedField struct {
 	property, old, new []byte
+	name               string
 }
 
 // getChangedFields takes two document trees and returns the compact value, old and new value of the fields that are changed in new tree.
@@ -61,6 +63,7 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 
 		if !bytes.Equal(ov, nv) {
 			changedFields = append(changedFields, changedField{
+				name:     k,
 				property: p.CompactName(),
 				old:      ov,
 				new:      nv,
@@ -77,7 +80,7 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 		v = leaf.Hash
 	}
 
-	cf := changedField{property: p.CompactName()}
+	cf := changedField{property: p.CompactName(), name: p.ReadableName()}
 	if old {
 		cf.old = v
 		return cf
@@ -87,7 +90,7 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 	return cf
 }
 
-// transitionRulesFor returns all the transition rules for the account.
+// transitionRulesFor returns a copy all the transition rules for the account.
 func (cd *CoreDocument) transitionRulesFor(account identity.DID) (rules []coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
@@ -130,4 +133,77 @@ func copyByteSlice(data [][]byte) [][]byte {
 	}
 
 	return nbs
+}
+
+// validateTransitions validates the changedFields based on the rules provided.
+// returns an error if any changedField violates the rules.
+func validateTransitions(rules []coredocumentpb.TransitionRule, changedFields []changedField) error {
+	cfMap := make(map[string]struct{})
+	for _, cf := range changedFields {
+		cfMap[cf.name] = struct{}{}
+	}
+
+	for _, rule := range rules {
+		for _, cf := range changedFields {
+			if isValidTransition(rule, cf) {
+				delete(cfMap, cf.name)
+			}
+		}
+	}
+
+	if len(cfMap) == 0 {
+		return nil
+	}
+
+	var err error
+	for k := range cfMap {
+		err = errors.AppendError(err, errors.New("invalid transition: %s", k))
+	}
+
+	return err
+}
+
+func isValidTransition(rule coredocumentpb.TransitionRule, cf changedField) bool {
+	// changed property length should be at least equal to rule property
+	if len(cf.property) < len(rule.Field) {
+		return false
+	}
+
+	// if the match type is prefix, get the compact property till prefix
+	v := cf.property
+	if rule.MatchType == coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX {
+		v = v[:len(rule.Field)]
+	}
+
+	// check the properties are equal
+	if !bytes.Equal(v, rule.Field) {
+		return false
+	}
+
+	// check if the action is allowed
+	// for now, we have only edit action
+	// edit allows following
+	// 1. update: editing a value
+	// 2. set: setting a new value ex: adding to slice or map
+	// 3. delete: deleting the new value ex: removing from slice or map
+	// Once we have more actions, like set, increment etc.. we can do those checks here
+	return true
+}
+
+// AccountCanUpdate validates the changes made by the account in the new document.
+// returns error if the transitions are not allowed for the account
+func (cd *CoreDocument) AccountCanUpdate(ncd *CoreDocument, account identity.DID, docType string) error {
+	oldTree, err := cd.documentTree(docType)
+	if err != nil {
+		return err
+	}
+
+	newTree, err := ncd.documentTree(docType)
+	if err != nil {
+		return err
+	}
+
+	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	rules := cd.transitionRulesFor(account)
+	return validateTransitions(rules, cf)
 }

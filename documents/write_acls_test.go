@@ -9,8 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -274,14 +277,7 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 	assert.Len(t, rules, 0)
 
 	// add roles and rules
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id[:])
-	rule := &coredocumentpb.TransitionRule{
-		RuleKey: utils.RandomSlice(32),
-		Roles:   [][]byte{role.RoleKey},
-	}
-	doc.Document.TransitionRules = append(doc.Document.TransitionRules, rule)
-	doc.Document.Roles = append(doc.Document.Roles, role)
+	_, rule := createTransitionRules(t, doc, id, nil, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 	rules = doc.transitionRulesFor(id)
 	assert.Len(t, rules, 1)
 	assert.Equal(t, *rule, rules[0])
@@ -289,4 +285,71 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 	// wrong id
 	rules = doc.transitionRulesFor(testingidentity.GenerateRandomDID())
 	assert.Len(t, rules, 0)
+}
+
+func createTransitionRules(t *testing.T, doc *CoreDocument, id identity.DID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
+	role := newRole()
+	role.Collaborators = append(role.Collaborators, id[:])
+	rule := &coredocumentpb.TransitionRule{
+		RuleKey:   utils.RandomSlice(32),
+		Roles:     [][]byte{role.RoleKey},
+		Field:     field,
+		MatchType: matchType,
+		Action:    coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT,
+	}
+	doc.Document.TransitionRules = append(doc.Document.TransitionRules, rule)
+	doc.Document.Roles = append(doc.Document.Roles, role)
+	return role, rule
+}
+
+func TestWriteACLs_validateTransitions_core_document(t *testing.T) {
+	doc, err := newCoreDocument()
+	assert.NoError(t, err)
+	doc.Document.DocumentRoot = utils.RandomSlice(32)
+	docType := documenttypes.InvoiceDataTypeUrl
+	id1 := testingidentity.GenerateRandomDID()
+	id2 := testingidentity.GenerateRandomDID()
+
+	// id1 will have rights to update all the fields in the core document
+	createTransitionRules(t, doc, id1, compactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+
+	// id2 will have write access to only identifiers
+	fields := [][]byte{
+		{0, 0, 0, 4},
+		{0, 0, 0, 3},
+		{0, 0, 0, 16},
+		{0, 0, 0, 2},
+		{0, 0, 0, 22},
+		{0, 0, 0, 23},
+	}
+
+	for _, f := range fields {
+		createTransitionRules(t, doc, id2, append(compactProperties(CDTreePrefix), f...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+	}
+
+	// prepare a new version of the document with out collaborators
+	ndoc, err := doc.PrepareNewVersion(nil, true)
+	assert.NoError(t, err)
+
+	// if this was changed by the id1, everything should be fine
+	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+
+	// if this was chnaged by id2, it should still be okay since roles would not have changed
+	assert.NoError(t, doc.AccountCanUpdate(ndoc, id2, docType))
+
+	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
+	ndoc, err = doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
+	assert.NoError(t, err)
+
+	// should not error out if the change was done by id1
+	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+
+	// this should fail since id2 has no write permission to roles and read_rules
+	err = doc.AccountCanUpdate(ndoc, id2, docType)
+	assert.Error(t, err)
+	// we should have 3 errors
+	// 1. update to roles
+	// 2. update to read_rules
+	// 3. update to read_rules action
+	assert.Equal(t, errors.Len(err), 3)
 }
