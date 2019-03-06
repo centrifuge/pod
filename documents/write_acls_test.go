@@ -20,7 +20,9 @@ import (
 )
 
 func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
-	ocd := newCoreDocument().Document
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	ocd := cd.Document
 	ncd := invoicepb.InvoiceData{
 		Currency: "EUR",
 	}
@@ -29,13 +31,15 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	newTree := getTree(t, &ncd)
 
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	// cf length should be len(ocd) and len(ncd) = 28 changed field
-	assert.Len(t, cf, 28)
+	// cf length should be len(ocd) and len(ncd) = 30 changed field
+	assert.Len(t, cf, 30)
 
 }
 
 func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
-	ocd := newCoreDocument().Document
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	ocd := cd.Document
 	oldTree := getTree(t, &ocd)
 	newTree := getTree(t, &ocd)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
@@ -59,7 +63,8 @@ func testExpectedProps(t *testing.T, cf []changedField, eprops map[string]struct
 }
 
 func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
-	doc := newCoreDocument()
+	doc, err := newCoreDocument()
+	assert.NoError(t, err)
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
 	assert.NoError(t, err)
@@ -70,18 +75,22 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next_version
 	// previous_root
 	// roles
+	// current pre image
+	// next pre image
 	// read_rules.roles
 	// read_rules.action
 	oldTree := getTree(t, &doc.Document)
 	newTree := getTree(t, &ndoc.Document)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 7)
+	assert.Len(t, cf, 9)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops := map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 16}): {},
 		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+		hexutil.Encode([]byte{0, 0, 0, 23}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
@@ -102,12 +111,14 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 4)
+	assert.Len(t, cf, 6)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 16}): {},
 		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+		hexutil.Encode([]byte{0, 0, 0, 23}): {},
 	}
 	testExpectedProps(t, cf, eprops)
 
@@ -121,11 +132,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// roles (new doc will have empty role while old one has one role)
 	// read_rules (new doc will have empty read_rules while old one has read_rules)
 	doc = ndoc
-	ndoc = newCoreDocument()
+	ndoc, err = newCoreDocument()
+	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 8)
+	assert.Len(t, cf, 10)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
@@ -133,6 +145,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 16}): {},
 		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+		hexutil.Encode([]byte{0, 0, 0, 23}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
@@ -146,7 +160,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 8)
+	assert.Len(t, cf, 10)
 	fmt.Println(cf)
 	rprop = append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 := append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -156,6 +170,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 16}): {},
 		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+		hexutil.Encode([]byte{0, 0, 0, 23}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
