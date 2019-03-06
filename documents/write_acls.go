@@ -36,9 +36,9 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 	}
 
 	// check each property and append it changed fields if the value is different.
-	for _, p := range props {
-		_, ol := oldTree.GetLeafByProperty(p.ReadableName())
-		_, nl := newTree.GetLeafByProperty(p.ReadableName())
+	for k, p := range props {
+		_, ol := oldTree.GetLeafByProperty(k)
+		_, nl := newTree.GetLeafByProperty(k)
 
 		if ol == nil {
 			changedFields = append(changedFields, newChangedField(p, nl, false))
