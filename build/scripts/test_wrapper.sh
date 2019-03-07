@@ -35,12 +35,17 @@ status=$?
 ############################################################
 
 ################# Run Tests ################################
-if [ $status -eq 0 ]; then
+args=( "$@" )
+if [[ $# == 0 ]]; then
+        args=(  unit cmd testworld integration )
+fi
+
+if [[ ${status} -eq 0 ]]; then
   statusAux=0
   for path in ${local_dir}/tests/*; do
-    [ -x "${path}" ] || continue # if not an executable, skip
+    [[ -x "${path}" ]] || continue # if not an executable, skip
 
-    for arg in $@; do
+    for arg in "${args[@]}"; do
         if [[ ${path} == *$arg* ]]; then
             echo "Executing test suite [${path}]"
             ./$path
