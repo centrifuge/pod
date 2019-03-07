@@ -4,7 +4,6 @@ package documents
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"reflect"
 	"testing"
@@ -75,7 +74,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// previous_version
 	// next_version
 	// previous_root
-	// roles ++
+	// roles (x2)
 	// current pre image
 	// next pre image
 	// read_rules.roles
@@ -100,6 +99,11 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 23}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):{},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):{},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):{},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):{},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                            {},
 	}
@@ -112,6 +116,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// previous_version
 	// next_version
 	// previous_root
+	// current pre image
+	// next pre image
 	doc = ndoc
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err = doc.PrepareNewVersion(nil, true)
@@ -137,18 +143,26 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// previous version
 	// next version
 	// previous_root
+	// current pre image
+	// next pre image
 	// roles (new doc will have empty role while old one has two roles)
 	// read_rules (new doc will have empty read_rules while old one has read_rules)
-	// transition_rules
+	// transition_rules (new doc will have empty transition_rules while old one has transition_rules)
 	doc = ndoc
 	ndoc, err = newCoreDocument()
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 10)
+	assert.Len(t, cf, 16)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
@@ -159,20 +173,32 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                            {},
 	}
 	testExpectedProps(t, cf, eprops)
 
 	// add different roles and read rules and check
+	// this will change
+	// current version
+	// previous version
+	// next version
+	// previous_root
+	// current pre image
+	// next pre image
+	// roles (new doc will have 2 new roles different from 2 old roles)
+	// read_rules
+	// transition_rules
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 10)
-	fmt.Println(cf)
-	rprop = append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	assert.Len(t, cf, 14)
+	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	rprop3 := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
+	rprop4 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
@@ -181,9 +207,13 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 22}): {},
 		hexutil.Encode([]byte{0, 0, 0, 23}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop3...)):                                           {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop4...)):                                           {},
 	}
 	testExpectedProps(t, cf, eprops)
 }
