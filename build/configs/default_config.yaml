@@ -11,11 +11,10 @@ networks:
     - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
       identityFactory: ""
-      identityRegistry: ""
       anchorRepository: ""
       paymentObligation: ""
 
-  # Main development testnet network
+  # Main development testnet network (Rinkeby)
   russianhill:
     # Numeric ID of the Centrifuge network
     id: 51
@@ -27,11 +26,11 @@ networks:
     ethereumNetworkId: 4
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses: 
-      identityFactory: "0x90d294571e73842697a66b7a99a09dd6c73d356d"
-      identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
-      anchorRepository: "0x7f854dfa98012d7fa55c803bba2260bcdee4b5ed"
-      paymentObligation: "0xdb0581A9328664855328AdDb0E251184640f9e5D"
+      identityFactory: "0xffe0612006eedaeda188cd9df54574a68920a97d"
+      anchorRepository: "0xd3be7846016367a08ad083b06df98ad78212d0a5"
+      paymentObligation: "0x2d5b6470af1ac962c55b6bee92f3c38c609f371e"
 
+  # Kovan test network
   bernalheights:
     ###
     # Kovan FAQ
@@ -50,10 +49,25 @@ networks:
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x85b32f7a3f40481f12334041670c8cbe07f7d79c"
-      identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
-      anchorRepository: "0x444f649e307442e76ccf737466e52f1609b98260"
-      paymentObligation: "0x0417eb37941164368401D666984cED7694ABcBb1"
+      identityFactory: "0x01adb663afd3a5d7655c89d2774cef51800f3bb6"
+      anchorRepository: "0x16f45eac73752eab73072fddbacbd0a58adc3a40"
+      paymentObligation: "0xeb1c6a36c4b1234aaae7ece88fb4f48d23d63146"
+
+  # Ropsten test network
+  dogpatch:
+    # Numeric ID of the Centrifuge network
+    id: 53
+    # Bootstrap list of nodes that Centrifuge provides to the dogpatch (TODO create ropsten bootnodes)
+    bootstrapPeers:
+      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
+      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    # Ethereum network ID - Ropsten
+    ethereumNetworkId: 3
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0x1ba18b61337fa121339339b554730c0e70b9a81c"
+      anchorRepository: "0xff5f35f6f3910ed66a24b6e55542e66b868416a3"
+      paymentObligation: "0x48c25e7639e888e667f20d30b96653de054251d8"
 
 # Data Storage
 storage:
@@ -94,6 +108,8 @@ queue:
   numWorkers: 2
   # Frees up CPU cycles when worker is waiting for events
   workerWaitTimeMS: 1
+  # Number of retries allowed for a task
+  taskRetries: 10
 
 # Ethereum specific configuration
 ethereum:
@@ -120,3 +136,6 @@ ethereum:
 debug:
   # pprof for debugging
   pprof: false
+
+anchoring:
+  precommit: true

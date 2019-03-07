@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -14,89 +15,91 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 var log = logging.Logger("nft")
 
-// ethereumPaymentObligationContract is an abstraction over the contract code to help in mocking it out
-type ethereumPaymentObligationContract interface {
+const (
+	// ErrNFTMinted error for NFT already minted for registry
+	ErrNFTMinted = errors.Error("NFT already minted")
+)
 
-	// Mint method abstracts Mint method on the contract
-	Mint(opts *bind.TransactOpts, to common.Address, tokenID *big.Int, tokenURI string, anchorID *big.Int, merkleRoot [32]byte, values []string, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error)
-
-	// OwnerOf to retrieve owner of the tokenID
-	OwnerOf(opts *bind.CallOpts, tokenID *big.Int) (common.Address, error)
+// Config is the config interface for nft package
+type Config interface {
+	GetEthereumContextWaitTimeout() time.Duration
 }
 
 // ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
 type ethereumPaymentObligation struct {
-	registry        *documents.ServiceRegistry
-	identityService identity.Service
+	cfg             Config
+	identityService identity.ServiceDID
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
-	txService       transactions.Service
+	txManager       transactions.Manager
 	blockHeightFunc func() (height uint64, err error)
 }
 
 // newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
 func newEthereumPaymentObligation(
-	identityService identity.Service,
+	cfg Config,
+	identityService identity.ServiceDID,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
-	txService transactions.Service,
+	txManager transactions.Manager,
 	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
 	return &ethereumPaymentObligation{
+		cfg:             cfg,
 		identityService: identityService,
 		ethClient:       ethClient,
 		bindContract:    bindContract,
 		queue:           queue,
 		docSrv:          docSrv,
-		txService:       txService,
+		txManager:       txManager,
 		blockHeightFunc: blockHeightFunc,
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, documentID []byte, depositAddress string, proofFields []string) (*MintRequest, error) {
-
-	model, err := s.docSrv.GetCurrentVersion(ctx, documentID)
+func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
+	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
-		return nil, err
+		return mreq, err
 	}
 
-	corDoc, err := model.PackCoreDocument()
+	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
-		return nil, err
+		return mreq, err
 	}
 
-	proofs, err := s.docSrv.CreateProofs(ctx, documentID, proofFields)
+	pfs, err := model.CreateNFTProofs(cid,
+		req.RegistryAddress,
+		tokenID[:],
+		req.SubmitTokenProof,
+		req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof)
 	if err != nil {
-		return nil, err
+		return mreq, err
 	}
 
-	toAddress := common.HexToAddress(depositAddress)
-
-	anchorID, err := anchors.ToAnchorID(corDoc.CurrentVersion)
+	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
+	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
-		return nil, nil
+		return mreq, err
 	}
 
-	rootHash, err := anchors.ToDocumentRoot(corDoc.DocumentRoot)
+	nextAnchorID, err := anchors.ToAnchorID(model.NextVersion())
 	if err != nil {
-		return nil, nil
+		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(toAddress, anchorID, proofs.FieldProofs, rootHash)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
-		return nil, err
+		return mreq, err
 	}
 
 	return requestData, nil
@@ -104,46 +107,129 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, docu
 }
 
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, documentID []byte, registryAddress, depositAddress string, proofFields []string) (*MintNFTResponse, error) {
+func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, err
-	}
-
-	requestData, err := s.prepareMintRequest(ctx, documentID, depositAddress, proofFields)
-	if err != nil {
-		return nil, errors.New("failed to prepare mint request: %v", err)
-	}
-
-	opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
-	if err != nil {
-		return nil, err
-	}
-
-	contract, err := s.bindContract(common.HexToAddress(registryAddress), s.ethClient)
-	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cidBytes, err := tc.GetIdentityID()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	cid, err := identity.ToCentID(cidBytes)
-	if err != nil {
-		return nil, err
+	cid := identity.NewDIDFromBytes(cidBytes)
+
+	if !req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
+		return nil, nil, errors.New("enable grant_nft_access to generate Read Access Proof")
 	}
 
-	txID, _, err := s.sendMintTransaction(cid, contract, opts, requestData)
+	tokenID := NewTokenID()
+	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
-		return nil, errors.New("failed to send transaction: %v", err)
+		return nil, nil, err
+	}
+
+	// check if the nft is successfully minted already
+	if model.IsNFTMinted(s, req.RegistryAddress) {
+		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
+	}
+
+	// Mint NFT within transaction
+	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Minting NFT",
+		s.minter(ctx, tokenID, model, req))
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return &MintNFTResponse{
 		TransactionID: txID.String(),
-		TokenID:       requestData.TokenID.String(),
-	}, nil
+		TokenID:       tokenID.String(),
+	}, done, nil
+}
+
+func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+		tc, err := contextutil.Account(ctx)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		err = model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, _, done, err := s.docSrv.Update(contextutil.WithTX(ctx, txID), model)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		isDone := <-done
+		if !isDone {
+			// some problem occurred in a child task
+			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
+			return
+		}
+
+		requestData, err := s.prepareMintRequest(ctx, tokenID, accountID, req)
+		if err != nil {
+			errOut <- errors.New("failed to prepare mint request: %v", err)
+			return
+		}
+
+		opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		contract, err := s.bindContract(req.RegistryAddress, s.ethClient)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID,
+			requestData.TokenURI, requestData.AnchorID, requestData.Props, requestData.Values,
+			requestData.Salts, requestData.Proofs)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
+			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String(), ethTX.Hash().String(), ethTX.Nonce(), ethTX.CheckNonce())
+		log.Infof("Transfer pending: %s\n", ethTX.Hash().String())
+
+		log.Debugf("To: %s", requestData.To.String())
+		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
+		log.Debugf("TokenURI: %s", requestData.TokenURI)
+		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID.Bytes()))
+		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
+		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
+		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
+		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
+		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
+	}
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
@@ -153,25 +239,10 @@ func (s *ethereumPaymentObligation) OwnerOf(registry common.Address, tokenID []b
 		return owner, errors.New("failed to bind the registry contract: %v", err)
 	}
 
-	opts, cancF := s.ethClient.GetGethCallOpts()
+	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
 
 	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
-}
-
-// sendMintTransaction sends the actual transaction to mint the NFT
-func (s *ethereumPaymentObligation) sendMintTransaction(cid identity.CentID, contract ethereumPaymentObligationContract, opts *bind.TransactOpts, requestData *MintRequest) (*uuid.UUID, *types.Transaction, error) {
-	tx, ethTx, err := s.ethClient.SubmitTransaction(cid, contract.Mint, opts, requestData.To, requestData.TokenID, requestData.TokenURI, requestData.AnchorID,
-		requestData.MerkleRoot, requestData.Values, requestData.Salts, requestData.Proofs)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	log.Infof("Sent off tx to mint [tokenID: %x, anchor: %x, registry: %x] to payment obligation contract. Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]",
-		requestData.TokenID, requestData.AnchorID, requestData.To, ethTx.Hash(), ethTx.Nonce(), ethTx.CheckNonce())
-	log.Infof("Transfer pending: 0x%x\n", ethTx.Hash())
-	return tx, ethTx, nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
@@ -189,11 +260,14 @@ type MintRequest struct {
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
 	AnchorID *big.Int
 
-	// MerkleRoot is the root hash of the merkle proof/doc
-	MerkleRoot [32]byte
+	// NextAnchorID is the next ID of the document, when updated
+	NextAnchorID *big.Int
+
+	// Props contains the compact props for readRole and tokenRole
+	Props [][]byte
 
 	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
-	Values []string
+	Values [][]byte
 
 	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
 	Salts [][32]byte
@@ -203,70 +277,91 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(to common.Address, anchorID anchors.AnchorID, proofs []*proofspb.Proof, rootHash [32]byte) (*MintRequest, error) {
-
-	// tokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
-	// tokenID should be random 32 bytes (32 byte = 256 bits)
-	tokenID := utils.ByteSliceToBigInt(utils.RandomSlice(32))
-	tokenURI := "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
-	proofData, err := createProofData(proofs)
+func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, proofs []*proofspb.Proof) (MintRequest, error) {
+	proofData, err := convertToProofData(proofs)
 	if err != nil {
-		return nil, err
+		return MintRequest{}, err
 	}
 
-	return &MintRequest{
-		To:         to,
-		TokenID:    tokenID,
-		TokenURI:   tokenURI,
-		AnchorID:   anchorID.BigInt(),
-		MerkleRoot: rootHash,
-		Values:     proofData.Values,
-		Salts:      proofData.Salts,
-		Proofs:     proofData.Proofs}, nil
+	return MintRequest{
+		To:           to,
+		TokenID:      tokenID.BigInt(),
+		TokenURI:     tokenID.URI(),
+		AnchorID:     anchorID.BigInt(),
+		NextAnchorID: nextAnchorID.BigInt(),
+		Props:        proofData.Props,
+		Values:       proofData.Values,
+		Salts:        proofData.Salts,
+		Proofs:       proofData.Proofs}, nil
 }
 
 type proofData struct {
-	Values []string
+	Props  [][]byte
+	Values [][]byte
 	Salts  [][32]byte
 	Proofs [][][32]byte
 }
 
-func createProofData(proofspb []*proofspb.Proof) (*proofData, error) {
-	var values = make([]string, len(proofspb))
+func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
+	var props = make([][]byte, len(proofspb))
+	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
 
+	// TODO remove later
+	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
+	//log.Info(json.MarshalIndent(proof, "", "  "))
+
 	for i, p := range proofspb {
-		values[i] = p.Value
 		salt32, err := utils.SliceToByte32(p.Salt)
 		if err != nil {
 			return nil, err
 		}
-
-		salts[i] = salt32
-		property, err := convertProofProperty(p.SortedHashes)
+		property, err := utils.ConvertProofForEthereum(p.SortedHashes)
 		if err != nil {
 			return nil, err
 		}
+		props[i] = p.GetCompactName()
+		values[i] = p.Value
+		salts[i] = salt32
 		proofs[i] = property
 	}
 
-	return &proofData{Values: values, Salts: salts, Proofs: proofs}, nil
-}
-
-func convertProofProperty(sortedHashes [][]byte) ([][32]byte, error) {
-	var property [][32]byte
-	for _, hash := range sortedHashes {
-		hash32, err := utils.SliceToByte32(hash)
-		if err != nil {
-			return nil, err
-		}
-		property = append(property, hash32)
-	}
-
-	return property, nil
+	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
 }
 
 func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
 	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
+}
+
+// Following are utility methods for nft parameter debugging purposes (Don't remove)
+
+func byteSlicetoString(s [][]byte) string {
+	str := "["
+
+	for i := 0; i < len(s); i++ {
+		str += "\"" + hexutil.Encode(s[i]) + "\",\n"
+	}
+	str += "]"
+	return str
+}
+
+func byte32SlicetoString(s [][32]byte) string {
+	str := "["
+
+	for i := 0; i < len(s); i++ {
+		str += "\"" + hexutil.Encode(s[i][:]) + "\",\n"
+	}
+	str += "]"
+	return str
+}
+
+func byteByte32SlicetoString(s [][][32]byte) string {
+	str := "["
+
+	for i := 0; i < len(s); i++ {
+		str += "\"" + byte32SlicetoString(s[i]) + "\",\n"
+	}
+	str += "]"
+	return str
 }

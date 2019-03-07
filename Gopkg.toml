@@ -28,11 +28,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "f93686ceaf40283c7dc496c62fcc69b1c1a272e3"
+  revision = "20c7fd5e4210e68d2a5662a8714d51ceeae031b8"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
+  revision = "be1a93f627115fcf9978a85c4b6b8f08adf87f35"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
@@ -40,15 +40,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "8c3b6a26b7929ec269302dc50d17c9ceb9772dda"
+  revision = "13d3af957299c614237c42cdc331f7acd7c7d201"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
   revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
-
-[[override]]
-  name = "github.com/xsleonard/go-merkle"
-  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
 
 [[override]]
   name = "github.com/ethereum/go-ethereum"

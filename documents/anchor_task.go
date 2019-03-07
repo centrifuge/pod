@@ -12,25 +12,29 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
-	"github.com/satori/go.uuid"
 )
 
 const (
-	modelIDParam           = "modelID"
-	accountIDParam         = "accountID"
+	// DocumentIDParam maps to model ID in the kwargs
+	DocumentIDParam = "documentID"
+
+	// AccountIDParam maps to account ID in the kwargs
+	AccountIDParam = "accountID"
+
 	documentAnchorTaskName = "Document Anchoring"
 )
 
 var log = logging.Logger("anchor_task")
 
 type documentAnchorTask struct {
-	transactions.BaseTask
+	txv1.BaseTask
 
 	id        []byte
-	accountID identity.CentID
+	accountID identity.DID
 
 	// state
 	config        config.Service
@@ -46,12 +50,12 @@ func (d *documentAnchorTask) TaskTypeName() string {
 
 // ParseKwargs parses the kwargs.
 func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
-	err := d.ParseTransactionID(kwargs)
+	err := d.ParseTransactionID(d.TaskTypeName(), kwargs)
 	if err != nil {
 		return err
 	}
 
-	modelID, ok := kwargs[modelIDParam].(string)
+	modelID, ok := kwargs[DocumentIDParam].(string)
 	if !ok {
 		return errors.New("missing model ID")
 	}
@@ -61,12 +65,12 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 		return errors.New("invalid model ID")
 	}
 
-	accountID, ok := kwargs[accountIDParam].(string)
+	accountID, ok := kwargs[AccountIDParam].(string)
 	if !ok {
 		return errors.New("missing account ID")
 	}
 
-	d.accountID, err = identity.CentIDFromString(accountID)
+	d.accountID, err = identity.NewDIDFromString(accountID)
 	if err != nil {
 		return errors.New("invalid cent ID")
 	}
@@ -76,7 +80,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 // Copy returns a new task with state.
 func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	return &documentAnchorTask{
-		BaseTask:      transactions.BaseTask{TxService: d.TxService},
+		BaseTask:      txv1.BaseTask{TxManager: d.TxManager},
 		config:        d.config,
 		processor:     d.processor,
 		modelGetFunc:  d.modelGetFunc,
@@ -86,7 +90,7 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 
 // RunTask anchors the document.
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
-	log.Infof("starting anchor task: %v\n", d.TxID.String())
+	log.Infof("starting anchor task for transaction: %s\n", d.TxID)
 	defer func() {
 		err = d.UpdateTransaction(d.accountID, d.TaskTypeName(), err)
 	}()
@@ -108,30 +112,48 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 
 	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
 		return d.modelSaveFunc(d.accountID[:], id, model)
-	}); err != nil {
+	}, tc.GetPrecommitEnabled()); err != nil {
 		return false, errors.New("failed to anchor document: %v", err)
 	}
 
 	return true, nil
 }
 
-// InitDocumentAnchorTask enqueues a new document anchor task and returns the txID.
-func InitDocumentAnchorTask(tq queue.TaskQueuer, txService transactions.Service, accountID identity.CentID, modelID []byte) (uuid.UUID, error) {
-	tx, err := txService.CreateTransaction(accountID, documentAnchorTaskName)
-	if err != nil {
-		return uuid.Nil, err
-	}
-
+// InitDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
+func InitDocumentAnchorTask(txMan transactions.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, txID transactions.TxID) (queue.TaskResult, error) {
 	params := map[string]interface{}{
-		transactions.TxIDParam: tx.ID.String(),
-		modelIDParam:           hexutil.Encode(modelID),
-		accountIDParam:         accountID.String(),
+		transactions.TxIDParam: txID.String(),
+		DocumentIDParam:        hexutil.Encode(modelID),
+		AccountIDParam:         accountID.String(),
 	}
 
-	_, err = tq.EnqueueJob(documentAnchorTaskName, params)
+	err := txMan.UpdateTaskStatus(accountID, txID, transactions.Pending, documentAnchorTaskName, "init")
 	if err != nil {
-		return uuid.Nil, err
+		return nil, err
 	}
 
-	return tx.ID, nil
+	tr, err := tq.EnqueueJob(documentAnchorTaskName, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return tr, nil
+}
+
+// CreateAnchorTransaction creates a transaction for anchoring a document using transaction manager
+func CreateAnchorTransaction(txMan transactions.Manager, tq queue.TaskQueuer, self identity.DID, txID transactions.TxID, documentID []byte) (transactions.TxID, chan bool, error) {
+	txID, done, err := txMan.ExecuteWithinTX(context.Background(), self, txID, "anchor document", func(accountID identity.DID, TID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
+		tr, err := InitDocumentAnchorTask(txMan, tq, accountID, documentID, TID)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		_, err = tr.Get(txMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errChan <- err
+			return
+		}
+		errChan <- nil
+	})
+	return txID, done, err
 }

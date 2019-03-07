@@ -10,13 +10,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ethid"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/version"
 	log2 "github.com/ipfs/go-log"
 )
@@ -34,19 +34,19 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		transactions.Bootstrapper{},
+		txv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
-		&ethid.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
-		p2p.Bootstrapper{},
 		api.Bootstrapper{},
-		documents.PostBootstrapper{},
 		&invoice.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&nft.Bootstrapper{},
+		p2p.Bootstrapper{},
+		documents.PostBootstrapper{},
 	}
 }
 
@@ -56,11 +56,11 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		transactions.Bootstrapper{},
+		txv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
+		&ideth.Bootstrapper{},
 		&anchors.Bootstrapper{},
-		&ethid.Bootstrapper{},
 	}
 }
 

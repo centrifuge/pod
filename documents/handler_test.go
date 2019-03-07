@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/documents"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -142,6 +142,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForVersion(t *testin
 }
 
 func TestConvertDocProofToClientFormat(t *testing.T) {
+	v1, _ := hexutil.Decode("0x76616c756531")
 	tests := []struct {
 		name   string
 		input  *documents.DocumentProof
@@ -155,8 +156,8 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				State:      "state",
 				FieldProofs: []*proofspb.Proof{
 					{
-						Property: proofs.ReadableName("prop1"),
-						Value:    "val1",
+						Property: proofs.CompactName([]byte{0, 0, 1}...),
+						Value:    v1,
 						Salt:     []byte{1, 2, 3},
 						Hash:     []byte{1, 2, 4},
 						SortedHashes: [][]byte{
@@ -175,8 +176,8 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				},
 				FieldProofs: []*documentpb.Proof{
 					{
-						Property: "prop1",
-						Value:    "val1",
+						Property: "0x000001",
+						Value:    "0x76616c756531",
 						Salt:     "0x010203",
 						Hash:     "0x010204",
 						SortedHashes: []string{
@@ -211,10 +212,12 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 }
 
 func TestConvertProofsToClientFormat(t *testing.T) {
+	v1, _ := hexutil.Decode("0x76616c756531")
+	v2, _ := hexutil.Decode("0x76616c756532")
 	clientFormat := documents.ConvertProofsToClientFormat([]*proofspb.Proof{
 		{
 			Property: proofs.ReadableName("prop1"),
-			Value:    "val1",
+			Value:    v1,
 			Salt:     utils.RandomSlice(32),
 			Hash:     utils.RandomSlice(32),
 			SortedHashes: [][]byte{
@@ -225,7 +228,7 @@ func TestConvertProofsToClientFormat(t *testing.T) {
 		},
 		{
 			Property: proofs.ReadableName("prop2"),
-			Value:    "val2",
+			Value:    v2,
 			Salt:     utils.RandomSlice(32),
 			Hash:     utils.RandomSlice(32),
 			SortedHashes: [][]byte{

@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
@@ -41,6 +42,9 @@ const (
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
 
+	// Identity is the contract name for Identity
+	Identity ContractName = "identity"
+
 	// IdentityFactory is the contract name for IdentityFactory
 	IdentityFactory ContractName = "identityFactory"
 
@@ -52,8 +56,8 @@ const (
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
-func ContractNames() [4]ContractName {
-	return [4]ContractName{AnchorRepo, IdentityFactory, IdentityRegistry, PaymentObligation}
+func ContractNames() [5]ContractName {
+	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, PaymentObligation}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -81,6 +85,7 @@ type Configuration interface {
 	GetServerAddress() string
 	GetNumWorkers() int
 	GetWorkerWaitTimeMS() int
+	GetTaskRetries() int
 	GetEthereumNodeURL() string
 	GetEthereumContextReadWaitTimeout() time.Duration
 	GetEthereumContextWaitTimeout() time.Duration
@@ -101,8 +106,9 @@ type Configuration interface {
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
 	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
+	GetPrecommitEnabled() bool
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -114,14 +120,16 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-
+	GetKeys() (map[string]IDKey, error)
+	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
 	GetIdentityID() ([]byte, error)
+	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
+	GetPrecommitEnabled() bool
 
 	// CreateProtobuf creates protobuf
 	CreateProtobuf() (*accountpb.AccountData, error)
@@ -137,6 +145,12 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+}
+
+// IDKey represents a key pair
+type IDKey struct {
+	PublicKey  []byte
+	PrivateKey []byte
 }
 
 // configuration holds the configuration details for the node.
@@ -271,6 +285,11 @@ func (c *configuration) GetNumWorkers() int {
 	return c.GetInt("queue.numWorkers")
 }
 
+// GetTaskRetries returns the number of retries allowed for a queued task
+func (c *configuration) GetTaskRetries() int {
+	return c.GetInt("queue.taskRetries")
+}
+
 // GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.
 func (c *configuration) GetWorkerWaitTimeMS() int {
 	return c.GetInt("queue.workerWaitTimeMS")
@@ -379,19 +398,24 @@ func (c *configuration) GetIdentityID() ([]byte, error) {
 	return id, err
 }
 
+// GetP2PKeyPair returns the P2P key pair.
+func (c *configuration) GetP2PKeyPair() (pub, priv string) {
+	return c.GetString("keys.p2p.publicKey"), c.GetString("keys.p2p.privateKey")
+}
+
 // GetSigningKeyPair returns the signing key pair.
 func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
 }
 
-// GetEthAuthKeyPair returns ethereum key pair.
-func (c *configuration) GetEthAuthKeyPair() (pub, priv string) {
-	return c.GetString("keys.ethauth.publicKey"), c.GetString("keys.ethauth.privateKey")
-}
-
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
+}
+
+// GetPrecommitEnabled returns true if precommit for anchors is enabled
+func (c *configuration) GetPrecommitEnabled() bool {
+	return c.GetBool("anchoring.precommit")
 }
 
 // LoadConfiguration loads the configuration from the given file.
@@ -447,9 +471,9 @@ func (c *configuration) initializeViper() {
 	c.v.SetEnvPrefix("CENT")
 }
 
-// SmartContractAddresses encapsulates the smart contract addresses ne
+// SmartContractAddresses encapsulates the smart contract addresses
 type SmartContractAddresses struct {
-	IdentityFactoryAddr, IdentityRegistryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
+	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -464,12 +488,16 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
+	preCommitEnabled := args["preCommitEnabled"].(bool)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
 	}
 	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
-		os.Mkdir(targetDataDir, os.ModePerm)
+		err := os.MkdirAll(targetDataDir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
@@ -490,6 +518,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
 	v.Set("accounts.keystore", targetDataDir+"/accounts")
+	v.Set("anchoring.precommit", preCommitEnabled)
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
@@ -504,8 +533,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ethereum.accounts.main.password", accountPassword)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
-	v.Set("keys.ethauth.privateKey", targetDataDir+"/ethauth.key.pem")
-	v.Set("keys.ethauth.publicKey", targetDataDir+"/ethauth.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
 
@@ -515,7 +542,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
 		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-		v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
 		v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 	}
@@ -531,7 +557,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-	c.v.Set("networks."+network+".contractAddresses.identityRegistry", smartContractAddresses.IdentityRegistryAddr)
 	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
 }

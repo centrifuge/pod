@@ -11,20 +11,19 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
-
-	"github.com/centrifuge/go-centrifuge/ethereum"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +31,7 @@ import (
 
 var (
 	cfg       config.Service
-	idService identity.Service
+	idService identity.ServiceDID
 )
 
 func TestMain(m *testing.M) {
@@ -40,22 +39,23 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&queue.Bootstrapper{},
-		transactions.Bootstrapper{},
+		txv1.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
-	idService = &testingcommons.MockIDService{}
-	ctx[identity.BootstrappedIDService] = idService
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	idService = &testingcommons.MockIdentityService{}
+	ctx[identity.BootstrappedDIDService] = idService
+	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
@@ -68,7 +68,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfgMock, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil)
+		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil, new(testingdocuments.MockRegistry), idService)
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)
@@ -109,7 +109,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	c = updateKeys(c)
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	pu, pr := c.GetSigningKeyPair()
+	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
@@ -123,7 +123,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	externalIP := "100.100.100.100"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	pu, pr := c.GetSigningKeyPair()
+	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
@@ -141,7 +141,7 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	externalIP := "100.200.300.400"
 	listenPort := 38202
 	cp2p := &peer{config: cfg}
-	pu, pr := c.GetSigningKeyPair()
+	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := cp2p.createSigningKey(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
@@ -150,16 +150,16 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 
 func updateKeys(c config.Configuration) config.Configuration {
 	n := c.(*configstore.NodeConfig)
+	n.MainIdentity.P2PKeyPair.Pub = "../build/resources/p2pKey.pub.pem"
+	n.MainIdentity.P2PKeyPair.Priv = "../build/resources/p2pKey.key.pem"
 	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
 	n.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
-	n.MainIdentity.EthAuthKeyPair.Pub = "../build/resources/ethauth.pub.pem"
-	n.MainIdentity.EthAuthKeyPair.Priv = "../build/resources/ethauth.key.pem"
 	return c
 }
 
 func mockmockConfigStore(n config.Configuration) *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
 	mockConfigStore.On("GetConfig").Return(n, nil)
-	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.CentIDLength)}}, nil)
+	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.DIDLength)}}, nil)
 	return mockConfigStore
 }

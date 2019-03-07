@@ -52,7 +52,7 @@
         "signing_key_pair": {
           "$ref": "#/definitions/accountKeyPair"
         },
-        "ethauth_key_pair": {
+        "p2p_key_pair": {
           "$ref": "#/definitions/accountKeyPair"
         }
       }
@@ -158,6 +158,12 @@
           "$ref": "#/definitions/accountAccountData"
         },
         "smart_contract_addresses": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "smart_contract_bytecode": {
           "type": "object",
           "additionalProperties": {
             "type": "string"

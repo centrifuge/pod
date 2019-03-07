@@ -37,7 +37,7 @@ func (m *GetRequest) Reset()         { *m = GetRequest{} }
 func (m *GetRequest) String() string { return proto.CompactTextString(m) }
 func (*GetRequest) ProtoMessage()    {}
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{0}
+	return fileDescriptor_service_114606e088e3c0a1, []int{0}
 }
 func (m *GetRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetRequest.Unmarshal(m, b)
@@ -76,7 +76,7 @@ func (m *GetVersionRequest) Reset()         { *m = GetVersionRequest{} }
 func (m *GetVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*GetVersionRequest) ProtoMessage()    {}
 func (*GetVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{1}
+	return fileDescriptor_service_114606e088e3c0a1, []int{1}
 }
 func (m *GetVersionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetVersionRequest.Unmarshal(m, b)
@@ -122,7 +122,7 @@ func (m *InvoiceCreatePayload) Reset()         { *m = InvoiceCreatePayload{} }
 func (m *InvoiceCreatePayload) String() string { return proto.CompactTextString(m) }
 func (*InvoiceCreatePayload) ProtoMessage()    {}
 func (*InvoiceCreatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{2}
+	return fileDescriptor_service_114606e088e3c0a1, []int{2}
 }
 func (m *InvoiceCreatePayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceCreatePayload.Unmarshal(m, b)
@@ -169,7 +169,7 @@ func (m *InvoiceUpdatePayload) Reset()         { *m = InvoiceUpdatePayload{} }
 func (m *InvoiceUpdatePayload) String() string { return proto.CompactTextString(m) }
 func (*InvoiceUpdatePayload) ProtoMessage()    {}
 func (*InvoiceUpdatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{3}
+	return fileDescriptor_service_114606e088e3c0a1, []int{3}
 }
 func (m *InvoiceUpdatePayload) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceUpdatePayload.Unmarshal(m, b)
@@ -222,7 +222,7 @@ func (m *InvoiceResponse) Reset()         { *m = InvoiceResponse{} }
 func (m *InvoiceResponse) String() string { return proto.CompactTextString(m) }
 func (*InvoiceResponse) ProtoMessage()    {}
 func (*InvoiceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{4}
+	return fileDescriptor_service_114606e088e3c0a1, []int{4}
 }
 func (m *InvoiceResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceResponse.Unmarshal(m, b)
@@ -256,7 +256,7 @@ func (m *InvoiceResponse) GetData() *InvoiceData {
 	return nil
 }
 
-// ResponseHeader contains a set of common fields for most documents
+// ResponseHeader contains a set of common fields for most document
 type ResponseHeader struct {
 	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
 	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
@@ -272,7 +272,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{5}
+	return fileDescriptor_service_114606e088e3c0a1, []int{5}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -370,7 +370,7 @@ func (m *InvoiceData) Reset()         { *m = InvoiceData{} }
 func (m *InvoiceData) String() string { return proto.CompactTextString(m) }
 func (*InvoiceData) ProtoMessage()    {}
 func (*InvoiceData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3d2a42d875b08717, []int{6}
+	return fileDescriptor_service_114606e088e3c0a1, []int{6}
 }
 func (m *InvoiceData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InvoiceData.Unmarshal(m, b)
@@ -739,9 +739,9 @@ var _DocumentService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "invoice/service.proto",
 }
 
-func init() { proto.RegisterFile("invoice/service.proto", fileDescriptor_service_3d2a42d875b08717) }
+func init() { proto.RegisterFile("invoice/service.proto", fileDescriptor_service_114606e088e3c0a1) }
 
-var fileDescriptor_service_3d2a42d875b08717 = []byte{
+var fileDescriptor_service_114606e088e3c0a1 = []byte{
 	// 939 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xdd, 0x6e, 0x1b, 0x45,
 	0x1b, 0x96, 0x93, 0xd4, 0x3f, 0xaf, 0xed, 0xa4, 0x99, 0x3a, 0xcd, 0x66, 0xd5, 0x7e, 0xd9, 0xfa,

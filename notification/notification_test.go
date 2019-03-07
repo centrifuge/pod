@@ -52,8 +52,8 @@ func (m mockConfig) GetReceiveEventNotificationEndpoint() string {
 
 func TestWebhookSender_Send(t *testing.T) {
 	docID := utils.RandomSlice(32)
-	accountID := utils.RandomSlice(identity.CentIDLength)
-	senderID := utils.RandomSlice(identity.CentIDLength)
+	accountID := utils.RandomSlice(identity.DIDLength)
+	senderID := utils.RandomSlice(identity.DIDLength)
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 	var wg sync.WaitGroup
@@ -98,7 +98,7 @@ func TestWebhookSender_Send(t *testing.T) {
 	}
 
 	cfg.Set("notifications.endpoint", "http://localhost:8090/webhook")
-	status, err := wb.Send(testingconfig.CreateTenantContext(t, cfg), notif)
+	status, err := wb.Send(testingconfig.CreateAccountContext(t, cfg), notif)
 	assert.NoError(t, err)
 	assert.Equal(t, status, Success)
 	wg.Wait()

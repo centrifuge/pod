@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type contextKey string
@@ -23,6 +20,8 @@ const (
 	ErrSelfNotFound = errors.Error("self value not found in the context")
 
 	self = contextKey("self")
+
+	tx = contextKey("tx")
 )
 
 // New creates new instance of the request headers.
@@ -30,13 +29,31 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }
 
-// Self returns Self CentID.
-func Self(ctx context.Context) (*identity.IDConfig, error) {
-	tc, ok := ctx.Value(self).(config.Account)
+// WithTX returns a context with TX ID
+func WithTX(ctx context.Context, txID transactions.TxID) context.Context {
+	return context.WithValue(ctx, tx, txID)
+}
+
+// TX returns current txID
+func TX(ctx context.Context) transactions.TxID {
+	tid, ok := ctx.Value(tx).(transactions.TxID)
 	if !ok {
-		return nil, ErrSelfNotFound
+		return transactions.NilTxID()
 	}
-	return identity.GetIdentityConfig(tc)
+	return tid
+}
+
+// AccountDID extracts the AccountConfig DID from the given context value
+func AccountDID(ctx context.Context) (identity.DID, error) {
+	acc, err := Account(ctx)
+	if err != nil {
+		return identity.DID{}, err
+	}
+	didBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return identity.NewDIDFromBytes(didBytes), nil
 }
 
 // Account extracts the TenanConfig from the given context value

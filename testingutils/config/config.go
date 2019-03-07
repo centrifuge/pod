@@ -1,3 +1,5 @@
+// +build unit integration
+
 package testingconfig
 
 import (
@@ -152,22 +154,27 @@ func (m *MockConfig) GetIdentityID() ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
+func (m *MockConfig) GetP2PKeyPair() (pub, priv string) {
+	args := m.Called()
+	return args.Get(0).(string), args.Get(1).(string)
+}
+
 func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
-func (m *MockConfig) GetEthAuthKeyPair() (pub, priv string) {
+func (m *MockConfig) GetPrecommitEnabled() bool {
 	args := m.Called()
-	return args.Get(0).(string), args.Get(1).(string)
+	return args.Get(0).(bool)
 }
 
-func CreateTenantContext(t *testing.T, cfg config.Configuration) context.Context {
+func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Context {
 	return CreateTenantContextWithContext(t, context.Background(), cfg)
 }
 
 func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
-	tc, err := configstore.NewAccount("", cfg)
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 
 	contextHeader, err := contextutil.New(ctx, tc)

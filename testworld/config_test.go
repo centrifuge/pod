@@ -14,6 +14,7 @@ func TestConfig_Happy(t *testing.T) {
 	// check charlies node config
 	res := getNodeConfig(charlie.httpExpect, charlie.id.String(), http.StatusOK)
 	accountID := res.Value("main_identity").Path("$.identity_id").String().NotEmpty()
+
 	accountID.Equal(charlie.id.String())
 
 	// check charlies main account

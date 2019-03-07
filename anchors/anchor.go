@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -49,6 +50,11 @@ func (a *AnchorID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(a[:])
 }
 
+// String returns anchorID in string form
+func (a *AnchorID) String() string {
+	return hexutil.Encode(a[:])
+}
+
 // DocumentRoot type is byte array of length DocumentRootLength
 type DocumentRoot [DocumentRootLength]byte
 
@@ -72,12 +78,9 @@ func RandomDocumentRoot() DocumentRoot {
 
 // PreCommitData holds required document details for pre-commit
 type PreCommitData struct {
-	AnchorID        AnchorID
-	SigningRoot     DocumentRoot
-	CentrifugeID    identity.CentID
-	Signature       []byte
-	ExpirationBlock *big.Int
-	SchemaVersion   uint
+	AnchorID      AnchorID
+	SigningRoot   DocumentRoot
+	SchemaVersion uint
 }
 
 // CommitData holds required document details for anchoring
@@ -85,9 +88,7 @@ type CommitData struct {
 	BlockHeight    uint64
 	AnchorID       AnchorID
 	DocumentRoot   DocumentRoot
-	CentrifugeID   identity.CentID
 	DocumentProofs [][DocumentProofLength]byte
-	Signature      []byte
 	SchemaVersion  uint
 }
 
@@ -109,31 +110,26 @@ func supportedSchemaVersion() uint {
 }
 
 // newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot) (preCommitData *PreCommitData) {
 	return &PreCommitData{
-		AnchorID:        anchorID,
-		SigningRoot:     signingRoot,
-		CentrifugeID:    centrifugeID,
-		Signature:       signature,
-		ExpirationBlock: expirationBlock,
-		SchemaVersion:   supportedSchemaVersion(),
+		AnchorID:      anchorID,
+		SigningRoot:   signingRoot,
+		SchemaVersion: supportedSchemaVersion(),
 	}
 }
 
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (commitData *CommitData) {
 	return &CommitData{
 		BlockHeight:    blockHeight,
 		AnchorID:       anchorID,
 		DocumentRoot:   documentRoot,
-		CentrifugeID:   centrifugeID,
 		DocumentProofs: documentProofs,
-		Signature:      signature,
 	}
 }
 
 // GenerateCommitHash generates Keccak256 message from AnchorID, CentID, DocumentRoot
-func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.CentID, documentRoot DocumentRoot) []byte {
+func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.DID, documentRoot DocumentRoot) []byte {
 	msg := append(anchorID[:], documentRoot[:]...)
 	msg = append(msg, centrifugeID[:]...)
 	return crypto.Keccak256(msg)

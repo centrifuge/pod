@@ -6,12 +6,53 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t, typeInvoice)
+	tests := []struct {
+		name                                     string
+		grantAccess, tokenProof, readAccessProof bool
+	}{
+		//{
+		//	name:        "grant access",
+		//	grantAccess: true,
+		//},
+		//
+		//{
+		//	name:       "token proof",
+		//	tokenProof: true,
+		//},
+		//
+		//{
+		//	name:        "grant access and token proof",
+		//	grantAccess: true,
+		//	tokenProof:  true,
+		//},
+		//
+		//{
+		//	name:            "grant access and read access proof",
+		//	grantAccess:     true,
+		//	readAccessProof: true,
+		//},
+
+		{
+			name:            "grant access, token proof and read access proof",
+			grantAccess:     true,
+			tokenProof:      true,
+			readAccessProof: true,
+		},
+	}
+
+	for _, c := range tests {
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			paymentObligationMint(t, typeInvoice, c.grantAccess, c.tokenProof, c.readAccessProof)
+		})
+	}
 }
 
 /* TODO: testcase not stable
@@ -21,7 +62,7 @@ func TestPaymentObligationMint_po_successful(t *testing.T) {
 }
 */
 
-func paymentObligationMint(t *testing.T, documentType string) {
+func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
@@ -56,10 +97,13 @@ func paymentObligationMint(t *testing.T, documentType string) {
 		http.StatusOK,
 		map[string]interface{}{
 
-			"identifier":      docIdentifier,
-			"registryAddress": doctorFord.contractAddresses.PaymentObligationAddr,
-			"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", // dummy address
-			"proofFields":     []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", "collaborators[0]"},
+			"identifier":                docIdentifier,
+			"registryAddress":           doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
+			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", documents.CDTreePrefix + ".next_version"},
+			"submitTokenProof":          tokenProof,
+			"submitNftOwnerAccessProof": nftReadAccessProof,
+			"grantNftAccess":            grantNFTAccess,
 		},
 	}
 
@@ -96,16 +140,6 @@ func TestPaymentObligationMint_errors(t *testing.T) {
 
 				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
 				"depositAddress":  "abc",
-			},
-		},
-		{
-			"document not found in the system database",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"identifier":      "0x12121212",
-				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-				"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
 			},
 		},
 	}

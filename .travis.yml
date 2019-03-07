@@ -23,6 +23,7 @@ cache:
     - /tmp/depcache
 
 before_install:
+  - nvm install 10.15.1
   - npm install -g truffle@4.1.13
 
 install:

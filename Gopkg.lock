@@ -57,14 +57,14 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:4542fc4bb0f0bab4d9fad7bf85ca7152cf706eb0ccb1f501899f625af6865d34"
+  digest = "1:ead823956932d64e6271256398aa0753b03d4a6dec8f522847841ca33b98f289"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "978840734a4a2fccd5d8dc7e462d9108079c5b5d"
+  revision = "be1a93f627115fcf9978a85c4b6b8f08adf87f35"
 
 [[projects]]
-  digest = "1:55060176e56680808b3d9be771d0baa31512b7743ffbaea4f61471dbba649be7"
+  digest = "1:8e4b7179dfb51d02daeb1c3ee4bb816243837b74a6c1bd663a803776c43b8eaf"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,7 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "f93686ceaf40283c7dc496c62fcc69b1c1a272e3"
+  revision = "20c7fd5e4210e68d2a5662a8714d51ceeae031b8"
 
 [[projects]]
   digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
@@ -86,14 +86,14 @@
   revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
 
 [[projects]]
-  digest = "1:a145dca8eb072174d0bce9c21771ec19885bdaa04fe2f9026de4664811b1caf7"
+  digest = "1:3ddba8bdf84eff2bedcc8e262cb87370d1301cb8ca7a3503be29a6eae25bd037"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "8c3b6a26b7929ec269302dc50d17c9ceb9772dda"
+  revision = "13d3af957299c614237c42cdc331f7acd7c7d201"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -1283,11 +1283,12 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:778500e3634377cb6660543afa4646c12a3a33aefadd3e1d269e24e57d75a3d7"
+  digest = "1:65f2553aabd1d6879691058ce20eac0f798a82d92c71f13cd56de3350fa06183"
   name = "github.com/xsleonard/go-merkle"
   packages = ["."]
   pruneopts = "UT"
-  revision = "fbb7cafc5ae411e13e718172f5af7917ad6c3ed7"
+  revision = "a73b8999d89d80bdcd89d199f41ab7fcdfd12dde"
+  source = "github.com/mikiquantum/go-merkle"
 
 [[projects]]
   branch = "master"
@@ -1511,6 +1512,7 @@
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
     "github.com/gogo/protobuf/io",
+    "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
@@ -1539,6 +1541,7 @@
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
+    "github.com/pkg/errors",
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",

@@ -4,6 +4,7 @@ package anchors_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"os"
 	"testing"
 
@@ -11,9 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -21,98 +20,140 @@ import (
 )
 
 var (
-	identityService identity.Service
-	anchorRepo      anchors.AnchorRepository
-	cfg             config.Configuration
+	anchorRepo anchors.AnchorRepository
+	cfg        config.Configuration
 )
 
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	identityService = ctx[identity.BootstrappedIDService].(identity.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
 
-func createIdentityWithKeys(t *testing.T, centrifugeId []byte) []byte {
-	centIdTyped, _ := identity.ToCentID(centrifugeId)
-	cfg.Set("identityId", centIdTyped.String())
-	id, confirmations, err := identityService.CreateIdentity(testingconfig.CreateTenantContext(t, cfg), centIdTyped)
-	assert.Nil(t, err, "should not error out when creating identity")
-	watchRegisteredIdentity := <-confirmations
-	assert.Nil(t, watchRegisteredIdentity.Error, "No error thrown by context")
-	// LookupIdentityForId
-	id, err = identityService.LookupIdentityForID(centIdTyped)
-	assert.Nil(t, err, "should not error out when resolving identity")
+func TestPreCommitAnchor_Integration(t *testing.T) {
+	anchorID := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
 
-	pubKey, _ := hexutil.Decode("0xc8dd3d66e112fae5c88fe6a677be24013e53c33e")
-
-	confirmations, err = id.AddKeyToIdentity(context.Background(), identity.KeyPurposeEthMsgAuth, pubKey)
-	assert.Nil(t, err, "should not error out when adding keys")
-	assert.NotNil(t, confirmations, "confirmations channel should not be nil")
-	watchRegisteredIdentityKey := <-confirmations
-	assert.Nil(t, watchRegisteredIdentityKey.Error, "No error thrown by context")
-
-	return centrifugeId
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
+	preCommitAnchor(t, anchorID, signingRoot)
+	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
+	assert.True(t, valid)
 }
 
-func TestCommitAnchor_Integration(t *testing.T) {
-	anchorID, _ := hexutil.Decode("0x154cc26833dec2f4ad7ead9d65f9ec968a1aa5efbf6fe762f8f2a67d18a2d9b1")
-	documentRoot, _ := hexutil.Decode("0x65a35574f70281ae4d1f6c9f3adccd5378743f858c67a802a49a08ce185bc975")
-	centrifugeId := utils.RandomSlice(identity.CentIDLength)
-	createIdentityWithKeys(t, centrifugeId)
-	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
-	centIdTyped, _ := identity.ToCentID(centrifugeId)
+func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
+	anchorIDPreImage := utils.RandomSlice(32)
+	h := sha256.New()
+	_, err := h.Write(anchorIDPreImage)
+	assert.NoError(t, err)
+	var anchorID []byte
+	anchorID = h.Sum(anchorID)
+	proofStr := []string{"0x73bb733279cd232d72732afad693f80510e71262738b1205a061a1c34497e49c", "0x408b2caa80ace6ac3a37be957235011c0053f0a561f5a8dcf66d223bfffccecb"}
+	signingRootStr := "0x6ae9e6cc91cded82896d2439942fd42412b5a2ff5fd45bbed0f5a20de0b962c2"
+	documentRootStr := "0xf5c8f866f4acf2e2e74a803f86cd2a7ac9285721259b172ef121417e886ca22a"
+
+	signingRoot, err := hexutil.Decode(signingRootStr)
+	assert.NoError(t, err)
+
+	documentRoot, err := hexutil.Decode(documentRootStr)
+	assert.NoError(t, err)
+
+	proof1, err := hexutil.Decode(proofStr[0])
+	assert.NoError(t, err)
+
+	proof2, err := hexutil.Decode(proofStr[1])
+	assert.NoError(t, err)
+
+	var proofB1 [32]byte
+	copy(proofB1[:], proof1)
+	var proofB2 [32]byte
+	copy(proofB2[:], proof2)
+
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
+	preCommitAnchor(t, anchorID, signingRoot)
+	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
+	assert.True(t, valid)
+
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	messageToSign := anchors.GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
-	signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
-	commitAnchor(t, anchorID, centrifugeId, documentRoot, signature, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB1, proofB2})
 	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 }
 
-func commitAnchor(t *testing.T, anchorID, centrifugeId, documentRoot, signature []byte, documentProofs [][32]byte) {
-	anchorIDTyped, _ := anchors.ToAnchorID(anchorID)
+func TestCommitAnchor_Integration(t *testing.T) {
+	anchorIDPreImage := utils.RandomSlice(32)
+	h := sha256.New()
+	_, err := h.Write(anchorIDPreImage)
+	assert.NoError(t, err)
+	var anchorID []byte
+	anchorID = h.Sum(anchorID)
+	documentRoot := utils.RandomSlice(32)
+
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	centIdFixed, _ := identity.ToCentID(centrifugeId)
+	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
+	assert.Nil(t, err)
+	assert.Equal(t, docRootTyped, gotDocRoot)
+}
 
-	cfg.Set("identityId", centIdFixed.String())
-	ctx := testingconfig.CreateTenantContext(t, cfg)
-	confirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, centIdFixed, documentProofs, signature)
-	if err != nil {
-		t.Fatalf("Error commit Anchor %v", err)
-	}
+func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs [][32]byte) {
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
+	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 
-	watchCommittedAnchor := <-confirmations
-	assert.Nil(t, watchCommittedAnchor.Error, "No error should be thrown by context")
-	assert.Equal(t, watchCommittedAnchor.CommitData.AnchorID, anchorIDTyped, "Resulting anchor should have the same ID as the input")
-	assert.Equal(t, watchCommittedAnchor.CommitData.DocumentRoot, docRootTyped, "Resulting anchor should have the same document hash as the input")
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
+
+	isDone := <-done
+
+	assert.True(t, isDone, "isDone should be true")
+
+	assert.Nil(t, err)
+}
+
+func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
+	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+	assert.NoError(t, err)
+	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	done, err := anchorRepo.PreCommitAnchor(ctx, anchorIDTyped, docRootTyped)
+
+	isDone := <-done
+
+	assert.True(t, isDone, "isDone should be true")
+	assert.Nil(t, err)
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	var commitDataList [5]*anchors.CommitData
-	var confirmationList [5]<-chan *anchors.WatchCommit
-	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
-	centrifugeId := utils.RandomSlice(identity.CentIDLength)
-	createIdentityWithKeys(t, centrifugeId)
+	var doneList [5]chan bool
 
 	for ix := 0; ix < 5; ix++ {
-		currentAnchorId := utils.RandomByte32()
+		anchorIDPreImage := utils.RandomSlice(32)
+		anchorIDPreImageID, err := anchors.ToAnchorID(anchorIDPreImage)
+		assert.NoError(t, err)
+		h := sha256.New()
+		_, err = h.Write(anchorIDPreImage)
+		assert.NoError(t, err)
+		var cAnchorId []byte
+		cAnchorId = h.Sum(cAnchorId)
+		currentAnchorId, err := anchors.ToAnchorID(cAnchorId)
+		assert.NoError(t, err)
 		currentDocumentRoot := utils.RandomByte32()
-		centIdFixed, _ := identity.ToCentID(centrifugeId)
-		messageToSign := anchors.GenerateCommitHash(currentAnchorId, centIdFixed, currentDocumentRoot)
-		signature, _ := secp256k1.SignEthereum(messageToSign, testPrivateKey)
 		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
-		h, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
+		hd, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
-		commitDataList[ix] = anchors.NewCommitData(h.Number.Uint64(), currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
-		cfg.Set("identityId", centIdFixed.String())
-		ctx := testingconfig.CreateTenantContext(t, cfg)
-		confirmationList[ix], err = anchorRepo.CommitAnchor(ctx, currentAnchorId, currentDocumentRoot, centIdFixed, documentProofs, signature)
+		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
+		ctx := testingconfig.CreateAccountContext(t, cfg)
+		doneList[ix], err = anchorRepo.CommitAnchor(ctx, anchorIDPreImageID, currentDocumentRoot, documentProofs)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
 		}
@@ -120,10 +161,8 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	}
 
 	for ix := 0; ix < 5; ix++ {
-		watchSingleAnchor := <-confirmationList[ix]
-		assert.Nil(t, watchSingleAnchor.Error, "No error thrown by context")
-		assert.Equal(t, commitDataList[ix].AnchorID, watchSingleAnchor.CommitData.AnchorID, "Should have the ID that was passed into create function [%v]", watchSingleAnchor.CommitData.AnchorID)
-		assert.Equal(t, commitDataList[ix].DocumentRoot, watchSingleAnchor.CommitData.DocumentRoot, "Should have the document root that was passed into create function [%v]", watchSingleAnchor.CommitData.DocumentRoot)
+		isDone := <-doneList[ix]
+		assert.True(t, isDone)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
 		gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorID)
