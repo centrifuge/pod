@@ -204,7 +204,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 17)
+	assert.Len(t, cf, 16)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop3 := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
