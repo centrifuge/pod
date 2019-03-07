@@ -85,7 +85,7 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 
 // NewCoreDocumentWithCollaborators generates new core Document with a document type specified by the prefix: CdTreePrefix, po, or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(collaborators []string, prefix string) (*CoreDocument, error) {
+func NewCoreDocumentWithCollaborators(collaborators []string, compactPrefix []byte) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
@@ -97,7 +97,7 @@ func NewCoreDocumentWithCollaborators(collaborators []string, prefix string) (*C
 	}
 
 	cd.initReadRules(ids)
-	cd.initTransitionRules(ids, prefix)
+	cd.initTransitionRules(ids, compactPrefix)
 	if err := cd.setSalts(); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (cd *CoreDocument) setSalts() error {
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool, prefix string) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool, compactPrefix []byte) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
 		return nil, errors.New("Document root is invalid")
 	}
@@ -192,7 +192,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
-	ncd.addCollaboratorsToTransitionRules(ucs, prefix)
+	ncd.addCollaboratorsToTransitionRules(ucs, compactPrefix)
 
 	if !initSalts {
 		return ncd, nil

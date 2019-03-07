@@ -47,7 +47,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false, CDTreePrefix)
+	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false, compactProperties(CDTreePrefix	))
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd.Document.ReadRules)
 	assert.NotNil(t, ncd.Document.Roles)
@@ -97,7 +97,7 @@ func TestCoreDocument_addNFTToReadRules(t *testing.T) {
 
 func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	account := testingidentity.GenerateRandomDID()
-	cd, err := NewCoreDocumentWithCollaborators([]string{account.String()}, CDTreePrefix)
+	cd, err := NewCoreDocumentWithCollaborators([]string{account.String()},compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
@@ -139,7 +139,7 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Nil(t, cd.Document.ReadRules)
 	assert.Nil(t, cd.Document.Roles)
 
-	cd, err = cd.AddNFT(true, registry, tokenID, CDTreePrefix)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
 	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
@@ -151,7 +151,7 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 
 	tokenID = utils.RandomSlice(32)
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	cd, err = cd.AddNFT(true, registry, tokenID, CDTreePrefix)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
 	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
@@ -171,7 +171,7 @@ func TestCoreDocument_IsNFTMinted(t *testing.T) {
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	tokenID := utils.RandomSlice(32)
 	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
-	cd, err = cd.AddNFT(true, registry, tokenID, CDTreePrefix)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 
 	tr := new(mockRegistry)
@@ -191,7 +191,7 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.Nil(t, pfs)
 
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	cd, err = cd.AddNFT(true, registry, tokenID, CDTreePrefix)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
 
@@ -213,7 +213,7 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	tokenID := utils.RandomSlice(32)
-	cd, err = cd.AddNFT(false, registry, tokenID, CDTreePrefix)
+	cd, err = cd.AddNFT(false, registry, tokenID)
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
 
@@ -263,7 +263,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cd, err = cd.AddNFT(true, registry, tokenID, "invoice")
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
 	cd.Document.DataRoot = utils.RandomSlice(32)
 	assert.NoError(t, cd.setSalts())
@@ -347,14 +347,14 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	granterID := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
-	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, CDTreePrefix)
+	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	payload := documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
 		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
 	}
-	ncd, err := cd.AddAccessToken(ctx, payload, CDTreePrefix)
+	ncd, err := cd.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
 	ncd.Document.DocumentRoot = utils.RandomSlice(32)
 	at := ncd.Document.AccessTokens[0]
@@ -403,7 +403,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 		Grantee:            "randomCentID",
 		DocumentIdentifier: "randomDocID",
 	}
-	_, err = m.AddAccessToken(ctx, payload, CDTreePrefix)
+	_, err = m.AddAccessToken(ctx, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: malformed address provided")
 	// invalid centID length
@@ -412,7 +412,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 		Grantee:            hexutil.Encode(invalidCentID),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
-	_, err = m.AddAccessToken(ctx, payload, CDTreePrefix)
+	_, err = m.AddAccessToken(ctx, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: malformed address provided")
 	// invalid docID length
@@ -424,7 +424,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 		DocumentIdentifier: hexutil.Encode(invalidDocID),
 	}
 
-	_, err = m.AddAccessToken(ctx, payload, CDTreePrefix)
+	_, err = m.AddAccessToken(ctx, payload)
 	assert.Contains(t, err.Error(), "failed to construct access token: invalid identifier length")
 	// valid
 	payload = documentpb.AccessTokenParams{
@@ -432,7 +432,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
 
-	ncd, err := m.AddAccessToken(ctx, payload, CDTreePrefix)
+	ncd, err := m.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
 	assert.Len(t, ncd.Document.AccessTokens, 1)
 }

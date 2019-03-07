@@ -119,7 +119,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
 	c := []string{c1.String(), c2.String()}
-	ncd, err := cd.PrepareNewVersion(c, false, CDTreePrefix)
+	ncd, err := cd.PrepareNewVersion(c, false, compactProperties(CDTreePrefix))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Document root is invalid")
 	assert.Nil(t, ncd)
@@ -127,13 +127,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	//collaborators need to be hex string
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	collabs := []string{"some ID"}
-	ncd, err = cd.PrepareNewVersion(collabs, false, CDTreePrefix)
+	ncd, err = cd.PrepareNewVersion(collabs, false, compactProperties(CDTreePrefix))
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	ncd, err = cd.PrepareNewVersion(c, false, CDTreePrefix)
+	ncd, err = cd.PrepareNewVersion(c, false, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err := ncd.GetCollaborators()
@@ -148,7 +148,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	expectedNextVersion = h.Sum(expectedNextVersion)
 	assert.Equal(t, expectedNextVersion, ncd.Document.NextVersion)
 
-	ncd, err = cd.PrepareNewVersion(c, true, CDTreePrefix)
+	ncd, err = cd.PrepareNewVersion(c, true, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err = ncd.GetCollaborators()
@@ -336,7 +336,7 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, CDTreePrefix)
+	cd, err := NewCoreDocumentWithCollaborators(ids, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
@@ -367,7 +367,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, CDTreePrefix)
+	cd, err := NewCoreDocumentWithCollaborators(ids, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -402,7 +402,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, CDTreePrefix)
+	cd, err := NewCoreDocumentWithCollaborators(ids, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)

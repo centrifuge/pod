@@ -146,7 +146,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, prefix)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -370,7 +370,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, prefix)
+	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
 	if err != nil {
 		return err
 	}
@@ -380,7 +380,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 
 // AddNFT adds NFT to the Purchase Order.
 func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
-	cd, err := p.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, prefix)
+	cd, err := p.CoreDocument.AddNFT(grantReadAccess, registry, tokenID)
 	if err != nil {
 		return err
 	}

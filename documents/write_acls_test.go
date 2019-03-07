@@ -66,7 +66,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, CDTreePrefix)
+	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
@@ -120,7 +120,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	doc = ndoc
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = doc.PrepareNewVersion(nil, true, CDTreePrefix)
+	ndoc, err = doc.PrepareNewVersion(nil, true, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
@@ -189,7 +189,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// read_rules
 	// transition_rules
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, CDTreePrefix)
+	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, compactProperties(CDTreePrefix))
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
@@ -307,16 +307,16 @@ func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
 func TestReadACLs_initTransitionRules(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	cd.initTransitionRules(nil, CDTreePrefix)
+	cd.initTransitionRules(nil, compactProperties(CDTreePrefix))
 	assert.Nil(t, cd.Document.Roles)
 	assert.Nil(t, cd.Document.TransitionRules)
 
 	collab := []identity.DID{testingidentity.GenerateRandomDID()}
-	cd.initTransitionRules(collab, CDTreePrefix)
+	cd.initTransitionRules(collab, compactProperties(CDTreePrefix))
 	assert.Len(t, cd.Document.TransitionRules, 1)
 	assert.Len(t, cd.Document.Roles, 1)
 
-	cd.initTransitionRules(collab, CDTreePrefix)
+	cd.initTransitionRules(collab, compactProperties(CDTreePrefix))
 	assert.Len(t, cd.Document.TransitionRules, 1)
 	assert.Len(t, cd.Document.Roles, 1)
 }
