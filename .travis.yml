@@ -34,12 +34,13 @@ install:
 
 jobs:
   include:
-    - stage: "Lint"
+    - stage: "Tests"
+      name: "Linting"
       script:
         - make lint-check proto-lint proto-all gen-swagger generate format-go
         - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code protobufs/gen
     - stage: "Tests"
-      name: "Unit, integration and cmd tests"
+      name: "Unit, Integration and CMD tests"
       script:
         - ./build/scripts/test_wrapper.sh unit cmd integration
       after_success:
