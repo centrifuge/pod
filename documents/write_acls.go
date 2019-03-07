@@ -9,19 +9,19 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 )
 
-// changedField holds the compact property, old and new value of the field that is changed
+// ChangedField holds the compact property, old and new value of the field that is changed
 // if the old is nil, then it is a set operation
 // if new is nil, then it is an unset operation
 // if both old and new are set, then it is an edit operation
-type changedField struct {
+type ChangedField struct {
 	property, old, new []byte
 	name               string
 }
 
-// getChangedFields takes two document trees and returns the compact value, old and new value of the fields that are changed in new tree.
+// GetChangedFields takes two document trees and returns the compact value, old and new value of the fields that are changed in new tree.
 // Properties may have been added to the new tree or removed from the new tree.
 // In Either case, since the new tree is different from old, that is considered a change.
-func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []changedField) {
+func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []ChangedField) {
 	oldProps := oldTree.PropertyOrder()
 	newProps := newTree.PropertyOrder()
 
@@ -62,7 +62,7 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 		}
 
 		if !bytes.Equal(ov, nv) {
-			changedFields = append(changedFields, changedField{
+			changedFields = append(changedFields, ChangedField{
 				name:     k,
 				property: p.CompactName(),
 				old:      ov,
@@ -74,13 +74,13 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 	return changedFields
 }
 
-func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changedField {
+func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) ChangedField {
 	v := leaf.Value
 	if leaf.Hashed {
 		v = leaf.Hash
 	}
 
-	cf := changedField{property: p.CompactName(), name: p.ReadableName()}
+	cf := ChangedField{property: p.CompactName(), name: p.ReadableName()}
 	if old {
 		cf.old = v
 		return cf
@@ -90,8 +90,8 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 	return cf
 }
 
-// transitionRulesFor returns a copy all the transition rules for the account.
-func (cd *CoreDocument) transitionRulesFor(account identity.DID) (rules []coredocumentpb.TransitionRule) {
+// TransitionRulesFor returns a copy all the transition rules for the account.
+func (cd *CoreDocument) TransitionRulesFor(account identity.DID) (rules []coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
 			role, err := getRole(rk, cd.Document.Roles)
@@ -135,9 +135,9 @@ func copyByteSlice(data [][]byte) [][]byte {
 	return nbs
 }
 
-// validateTransitions validates the changedFields based on the rules provided.
-// returns an error if any changedField violates the rules.
-func validateTransitions(rules []coredocumentpb.TransitionRule, changedFields []changedField) error {
+// ValidateTransitions validates the changedFields based on the rules provided.
+// returns an error if any ChangedField violates the rules.
+func ValidateTransitions(rules []coredocumentpb.TransitionRule, changedFields []ChangedField) error {
 	cfMap := make(map[string]struct{})
 	for _, cf := range changedFields {
 		cfMap[cf.name] = struct{}{}
@@ -163,7 +163,7 @@ func validateTransitions(rules []coredocumentpb.TransitionRule, changedFields []
 	return err
 }
 
-func isValidTransition(rule coredocumentpb.TransitionRule, cf changedField) bool {
+func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool {
 	// changed property length should be at least equal to rule property
 	if len(cf.property) < len(rule.Field) {
 		return false
@@ -203,7 +203,7 @@ func (cd *CoreDocument) AccountCanUpdate(ncd *CoreDocument, account identity.DID
 		return err
 	}
 
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	rules := cd.transitionRulesFor(account)
-	return validateTransitions(rules, cf)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	rules := cd.TransitionRulesFor(account)
+	return ValidateTransitions(rules, cf)
 }
