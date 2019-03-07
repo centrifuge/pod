@@ -43,7 +43,6 @@ func getAnchorAddress(cfg config.Configuration) common.Address {
 }
 
 func TestExecute_successful(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -79,7 +78,6 @@ func TestExecute_successful(t *testing.T) {
 }
 
 func TestExecute_fail_falseMethodName(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 
@@ -99,7 +97,6 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 }
 
 func TestExecute_fail_MissingParam(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -128,7 +125,6 @@ func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byt
 
 // Checks the standard behaviour of the anchor contract
 func TestAnchorWithoutExecute_successful(t *testing.T) {
-	t.Parallel()
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)

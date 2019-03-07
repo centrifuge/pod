@@ -75,7 +75,6 @@ func addKey(aCtx context.Context, t *testing.T, did id.DID, idSrv id.ServiceDID,
 }
 
 func TestServiceAddKey_successful(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -87,7 +86,6 @@ func TestServiceAddKey_successful(t *testing.T) {
 }
 
 func TestServiceAddKey_fail(t *testing.T) {
-	t.Parallel()
 	testKey := getTestKey()
 	did := testingidentity.GenerateRandomDID()
 	aCtx := getTestDIDContext(t, did)
@@ -103,7 +101,6 @@ func TestServiceAddKey_fail(t *testing.T) {
 }
 
 func TestService_IsSignedWithPurpose(t *testing.T) {
-	t.Parallel()
 	// create keys
 	pk, sk, err := secp256k1.GenerateSigningKeyPair()
 	address := common.HexToAddress(secp256k1.GetAddress(pk))
@@ -151,7 +148,6 @@ func TestService_IsSignedWithPurpose(t *testing.T) {
 }
 
 func TestService_AddMultiPurposeKey(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -174,7 +170,6 @@ func TestService_AddMultiPurposeKey(t *testing.T) {
 }
 
 func TestService_RevokeKey(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -196,7 +191,6 @@ func TestService_RevokeKey(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 
 	aCtx := getTestDIDContext(t, *did)
@@ -212,7 +206,6 @@ func TestExists(t *testing.T) {
 }
 
 func TestValidateKey(t *testing.T) {
-	t.Parallel()
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -259,14 +252,12 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
 }
 
 func TestGetClientP2PURL(t *testing.T) {
-	t.Parallel()
 	addP2PKeyTestGetClientP2PURL(t)
 	resetDefaultCentID()
 
 }
 
 func TestGetClientP2PURLs(t *testing.T) {
-	t.Parallel()
 	didA, urlA := addP2PKeyTestGetClientP2PURL(t)
 	didB, urlB := addP2PKeyTestGetClientP2PURL(t)
 	idSrv := initIdentity()

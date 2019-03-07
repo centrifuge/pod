@@ -68,7 +68,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
-	t.Parallel()
 	b := utils.RandomSlice(32)
 	centrifugeId := createIdentity(t)
 	req := &p2ppb.GetDocumentRequest{DocumentIdentifier: b}
@@ -78,7 +77,6 @@ func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
-	t.Parallel()
 	centID := createIdentity(t)
 	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
@@ -109,7 +107,6 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
-	t.Parallel()
 	_, cd := prepareDocumentForP2PHandler(t, nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
@@ -122,7 +119,6 @@ func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
-	t.Parallel()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	po, cd := prepareDocumentForP2PHandler(t, nil)
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
@@ -142,7 +138,6 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
-	t.Parallel()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	po, cd := prepareDocumentForP2PHandler(t, nil)
 	po, cd = updateDocumentForP2Phandler(t, po)
@@ -156,7 +151,6 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
-	t.Parallel()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, cd := prepareDocumentForP2PHandler(t, nil)
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
@@ -168,7 +162,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
-	t.Parallel()
 	_, cd := prepareDocumentForP2PHandler(t, nil)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -191,7 +184,6 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
-	t.Parallel()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	id, err := cfg.GetIdentityID()
 	assert.NoError(t, err)
@@ -201,7 +193,6 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument(t *testing.T) {
-	t.Parallel()
 	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	centrifugeId := createIdentity(t)
