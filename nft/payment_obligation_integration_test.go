@@ -136,9 +136,9 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
-	assert.Len(t, cd.Roles, 2)
-	assert.Len(t, cd.Roles[1].Nfts, 1)
-	newNFT := cd.Roles[1].Nfts[0]
+	assert.Len(t, cd.Roles, 3)
+	assert.Len(t, cd.Roles[2].Nfts, 1)
+	newNFT := cd.Roles[2].Nfts[0]
 	enft, err := documents.ConstructNFT(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, enft, newNFT)

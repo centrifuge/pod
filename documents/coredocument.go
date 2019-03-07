@@ -4,8 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"

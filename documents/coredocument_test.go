@@ -428,4 +428,3 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
 }
-

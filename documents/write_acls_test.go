@@ -4,10 +4,11 @@ package documents
 
 import (
 	"crypto/sha256"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -99,13 +100,13 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 23}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):{},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):{},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):{},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):{},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
-		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                            {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
 	}
 
 	testExpectedProps(t, cf, eprops)
@@ -158,22 +159,22 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 16}): {},
-		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 22}): {},
-		hexutil.Encode([]byte{0, 0, 0, 23}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 9}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 4}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 16}):                                                             {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 22}):                                                             {},
+		hexutil.Encode([]byte{0, 0, 0, 23}):                                                             {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
-		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                            {},
+		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
 	}
 	testExpectedProps(t, cf, eprops)
 
@@ -200,13 +201,13 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	rprop3 := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop4 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
-		hexutil.Encode([]byte{0, 0, 0, 9}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 16}): {},
-		hexutil.Encode([]byte{0, 0, 0, 2}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 22}): {},
-		hexutil.Encode([]byte{0, 0, 0, 23}): {},
+		hexutil.Encode([]byte{0, 0, 0, 9}):                                      {},
+		hexutil.Encode([]byte{0, 0, 0, 4}):                                      {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):                                      {},
+		hexutil.Encode([]byte{0, 0, 0, 16}):                                     {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):                                      {},
+		hexutil.Encode([]byte{0, 0, 0, 22}):                                     {},
+		hexutil.Encode([]byte{0, 0, 0, 23}):                                     {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}): {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
