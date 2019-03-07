@@ -42,6 +42,7 @@ func enqueueJob(t *testing.T, txHash string) (transactions.Manager, identity.DID
 }
 
 func TestTransactionStatusTask_successful(t *testing.T) {
+	t.Parallel()
 	txManager, cid, tx, result := enqueueJob(t, "0x1")
 
 	r := <-result
@@ -52,6 +53,7 @@ func TestTransactionStatusTask_successful(t *testing.T) {
 }
 
 func TestTransactionStatusTask_failed(t *testing.T) {
+	t.Parallel()
 	txManager, cid, tx, result := enqueueJob(t, "0x2")
 
 	r := <-result

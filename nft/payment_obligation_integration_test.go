@@ -119,6 +119,7 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
+	t.Parallel()
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
@@ -168,6 +169,7 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 }
 
 func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
+	t.Parallel()
 	failMintNFT(t, false, true)
 }
 
@@ -195,6 +197,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 }
 
 func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{

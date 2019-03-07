@@ -61,6 +61,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
+	t.Parallel()
 	tc, _, err := createLocalCollaborator(t, false)
 	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
@@ -75,6 +76,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 }
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
+	t.Parallel()
 	tc, _, err := createLocalCollaborator(t, true)
 	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
@@ -89,6 +91,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
+	t.Parallel()
 	tc, cid, err := createLocalCollaborator(t, false)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
