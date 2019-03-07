@@ -34,13 +34,22 @@ install:
 
 jobs:
   include:
-    - stage: test
+    - stage: "Lint"
       script:
         - make lint-check proto-lint proto-all gen-swagger generate format-go
         - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code protobufs/gen
-        - ./build/scripts/test_wrapper.sh
+    - stage: "Tests"
+      name: "Unit, integration and cmd tests"
+      script:
+        - ./build/scripts/test_wrapper.sh unit cmd integration
       after_success:
        - bash <(curl -s https://codecov.io/bash)
+    - stage: "Tests"
+      name: "Test world tests"
+      script:
+        - ./build/scripts/test_wrapper.sh testworld
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
       if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master))
       before_script:

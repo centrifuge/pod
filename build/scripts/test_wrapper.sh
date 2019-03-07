@@ -40,9 +40,14 @@ if [ $status -eq 0 ]; then
   for path in ${local_dir}/tests/*; do
     [ -x "${path}" ] || continue # if not an executable, skip
 
-    echo "Executing test suite [${path}]"
-    ./$path
-    statusAux="$(( $statusAux | $? ))"
+    for arg in $@; do
+        if [[ ${path} == *$arg* ]]; then
+            echo "Executing test suite [${path}]"
+            ./$path
+            statusAux="$(( $statusAux | $? ))"
+            continue
+        fi
+    done
   done
   # Store status of tests
   status=$statusAux
