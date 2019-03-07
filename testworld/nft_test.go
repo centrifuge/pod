@@ -100,7 +100,7 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 			"identifier":                docIdentifier,
 			"registryAddress":           doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", documents.CDTreePrefix + ".next_version"},
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,
