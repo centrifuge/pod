@@ -187,7 +187,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
 	assert.NoError(t, err)
-	roleCount := 2
+	roleCount := 3
 	if grantAccess {
 		roleCount++
 	}
