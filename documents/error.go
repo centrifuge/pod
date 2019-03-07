@@ -35,49 +35,20 @@ const (
 	// ErrDocumentPersistence must be used when creating or updating a document in the system database failed
 	ErrDocumentPersistence = errors.Error("error encountered when storing document in the system database")
 
-	// ErrDocumentPackingCoreDocument must be used when packing of core document for the given document failed
-	ErrDocumentPackingCoreDocument = errors.Error("core document packing failed")
-
 	// ErrDocumentUnPackingCoreDocument must be used when unpacking of core document for the given document failed
 	ErrDocumentUnPackingCoreDocument = errors.Error("core document unpacking failed")
 
 	// ErrDocumentPrepareCoreDocument must be used when preparing a new core document fails for the given document
 	ErrDocumentPrepareCoreDocument = errors.Error("core document preparation failed")
 
-	// ErrDocumentSigning must be used when document signing related functionality fails
-	ErrDocumentSigning = errors.Error("document signing failed")
-
 	// ErrDocumentAnchoring must be used when document anchoring fails
 	ErrDocumentAnchoring = errors.Error("document anchoring failed")
-
-	// ErrDocumentCollaborator must be used when there is an error in processing collaborators
-	ErrDocumentCollaborator = errors.Error("document collaborator issue")
 
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
 	// ErrDataRootInvalid must be used when the data root is invalid
 	ErrDataRootInvalid = errors.Error("data root is invalid")
-
-	// Document repository errors
-
-	// ErrDocumentRepositoryModelNotRegistered must be used when the model hasn't been registered in the database repository
-	ErrDocumentRepositoryModelNotRegistered = errors.Error("document model hasn't been registered in the database repository")
-
-	// ErrDocumentRepositorySerialisation must be used when document repository encounters a marshalling error
-	ErrDocumentRepositorySerialisation = errors.Error("document repository encountered a marshalling error")
-
-	// ErrDocumentRepositoryModelNotFound must be used when document repository can not locate the given model
-	ErrDocumentRepositoryModelNotFound = errors.Error("document repository could not locate the given model")
-
-	// ErrDocumentRepositoryModelSave must be used when document repository can not save the given model
-	ErrDocumentRepositoryModelSave = errors.Error("document repository could not save the given model")
-
-	// ErrDocumentRepositoryModelAllReadyExists must be used when document repository finds an already existing model when saving
-	ErrDocumentRepositoryModelAllReadyExists = errors.Error("document repository found an already existing model when saving")
-
-	// ErrDocumentRepositoryModelDoesntExist must be used when document repository does not find an existing model for an update
-	ErrDocumentRepositoryModelDoesntExist = errors.Error("document repository did not find an existing model for an update")
 
 	// Read ACL errors
 
