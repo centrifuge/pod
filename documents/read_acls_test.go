@@ -47,7 +47,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false, compactProperties(CDTreePrefix	))
+	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd.Document.ReadRules)
 	assert.NotNil(t, ncd.Document.Roles)
@@ -97,7 +97,7 @@ func TestCoreDocument_addNFTToReadRules(t *testing.T) {
 
 func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	account := testingidentity.GenerateRandomDID()
-	cd, err := NewCoreDocumentWithCollaborators([]string{account.String()},compactProperties(CDTreePrefix))
+	cd, err := NewCoreDocumentWithCollaborators([]string{account.String()}, nil)
 	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
@@ -347,7 +347,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	granterID := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
-	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, compactProperties(CDTreePrefix))
+	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, nil)
 	assert.NoError(t, err)
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	payload := documentpb.AccessTokenParams{

@@ -80,14 +80,14 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// read_rules.roles
 	// read_rules.action
 	// transition_rules.RuleKey
-	// transition_rules.Roles
+	// (transition_rules.Roles
 	// transition_rules.MatchType
 	// transition_rules.Action
-	// transition_rules.Field
+	// transition_rules.Field) x 2
 	oldTree := getTree(t, &doc.Document)
 	newTree := getTree(t, &ndoc.Document)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 15)
+	assert.Len(t, cf, 20)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops := map[string]struct{}{
@@ -104,6 +104,11 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
 	}
@@ -120,7 +125,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	doc = ndoc
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = doc.PrepareNewVersion(nil, true, compactProperties(CDTreePrefix))
+	ndoc, err = doc.PrepareNewVersion(nil, true, nil)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
@@ -147,21 +152,26 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	// roles (new doc will have empty role while old one has two roles)
 	// read_rules (new doc will have empty read_rules while old one has read_rules)
-	// transition_rules (new doc will have empty transition_rules while old one has transition_rules)
+	// transition_rules (new doc will have empty transition_rules while old one has 2 transition_rules)
 	doc = ndoc
 	ndoc, err = newCoreDocument()
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 16)
+	assert.Len(t, cf, 21)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 9}):                                                              {},
 		hexutil.Encode([]byte{0, 0, 0, 4}):                                                              {},
@@ -189,27 +199,30 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// read_rules
 	// transition_rules
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, compactProperties(CDTreePrefix))
+	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, nil)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
 	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	assert.Len(t, cf, 14)
+	assert.Len(t, cf, 17)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop3 := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop4 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
-		hexutil.Encode([]byte{0, 0, 0, 9}):                                      {},
-		hexutil.Encode([]byte{0, 0, 0, 4}):                                      {},
-		hexutil.Encode([]byte{0, 0, 0, 3}):                                      {},
-		hexutil.Encode([]byte{0, 0, 0, 16}):                                     {},
-		hexutil.Encode([]byte{0, 0, 0, 2}):                                      {},
-		hexutil.Encode([]byte{0, 0, 0, 22}):                                     {},
-		hexutil.Encode([]byte{0, 0, 0, 23}):                                     {},
-		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}): {},
+		hexutil.Encode([]byte{0, 0, 0, 9}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 4}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 3}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 16}):                                                             {},
+		hexutil.Encode([]byte{0, 0, 0, 2}):                                                              {},
+		hexutil.Encode([]byte{0, 0, 0, 22}):                                                             {},
+		hexutil.Encode([]byte{0, 0, 0, 23}):                                                             {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}): {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop3...)):                                           {},
@@ -307,16 +320,16 @@ func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
 func TestReadACLs_initTransitionRules(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	cd.initTransitionRules(nil, compactProperties(CDTreePrefix))
+	cd.initTransitionRules(nil, nil)
 	assert.Nil(t, cd.Document.Roles)
 	assert.Nil(t, cd.Document.TransitionRules)
 
 	collab := []identity.DID{testingidentity.GenerateRandomDID()}
-	cd.initTransitionRules(collab, compactProperties(CDTreePrefix))
-	assert.Len(t, cd.Document.TransitionRules, 1)
-	assert.Len(t, cd.Document.Roles, 1)
+	cd.initTransitionRules(collab, nil)
+	assert.Len(t, cd.Document.TransitionRules, 2)
+	assert.Len(t, cd.Document.Roles, 2)
 
-	cd.initTransitionRules(collab, compactProperties(CDTreePrefix))
-	assert.Len(t, cd.Document.TransitionRules, 1)
-	assert.Len(t, cd.Document.Roles, 1)
+	cd.initTransitionRules(collab, nil)
+	assert.Len(t, cd.Document.TransitionRules, 2)
+	assert.Len(t, cd.Document.Roles, 2)
 }

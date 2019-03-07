@@ -119,7 +119,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
 	c := []string{c1.String(), c2.String()}
-	ncd, err := cd.PrepareNewVersion(c, false, compactProperties(CDTreePrefix))
+	ncd, err := cd.PrepareNewVersion(c, false, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Document root is invalid")
 	assert.Nil(t, ncd)
@@ -127,13 +127,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	//collaborators need to be hex string
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	collabs := []string{"some ID"}
-	ncd, err = cd.PrepareNewVersion(collabs, false, compactProperties(CDTreePrefix))
+	ncd, err = cd.PrepareNewVersion(collabs, false, nil)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	ncd, err = cd.PrepareNewVersion(c, false, compactProperties(CDTreePrefix))
+	ncd, err = cd.PrepareNewVersion(c, false, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err := ncd.GetCollaborators()
@@ -148,7 +148,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	expectedNextVersion = h.Sum(expectedNextVersion)
 	assert.Equal(t, expectedNextVersion, ncd.Document.NextVersion)
 
-	ncd, err = cd.PrepareNewVersion(c, true, compactProperties(CDTreePrefix))
+	ncd, err = cd.PrepareNewVersion(c, true, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err = ncd.GetCollaborators()
@@ -165,9 +165,9 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Len(t, cd.Document.Roles, 0)
 	assert.Len(t, cd.Document.ReadRules, 0)
 	assert.Len(t, cd.Document.TransitionRules, 0)
-	assert.Len(t, ncd.Document.Roles, 2)
+	assert.Len(t, ncd.Document.Roles, 3)
 	assert.Len(t, ncd.Document.ReadRules, 1)
-	assert.Len(t, ncd.Document.TransitionRules, 1)
+	assert.Len(t, ncd.Document.TransitionRules, 2)
 	assert.Len(t, ncd.Document.Roles[0].Collaborators, 2)
 	assert.Equal(t, ncd.Document.Roles[0].Collaborators[0], c1[:])
 	assert.Equal(t, ncd.Document.Roles[0].Collaborators[1], c2[:])
