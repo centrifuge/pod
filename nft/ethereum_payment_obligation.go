@@ -194,9 +194,9 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, nextAnchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
 		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID,
-			requestData.TokenURI, requestData.AnchorID, requestData.NextAnchorID, requestData.Props, requestData.Values,
+			requestData.TokenURI, requestData.AnchorID, requestData.Props, requestData.Values,
 			requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
