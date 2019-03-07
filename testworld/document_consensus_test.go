@@ -37,7 +37,6 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			switch test.testType {
 			case multiHost:
 				addExternalCollaborator(t, test.docType)
@@ -75,10 +74,10 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
-	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
+	// b updates invoice and shares with c as well
+	res = updateDocument(bob.httpExpect, b, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
 	txID = getTransactionID(t, res)
-	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "success")
+	waitTillStatus(t, bob.httpExpect, b, txID, "success")
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {

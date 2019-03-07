@@ -3,33 +3,39 @@
 package p2p_test
 
 import (
+	"context"
 	"flag"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/coredocument"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/golang/protobuf/ptypes/any"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	client    documents.Client
-	cfg       config.Configuration
-	idService identity.Service
-	cfgStore  config.Service
+	client     documents.Client
+	cfg        config.Configuration
+	idService  identity.ServiceDID
+	idFactory  identity.Factory
+	cfgStore   config.Service
+	defaultDID identity.DID
 )
 
 func TestMain(m *testing.M) {
@@ -37,9 +43,18 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
-	idService = ctx[identity.BootstrappedIDService].(identity.Service)
+	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
-	testingidentity.CreateIdentityWithKeys(cfg, idService)
+	tc, err := configstore.TempAccount("main", cfg)
+	assert.NoError(&testing.T{}, err)
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(&testing.T{}, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = didAddr.Bytes()
+	did, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), acc, idService, idFactory)
+	assert.NoError(&testing.T{}, err)
+	defaultDID = did
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -47,75 +62,96 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, doc)
+	acc, err := configstore.NewAccount("main", cfg)
+	assert.Nil(t, err)
+	acci := acc.(*configstore.Account)
+	acci.IdentityID = defaultDID[:]
+	ctxh, err := contextutil.New(context.Background(), acci)
+	assert.Nil(t, err)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(doc.Signatures))
+	assert.NotNil(t, signs)
 }
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	err = client.GetSignaturesForDocument(ctxh, doc)
+	acc, err := configstore.NewAccount("main", cfg)
+	assert.Nil(t, err)
+	acci := acc.(*configstore.Account)
+	acci.IdentityID = defaultDID[:]
+	ctxh, err := contextutil.New(context.Background(), acci)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	// one signature would be missing
-	assert.Equal(t, 1, len(doc.Signatures))
+	assert.Equal(t, 0, len(signs))
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t, false)
-	ctxh := testingconfig.CreateTenantContext(t, cfg)
-	doc := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-
-	_, err = client.SendAnchoredDocument(ctxh, cid.CentID(), &p2ppb.AnchorDocumentRequest{Document: doc})
-	if assert.Error(t, err) {
-		assert.Equal(t, "[1]document is invalid: [mismatched document roots]", err.Error())
-	}
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
+	cd, err := dm.PackCoreDocument()
+	assert.NoError(t, err)
+	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: &cd})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mismatched document roots")
 }
 
-func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.Identity, error) {
-	tcID := identity.RandomCentID()
-	tc, err := configstore.TempAccount("", cfg)
+func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(t, err)
+	did := identity.NewDID(*didAddr)
+	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
-	tcr.IdentityID = tcID[:]
-	id := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService)
+	tcr.IdentityID = did[:]
+	cdid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	assert.NoError(t, err)
+	if !cdid.Equal(did) {
+		assert.True(t, false, "Race condition identified when creating accounts")
+	}
+	tcr.IdentityID = did[:]
 	if corruptID {
-		tcr.IdentityID = utils.RandomSlice(identity.CentIDLength)
+		tcr.IdentityID = utils.RandomSlice(common.AddressLength)
 	}
 	tc, err = cfgStore.CreateAccount(tcr)
 	assert.NoError(t, err)
-	return tcr, id, err
+	return tcr, did, err
 }
 
-func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) *coredocumentpb.CoreDocument {
-	idConfig, err := identity.GetIdentityConfig(cfg)
-	assert.Nil(t, err)
-	identifier := utils.RandomSlice(32)
-	salts := &coredocumentpb.CoreDocumentSalts{}
-	doc := &coredocumentpb.CoreDocument{
-		Collaborators:      collaborators,
-		DataRoot:           utils.RandomSlice(32),
-		DocumentIdentifier: identifier,
-		CurrentVersion:     identifier,
-		NextVersion:        utils.RandomSlice(32),
-		CoredocumentSalts:  salts,
-		EmbeddedData: &any.Any{
-			TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		},
-		EmbeddedDataSalts: &any.Any{
-			TypeUrl: documenttypes.InvoiceSaltsTypeUrl,
-		},
+func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) documents.Model {
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accCfg, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	acc := accCfg.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	accKeys, err := acc.GetKeys()
+	assert.NoError(t, err)
+	payalod := testingdocuments.CreatePOPayload()
+	var cs []string
+	for _, c := range collaborators {
+		cs = append(cs, hexutil.Encode(c))
 	}
-	err = proofs.FillSalts(doc, salts)
-	assert.Nil(t, err)
-	tree, _ := coredocument.GetDocumentSigningTree(doc)
-	doc.SigningRoot = tree.RootHash()
-	sig := identity.Sign(idConfig, identity.KeyPurposeSigning, doc.SigningRoot)
-	doc.Signatures = append(doc.Signatures, sig)
-	tree, _ = coredocument.GetDocumentRootTree(doc)
-	doc.DocumentRoot = tree.RootHash()
-	return doc
+	payalod.Collaborators = cs
+	po := new(purchaseorder.PurchaseOrder)
+	err = po.InitPurchaseOrderInput(payalod, defaultDID.String())
+	assert.NoError(t, err)
+	_, err = po.CalculateDataRoot()
+	assert.NoError(t, err)
+	sr, err := po.CalculateSigningRoot()
+	assert.NoError(t, err)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		EntityId:  defaultDID[:],
+		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature: s,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}
+	po.AppendSignatures(sig)
+	_, err = po.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	return po
 }

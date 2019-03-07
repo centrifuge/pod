@@ -1,10 +1,18 @@
 package configstore
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"reflect"
 	"time"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -39,6 +47,7 @@ type NodeConfig struct {
 	ServerPort                     int
 	ServerAddress                  string
 	NumWorkers                     int
+	TaskRetries                    int
 	WorkerWaitTimeMS               int
 	EthereumNodeURL                string
 	EthereumContextReadWaitTimeout time.Duration
@@ -52,6 +61,7 @@ type NodeConfig struct {
 	BootstrapPeers                 []string
 	NetworkID                      uint32
 	SmartContractAddresses         map[config.ContractName]common.Address
+	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
 }
 
@@ -143,6 +153,11 @@ func (nc *NodeConfig) GetServerAddress() string {
 // GetNumWorkers refer the interface
 func (nc *NodeConfig) GetNumWorkers() int {
 	return nc.NumWorkers
+}
+
+// GetTaskRetries returns the number of retries allowed for a queued task
+func (nc *NodeConfig) GetTaskRetries() int {
+	return nc.TaskRetries
 }
 
 // GetWorkerWaitTimeMS refer the interface
@@ -240,14 +255,19 @@ func (nc *NodeConfig) GetIdentityID() ([]byte, error) {
 	return nc.MainIdentity.IdentityID, nil
 }
 
+// GetP2PKeyPair refer the interface
+func (nc *NodeConfig) GetP2PKeyPair() (pub, priv string) {
+	return nc.MainIdentity.P2PKeyPair.Pub, nc.MainIdentity.P2PKeyPair.Priv
+}
+
 // GetSigningKeyPair refer the interface
 func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
 	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Priv
 }
 
-// GetEthAuthKeyPair refer the interface
-func (nc *NodeConfig) GetEthAuthKeyPair() (pub, priv string) {
-	return nc.MainIdentity.EthAuthKeyPair.Pub, nc.MainIdentity.EthAuthKeyPair.Priv
+// GetPrecommitEnabled refer the interface
+func (nc *NodeConfig) GetPrecommitEnabled() bool {
+	return nc.MainIdentity.PrecommitEnabled
 }
 
 // IsPProfEnabled refer the interface
@@ -280,17 +300,13 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 	return &configpb.ConfigData{
 		MainIdentity: &accountpb.AccountData{
 			EthAccount: &accountpb.EthereumAccount{
-				Address:  nc.MainIdentity.EthereumAccount.Address,
+				Address:  common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
 				Key:      nc.MainIdentity.EthereumAccount.Key,
 				Password: nc.MainIdentity.EthereumAccount.Password,
 			},
 			EthDefaultAccountName:            nc.MainIdentity.EthereumDefaultAccountName,
-			IdentityId:                       hexutil.Encode(nc.MainIdentity.IdentityID),
+			IdentityId:                       common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
 			ReceiveEventNotificationEndpoint: nc.MainIdentity.ReceiveEventNotificationEndpoint,
-			EthauthKeyPair: &accountpb.KeyPair{
-				Pub: nc.MainIdentity.EthAuthKeyPair.Pub,
-				Pvt: nc.MainIdentity.EthAuthKeyPair.Priv,
-			},
 			SigningKeyPair: &accountpb.KeyPair{
 				Pub: nc.MainIdentity.SigningKeyPair.Pub,
 				Pvt: nc.MainIdentity.SigningKeyPair.Priv,
@@ -314,6 +330,7 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 		NetworkId:                 nc.NetworkID,
 		PprofEnabled:              nc.PprofEnabled,
 		SmartContractAddresses:    convertAddressesToStringMap(nc.SmartContractAddresses),
+		SmartContractBytecode:     convertBytecodeToStringMap(nc.SmartContractBytecode),
 	}
 }
 
@@ -325,8 +342,16 @@ func convertAddressesToStringMap(addresses map[config.ContractName]common.Addres
 	return m
 }
 
+func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string]string {
+	m := make(map[string]string)
+	for k, v := range bcode {
+		m[string(k)] = v
+	}
+	return m
+}
+
 func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
-	identityID, _ := hexutil.Decode(data.MainIdentity.IdentityId)
+	identityID := common.HexToAddress(data.MainIdentity.IdentityId).Bytes()
 
 	nc.MainIdentity = Account{
 		EthereumAccount: &config.AccountConfig{
@@ -340,10 +365,6 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 		SigningKeyPair: KeyPair{
 			Pub:  data.MainIdentity.SigningKeyPair.Pub,
 			Priv: data.MainIdentity.SigningKeyPair.Pvt,
-		},
-		EthAuthKeyPair: KeyPair{
-			Pub:  data.MainIdentity.EthauthKeyPair.Pub,
-			Priv: data.MainIdentity.EthauthKeyPair.Pvt,
 		},
 	}
 	nc.StoragePath = data.StoragePath
@@ -370,6 +391,10 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	if err != nil {
 		return err
 	}
+	nc.SmartContractBytecode, err = convertStringMapToSmartContractBytecode(data.SmartContractBytecode)
+	if err != nil {
+		return err
+	}
 	nc.PprofEnabled = data.PprofEnabled
 	return nil
 }
@@ -386,12 +411,20 @@ func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[conf
 	return m, nil
 }
 
+func convertStringMapToSmartContractBytecode(bcode map[string]string) (map[config.ContractName]string, error) {
+	m := make(map[config.ContractName]string)
+	for k, v := range bcode {
+		m[config.ContractName(k)] = v
+	}
+	return m, nil
+}
+
 // NewNodeConfig creates a new NodeConfig instance with configs
 func NewNodeConfig(c config.Configuration) config.Configuration {
 	mainAccount, _ := c.GetEthereumAccount(c.GetEthereumDefaultAccountName())
 	mainIdentity, _ := c.GetIdentityID()
+	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	signPub, signPriv := c.GetSigningKeyPair()
-	ethAuthPub, ethAuthPriv := c.GetEthAuthKeyPair()
 
 	return &NodeConfig{
 		MainIdentity: Account{
@@ -403,13 +436,13 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 			EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 			IdentityID:                       mainIdentity,
 			ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+			P2PKeyPair: KeyPair{
+				Pub:  p2pPub,
+				Priv: p2pPriv,
+			},
 			SigningKeyPair: KeyPair{
 				Pub:  signPub,
 				Priv: signPriv,
-			},
-			EthAuthKeyPair: KeyPair{
-				Pub:  ethAuthPub,
-				Priv: ethAuthPriv,
 			},
 		},
 		StoragePath:                    c.GetStoragePath(),
@@ -454,8 +487,14 @@ type Account struct {
 	ReceiveEventNotificationEndpoint string
 	IdentityID                       []byte
 	SigningKeyPair                   KeyPair
-	EthAuthKeyPair                   KeyPair
 	P2PKeyPair                       KeyPair
+	keys                             map[string]config.IDKey
+	PrecommitEnabled                 bool
+}
+
+// GetPrecommitEnabled gets the enable pre commit value
+func (acc *Account) GetPrecommitEnabled() bool {
+	return acc.PrecommitEnabled
 }
 
 // GetEthereumAccount gets EthereumAccount
@@ -478,19 +517,111 @@ func (acc *Account) GetIdentityID() ([]byte, error) {
 	return acc.IdentityID, nil
 }
 
+// GetP2PKeyPair gets P2PKeyPair
+func (acc *Account) GetP2PKeyPair() (pub, priv string) {
+	return acc.P2PKeyPair.Pub, acc.P2PKeyPair.Priv
+}
+
 // GetSigningKeyPair gets SigningKeyPair
 func (acc *Account) GetSigningKeyPair() (pub, priv string) {
 	return acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv
 }
 
-// GetEthAuthKeyPair gets EthAuthKeyPair
-func (acc *Account) GetEthAuthKeyPair() (pub, priv string) {
-	return acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv
-}
-
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
 func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 	return acc.EthereumContextWaitTimeout
+}
+
+// SignMsg signs a message with the signing key
+func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning.Name].PrivateKey, msg, crypto.CurveSecp256K1)
+	if err != nil {
+		return nil, err
+	}
+
+	did, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+
+	return &coredocumentpb.Signature{
+		EntityId:  did,
+		PublicKey: keys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature: signature,
+		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+	}, nil
+}
+
+func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
+	var ethAddr struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
+	if err != nil {
+		return nil, err
+	}
+	return hex.DecodeString(ethAddr.Address)
+}
+
+// GetKeys returns the keys of an account
+// TODO remove GetKeys and add signing methods to account
+func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
+	if acc.keys == nil {
+		acc.keys = map[string]config.IDKey{}
+	}
+
+	// KeyPurposeAction
+	if _, ok := acc.keys[identity.KeyPurposeAction.Name]; !ok {
+		pk, err := acc.getEthereumAccountAddress()
+		if err != nil {
+			return idKeys, err
+		}
+		address32Bytes, err := utils.ByteArrayTo32BytesLeftPadded(pk)
+		if err != nil {
+			return idKeys, err
+		}
+		acc.keys[identity.KeyPurposeAction.Name] = config.IDKey{
+			PublicKey: address32Bytes[:],
+		}
+	}
+
+	// KeyPurposeP2PDiscovery
+	if _, ok := acc.keys[identity.KeyPurposeP2PDiscovery.Name]; !ok {
+		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetP2PKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+
+		acc.keys[identity.KeyPurposeP2PDiscovery.Name] = config.IDKey{
+			PublicKey:  pk,
+			PrivateKey: sk}
+	}
+
+	// KeyPurposeSigning
+	if _, ok := acc.keys[identity.KeyPurposeSigning.Name]; !ok {
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+
+		acc.keys[identity.KeyPurposeSigning.Name] = config.IDKey{
+			PublicKey:  address32Bytes[:],
+			PrivateKey: sk}
+	}
+
+	id, err := acc.GetIdentityID()
+	if err != nil {
+		return idKeys, err
+	}
+	acc.IdentityID = id
+
+	return acc.keys, nil
+
 }
 
 // ID Get the ID of the document represented by this model
@@ -526,14 +657,14 @@ func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 		},
 		EthDefaultAccountName:            acc.EthereumDefaultAccountName,
 		ReceiveEventNotificationEndpoint: acc.ReceiveEventNotificationEndpoint,
-		IdentityId:                       hexutil.Encode(acc.IdentityID),
+		IdentityId:                       common.BytesToAddress(acc.IdentityID).Hex(),
+		P2PKeyPair: &accountpb.KeyPair{
+			Pub: acc.P2PKeyPair.Pub,
+			Pvt: acc.P2PKeyPair.Priv,
+		},
 		SigningKeyPair: &accountpb.KeyPair{
 			Pub: acc.SigningKeyPair.Pub,
 			Pvt: acc.SigningKeyPair.Priv,
-		},
-		EthauthKeyPair: &accountpb.KeyPair{
-			Pub: acc.EthAuthKeyPair.Pub,
-			Pvt: acc.EthAuthKeyPair.Priv,
 		},
 	}, nil
 }
@@ -545,11 +676,11 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	if data.EthAccount == nil {
 		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthAccount field"))
 	}
+	if data.P2PKeyPair == nil {
+		return errors.NewTypedError(ErrNilParameter, errors.New("nil P2PKeyPair field"))
+	}
 	if data.SigningKeyPair == nil {
 		return errors.NewTypedError(ErrNilParameter, errors.New("nil SigningKeyPair field"))
-	}
-	if data.EthauthKeyPair == nil {
-		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthauthKeyPair field"))
 	}
 	acc.EthereumAccount = &config.AccountConfig{
 		Address:  data.EthAccount.Address,
@@ -559,25 +690,29 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	acc.EthereumDefaultAccountName = data.EthDefaultAccountName
 	acc.IdentityID, _ = hexutil.Decode(data.IdentityId)
 	acc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
+	acc.P2PKeyPair = KeyPair{
+		Pub:  data.P2PKeyPair.Pub,
+		Priv: data.P2PKeyPair.Pvt,
+	}
 	acc.SigningKeyPair = KeyPair{
 		Pub:  data.SigningKeyPair.Pub,
 		Priv: data.SigningKeyPair.Pvt,
 	}
-	acc.EthAuthKeyPair = KeyPair{
-		Pub:  data.EthauthKeyPair.Pub,
-		Priv: data.EthauthKeyPair.Pvt,
-	}
+
 	return nil
 }
 
 // NewAccount creates a new Account instance with configs
 func NewAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
+	if ethAccountName == "" {
+		return nil, errors.New("ethAccountName not provided")
+	}
 	id, err := c.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 	acc, err := c.GetEthereumAccount(ethAccountName)
-	if err != nil && ethAccountName != "" {
+	if err != nil {
 		return nil, err
 	}
 	return &Account{
@@ -586,15 +721,19 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 		EthereumContextWaitTimeout:       c.GetEthereumContextWaitTimeout(),
 		IdentityID:                       id,
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
-		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
+		PrecommitEnabled:                 c.GetPrecommitEnabled(),
 	}, nil
 }
 
 // TempAccount creates a new Account without id validation, Must only be used for account creation.
 func TempAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
+	if ethAccountName == "" {
+		return nil, errors.New("ethAccountName not provided")
+	}
 	acc, err := c.GetEthereumAccount(ethAccountName)
-	if err != nil && ethAccountName != "" {
+	if err != nil {
 		return nil, err
 	}
 	return &Account{
@@ -602,7 +741,8 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
 		IdentityID:                       []byte{},
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
+		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
-		EthAuthKeyPair:                   NewKeyPair(c.GetEthAuthKeyPair()),
+		PrecommitEnabled:                 c.GetPrecommitEnabled(),
 	}, nil
 }

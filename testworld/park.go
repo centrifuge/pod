@@ -5,18 +5,14 @@ package testworld
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
-
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
-
 	"testing"
-
 	"time"
 
-	"net/http"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -45,7 +41,7 @@ const defaultP2PTimeout = "10s"
 type hostTestSuite struct {
 	name       string
 	host       *host
-	id         identity.CentID
+	id         identity.DID
 	httpExpect *httpexpect.Expect
 }
 
@@ -53,7 +49,7 @@ type hostTestSuite struct {
 type hostManager struct {
 
 	// network settings
-	ethNodeUrl, accountKeyPath, accountPassword, network string
+	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string
 
 	txPoolAccess bool
 
@@ -65,6 +61,9 @@ type hostManager struct {
 
 	// niceHosts are the happy and nice hosts at the Testworld such as Teddy
 	niceHosts map[string]*host
+
+	// tempHosts are hosts created at runtime, they should be part of niceHosts/naughtyHosts as well
+	tempHosts map[string]*host
 
 	// TODO create evil hosts such as William (or Eve)
 
@@ -78,17 +77,19 @@ type hostManager struct {
 }
 
 func newHostManager(
-	ethNodeUrl, accountKeyPath, accountPassword, network string,
+	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string,
 	txPoolAccess bool,
 	smartContractAddrs *config.SmartContractAddresses) *hostManager {
 	return &hostManager{
 		ethNodeUrl:        ethNodeUrl,
 		accountKeyPath:    accountKeyPath,
 		accountPassword:   accountPassword,
+		twConfigName:      twConfigName,
 		network:           network,
 		txPoolAccess:      txPoolAccess,
 		contractAddresses: smartContractAddrs,
 		niceHosts:         make(map[string]*host),
+		tempHosts:         make(map[string]*host),
 	}
 }
 
@@ -109,7 +110,7 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
+	r.bernard = r.createHost("Bernard", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -129,7 +130,7 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -148,7 +149,7 @@ func (r *hostManager) init(createConfig bool) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("CentID for %s is %s \n", name, i)
+		fmt.Printf("DID for %s is %s \n", name, i)
 		if createConfig {
 			_ = host.createAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 		}
@@ -168,13 +169,38 @@ func (r *hostManager) stop() {
 	r.canc()
 }
 
-func (r *hostManager) createHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+func (r *hostManager) addNiceHost(name string, host *host) {
+	r.niceHosts[name] = host
+}
+
+func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	tempHost := r.createHost(name, twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+	r.tempHosts[name] = tempHost
+	return tempHost
+}
+
+func (r *hostManager) startTempHost(name string) error {
+	tempHost, ok := r.tempHosts[name]
+	if !ok {
+		return errors.New("host %s not found as temp host", name)
+	}
+	err := tempHost.init()
+	if err != nil {
+		return err
+	}
+	go tempHost.live(r.cancCtx)
+
+	return nil
+}
+
+func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
 		r.accountKeyPath,
 		r.accountPassword,
 		r.network,
+		twConfigName,
 		p2pTimeout,
 		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
@@ -204,7 +230,8 @@ type host struct {
 	txPoolAccess       bool
 	smartContractAddrs *config.SmartContractAddresses
 	config             config.Configuration
-	identity           identity.Identity
+	identity           identity.DID
+	idService          identity.ServiceDID
 	node               *node.Node
 	canc               context.CancelFunc
 	createConfig       bool
@@ -213,7 +240,7 @@ type host struct {
 }
 
 func newHost(
-	name, ethNodeUrl, accountKeyPath, accountPassword, network, p2pTimeout string,
+	name, ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName, p2pTimeout string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess, createConfig, multiAccount bool,
@@ -231,7 +258,7 @@ func newHost(
 		bootstrapNodes:     bootstraps,
 		txPoolAccess:       txPoolAccess,
 		smartContractAddrs: smartContractAddrs,
-		dir:                "peerconfigs/" + name,
+		dir:                fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
 		createConfig:       createConfig,
 		multiAccount:       multiAccount,
 	}
@@ -239,7 +266,7 @@ func newHost(
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, h.p2pTimeout, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
 		if err != nil {
 			return err
 		}
@@ -255,16 +282,12 @@ func (h *host) init() error {
 		return err
 	}
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idService := h.bootstrappedCtx[identity.BootstrappedIDService].(identity.Service)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
 		return err
 	}
-	id, err := identity.ToCentID(idBytes)
-	if err != nil {
-		return err
-	}
-	h.identity, err = idService.LookupIdentityForID(id)
+	h.identity = identity.NewDIDFromBytes(idBytes)
+	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	if err != nil {
 		return err
 	}
@@ -348,14 +371,15 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 	}
 	// create 3 accounts
 	for i := 0; i < 3; i++ {
-		res := generateAccount(e, h.identity.CentID().String(), http.StatusOK)
+		log.Infof("creating account %d for host %s", i, h.name)
+		res := generateAccount(e, h.identity.String(), http.StatusOK)
 		res.Value("identity_id").String().NotEmpty()
 	}
 	return nil
 }
 
 func (h *host) loadAccounts(e *httpexpect.Expect) error {
-	res := getAllAccounts(e, h.identity.CentID().String(), http.StatusOK)
+	res := getAllAccounts(e, h.identity.String(), http.StatusOK)
 	accounts := res.Value("data").Array()
 	accIDs := getAccounts(accounts)
 	keys := make([]string, 0, len(accIDs))
@@ -370,12 +394,12 @@ func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
 	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
 }
 
-func (h *host) id() (identity.CentID, error) {
-	return h.identity.CentID(), nil
+func (h *host) id() (identity.DID, error) {
+	return h.identity, nil
 }
 
 func (h *host) p2pURL() (string, error) {
-	lastB58Key, err := h.identity.CurrentP2PKey()
+	lastB58Key, err := h.idService.CurrentP2PKey(h.identity)
 	if err != nil {
 		return "", err
 	}

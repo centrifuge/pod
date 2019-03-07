@@ -17,23 +17,22 @@ import (
 const (
 	signingPubKeyName  = "signingKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
-	ethAuthPubKeyName  = "ethauth.pub.pem"
-	ethAuthPrivKeyName = "ethauth.key.pem"
 )
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
-	InitProtocolForCID(CID identity.CentID)
+	InitProtocolForDID(DID *identity.DID)
 }
 
 type service struct {
 	repo                 repository
-	idService            identity.Service
+	idFactory            identity.Factory
+	idService            identity.ServiceDID
 	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service
-func DefaultService(repository repository, idService identity.Service) config.Service {
+func DefaultService(repository repository, idService identity.ServiceDID) config.Service {
 	return &service{repo: repository, idService: idService}
 }
 
@@ -72,100 +71,65 @@ func (s service) GenerateAccount() (config.Account, error) {
 	}
 
 	// copy the main account for basic settings
-	mtc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
+	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if nil != err {
 		return nil, err
 	}
-	ctx, err := contextutil.New(context.Background(), mtc)
+	ctx, err := contextutil.New(context.Background(), acc)
 	if err != nil {
 		return nil, err
 	}
 
-	id, confirmations, err := s.idService.CreateIdentity(ctx, identity.RandomCentID())
-	if err != nil {
-		return nil, err
-	}
-	<-confirmations
-
-	// copy the main account again to create the new account
-	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
+	DID, err := s.idFactory.CreateIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	CID := id.CentID()
-	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), CID)
+	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), DID)
 	if err != nil {
 		return nil, err
 	}
 
-	// minor hack to set same p2p keys as node to account: Set the new account ID to copy of main account and create p2p keys
-	mtcc := mtc.(*Account)
-	mtcc.IdentityID = CID[:]
-	err = s.idService.AddKeyFromConfig(mtcc, identity.KeyPurposeP2P)
+	err = s.idService.AddKeysForAccount(acc)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeSigning)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.idService.AddKeyFromConfig(acc, identity.KeyPurposeEthMsgAuth)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.repo.CreateAccount(CID[:], acc)
+	err = s.repo.CreateAccount(DID[:], acc)
 	if err != nil {
 		return nil, err
 	}
 
 	// initiate network handling
-	s.protocolSetterFinder().InitProtocolForCID(CID)
+	s.protocolSetterFinder().InitProtocolForDID(DID)
 	return acc, nil
 }
 
-func generateAccountKeys(keystore string, acc *Account, CID identity.CentID) (*Account, error) {
-	acc.IdentityID = CID[:]
-	Pub, err := createKeyPath(keystore, CID, signingPubKeyName)
+// generateAccountKeys generates signing keys
+func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Account, error) {
+	acc.IdentityID = DID[:]
+	sPub, err := createKeyPath(keystore, DID, signingPubKeyName)
 	if err != nil {
 		return nil, err
 	}
-	Priv, err := createKeyPath(keystore, CID, signingPrivKeyName)
+	sPriv, err := createKeyPath(keystore, DID, signingPrivKeyName)
 	if err != nil {
 		return nil, err
 	}
 	acc.SigningKeyPair = KeyPair{
-		Pub:  Pub,
-		Priv: Priv,
+		Pub:  sPub,
+		Priv: sPriv,
 	}
-	ePub, err := createKeyPath(keystore, CID, ethAuthPubKeyName)
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
-	ePriv, err := createKeyPath(keystore, CID, ethAuthPrivKeyName)
-	if err != nil {
-		return nil, err
-	}
-	acc.EthAuthKeyPair = KeyPair{
-		Pub:  ePub,
-		Priv: ePriv,
-	}
-	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, "ed25519")
-	if err != nil {
-		return nil, err
-	}
-	err = crypto.GenerateSigningKeyPair(acc.EthAuthKeyPair.Pub, acc.EthAuthKeyPair.Priv, "secp256k1")
-	if err != nil {
-		return nil, err
-	}
+
 	return acc, nil
 }
 
-func createKeyPath(keyStorepath string, CID identity.CentID, keyName string) (string, error) {
-	tdir := fmt.Sprintf("%s/%s", keyStorepath, CID.String())
+func createKeyPath(keyStorepath string, DID *identity.DID, keyName string) (string, error) {
+	tdir := fmt.Sprintf("%s/%s", keyStorepath, DID.String())
 	// create account specific key dir
 	if _, err := os.Stat(tdir); os.IsNotExist(err) {
 		err := os.MkdirAll(tdir, os.ModePerm)

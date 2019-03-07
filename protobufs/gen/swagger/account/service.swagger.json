@@ -150,7 +150,7 @@
         "signing_key_pair": {
           "$ref": "#/definitions/accountKeyPair"
         },
-        "ethauth_key_pair": {
+        "p2p_key_pair": {
           "$ref": "#/definitions/accountKeyPair"
         }
       }

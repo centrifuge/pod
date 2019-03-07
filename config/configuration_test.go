@@ -32,6 +32,7 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"p2pPort":           int64(38202),
 		"txpoolaccess":      false,
 		"p2pConnectTimeout": "",
+		"preCommitEnabled":  false,
 	}
 
 	v, err := CreateConfigFile(data)

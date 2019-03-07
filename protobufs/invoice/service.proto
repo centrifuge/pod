@@ -11,7 +11,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for invoice documents
+// DocumentService contains all common interactions for invoice document
 service DocumentService {
   rpc Create(InvoiceCreatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
@@ -74,7 +74,7 @@ message InvoiceResponse {
   InvoiceData data = 2;
 }
 
-// ResponseHeader contains a set of common fields for most documents
+// ResponseHeader contains a set of common fields for most document
 message ResponseHeader {
   string document_id = 1;
   string version_id = 2;

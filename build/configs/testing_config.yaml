@@ -6,7 +6,7 @@ ethereum:
       password: ''
       address: 89b0a86583c4444acfd71b463e0d3c55ae1412a5
 
-identityId: "0x010101010101"
+identityId: "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
 # Accounts key storage
 accounts:
@@ -17,9 +17,12 @@ queue:
   workerWaitTimeMS: 1
 
 keys:
+  p2p:
+    publicKey: ../../build/resources/p2pKey.pub.pem
+    privateKey: ../../build/resources/p2pKey.key.pem
   signing:
     publicKey: ../../build/resources/signingKey.pub.pem
     privateKey: ../../build/resources/signingKey.key.pem
-  ethauth:
-    publicKey: ../../build/resources/ethauth.pub.pem
-    privateKey: ../../build/resources/ethauth.key.pem
+
+anchoring:
+  precommit: true

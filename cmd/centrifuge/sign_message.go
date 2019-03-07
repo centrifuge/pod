@@ -15,7 +15,6 @@ func init() {
 	var privateKeyFileParam string
 	var curveTypeParam string
 	var messageParam string
-	var ethereumSignFlag bool
 
 	var signMessageCmd = &cobra.Command{
 		Use:   "sign",
@@ -27,12 +26,11 @@ func init() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			signature, err := crypto.SignMessage(privateKey, []byte(messageParam), curveTypeParam, ethereumSignFlag)
+			signature, err := crypto.SignMessage(privateKey, []byte(messageParam), curveTypeParam)
 			if err != nil {
 				log.Fatal(err)
 			}
 			fmt.Println(hexutil.Encode(signature))
-
 		},
 	}
 
@@ -40,5 +38,4 @@ func init() {
 	signMessageCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to sign")
 	signMessageCmd.Flags().StringVarP(&privateKeyFileParam, "private", "p", "", "private key path")
 	signMessageCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported:'secp256k1')")
-	signMessageCmd.Flags().BoolVarP(&ethereumSignFlag, "ethereum", "e", false, "sign message according to Ethereum specification")
 }

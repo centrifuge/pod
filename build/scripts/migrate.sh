@@ -32,6 +32,7 @@ fi
 if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
 then
     echo "Running the Solidity contracts migrations for local geth"
+    sleep 30 # allow geth block gas limit to increase to more than 7000000
     ${CENT_ETHEREUM_CONTRACTS_DIR}/scripts/migrate.sh localgeth
 else
     echo "Not migrating the Solidity contracts"

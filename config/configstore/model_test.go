@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -21,6 +22,11 @@ import (
 
 type mockConfig struct {
 	mock.Mock
+}
+
+func (m *mockConfig) GetPrecommitEnabled() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
 }
 
 func (m *mockConfig) Type() reflect.Type {
@@ -140,6 +146,12 @@ func (m *mockConfig) GetNumWorkers() int {
 	return args.Get(0).(int)
 }
 
+// GetTaskRetries returns the number of retries allowed for a queued task
+func (m *mockConfig) GetTaskRetries() int {
+	args := m.Called()
+	return args.Get(0).(int)
+}
+
 func (m *mockConfig) GetWorkerWaitTimeMS() int {
 	args := m.Called()
 	return args.Get(0).(int)
@@ -230,12 +242,12 @@ func (m *mockConfig) GetIdentityID() ([]byte, error) {
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-func (m *mockConfig) GetSigningKeyPair() (pub, priv string) {
+func (m *mockConfig) GetP2PKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
-func (m *mockConfig) GetEthAuthKeyPair() (pub, priv string) {
+func (m *mockConfig) GetSigningKeyPair() (pub, priv string) {
 	args := m.Called()
 	return args.Get(0).(string), args.Get(1).(string)
 }
@@ -252,10 +264,11 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
+	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	c.On("GetPrecommitEnabled").Return(true).Once()
 	_, err := NewAccount("name", c)
 	assert.NoError(t, err)
 	c.AssertExpectations(t)
@@ -271,14 +284,14 @@ func TestNodeConfigProtobuf(t *testing.T) {
 	assert.Equal(t, nc.GetServerPort(), int(ncpb.ServerPort))
 	i, err := nc.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, hexutil.Encode(i), ncpb.MainIdentity.IdentityId)
+	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(ncpb.MainIdentity.IdentityId).Hex())
 
 	ncCopy := new(NodeConfig)
 	err = ncCopy.loadFromProtobuf(ncpb)
 	assert.NoError(t, err)
 	assert.Equal(t, ncpb.StoragePath, ncCopy.StoragePath)
 	assert.Equal(t, int(ncpb.ServerPort), ncCopy.ServerPort)
-	assert.Equal(t, ncpb.MainIdentity.IdentityId, hexutil.Encode(ncCopy.MainIdentity.IdentityID))
+	assert.Equal(t, ncpb.MainIdentity.IdentityId, common.HexToAddress(ncpb.MainIdentity.IdentityId).Hex())
 }
 
 func TestAccountProtobuf_validationFailures(t *testing.T) {
@@ -286,10 +299,11 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil)
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil)
+	c.On("GetP2PKeyPair").Return("pub", "priv")
 	c.On("GetSigningKeyPair").Return("pub", "priv")
-	c.On("GetEthAuthKeyPair").Return("pub", "priv")
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
+	c.On("GetPrecommitEnabled").Return(true)
 	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
@@ -317,6 +331,13 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	assert.Error(t, err)
 	accpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
 
+	// Nil P2PKeyPair
+	p2pKey := proto.Clone(accpb.P2PKeyPair)
+	accpb.P2PKeyPair = nil
+	err = tco.loadFromProtobuf(accpb)
+	assert.Error(t, err)
+	accpb.P2PKeyPair = p2pKey.(*accountpb.KeyPair)
+
 	// Nil SigningKeyPair
 	signKey := proto.Clone(accpb.SigningKeyPair)
 	accpb.SigningKeyPair = nil
@@ -324,12 +345,6 @@ func TestAccountProtobuf_validationFailures(t *testing.T) {
 	assert.Error(t, err)
 	accpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
 
-	// Nil EthauthKeyPair
-	ethAuthKey := proto.Clone(accpb.EthauthKeyPair)
-	accpb.EthauthKeyPair = nil
-	err = tco.loadFromProtobuf(accpb)
-	assert.Error(t, err)
-	accpb.EthauthKeyPair = ethAuthKey.(*accountpb.KeyPair)
 }
 
 func TestAccountConfigProtobuf(t *testing.T) {
@@ -337,10 +352,11 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
+	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	c.On("GetPrecommitEnabled").Return(true).Once()
 	tc, err := NewAccount("name", c)
 	assert.Nil(t, err)
 	c.AssertExpectations(t)
@@ -350,7 +366,8 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), accpb.ReceiveEventNotificationEndpoint)
 	i, err := tc.GetIdentityID()
 	assert.Nil(t, err)
-	assert.Equal(t, hexutil.Encode(i), accpb.IdentityId)
+
+	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(accpb.IdentityId).Hex())
 	_, priv := tc.GetSigningKeyPair()
 	assert.Equal(t, priv, accpb.SigningKeyPair.Pvt)
 
@@ -358,7 +375,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	err = tcCopy.loadFromProtobuf(accpb)
 	assert.NoError(t, err)
 	assert.Equal(t, accpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
-	assert.Equal(t, accpb.IdentityId, hexutil.Encode(tcCopy.IdentityID))
+	assert.Equal(t, common.HexToAddress(accpb.IdentityId).Hex(), common.BytesToAddress(tcCopy.IdentityID).Hex())
 	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
 }
 
@@ -374,9 +391,9 @@ func createMockConfig() *mockConfig {
 	c.On("GetNumWorkers").Return(2).Once()
 	c.On("GetWorkerWaitTimeMS").Return(1).Once()
 	c.On("GetEthereumNodeURL").Return("dummyNode").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(6), nil).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
+	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthAuthKeyPair").Return("pub", "priv").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	c.On("GetEthereumAccount", "dummyAcc").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()

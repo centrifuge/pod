@@ -5,15 +5,12 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/satori/go.uuid"
 )
 
 // Service defines specific functions for purchase order
@@ -39,7 +36,7 @@ type service struct {
 	documents.Service
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
-	txService transactions.Service
+	txManager transactions.Manager
 }
 
 // DefaultService returns the default implementation of the service
@@ -47,30 +44,30 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txService transactions.Service,
+	txManager transactions.Manager,
 ) Service {
 	return service{
 		repo:      repo,
 		queueSrv:  queueSrv,
-		txService: txService,
+		txManager: txManager,
 		Service:   srv,
 	}
 }
 
-// DeriveFromCoreDocument takes a core document and returns a purchase order
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Model, error) {
-	var model documents.Model = new(PurchaseOrder)
-	err := model.UnpackCoreDocument(cd)
+// DeriveFromCoreDocument takes a core document model and returns a purchase order
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+	po := new(PurchaseOrder)
+	err := po.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	return model, nil
+	return po, nil
 }
 
-// calculateDataRoot validates the document, calculates the data root, and persists to DB
-func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	self, err := contextutil.Self(ctx)
+// validateAndPersist validates the document, and persists to DB
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -80,12 +77,6 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
 	}
 
-	// create data root, has to be done at the model level to access fields
-	err = po.calculateDataRoot()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
 	// validate the invoice
 	err = validator.Validate(old, po)
 	if err != nil {
@@ -93,7 +84,7 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(self.ID[:], po.CoreDocument.CurrentVersion, po)
+	err = s.repo.Create(selfDID[:], po.CurrentVersion(), po)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
@@ -102,58 +93,48 @@ func (s service) calculateDataRoot(ctx context.Context, old, new documents.Model
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
-	self, err := contextutil.Self(ctx)
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	po, err = s.calculateDataRoot(ctx, nil, po, CreateValidator())
+	po, err = s.validateAndPersist(ctx, nil, po, CreateValidator())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
 
-	cd, err := po.PackCoreDocument()
+	txID := contextutil.TX(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, transactions.NilTxID(), nil, nil
 	}
-
-	txID, err := documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion)
-	if err != nil {
-		return nil, uuid.Nil, err
-	}
-
-	return po, txID, nil
+	return po, txID, done, nil
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, po documents.Model) (documents.Model, uuid.UUID, error) {
-	self, err := contextutil.Self(ctx)
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	cd, err := po.PackCoreDocument()
+	old, err := s.GetCurrentVersion(ctx, new.ID())
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	old, err := s.GetCurrentVersion(ctx, cd.DocumentIdentifier)
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
 	if err != nil {
-		return nil, uuid.Nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, transactions.NilTxID(), nil, err
 	}
 
-	po, err = s.calculateDataRoot(ctx, old, po, UpdateValidator())
+	txID := contextutil.TX(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
-		return nil, uuid.Nil, err
+		return nil, transactions.NilTxID(), nil, err
 	}
-
-	txID, err := documents.InitDocumentAnchorTask(s.queueSrv, s.txService, self.ID, cd.CurrentVersion)
-	if err != nil {
-		return nil, uuid.Nil, err
-	}
-
-	return po, txID, nil
+	return new, txID, done, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
@@ -162,13 +143,13 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpop
 		return nil, documents.ErrDocumentNil
 	}
 
-	idConf, err := contextutil.Self(ctx)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payload, idConf.ID.String())
+	err = po.InitPurchaseOrderInput(payload, selfDID.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -195,26 +176,9 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 
 	// load purchase order data
 	po := new(PurchaseOrder)
-	err = po.initPurchaseOrderFromData(payload.Data)
+	err = po.PrepareNewVersion(old, payload.Data, payload.Collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
-	}
-
-	// update core document
-	oldCD, err := old.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	idConf, err := contextutil.Self(ctx)
-	if err != nil {
-		return nil, documents.ErrDocumentConfigAccountID
-	}
-
-	collaborators := append([]string{idConf.ID.String()}, payload.Collaborators...)
-	po.CoreDocument, err = coredocument.PrepareNewVersion(*oldCD, collaborators)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, err)
 	}
 
 	return po, nil
@@ -232,29 +196,25 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 
 // DerivePurchaseOrderResponse returns po response from the model
 func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
-	cd, err := doc.PackCoreDocument()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
-	}
-
-	collaborators := make([]string, len(cd.Collaborators))
-	for i, c := range cd.Collaborators {
-		cid, err := identity.ToCentID(c)
-		if err != nil {
-			return nil, errors.NewTypedError(documents.ErrDocumentCollaborator, err)
-		}
-		collaborators[i] = cid.String()
-	}
-
-	h := &clientpopb.ResponseHeader{
-		DocumentId:    hexutil.Encode(cd.DocumentIdentifier),
-		VersionId:     hexutil.Encode(cd.CurrentVersion),
-		Collaborators: collaborators,
-	}
-
 	data, err := s.DerivePurchaseOrderData(doc)
 	if err != nil {
 		return nil, err
+	}
+
+	cs, err := doc.GetCollaborators()
+	if err != nil {
+		return nil, err
+	}
+
+	var css []string
+	for _, c := range cs {
+		css = append(css, c.String())
+	}
+
+	h := &clientpopb.ResponseHeader{
+		DocumentId:    hexutil.Encode(doc.ID()),
+		VersionId:     hexutil.Encode(doc.CurrentVersion()),
+		Collaborators: css,
 	}
 
 	return &clientpopb.PurchaseOrderResponse{

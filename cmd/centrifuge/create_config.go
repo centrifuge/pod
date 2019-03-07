@@ -30,17 +30,7 @@ func init() {
 		Short: "Configures Node",
 		Long:  ``,
 		Run: func(c *cobra.Command, args []string) {
-			err := cmd.CreateConfig(targetDataDir,
-				ethNodeURL,
-				accountKeyPath,
-				accountPassword,
-				network,
-				apiPort,
-				p2pPort,
-				bootstraps,
-				txPoolAccess,
-				"",
-				nil)
+			err := cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
