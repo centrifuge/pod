@@ -41,8 +41,6 @@ const (
 	// CDTreePrefix is the human readable prefix for core doc tree props
 	CDTreePrefix = "cd_tree"
 
-	//InvoicePrefix is the human readable prefix
-
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
 )
