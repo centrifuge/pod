@@ -109,7 +109,7 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identi
 	if role == nil {
 		return
 	}
-	cd.addNewTransitionRule(role, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, []byte(compactProperties(CDTreePrefix)), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	cd.addNewTransitionRule(role, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, compactProperties(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	cd.addNewTransitionRule(role, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, compactPrefix, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 }
 
