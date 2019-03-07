@@ -69,6 +69,24 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go get -u github.com/jteeuwen/go-bindata/...
 
+abigen-install: ## Installs ABIGEN from vendor
+abigen-install: vendorinstall
+	go-vendorinstall github.com/ethereum/go-ethereum/cmd/abigen
+
+gen-abi-bindings: ## Generates GO ABI Bindings
+gen-abi-bindings: install-deps abigen-install
+	$(eval CONTRACTS_VERSION := $(shell cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/package.json | jq -r '.version'))
+	npm install --prefix tmp/contracts @centrifuge/ethereum-contracts@${CONTRACTS_VERSION}
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/PaymentObligation.json | jq '.abi' > tmp/contracts/po.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
+	@abigen --abi tmp/contracts/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
+	@abigen --abi tmp/contracts/ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract.go
+	@abigen --abi tmp/contracts/po.abi --pkg nft --type EthereumPaymentObligationContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/ethereum_payment_obligation_contract.go
+	@abigen --abi tmp/contracts/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
+	@rm -Rf ./tmp
+
 install: ## Builds and Install binary for development
 install: install-deps vendorinstall
 	@go install ./cmd/centrifuge/...

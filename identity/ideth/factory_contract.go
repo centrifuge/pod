@@ -28,7 +28,7 @@ var (
 )
 
 // FactoryContractABI is the input ABI used to generate the binding from.
-const FactoryContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityCreated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[],\"name\":\"createIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"createIdentityFor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const FactoryContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"identity\",\"type\":\"address\"}],\"name\":\"IdentityCreated\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[],\"name\":\"createIdentity\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"manager\",\"type\":\"address\"},{\"name\":\"keys\",\"type\":\"bytes32[]\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"}],\"name\":\"createIdentityFor\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"identityAddr\",\"type\":\"address\"}],\"name\":\"createdIdentity\",\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // FactoryContract is an auto generated Go binding around an Ethereum contract.
 type FactoryContract struct {
@@ -172,6 +172,32 @@ func (_FactoryContract *FactoryContractTransactorRaw) Transact(opts *bind.Transa
 	return _FactoryContract.Contract.contract.Transact(opts, method, params...)
 }
 
+// CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
+//
+// Solidity: function createdIdentity(identityAddr address) constant returns(valid bool)
+func (_FactoryContract *FactoryContractCaller) CreatedIdentity(opts *bind.CallOpts, identityAddr common.Address) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _FactoryContract.contract.Call(opts, out, "createdIdentity", identityAddr)
+	return *ret0, err
+}
+
+// CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
+//
+// Solidity: function createdIdentity(identityAddr address) constant returns(valid bool)
+func (_FactoryContract *FactoryContractSession) CreatedIdentity(identityAddr common.Address) (bool, error) {
+	return _FactoryContract.Contract.CreatedIdentity(&_FactoryContract.CallOpts, identityAddr)
+}
+
+// CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
+//
+// Solidity: function createdIdentity(identityAddr address) constant returns(valid bool)
+func (_FactoryContract *FactoryContractCallerSession) CreatedIdentity(identityAddr common.Address) (bool, error) {
+	return _FactoryContract.Contract.CreatedIdentity(&_FactoryContract.CallOpts, identityAddr)
+}
+
 // CreateIdentity is a paid mutator transaction binding the contract method 0x59d21ad9.
 //
 // Solidity: function createIdentity() returns()
@@ -193,25 +219,25 @@ func (_FactoryContract *FactoryContractTransactorSession) CreateIdentity() (*typ
 	return _FactoryContract.Contract.CreateIdentity(&_FactoryContract.TransactOpts)
 }
 
-// CreateIdentityFor is a paid mutator transaction binding the contract method 0xa480f9f7.
+// CreateIdentityFor is a paid mutator transaction binding the contract method 0xc4ff1c23.
 //
-// Solidity: function createIdentityFor(address owner) returns()
-func (_FactoryContract *FactoryContractTransactor) CreateIdentityFor(opts *bind.TransactOpts, owner common.Address) (*types.Transaction, error) {
-	return _FactoryContract.contract.Transact(opts, "createIdentityFor", owner)
+// Solidity: function createIdentityFor(manager address, keys bytes32[], purposes uint256[]) returns()
+func (_FactoryContract *FactoryContractTransactor) CreateIdentityFor(opts *bind.TransactOpts, manager common.Address, keys [][32]byte, purposes []*big.Int) (*types.Transaction, error) {
+	return _FactoryContract.contract.Transact(opts, "createIdentityFor", manager, keys, purposes)
 }
 
-// CreateIdentityFor is a paid mutator transaction binding the contract method 0xa480f9f7.
+// CreateIdentityFor is a paid mutator transaction binding the contract method 0xc4ff1c23.
 //
-// Solidity: function createIdentityFor(address owner) returns()
-func (_FactoryContract *FactoryContractSession) CreateIdentityFor(owner common.Address) (*types.Transaction, error) {
-	return _FactoryContract.Contract.CreateIdentityFor(&_FactoryContract.TransactOpts, owner)
+// Solidity: function createIdentityFor(manager address, keys bytes32[], purposes uint256[]) returns()
+func (_FactoryContract *FactoryContractSession) CreateIdentityFor(manager common.Address, keys [][32]byte, purposes []*big.Int) (*types.Transaction, error) {
+	return _FactoryContract.Contract.CreateIdentityFor(&_FactoryContract.TransactOpts, manager, keys, purposes)
 }
 
-// CreateIdentityFor is a paid mutator transaction binding the contract method 0xa480f9f7.
+// CreateIdentityFor is a paid mutator transaction binding the contract method 0xc4ff1c23.
 //
-// Solidity: function createIdentityFor(address owner) returns()
-func (_FactoryContract *FactoryContractTransactorSession) CreateIdentityFor(owner common.Address) (*types.Transaction, error) {
-	return _FactoryContract.Contract.CreateIdentityFor(&_FactoryContract.TransactOpts, owner)
+// Solidity: function createIdentityFor(manager address, keys bytes32[], purposes uint256[]) returns()
+func (_FactoryContract *FactoryContractTransactorSession) CreateIdentityFor(manager common.Address, keys [][32]byte, purposes []*big.Int) (*types.Transaction, error) {
+	return _FactoryContract.Contract.CreateIdentityFor(&_FactoryContract.TransactOpts, manager, keys, purposes)
 }
 
 // FactoryContractIdentityCreatedIterator is returned from FilterIdentityCreated and is used to iterate over the raw logs and unpacked data for IdentityCreated events raised by the FactoryContract contract.
@@ -289,7 +315,7 @@ type FactoryContractIdentityCreated struct {
 
 // FilterIdentityCreated is a free log retrieval operation binding the contract event 0xac993fde3b9423ff59e4a23cded8e89074c9c8740920d1d870f586ba7c5c8cf0.
 //
-// Solidity: event IdentityCreated(address indexed identity)
+// Solidity: e IdentityCreated(identity indexed address)
 func (_FactoryContract *FactoryContractFilterer) FilterIdentityCreated(opts *bind.FilterOpts, identity []common.Address) (*FactoryContractIdentityCreatedIterator, error) {
 
 	var identityRule []interface{}
@@ -306,7 +332,7 @@ func (_FactoryContract *FactoryContractFilterer) FilterIdentityCreated(opts *bin
 
 // WatchIdentityCreated is a free log subscription operation binding the contract event 0xac993fde3b9423ff59e4a23cded8e89074c9c8740920d1d870f586ba7c5c8cf0.
 //
-// Solidity: event IdentityCreated(address indexed identity)
+// Solidity: e IdentityCreated(identity indexed address)
 func (_FactoryContract *FactoryContractFilterer) WatchIdentityCreated(opts *bind.WatchOpts, sink chan<- *FactoryContractIdentityCreated, identity []common.Address) (event.Subscription, error) {
 
 	var identityRule []interface{}
