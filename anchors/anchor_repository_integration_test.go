@@ -34,6 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestPreCommitAnchor_Integration(t *testing.T) {
+	t.Parallel()
 	anchorID := utils.RandomSlice(32)
 	signingRoot := utils.RandomSlice(32)
 
@@ -45,6 +46,7 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 }
 
 func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
+	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h := sha256.New()
 	_, err := h.Write(anchorIDPreImage)
@@ -86,6 +88,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 }
 
 func TestCommitAnchor_Integration(t *testing.T) {
+	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h := sha256.New()
 	_, err := h.Write(anchorIDPreImage)
@@ -133,6 +136,7 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
+	t.Parallel()
 	var commitDataList [5]*anchors.CommitData
 	var doneList [5]chan bool
 
