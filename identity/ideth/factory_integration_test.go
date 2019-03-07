@@ -52,7 +52,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateIdentity_successful(t *testing.T) {
-	t.Parallel()
 	factory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := factory.CreateIdentity(accountCtx)
