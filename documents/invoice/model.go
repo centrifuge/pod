@@ -157,7 +157,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, prefix)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -388,7 +388,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, prefix)
 	if err != nil {
 		return err
 	}
@@ -398,7 +398,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 
 // AddNFT adds NFT to the Invoice.
 func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
-	cd, err := i.CoreDocument.AddNFT(grantReadAccess, registry, tokenID)
+	cd, err := i.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, prefix)
 	if err != nil {
 		return err
 	}

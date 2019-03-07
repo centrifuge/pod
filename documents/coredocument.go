@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -41,6 +40,8 @@ const (
 
 	// CDTreePrefix is the human readable prefix for core doc tree props
 	CDTreePrefix = "cd_tree"
+
+	//InvoicePrefix is the human readable prefix
 
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
@@ -84,8 +85,9 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 	return &CoreDocument{Document: cd}
 }
 
-// NewCoreDocumentWithCollaborators generates new core Document, adds collaborators, adds read rules and fills salts
-func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, error) {
+// NewCoreDocumentWithCollaborators generates new core Document with a document type specified by the prefix: CdTreePrefix, po, or invoice.
+// It then adds collaborators, adds read rules and fills salts.
+func NewCoreDocumentWithCollaborators(collaborators []string, prefix string) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
@@ -97,7 +99,7 @@ func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, er
 	}
 
 	cd.initReadRules(ids)
-	cd.initTransitionRules(ids)
+	cd.initTransitionRules(ids, prefix)
 	if err := cd.setSalts(); err != nil {
 		return nil, err
 	}
@@ -158,7 +160,7 @@ func (cd *CoreDocument) setSalts() error {
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool, prefix string) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
 		return nil, errors.New("Document root is invalid")
 	}
@@ -192,7 +194,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
-	ncd.addCollaboratorsToTransitionRules(ucs)
+	ncd.addCollaboratorsToTransitionRules(ucs, prefix)
 
 	if !initSalts {
 		return ncd, nil
@@ -214,7 +216,7 @@ func newRole() *coredocumentpb.Role {
 // addCollaboratorsToNewRole creates a new Role and adds the given collaborators to this Role.
 // The Role is then returned.
 // The operation returns a nil Role if no collaborators are provided.
-func (cd *CoreDocument) addCollaboratorsToNewRole(collaborators []identity.DID) *coredocumentpb.Role {
+func newRoleWithCollaborators(collaborators []identity.DID) *coredocumentpb.Role {
 	if len(collaborators) == 0 {
 		return nil
 	}

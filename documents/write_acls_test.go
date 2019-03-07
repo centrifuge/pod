@@ -8,9 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -67,7 +66,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
+	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, CDTreePrefix)
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
@@ -121,7 +120,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	doc = ndoc
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = doc.PrepareNewVersion(nil, true)
+	ndoc, err = doc.PrepareNewVersion(nil, true, CDTreePrefix)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
@@ -190,7 +189,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// read_rules
 	// transition_rules
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
+	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, CDTreePrefix)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
@@ -308,16 +307,16 @@ func getTree(t *testing.T, doc proto.Message) *proofs.DocumentTree {
 func TestReadACLs_initTransitionRules(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	cd.initTransitionRules(nil)
+	cd.initTransitionRules(nil, CDTreePrefix)
 	assert.Nil(t, cd.Document.Roles)
 	assert.Nil(t, cd.Document.TransitionRules)
 
 	collab := []identity.DID{testingidentity.GenerateRandomDID()}
-	cd.initTransitionRules(collab)
+	cd.initTransitionRules(collab, CDTreePrefix)
 	assert.Len(t, cd.Document.TransitionRules, 1)
 	assert.Len(t, cd.Document.Roles, 1)
 
-	cd.initTransitionRules(collab)
+	cd.initTransitionRules(collab, CDTreePrefix)
 	assert.Len(t, cd.Document.TransitionRules, 1)
 	assert.Len(t, cd.Document.Roles, 1)
 }
