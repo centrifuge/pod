@@ -12,13 +12,10 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
-
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -296,7 +293,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil, true)
+	cd, err := po.CoreDocument.PrepareNewVersion(nil, true, "po")
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)
