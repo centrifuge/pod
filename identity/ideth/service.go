@@ -366,15 +366,7 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 				return errors.New("the given key [%x] for purpose [%s] has been revoked before provided time %s", key, purpose.String(), validateAt.String())
 			}
 		} else {
-			// else check if the revocation block number is before the latest block number from Ethereum
-			latest, err := i.client.GetEthClient().BlockByNumber(ctx, nil)
-			if err != nil {
-				return err
-			}
-
-			if ethKey.RevokedAt.Cmp(big.NewInt(0)) > 0 && ethKey.RevokedAt.Cmp(latest.Number()) <= 0 {
-				return errors.New("the given key [%x] for purpose [%s] has been revoked before latest block", key, purpose.String())
-			}
+			return errors.New("the given key [%x] for purpose [%s] has been revoked and not valid anymore", key, purpose.String())
 		}
 	}
 
