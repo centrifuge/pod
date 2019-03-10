@@ -28,11 +28,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "b5992325667104a35db388db0ef0cbf4b0c2bf03"
+  revision = "20c7fd5e4210e68d2a5662a8714d51ceeae031b8"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  revision = "d269f08e89bd195f158787d2ea59274810abc943"
+  revision = "be1a93f627115fcf9978a85c4b6b8f08adf87f35"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"

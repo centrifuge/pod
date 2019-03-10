@@ -51,6 +51,8 @@ func invoiceNFTPayload(collaborators []string) map[string]interface{} {
 			"currency":       "USD",
 			"net_amount":     "40",
 			"document_type":  "invoice",
+			"sender":         collaborators[0],
+			"invoice_status": "unpaid",
 		},
 		"collaborators": collaborators,
 	}

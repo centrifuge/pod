@@ -131,32 +131,6 @@
     }
   },
   "definitions": {
-    "documentAccessTokenParams": {
-      "type": "object",
-      "properties": {
-        "grantee": {
-          "type": "string",
-          "title": "The identity being granted access to the document"
-        },
-        "document_identifier": {
-          "type": "string",
-          "title": "Original identifier of the document"
-        }
-      }
-    },
-    "documentUpdateAccessTokenPayload": {
-      "type": "object",
-      "properties": {
-        "delegating_document_identifier": {
-          "type": "string",
-          "title": "The document which should contain the access token referenced below"
-        },
-        "access_token_params": {
-          "$ref": "#/definitions/documentAccessTokenParams",
-          "title": "The access token to be appended to the indicated document above"
-        }
-      }
-    },
     "purchaseorderPurchaseOrderCreatePayload": {
       "type": "object",
       "properties": {
@@ -291,9 +265,6 @@
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
-        },
-        "access_token_payload": {
-          "$ref": "#/definitions/documentUpdateAccessTokenPayload"
         }
       }
     },

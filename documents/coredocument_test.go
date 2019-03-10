@@ -162,6 +162,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, cd.Document.CurrentVersion, ncd.Document.PreviousVersion)
 	assert.Equal(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
 	assert.Equal(t, cd.Document.DocumentRoot, ncd.Document.PreviousRoot)
+	assert.Len(t, cd.Document.Roles, 0)
+	assert.Len(t, cd.Document.ReadRules, 0)
+	assert.Len(t, ncd.Document.Roles, 1)
+	assert.Len(t, ncd.Document.ReadRules, 1)
+	assert.Len(t, ncd.Document.Roles[0].Collaborators, 2)
+	assert.Equal(t, ncd.Document.Roles[0].Collaborators[0], c1[:])
+	assert.Equal(t, ncd.Document.Roles[0].Collaborators[1], c2[:])
 }
 
 func TestGetSigningProofHashes(t *testing.T) {
