@@ -8,9 +8,10 @@ import (
 )
 
 // ToTimestamp converts time.Time to timestamp.TimeStamp.
+// Ref: https://github.com/golang/protobuf/blob/master/ptypes/timestamp.go#L113
 func ToTimestamp(time time.Time) *timestamp.Timestamp {
 	return &timestamp.Timestamp{
-		Seconds: int64(time.Second()),
+		Seconds: time.Unix(),
 		Nanos:   int32(time.Nanosecond()),
 	}
 }
