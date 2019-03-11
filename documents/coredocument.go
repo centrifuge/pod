@@ -83,8 +83,9 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 	return &CoreDocument{Document: cd}
 }
 
-// NewCoreDocumentWithCollaborators generates new core Document, adds collaborators, adds read rules and fills salts
-func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, error) {
+// NewCoreDocumentWithCollaborators generates new core Document with a document type specified by the prefix: po or invoice.
+// It then adds collaborators, adds read rules and fills salts.
+func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
@@ -96,6 +97,7 @@ func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, er
 	}
 
 	cd.initReadRules(ids)
+	cd.initTransitionRules(ids, documentPrefix)
 	if err := cd.setSalts(); err != nil {
 		return nil, err
 	}
@@ -156,7 +158,7 @@ func (cd *CoreDocument) setSalts() error {
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool, documentPrefix []byte) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
 		return nil, errors.New("Document root is invalid")
 	}
@@ -190,6 +192,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
+	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
 
 	if !initSalts {
 		return ncd, nil
@@ -203,32 +206,26 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 	return ncd, nil
 }
 
-// addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
-// The operation is no-op if no collaborators is provided.
-// The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
-func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
+// newRole returns a new role with random role key
+func newRole() *coredocumentpb.Role {
+	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(idSize)}
+}
+
+// newRoleWithCollaborators creates a new Role and adds the given collaborators to this Role.
+// The Role is then returned.
+// The operation returns a nil Role if no collaborators are provided.
+func newRoleWithCollaborators(collaborators []identity.DID) *coredocumentpb.Role {
 	if len(collaborators) == 0 {
-		return
+		return nil
 	}
 
 	// create a role for given collaborators
-	role := new(coredocumentpb.Role)
-	role.RoleKey = utils.RandomSlice(idSize)
+	role := newRole()
 	for _, c := range collaborators {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
 	}
-
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
-}
-
-// addNewRule creates a new rule as per the role and action.
-func (cd *CoreDocument) addNewRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
-	cd.Document.Roles = append(cd.Document.Roles, role)
-	rule := new(coredocumentpb.ReadRule)
-	rule.Roles = append(rule.Roles, role.RoleKey)
-	rule.Action = action
-	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
+	return role
 }
 
 // CreateProofs takes Document data tree and list to fields and generates proofs.
