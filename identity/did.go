@@ -220,7 +220,7 @@ type ServiceDID interface {
 	Exists(ctx context.Context, did DID) error
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
-	ValidateKey(ctx context.Context, did DID, key []byte, purpose *big.Int) error
+	ValidateKey(ctx context.Context, did DID, key []byte, purpose *big.Int, at *time.Time) error
 
 	// ValidateSignature checks if signature is valid for given identity
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error

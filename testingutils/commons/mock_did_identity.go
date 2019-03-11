@@ -4,6 +4,7 @@ package testingcommons
 
 import (
 	"context"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -83,7 +84,7 @@ func (i *MockIdentityService) Exists(ctx context.Context, did identity.DID) erro
 }
 
 // ValidateKey checks if a given key is valid for the given centrifugeID.
-func (i *MockIdentityService) ValidateKey(ctx context.Context, did identity.DID, key []byte, purpose *big.Int) error {
+func (i *MockIdentityService) ValidateKey(ctx context.Context, did identity.DID, key []byte, purpose *big.Int, at *time.Time) error {
 	args := i.Called(ctx, did, key, purpose)
 	return args.Error(0)
 }

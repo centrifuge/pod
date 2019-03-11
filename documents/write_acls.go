@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 )
 
@@ -38,6 +39,7 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 			continue
 		}
 
+		props[pn] = p
 		_, ol := oldTree.GetLeafByProperty(pn)
 		_, nl := newTree.GetLeafByProperty(pn)
 
@@ -203,4 +205,42 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	rules := cd.transitionRulesFor(collaborator)
 	return validateTransitions(rules, cf)
+}
+
+// initTransitionRules initiates the transition rules for a given Core Document.
+// Collaborators are given default edit capability over all fields of the CoreDocument and underlying documents such as invoices or purchase orders.
+// if the rules are created already, this is a no-op.
+// if collaborators are empty, it is a no-op
+func (cd *CoreDocument) initTransitionRules(collaborators []identity.DID, documentPrefix []byte) {
+	if len(cd.Document.Roles) > 0 && len(cd.Document.TransitionRules) > 0 {
+		return
+	}
+	if len(collaborators) < 0 {
+		return
+	}
+	cd.addCollaboratorsToTransitionRules(collaborators, documentPrefix)
+}
+
+// addCollaboratorsToTransitionRules adds the given collaborators to a new transition rule which defaults to
+// granting edit capability over all fields of the document.
+func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identity.DID, documentPrefix []byte) {
+	role := newRoleWithCollaborators(collaborators)
+	if role == nil {
+		return
+	}
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, compactProperties(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, documentPrefix, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+}
+
+// addNewTransitionRule creates a new transition rule with the given parameters.
+func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) {
+	rule := &coredocumentpb.TransitionRule{
+		RuleKey:   utils.RandomSlice(32),
+		MatchType: matchType,
+		Action:    action,
+		Field:     field,
+		Roles:     [][]byte{roleKey},
+	}
+	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
 }

@@ -89,7 +89,8 @@ func peerValidator(idService identity.ServiceDID) Validator {
 		if err != nil {
 			return err
 		}
-		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value))
+		// TODO provide the time for validation here by adding the sent timestamp to the p2p header
+		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value), nil)
 	})
 }
 
