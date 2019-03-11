@@ -3,8 +3,10 @@
 package testworld
 
 import (
+	"context"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -14,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 	"testing"
 	"time"
 )
@@ -29,7 +30,7 @@ func TestHost_ValidSignature(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, alice.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, alice.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, ctxh)
 	assert.Equal(t, 1, len(dm.Signatures()))
 
 	signatures, _, _ := alice.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
@@ -44,12 +45,13 @@ func TestHost_FakedSignature(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
+	actxh := testingconfig.CreateAccountContext(t, alice.host.config)
+	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, alice.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, actxh)
 
-	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 }
@@ -61,7 +63,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 
 	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
-	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, big.NewInt(identity.KeyPurposeSigning))
+	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
 	assert.NoError(t, err)
 
 	// Revoke Key
@@ -70,7 +72,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, eve.host.config)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, ctxh)
 
 	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
@@ -78,7 +80,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 }
 
 // Helper Methods
-func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, config config.Configuration) documents.Model {
+func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, ctx context.Context) documents.Model {
 	payload := testingdocuments.CreatePOPayload()
 	var cs []string
 	for _, c := range collaborators {
@@ -96,13 +98,18 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	idConfig, err := identity.GetIdentityConfig(config)
-	s, err := crypto.SignMessage(idConfig.Keys[identity.KeyPurposeSigning].PrivateKey, sr, crypto.CurveSecp256K1)
+	accCfg, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	acc := accCfg.(*configstore.Account)
+	accKeys, err := acc.GetKeys()
+	assert.NoError(t, err)
+
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
 		EntityId:  identityDID[:],
-		PublicKey: idConfig.Keys[identity.KeyPurposeSigning].PublicKey,
+		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
