@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
@@ -238,8 +239,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoice_CreateProofs(t *testing.T) {
-	i, err := createInvoice(t)
-	assert.Nil(t, err)
+	i := createInvoice(t)
 	rk := i.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := i.CreateProofs([]string{"invoice.invoice_number", pf, documents.CDTreePrefix + ".document_type"})
@@ -269,15 +269,13 @@ func TestInvoice_CreateProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, err := createInvoice(t)
-	assert.Nil(t, err)
-	_, err = i.CreateProofs([]string{"nonexisting"})
+	i := createInvoice(t)
+	_, err := i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, err := createInvoice(t)
-	assert.Nil(t, err)
+	i := createInvoice(t)
 	assert.Equal(t, i.CoreDocument.ID(), i.ID())
 }
 
@@ -290,7 +288,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
 }
 
-func createInvoice(t *testing.T) (*Invoice, error) {
+func createInvoice(t *testing.T) *Invoice {
 	i := new(Invoice)
 	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), defaultDID.String())
 	assert.NoError(t, err)
@@ -300,5 +298,60 @@ func createInvoice(t *testing.T) (*Invoice, error) {
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	return i, nil
+	return i
+}
+
+func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
+	inv := createInvoice(t)
+	id1 := defaultDID
+	id2 := testingidentity.GenerateRandomDID()
+	id3 := testingidentity.GenerateRandomDID()
+
+	// wrong type
+	err := inv.CollaboratorCanUpdate(new(mockModel), id1)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
+	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
+
+	// update the document
+	model, err := testRepo().Get(id1[:], inv.CurrentVersion())
+	assert.NoError(t, err)
+	oldInv := model.(*Invoice)
+	data := oldInv.getClientData()
+	data.GrossAmount = 50
+	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
+	assert.NoError(t, err)
+
+	// id1 should have persmission
+	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
+
+	// id2 should fail since it doesn't have the permission to update
+	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
+
+	// update the id3 rules to update only gross amount
+	inv.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	inv.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
+	inv.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
+
+	// fetch the document
+	model, err = testRepo().Get(id1[:], inv.CurrentVersion())
+	assert.NoError(t, err)
+	oldInv = model.(*Invoice)
+	data = oldInv.getClientData()
+	data.GrossAmount = 55
+	data.Currency = "INR"
+	err = inv.PrepareNewVersion(inv, data, nil)
+	assert.NoError(t, err)
+
+	// id1 should have persmission
+	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
+
+	// id2 should fail since it doesn't have the permission to update
+	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
+
+	// id3 should fail with just one error since changing Currency is not allowed
+	err = oldInv.CollaboratorCanUpdate(inv, id3)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
 }
