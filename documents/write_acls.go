@@ -87,8 +87,8 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changed
 	return cf
 }
 
-// transitionRulesFor returns a copy all the transition rules for the account.
-func (cd *CoreDocument) transitionRulesFor(account identity.DID) (rules []coredocumentpb.TransitionRule) {
+// transitionRulesFor returns a copy all the transition rules for the DID.
+func (cd *CoreDocument) transitionRulesFor(did identity.DID) (rules []coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
 			role, err := getRole(rk, cd.Document.Roles)
@@ -96,7 +96,7 @@ func (cd *CoreDocument) transitionRulesFor(account identity.DID) (rules []coredo
 				continue
 			}
 
-			if _, ok := isAccountInRole(role, account); !ok {
+			if _, ok := isDIDInRole(role, did); !ok {
 				continue
 			}
 
@@ -187,9 +187,9 @@ func isValidTransition(rule coredocumentpb.TransitionRule, cf changedField) bool
 	return true
 }
 
-// AccountCanUpdate validates the changes made by the account in the new document.
-// returns error if the transitions are not allowed for the account
-func (cd *CoreDocument) AccountCanUpdate(ncd *CoreDocument, account identity.DID, docType string) error {
+// CollaboratorCanUpdate validates the changes made by the collaborator in the new document.
+// returns error if the transitions are not allowed for the collaborator.
+func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator identity.DID, docType string) error {
 	oldTree, err := cd.documentTree(docType)
 	if err != nil {
 		return err
@@ -201,6 +201,6 @@ func (cd *CoreDocument) AccountCanUpdate(ncd *CoreDocument, account identity.DID
 	}
 
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	rules := cd.transitionRulesFor(account)
+	rules := cd.transitionRulesFor(collaborator)
 	return validateTransitions(rules, cf)
 }

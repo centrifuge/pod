@@ -349,20 +349,20 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.NoError(t, err)
 
 	// if this was changed by the id1, everything should be fine
-	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
 
 	// if this was chnaged by id2, it should still be okay since roles would not have changed
-	assert.NoError(t, doc.AccountCanUpdate(ndoc, id2, docType))
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
 	ndoc, err = doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true)
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1
-	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
 
 	// this should fail since id2 has no write permission to roles and read_rules
-	err = doc.AccountCanUpdate(ndoc, id2, docType)
+	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
 	assert.Error(t, err)
 	// we should have 3 errors
 	// 1. update to roles
@@ -371,7 +371,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.Equal(t, 3, errors.Len(err))
 
 	// check with some random collaborator who has no permission at all
-	err = doc.AccountCanUpdate(ndoc, testingidentity.GenerateRandomDID(), docType)
+	err = doc.CollaboratorCanUpdate(ndoc, testingidentity.GenerateRandomDID(), docType)
 	assert.Error(t, err)
 	// error should all have field changes
 	// all the identifier changes = 6
@@ -391,10 +391,10 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// if id1 changed it, it should be okay
-	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
 
 	// if id2  made the change, it should error out with one invalid transition
-	err = doc.AccountCanUpdate(ndoc, id2, docType)
+	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
 
@@ -406,10 +406,10 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// if id1 changed it, it should be okay
-	assert.NoError(t, doc.AccountCanUpdate(ndoc, id1, docType))
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
 
 	// if id2 should be okay since we added a specific registry
-	assert.NoError(t, doc.AccountCanUpdate(ndoc, id2, docType))
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// id2 went rogue and updated nft for different registry
 	registry2 := testingidentity.GenerateRandomDID()
@@ -418,11 +418,11 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// if id1 changed it, it should be okay
-	assert.NoError(t, ndoc.AccountCanUpdate(ndoc1, id1, docType))
+	assert.NoError(t, ndoc.CollaboratorCanUpdate(ndoc1, id1, docType))
 
 	// if id2 is allowed to change only nft with specific registry
 	// this should trigger 1 error
-	err = ndoc.AccountCanUpdate(ndoc1, id2, docType)
+	err = ndoc.CollaboratorCanUpdate(ndoc1, id2, docType)
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
 
@@ -435,24 +435,24 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// id1 change should be fine
-	assert.NoError(t, ndoc1.AccountCanUpdate(ndoc2, id1, docType))
+	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
 
 	// id2 change should be fine since id2 has a rule allowing nft update
-	assert.NoError(t, ndoc1.AccountCanUpdate(ndoc2, id2, docType))
+	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType))
 
 	// now make a change that will trigger read rules and roles as well
 	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
 
 	// id1 change should be fine
-	assert.NoError(t, ndoc1.AccountCanUpdate(ndoc2, id1, docType))
+	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
 
 	// id2 change will be invalid since with grant access, roles and read_rules will be updated
 	// this will lead to 3 errors
 	// 1. roles
 	// 2. read_rules.roles
 	// 3. read_rules.action
-	err = ndoc1.AccountCanUpdate(ndoc2, id2, docType)
+	err = ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType)
 	assert.Error(t, err)
 	assert.Equal(t, 3, errors.Len(err))
 }
