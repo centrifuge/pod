@@ -160,7 +160,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -393,7 +393,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
 	if err != nil {
 		return err
 	}

@@ -119,7 +119,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
 	c := []string{c1.String(), c2.String()}
-	ncd, err := cd.PrepareNewVersion(c, false)
+	ncd, err := cd.PrepareNewVersion(c, false, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Document root is invalid")
 	assert.Nil(t, ncd)
@@ -127,13 +127,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	//collaborators need to be hex string
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	collabs := []string{"some ID"}
-	ncd, err = cd.PrepareNewVersion(collabs, false)
+	ncd, err = cd.PrepareNewVersion(collabs, false, nil)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	ncd, err = cd.PrepareNewVersion(c, false)
+	ncd, err = cd.PrepareNewVersion(c, false, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err := ncd.GetCollaborators()
@@ -148,7 +148,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	expectedNextVersion = h.Sum(expectedNextVersion)
 	assert.Equal(t, expectedNextVersion, ncd.Document.NextVersion)
 
-	ncd, err = cd.PrepareNewVersion(c, true)
+	ncd, err = cd.PrepareNewVersion(c, true, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err = ncd.GetCollaborators()
@@ -164,8 +164,10 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, cd.Document.DocumentRoot, ncd.Document.PreviousRoot)
 	assert.Len(t, cd.Document.Roles, 0)
 	assert.Len(t, cd.Document.ReadRules, 0)
-	assert.Len(t, ncd.Document.Roles, 1)
+	assert.Len(t, cd.Document.TransitionRules, 0)
+	assert.Len(t, ncd.Document.Roles, 3)
 	assert.Len(t, ncd.Document.ReadRules, 1)
+	assert.Len(t, ncd.Document.TransitionRules, 2)
 	assert.Len(t, ncd.Document.Roles[0].Collaborators, 2)
 	assert.Equal(t, ncd.Document.Roles[0].Collaborators[0], c1[:])
 	assert.Equal(t, ncd.Document.Roles[0].Collaborators[1], c2[:])
@@ -334,7 +336,7 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids)
+	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
@@ -344,10 +346,9 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
-
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
 	assert.NoError(t, err)
@@ -364,8 +365,9 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
+	id3 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids)
+	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -378,7 +380,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -390,13 +392,17 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
+
+	role2 := newRole()
+	role2.Collaborators = append(role.Collaborators, id3[:])
+	cd.addNewTransitionRule(role2, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 }
 
 func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids)
+	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
@@ -409,7 +415,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetSignerCollaborators()
 	assert.NoError(t, err)

@@ -146,7 +146,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -370,7 +370,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
 	if err != nil {
 		return err
 	}

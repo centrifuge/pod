@@ -33,6 +33,27 @@ func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
 	cd.addCollaboratorsToReadSignRules(collaborators)
 }
 
+// addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
+// The operation is no-op if no collaborators are provided.
+// The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
+func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
+	role := newRoleWithCollaborators(collaborators)
+	if role == nil {
+		return
+	}
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
+}
+
+// addNewReadRule creates a new read rule as per the role and action.
+func (cd *CoreDocument) addNewReadRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	rule := &coredocumentpb.ReadRule{
+		Action: action,
+		Roles:  [][]byte{role.RoleKey},
+	}
+	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
+}
+
 // findRole calls OnRole for every role that matches the actions passed in
 func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
 	am := make(map[int32]struct{})
@@ -112,14 +133,14 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 
 	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
-	cd.addNewRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
 	return cd.setSalts()
 }
 
 // AddNFT returns a new CoreDocument model with nft added to the Core Document. If grantReadAccess is true, the nft is added
 // to the read rules.
 func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, false)
+	ncd, err := cd.PrepareNewVersion(nil, false, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
@@ -370,7 +391,8 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value))
+	// TODO provide the time for validation here using the signature timestamp
+	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), nil)
 	if err != nil {
 		return err
 	}
@@ -379,7 +401,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 
 // AddAccessToken adds the AccessToken to the document
 func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, false)
+	ncd, err := cd.PrepareNewVersion(nil, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -461,9 +483,4 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
 	return tm, nil
-}
-
-// newRole returns a new role with random role key
-func newRole() *coredocumentpb.Role {
-	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(32)}
 }
