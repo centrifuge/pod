@@ -322,7 +322,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
 	assert.NoError(t, err)
 
-	// id1 should have persmission
+	// id1 should have permission
 	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
 
 	// id2 should fail since it doesn't have the permission to update
@@ -344,7 +344,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	err = inv.PrepareNewVersion(inv, data, nil)
 	assert.NoError(t, err)
 
-	// id1 should have persmission
+	// id1 should have permission
 	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
 
 	// id2 should fail since it doesn't have the permission to update
@@ -354,4 +354,5 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	err = oldInv.CollaboratorCanUpdate(inv, id3)
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
+	assert.Contains(t, err.Error(), "invoice.currency")
 }
