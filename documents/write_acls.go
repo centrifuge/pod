@@ -117,10 +117,10 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identi
 func (cd *CoreDocument) addNewTransitionRule(role *coredocumentpb.Role, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) {
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	rule := &coredocumentpb.TransitionRule{
-		RuleKey: utils.RandomSlice(32),
+		RuleKey:   utils.RandomSlice(32),
 		MatchType: matchType,
-		Action: action,
-		Field: field,
+		Action:    action,
+		Field:     field,
 	}
 	rule.Roles = append(rule.Roles, role.RoleKey)
 	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
