@@ -121,7 +121,7 @@ func (cd *CoreDocument) addNewTransitionRule(role *coredocumentpb.Role, matchTyp
 		MatchType: matchType,
 		Action:    action,
 		Field:     field,
+		Roles:     [][]byte{role.RoleKey},
 	}
-	rule.Roles = append(rule.Roles, role.RoleKey)
 	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
 }

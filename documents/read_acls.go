@@ -49,8 +49,8 @@ func (cd *CoreDocument) addNewReadRule(role *coredocumentpb.Role, action coredoc
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	rule := &coredocumentpb.ReadRule{
 		Action: action,
+		Roles:  [][]byte{role.RoleKey},
 	}
-	rule.Roles = append(rule.Roles, role.RoleKey)
 	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
 }
 
