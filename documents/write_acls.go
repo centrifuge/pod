@@ -25,6 +25,7 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 	oldProps := oldTree.PropertyOrder()
 	newProps := newTree.PropertyOrder()
 
+	// check each property and append it changed fields if the value is different.
 	props := make(map[string]proofs.Property)
 	for _, p := range append(oldProps, newProps...) {
 		// we can ignore the length property since any change in slice or map will return in addition or deletion of properties in the new tree
@@ -32,17 +33,13 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 			continue
 		}
 
-		if _, ok := props[p.ReadableName()]; ok {
+		pn := p.ReadableName()
+		if _, ok := props[pn]; ok {
 			continue
 		}
 
-		props[p.ReadableName()] = p
-	}
-
-	// check each property and append it changed fields if the value is different.
-	for k, p := range props {
-		_, ol := oldTree.GetLeafByProperty(k)
-		_, nl := newTree.GetLeafByProperty(k)
+		_, ol := oldTree.GetLeafByProperty(pn)
+		_, nl := newTree.GetLeafByProperty(pn)
 
 		if ol == nil {
 			changedFields = append(changedFields, newChangedField(p, nl, false))
@@ -63,7 +60,7 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 
 		if !bytes.Equal(ov, nv) {
 			changedFields = append(changedFields, changedField{
-				name:     k,
+				name:     pn,
 				property: p.CompactName(),
 				old:      ov,
 				new:      nv,
