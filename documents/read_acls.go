@@ -47,9 +47,10 @@ func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity
 // addNewReadRule creates a new read rule as per the role and action.
 func (cd *CoreDocument) addNewReadRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
 	cd.Document.Roles = append(cd.Document.Roles, role)
-	rule := new(coredocumentpb.ReadRule)
+	rule := &coredocumentpb.ReadRule{
+		Action: action,
+	}
 	rule.Roles = append(rule.Roles, role.RoleKey)
-	rule.Action = action
 	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
 }
 
