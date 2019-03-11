@@ -66,17 +66,18 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, nil)
+	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, []byte("po"))
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
+
 	// current_version
 	// previous_version
 	// next_version
 	// previous_root
-	// roles (x2)
 	// current pre image
 	// next pre image
+
 	// read_rules.roles
 	// read_rules.action
 	// transition_rules.RuleKey
@@ -84,6 +85,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// transition_rules.MatchType
 	// transition_rules.Action
 	// transition_rules.Field) x 2
+	// roles + 2
 	oldTree := getTree(t, &doc.Document)
 	newTree := getTree(t, &ndoc.Document)
 	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
@@ -125,7 +127,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	doc = ndoc
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = doc.PrepareNewVersion(nil, true, nil)
+	ndoc, err = doc.PrepareNewVersion(nil, true, []byte("po"))
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
@@ -199,7 +201,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// read_rules
 	// transition_rules
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, nil)
+	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, true, []byte("po"))
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document)
 	newTree = getTree(t, &ndoc.Document)
