@@ -299,7 +299,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	// id2 should fail since it doesn't have the permission to update
 	assert.Error(t, oldPO.CollaboratorCanUpdate(po, id2))
 
-	// update the id3 rules to update only gross amount
+	// update the id3 rules to update only order amount
 	po.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
 	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
 	po.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
