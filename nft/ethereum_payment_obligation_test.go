@@ -64,7 +64,7 @@ func TestCreateProofData(t *testing.T) {
 				},
 			},
 			proofData{
-				Values: [][]byte{v1, v2, []uint8(nil), []uint8(nil)},
+				Values: [][]byte{v1, v2},
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
@@ -119,7 +119,7 @@ func TestCreateProofData(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			proofData, err := createProofData(nil, test.proofs)
+			proofData, err := convertToProofData(test.proofs)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {

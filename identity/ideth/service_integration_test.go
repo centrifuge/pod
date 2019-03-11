@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
@@ -218,14 +219,47 @@ func TestValidateKey(t *testing.T) {
 	var purpose *big.Int
 	purpose = big.NewInt(123) // test purpose
 
-	err := idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose)
+	err := idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, nil)
 	assert.Nil(t, err, "key with purpose should exist")
 
 	purpose = big.NewInt(1) //false purpose
-	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose)
+	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, nil)
 	assert.Error(t, err, "key with purpose should not exist")
 	resetDefaultCentID()
 
+}
+
+func TestValidateKey_revoked(t *testing.T) {
+	did := deployIdentityContract(t)
+	aCtx := getTestDIDContext(t, *did)
+	idSrv := initIdentity()
+
+	testKey := getTestKey()
+	addKey(aCtx, t, *did, idSrv, testKey)
+
+	err := idSrv.RevokeKey(aCtx, testKey.GetKey())
+	assert.NoError(t, err)
+
+	key32 := testKey.GetKey()
+
+	var purpose *big.Int
+	purpose = big.NewInt(123) // test purpose
+
+	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, nil)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "for purpose [123] has been revoked and not valid anymore")
+	}
+
+	beforeRevocation := time.Now().Add(-20 * time.Second)
+	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, &beforeRevocation)
+	assert.NoError(t, err)
+
+	afterRevocation := time.Now()
+	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, &afterRevocation)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "for purpose [123] has been revoked before provided time")
+	}
+	resetDefaultCentID()
 }
 
 func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
