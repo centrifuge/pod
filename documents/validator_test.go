@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -294,7 +295,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	// mismatch
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
-		EntityId:  utils.RandomSlice(6),
+		SignerId:  utils.RandomSlice(6),
 		PublicKey: utils.RandomSlice(32),
 	}
 
@@ -353,7 +354,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	// failed validation
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
-		EntityId:  utils.RandomSlice(6),
+		SignerId:  utils.RandomSlice(identity.DIDLength),
 		PublicKey: utils.RandomSlice(32),
 	}
 	model = new(mockModel)
