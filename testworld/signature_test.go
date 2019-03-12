@@ -4,6 +4,9 @@ package testworld
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -16,8 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestHost_ValidSignature(t *testing.T) {
