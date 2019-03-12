@@ -93,7 +93,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model, senderID []byte) error {
+func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
 	psv := SignatureValidator(dp.identityService)
 	err := psv.Validate(nil, model)
 	if err != nil {

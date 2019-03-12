@@ -205,7 +205,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("CurrentVersion").Return([]byte{})
 	model.On("NextVersion").Return([]byte{})
 	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
-	err = dp.RequestSignatures(ctxh, model, []byte{})
+	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 
@@ -221,7 +221,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.sigs = append(model.sigs, sig)
 	c := new(p2pClient)
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("cannot validate key")).Once()
-	err = dp.RequestSignatures(ctxh, model, id)
+	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
 	assert.Error(t, err)
@@ -239,7 +239,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
 	c.On("GetSignaturesForDocument", ctxh, model).Return(nil, errors.New("failed to get signatures")).Once()
 	dp.p2pClient = c
-	err = dp.RequestSignatures(ctxh, model, id)
+	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
 	assert.Error(t, err)
@@ -257,7 +257,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	c = new(p2pClient)
 	c.On("GetSignaturesForDocument", ctxh, model).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 	dp.p2pClient = c
-	err = dp.RequestSignatures(ctxh, model, id)
+	err = dp.RequestSignatures(ctxh, model)
 	model.AssertExpectations(t)
 	c.AssertExpectations(t)
 	assert.Nil(t, err)
@@ -350,7 +350,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
 	dp.identityService = srv
-	err = dp.AnchorDocument(ctxh, model, nil)
+	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
@@ -375,7 +375,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	ch <- true
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
-	err = dp.AnchorDocument(ctxh, model, nil)
+	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	repo.AssertExpectations(t)
