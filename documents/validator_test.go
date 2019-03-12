@@ -6,9 +6,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/stretchr/testify/mock"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
