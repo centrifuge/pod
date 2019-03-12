@@ -429,14 +429,14 @@ func (i *Invoice) CreateNFTProofs(
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
-func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, did identity.DID) error {
+func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator identity.DID) error {
 	newInv, ok := updated.(*Invoice)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an invoice but got %T", updated))
 	}
 
 	// check the core document changes
-	err := i.CoreDocument.CollaboratorCanUpdate(newInv.CoreDocument, did, i.DocumentType())
+	err := i.CoreDocument.CollaboratorCanUpdate(newInv.CoreDocument, collaborator, i.DocumentType())
 	if err != nil {
 		return err
 	}
@@ -452,7 +452,7 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, did identity.DI
 		return err
 	}
 
-	rules := i.CoreDocument.TransitionRulesFor(did)
+	rules := i.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	return documents.ValidateTransitions(rules, cf)
 }

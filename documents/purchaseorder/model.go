@@ -407,14 +407,14 @@ func (p *PurchaseOrder) CreateNFTProofs(
 }
 
 // CollaboratorCanUpdate checks if the account can update the document.
-func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, account identity.DID) error {
+func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collaborator identity.DID) error {
 	newPo, ok := updated.(*PurchaseOrder)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting a purchase order but got %T", updated))
 	}
 
 	// check the core document changes
-	err := p.CoreDocument.CollaboratorCanUpdate(newPo.CoreDocument, account, p.DocumentType())
+	err := p.CoreDocument.CollaboratorCanUpdate(newPo.CoreDocument, collaborator, p.DocumentType())
 	if err != nil {
 		return err
 	}
@@ -430,7 +430,7 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, account i
 		return err
 	}
 
-	rules := p.CoreDocument.TransitionRulesFor(account)
+	rules := p.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	return documents.ValidateTransitions(rules, cf)
 }

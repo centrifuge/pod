@@ -19,7 +19,7 @@ type ChangedField struct {
 	Name               string
 }
 
-// GetChangedFields takes two document trees and returns the compact value, old and new value of the fields that are changed in new tree.
+// GetChangedFields takes two document trees and returns the compact property, old and new value of the fields that are changed in new tree.
 // Properties may have been added to the new tree or removed from the new tree.
 // In Either case, since the new tree is different from old, that is considered a change.
 func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []ChangedField) {
