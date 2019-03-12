@@ -25,16 +25,16 @@ func TestHost_ValidSignature(t *testing.T) {
 	t.Parallel()
 
 	// Hosts
-	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ctxh := testingconfig.CreateAccountContext(t, alice.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, ctxh)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, ctxh)
 	assert.Equal(t, 1, len(dm.Signatures()))
 
-	signatures, _, _ := alice.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	signatures, _, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.Equal(t, 1, len(signatures))
 }
 
@@ -59,6 +59,8 @@ func TestHost_FakedSignature(t *testing.T) {
 
 func TestHost_RevokedSigningKey(t *testing.T) {
 	t.Parallel()
+
+	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
@@ -67,9 +69,12 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
 	assert.NoError(t, err)
 
+	// Test Key
+	testKey := identity.NewKey(keys[0], &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
+
 	// Revoke Key
-	eve.host.idService.RevokeKey(ctxh, keys[0])
-	response, err := eve.host.idService.GetKey(eve.id, keys[0])
+	eve.host.idService.RevokeKey(ctxh, testKey.GetKey())
+	response, err := eve.host.idService.GetKey(eve.id, testKey.GetKey())
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
 
 	collaborators := [][]byte{bob.id[:]}
@@ -78,6 +83,16 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
+
+	// Add Key fails since the key already exists
+	err = eve.host.idService.AddKey(ctxh, testKey)
+	assert.Nil(t, err, "Add Key should be successful")
+
+	response, err = eve.host.idService.GetKey(eve.id, testKey.GetKey())
+	assert.Nil(t, err, "Get Key should be successful")
+
+	err = eve.host.idService.ValidateKey(ctxh, eve.id, utils.Byte32ToSlice(testKey.GetKey()), testKey.GetPurpose(), nil)
+	assert.Nil(t, err, "Key with purpose should exist")
 }
 
 // Helper Methods
