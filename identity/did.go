@@ -309,3 +309,13 @@ type Config interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
 }
+
+// ValidateDIDBytes validates a centrifuge ID given as bytes
+func ValidateDIDBytes(givenDID []byte, did DID) error {
+	calcdid := NewDIDFromBytes(givenDID)
+	if !did.Equal(calcdid) {
+		return errors.New("provided bytes doesn't match centID")
+	}
+
+	return nil
+}

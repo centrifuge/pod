@@ -10,19 +10,19 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 )
 
-// changedField holds the compact property, old and new value of the field that is changed
+// ChangedField holds the compact property, old and new value of the field that is changed
 // if the old is nil, then it is a set operation
 // if new is nil, then it is an unset operation
 // if both old and new are set, then it is an edit operation
-type changedField struct {
-	property, old, new []byte
-	name               string
+type ChangedField struct {
+	Property, Old, New []byte
+	Name               string
 }
 
-// getChangedFields takes two document trees and returns the compact value, old and new value of the fields that are changed in new tree.
+// GetChangedFields takes two document trees and returns the compact property, old and new value of the fields that are changed in new tree.
 // Properties may have been added to the new tree or removed from the new tree.
 // In Either case, since the new tree is different from old, that is considered a change.
-func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []changedField) {
+func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []ChangedField) {
 	oldProps := oldTree.PropertyOrder()
 	newProps := newTree.PropertyOrder()
 
@@ -61,11 +61,11 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 		}
 
 		if !bytes.Equal(ov, nv) {
-			changedFields = append(changedFields, changedField{
-				name:     pn,
-				property: p.CompactName(),
-				old:      ov,
-				new:      nv,
+			changedFields = append(changedFields, ChangedField{
+				Name:     pn,
+				Property: p.CompactName(),
+				Old:      ov,
+				New:      nv,
 			})
 		}
 	}
@@ -73,24 +73,24 @@ func getChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 	return changedFields
 }
 
-func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) changedField {
+func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) ChangedField {
 	v := leaf.Value
 	if leaf.Hashed {
 		v = leaf.Hash
 	}
 
-	cf := changedField{property: p.CompactName(), name: p.ReadableName()}
+	cf := ChangedField{Property: p.CompactName(), Name: p.ReadableName()}
 	if old {
-		cf.old = v
+		cf.Old = v
 		return cf
 	}
 
-	cf.new = v
+	cf.New = v
 	return cf
 }
 
-// transitionRulesFor returns a copy all the transition rules for the DID.
-func (cd *CoreDocument) transitionRulesFor(did identity.DID) (rules []coredocumentpb.TransitionRule) {
+// TransitionRulesFor returns a copy all the transition rules for the DID.
+func (cd *CoreDocument) TransitionRulesFor(did identity.DID) (rules []coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
 			role, err := getRole(rk, cd.Document.Roles)
@@ -134,18 +134,18 @@ func copyByteSlice(data [][]byte) [][]byte {
 	return nbs
 }
 
-// validateTransitions validates the changedFields based on the rules provided.
-// returns an error if any changedField violates the rules.
-func validateTransitions(rules []coredocumentpb.TransitionRule, changedFields []changedField) error {
+// ValidateTransitions validates the changedFields based on the rules provided.
+// returns an error if any ChangedField violates the rules.
+func ValidateTransitions(rules []coredocumentpb.TransitionRule, changedFields []ChangedField) error {
 	cfMap := make(map[string]struct{})
 	for _, cf := range changedFields {
-		cfMap[cf.name] = struct{}{}
+		cfMap[cf.Name] = struct{}{}
 	}
 
 	for _, rule := range rules {
 		for _, cf := range changedFields {
 			if isValidTransition(rule, cf) {
-				delete(cfMap, cf.name)
+				delete(cfMap, cf.Name)
 			}
 		}
 	}
@@ -162,14 +162,14 @@ func validateTransitions(rules []coredocumentpb.TransitionRule, changedFields []
 	return err
 }
 
-func isValidTransition(rule coredocumentpb.TransitionRule, cf changedField) bool {
+func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool {
 	// changed property length should be at least equal to rule property
-	if len(cf.property) < len(rule.Field) {
+	if len(cf.Property) < len(rule.Field) {
 		return false
 	}
 
 	// if the match type is prefix, get the compact property till prefix
-	v := cf.property
+	v := cf.Property
 	if rule.MatchType == coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX {
 		v = v[:len(rule.Field)]
 	}
@@ -202,9 +202,9 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 		return err
 	}
 
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	rules := cd.transitionRulesFor(collaborator)
-	return validateTransitions(rules, cf)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	rules := cd.TransitionRulesFor(collaborator)
+	return ValidateTransitions(rules, cf)
 }
 
 // initTransitionRules initiates the transition rules for a given Core Document.

@@ -4,6 +4,7 @@ package documents
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"os"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -204,6 +206,44 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetSignaturesTree(t *testing.T) {
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	cd.Document.EmbeddedData = docAny
+	cd.Document.DataRoot = utils.RandomSlice(32)
+	sig := &coredocumentpb.Signature{
+		SignerId:    utils.RandomSlice(identity.DIDLength),
+		PublicKey:   utils.RandomSlice(32),
+		SignatureId: utils.RandomSlice(52),
+		Signature:   utils.RandomSlice(32),
+	}
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
+	err = cd.setSalts()
+	assert.NoError(t, err)
+
+	signatureTree, err := cd.getSignatureDataTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureTree)
+
+	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
+	assert.Equal(t, 0, lengthIdx)
+	assert.NotNil(t, lengthLeaf)
+	assert.Equal(t, SignaturesTreePrefix+".signatures.length", lengthLeaf.Property.ReadableName())
+	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
+
+	signerKey := hexutil.Encode(sig.SignatureId)
+	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
+	assert.NotNil(t, signerLeaf)
+	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
+	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
+	assert.Equal(t, sig.SignerId, signerLeaf.Value)
+}
+
 func TestGetDocumentSigningTree(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
@@ -232,6 +272,14 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 
+	sig := &coredocumentpb.Signature{
+		SignerId:    utils.RandomSlice(identity.DIDLength),
+		PublicKey:   utils.RandomSlice(32),
+		SignatureId: utils.RandomSlice(52),
+		Signature:   utils.RandomSlice(32),
+	}
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
+
 	// no signing root generated
 	_, err = cd.DocumentRootTree()
 	assert.Error(t, err)
@@ -240,15 +288,21 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd.Document.SigningRoot = utils.RandomSlice(32)
 	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
-	_, leaf := tree.GetLeafByProperty("signing_root")
+	_, leaf := tree.GetLeafByProperty(SigningRootField)
 	assert.NotNil(t, leaf)
 	assert.Equal(t, cd.Document.SigningRoot, leaf.Hash)
+
+	// Get signaturesLeaf
+	_, signaturesLeaf := tree.GetLeafByProperty(SignaturesRootField)
+	assert.NotNil(t, signaturesLeaf)
+	assert.Equal(t, SignaturesRootField, signaturesLeaf.Property.ReadableName())
+	assert.Equal(t, compactProperties(SignaturesRootField), signaturesLeaf.Property.CompactName())
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
-	testTree := NewDefaultTree(nil)
-	props := []proofs.Property{NewLeafProperty("sample_field", []byte{0, 0, 0, 200}), NewLeafProperty("sample_field2", []byte{0, 0, 0, 202})}
+	testTree := NewDefaultTreeWithPrefix(nil, "prefix", []byte{1, 0, 0, 0})
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
 	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
@@ -279,7 +333,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		proofLength int
 	}{
 		{
-			"sample_field",
+			"prefix.sample_field",
 			false,
 			3,
 		},
@@ -289,7 +343,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			6,
 		},
 		{
-			"sample_field2",
+			"prefix.sample_field2",
 			false,
 			3,
 		},

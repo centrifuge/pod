@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -284,7 +283,7 @@ func validateSignatureResp(
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	err := ideth.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiver)
+	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, err.Error())
 	}

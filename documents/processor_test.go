@@ -137,6 +137,11 @@ func (m *mockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
 	return cd, args.Error(1)
 }
 
+func (m *mockModel) CollaboratorCanUpdate(new Model, collaborator identity.DID) error {
+	args := m.Called(new, collaborator)
+	return args.Error(0)
+}
+
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)

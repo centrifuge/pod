@@ -183,7 +183,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (prfs []*proofspb.Proof, err error) {
 
 	if len(cd.Document.DataRoot) != idSize {
 		return nil, ErrDataRootInvalid
@@ -218,12 +218,8 @@ func (cd *CoreDocument) CreateNFTProofs(
 		return nil, errors.New("failed to generate core Document tree: %v", err)
 	}
 
-	proofs, missedProofs := generateProofs(cdTree, pfKeys, append([][]byte{cd.Document.DataRoot}, signingRootProofHashes...))
-	if len(missedProofs) != 0 {
-		return nil, errors.New("failed to create proofs for fields %v", missedProofs)
-	}
-
-	return proofs, nil
+	treeProofs := map[string]*TreeProof{CDTreePrefix: newTreeProof(cdTree, append([][]byte{cd.Document.DataRoot}, signingRootProofHashes...))}
+	return generateProofs(pfKeys, treeProofs)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice

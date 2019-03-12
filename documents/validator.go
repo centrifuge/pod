@@ -199,7 +199,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, sr, tm); erri != nil {
 				err = errors.AppendError(
 					err,
-					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.EntityId), erri))
+					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
 			}
 		}
 		if !authorFound {
@@ -239,6 +239,21 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 			return errors.New("mismatched document roots")
 		}
 
+		return nil
+	})
+}
+
+// TransitionValidator checks that the document model changes are within the transition_rule capability of the
+// identity making the changes
+func TransitionValidator(collaborator identity.DID) Validator {
+	return ValidatorFunc(func(old, new Model) error {
+		if old == nil {
+			return nil
+		}
+		err := old.CollaboratorCanUpdate(new, collaborator)
+		if err != nil {
+			return errors.New("invalid document state transition: %v", err)
+		}
 		return nil
 	})
 }

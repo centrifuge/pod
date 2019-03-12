@@ -33,7 +33,7 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	oldTree := getTree(t, &ocd, "", nil)
 	newTree := getTree(t, &ncd, "", nil)
 
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	// cf length should be len(ocd) and len(ncd) = 31 changed field
 	assert.Len(t, cf, 31)
 
@@ -45,22 +45,22 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	ocd := cd.Document
 	oldTree := getTree(t, &ocd, "", nil)
 	newTree := getTree(t, &ocd, "", nil)
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 0)
 
 	// check hashed field
 	ocd.PreviousRoot = utils.RandomSlice(32)
 	oldTree = getTree(t, &ocd, "", nil)
 	newTree = getTree(t, &ocd, "", nil)
-	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf = GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 0)
 }
 
-func testExpectedProps(t *testing.T, cf []changedField, eprops map[string]struct{}) {
+func testExpectedProps(t *testing.T, cf []ChangedField, eprops map[string]struct{}) {
 	for _, f := range cf {
-		_, ok := eprops[hexutil.Encode(f.property)]
+		_, ok := eprops[hexutil.Encode(f.Property)]
 		if !ok {
-			assert.Failf(t, "", "expected %x property to be present", f.property)
+			assert.Failf(t, "", "expected %x property to be present", f.Property)
 		}
 	}
 }
@@ -91,7 +91,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// roles + 2
 	oldTree := getTree(t, &doc.Document, "", nil)
 	newTree := getTree(t, &ndoc.Document, "", nil)
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 20)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -134,7 +134,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
-	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf = GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 6)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
@@ -163,7 +163,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
-	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf = GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 21)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -208,7 +208,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
-	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf = GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 16)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -251,7 +251,7 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 
 	oldTree := getTree(t, doc, "", nil)
 	newTree := getTree(t, doc, "", nil)
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 0)
 
 	// updated doc
@@ -266,28 +266,28 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 
 	oldTree = getTree(t, doc, "", nil)
 	newTree = getTree(t, ndoc, "", nil)
-	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf = GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 2)
-	eprops := map[string]changedField{
+	eprops := map[string]ChangedField{
 		hexutil.Encode([]byte{0, 0, 0, 1}): {
-			property: []byte{0, 0, 0, 1},
-			name:     "invoice_number",
-			old:      []byte{49, 50, 51, 52, 53},
-			new:      []byte{49, 50, 51, 52, 53, 54},
+			Property: []byte{0, 0, 0, 1},
+			Name:     "invoice_number",
+			Old:      []byte{49, 50, 51, 52, 53},
+			New:      []byte{49, 50, 51, 52, 53, 54},
 		},
 
 		hexutil.Encode([]byte{0, 0, 0, 13}): {
-			property: []byte{0, 0, 0, 13},
-			name:     "currency",
-			old:      []byte{},
-			new:      []byte{69, 85, 82},
+			Property: []byte{0, 0, 0, 13},
+			Name:     "currency",
+			Old:      []byte{},
+			New:      []byte{69, 85, 82},
 		},
 	}
 
 	for _, f := range cf {
-		ef, ok := eprops[hexutil.Encode(f.property)]
+		ef, ok := eprops[hexutil.Encode(f.Property)]
 		if !ok {
-			t.Fatalf("expected %x property change", f.property)
+			t.Fatalf("expected %x property change", f.Property)
 		}
 
 		assert.True(t, reflect.DeepEqual(f, ef))
@@ -298,7 +298,7 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	ndoc = new(invoicepb.InvoiceData)
 	oldTree = getTree(t, doc, "", nil)
 	newTree = getTree(t, ndoc, "", nil)
-	cf = getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf = GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	assert.Len(t, cf, 5)
 	eprps := map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 1}):  {},
@@ -336,17 +336,17 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
 	id := testingidentity.GenerateRandomDID()
-	rules := doc.transitionRulesFor(id)
+	rules := doc.TransitionRulesFor(id)
 	assert.Len(t, rules, 0)
 
 	// add roles and rules
 	_, rule := createTransitionRules(t, doc, id, nil, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
-	rules = doc.transitionRulesFor(id)
+	rules = doc.TransitionRulesFor(id)
 	assert.Len(t, rules, 1)
 	assert.Equal(t, *rule, rules[0])
 
 	// wrong id
-	rules = doc.transitionRulesFor(testingidentity.GenerateRandomDID())
+	rules = doc.TransitionRulesFor(testingidentity.GenerateRandomDID())
 	assert.Len(t, rules, 0)
 }
 
@@ -515,9 +515,9 @@ func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, do
 	oldTree := getTree(t, doc1, prefix, compact)
 	newTree := getTree(t, doc2, prefix, compact)
 
-	cf := getChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
-	rules := cd.transitionRulesFor(id)
-	return validateTransitions(rules, cf)
+	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	rules := cd.TransitionRulesFor(id)
+	return ValidateTransitions(rules, cf)
 }
 
 func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {

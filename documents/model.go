@@ -105,6 +105,9 @@ type Model interface {
 
 	// Timestamp is the time of update in UTC of the document version represented by the model
 	Timestamp() (time.Time, error)
+
+	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
+	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
 }
 
 // TokenRegistry defines NFT related functions.

@@ -457,18 +457,7 @@ func (i service) ValidateSignature(did id.DID, pubKey []byte, signature []byte, 
 	return nil
 }
 
-// ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
-func ValidateCentrifugeIDBytes(givenDID []byte, DID id.DID) error {
-	calcCentID := id.NewDIDFromBytes(givenDID)
-	if !DID.Equal(calcCentID) {
-		return errors.New("provided bytes doesn't match centID")
-	}
-
-	return nil
-}
-
 // NewDIDFromContext returns DID from context.Account
-// TODO remove this function to identity/did.go as soon as IDConfig is removed otherwise there is a cyclic dep
 func NewDIDFromContext(ctx context.Context) (id.DID, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {

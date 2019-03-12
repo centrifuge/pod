@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -243,6 +244,25 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	model.AssertExpectations(t)
 }
 
+func TestValidator_TransitionValidator(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	updated := new(mockModel)
+
+	// does not error out if there is no old document model (if new model is the first version of the document model)
+	tv := TransitionValidator(id1)
+	err := tv.Validate(nil, updated)
+	assert.NoError(t, err)
+
+	old := new(mockModel)
+	old.On("CollaboratorCanUpdate", updated, id1).Return(errors.New("error"))
+	err = tv.Validate(old, updated)
+	assert.Contains(t, err.Error(), "invalid document state transition: error")
+
+	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
+	err = tv.Validate(old.Model, updated)
+	assert.NoError(t, err)
+}
+
 func TestValidator_SignatureValidator(t *testing.T) {
 	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	assert.NoError(t, err)
@@ -277,7 +297,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	tm := time.Now()
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
-		EntityId:  utils.RandomSlice(identity.DIDLength),
+		SignerId:  utils.RandomSlice(identity.DIDLength),
 		PublicKey: utils.RandomSlice(32),
 		Timestamp: utils.ToTimestamp(tm),
 	}
@@ -382,7 +402,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	assert.NoError(t, err)
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
-		EntityId:  utils.RandomSlice(6),
+		SignerId:  utils.RandomSlice(identity.DIDLength),
 		PublicKey: utils.RandomSlice(32),
 		Timestamp: tmp,
 	}
