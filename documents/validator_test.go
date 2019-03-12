@@ -5,6 +5,8 @@ package documents
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -240,6 +242,25 @@ func TestValidator_documentRootValidator(t *testing.T) {
 	err = dv.Validate(nil, model)
 	assert.NoError(t, err)
 	model.AssertExpectations(t)
+}
+
+func TestValidator_TransitionValidator(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	updated := new(mockModel)
+
+	// does not error out if there is no old document model (if new model is the first version of the document model)
+	tv := TransitionValidator(id1)
+	err := tv.Validate(nil, updated)
+	assert.NoError(t, err)
+
+	old := new(mockModel)
+	old.On("CollaboratorCanUpdate", updated, id1).Return(errors.New("error"))
+	err = tv.Validate(old, updated)
+	assert.Contains(t, err.Error(), "invalid document state transition: error")
+
+	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
+	err = tv.Validate(old.Model, updated)
+	assert.NoError(t, err)
 }
 
 func TestValidator_SignatureValidator(t *testing.T) {

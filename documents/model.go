@@ -97,7 +97,7 @@ type Model interface {
 	ATGranteeCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
-	CollaboratorCanUpdate(updated Model, did identity.DID) error
+	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
 }
 
 // TokenRegistry defines NFT related functions.
