@@ -30,6 +30,7 @@ type Invoice struct {
 	*documents.CoreDocument
 
 	InvoiceNumber    string // invoice number or reference number
+	InvoiceStatus    string // invoice status
 	SenderName       string // name of the sender company
 	SenderStreet     string // street and address details of the sender company
 	SenderCity       string
@@ -80,6 +81,7 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 
 	return &clientinvoicepb.InvoiceData{
 		InvoiceNumber:    i.InvoiceNumber,
+		InvoiceStatus:    i.InvoiceStatus,
 		SenderName:       i.SenderName,
 		SenderStreet:     i.SenderStreet,
 		SenderCity:       i.SenderCity,
@@ -123,6 +125,7 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 
 	return &invoicepb.InvoiceData{
 		InvoiceNumber:    i.InvoiceNumber,
+		InvoiceStatus:    i.InvoiceStatus,
 		SenderName:       i.SenderName,
 		SenderStreet:     i.SenderStreet,
 		SenderCity:       i.SenderCity,
@@ -169,6 +172,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 // initInvoiceFromData initialises invoice from invoiceData
 func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.InvoiceNumber = data.InvoiceNumber
+	i.InvoiceStatus = data.InvoiceStatus
 	i.SenderName = data.SenderName
 	i.SenderStreet = data.SenderStreet
 	i.SenderCity = data.SenderCity
@@ -221,6 +225,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
 func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
 	i.InvoiceNumber = invoiceData.InvoiceNumber
+	i.InvoiceStatus = invoiceData.InvoiceStatus
 	i.SenderName = invoiceData.SenderName
 	i.SenderStreet = invoiceData.SenderStreet
 	i.SenderCity = invoiceData.SenderCity

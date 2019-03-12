@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"context"
-	"math/big"
 	"os"
 	"os/exec"
 	"path"
@@ -59,7 +58,7 @@ func TestCreateConfig(t *testing.T) {
 	dataDir := "testconfig"
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
 	scAddrs := testingutils.GetSmartContractAddresses()
-	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", 8028, 38202, nil, true, "", scAddrs)
+	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", 8028, 38202, nil, true, false, "", scAddrs)
 	assert.Nil(t, err, "Create Config should be successful")
 
 	// config exists
@@ -76,34 +75,24 @@ func TestCreateConfig(t *testing.T) {
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
 
 	// Keys exists
-	// type KeyPurposeEthMsgAuth
-	idSrv := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
-	pk, _, err := secp256k1.GetSigningKeyPair(cfg.GetEthAuthKeyPair())
-	assert.Nil(t, err)
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	assert.Nil(t, err)
-	response, err := idSrv.GetKey(accountId, address32Bytes)
-	assert.Nil(t, err)
-	assert.NotNil(t, response)
-	assert.Equal(t, big.NewInt(identity.KeyPurposeEthMsgAuth), response.Purposes[0], "purpose should be ETHMsgAuth")
-
 	// type KeyPurposeP2P
-	pk, _, err = ed25519.GetSigningKeyPair(cfg.GetP2PKeyPair())
+	idSrv := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	pk, _, err := ed25519.GetSigningKeyPair(cfg.GetP2PKeyPair())
 	assert.Nil(t, err)
 	pk32, err := utils.SliceToByte32(pk)
 	assert.Nil(t, err)
-	response, _ = idSrv.GetKey(accountId, pk32)
+	response, _ := idSrv.GetKey(accountId, pk32)
 	assert.NotNil(t, response)
-	assert.Equal(t, big.NewInt(identity.KeyPurposeP2P), response.Purposes[0], "purpose should be P2P")
+	assert.Equal(t, &(identity.KeyPurposeP2PDiscovery.Value), response.Purposes[0], "purpose should be P2P")
 
 	// type KeyPurposeSigning
 	pk, _, err = secp256k1.GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Nil(t, err)
-	address32Bytes = utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 	assert.Nil(t, err)
 	response, _ = idSrv.GetKey(accountId, address32Bytes)
 	assert.NotNil(t, response)
-	assert.Equal(t, big.NewInt(identity.KeyPurposeSigning), response.Purposes[0], "purpose should be Signing")
+	assert.Equal(t, &(identity.KeyPurposeSigning.Value), response.Purposes[0], "purpose should be Signing")
 
 	err = exec.Command("rm", "-rf", dataDir).Run()
 	assert.Nil(t, err, "removing testconfig folder should be successful")

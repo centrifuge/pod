@@ -39,33 +39,49 @@ func RunSmartContractMigrations() {
 	if isRunningOnCI {
 		return
 	}
+
+	var err error
 	projDir := GetProjectDir()
 	migrationScript := path.Join(projDir, "build", "scripts", "migrate.sh")
-	_, err := exec.Command(migrationScript, projDir).Output()
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < 3; i++ {
+		log.Infof("Trying to migrate contracts for the %d th time", i)
+		_, err = exec.Command(migrationScript, projDir).Output()
+		if err == nil {
+			return
+		}
 	}
+	// trying 3 times to migrate didnt work
+	log.Fatal(err)
 }
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
 func GetSmartContractAddresses() *config.SmartContractAddresses {
-	dat, err := findContractDeployJSON()
+	iddat, err := findContractDeployJSON("IdentityFactory.json")
 	if err != nil {
 		panic(err)
 	}
-	idFactoryAddrOp := getOpForContract(".contracts.IdentityFactory.address")
-	anchorRepoAddrOp := getOpForContract(".contracts.AnchorRepository.address")
-	payObAddrOp := getOpForContract(".contracts.PaymentObligation.address")
+
+	ancdat, err := findContractDeployJSON("AnchorRepository.json")
+	if err != nil {
+		panic(err)
+	}
+
+	payobdat, err := findContractDeployJSON("PaymentObligation.json")
+	if err != nil {
+		panic(err)
+	}
+
+	addrOp := getOpForContract(".networks.8383.address")
 	return &config.SmartContractAddresses{
-		IdentityFactoryAddr:   getOpAddr(idFactoryAddrOp, dat),
-		AnchorRepositoryAddr:  getOpAddr(anchorRepoAddrOp, dat),
-		PaymentObligationAddr: getOpAddr(payObAddrOp, dat),
+		IdentityFactoryAddr:   getOpAddr(addrOp, iddat),
+		AnchorRepositoryAddr:  getOpAddr(addrOp, ancdat),
+		PaymentObligationAddr: getOpAddr(addrOp, payobdat),
 	}
 }
 
-func findContractDeployJSON() ([]byte, error) {
+func findContractDeployJSON(file string) ([]byte, error) {
 	projDir := GetProjectDir()
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "deployments", "localgeth.json")
+	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "build", "contracts", file)
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
 		return nil, err
@@ -146,8 +162,6 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	cfg.Set("keys.p2p.privateKey", fmt.Sprintf("%s/build/resources/p2pKey.key.pem", projDir))
 	cfg.Set("keys.signing.publicKey", fmt.Sprintf("%s/build/resources/signingKey.pub.pem", projDir))
 	cfg.Set("keys.signing.privateKey", fmt.Sprintf("%s/build/resources/signingKey.key.pem", projDir))
-	cfg.Set("keys.ethauth.publicKey", fmt.Sprintf("%s/build/resources/ethauth.pub.pem", projDir))
-	cfg.Set("keys.ethauth.privateKey", fmt.Sprintf("%s/build/resources/ethauth.key.pem", projDir))
 	SetupSmartContractAddresses(cfg, addresses)
 	cm := make(map[string]interface{})
 	cm[bootstrap.BootstrappedConfig] = cfg

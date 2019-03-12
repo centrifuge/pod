@@ -8,9 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 )
 
 type testType string

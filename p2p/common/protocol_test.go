@@ -101,10 +101,6 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 			Priv: ssk,
 			Pub:  spk,
 		},
-		EthAuthKeyPair: configstore.KeyPair{
-			Priv: ssk,
-			Pub:  spk,
-		},
 	}
 	ctx, _ := contextutil.New(context.Background(), acc)
 	assert.NotNil(t, ctx)

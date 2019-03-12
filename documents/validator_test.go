@@ -413,7 +413,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get document root from chain")
+	assert.Contains(t, err.Error(), "failed to get document root for anchor")
 
 	// mismatched doc roots
 	docRoot := anchors.RandomDocumentRoot()

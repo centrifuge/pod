@@ -59,7 +59,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(t, err)
 	did := identity.NewDID(*didAddr)
-	tc, err := configstore.TempAccount("", cfg)
+	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]
@@ -78,17 +78,21 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
+			Sender:        did.String(),
 			InvoiceNumber: "2132131",
+			InvoiceStatus: "unpaid",
 			GrossAmount:   123,
 			NetAmount:     123,
 			Currency:      "EUR",
 			DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
 		},
 	})
-	assert.Nil(t, err, "should not error out when creating invoice model")
-	modelUpdated, txID, _, err := invSrv.Create(ctx, model)
-	err = txManager.WaitForTransaction(cid, txID)
-	assert.Nil(t, err)
+	assert.NoError(t, err, "should not error out when creating invoice model")
+	modelUpdated, txID, done, err := invSrv.Create(ctx, model)
+	assert.NoError(t, err)
+	d := <-done
+	assert.True(t, d)
+	assert.NoError(t, txManager.WaitForTransaction(cid, txID))
 
 	// get ID
 	id := modelUpdated.ID()
@@ -102,10 +106,10 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
 	resp, done, err := payOb.MintNFT(ctx, req)
-	assert.Nil(t, err, "should not error out when minting an invoice")
+	assert.NoError(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
-	assert.Nil(t, err, "should not error out when getting tokenID hex")
+	assert.NoError(t, err, "should not error out when getting tokenID hex")
 	<-done
 	txID, err := transactions.FromString(resp.TransactionID)
 	assert.NoError(t, err)
@@ -117,14 +121,17 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
-	t.SkipNow()
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	regAddr := registry.String()
+	log.Info(regAddr)
 	req := nft.MintNFTRequest{
-		DocumentID:         id,
-		RegistryAddress:    registry,
-		DepositAddress:     common.HexToAddress(depositAddr),
-		ProofFields:        []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date"},
-		GrantNFTReadAccess: true,
+		DocumentID:               id,
+		RegistryAddress:          registry,
+		DepositAddress:           common.HexToAddress(depositAddr),
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", documents.CDTreePrefix + ".next_version"},
+		GrantNFTReadAccess:       true,
+		SubmitNFTReadAccessProof: true,
+		SubmitTokenProof:         true,
 	}
 	tokenID := mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
@@ -163,7 +170,6 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 }
 
 func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
-	t.SkipNow()
 	failMintNFT(t, false, true)
 }
 
@@ -173,7 +179,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "cd_tree.next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,
@@ -191,27 +197,9 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 }
 
 func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
-	t.SkipNow()
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{
-		{
-			grantAccess: true,
-		},
-
-		{
-			tokenProof: true,
-		},
-
-		{
-			grantAccess: true,
-			tokenProof:  true,
-		},
-
-		{
-			grantAccess:     true,
-			readAccessProof: true,
-		},
 		{
 			grantAccess:     true,
 			tokenProof:      true,

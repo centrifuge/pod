@@ -1,3 +1,5 @@
+// +build unit integration
+
 package testingdocuments
 
 import (
@@ -62,6 +64,12 @@ type MockModel struct {
 func (m *MockModel) CurrentVersion() []byte {
 	args := m.Called()
 	return args.Get(0).([]byte)
+}
+
+func (m *MockModel) CurrentVersionPreimage() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
 }
 
 func (m *MockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {

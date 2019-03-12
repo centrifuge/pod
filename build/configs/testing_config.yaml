@@ -23,6 +23,6 @@ keys:
   signing:
     publicKey: ../../build/resources/signingKey.pub.pem
     privateKey: ../../build/resources/signingKey.key.pem
-  ethauth:
-    publicKey: ../../build/resources/ethauth.pub.pem
-    privateKey: ../../build/resources/ethauth.key.pem
+
+anchoring:
+  precommit: true

@@ -35,46 +35,49 @@ const (
 	// ErrDocumentPersistence must be used when creating or updating a document in the system database failed
 	ErrDocumentPersistence = errors.Error("error encountered when storing document in the system database")
 
-	// ErrDocumentPackingCoreDocument must be used when packing of core document for the given document failed
-	ErrDocumentPackingCoreDocument = errors.Error("core document packing failed")
-
 	// ErrDocumentUnPackingCoreDocument must be used when unpacking of core document for the given document failed
 	ErrDocumentUnPackingCoreDocument = errors.Error("core document unpacking failed")
 
 	// ErrDocumentPrepareCoreDocument must be used when preparing a new core document fails for the given document
 	ErrDocumentPrepareCoreDocument = errors.Error("core document preparation failed")
 
-	// ErrDocumentSigning must be used when document signing related functionality fails
-	ErrDocumentSigning = errors.Error("document signing failed")
-
 	// ErrDocumentAnchoring must be used when document anchoring fails
 	ErrDocumentAnchoring = errors.Error("document anchoring failed")
-
-	// ErrDocumentCollaborator must be used when there is an error in processing collaborators
-	ErrDocumentCollaborator = errors.Error("document collaborator issue")
 
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
-	// Document repository errors
+	// ErrDataRootInvalid must be used when the data root is invalid
+	ErrDataRootInvalid = errors.Error("data root is invalid")
 
-	// ErrDocumentRepositoryModelNotRegistered must be used when the model hasn't been registered in the database repository
-	ErrDocumentRepositoryModelNotRegistered = errors.Error("document model hasn't been registered in the database repository")
+	// Read ACL errors
 
-	// ErrDocumentRepositorySerialisation must be used when document repository encounters a marshalling error
-	ErrDocumentRepositorySerialisation = errors.Error("document repository encountered a marshalling error")
+	// ErrNftNotFound must be used when the NFT is not found in the document
+	ErrNftNotFound = errors.Error("nft not found in the Document")
 
-	// ErrDocumentRepositoryModelNotFound must be used when document repository can not locate the given model
-	ErrDocumentRepositoryModelNotFound = errors.Error("document repository could not locate the given model")
+	// ErrNftByteLength must be used when there is a byte length mismatch
+	ErrNftByteLength = errors.Error("byte length mismatch")
 
-	// ErrDocumentRepositoryModelSave must be used when document repository can not save the given model
-	ErrDocumentRepositoryModelSave = errors.Error("document repository could not save the given model")
+	// ErrAccessTokenInvalid must be used when the access token is invalid
+	ErrAccessTokenInvalid = errors.Error("access token is invalid")
 
-	// ErrDocumentRepositoryModelAllReadyExists must be used when document repository finds an already existing model when saving
-	ErrDocumentRepositoryModelAllReadyExists = errors.Error("document repository found an already existing model when saving")
+	// ErrAccessTokenNotFound must be used when the access token was not found
+	ErrAccessTokenNotFound = errors.Error("access token not found")
 
-	// ErrDocumentRepositoryModelDoesntExist must be used when document repository does not find an existing model for an update
-	ErrDocumentRepositoryModelDoesntExist = errors.Error("document repository did not find an existing model for an update")
+	// ErrRequesterNotGrantee must be used when the document requester is not the grantee of the access token
+	ErrRequesterNotGrantee = errors.Error("requester is not the same as the access token grantee")
+
+	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
+	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
+
+	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
+	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
+
+	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
+	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
+
+	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
+	ErrInvalidIDLength = errors.Error("invalid identifier length")
 )
 
 // Error wraps an error with specific key

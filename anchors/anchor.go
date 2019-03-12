@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -49,6 +50,11 @@ func (a *AnchorID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(a[:])
 }
 
+// String returns anchorID in string form
+func (a *AnchorID) String() string {
+	return hexutil.Encode(a[:])
+}
+
 // DocumentRoot type is byte array of length DocumentRootLength
 type DocumentRoot [DocumentRootLength]byte
 
@@ -72,12 +78,9 @@ func RandomDocumentRoot() DocumentRoot {
 
 // PreCommitData holds required document details for pre-commit
 type PreCommitData struct {
-	AnchorID        AnchorID
-	SigningRoot     DocumentRoot
-	DID             identity.DID
-	Signature       []byte
-	ExpirationBlock *big.Int
-	SchemaVersion   uint
+	AnchorID      AnchorID
+	SigningRoot   DocumentRoot
+	SchemaVersion uint
 }
 
 // CommitData holds required document details for anchoring
@@ -107,14 +110,11 @@ func supportedSchemaVersion() uint {
 }
 
 // newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.DID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
+func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot) (preCommitData *PreCommitData) {
 	return &PreCommitData{
-		AnchorID:        anchorID,
-		SigningRoot:     signingRoot,
-		DID:             centrifugeID,
-		Signature:       signature,
-		ExpirationBlock: expirationBlock,
-		SchemaVersion:   supportedSchemaVersion(),
+		AnchorID:      anchorID,
+		SigningRoot:   signingRoot,
+		SchemaVersion: supportedSchemaVersion(),
 	}
 }
 

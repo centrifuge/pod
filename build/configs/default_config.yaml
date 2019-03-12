@@ -11,7 +11,6 @@ networks:
     - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
       identityFactory: ""
-      identityRegistry: ""
       anchorRepository: ""
       paymentObligation: ""
 
@@ -27,10 +26,9 @@ networks:
     ethereumNetworkId: 4
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses: 
-      identityFactory: "0xF3d98f3f6866E772305504317519A12Dcf8e8e9A"
-      identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
-      anchorRepository: "0x5372Be663ad3FDe0B2F64776081C077C4B5aa457"
-      paymentObligation: "0x5F029989DE7AA406aD01DD1d25d6f2e021Eee008"
+      identityFactory: "0xffe0612006eedaeda188cd9df54574a68920a97d"
+      anchorRepository: "0xd3be7846016367a08ad083b06df98ad78212d0a5"
+      paymentObligation: "0x2d5b6470af1ac962c55b6bee92f3c38c609f371e"
 
   # Kovan test network
   bernalheights:
@@ -51,10 +49,9 @@ networks:
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0xC33e46E8f78f42CF041aB9009125F38280E80E3C"
-      identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
-      anchorRepository: "0xcE2a6E242C457Bc7Ecbe0cb9dA8f2FFCA21273c9"
-      paymentObligation: "0x4922ea1a05c15547eA3f7a3eA9B0fBF2965E466F"
+      identityFactory: "0x01adb663afd3a5d7655c89d2774cef51800f3bb6"
+      anchorRepository: "0x16f45eac73752eab73072fddbacbd0a58adc3a40"
+      paymentObligation: "0xeb1c6a36c4b1234aaae7ece88fb4f48d23d63146"
 
   # Ropsten test network
   dogpatch:
@@ -68,10 +65,9 @@ networks:
     ethereumNetworkId: 3
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x47d3194f858d1Fa26C51a93631CEA6eFa570E833"
-      identityRegistry: "0x55160B12091c41E7C41f0BA5Ae925a0426c4aAEA"
-      anchorRepository: "0xE3228070377Be6DD03f29661AD194Ed038f2830f"
-      paymentObligation: "0x5820c05E8eE7d63720DF8D5e6C5987Ac6D998C42"
+      identityFactory: "0x1ba18b61337fa121339339b554730c0e70b9a81c"
+      anchorRepository: "0xff5f35f6f3910ed66a24b6e55542e66b868416a3"
+      paymentObligation: "0x48c25e7639e888e667f20d30b96653de054251d8"
 
 # Data Storage
 storage:
@@ -135,3 +131,6 @@ ethereum:
 debug:
   # pprof for debugging
   pprof: false
+
+anchoring:
+  precommit: true

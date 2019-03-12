@@ -6,15 +6,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -29,21 +25,83 @@ const (
 	// BootstrappedDIDService stores the id of the service
 	BootstrappedDIDService string = "BootstrappedDIDService"
 
-	// CentIDLength is the length in bytes of the DID
-	CentIDLength = 6
-
-	// KeyPurposeP2P represents a key used for p2p txns
-	KeyPurposeP2P = 1
-
-	// KeyPurposeSigning represents a key used for signing
-	KeyPurposeSigning = 2
-
-	// KeyPurposeEthMsgAuth represents a key used for ethereum txns
-	KeyPurposeEthMsgAuth = 3
-
 	// KeyTypeECDSA has the value one in the ERC725 identity contract
 	KeyTypeECDSA = 1
+
+	keyPurposeMgmt         = "MANAGEMENT"
+	keyPurposeAction       = "ACTION"
+	keyPurposeP2PDiscovery = "P2P_DISCOVERY"
+	keyPurposeSigning      = "SIGNING"
 )
+
+var (
+	// KeyPurposeManagement purpose stores the management key to interact with the ERC725 identity contract
+	KeyPurposeManagement Purpose
+	// KeyPurposeAction purpose stores the action key to interact with the ERC725 identity contract
+	KeyPurposeAction Purpose
+	// KeyPurposeP2PDiscovery purpose stores the action key to interact with the ERC725 identity contract
+	KeyPurposeP2PDiscovery Purpose
+	// KeyPurposeSigning purpose stores the action key to interact with the ERC725 identity contract
+	KeyPurposeSigning Purpose
+)
+
+func init() {
+	KeyPurposeManagement = getKeyPurposeManagement()
+	KeyPurposeAction = getKeyPurposeAction()
+	KeyPurposeP2PDiscovery = getKeyPurposeP2PDiscovery()
+	KeyPurposeSigning = getKeyPurposeSigning()
+}
+
+// getKeyPurposeManagement is calculated out of Hex(leftPadding(1,32))
+func getKeyPurposeManagement() Purpose {
+	enc := "0000000000000000000000000000000000000000000000000000000000000001"
+	v, _ := new(big.Int).SetString(enc, 16)
+	return Purpose{Name: keyPurposeMgmt, HexValue: enc, Value: *v}
+}
+
+// getKeyPurposeAction is calculated out of Hex(leftPadding(2,32))
+func getKeyPurposeAction() Purpose {
+	enc := "0000000000000000000000000000000000000000000000000000000000000002"
+	v, _ := new(big.Int).SetString(enc, 16)
+	return Purpose{Name: keyPurposeAction, HexValue: enc, Value: *v}
+}
+
+// getKeyPurposeP2PDiscovery is calculated out of Hex(sha256("CENTRIFUGE@P2P_DISCOVERY"))
+func getKeyPurposeP2PDiscovery() Purpose {
+	hashed := "88dbd1f0b244e515ab5aee93b5dee6a2d8e326576a583822635a27e52e5b591e"
+	v, _ := new(big.Int).SetString(hashed, 16)
+	return Purpose{Name: keyPurposeP2PDiscovery, HexValue: hashed, Value: *v}
+}
+
+// getKeyPurposeSigning is calculated out of Hex(sha256("CENTRIFUGE@SIGNING"))
+func getKeyPurposeSigning() Purpose {
+	hashed := "774a43710604e3ce8db630136980a6ba5a65b5e6686ee51009ed5f3fded6ea7e"
+	v, _ := new(big.Int).SetString(hashed, 16)
+	return Purpose{Name: keyPurposeSigning, HexValue: hashed, Value: *v}
+}
+
+// Purpose contains the different representation of purpose along the code
+type Purpose struct {
+	Name     string
+	HexValue string
+	Value    big.Int
+}
+
+// GetPurposeByName retrieves the Purpose by name
+func GetPurposeByName(name string) Purpose {
+	switch name {
+	case keyPurposeMgmt:
+		return getKeyPurposeManagement()
+	case keyPurposeAction:
+		return getKeyPurposeAction()
+	case keyPurposeP2PDiscovery:
+		return getKeyPurposeP2PDiscovery()
+	case keyPurposeSigning:
+		return getKeyPurposeSigning()
+	default:
+		return Purpose{}
+	}
+}
 
 // DID stores the identity address of the user
 type DID common.Address
@@ -162,7 +220,7 @@ type ServiceDID interface {
 	Exists(ctx context.Context, did DID) error
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
-	ValidateKey(ctx context.Context, did DID, key []byte, purpose int64) error
+	ValidateKey(ctx context.Context, did DID, key []byte, purpose *big.Int, at *time.Time) error
 
 	// ValidateSignature checks if signature is valid for given identity
 	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
@@ -250,51 +308,5 @@ type Config interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
-}
-
-// IDConfig holds information about the identity
-// Deprecated
-type IDConfig struct {
-	ID   DID
-	Keys map[int]IDKey
-}
-
-// GetIdentityConfig returns the identity and keys associated with the node.
-func GetIdentityConfig(config Config) (*IDConfig, error) {
-	centIDBytes, err := config.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-	centID := NewDIDFromBytes(centIDBytes)
-
-	//ed25519 keys
-	keys := map[int]IDKey{}
-
-	pk, sk, err := ed25519.GetSigningKeyPair(config.GetP2PKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	keys[KeyPurposeP2P] = IDKey{PublicKey: pk, PrivateKey: sk}
-
-	pk, sk, err = secp256k1.GetSigningKeyPair(config.GetSigningKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	keys[KeyPurposeSigning] = IDKey{PublicKey: pk32[:], PrivateKey: sk}
-
-	//secp256k1 keys
-	pk, sk, err = secp256k1.GetSigningKeyPair(config.GetEthAuthKeyPair())
-	if err != nil {
-		return nil, err
-	}
-	pubKey, err := hexutil.Decode(secp256k1.GetAddress(pk))
-	if err != nil {
-		return nil, err
-	}
-	keys[KeyPurposeEthMsgAuth] = IDKey{PublicKey: pubKey, PrivateKey: sk}
-
-	return &IDConfig{ID: centID, Keys: keys}, nil
 }

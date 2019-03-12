@@ -6,18 +6,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -27,7 +26,8 @@ import (
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.initReadRules(nil)
 	assert.Nil(t, cd.Document.Roles)
 	assert.Nil(t, cd.Document.ReadRules)
@@ -43,7 +43,8 @@ func TestReadACLs_initReadRules(t *testing.T) {
 }
 
 func TestReadAccessValidator_AccountCanRead(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false)
@@ -70,12 +71,13 @@ func (m mockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.A
 }
 
 func TestCoreDocument_addNFTToReadRules(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 
 	// wrong registry or token format
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(34)
-	err := cd.addNFTToReadRules(registry, tokenID)
+	err = cd.addNFTToReadRules(registry, tokenID)
 	assert.Error(t, err)
 	assert.Nil(t, cd.Document.CoredocumentSalts)
 	assert.Nil(t, cd.Document.ReadRules)
@@ -119,11 +121,16 @@ func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	assert.Error(t, cd.NFTOwnerCanRead(tr, registry, tokenID, account))
 	tr.AssertExpectations(t)
 
-	// TODO(ved): add a successful test once identity v2 is complete
+	// same owner
+	owner = account.ToAddress()
+	tr.On("OwnerOf", registry, tokenID).Return(owner, nil).Once()
+	assert.NoError(t, cd.NFTOwnerCanRead(tr, registry, tokenID, account))
+	tr.AssertExpectations(t)
 }
 
 func TestCoreDocumentModel_AddNFT(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
@@ -132,7 +139,7 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Nil(t, cd.Document.ReadRules)
 	assert.Nil(t, cd.Document.Roles)
 
-	cd, err := cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
 	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
@@ -156,14 +163,15 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 }
 
 func TestCoreDocument_IsNFTMinted(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	assert.False(t, cd.IsNFTMinted(nil, registry))
 
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	tokenID := utils.RandomSlice(32)
 	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
-	cd, err := cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 
 	tr := new(mockRegistry)
@@ -173,7 +181,8 @@ func TestCoreDocument_IsNFTMinted(t *testing.T) {
 }
 
 func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
 
@@ -190,12 +199,13 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 3)
 	assert.Equal(t, CDTreePrefix+".read_rules[0].roles[0]", pfs[0])
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(cd.Document.Roles[0].RoleKey)), pfs[1])
-	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[2])
+	assert.Equal(t, CDTreePrefix+".read_rules[0].action", pfs[1])
+	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[0]", hexutil.Encode(cd.Document.Roles[0].RoleKey)), pfs[2])
 }
 
 func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	pf, err := getNFTUniqueProofKey(cd.Document.Nfts, registry)
 	assert.Error(t, err)
@@ -213,7 +223,8 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 }
 
 func TestCoreDocument_getRoleProofKey(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	roleKey := make([]byte, 32, 32)
 	account := testingidentity.GenerateRandomDID()
 	pf, err := getRoleProofKey(cd.Document.Roles, roleKey, account)
@@ -233,7 +244,8 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 }
 
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	invData := &invoicepb.InvoiceData{}
 	dataSalts, err := GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 	assert.NoError(t, err)
@@ -324,17 +336,20 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 			assert.True(t, valid)
 		}
 	}
-
 }
 
 func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, _ := contextutil.Account(ctx)
-	cd := newCoreDocument()
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
+	srv := new(testingcommons.MockIdentityService)
 	id, err := account.GetIdentityID()
-	granteeID := identity.NewDIDFromBytes(id)
+	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
+	granterID := identity.NewDIDFromBytes(id)
+	assert.NoError(t, err)
+	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()})
+	assert.NoError(t, err)
+	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	payload := documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
 		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
@@ -342,8 +357,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	ncd, err := cd.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
 	ncd.Document.DocumentRoot = utils.RandomSlice(32)
-	docRoles := ncd.Document.GetRoles()
-	at := docRoles[0].AccessTokens[0]
+	at := ncd.Document.AccessTokens[0]
 	assert.NotNil(t, at)
 	// wrong token identifier
 	tr := &p2ppb.AccessTokenRequest{
@@ -355,29 +369,33 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: tr,
 	}
-	err = ncd.ATOwnerCanRead(dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.Error(t, err, "access token not found")
-	// valid access token
-	// TODO: this will always fail until validation for signatures is secp
-	//tr = &p2ppb.AccessTokenRequest{
-	//	DelegatingDocumentIdentifier: dm.Document.DocumentIdentifier,
-	//	AccessTokenId:                at.Identifier,
-	//}
-	//dr.AccessTokenRequest = tr
-	//err = dm.accessTokenOwnerCanRead(dr, granteeID[:])
-	//assert.NoError(t, err)
+	// invalid signing key
+	tr = &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: ncd.Document.DocumentIdentifier,
+		AccessTokenId:                at.Identifier,
+	}
+	dr.AccessTokenRequest = tr
+	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
+	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	assert.Error(t, err)
+	// valid key
+	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	assert.NoError(t, err)
 }
 
-func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
-	m := newCoreDocument()
+func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
+	m, err := newCoreDocument()
+	assert.NoError(t, err)
 	m.Document.DocumentRoot = utils.RandomSlice(32)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
 	cd := m.Document
-	assert.Len(t, cd.ReadRules, 0)
-	assert.Len(t, cd.Roles, 0)
+	assert.Len(t, cd.AccessTokens, 0)
 
 	// invalid centID format
 	payload := documentpb.AccessTokenParams{
@@ -416,7 +434,5 @@ func TestCoreDocumentModel_AddAccessTokenToReadRules(t *testing.T) {
 
 	ncd, err := m.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
-	assert.Len(t, ncd.Document.ReadRules, 1)
-	assert.Equal(t, ncd.Document.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ)
-	assert.Len(t, ncd.Document.Roles, 1)
+	assert.Len(t, ncd.Document.AccessTokens, 1)
 }

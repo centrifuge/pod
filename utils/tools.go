@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -76,11 +75,22 @@ func AddressTo32Bytes(address common.Address) [32]byte {
 	addressBytes := address.Bytes()
 	address32Byte := [32]byte{}
 	for i := 1; i <= common.AddressLength; i++ {
-
 		address32Byte[32-i] = addressBytes[common.AddressLength-i]
 	}
 	return address32Byte
 
+}
+
+// ByteArrayTo32BytesLeftPadded converts an address to 32 a byte array
+// The length of the input has to be less or equals to 32
+func ByteArrayTo32BytesLeftPadded(in []byte) ([32]byte, error) {
+	byte32 := [32]byte{}
+	if len(in) > 32 {
+		return byte32, errors.New("incorrect input length %d should be 32", len(in))
+	}
+	padLength := 32 - len(in)
+	out := append(make([]byte, padLength, padLength), in...)
+	return SliceToByte32(out)
 }
 
 // RandomSlice returns a randomly filled byte array with length of given size
@@ -188,4 +198,18 @@ func ConvertIntToByte32(n int) ([32]byte, error) {
 // ConvertByte32ToInt converts a fixed length byte array into int with BigEndian order
 func ConvertByte32ToInt(nb [32]byte) int {
 	return int(binary.BigEndian.Uint64(nb[:]))
+}
+
+// ConvertProofForEthereum converts a proof to 32 byte format needed by ethereum
+func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
+	var property [][32]byte
+	for _, hash := range sortedHashes {
+		hash32, err := SliceToByte32(hash)
+		if err != nil {
+			return nil, err
+		}
+		property = append(property, hash32)
+	}
+
+	return property, nil
 }

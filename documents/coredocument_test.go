@@ -8,8 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -27,6 +25,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 )
@@ -60,8 +59,6 @@ func TestMain(m *testing.M) {
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	cfg.Set("keys.ethauth.publicKey", "../build/resources/ethauth.pub.pem")
-	cfg.Set("keys.ethauth.privateKey", "../build/resources/ethauth.key.pem")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -112,7 +109,13 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 }
 
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	h := sha256.New()
+	h.Write(cd.Document.CurrentPreimage)
+	var expectedCurrentVersion []byte
+	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
+	assert.Equal(t, expectedCurrentVersion, cd.Document.CurrentVersion)
 
 	// missing DocumentRoot
 	c1 := testingidentity.GenerateRandomDID()
@@ -141,6 +144,11 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Contains(t, cs, c1)
 	assert.Contains(t, cs, c2)
 	assert.Nil(t, ncd.Document.CoredocumentSalts)
+	h = sha256.New()
+	h.Write(ncd.Document.NextPreimage)
+	var expectedNextVersion []byte
+	expectedNextVersion = h.Sum(expectedNextVersion)
+	assert.Equal(t, expectedNextVersion, ncd.Document.NextVersion)
 
 	ncd, err = cd.PrepareNewVersion(c, true)
 	assert.NoError(t, err)
@@ -156,6 +164,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, cd.Document.CurrentVersion, ncd.Document.PreviousVersion)
 	assert.Equal(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
 	assert.Equal(t, cd.Document.DocumentRoot, ncd.Document.PreviousRoot)
+	assert.Len(t, cd.Document.Roles, 0)
+	assert.Len(t, cd.Document.ReadRules, 0)
+	assert.Len(t, ncd.Document.Roles, 1)
+	assert.Len(t, ncd.Document.ReadRules, 1)
+	assert.Len(t, ncd.Document.Roles[0].Collaborators, 2)
+	assert.Equal(t, ncd.Document.Roles[0].Collaborators[0], c1[:])
+	assert.Equal(t, ncd.Document.Roles[0].Collaborators[1], c2[:])
 }
 
 func TestGetSigningProofHashes(t *testing.T) {
@@ -164,10 +179,11 @@ func TestGetSigningProofHashes(t *testing.T) {
 		Value:   []byte{},
 	}
 
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.Document.EmbeddedData = docAny
 	cd.Document.DataRoot = utils.RandomSlice(32)
-	err := cd.setSalts()
+	err = cd.setSalts()
 	assert.NoError(t, err)
 
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
@@ -176,7 +192,7 @@ func TestGetSigningProofHashes(t *testing.T) {
 	_, err = cd.CalculateDocumentRoot()
 	assert.Nil(t, err)
 
-	hashes, err := cd.getSigningRootProofHashes()
+	hashes, err := cd.GetSigningRootProof()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(hashes))
 
@@ -191,7 +207,8 @@ func TestGetSignaturesTree(t *testing.T) {
 		Value:   []byte{},
 	}
 
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.Document.EmbeddedData = docAny
 	cd.Document.DataRoot = utils.RandomSlice(32)
 	sig := &coredocumentpb.Signature{
@@ -201,7 +218,7 @@ func TestGetSignaturesTree(t *testing.T) {
 		Signature:   utils.RandomSlice(32),
 	}
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	err := cd.setSalts()
+	err = cd.setSalts()
 	assert.NoError(t, err)
 
 	signatureTree, err := cd.getSignatureDataTree()
@@ -223,10 +240,11 @@ func TestGetSignaturesTree(t *testing.T) {
 }
 
 func TestGetDocumentSigningTree(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 
 	// no data root
-	_, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl)
+	_, err = cd.signingRootTree(documenttypes.InvoiceDataTypeUrl)
 	assert.Error(t, err)
 
 	// successful tree generation
@@ -246,7 +264,8 @@ func TestGetDocumentSigningTree(t *testing.T) {
 
 // TestGetDocumentRootTree tests that the documentroottree is properly calculated
 func TestGetDocumentRootTree(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
 		SignerId:    utils.RandomSlice(identity.DIDLength),
@@ -257,30 +276,28 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 
 	// no signing root generated
-	_, err := cd.DocumentRootTree()
+	_, err = cd.DocumentRootTree()
 	assert.Error(t, err)
 
 	// successful Document root generation
 	cd.Document.SigningRoot = utils.RandomSlice(32)
 	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
-	_, leaf := tree.GetLeafByProperty("signing_root")
+	_, leaf := tree.GetLeafByProperty(SigningRootField)
 	assert.NotNil(t, leaf)
 	assert.Equal(t, cd.Document.SigningRoot, leaf.Hash)
 
-	// Get some signer signature
-	signerKey := hexutil.Encode(sig.SignatureId)
-	_, signerLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
-	assert.NotNil(t, signerLeaf)
-	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
-	assert.Equal(t, sig.SignerId, signerLeaf.Value)
+	// Get signaturesLeaf
+	_, signaturesLeaf := tree.GetLeafByProperty(SignaturesRootField)
+	assert.NotNil(t, signaturesLeaf)
+	assert.Equal(t, SignaturesRootField, signaturesLeaf.Property.ReadableName())
+	assert.Equal(t, compactProperties(SignaturesRootField), signaturesLeaf.Property.CompactName())
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
-	testTree := NewDefaultTree(nil)
-	props := []proofs.Property{NewLeafProperty("sample_field", []byte{0, 0, 0, 200}), NewLeafProperty("sample_field2", []byte{0, 0, 0, 202})}
+	testTree := NewDefaultTreeWithPrefix(nil, "prefix", []byte{1, 0, 0, 0})
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
 	err := testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
@@ -293,7 +310,8 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		Value:   []byte{},
 	}
 
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	cd.Document.EmbeddedData = docAny
 	assert.NoError(t, cd.setSalts())
 	cd.Document.DataRoot = testTree.RootHash()
@@ -310,7 +328,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		proofLength int
 	}{
 		{
-			"sample_field",
+			"prefix.sample_field",
 			false,
 			3,
 		},
@@ -320,7 +338,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			6,
 		},
 		{
-			"sample_field2",
+			"prefix.sample_field2",
 			false,
 			3,
 		},
@@ -356,7 +374,8 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 }
 
 func TestCoreDocument_setSalts(t *testing.T) {
-	cd := newCoreDocument()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	assert.Nil(t, cd.Document.CoredocumentSalts)
 
 	assert.NoError(t, cd.setSalts())

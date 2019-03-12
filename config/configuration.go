@@ -108,7 +108,7 @@ type Configuration interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
+	GetPrecommitEnabled() bool
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -120,7 +120,7 @@ type Configuration interface {
 // Account exposes account options
 type Account interface {
 	storage.Model
-	GetKeys() (map[int]IDKey, error)
+	GetKeys() (map[string]IDKey, error)
 	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
@@ -128,8 +128,8 @@ type Account interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
-	GetEthAuthKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
+	GetPrecommitEnabled() bool
 
 	// CreateProtobuf creates protobuf
 	CreateProtobuf() (*accountpb.AccountData, error)
@@ -151,12 +151,6 @@ type Service interface {
 type IDKey struct {
 	PublicKey  []byte
 	PrivateKey []byte
-}
-
-// IDKeys holds key of an identity
-type IDKeys struct {
-	ID   []byte
-	Keys map[int]IDKey
 }
 
 // configuration holds the configuration details for the node.
@@ -414,14 +408,14 @@ func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
 }
 
-// GetEthAuthKeyPair returns ethereum key pair.
-func (c *configuration) GetEthAuthKeyPair() (pub, priv string) {
-	return c.GetString("keys.ethauth.publicKey"), c.GetString("keys.ethauth.privateKey")
-}
-
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
+}
+
+// GetPrecommitEnabled returns true if precommit for anchors is enabled
+func (c *configuration) GetPrecommitEnabled() bool {
+	return c.GetBool("anchoring.precommit")
 }
 
 // LoadConfiguration loads the configuration from the given file.
@@ -494,6 +488,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
+	preCommitEnabled := args["preCommitEnabled"].(bool)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -523,6 +518,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
 	v.Set("accounts.keystore", targetDataDir+"/accounts")
+	v.Set("anchoring.precommit", preCommitEnabled)
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", "0.0.0.0")
@@ -537,8 +533,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ethereum.accounts.main.password", accountPassword)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
-	v.Set("keys.ethauth.privateKey", targetDataDir+"/ethauth.key.pem")
-	v.Set("keys.ethauth.publicKey", targetDataDir+"/ethauth.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
 

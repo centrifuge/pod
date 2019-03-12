@@ -1,6 +1,8 @@
 package documents
 
 import (
+	"context"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -19,6 +21,9 @@ type Model interface {
 
 	// CurrentVersion returns the current version identifier of the Document
 	CurrentVersion() []byte
+
+	// CurrentVersionPreimage returns the current version pre-image of the Document. This is intended to hide the next version of an updated version of the document.
+	CurrentVersionPreimage() []byte
 
 	// PreviousVersion returns the previous version identifier of the Document
 	PreviousVersion() []byte
@@ -44,6 +49,9 @@ type Model interface {
 
 	// CalculateDocumentRoot returns the Document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
+
+	// GetSigningRootProof get the proof for signing root of the model.
+	GetSigningRootProof() (hashes [][]byte, err error)
 
 	// PreviousDocumentRoot returns the Document root of the previous version.
 	PreviousDocumentRoot() []byte
@@ -85,8 +93,8 @@ type Model interface {
 	// NFTOwnerCanRead returns error if the NFT cannot read the document.
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
-	// ATOwnerCanRead returns error if the NFT cannot read the document.
-	ATOwnerCanRead(tokenID, docID []byte, account identity.DID) (err error)
+	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
+	ATGranteeCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
 }
 
 // TokenRegistry defines NFT related functions.
