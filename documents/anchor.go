@@ -13,7 +13,7 @@ import (
 type AnchorProcessor interface {
 	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
-	RequestSignatures(ctx context.Context, model Model, senderID []byte) error
+	RequestSignatures(ctx context.Context, model Model) error
 	PrepareForAnchoring(model Model) error
 	PreAnchorDocument(ctx context.Context, model Model) error
 	AnchorDocument(ctx context.Context, model Model) error
@@ -25,7 +25,7 @@ type updaterFunc func(id []byte, model Model) error
 
 // AnchorDocument add signature, requests signatures, anchors document, and sends the anchored document
 // to collaborators
-func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc, preAnchor bool, senderID []byte) (Model, error) {
+func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, updater updaterFunc, preAnchor bool) (Model, error) {
 	id := model.CurrentVersion()
 	err := proc.PrepareForSignatureRequests(ctx, model)
 	if err != nil {
@@ -44,7 +44,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 		}
 	}
 
-	err = proc.RequestSignatures(ctx, model, senderID)
+	err = proc.RequestSignatures(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to collect signatures: %v", err))
 	}

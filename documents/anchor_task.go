@@ -112,10 +112,9 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		return false, errors.New("failed to get model: %v", err)
 	}
 
-	id := testingidentity.GenerateRandomDID()
 	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
 		return d.modelSaveFunc(d.accountID[:], id, model)
-	}, tc.GetPrecommitEnabled(), id[:]); err != nil {
+	}, tc.GetPrecommitEnabled()); err != nil {
 		return false, errors.New("failed to anchor document: %v", err)
 	}
 
