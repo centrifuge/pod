@@ -6,7 +6,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
@@ -90,8 +89,8 @@ func (i *MockIdentityService) ValidateKey(ctx context.Context, did identity.DID,
 }
 
 // ValidateSignature checks if signature is valid for given identity
-func (i *MockIdentityService) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	args := i.Called(signature, message)
+func (i *MockIdentityService) ValidateSignature(did identity.DID, pubKey []byte, signature []byte, message []byte, timestamp time.Time) error {
+	args := i.Called(did, pubKey, signature, message, timestamp)
 	return args.Error(0)
 }
 

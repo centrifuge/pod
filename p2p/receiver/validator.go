@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 )
@@ -89,8 +89,13 @@ func peerValidator(idService identity.ServiceDID) Validator {
 		if err != nil {
 			return err
 		}
-		// TODO provide the time for validation here by adding the sent timestamp to the p2p header
-		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value), nil)
+
+		tm, err := utils.FromTimestamp(header.Timestamp)
+		if err != nil {
+			return err
+		}
+
+		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value), &tm)
 	})
 }
 

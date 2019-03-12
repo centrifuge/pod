@@ -178,12 +178,34 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			return errors.New("atleast one signature expected")
 		}
 
+		authorFound := false
 		for _, sig := range signatures {
-			if erri := idService.ValidateSignature(&sig, sr); erri != nil {
+			tm, terr := utils.FromTimestamp(sig.Timestamp)
+			sigDID := identity.NewDIDFromBytes(sig.EntityId)
+			if model.Author().Equal(sigDID) {
+				authorFound = true
+				// if author is found, check his signature relative to signed time on the document
+				tm, terr = model.Timestamp()
+			}
+
+			// terr is updated twice in previous lines, we wait until final value is determined to check for error
+			if terr != nil {
+				err = errors.AppendError(
+					err,
+					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.EntityId), terr))
+				continue
+			}
+
+			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, sr, tm); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.EntityId), erri))
 			}
+		}
+		if !authorFound {
+			err = errors.AppendError(
+				err,
+				errors.New("signature verification failed: author not found"))
 		}
 		return err
 	})

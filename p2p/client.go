@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -287,7 +289,12 @@ func validateSignatureResp(
 		return centerrors.New(code.AuthenticationFailed, err.Error())
 	}
 
-	err = identityService.ValidateSignature(resp.Signature, signingRoot)
+	tm, err := utils.FromTimestamp(resp.Signature.Timestamp)
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, err.Error())
+	}
+
+	err = identityService.ValidateSignature(identity.NewDIDFromBytes(resp.Signature.EntityId), resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
