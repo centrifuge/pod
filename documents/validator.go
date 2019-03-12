@@ -223,9 +223,12 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 
 // TransitionValidator checks that the document model changes are within the transition_rule capability of the
 // identity making the changes
-func TransitionValidator(collaboratorID identity.DID) Validator {
+func TransitionValidator(collaborator identity.DID) Validator {
 	return ValidatorFunc(func(old, new Model) error {
-		err := old.CollaboratorCanUpdate(new, collaboratorID)
+		if old == nil {
+			return nil
+		}
+		err := old.CollaboratorCanUpdate(new, collaborator)
 		if err != nil {
 			return errors.New("invalid document state transition: %v", err)
 		}
@@ -263,7 +266,6 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	return ValidatorGroup{
 		PreAnchorValidator(idService),
 		anchoredValidator(repo),
-		//transition_validator
 	}
 }
 
@@ -277,6 +279,5 @@ func SignatureValidator(idService identity.ServiceDID) ValidatorGroup {
 		baseValidator(),
 		signingRootValidator(),
 		signaturesValidator(idService),
-		//transition_validator
 	}
 }
