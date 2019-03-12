@@ -125,7 +125,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository, nil).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -156,7 +156,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, send
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	if err := SignatureRequestValidator(s.idService, senderID).Validate(nil, model); err != nil {
+	if err := RequestDocumentSignatureValidator(s.idService, senderID).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -211,7 +211,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.New("no model given")
 	}
 
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository, nil).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

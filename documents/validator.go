@@ -242,8 +242,8 @@ func TransitionValidator(senderID []byte) Validator {
 // signing root validator
 // signatures validator
 // should be used when node receives a document requesting for signature
-func SignatureRequestValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
-	return SignatureValidator(idService, senderID)
+func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
+	return SignatureValidator(idService)
 }
 
 // PreAnchorValidator is a validator group with following validators
@@ -252,9 +252,9 @@ func SignatureRequestValidator(idService identity.ServiceDID, senderID []byte) V
 // document root validator
 // signatures validator
 // should be called before pre anchoring
-func PreAnchorValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
+func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
-		SignatureValidator(idService, senderID),
+		SignatureValidator(idService),
 		documentRootValidator(),
 	}
 }
@@ -263,23 +263,33 @@ func PreAnchorValidator(idService identity.ServiceDID, senderID []byte) Validato
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRepository, senderID []byte) ValidatorGroup {
+func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
-		PreAnchorValidator(idService, senderID),
+		PreAnchorValidator(idService),
 		anchoredValidator(repo),
 	}
 }
+
+// RequestDocumentSignatureValidator is a validator group with the following validators
+// SignatureValidator
+// transitionsValidator
+// it should be called when a document is received over the p2p layer before signing
+	func RequestDocumentSignatureValidator(idService identity.ServiceDID, senderID[]byte) ValidatorGroup {
+		return ValidatorGroup{
+			SignatureValidator(idService),
+			TransitionValidator(senderID),
+		}
+	}
 
 // SignatureValidator is a validator group with following validators
 // baseValidator
 // signingRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
-func SignatureValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
+func SignatureValidator(idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
 		signaturesValidator(idService),
-		TransitionValidator(senderID),
 	}
 }

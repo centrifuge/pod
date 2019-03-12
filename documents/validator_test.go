@@ -263,11 +263,10 @@ func TestValidator_TransitionValidator(t *testing.T) {
 }
 
 func TestValidator_SignatureValidator(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
 	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	assert.NoError(t, err)
 	idService := new(testingcommons.MockIdentityService)
-	sv := SignatureValidator(idService, id1[:])
+	sv := SignatureValidator(idService)
 
 	// fail to get signing root
 	model := new(mockModel)
@@ -301,7 +300,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	}
 
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, id1[:])
+	sv = SignatureValidator(idService)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -386,8 +385,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 }
 
 func TestPreAnchorValidator(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	pav := PreAnchorValidator(nil, id1[:])
+	pav := PreAnchorValidator(nil)
 	assert.Len(t, pav, 2)
 }
 
@@ -463,13 +461,11 @@ func TestValidator_anchoredValidator(t *testing.T) {
 }
 
 func TestPostAnchoredValidator(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	pav := PostAnchoredValidator(nil, nil, id1[:])
+	pav := PostAnchoredValidator(nil, nil)
 	assert.Len(t, pav, 2)
 }
 
 func TestSignatureRequestValidator(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	srv := SignatureRequestValidator(nil, id1[:])
-	assert.Len(t, srv, 4)
+	srv := SignatureRequestValidator(nil)
+	assert.Len(t, srv, 3)
 }
