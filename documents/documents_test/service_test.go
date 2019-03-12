@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -29,11 +30,8 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	cid         = testingidentity.GenerateRandomDID()
-	centIDBytes = cid[:]
-	tenantID    = cid[:]
-	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
-	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
+	did      = testingidentity.GenerateRandomDID()
+	tenantID = did[:]
 )
 
 var ctx = map[string]interface{}{}
@@ -49,18 +47,99 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("identityId", cid.String())
+	cfg.Set("identityId", did.String())
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
-func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
-	poSrv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
+func TestService_ReceiveAnchoredDocument(t *testing.T) {
+	srv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
 
 	// self failed
-	err := poSrv.ReceiveAnchoredDocument(context.Background(), nil, nil)
+	err := srv.ReceiveAnchoredDocument(context.Background(), nil, nil)
 	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// nil model
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	acc, err := contextutil.Account(ctxh)
+	assert.NoError(t, err)
+	err = srv.ReceiveAnchoredDocument(ctxh, nil, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// first version of the document but not saved
+	id2 := testingidentity.GenerateRandomDID()
+	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, true)
+	idSrv := new(testingcommons.MockIdentityService)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	ar := new(mockAnchorRepo)
+	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	assert.NoError(t, err)
+	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
+	ar.AssertExpectations(t)
+	idSrv.AssertExpectations(t)
+
+	// new document with saved
+	doc, cd = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, false)
+	idSrv = new(testingcommons.MockIdentityService)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	ar = new(mockAnchorRepo)
+	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
+	assert.NoError(t, err)
+	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
+	assert.NoError(t, err)
+	ar.AssertExpectations(t)
+	idSrv.AssertExpectations(t)
+
+	// document with missing previous version
+	model := new(testingdocuments.MockModel)
+	model.On("PreviousVersion").Return(utils.RandomSlice(32))
+	err = srv.ReceiveAnchoredDocument(ctxh, model, did[:])
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// prepare a new version
+	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+	_, err = doc.CalculateDataRoot()
+	assert.NoError(t, err)
+	sr, err := doc.CalculateSigningRoot()
+	assert.NoError(t, err)
+	sig, err := acc.SignMsg(sr)
+	assert.NoError(t, err)
+
+	doc.AppendSignatures(sig)
+	ndr, err := doc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	err = testRepo().Create(did[:], doc.CurrentVersion(), doc)
+	assert.NoError(t, err)
+
+	// invalid transition for id3
+	id3 := testingidentity.GenerateRandomDID()
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, id3[:])
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	assert.Contains(t, err.Error(), "invalid document state transition")
+
+	// valid transition for id2
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	ar = new(mockAnchorRepo)
+	dr, err = anchors.ToDocumentRoot(ndr)
+	assert.NoError(t, err)
+	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2[:])
+	assert.NoError(t, err)
+	ar.AssertExpectations(t)
+	idSrv.AssertExpectations(t)
 }
 
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
@@ -98,7 +177,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 func TestService_CreateProofs(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	proof, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
@@ -110,7 +189,7 @@ func TestService_CreateProofs(t *testing.T) {
 func TestService_CreateProofsValidationFails(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
@@ -123,7 +202,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	_, err := service.CreateProofs(ctxh, i.CurrentVersion(), []string{"invalid_field"})
 	assert.Error(t, err)
@@ -141,7 +220,7 @@ func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 func TestService_CreateProofsForVersion(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	proof, err := service.CreateProofsForVersion(ctxh, i.ID(), i.CurrentVersion(), []string{"invoice.invoice_number"})
 	assert.Nil(t, err)
@@ -154,7 +233,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, true)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, true)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
@@ -166,7 +245,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, false)
+	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	s, _ := getServiceWithMockedLayers()
 	_, err := s.CreateProofsForVersion(ctxh, i.ID(), utils.RandomSlice(32), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
@@ -340,9 +419,18 @@ func TestService_Exists(t *testing.T) {
 
 }
 
-func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborators []identity.DID, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(invoice.Invoice)
-	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid.String())
+	data := testingdocuments.CreateInvoicePayload()
+	if len(collaborators) > 0 {
+		var cs []string
+		for _, c := range collaborators {
+			cs = append(cs, c.String())
+		}
+		data.Collaborators = cs
+	}
+
+	err := i.InitInvoiceInput(data, did.String())
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
