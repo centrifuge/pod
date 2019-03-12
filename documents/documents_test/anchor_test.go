@@ -50,7 +50,7 @@ func (m *mockAnchorProcessor) PrepareForSignatureRequests(ctx context.Context, m
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) RequestSignatures(ctx context.Context, model documents.Model, senderID []byte) error {
+func (m *mockAnchorProcessor) RequestSignatures(ctx context.Context, model documents.Model) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }
@@ -60,7 +60,7 @@ func (m *mockAnchorProcessor) PrepareForAnchoring(model documents.Model) error {
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) AnchorDocument(ctx context.Context, model documents.Model, senderID []byte) error {
+func (m *mockAnchorProcessor) AnchorDocument(ctx context.Context, model documents.Model) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
@@ -82,7 +82,7 @@ func TestAnchorDocument(t *testing.T) {
 	m.On("CurrentVersion").Return(id).Once()
 	proc := &mockAnchorProcessor{}
 	proc.On("PrepareForSignatureRequests", m).Return(errors.New("error")).Once()
-	model, err := documents.AnchorDocument(ctxh, m, proc, updater, false, id)
+	model, err := documents.AnchorDocument(ctxh, m, proc, updater, false)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, model)
@@ -96,7 +96,7 @@ func TestAnchorDocument(t *testing.T) {
 	proc.On("PrepareForSignatureRequests", m).Return(nil).Once()
 	proc.On("RequestSignatures", ctxh, m).Return(errors.New("error")).Once()
 	proc.On("PreAnchorDocument", ctxh, m).Return(nil).Once()
-	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true, id)
+	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, model)
@@ -111,7 +111,7 @@ func TestAnchorDocument(t *testing.T) {
 	proc.On("RequestSignatures", ctxh, m).Return(nil).Once()
 	proc.On("PrepareForAnchoring", m).Return(errors.New("error")).Once()
 	proc.On("PreAnchorDocument", ctxh, m).Return(nil).Once()
-	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true, id)
+	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, model)
@@ -127,7 +127,7 @@ func TestAnchorDocument(t *testing.T) {
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
 	proc.On("PreAnchorDocument", ctxh, m).Return(nil).Once()
 	proc.On("AnchorDocument", m).Return(errors.New("error")).Once()
-	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true, id)
+	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, model)
@@ -144,7 +144,7 @@ func TestAnchorDocument(t *testing.T) {
 	proc.On("PreAnchorDocument", ctxh, m).Return(nil).Once()
 	proc.On("AnchorDocument", m).Return(nil).Once()
 	proc.On("SendDocument", ctxh, m).Return(errors.New("error")).Once()
-	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true, id)
+	model, err = documents.AnchorDocument(ctxh, m, proc, updater, true)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, model)
@@ -160,7 +160,7 @@ func TestAnchorDocument(t *testing.T) {
 	proc.On("PrepareForAnchoring", m).Return(nil).Once()
 	proc.On("AnchorDocument", m).Return(nil).Once()
 	proc.On("SendDocument", ctxh, m).Return(nil).Once()
-	model, err = documents.AnchorDocument(ctxh, m, proc, updater, false, id)
+	model, err = documents.AnchorDocument(ctxh, m, proc, updater, false)
 	m.AssertExpectations(t)
 	proc.AssertExpectations(t)
 	assert.Nil(t, err)
