@@ -108,7 +108,11 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	tc, err := configstore.NewAccount("main", cfg)
+	assert.NoError(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
@@ -199,7 +203,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = centrifugeId[:]
 
-	ctxh, err := contextutil.New(context.Background(), tc)
+	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.Nil(t, err)
 
 	po, cd := prepareDocumentForP2PHandler(t, nil)
@@ -209,6 +213,8 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 
 	// Add signature received
 	po.AppendSignatures(resp.Signature)
+	// Since we have changed the coredocument by adding signatures lets generate salts again
+	po.Document.SignatureDataSalts = nil
 	tree, err := po.DocumentRootTree()
 	po.Document.DocumentRoot = tree.RootHash()
 

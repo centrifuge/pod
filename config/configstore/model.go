@@ -538,7 +538,8 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	signature, err := crypto.SignMessage(keys[identity.KeyPurposeSigning.Name].PrivateKey, msg, crypto.CurveSecp256K1)
+	signingKeyPair := keys[identity.KeyPurposeSigning.Name]
+	signature, err := crypto.SignMessage(signingKeyPair.PrivateKey, msg, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
@@ -549,9 +550,9 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	}
 
 	return &coredocumentpb.Signature{
-		SignatureId: append(did, keys[identity.KeyPurposeSigning.Name].PublicKey...),
+		SignatureId: append(did, signingKeyPair.PublicKey...),
 		SignerId:    did,
-		PublicKey:   keys[identity.KeyPurposeSigning.Name].PublicKey,
+		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
 		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}, nil

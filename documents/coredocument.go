@@ -43,7 +43,7 @@ const (
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
 
-	// SignaturesTreePrefix is the human readable prefix for signing tree props
+	// SignaturesTreePrefix is the human readable prefix for signature props
 	SignaturesTreePrefix = "signatures_tree"
 )
 
@@ -285,6 +285,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	return generateProofs(fields, treeProofs)
 }
 
+// TODO remove as soon as we have a public method that retrieves the parent prefix
 func getDataTreePrefix(dataTree *proofs.DocumentTree) (string, error) {
 	props := dataTree.PropertyOrder()
 	if len(props) == 0 {
@@ -346,7 +347,7 @@ func (cd *CoreDocument) setSignatureDataSalts() ([]*coredocumentpb.DocumentSalt,
 	return cd.Document.SignatureDataSalts, nil
 }
 
-// GetSignatureDataTree returns the merkle tree for the Signature Data root.
+// getSignatureDataTree returns the merkle tree for the Signature Data root.
 func (cd *CoreDocument) getSignatureDataTree() (*proofs.DocumentTree, error) {
 	signatureSalts, err := cd.setSignatureDataSalts()
 	if err != nil {
