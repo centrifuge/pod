@@ -5,6 +5,7 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"math/big"
 	"os"
 	"testing"
@@ -106,19 +107,21 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	id := testingidentity.GenerateRandomDID()
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 
-	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
 	assert.NotNil(t, err, "must not be nil")
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
 }
 
 func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
+	id := testingidentity.GenerateRandomDID()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	po, cd := prepareDocumentForP2PHandler(t, nil)
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -126,7 +129,7 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 	//Update document
 	po, cd = updateDocumentForP2Phandler(t, po)
-	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -135,11 +138,12 @@ func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
 }
 
 func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
+	id := testingidentity.GenerateRandomDID()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	po, cd := prepareDocumentForP2PHandler(t, nil)
 	po, cd = updateDocumentForP2Phandler(t, po)
 	assert.NotEqual(t, cd.DocumentIdentifier, cd.CurrentVersion)
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -148,9 +152,10 @@ func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
+	id := testingidentity.GenerateRandomDID()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, cd := prepareDocumentForP2PHandler(t, nil)
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -200,7 +205,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	po, cd := prepareDocumentForP2PHandler(t, nil)
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, centrifugeId[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 

@@ -95,7 +95,8 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.RequestDocumentSignature(ctx, req)
+	fromID := msg.Header.SenderId
+	res, err := srv.RequestDocumentSignature(ctx, req, fromID)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -117,7 +118,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
-func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, senderID []byte) (*p2ppb.SignatureResponse, error) {
 	if sigReq == nil || sigReq.Document == nil {
 		return nil, errors.New("nil document provided")
 	}
@@ -127,7 +128,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model)
+	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, senderID)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

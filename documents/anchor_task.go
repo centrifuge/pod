@@ -3,7 +3,6 @@ package documents
 import (
 	"context"
 	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -11,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/gocelery"
@@ -110,9 +110,10 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		return false, errors.New("failed to get model: %v", err)
 	}
 
+	id := testingidentity.GenerateRandomDID()
 	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
 		return d.modelSaveFunc(d.accountID[:], id, model)
-	}, tc.GetPrecommitEnabled()); err != nil {
+	}, tc.GetPrecommitEnabled(), id[:]); err != nil {
 		return false, errors.New("failed to anchor document: %v", err)
 	}
 

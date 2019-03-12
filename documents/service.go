@@ -50,7 +50,7 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, model Model, senderID []byte) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
@@ -125,7 +125,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepository, nil).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -150,13 +150,13 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Model, senderID []byte) (*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	if err := SignatureRequestValidator(s.idService).Validate(nil, model); err != nil {
+	if err := SignatureRequestValidator(s.idService, senderID).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -211,7 +211,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.New("no model given")
 	}
 
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepository, nil).Validate(nil, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

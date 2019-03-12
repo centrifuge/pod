@@ -223,11 +223,12 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 
 // TransitionValidator checks that the document model changes are within the transition_rule capability of the
 // identity making the changes
-func TransitionValidator(collaborator identity.DID) Validator {
+func TransitionValidator(senderID []byte) Validator {
 	return ValidatorFunc(func(old, new Model) error {
 		if old == nil {
 			return nil
 		}
+		collaborator := identity.NewDIDFromBytes(senderID)
 		err := old.CollaboratorCanUpdate(new, collaborator)
 		if err != nil {
 			return errors.New("invalid document state transition: %v", err)
@@ -241,8 +242,8 @@ func TransitionValidator(collaborator identity.DID) Validator {
 // signing root validator
 // signatures validator
 // should be used when node receives a document requesting for signature
-func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
-	return SignatureValidator(idService)
+func SignatureRequestValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
+	return SignatureValidator(idService, senderID)
 }
 
 // PreAnchorValidator is a validator group with following validators
@@ -251,9 +252,9 @@ func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
 // document root validator
 // signatures validator
 // should be called before pre anchoring
-func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
+func PreAnchorValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
 	return ValidatorGroup{
-		SignatureValidator(idService),
+		SignatureValidator(idService, senderID),
 		documentRootValidator(),
 	}
 }
@@ -262,9 +263,9 @@ func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRepository) ValidatorGroup {
+func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRepository, senderID []byte) ValidatorGroup {
 	return ValidatorGroup{
-		PreAnchorValidator(idService),
+		PreAnchorValidator(idService, senderID),
 		anchoredValidator(repo),
 	}
 }
@@ -274,10 +275,11 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 // signingRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
-func SignatureValidator(idService identity.ServiceDID) ValidatorGroup {
+func SignatureValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
 		signaturesValidator(idService),
+		TransitionValidator(senderID),
 	}
 }
