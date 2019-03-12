@@ -223,9 +223,9 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 
 // TransitionValidator checks that the document model changes are within the transition_rule capability of the
 // identity making the changes
-func TransitionValidator(newModel Model,  collaboratorID identity.DID) Validator {
-	return ValidatorFunc(func(_, model Model) error {
-		err := model.CollaboratorCanUpdate(newModel, collaboratorID)
+func TransitionValidator(collaboratorID identity.DID) Validator {
+	return ValidatorFunc(func(old, new Model) error {
+		err := old.CollaboratorCanUpdate(new, collaboratorID)
 		if err != nil {
 			return errors.New("invalid document state transition: %v", err)
 		}
