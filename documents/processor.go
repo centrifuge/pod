@@ -152,7 +152,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model, senderID []byte) error {
+func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
 	pav := PreAnchorValidator(dp.identityService)
 	err := pav.Validate(nil, model)
 	if err != nil {

@@ -16,7 +16,7 @@ type AnchorProcessor interface {
 	RequestSignatures(ctx context.Context, model Model, senderID []byte) error
 	PrepareForAnchoring(model Model) error
 	PreAnchorDocument(ctx context.Context, model Model) error
-	AnchorDocument(ctx context.Context, model Model, senderID []byte) error
+	AnchorDocument(ctx context.Context, model Model) error
 	SendDocument(ctx context.Context, model Model) error
 }
 
@@ -65,7 +65,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 	}
 
 	// TODO [TXManager] this function creates a child task in the queue which should be removed and called from the TxManger function
-	err = proc.AnchorDocument(ctx, model, senderID)
+	err = proc.AnchorDocument(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor document: %v", err))
 	}
