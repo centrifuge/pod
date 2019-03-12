@@ -4,6 +4,8 @@ package nft_test
 
 import (
 	"context"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
 	"testing"
 	"time"
@@ -124,11 +126,19 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
+	acc, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	accDIDBytes, err := acc.GetIdentityID()
+	assert.NoError(t, err)
+	keys, err := acc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
 		SubmitTokenProof:         true,
