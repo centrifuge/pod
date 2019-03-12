@@ -274,12 +274,12 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 // SignatureValidator
 // transitionsValidator
 // it should be called when a document is received over the p2p layer before signing
-	func RequestDocumentSignatureValidator(idService identity.ServiceDID, senderID[]byte) ValidatorGroup {
-		return ValidatorGroup{
-			SignatureValidator(idService),
-			TransitionValidator(senderID),
-		}
+func RequestDocumentSignatureValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
+	return ValidatorGroup{
+		SignatureValidator(idService),
+		TransitionValidator(senderID),
 	}
+}
 
 // SignatureValidator is a validator group with following validators
 // baseValidator
