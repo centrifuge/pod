@@ -41,15 +41,15 @@ func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity
 	if role == nil {
 		return
 	}
-	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ_SIGN)
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ_SIGN)
 }
 
 // addNewReadRule creates a new read rule as per the role and action.
-func (cd *CoreDocument) addNewReadRule(role *coredocumentpb.Role, action coredocumentpb.Action) {
-	cd.Document.Roles = append(cd.Document.Roles, role)
+func (cd *CoreDocument) addNewReadRule(roleKey []byte, action coredocumentpb.Action) {
 	rule := &coredocumentpb.ReadRule{
 		Action: action,
-		Roles:  [][]byte{role.RoleKey},
+		Roles:  [][]byte{roleKey},
 	}
 	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
 }
@@ -119,7 +119,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 func (cd *CoreDocument) AccountCanRead(account identity.DID) bool {
 	// loop though read rules, check all the rules
 	return findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		_, found := isAccountInRole(role, account)
+		_, found := isDIDInRole(role, account)
 		return found
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
@@ -133,7 +133,8 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 
 	role := newRole()
 	role.Nfts = append(role.Nfts, nft)
-	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 	return cd.setSalts()
 }
 
@@ -313,7 +314,7 @@ func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account ident
 		return pk, err
 	}
 
-	idx, found := isAccountInRole(role, account)
+	idx, found := isDIDInRole(role, account)
 	if !found {
 		return pk, ErrNFTRoleMissing
 	}
@@ -321,10 +322,10 @@ func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account ident
 	return fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx), nil
 }
 
-// isAccountInRole returns the index of the collaborator and true if account is in the given role as collaborators.
-func isAccountInRole(role *coredocumentpb.Role, account identity.DID) (idx int, found bool) {
+// isDIDInRole returns the index of the collaborator and true if did is in the given role as collaborators.
+func isDIDInRole(role *coredocumentpb.Role, did identity.DID) (idx int, found bool) {
 	for i, id := range role.Collaborators {
-		if bytes.Equal(id, account[:]) {
+		if bytes.Equal(id, did[:]) {
 			return i, true
 		}
 	}

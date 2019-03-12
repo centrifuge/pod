@@ -165,12 +165,15 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Len(t, cd.Document.Roles, 0)
 	assert.Len(t, cd.Document.ReadRules, 0)
 	assert.Len(t, cd.Document.TransitionRules, 0)
-	assert.Len(t, ncd.Document.Roles, 3)
+	assert.Len(t, ncd.Document.Roles, 2)
 	assert.Len(t, ncd.Document.ReadRules, 1)
 	assert.Len(t, ncd.Document.TransitionRules, 2)
 	assert.Len(t, ncd.Document.Roles[0].Collaborators, 2)
 	assert.Equal(t, ncd.Document.Roles[0].Collaborators[0], c1[:])
 	assert.Equal(t, ncd.Document.Roles[0].Collaborators[1], c2[:])
+	assert.Len(t, ncd.Document.Roles[1].Collaborators, 2)
+	assert.Equal(t, ncd.Document.Roles[1].Collaborators[0], c1[:])
+	assert.Equal(t, ncd.Document.Roles[1].Collaborators[1], c2[:])
 }
 
 func TestGetSigningProofHashes(t *testing.T) {
@@ -348,7 +351,8 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 	assert.Len(t, cs, 0)
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
 	assert.NoError(t, err)
@@ -380,7 +384,8 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -395,7 +400,8 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 
 	role2 := newRole()
 	role2.Collaborators = append(role.Collaborators, id3[:])
-	cd.addNewTransitionRule(role2, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	cd.Document.Roles = append(cd.Document.Roles, role2)
+	cd.addNewTransitionRule(role2.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 }
 
 func TestCoreDocument_GetSignCollaborators(t *testing.T) {
@@ -415,7 +421,8 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.addNewReadRule(role, coredocumentpb.Action_ACTION_READ)
+	cd.Document.Roles = append(cd.Document.Roles, role)
+	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetSignerCollaborators()
 	assert.NoError(t, err)
