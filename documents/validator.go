@@ -181,7 +181,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 		authorFound := false
 		for _, sig := range signatures {
 			tm, terr := utils.FromTimestamp(sig.Timestamp)
-			sigDID := identity.NewDIDFromBytes(sig.EntityId)
+			sigDID := identity.NewDIDFromBytes(sig.SignerId)
 			if model.Author().Equal(sigDID) {
 				authorFound = true
 				// if author is found, check his signature relative to signed time on the document
@@ -192,7 +192,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			if terr != nil {
 				err = errors.AppendError(
 					err,
-					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.EntityId), terr))
+					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), terr))
 				continue
 			}
 

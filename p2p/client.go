@@ -293,7 +293,7 @@ func validateSignatureResp(
 		return centerrors.New(code.AuthenticationFailed, err.Error())
 	}
 
-	err = identityService.ValidateSignature(identity.NewDIDFromBytes(resp.Signature.EntityId), resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
+	err = identityService.ValidateSignature(identity.NewDIDFromBytes(resp.Signature.SignerId), resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
