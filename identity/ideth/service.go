@@ -446,10 +446,10 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 
 // ValidateSignature validates a signature on a message based on identity data
 func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	centID := id.NewDIDFromBytes(signature.EntityId)
+	did := id.NewDIDFromBytes(signature.SignerId)
 
 	sigTime := time.Unix(signature.Timestamp.Seconds, int64(signature.Timestamp.Nanos))
-	err := i.ValidateKey(context.Background(), centID, signature.PublicKey, &(id.KeyPurposeSigning.Value), &sigTime)
+	err := i.ValidateKey(context.Background(), did, signature.PublicKey, &(id.KeyPurposeSigning.Value), &sigTime)
 	if err != nil {
 		return err
 	}
@@ -461,18 +461,7 @@ func (i service) ValidateSignature(signature *coredocumentpb.Signature, message 
 	return nil
 }
 
-// ValidateCentrifugeIDBytes validates a centrifuge ID given as bytes
-func ValidateCentrifugeIDBytes(givenDID []byte, DID id.DID) error {
-	calcCentID := id.NewDIDFromBytes(givenDID)
-	if !DID.Equal(calcCentID) {
-		return errors.New("provided bytes doesn't match centID")
-	}
-
-	return nil
-}
-
 // NewDIDFromContext returns DID from context.Account
-// TODO remove this function to identity/did.go as soon as IDConfig is removed otherwise there is a cyclic dep
 func NewDIDFromContext(ctx context.Context) (id.DID, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {

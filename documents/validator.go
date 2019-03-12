@@ -182,7 +182,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			if erri := idService.ValidateSignature(&sig, sr); erri != nil {
 				err = errors.AppendError(
 					err,
-					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.EntityId), erri))
+					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
 			}
 		}
 		return err

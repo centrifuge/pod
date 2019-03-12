@@ -108,13 +108,16 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 // TODO: consolidate into one test, test for transition validity
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	id := testingidentity.GenerateRandomDID()
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
+	tc, err := configstore.NewAccount("main", cfg)
+	assert.NoError(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, nil)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, resp, "must be non nil")
 
-	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id[:])
+	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, nil)
 	assert.NotNil(t, err, "must not be nil")
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
 }
@@ -203,7 +206,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = centrifugeId[:]
 
-	ctxh, err := contextutil.New(context.Background(), tc)
+	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.Nil(t, err)
 
 	po, cd := prepareDocumentForP2PHandler(t, nil)
@@ -213,6 +216,8 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 
 	// Add signature received
 	po.AppendSignatures(resp.Signature)
+	// Since we have changed the coredocument by adding signatures lets generate salts again
+	po.Document.SignatureDataSalts = nil
 	tree, err := po.DocumentRootTree()
 	po.Document.DocumentRoot = tree.RootHash()
 
@@ -286,10 +291,11 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		EntityId:  defaultDID[:],
-		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
-		Signature: s,
-		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+		SignatureId: append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
+		SignerId:    defaultDID[:],
+		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature:   s,
+		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}
 	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()
