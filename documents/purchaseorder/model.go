@@ -146,7 +146,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -370,7 +370,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
 	if err != nil {
 		return err
 	}
@@ -404,4 +404,33 @@ func (p *PurchaseOrder) CreateNFTProofs(
 	return p.CoreDocument.CreateNFTProofs(
 		p.DocumentType(),
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
+}
+
+// CollaboratorCanUpdate checks if the account can update the document.
+func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collaborator identity.DID) error {
+	newPo, ok := updated.(*PurchaseOrder)
+	if !ok {
+		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting a purchase order but got %T", updated))
+	}
+
+	// check the core document changes
+	err := p.CoreDocument.CollaboratorCanUpdate(newPo.CoreDocument, collaborator, p.DocumentType())
+	if err != nil {
+		return err
+	}
+
+	// check purchase order specific changes
+	oldTree, err := p.getDocumentDataTree()
+	if err != nil {
+		return err
+	}
+
+	newTree, err := newPo.getDocumentDataTree()
+	if err != nil {
+		return err
+	}
+
+	rules := p.CoreDocument.TransitionRulesFor(collaborator)
+	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	return documents.ValidateTransitions(rules, cf)
 }

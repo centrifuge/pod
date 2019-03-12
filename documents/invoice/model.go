@@ -160,7 +160,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -393,7 +393,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true)
+	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
 	if err != nil {
 		return err
 	}
@@ -426,4 +426,33 @@ func (i *Invoice) CreateNFTProofs(
 	return i.CoreDocument.CreateNFTProofs(
 		i.DocumentType(),
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
+}
+
+// CollaboratorCanUpdate checks if the collaborator can update the document.
+func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator identity.DID) error {
+	newInv, ok := updated.(*Invoice)
+	if !ok {
+		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an invoice but got %T", updated))
+	}
+
+	// check the core document changes
+	err := i.CoreDocument.CollaboratorCanUpdate(newInv.CoreDocument, collaborator, i.DocumentType())
+	if err != nil {
+		return err
+	}
+
+	// check invoice specific changes
+	oldTree, err := i.getDocumentDataTree()
+	if err != nil {
+		return err
+	}
+
+	newTree, err := newInv.getDocumentDataTree()
+	if err != nil {
+		return err
+	}
+
+	rules := i.CoreDocument.TransitionRulesFor(collaborator)
+	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	return documents.ValidateTransitions(rules, cf)
 }
