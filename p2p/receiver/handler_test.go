@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -77,8 +79,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
+	id := testingidentity.GenerateRandomDID()
 	req := &p2ppb.SignatureRequest{}
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(context.Background(), req, id[:])
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }

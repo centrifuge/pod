@@ -5,11 +5,12 @@ package receiver_test
 import (
 	"context"
 	"flag"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -104,6 +105,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
 }
 
+// TODO: consolidate into one test, test for transition validity
 func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
