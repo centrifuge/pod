@@ -7,17 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -75,7 +74,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	// Revoke Key
 	key, err := utils.SliceToByte32(publicKey)
 	assert.NoError(t, err)
-	RevokeSigningKey(t, eve.host.idService, key, eve.id, ctxh)
+	RevokeKey(t, eve.host.idService, key, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
@@ -122,14 +121,14 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	return po
 }
 
-func RevokeSigningKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
+func RevokeKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
 	idService.RevokeKey(ctx, key)
 	response, err := idService.GetKey(identityDID, key)
 	assert.NoError(t, err)
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
 }
 
-func AddSigningKey(t *testing.T, idService identity.ServiceDID, testKey identity.KeyDID, identityDID identity.DID, ctx context.Context) {
+func AddKey(t *testing.T, idService identity.ServiceDID, testKey identity.KeyDID, identityDID identity.DID, ctx context.Context) {
 	err := idService.AddKey(ctx, testKey)
 	assert.Nil(t, err, "Add Key should be successful")
 
@@ -151,10 +150,7 @@ func GetSigningKeyPair(t *testing.T, idService identity.ServiceDID, identityDID 
 	testKey := identity.NewKey(address32Bytes, &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
 
 	// Add Key
-	AddSigningKey(t, idService, testKey, identityDID, ctx)
-
-	// Revoke Key
-	//RevokeSigningKey(t, idService, address32Bytes, identityDID, ctx)
+	AddKey(t, idService, testKey, identityDID, ctx)
 
 	return utils.Byte32ToSlice(address32Bytes), privateKey
 }

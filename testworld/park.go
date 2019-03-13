@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
 	"os"
 	"os/signal"
 	"testing"
