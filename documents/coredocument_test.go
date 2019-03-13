@@ -198,9 +198,13 @@ func TestGetSignaturesTree(t *testing.T) {
 	err = cd.setSalts()
 	assert.NoError(t, err)
 
+	signatureRoot, err := cd.CalculateSignatureRoot()
+	assert.NoError(t, err)
+
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
 	assert.NotNil(t, signatureTree)
+	assert.Equal(t, signatureTree.RootHash(), signatureRoot)
 
 	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
 	assert.Equal(t, 0, lengthIdx)

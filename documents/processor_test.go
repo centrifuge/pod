@@ -356,6 +356,26 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pre anchor validation failed")
 
+	id = utils.RandomSlice(32)
+	next = utils.RandomSlice(32)
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
+	model.On("CalculateSignatureRoot").Return(nil, errors.New("error"))
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", sig, sr).Return(nil).Once()
+	dp.identityService = srv
+	err = dp.AnchorDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get signature root")
+
 	// success
 	model = new(mockModel)
 	model.On("ID").Return(id)

@@ -169,23 +169,23 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get document root: %v", err)
 	}
 
-	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
-	if err != nil {
-		return errors.New("failed to get anchor ID: %v", err)
-	}
-
 	signatureRoot, err := model.CalculateSignatureRoot()
 	if err != nil {
 		return errors.New("failed to get signature root: %v", err)
 	}
 
-	signingRootProofHashes, err := utils.ConvertProofForEthereum([][]byte{signatureRoot})
+	ethSignatureRoot, err := utils.ConvertProofForEthereum([][]byte{signatureRoot})
 	if err != nil {
-		return errors.New("failed to get signing root proof in ethereum format: %v", err)
+		return errors.New("failed to get signature root in ethereum format: %v", err)
+	}
+
+	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
+	if err != nil {
+		return errors.New("failed to get anchor ID: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootProofHashes)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, ethSignatureRoot)
 
 	isDone := <-done
 
