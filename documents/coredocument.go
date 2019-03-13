@@ -258,13 +258,10 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	if err != nil {
 		return nil, errors.New("failed to generate signatures tree: %v", err)
 	}
+
 	cdTree, err := cd.documentTree(docType)
 	if err != nil {
 		return nil, errors.New("failed to generate core Document tree: %v", err)
-	}
-	srpHashes, err := cd.GetSigningRootProof()
-	if err != nil {
-		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}
 
 	dataRoot := dataTree.RootHash()
@@ -275,9 +272,14 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 		return nil, err
 	}
 
-	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, srpHashes...))
-	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, srpHashes)
-	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, srpHashes...))
+	// (dataProof => dataRoot) + cdRoot+ signatureRoot = documentRoot
+	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, signatureTree.RootHash()))
+
+	// (signatureProof => signatureRoot) + signingRoot = documentRoot
+	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{cd.Document.SigningRoot})
+
+	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
+	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, signatureTree.RootHash()))
 
 	return generateProofs(fields, treeProofs)
 }
@@ -315,20 +317,14 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 	return prfs, nil
 }
 
-// GetSigningRootProof returns the hashes needed to create a proof for fields from SigningRoot to DocumentRoot.
-// The returned proofs are appended to the proofs generated from the data tree and core Document tree for a successful verification.
-func (cd *CoreDocument) GetSigningRootProof() (hashes [][]byte, err error) {
-	tree, err := cd.DocumentRootTree()
+// CalculateSignatureRoot returns the signature root of the document.
+func (cd *CoreDocument) CalculateSignatureRoot() ([]byte, error) {
+	tree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return
+		return nil, errors.New("failed to get signature tree: %v", err)
 	}
 
-	rootProof, err := tree.CreateProof("signing_root")
-	if err != nil {
-		return
-	}
-
-	return rootProof.SortedHashes, err
+	return tree.RootHash(), nil
 }
 
 // setSignatureDataSalts generate salts for SignatureData.

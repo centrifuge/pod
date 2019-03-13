@@ -45,9 +45,9 @@ func (m *mockModel) CalculateDocumentRoot() ([]byte, error) {
 	return dr, args.Error(1)
 }
 
-func (m *mockModel) GetSigningRootProof() (hashes [][]byte, err error) {
+func (m *mockModel) CalculateSignatureRoot() ([]byte, error) {
 	args := m.Called()
-	dr, _ := args.Get(0).([][]byte)
+	dr, _ := args.Get(0).([]byte)
 	return dr, args.Error(1)
 }
 
@@ -363,7 +363,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("CurrentVersionPreimage").Return(id)
 	model.On("NextVersion").Return(next)
 	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("GetSigningRootProof").Return([][32]byte{utils.RandomByte32()}, nil)
+	model.On("CalculateSignatureRoot").Return(utils.RandomSlice(32), nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.sigs = append(model.sigs, sig)

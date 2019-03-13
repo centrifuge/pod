@@ -178,34 +178,6 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, ncd.Document.Roles[1].Collaborators[1], c2[:])
 }
 
-func TestGetSigningProofHashes(t *testing.T) {
-	docAny := &any.Any{
-		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-		Value:   []byte{},
-	}
-
-	cd, err := newCoreDocument()
-	assert.NoError(t, err)
-	cd.Document.EmbeddedData = docAny
-	cd.Document.DataRoot = utils.RandomSlice(32)
-	err = cd.setSalts()
-	assert.NoError(t, err)
-
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
-	assert.Nil(t, err)
-
-	_, err = cd.CalculateDocumentRoot()
-	assert.Nil(t, err)
-
-	hashes, err := cd.GetSigningRootProof()
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(hashes))
-
-	valid, err := proofs.ValidateProofSortedHashes(cd.Document.SigningRoot, hashes, cd.Document.DocumentRoot, sha256.New())
-	assert.True(t, valid)
-	assert.Nil(t, err)
-}
-
 func TestGetSignaturesTree(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
