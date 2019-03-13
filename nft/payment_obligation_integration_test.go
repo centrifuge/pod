@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -24,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,7 +85,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 			GrossAmount:   123,
 			NetAmount:     123,
 			Currency:      "EUR",
-			DueDate:       &timestamp.Timestamp{Seconds: dueDate.Unix()},
+			DueDate:       utils.ToTimestamp(dueDate),
 		},
 	})
 	assert.NoError(t, err, "should not error out when creating invoice model")

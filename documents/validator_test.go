@@ -4,6 +4,7 @@ package documents
 
 import (
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -273,7 +274,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
 	model.On("NextVersion").Return(utils.RandomSlice(32))
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
 	err = sv.Validate(nil, model)
 	assert.Error(t, err)
@@ -293,9 +294,10 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "atleast one signature expected")
 
 	// mismatch
+	tm := time.Now()
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
-		SignerId:  utils.RandomSlice(6),
+		SignerId:  utils.RandomSlice(identity.DIDLength),
 		PublicKey: utils.RandomSlice(32),
 	}
 
@@ -306,7 +308,45 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
 	model.On("NextVersion").Return(utils.RandomSlice(32))
 	model.On("CalculateSigningRoot").Return(sr, nil)
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
+	model.On("Author").Return(identity.NewDIDFromBytes(s.SignerId))
+	model.On("Timestamp").Return(tm, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
+	model.On("Signatures").Return().Once()
+	model.sigs = append(model.sigs, s)
+	err = sv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	// model author not found
+	idService = new(testingcommons.MockIdentityService)
+	sv = SignatureValidator(idService)
+	model = new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Author").Return(identity.NewDIDFromBytes(s.SignerId))
+	model.On("Timestamp").Return(tm, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
+	model.On("Signatures").Return().Once()
+	model.sigs = append(model.sigs, s)
+	err = sv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	// model timestamp err
+	idService = new(testingcommons.MockIdentityService)
+	sv = SignatureValidator(idService)
+	model = new(mockModel)
+	model.On("ID").Return(utils.RandomSlice(32))
+	model.On("CurrentVersion").Return(utils.RandomSlice(32))
+	model.On("NextVersion").Return(utils.RandomSlice(32))
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Author").Return(identity.NewDIDFromBytes(s.SignerId))
+	model.On("Timestamp").Return(tm, errors.New("some timestamp error"))
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
@@ -315,6 +355,8 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 
 	// success
+	idService = new(testingcommons.MockIdentityService)
+	sv = SignatureValidator(idService)
 	s, err = account.SignMsg(sr)
 	assert.NoError(t, err)
 	model = new(mockModel)
@@ -322,7 +364,9 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
 	model.On("NextVersion").Return(utils.RandomSlice(32))
 	model.On("CalculateSigningRoot").Return(sr, nil)
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
+	model.On("Author").Return(identity.NewDIDFromBytes(s.SignerId))
+	model.On("Timestamp").Return(tm, nil)
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
@@ -352,6 +396,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "atleast one signature expected")
 
 	// failed validation
+	tm := time.Now().UTC()
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
 		SignerId:  utils.RandomSlice(identity.DIDLength),
@@ -360,9 +405,11 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = new(mockModel)
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
+	model.On("Author").Return(identity.NewDIDFromBytes(s.SignerId))
+	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, s)
 	srv = new(testingcommons.MockIdentityService)
-	srv.On("ValidateSignature", s, sr).Return(errors.New("error")).Once()
+	srv.On("ValidateSignature", identity.NewDIDFromBytes(s.SignerId), s.PublicKey, s.Signature, sr, tm).Return(errors.New("error")).Once()
 	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -374,9 +421,11 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model = new(mockModel)
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
+	model.On("Author").Return(identity.NewDIDFromBytes(s.SignerId))
+	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, s)
 	srv = new(testingcommons.MockIdentityService)
-	srv.On("ValidateSignature", s, sr).Return(nil).Once()
+	srv.On("ValidateSignature", identity.NewDIDFromBytes(s.SignerId), s.PublicKey, s.Signature, sr, tm).Return(nil).Once()
 	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)

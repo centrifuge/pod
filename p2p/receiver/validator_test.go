@@ -4,6 +4,9 @@ package receiver
 
 import (
 	"testing"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
@@ -80,7 +83,9 @@ func TestValidate_peerValidator(t *testing.T) {
 	assert.Error(t, err)
 
 	// Nil centID
-	header := &p2ppb.Header{}
+	header := &p2ppb.Header{
+		Timestamp: utils.ToTimestamp(time.Now()),
+	}
 	err = sv.Validate(header, nil, nil)
 	assert.Error(t, err)
 
@@ -109,6 +114,7 @@ func TestValidate_handshakeValidator(t *testing.T) {
 	header := &p2ppb.Header{
 		NodeVersion:       "version",
 		NetworkIdentifier: 52,
+		Timestamp:         utils.ToTimestamp(time.Now()),
 	}
 	err := hv.Validate(header, nil, nil)
 	assert.NotNil(t, err)

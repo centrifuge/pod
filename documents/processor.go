@@ -75,6 +75,16 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
+	id, err := self.GetIdentityID()
+	if err != nil {
+		return err
+	}
+
+	err = model.AddUpdateLog(identity.NewDIDFromBytes(id))
+	if err != nil {
+		return err
+	}
+
 	// calculate the signing root
 	sr, err := model.CalculateSigningRoot()
 	if err != nil {

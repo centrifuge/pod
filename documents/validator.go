@@ -178,12 +178,31 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			return errors.New("atleast one signature expected")
 		}
 
+		authorFound := false
 		for _, sig := range signatures {
-			if erri := idService.ValidateSignature(&sig, sr); erri != nil {
+			sigDID := identity.NewDIDFromBytes(sig.SignerId)
+			if model.Author().Equal(sigDID) {
+				authorFound = true
+			}
+
+			tm, terr := model.Timestamp()
+			if terr != nil {
+				err = errors.AppendError(
+					err,
+					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), terr))
+				continue
+			}
+
+			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, sr, tm); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
 			}
+		}
+		if !authorFound {
+			err = errors.AppendError(
+				err,
+				errors.New("signature verification failed: author's signature missing on document"))
 		}
 		return err
 	})
