@@ -5,6 +5,12 @@ package receiver_test
 import (
 	"context"
 	"flag"
+	"fmt"
+	"math/big"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -32,10 +38,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"os"
-	"testing"
-	"time"
 )
 
 var (
@@ -105,7 +107,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 // TODO: consolidate into one test, test for transition validity
 func TestHandler_RequestDocumentSignature(t *testing.T) {
 	id := testingidentity.GenerateRandomDID()
-	
+
 	// account context not configured correctly
 	_, err := docSrv.RequestDocumentSignature(context.Background(), nil, id)
 	assert.Error(t, err)
@@ -113,15 +115,21 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 
 	// nil document
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	//id2 := testingidentity.GenerateRandomDID()
-	_, err = docSrv.RequestDocumentSignature(ctxh, nil, id)
+	id2 := testingidentity.GenerateRandomDID()
+	_, err = handler.RequestDocumentSignature(ctxh, nil, id)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// invalid transition
-
+	cd, _ := createCDWithEmbeddedPO(t, ctxh, id, nil)
+	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
+	fmt.Println(err)
+	assert.Error(t, err)
 
 	// valid transition
+	cd, _ = createCDWithEmbeddedPO(t, ctxh, id, []identity.DID{id2})
+	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
+	assert.NoError(t, err)
 
 	//_, cd := prepareDocumentForP2PHandler(t, nil)
 	//tc, err := configstore.NewAccount("main", cfg)
@@ -227,7 +235,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	po, cd := prepareDocumentForP2PHandler(t, nil)
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID[:])
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
@@ -379,7 +387,7 @@ func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2p
 	return signResp
 }
 
-func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model){
+func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
 	po := new(purchaseorder.PurchaseOrder)
 	data := testingdocuments.CreatePOPayload()
 	if len(collaborators) > 0 {

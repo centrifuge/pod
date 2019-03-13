@@ -4,12 +4,13 @@ package p2p
 
 import (
 	"context"
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -137,7 +138,7 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	return &protocolpb.P2PEnvelope{Body: reqB}
 }
 
-func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model){
+func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
 	po := new(purchaseorder.PurchaseOrder)
 	data := testingdocuments.CreatePOPayload()
 	if len(collaborators) > 0 {

@@ -155,7 +155,9 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, send
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-
+	if model == nil {
+		return nil, ErrDocumentNil
+	}
 	if err := RequestDocumentSignatureValidator(s.idService, senderID).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
