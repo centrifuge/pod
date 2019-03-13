@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var centrifugeId = testingidentity.GenerateRandomDID()
+var did = testingidentity.GenerateRandomDID()
 
 type MockMessenger struct {
 	mock.Mock
@@ -50,15 +50,15 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
-	idService := getIDMocks(ctx, centrifugeId)
+	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	cd, _ := createCDWithEmbeddedPO(t, ctx, centrifugeId, nil)
+	cd, _ := createCDWithEmbeddedPO(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(nil, errors.New("some error"))
-	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(nil, errors.New("some error"))
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
@@ -69,38 +69,38 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
-	idService := getIDMocks(ctx, centrifugeId)
+	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	cd, _ := createCDWithEmbeddedPO(t, ctx, centrifugeId, nil)
+	cd, _ := createCDWithEmbeddedPO(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
-	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp("", nil), nil)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
 	assert.Nil(t, resp, "must be nil")
 }
 
-func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
+func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
-	idService := getIDMocks(ctx, centrifugeId)
+	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	cd, _ := createCDWithEmbeddedPO(t, ctx, centrifugeId, nil)
+	cd, _ := createCDWithEmbeddedPO(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
 	randomBytes := utils.RandomSlice(identity.DIDLength)
 	signature := &coredocumentpb.Signature{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
-	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
 
 	m.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
@@ -109,10 +109,10 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 }
 
-func getIDMocks(ctx context.Context, centrifugeId identity.DID) *testingcommons.MockIdentityService {
+func getIDMocks(ctx context.Context, did identity.DID) *testingcommons.MockIdentityService {
 	idService := &testingcommons.MockIdentityService{}
-	idService.On("CurrentP2PKey", centrifugeId).Return("5dsgvJGnvAfiR3K6HCBc4hcokSfmjj", nil)
-	idService.On("Exists", ctx, centrifugeId).Return(nil)
+	idService.On("CurrentP2PKey", did).Return("5dsgvJGnvAfiR3K6HCBc4hcokSfmjj", nil)
+	idService.On("Exists", ctx, did).Return(nil)
 	return idService
 }
 

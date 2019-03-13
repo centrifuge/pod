@@ -39,7 +39,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		if err != nil {
 			return nil, err
 		}
-		return h.SendAnchoredDocument(localCtx, in, receiverID[:])
+		return h.SendAnchoredDocument(localCtx, in, receiverID)
 	}
 
 	err = s.idService.Exists(ctx, receiverID)

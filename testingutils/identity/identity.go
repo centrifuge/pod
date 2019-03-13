@@ -9,8 +9,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.ServiceDID, idFactory identity.Factory) (identity.DID, error) {
