@@ -4,8 +4,8 @@ package testworld
 
 import (
 	"context"
+	"net/http"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -76,6 +76,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NoError(t, err)
 	RevokeKey(t, eve.host.idService, key, eve.id, ctxh)
 
+	// Eve creates document with Bob and signs with Revoked key
 	collaborators := [][]byte{bob.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
 
@@ -83,6 +84,17 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
+
+	// Bob creates document with Eve whose key is revoked
+	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
+	assert.NoError(t, err)
+
+	// Revoke Key
+	RevokeKey(t, eve.host.idService, keys[0], eve.id, ctxh)
+
+	res := createDocument(bob.httpExpect, bob.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{eve.id.String()}))
+	txID := getTransactionID(t, res)
+	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "failed")
 }
 
 // Helper Methods
@@ -108,10 +120,10 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
-		EntityId:  identityDID[:],
-		PublicKey: publicKey,
-		Signature: s,
-		Timestamp: utils.ToTimestamp(time.Now().UTC()),
+		SignatureId: append(identityDID[:], publicKey...),
+		SignerId:    identityDID[:],
+		PublicKey:   publicKey,
+		Signature:   s,
 	}
 	po.AppendSignatures(sig)
 
