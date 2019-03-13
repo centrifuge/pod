@@ -53,7 +53,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedDocumentService] = DefaultService(repo, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
-
 	return nil
 }
 

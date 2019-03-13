@@ -33,11 +33,10 @@ func TestHost_ValidSignature(t *testing.T) {
 
 	collaborators := [][]byte{bob.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
-	assert.Equal(t, 1, len(dm.Signatures()))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
-	assert.Nil(t, signatureErrors)
 	assert.NoError(t, err)
+	assert.Nil(t, signatureErrors)
 	assert.Equal(t, 1, len(signatures))
 }
 
@@ -56,7 +55,8 @@ func TestHost_FakedSignature(t *testing.T) {
 	collaborators := [][]byte{bob.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
 
-	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
+	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
+	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 }
@@ -108,6 +108,9 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 
 	po := new(purchaseorder.PurchaseOrder)
 	err := po.InitPurchaseOrderInput(payload, identityDID.String())
+	assert.NoError(t, err)
+
+	err = po.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 
 	_, err = po.CalculateDataRoot()
