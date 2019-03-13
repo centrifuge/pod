@@ -397,7 +397,6 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// failed validation
 	tm := time.Now().UTC()
-	assert.NoError(t, err)
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
 		SignerId:  utils.RandomSlice(identity.DIDLength),
