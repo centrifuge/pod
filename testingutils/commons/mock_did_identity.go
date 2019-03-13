@@ -6,6 +6,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -40,15 +42,15 @@ func (i *MockIdentityService) GetKey(did identity.DID, key [32]byte) (*identity.
 }
 
 // RawExecute calls the execute method on the identity contract
-func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte) error {
+func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte) (utxID uuid.UUID, done chan bool, err error) {
 	args := i.Called(ctx, to, data)
-	return args.Error(0)
+	return args.Get(0).(uuid.UUID), args.Get(1).(chan bool), args.Error(2)
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
-func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
+func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (utxID uuid.UUID, done chan bool, err error) {
 	a := i.Called(ctx, to, contractAbi, methodName, args)
-	return a.Error(0)
+	return a.Get(0).(uuid.UUID), a.Get(1).(chan bool), a.Error(2)
 }
 
 // IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys

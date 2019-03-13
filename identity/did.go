@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -199,10 +201,10 @@ type ServiceDID interface {
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte) error
+	RawExecute(ctx context.Context, to common.Address, data []byte) (utxID uuid.UUID, done chan bool, err error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error
+	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (utxID uuid.UUID, done chan bool, err error)
 
 	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
 	IsSignedWithPurpose(did DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error)

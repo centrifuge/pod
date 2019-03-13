@@ -70,7 +70,9 @@ func TestExecute_successful(t *testing.T) {
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
 	// call execute
-	err = idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorIdPreimage.BigInt(), testRootHash, proofs)
+	_, done, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorIdPreimage.BigInt(), testRootHash, proofs)
+	isDone := <-done
+	assert.True(t, isDone)
 	assert.Nil(t, err, "Execute method calls should be successful")
 
 	checkAnchor(t, testAnchorId, rootHash)
@@ -90,9 +92,10 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
-	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
+	_, done, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
+	isDone := <-done
+	assert.False(t, isDone)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
-
 	resetDefaultCentID()
 }
 
@@ -106,8 +109,10 @@ func TestExecute_fail_MissingParam(t *testing.T) {
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
-	err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
-	assert.Error(t, err, "should throw an error because method is not existing in abi")
+	_, done, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorId.BigInt(), testRootHash)
+	isDone := <-done
+	assert.False(t, isDone)
+	assert.Error(t, err, "should throw an error because wrong params as per abi")
 	resetDefaultCentID()
 }
 

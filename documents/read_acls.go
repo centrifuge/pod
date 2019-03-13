@@ -208,9 +208,9 @@ func (cd *CoreDocument) CreateNFTProofs(
 		pfKeys = append(pfKeys, pks...)
 	}
 
-	signingRootProofHashes, err := cd.GetSigningRootProof()
+	signaturesTree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return nil, errors.New("failed to generate signing root proofs: %v", err)
+		return nil, errors.New("failed to get signatures tree: %v", err)
 	}
 
 	cdTree, err := cd.documentTree(docType)
@@ -218,7 +218,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 		return nil, errors.New("failed to generate core Document tree: %v", err)
 	}
 
-	treeProofs := map[string]*TreeProof{CDTreePrefix: newTreeProof(cdTree, append([][]byte{cd.Document.DataRoot}, signingRootProofHashes...))}
+	treeProofs := map[string]*TreeProof{CDTreePrefix: newTreeProof(cdTree, append([][]byte{cd.Document.DataRoot}, signaturesTree.RootHash()))}
 	return generateProofs(pfKeys, treeProofs)
 }
 

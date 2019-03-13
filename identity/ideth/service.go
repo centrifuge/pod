@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -243,45 +245,37 @@ func (i service) IsSignedWithPurpose(did id.DID, message [32]byte, signature []b
 }
 
 // RawExecute calls the execute method on the identity contract
-func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) error {
+// TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) (utxID uuid.UUID, done chan bool, err error) {
+	txID := contextutil.TX(ctx)
 	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
-		return err
+		return uuid.Nil, nil, err
 	}
 	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
-		return err
+		return uuid.Nil, nil, err
 	}
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
-	if err != nil {
-		return err
-	}
-
-	isDone := <-done
-	// non async task
-	if !isDone {
-		return errors.New("raw execute TX failed: txID:%s", txID.String())
-
-	}
-	return nil
-
+	txID, done, err = i.txManager.ExecuteWithinTX(context.Background(), DID, txID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	utxID = uuid.UUID(txID)
+	return utxID, done, err
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
-func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
-	abi, err := abi.JSON(strings.NewReader(contractAbi))
+// TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
+func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (utxID uuid.UUID, done chan bool, err error) {
+	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
-		return err
+		return uuid.Nil, nil, err
 	}
 
 	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
-	data, err := abi.Pack(methodName, args...)
+	data, err := abiObj.Pack(methodName, args...)
 	if err != nil {
-		return err
+		return uuid.Nil, nil, err
 	}
 	return i.RawExecute(ctx, to, data)
 }
