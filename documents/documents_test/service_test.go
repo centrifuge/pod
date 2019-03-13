@@ -30,8 +30,8 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	did      = testingidentity.GenerateRandomDID()
-	tenantID = did[:]
+	did       = testingidentity.GenerateRandomDID()
+	accountID = did[:]
 )
 
 var ctx = map[string]interface{}{}
@@ -73,7 +73,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, true)
 	idSrv := new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar := new(mockAnchorRepo)
 	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
@@ -88,7 +88,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	// new document with saved
 	doc, cd = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, false)
 	idSrv = new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
@@ -108,6 +108,8 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+	err = doc.AddUpdateLog(did)
 	assert.NoError(t, err)
 	_, err = doc.CalculateDataRoot()
 	assert.NoError(t, err)
@@ -130,7 +132,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition for id2
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(ndr)
 	assert.NoError(t, err)
@@ -432,7 +434,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 
 	err := i.InitInvoiceInput(data, did.String())
 	assert.NoError(t, err)
-	err = i.AddUpdateLog(cid)
+	err = i.AddUpdateLog(did)
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
