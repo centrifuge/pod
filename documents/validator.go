@@ -241,9 +241,9 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
-// TransitionValidator checks that the document model changes are within the transition_rule capability of the
-// identity making the changes
-func TransitionValidator(collaborator identity.DID) Validator {
+// transitionValidator checks that the document changes are within the transition_rule capability of the
+// collaborator making the changes
+func transitionValidator(collaborator identity.DID) Validator {
 	return ValidatorFunc(func(old, new Model) error {
 		if old == nil {
 			return nil
@@ -286,6 +286,19 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	return ValidatorGroup{
 		PreAnchorValidator(idService),
 		anchoredValidator(repo),
+	}
+}
+
+// ReceivedAnchoredDocumentValidator is a validator group with following validators
+// transitionValidator
+// PostAnchoredValidator
+func ReceivedAnchoredDocumentValidator(
+	idService identity.ServiceDID,
+	repo anchors.AnchorRepository,
+	collaborator identity.DID) ValidatorGroup {
+	return ValidatorGroup{
+		transitionValidator(collaborator),
+		PostAnchoredValidator(idService, repo),
 	}
 }
 
