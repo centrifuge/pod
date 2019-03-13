@@ -69,13 +69,8 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
 	assert.NoError(t, err)
 
-	// Test Key
-	testKey := identity.NewKey(keys[0], &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
-
 	// Revoke Key
-	eve.host.idService.RevokeKey(ctxh, testKey.GetKey())
-	response, err := eve.host.idService.GetKey(eve.id, testKey.GetKey())
-	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
+	RevokeSigningKey(t, eve.host.idService, keys[len(keys) - 1], eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, ctxh)
@@ -84,15 +79,11 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 
-	// Add Key fails since the key already exists
-	err = eve.host.idService.AddKey(ctxh, testKey)
-	assert.Nil(t, err, "Add Key should be successful")
+	// Test Key
+	testKey := identity.NewKey(utils.RandomByte32(), &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
 
-	response, err = eve.host.idService.GetKey(eve.id, testKey.GetKey())
-	assert.Nil(t, err, "Get Key should be successful")
-
-	err = eve.host.idService.ValidateKey(ctxh, eve.id, utils.Byte32ToSlice(testKey.GetKey()), testKey.GetPurpose(), nil)
-	assert.Nil(t, err, "Key with purpose should exist")
+	// Add Key
+	AddSigningKey(t, eve.host.idService, testKey, eve.id, ctxh)
 }
 
 // Helper Methods
@@ -135,4 +126,21 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	assert.NoError(t, err)
 
 	return po
+}
+
+func RevokeSigningKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
+	idService.RevokeKey(ctx, key)
+	response, _ := idService.GetKey(identityDID, key)
+	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
+}
+
+func AddSigningKey(t *testing.T, idService identity.ServiceDID, testKey identity.KeyDID, identityDID identity.DID, ctx context.Context) {
+	err := idService.AddKey(ctx, testKey)
+	assert.Nil(t, err, "Add Key should be successful")
+
+	_, err = idService.GetKey(identityDID, testKey.GetKey())
+	assert.Nil(t, err, "Get Key should be successful")
+
+	err = idService.ValidateKey(ctx, identityDID, utils.Byte32ToSlice(testKey.GetKey()), testKey.GetPurpose(), nil)
+	assert.Nil(t, err, "Key with purpose should exist")
 }
