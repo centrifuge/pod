@@ -113,12 +113,11 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
-	// nil document
+	// nil sigRequest
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	id2 := testingidentity.GenerateRandomDID()
 	_, err = handler.RequestDocumentSignature(ctxh, nil, id)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// invalid transition
 	cd, _ := createCDWithEmbeddedPO(t, ctxh, id, nil)
