@@ -207,11 +207,23 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return err
 	}
 	did := identity.NewDIDFromBytes(idBytes)
+
 	if model == nil {
-		return errors.New("no model given")
+		return ErrDocumentNil
 	}
 
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+	var old Model
+	// lets pick the old version of the document from the repo and pass this to the validator
+	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
+		old, err = s.repo.Get(did[:], model.PreviousVersion())
+		if err != nil {
+			// TODO(ved): we should pull the old document from the peer
+			return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+		}
+	}
+
+	collaborator := identity.NewDIDFromBytes(senderID)
+	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepository, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
