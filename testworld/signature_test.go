@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -22,25 +23,26 @@ import (
 )
 
 func TestHost_ValidSignature(t *testing.T) {
-	t.Parallel()
-
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
 	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
+	// Get PublicKey and PrivateKey
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
+
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, ctxh)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
 	assert.Equal(t, 1, len(dm.Signatures()))
 
-	signatures, _, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	assert.Nil(t, signatureErrors)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(signatures))
 }
 
 func TestHost_FakedSignature(t *testing.T) {
-	t.Parallel()
-
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -49,8 +51,11 @@ func TestHost_FakedSignature(t *testing.T) {
 	actxh := testingconfig.CreateAccountContext(t, alice.host.config)
 	ectxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
+	// Get PublicKey and PrivateKey
+	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
+
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, actxh)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
 
 	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
@@ -58,36 +63,31 @@ func TestHost_FakedSignature(t *testing.T) {
 }
 
 func TestHost_RevokedSigningKey(t *testing.T) {
-	t.Parallel()
-
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
 	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
-	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
-	assert.NoError(t, err)
+	// Get PublicKey and PrivateKey
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	// Revoke Key
-	RevokeSigningKey(t, eve.host.idService, keys[len(keys) - 1], eve.id, ctxh)
+	key, err := utils.SliceToByte32(publicKey)
+	assert.NoError(t, err)
+	RevokeSigningKey(t, eve.host.idService, key, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, ctxh)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
 
-	signatures, signatureErrors, _ := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
+	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
-
-	// Test Key
-	testKey := identity.NewKey(utils.RandomByte32(), &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
-
-	// Add Key
-	AddSigningKey(t, eve.host.idService, testKey, eve.id, ctxh)
 }
 
 // Helper Methods
-func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, ctx context.Context) documents.Model {
+func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte) documents.Model {
 	payload := testingdocuments.CreatePOPayload()
 	var cs []string
 	for _, c := range collaborators {
@@ -105,18 +105,12 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	accCfg, err := contextutil.Account(ctx)
-	assert.NoError(t, err)
-	acc := accCfg.(*configstore.Account)
-	accKeys, err := acc.GetKeys()
-	assert.NoError(t, err)
-
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
 		EntityId:  identityDID[:],
-		PublicKey: accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		PublicKey: publicKey,
 		Signature: s,
 		Timestamp: utils.ToTimestamp(time.Now().UTC()),
 	}
@@ -130,7 +124,8 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 
 func RevokeSigningKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
 	idService.RevokeKey(ctx, key)
-	response, _ := idService.GetKey(identityDID, key)
+	response, err := idService.GetKey(identityDID, key)
+	assert.NoError(t, err)
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
 }
 
@@ -143,4 +138,28 @@ func AddSigningKey(t *testing.T, idService identity.ServiceDID, testKey identity
 
 	err = idService.ValidateKey(ctx, identityDID, utils.Byte32ToSlice(testKey.GetKey()), testKey.GetPurpose(), nil)
 	assert.Nil(t, err, "Key with purpose should exist")
+}
+
+func GetSigningKeyPair(t *testing.T, idService identity.ServiceDID, identityDID identity.DID, ctx context.Context) ([]byte, []byte) {
+	// Generate PublicKey and PrivateKey
+	publicKey, privateKey, err := secp256k1.GenerateSigningKeyPair()
+	assert.NoError(t, err)
+
+	address32Bytes := convertKeyTo32Bytes(publicKey)
+
+	// Test Key
+	testKey := identity.NewKey(address32Bytes, &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
+
+	// Add Key
+	AddSigningKey(t, idService, testKey, identityDID, ctx)
+
+	// Revoke Key
+	//RevokeSigningKey(t, idService, address32Bytes, identityDID, ctx)
+
+	return utils.Byte32ToSlice(address32Bytes), privateKey
+}
+
+func convertKeyTo32Bytes(key []byte) [32]byte {
+	address := common.HexToAddress(secp256k1.GetAddress(key))
+	return utils.AddressTo32Bytes(address)
 }
