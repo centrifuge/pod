@@ -221,14 +221,13 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
-// TransitionValidator checks that the document model changes are within the transition_rule capability of the
-// identity making the changes
-func TransitionValidator(senderID []byte) Validator {
+// transitionValidator checks that the document changes are within the transition_rule capability of the
+// collaborator making the changes
+func transitionValidator(collaborator identity.DID) Validator {
 	return ValidatorFunc(func(old, new Model) error {
 		if old == nil {
 			return nil
 		}
-		collaborator := identity.NewDIDFromBytes(senderID)
 		err := old.CollaboratorCanUpdate(new, collaborator)
 		if err != nil {
 			return errors.New("invalid document state transition: %v", err)
@@ -270,14 +269,27 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	}
 }
 
+// ReceivedAnchoredDocumentValidator is a validator group with following validators
+// transitionValidator
+// PostAnchoredValidator
+func ReceivedAnchoredDocumentValidator(
+	idService identity.ServiceDID,
+	repo anchors.AnchorRepository,
+	collaborator identity.DID) ValidatorGroup {
+	return ValidatorGroup{
+		transitionValidator(collaborator),
+		PostAnchoredValidator(idService, repo),
+	}
+}
+
 // RequestDocumentSignatureValidator is a validator group with the following validators
 // SignatureValidator
 // transitionsValidator
 // it should be called when a document is received over the p2p layer before signing
-func RequestDocumentSignatureValidator(idService identity.ServiceDID, senderID []byte) ValidatorGroup {
+func RequestDocumentSignatureValidator(idService identity.ServiceDID, senderID identity.DID) ValidatorGroup {
 	return ValidatorGroup{
 		SignatureValidator(idService),
-		TransitionValidator(senderID),
+		transitionValidator(senderID),
 	}
 }
 

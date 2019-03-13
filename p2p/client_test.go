@@ -4,20 +4,21 @@ package p2p
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -26,6 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+var centrifugeId = testingidentity.GenerateRandomDID()
 
 type MockMessenger struct {
 	mock.Mock
@@ -42,7 +45,6 @@ func (mm *MockMessenger) SendMessage(ctx context.Context, p libp2pPeer.ID, pmes 
 }
 
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
-	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
@@ -50,9 +52,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	idService := getIDMocks(ctx, centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-
-	_, cd := createCDWithEmbeddedPO(t)
-
+	cd, _ := createCDWithEmbeddedPO(t, ctx, centrifugeId, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -64,9 +64,6 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 }
 
 func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
-	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-	assert.NoError(t, err)
-
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
@@ -74,8 +71,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	idService := getIDMocks(ctx, centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	_, cd := createCDWithEmbeddedPO(t)
-
+	cd, _ := createCDWithEmbeddedPO(t, ctx, centrifugeId, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -88,7 +84,6 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 }
 
 func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
-	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
@@ -96,8 +91,7 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 	idService := getIDMocks(ctx, centrifugeId)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	_, cd := createCDWithEmbeddedPO(t)
-
+	cd, _ := createCDWithEmbeddedPO(t, ctx, centrifugeId, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -143,17 +137,34 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	return &protocolpb.P2PEnvelope{Body: reqB}
 }
 
-func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model){
 	po := new(purchaseorder.PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), testingidentity.GenerateRandomDID().String())
+	data := testingdocuments.CreatePOPayload()
+	if len(collaborators) > 0 {
+		var cs []string
+		for _, c := range collaborators {
+			cs = append(cs, c.String())
+		}
+		data.Collaborators = cs
+	}
+	err := po.InitPurchaseOrderInput(data, cid.String())
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateSigningRoot()
+	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
+
+	acc, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(sr)
+	assert.NoError(t, err)
+
+	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
-	return po, cd
+
+	return cd, po
 }

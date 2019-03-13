@@ -50,7 +50,7 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model, senderID []byte) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, model Model, senderID identity.DID) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
@@ -150,7 +150,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model, senderID []byte) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Model, senderID identity.DID) (*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -207,11 +207,23 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return err
 	}
 	did := identity.NewDIDFromBytes(idBytes)
+
 	if model == nil {
-		return errors.New("no model given")
+		return ErrDocumentNil
 	}
 
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+	var old Model
+	// lets pick the old version of the document from the repo and pass this to the validator
+	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
+		old, err = s.repo.Get(did[:], model.PreviousVersion())
+		if err != nil {
+			// TODO(ved): we should pull the old document from the peer
+			return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+		}
+	}
+
+	collaborator := identity.NewDIDFromBytes(senderID)
+	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepository, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

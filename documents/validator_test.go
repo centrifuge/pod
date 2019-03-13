@@ -248,7 +248,7 @@ func TestValidator_TransitionValidator(t *testing.T) {
 	updated := new(mockModel)
 
 	// does not error out if there is no old document model (if new model is the first version of the document model)
-	tv := TransitionValidator(id1[:])
+	tv := transitionValidator(id1)
 	err := tv.Validate(nil, updated)
 	assert.NoError(t, err)
 

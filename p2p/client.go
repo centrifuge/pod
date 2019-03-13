@@ -143,11 +143,12 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		if err != nil {
 			return nil, err
 		}
-		ownID, err := tc.GetIdentityID()
+		id, err := tc.GetIdentityID()
 		if err != nil {
 			return nil, err
 		}
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, ownID[:])
+		ownID := identity.NewDIDFromBytes(id)
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, ownID)
 		if err != nil {
 			return nil, err
 		}

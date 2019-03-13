@@ -81,7 +81,7 @@ func TestMain(m *testing.M) {
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	id := testingidentity.GenerateRandomDID()
 	req := &p2ppb.SignatureRequest{}
-	resp, err := handler.RequestDocumentSignature(context.Background(), req, id[:])
+	resp, err := handler.RequestDocumentSignature(context.Background(), req, id)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }

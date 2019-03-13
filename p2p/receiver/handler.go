@@ -95,7 +95,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	fromID := msg.Header.SenderId
+	fromID := identity.NewDIDFromBytes(msg.Header.SenderId)
 	res, err := srv.RequestDocumentSignature(ctx, req, fromID)
 	if err != nil {
 		return convertToErrorEnvelop(err)
@@ -118,7 +118,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
-func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, senderID []byte) (*p2ppb.SignatureResponse, error) {
+func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, senderID identity.DID) (*p2ppb.SignatureResponse, error) {
 	if sigReq == nil || sigReq.Document == nil {
 		return nil, errors.New("nil document provided")
 	}
