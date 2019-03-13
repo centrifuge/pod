@@ -180,13 +180,12 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 
 		authorFound := false
 		for _, sig := range signatures {
-			tm, terr := model.Timestamp()
 			sigDID := identity.NewDIDFromBytes(sig.SignerId)
 			if model.Author().Equal(sigDID) {
 				authorFound = true
 			}
 
-			// terr is updated twice in previous lines, we wait until final value is determined to check for error
+			tm, terr := model.Timestamp()
 			if terr != nil {
 				err = errors.AppendError(
 					err,
