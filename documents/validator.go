@@ -180,12 +180,10 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 
 		authorFound := false
 		for _, sig := range signatures {
-			tm, terr := utils.FromTimestamp(sig.Timestamp)
+			tm, terr := model.Timestamp()
 			sigDID := identity.NewDIDFromBytes(sig.SignerId)
 			if model.Author().Equal(sigDID) {
 				authorFound = true
-				// if author is found, check his signature relative to signed time on the document
-				tm, terr = model.Timestamp()
 			}
 
 			// terr is updated twice in previous lines, we wait until final value is determined to check for error
@@ -205,7 +203,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 		if !authorFound {
 			err = errors.AppendError(
 				err,
-				errors.New("signature verification failed: author not found"))
+				errors.New("signature verification failed: author's signature missing on document"))
 		}
 		return err
 	})

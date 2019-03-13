@@ -314,8 +314,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return()
 	model.On("Author").Return(identity.NewDIDFromBytes(did))
-	tm, err := utils.FromTimestamp(sig.Timestamp)
-	assert.NoError(t, err)
+	tm := time.Now()
 	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
@@ -385,8 +384,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(nil, errors.New("error"))
 	model.On("Author").Return(identity.NewDIDFromBytes(did))
-	tm, err := utils.FromTimestamp(sig.Timestamp)
-	assert.NoError(t, err)
+	tm := time.Now()
 	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
@@ -452,8 +450,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.On("Author").Return(identity.NewDIDFromBytes(didb))
-	tm, err := utils.FromTimestamp(sig.Timestamp)
-	assert.NoError(t, err)
+	tm := time.Now()
 	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}

@@ -554,7 +554,6 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		SignerId:    did,
 		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
-		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}, nil
 }
 

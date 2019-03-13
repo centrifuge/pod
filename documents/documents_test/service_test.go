@@ -31,7 +31,7 @@ var testRepoGlobal documents.Repository
 var (
 	cid         = testingidentity.GenerateRandomDID()
 	centIDBytes = cid[:]
-	tenantID    = cid[:]
+	accountID   = cid[:]
 	key1Pub     = [...]byte{230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 	key1        = []byte{102, 109, 71, 239, 130, 229, 128, 189, 37, 96, 223, 5, 189, 91, 210, 47, 89, 4, 165, 6, 188, 53, 49, 250, 109, 151, 234, 139, 57, 205, 231, 253, 230, 49, 10, 12, 200, 149, 43, 184, 145, 87, 163, 252, 114, 31, 91, 163, 24, 237, 36, 51, 165, 8, 34, 104, 97, 49, 114, 85, 255, 15, 195, 199}
 )
@@ -66,7 +66,7 @@ func TestService_ReceiveAnchoredDocumentFailed(t *testing.T) {
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
 	idService := testingcommons.MockIdentityService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
 	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
@@ -114,7 +114,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
-	assert.Nil(t, testRepo().Update(tenantID, i.CurrentVersion(), i))
+	assert.Nil(t, testRepo().Update(accountID, i.CurrentVersion(), i))
 	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get signing root")
@@ -203,7 +203,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 		}
 
-		err := testRepo().Create(tenantID, version, inv)
+		err := testRepo().Create(accountID, version, inv)
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
@@ -232,7 +232,7 @@ func TestService_GetVersion_successful(t *testing.T) {
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := testRepo().Create(tenantID, currentVersion, inv)
+	err := testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
@@ -261,7 +261,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
 	_, err = service.GetCurrentVersion(ctxh, documentIdentifier)
@@ -288,7 +288,7 @@ func TestService_GetVersion_error(t *testing.T) {
 		GrossAmount:  60,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
-	err = testRepo().Create(tenantID, currentVersion, inv)
+	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	//random version
@@ -330,7 +330,7 @@ func TestService_Exists(t *testing.T) {
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 
 	exists := service.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "document should exist")
@@ -343,6 +343,8 @@ func TestService_Exists(t *testing.T) {
 func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(invoice.Invoice)
 	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid.String())
+	assert.NoError(t, err)
+	err = i.AddUpdateLog(cid)
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
@@ -362,7 +364,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, skipSave boo
 	assert.NoError(t, err)
 
 	if !skipSave {
-		err = testRepo().Create(tenantID, i.CurrentVersion(), i)
+		err = testRepo().Create(accountID, i.CurrentVersion(), i)
 		assert.NoError(t, err)
 	}
 	return i, cd

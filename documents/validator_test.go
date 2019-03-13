@@ -299,7 +299,6 @@ func TestValidator_SignatureValidator(t *testing.T) {
 		Signature: utils.RandomSlice(32),
 		SignerId:  utils.RandomSlice(identity.DIDLength),
 		PublicKey: utils.RandomSlice(32),
-		Timestamp: utils.ToTimestamp(tm),
 	}
 
 	idService = new(testingcommons.MockIdentityService)
@@ -398,13 +397,11 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// failed validation
 	tm := time.Now().UTC()
-	tmp, err := utils.ToTimestampProper(tm)
 	assert.NoError(t, err)
 	s := &coredocumentpb.Signature{
 		Signature: utils.RandomSlice(32),
 		SignerId:  utils.RandomSlice(identity.DIDLength),
 		PublicKey: utils.RandomSlice(32),
-		Timestamp: tmp,
 	}
 	model = new(mockModel)
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()

@@ -15,9 +15,10 @@ const (
 	CurveSecp256K1 string = "secp256k1"
 )
 
-func ObtainP2PKeypair(pubKey, privKey string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {
+// ObtainP2PKeypair obtains a key pair from given file paths
+func ObtainP2PKeypair(pubKeyFile, privKeyFile string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {
 	// Create the signing key for the host
-	publicKey, privateKey, err := ed25519.GetSigningKeyPair(pubKey, privKey)
+	publicKey, privateKey, err := ed25519.GetSigningKeyPair(pubKeyFile, privKeyFile)
 	if err != nil {
 		return nil, nil, errors.New("failed to get keys: %v", err)
 	}

@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -278,6 +277,8 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		err = po.InitPurchaseOrderInput(payload, defaultDID.String())
 		assert.NoError(t, err)
 	}
+	err = po.AddUpdateLog(defaultDID)
+	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
@@ -289,7 +290,6 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		SignerId:    defaultDID[:],
 		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature:   s,
-		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}
 	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()

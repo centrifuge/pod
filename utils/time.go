@@ -15,7 +15,7 @@ func ToTimestamp(time time.Time) *timestamp.Timestamp {
 	}
 }
 
-// ToTimestamp converts time.Time to timestamp.TimeStamp.
+// ToTimestampProper converts time.Time to timestamp.TimeStamp.
 func ToTimestampProper(time time.Time) (*timestamp.Timestamp, error) {
 	return ptypes.TimestampProto(time)
 }
