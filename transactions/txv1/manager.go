@@ -42,6 +42,15 @@ func (s *manager) GetDefaultTaskTimeout() time.Duration {
 	return s.config.GetEthereumContextWaitTimeout()
 }
 
+func (s *manager) UpdateTransactionWithValue(accountID identity.DID, id transactions.TxID, key string, value []byte) error {
+	tx, err := s.GetTransaction(accountID, id)
+	if err != nil {
+		return err
+	}
+	tx.Values[key] = transactions.TXValue{Key: key, Value: value}
+	return s.saveTransaction(tx)
+}
+
 func (s *manager) UpdateTaskStatus(accountID identity.DID, id transactions.TxID, status transactions.Status, taskName, message string) error {
 	tx, err := s.GetTransaction(accountID, id)
 	if err != nil {
