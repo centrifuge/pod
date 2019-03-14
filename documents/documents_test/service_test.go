@@ -264,7 +264,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	id := testingidentity.GenerateRandomDID()
 	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar := new(mockAnchorRepo)
 	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
@@ -274,7 +274,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
-
+	err = doc.AddUpdateLog(did)
 	_, err = doc.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := doc.CalculateSigningRoot()
@@ -284,8 +284,6 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 
 	doc.AppendSignatures(sig)
 	_, err = doc.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	err = testRepo().Create(did[:], doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
 
 	// invalid transition

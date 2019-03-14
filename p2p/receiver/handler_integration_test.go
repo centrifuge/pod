@@ -104,10 +104,14 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
 	tc, err := configstore.NewAccount("main", cfg)
-	assert.NoError(t, err)
+	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = defaultDID[:]
+
 	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.Nil(t, err)
+
+	po, cd := prepareDocumentForP2PHandler(t, nil)
 
 	// nil sigRequest
 	id2 := testingidentity.GenerateRandomDID()
@@ -115,84 +119,32 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "nil document provided")
 
-	_, cd := prepareDocumentForP2PHandler(t, nil)
-
-	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
+	// requestDocumentSignature, no previous versions
+	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
 	assert.NoError(t, err)
-	assert.NotNil(t, resp, "must be non nil")
 
-	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
+	// we can update the document so that there are two versions in the repo
+	_, ncd := updateDocumentForP2Phandler(t, po)
+	assert.NotEqual(t, cd.DocumentIdentifier, ncd.CurrentVersion)
 
-	//invalid transition for non-collaborator id
-	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
-	fmt.Println(err)
+	// invalid transition for non-collaborator id
+	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd}, id2)
 	assert.Error(t, err)
 
 	// valid transition for collaborator id
-	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd}, defaultDID)
+	fmt.Println(ncd.PreviousVersion, ncd.CurrentVersion)
 	assert.NoError(t, err)
-}
+	assert.NotNil(t, resp, "must be non nil")
+	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+	sig := resp.Signature
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), ncd.SigningRoot), "signature must be valid")
 
-//func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
-//	po, cd := prepareDocumentForP2PHandler(t, nil)
-//	tc, err := configstore.NewAccount("main", cfg)
-//	assert.NoError(t, err)
-//	acc := tc.(*configstore.Account)
-//	acc.IdentityID = defaultDID[:]
-//	ctxh, err := contextutil.New(context.Background(), acc)
-//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
-//	assert.Nil(t, err, "must be nil")
-//	assert.NotNil(t, resp, "must be non nil")
-//
-//	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
-//	assert.NotNil(t, err, "must not be nil")
-//	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
-//}
-//
-//func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
-//	ctxh := testingconfig.CreateAccountContext(t, cfg)
-//	po, cd := prepareDocumentForP2PHandler(t, nil)
-//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
-//	assert.Nil(t, err, "must be nil")
-//	assert.NotNil(t, resp, "must be non nil")
-//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-//	sig := resp.Signature
-//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
-//	//Update document
-//	po, cd = updateDocumentForP2Phandler(t, po)
-//	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
-//	assert.Nil(t, err, "must be nil")
-//	assert.NotNil(t, resp, "must be non nil")
-//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-//	sig = resp.Signature
-//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
-//}
-//
-//func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
-//	ctxh := testingconfig.CreateAccountContext(t, cfg)
-//	po, cd := prepareDocumentForP2PHandler(t, nil)
-//	po, cd = updateDocumentForP2Phandler(t, po)
-//	assert.NotEqual(t, cd.DocumentIdentifier, cd.CurrentVersion)
-//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
-//	assert.Nil(t, err, "must be nil")
-//	assert.NotNil(t, resp, "must be non nil")
-//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-//	sig := resp.Signature
-//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
-//}
-//
-//func TestHandler_RequestDocumentSignature(t *testing.T) {
-//	ctxh := testingconfig.CreateAccountContext(t, cfg)
-//	_, cd := prepareDocumentForP2PHandler(t, nil)
-//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
-//	assert.Nil(t, err, "must be nil")
-//	assert.NotNil(t, resp, "must be non nil")
-//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-//	sig := resp.Signature
-//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
-//}
+	// document already exists
+	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
+	assert.NotNil(t, err, "must not be nil")
+	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
+}
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
