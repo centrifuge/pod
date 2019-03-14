@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -30,6 +29,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -66,19 +66,17 @@ func TestMain(m *testing.M) {
 
 func TestHandler_GetDocument_nonexistentIdentifier(t *testing.T) {
 	b := utils.RandomSlice(32)
-	centrifugeId := createIdentity(t)
 	req := &p2ppb.GetDocumentRequest{DocumentIdentifier: b}
-	resp, err := handler.GetDocument(context.Background(), req, centrifugeId)
+	resp, err := handler.GetDocument(context.Background(), req, defaultDID)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }
 
 func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
-	centID := createIdentity(t)
 	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
-	acc.IdentityID = centID[:]
+	acc.IdentityID = defaultDID[:]
 	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.Nil(t, err)
 	_, err = cfgService.CreateAccount(acc)
@@ -94,7 +92,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	peerID, err := cented25519.PublicKeyToP2PKey(bPk)
 	assert.NoError(t, err)
 
-	p2pResp, err := handler.HandleInterceptor(ctxh, peerID, p2pcommon.ProtocolForDID(&centID), p2pEnv)
+	p2pResp, err := handler.HandleInterceptor(ctxh, peerID, p2pcommon.ProtocolForDID(&defaultDID), p2pEnv)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, p2pResp, "must be non nil")
 	resp := resolveSignatureResponse(t, p2pResp)
@@ -169,8 +167,10 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	// Anchor document
 	accDID, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	anchorIDTyped, _ := anchors.ToAnchorID(cd.CurrentPreimage)
-	docRootTyped, _ := anchors.ToDocumentRoot(cd.DocumentRoot)
+	anchorIDTyped, err := anchors.ToAnchorID(cd.CurrentPreimage)
+	assert.NoError(t, err)
+	docRootTyped, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	assert.NoError(t, err)
 
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
@@ -196,9 +196,8 @@ func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 func TestHandler_SendAnchoredDocument(t *testing.T) {
 	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
-	centrifugeId := createIdentity(t)
 	acc := tc.(*configstore.Account)
-	acc.IdentityID = centrifugeId[:]
+	acc.IdentityID = defaultDID[:]
 
 	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.Nil(t, err)
@@ -216,8 +215,10 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	po.Document.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, _ := anchors.ToAnchorID(po.Document.CurrentPreimage)
-	docRootTyped, _ := anchors.ToDocumentRoot(po.Document.DocumentRoot)
+	anchorIDTyped, err := anchors.ToAnchorID(po.Document.CurrentPreimage)
+	assert.NoError(t, err)
+	docRootTyped, err := anchors.ToDocumentRoot(po.Document.DocumentRoot)
+	assert.NoError(t, err)
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
 
@@ -225,7 +226,44 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
 	cd, err = po.PackCoreDocument()
 	assert.NoError(t, err)
-	anchorResp, err := handler.SendAnchoredDocument(ctxh, &p2ppb.AnchorDocumentRequest{Document: &cd}, centrifugeId[:])
+
+	// this should succeed since this is the first document version
+	anchorResp, err := handler.SendAnchoredDocument(ctxh, &p2ppb.AnchorDocumentRequest{Document: &cd}, defaultDID[:])
+	assert.Nil(t, err)
+	assert.NotNil(t, anchorResp, "must be non nil")
+	assert.True(t, anchorResp.Accepted)
+
+	// update the document
+	npo, ncd := updateDocumentForP2Phandler(t, po)
+	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	// Add signature received
+	npo.AppendSignatures(resp.Signature)
+	tree, err = npo.DocumentRootTree()
+	npo.Document.DocumentRoot = tree.RootHash()
+
+	// Anchor document
+	anchorIDTyped, err = anchors.ToAnchorID(npo.Document.CurrentPreimage)
+	assert.NoError(t, err)
+	docRootTyped, err = anchors.ToDocumentRoot(npo.Document.DocumentRoot)
+	assert.NoError(t, err)
+	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	assert.Nil(t, err)
+
+	watchCommittedAnchor = <-anchorConfirmations
+	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	ncd, err = npo.PackCoreDocument()
+	assert.NoError(t, err)
+
+	// transition failure for random ID
+	id := testingidentity.GenerateRandomDID()
+	_, err = handler.SendAnchoredDocument(ctxh, &p2ppb.AnchorDocumentRequest{Document: &ncd}, id[:])
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid document state transition")
+
+	anchorResp, err = handler.SendAnchoredDocument(ctxh, &p2ppb.AnchorDocumentRequest{Document: &ncd}, defaultDID[:])
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)
@@ -278,6 +316,8 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		err = po.InitPurchaseOrderInput(payload, defaultDID.String())
 		assert.NoError(t, err)
 	}
+	err = po.AddUpdateLog(defaultDID)
+	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
@@ -289,7 +329,6 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		SignerId:    defaultDID[:],
 		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature:   s,
-		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}
 	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()

@@ -9,7 +9,6 @@ import (
 
 	"github.com/satori/go.uuid"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -439,16 +438,13 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 }
 
 // ValidateSignature validates a signature on a message based on identity data
-func (i service) ValidateSignature(signature *coredocumentpb.Signature, message []byte) error {
-	did := id.NewDIDFromBytes(signature.SignerId)
-
-	sigTime := time.Unix(signature.Timestamp.Seconds, int64(signature.Timestamp.Nanos))
-	err := i.ValidateKey(context.Background(), did, signature.PublicKey, &(id.KeyPurposeSigning.Value), &sigTime)
+func (i service) ValidateSignature(did id.DID, pubKey []byte, signature []byte, message []byte, timestamp time.Time) error {
+	err := i.ValidateKey(context.Background(), did, pubKey, &(id.KeyPurposeSigning.Value), &timestamp)
 	if err != nil {
 		return err
 	}
 
-	if !crypto.VerifyMessage(signature.PublicKey, message, signature.Signature, crypto.CurveSecp256K1) {
+	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveSecp256K1) {
 		return errors.New("error when validating signature")
 	}
 

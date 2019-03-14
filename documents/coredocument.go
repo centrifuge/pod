@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -599,6 +600,26 @@ func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
 	}
 
 	return signatures
+}
+
+// AddUpdateLog adds a log to the model to persist an update related meta data such as author
+func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
+	cd.Document.Author = account[:]
+	cd.Document.Timestamp, err = utils.ToTimestampProper(time.Now().UTC())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Author is the author of the document version represented by the model
+func (cd *CoreDocument) Author() identity.DID {
+	return identity.NewDIDFromBytes(cd.Document.Author)
+}
+
+// Timestamp is the time of update in UTC of the document version represented by the model
+func (cd *CoreDocument) Timestamp() (time.Time, error) {
+	return utils.FromTimestamp(cd.Document.Timestamp)
 }
 
 func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {

@@ -6,14 +6,12 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/satori/go.uuid"
-
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/satori/go.uuid"
 )
 
 const (
@@ -225,7 +223,7 @@ type ServiceDID interface {
 	ValidateKey(ctx context.Context, did DID, key []byte, purpose *big.Int, at *time.Time) error
 
 	// ValidateSignature checks if signature is valid for given identity
-	ValidateSignature(signature *coredocumentpb.Signature, message []byte) error
+	ValidateSignature(did DID, pubKey []byte, signature []byte, message []byte, timestamp time.Time) error
 
 	// CurrentP2PKey retrieves the last P2P key stored in the identity
 	CurrentP2PKey(did DID) (ret string, err error)

@@ -7,7 +7,6 @@ import (
 	"flag"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -84,8 +83,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
-	// one signature would be missing
-	assert.Equal(t, 0, len(signs))
+	assert.Equal(t, 1, len(signs))
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
@@ -138,6 +136,8 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	po := new(purchaseorder.PurchaseOrder)
 	err = po.InitPurchaseOrderInput(payalod, defaultDID.String())
 	assert.NoError(t, err)
+	err = po.AddUpdateLog(defaultDID)
+	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := po.CalculateSigningRoot()
@@ -149,7 +149,6 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 		SignerId:    defaultDID[:],
 		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature:   s,
-		Timestamp:   utils.ToTimestamp(time.Now().UTC()),
 	}
 	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()

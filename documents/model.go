@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -98,6 +99,15 @@ type Model interface {
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
 	ATGranteeCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
+
+	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
+	AddUpdateLog(account identity.DID) error
+
+	// Author is the author of the document version represented by the model
+	Author() identity.DID
+
+	// Timestamp is the time of update in UTC of the document version represented by the model
+	Timestamp() (time.Time, error)
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
 	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
