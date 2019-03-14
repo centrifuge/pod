@@ -133,23 +133,23 @@ func createInsecureClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func waitTillStatus(t *testing.T, e *httpexpect.Expect, auth string, txID string, expectedStatus string) {
+func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
 	for {
-		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object()
-		status := resp.Path("$.status").String().Raw()
+		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
+		status := resp["status"].(string)
 
 		if status == "pending" {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
-		if status == expectedStatus {
-			break
-		} else {
-			t.Error(resp.Path("$.message").String().Raw())
+		message, ok := resp["message"].(string)
+
+		if !ok {
+			message = "Unknown error while processing transaction"
 		}
 
-		break
+		return status, message
 	}
 }
 

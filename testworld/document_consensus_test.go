@@ -61,7 +61,10 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	// a shares document with b first
 	res := createDocument(bob.httpExpect, a, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{b}))
 	txID := getTransactionID(t, res)
-	waitTillStatus(t, bob.httpExpect, a, txID, "success")
+	status, message := getTransactionStatusAndMessage(bob.httpExpect, a, txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -83,7 +86,10 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	// b updates invoice and shares with c as well
 	res = updateDocument(bob.httpExpect, b, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
 	txID = getTransactionID(t, res)
-	waitTillStatus(t, bob.httpExpect, b, txID, "success")
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, b, txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -111,7 +117,10 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	// Alice shares document with Bobs accounts a and b
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{a, b}))
 	txID := getTransactionID(t, res)
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -134,7 +143,10 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
 	res = updateDocument(bob.httpExpect, a, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), b, c, d, e}))
 	txID = getTransactionID(t, res)
-	waitTillStatus(t, bob.httpExpect, a, txID, "success")
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, a, txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -159,7 +171,10 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	// Alice shares document with Bob first
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -181,7 +196,10 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
-	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "success")
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -204,14 +222,16 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 }
 
 func collaboratorTimeOut(t *testing.T, documentType string) {
-
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
 	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, response)
-	waitTillStatus(t, kenny.httpExpect, kenny.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(kenny.httpExpect, kenny.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	// check if Bob and Kenny received the document
 	docIdentifier := getDocumentIdentifier(t, response)
@@ -231,7 +251,10 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	// Bob will anchor the document without Kennys signature
 	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedPayload)
 	txID = getTransactionID(t, response)
-	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "failed")
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "failed" {
+		t.Error(message)
+	}
 
 	// check if bob saved the updated document
 	paramsV2 := map[string]interface{}{
