@@ -515,6 +515,6 @@ func TestPostAnchoredValidator(t *testing.T) {
 }
 
 func TestSignatureRequestValidator(t *testing.T) {
-	srv := SignatureRequestValidator(nil)
-	assert.Len(t, srv, 3)
+	srv := SignatureRequestValidator(testingidentity.GenerateRandomDID(), nil)
+	assert.Len(t, srv, 2)
 }

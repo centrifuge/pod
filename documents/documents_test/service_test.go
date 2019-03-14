@@ -239,7 +239,7 @@ func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
-	signature, err := service.RequestDocumentSignature(ctxh, i)
+	signature, err := service.ReceiveDocumentSignatureRequest(ctxh, i)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, signature)

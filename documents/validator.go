@@ -1,6 +1,8 @@
 package documents
 
 import (
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -19,7 +21,6 @@ type ValidatorGroup []Validator
 
 //Validate will execute all group specific atomic validations
 func (group ValidatorGroup) Validate(oldState Model, newState Model) (errs error) {
-
 	for _, v := range group {
 		if err := v.Validate(oldState, newState); err != nil {
 			errs = errors.AppendError(errs, err)
@@ -162,6 +163,48 @@ func documentRootValidator() Validator {
 	})
 }
 
+// documentChangePeriodValidator checks if a document anchoring is done within the allowed maximum time frame after the change
+func documentChangePeriodValidator(repository anchors.AnchorRepository) Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		dr, err := model.CalculateDocumentRoot()
+		if err != nil {
+			return errors.New("failed to get document root: %v", err)
+		}
+
+		if len(dr) != idSize {
+			return errors.New("document root is invalid")
+		}
+
+		return nil
+	})
+}
+
+// documentAuthorValidator checks if a given sender DID is the document author
+func documentAuthorValidator(sender identity.DID) Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		if !model.Author().Equal(sender) {
+			return errors.New("document sender is not the author")
+		}
+
+		return nil
+	})
+}
+
+// documentTimestampForSigningValidator checks if a given document has a timestamp recent enough to be signed
+func documentTimestampForSigningValidator() Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		tm, err := model.Timestamp()
+		if err != nil {
+			return errors.New("failed to get document timestamp: %v", err)
+		}
+
+		if tm.Before(time.Now().Add(-anchors.MaxPreCommitToCommitDuration)) {
+			return errors.New("document is too old to be signed")
+		}
+		return nil
+	})
+}
+
 // signaturesValidator validates all the signatures in the core document
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
@@ -256,12 +299,17 @@ func transitionValidator(collaborator identity.DID) Validator {
 }
 
 // SignatureRequestValidator returns a validator group with following validators
+// document timestamp for signing validator
+// document author validator
 // base validator
 // signing root validator
 // signatures validator
 // should be used when node receives a document requesting for signature
-func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
-	return SignatureValidator(idService)
+func SignatureRequestValidator(sender identity.DID, idService identity.ServiceDID) ValidatorGroup {
+	return ValidatorGroup{
+		documentTimestampForSigningValidator(),
+		documentAuthorValidator(sender),
+		SignatureValidator(idService)}
 }
 
 // PreAnchorValidator is a validator group with following validators
