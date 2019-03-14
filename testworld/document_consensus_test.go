@@ -175,8 +175,8 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 
 	//// let charlie update the document and fail
-	//res = failedUpdateDocument(charlie.httpExpect, charlie.id.String(), documentType, http.StatusInternalServerError, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
-	//assert.NotNil(t, res)
+	res = failedUpdateDocument(charlie.httpExpect, charlie.id.String(), documentType, http.StatusInternalServerError, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
+	assert.NotNil(t, res)
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
