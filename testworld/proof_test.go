@@ -12,13 +12,11 @@ import (
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
 	proofWithMultipleFields_successful(t, typeInvoice)
-
 }
 
 func TestProofWithMultipleFields_po_successful(t *testing.T) {
 	t.Parallel()
 	proofWithMultipleFields_successful(t, typePO)
-
 }
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
@@ -45,7 +43,6 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 	checkProof(proofFromAlice, documentType, docIdentifier)
 	checkProof(proofFromBob, documentType, docIdentifier)
-
 }
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
@@ -64,5 +61,4 @@ func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier 
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()
 	objProof.Path("$.field_proofs[1].property").String().Equal(compactPrefix + prop2)
 	objProof.Path("$.field_proofs[1].sorted_hashes").NotNull()
-
 }

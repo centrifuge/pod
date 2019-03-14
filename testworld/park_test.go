@@ -13,6 +13,8 @@ import (
 
 func TestHost_Happy(t *testing.T) {
 	t.Parallel()
+
+	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
@@ -42,6 +44,7 @@ func TestHost_Happy(t *testing.T) {
 
 func TestHost_RestartWithAccounts(t *testing.T) {
 	t.Parallel()
+
 	// Name can be randomly generated
 	tempHostName := "Sleepy"
 	bootnode, err := doctorFord.bernard.p2pURL()
