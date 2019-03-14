@@ -32,8 +32,8 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	did      = testingidentity.GenerateRandomDID()
-	tenantID = did[:]
+	did       = testingidentity.GenerateRandomDID()
+	accountID = did[:]
 )
 
 var ctx = map[string]interface{}{}
@@ -75,7 +75,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, true)
 	idSrv := new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar := new(mockAnchorRepo)
 	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	// new document with saved
 	doc, cd = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, false)
 	idSrv = new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
@@ -110,6 +110,8 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+	err = doc.AddUpdateLog(did)
 	assert.NoError(t, err)
 	_, err = doc.CalculateDataRoot()
 	assert.NoError(t, err)
@@ -132,7 +134,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition for id2
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(ndr)
 	assert.NoError(t, err)
@@ -147,7 +149,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
 	idService := testingcommons.MockIdentityService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
 	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
@@ -195,7 +197,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
-	assert.Nil(t, testRepo().Update(tenantID, i.CurrentVersion(), i))
+	assert.Nil(t, testRepo().Update(accountID, i.CurrentVersion(), i))
 	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get signing root")
@@ -337,7 +339,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 		}
 
-		err := testRepo().Create(tenantID, version, inv)
+		err := testRepo().Create(accountID, version, inv)
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
@@ -366,7 +368,7 @@ func TestService_GetVersion_successful(t *testing.T) {
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := testRepo().Create(tenantID, currentVersion, inv)
+	err := testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
@@ -395,7 +397,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
 	_, err = service.GetCurrentVersion(ctxh, documentIdentifier)
@@ -422,7 +424,7 @@ func TestService_GetVersion_error(t *testing.T) {
 		GrossAmount:  60,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
-	err = testRepo().Create(tenantID, currentVersion, inv)
+	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	//random version
@@ -464,7 +466,7 @@ func TestService_Exists(t *testing.T) {
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 
 	exists := service.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "document should exist")
@@ -487,6 +489,8 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 
 	err := i.InitInvoiceInput(data, did.String())
 	assert.NoError(t, err)
+	err = i.AddUpdateLog(did)
+	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := i.CalculateSigningRoot()
@@ -505,7 +509,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 	assert.NoError(t, err)
 
 	if !skipSave {
-		err = testRepo().Create(tenantID, i.CurrentVersion(), i)
+		err = testRepo().Create(accountID, i.CurrentVersion(), i)
 		assert.NoError(t, err)
 	}
 	return i, cd

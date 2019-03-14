@@ -7,6 +7,9 @@ import (
 	"crypto/rand"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
@@ -195,22 +198,24 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 }
 
 func TestP2PService_basicChecks(t *testing.T) {
+	tm, err := utils.ToTimestampProper(time.Now())
+	assert.NoError(t, err)
 	tests := []struct {
 		header *p2ppb.Header
 		err    error
 	}{
 		{
-			header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12},
+			header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12, Timestamp: tm},
 			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12},
+			header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12, Timestamp: tm},
 			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID()},
+			header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID(), Timestamp: tm},
 		},
 	}
 

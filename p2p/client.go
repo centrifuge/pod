@@ -192,7 +192,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		header = recvEnvelope.Header
 	}
 
-	err = validateSignatureResp(s.idService, id, cd.SigningRoot, header, resp)
+	err = validateSignatureResp(id, header, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -274,9 +274,7 @@ func convertClientError(recv *p2ppb.Envelope) error {
 }
 
 func validateSignatureResp(
-	identityService identity.ServiceDID,
 	receiver identity.DID,
-	signingRoot []byte,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {
 
@@ -288,11 +286,6 @@ func validateSignatureResp(
 	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, err.Error())
-	}
-
-	err = identityService.ValidateSignature(resp.Signature, signingRoot)
-	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
 	return nil
 }
