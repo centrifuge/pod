@@ -224,7 +224,7 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
 
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.getSignatureDataTree(false)
 	if err != nil {
 		return nil, errors.New("failed to generate signatures tree: %v", err)
 	}
@@ -301,27 +301,9 @@ func (cd *CoreDocument) GetSigningRootProof() (hashes [][]byte, err error) {
 	return rootProof.SortedHashes, err
 }
 
-// setSignatureDataSalts generate salts for SignatureData.
-// This is no-op if the salts are already generated.
-func (cd *CoreDocument) setSignatureDataSalts() ([]*coredocumentpb.DocumentSalt, error) {
-	if cd.Document.SignatureDataSalts == nil {
-		proofSalts, err := GenerateNewSalts(cd.Document.SignatureData, SignaturesTreePrefix, compactProperties(SignaturesTreePrefix))
-		if err != nil {
-			return nil, err
-		}
-		cd.Document.SignatureDataSalts = ConvertToProtoSalts(proofSalts)
-	}
-	return cd.Document.SignatureDataSalts, nil
-}
-
 // getSignatureDataTree returns the merkle tree for the Signature Data root.
-func (cd *CoreDocument) getSignatureDataTree() (*proofs.DocumentTree, error) {
-	signatureSalts, err := cd.setSignatureDataSalts()
-	if err != nil {
-		return nil, err
-	}
-	tree := NewDefaultTreeWithPrefix(ConvertToProofSalts(signatureSalts), SignaturesTreePrefix, compactProperties(SignaturesTreePrefix))
-
+func (cd *CoreDocument) getSignatureDataTree(mutable bool) (tree *proofs.DocumentTree, err error) {
+	tree = NewDefaultTreeWithPrefix(&cd.Document, SignaturesTreePrefix, compactProperties(SignaturesTreePrefix), mutable)
 	err = tree.AddLeavesFromDocument(cd.Document.SignatureData)
 	if err != nil {
 		return nil, err
@@ -351,7 +333,7 @@ func (cd *CoreDocument) DocumentRootTree(mutable bool) (tree *proofs.DocumentTre
 		return nil, err
 	}
 	// Second leaf from the signature data tree
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.getSignatureDataTree(mutable)
 	if err != nil {
 		return nil, err
 	}

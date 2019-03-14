@@ -283,7 +283,7 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
-	i, _ := createInvoice(t)
+	i := createInvoice(t)
 	i.InvoiceNumber = "321321"
 	tree, err := i.getDocumentDataTree(true)
 	assert.Nil(t, err, "tree should be generated without error")
@@ -325,6 +325,15 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	data := oldInv.getClientData()
 	data.GrossAmount = 50
 	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateDataRoot()
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
 	// id1 should have permission

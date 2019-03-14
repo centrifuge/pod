@@ -390,6 +390,12 @@ func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
 	return i.CoreDocument.CalculateSigningRoot(i.DocumentType())
 }
 
+// CalculateDocumentRoot calculate the document root
+// TODO: Should we add this
+func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
+	return i.CoreDocument.CalculateDocumentRoot()
+}
+
 // CreateNFTProofs creates proofs specific to NFT minting.
 func (i *Invoice) CreateNFTProofs(
 	account identity.DID,
@@ -415,18 +421,18 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	}
 
 	// check invoice specific changes
-	oldTree, err := i.getDocumentDataTree()
+	oldTree, err := i.getDocumentDataTree(false)
 	if err != nil {
 		return err
 	}
 
-	newTree, err := newInv.getDocumentDataTree()
+	newTree, err := newInv.getDocumentDataTree(false)
 	if err != nil {
 		return err
 	}
 
 	rules := i.CoreDocument.TransitionRulesFor(collaborator)
-	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
 

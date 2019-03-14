@@ -22,7 +22,7 @@ type ChangedField struct {
 // GetChangedFields takes two document trees and returns the compact property, old and new value of the fields that are changed in new tree.
 // Properties may have been added to the new tree or removed from the new tree.
 // In Either case, since the new tree is different from old, that is considered a change.
-func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []ChangedField) {
+func GetChangedFields(oldTree, newTree *proofs.DocumentTree) (changedFields []ChangedField) {
 	oldProps := oldTree.PropertyOrder()
 	newProps := newTree.PropertyOrder()
 
@@ -30,7 +30,7 @@ func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 	props := make(map[string]proofs.Property)
 	for _, p := range append(oldProps, newProps...) {
 		// we can ignore the length property since any change in slice or map will return in addition or deletion of properties in the new tree
-		if p.Text == lengthSuffix {
+		if p.Text == proofs.DefaultReadablePropertyLengthSuffix {
 			continue
 		}
 
@@ -192,17 +192,17 @@ func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool
 // CollaboratorCanUpdate validates the changes made by the collaborator in the new document.
 // returns error if the transitions are not allowed for the collaborator.
 func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator identity.DID, docType string) error {
-	oldTree, err := cd.documentTree(docType)
+	oldTree, err := cd.documentTree(docType, false)
 	if err != nil {
 		return err
 	}
 
-	newTree, err := ncd.documentTree(docType)
+	newTree, err := ncd.documentTree(docType, false)
 	if err != nil {
 		return err
 	}
 
-	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := GetChangedFields(oldTree, newTree)
 	rules := cd.TransitionRulesFor(collaborator)
 	return ValidateTransitions(rules, cf)
 }

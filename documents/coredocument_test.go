@@ -143,7 +143,6 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Len(t, cs, 2)
 	assert.Contains(t, cs, c1)
 	assert.Contains(t, cs, c2)
-	assert.Nil(t, ncd.Document.CoredocumentSalts)
 	h = sha256.New()
 	h.Write(ncd.Document.NextPreimage)
 	var expectedNextVersion []byte
@@ -158,7 +157,6 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Len(t, cs, 2)
 	assert.Contains(t, cs, c1)
 	assert.Contains(t, cs, c2)
-	assert.NotNil(t, ncd.Document.CoredocumentSalts)
 
 	assert.Equal(t, cd.Document.NextVersion, ncd.Document.CurrentVersion)
 	assert.Equal(t, cd.Document.CurrentVersion, ncd.Document.PreviousVersion)
@@ -188,9 +186,6 @@ func TestGetSigningProofHashes(t *testing.T) {
 	assert.NoError(t, err)
 	cd.Document.EmbeddedData = docAny
 	cd.Document.DataRoot = utils.RandomSlice(32)
-	err = cd.setSalts()
-	assert.NoError(t, err)
-
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.Nil(t, err)
 
@@ -223,12 +218,7 @@ func TestGetSignaturesTree(t *testing.T) {
 		Signature:   utils.RandomSlice(32),
 	}
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	err = cd.setSalts()
-	assert.NoError(t, err)
-
-	signatureTree, err := cd.getSignatureDataTree()
-	assert.NoError(t, err)
-	assert.NotNil(t, signatureTree)
+	signatureTree, err := cd.getSignatureDataTree(true)
 
 	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
 	assert.Equal(t, 0, lengthIdx)
@@ -249,7 +239,7 @@ func TestGetDocumentSigningTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// no data root
-	_, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl, false)
+	_, err = cd.signingRootTree(documenttypes.InvoiceDataTypeUrl, false)
 	assert.Error(t, err)
 
 	// successful tree generation
@@ -282,7 +272,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 
 	// no signing root generated
-	_, err := cd.DocumentRootTree(false)
+	_, err = cd.DocumentRootTree(false)
 	assert.Error(t, err)
 
 	// successful Document root generation

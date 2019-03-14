@@ -389,18 +389,18 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	}
 
 	// check purchase order specific changes
-	oldTree, err := p.getDocumentDataTree()
+	oldTree, err := p.getDocumentDataTree(false)
 	if err != nil {
 		return err
 	}
 
-	newTree, err := newPo.getDocumentDataTree()
+	newTree, err := newPo.getDocumentDataTree(false)
 	if err != nil {
 		return err
 	}
 
 	rules := p.CoreDocument.TransitionRulesFor(collaborator)
-	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
 
