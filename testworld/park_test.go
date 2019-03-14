@@ -13,6 +13,8 @@ import (
 
 func TestHost_Happy(t *testing.T) {
 	t.Parallel()
+
+	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
@@ -20,7 +22,10 @@ func TestHost_Happy(t *testing.T) {
 	// alice shares a document with bob and charlie
 	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
 	txID := getTransactionID(t, res)
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 
@@ -39,6 +44,7 @@ func TestHost_Happy(t *testing.T) {
 
 func TestHost_RestartWithAccounts(t *testing.T) {
 	t.Parallel()
+
 	// Name can be randomly generated
 	tempHostName := "Sleepy"
 	bootnode, err := doctorFord.bernard.p2pURL()
