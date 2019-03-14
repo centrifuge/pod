@@ -43,15 +43,15 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 

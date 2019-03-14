@@ -48,6 +48,7 @@ var (
 	cfgService config.Service
 	docSrv     documents.Service
 	defaultDID identity.DID
+	docRepo    documents.Repository
 )
 
 func TestMain(m *testing.M) {
@@ -59,6 +60,7 @@ func TestMain(m *testing.M) {
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	docRepo = ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
 	defaultDID = createIdentity(&testing.T{})
 	result := m.Run()
@@ -116,18 +118,84 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "nil document provided")
 
-	// invalid transition
 	_, cd := prepareDocumentForP2PHandler(t, nil)
-	//cd, _ := createCDWithEmbeddedPO(t, acc, defaultDID, nil)
+
+	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp, "must be non nil")
+
+	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
+
+	//invalid transition for non-collaborator id
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
 	fmt.Println(err)
 	assert.Error(t, err)
 
-	// valid transition
-	cd, _ = createCDWithEmbeddedPO(t, acc, defaultDID, []identity.DID{id2})
+	// valid transition for collaborator id
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, id2)
 	assert.NoError(t, err)
 }
+
+//func TestHandler_RequestDocumentSignature_AlreadyExists(t *testing.T) {
+//	po, cd := prepareDocumentForP2PHandler(t, nil)
+//	tc, err := configstore.NewAccount("main", cfg)
+//	assert.NoError(t, err)
+//	acc := tc.(*configstore.Account)
+//	acc.IdentityID = defaultDID[:]
+//	ctxh, err := contextutil.New(context.Background(), acc)
+//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
+//	assert.Nil(t, err, "must be nil")
+//	assert.NotNil(t, resp, "must be non nil")
+//
+//	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
+//	assert.NotNil(t, err, "must not be nil")
+//	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists.Error())
+//}
+//
+//func TestHandler_RequestDocumentSignature_UpdateSucceeds(t *testing.T) {
+//	ctxh := testingconfig.CreateAccountContext(t, cfg)
+//	po, cd := prepareDocumentForP2PHandler(t, nil)
+//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+//	assert.Nil(t, err, "must be nil")
+//	assert.NotNil(t, resp, "must be non nil")
+//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+//	sig := resp.Signature
+//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
+//	//Update document
+//	po, cd = updateDocumentForP2Phandler(t, po)
+//	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+//	assert.Nil(t, err, "must be nil")
+//	assert.NotNil(t, resp, "must be non nil")
+//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+//	sig = resp.Signature
+//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
+//}
+//
+//func TestHandler_RequestDocumentSignatureFirstTimeOnUpdatedDocument(t *testing.T) {
+//	ctxh := testingconfig.CreateAccountContext(t, cfg)
+//	po, cd := prepareDocumentForP2PHandler(t, nil)
+//	po, cd = updateDocumentForP2Phandler(t, po)
+//	assert.NotEqual(t, cd.DocumentIdentifier, cd.CurrentVersion)
+//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+//	assert.Nil(t, err, "must be nil")
+//	assert.NotNil(t, resp, "must be non nil")
+//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+//	sig := resp.Signature
+//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
+//}
+//
+//func TestHandler_RequestDocumentSignature(t *testing.T) {
+//	ctxh := testingconfig.CreateAccountContext(t, cfg)
+//	_, cd := prepareDocumentForP2PHandler(t, nil)
+//	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd})
+//	assert.Nil(t, err, "must be nil")
+//	assert.NotNil(t, resp, "must be non nil")
+//	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
+//	sig := resp.Signature
+//	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
+//}
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	_, cd := prepareDocumentForP2PHandler(t, nil)
@@ -323,33 +391,4 @@ func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2p
 	err = proto.Unmarshal(dataEnv.Body, signResp)
 	assert.NoError(t, err)
 	return signResp
-}
-
-func createCDWithEmbeddedPO(t *testing.T, acc config.Account, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
-	po := new(purchaseorder.PurchaseOrder)
-	data := testingdocuments.CreatePOPayload()
-	if len(collaborators) > 0 {
-		var cs []string
-		for _, c := range collaborators {
-			cs = append(cs, c.String())
-		}
-		data.Collaborators = cs
-	}
-	err := po.InitPurchaseOrderInput(data, cid.String())
-	assert.NoError(t, err)
-	_, err = po.CalculateDataRoot()
-	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
-	assert.NoError(t, err)
-
-	sig, err := acc.SignMsg(sr)
-	assert.NoError(t, err)
-
-	po.AppendSignatures(sig)
-	_, err = po.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	cd, err := po.PackCoreDocument()
-	assert.NoError(t, err)
-
-	return cd, po
 }
