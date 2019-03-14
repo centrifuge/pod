@@ -48,7 +48,6 @@ var (
 	cfgService config.Service
 	docSrv     documents.Service
 	defaultDID identity.DID
-	docRepo    documents.Repository
 )
 
 func TestMain(m *testing.M) {
@@ -60,7 +59,6 @@ func TestMain(m *testing.M) {
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
-	docRepo = ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
 	defaultDID = createIdentity(&testing.T{})
 	result := m.Run()
