@@ -94,7 +94,11 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 
 	res := createDocument(bob.httpExpect, bob.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{eve.id.String()}))
 	txID := getTransactionID(t, res)
-	waitTillStatus(t, bob.httpExpect, bob.id.String(), txID, "failed")
+	status, message := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "failed" {
+		t.Error(message)
+	}
+	assert.Contains(t, message, "failed to validate signatures")
 }
 
 // Helper Methods

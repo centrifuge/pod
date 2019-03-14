@@ -133,7 +133,7 @@ func createInsecureClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func waitTillStatus(t *testing.T, e *httpexpect.Expect, auth string, txID string, expectedStatus string) {
+func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
 	for {
 		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object()
 		status := resp.Path("$.status").String().Raw()
@@ -143,13 +143,7 @@ func waitTillStatus(t *testing.T, e *httpexpect.Expect, auth string, txID string
 			continue
 		}
 
-		if status == expectedStatus {
-			break
-		} else {
-			t.Error(resp.Path("$.message").String().Raw())
-		}
-
-		break
+		return status, resp.Path("$.message").String().Raw()
 	}
 }
 
