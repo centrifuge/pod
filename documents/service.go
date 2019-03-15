@@ -185,18 +185,13 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 
 	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 
-	tenantID, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
 	sig, err := acc.SignMsg(sr)
 	if err != nil {
 		return nil, err
 	}
 	model.AppendSignatures(sig)
 
-	err = s.repo.Create(tenantID, model.CurrentVersion(), model)
+	err = s.repo.Create(did[:], model.CurrentVersion(), model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
