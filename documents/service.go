@@ -168,7 +168,9 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
 		if err != nil {
-			return nil, errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+			// TODO: should pull old document from peer
+			old = nil
+			//return nil, errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
 		}
 	}
 
@@ -225,7 +227,8 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
 		if err != nil {
 			// TODO(ved): we should pull the old document from the peer
-			return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+			old = nil
+			//return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
 		}
 	}
 
