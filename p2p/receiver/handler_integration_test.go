@@ -290,13 +290,13 @@ func createIdentity(t *testing.T) identity.DID {
 	assert.NoError(t, err)
 	pk, err := utils.SliceToByte32(accKeys[identity.KeyPurposeP2PDiscovery.Name].PublicKey)
 	assert.NoError(t, err)
-	keyDID := identity.NewKey(pk, &(identity.KeyPurposeP2PDiscovery.Value), big.NewInt(identity.KeyTypeECDSA))
+	keyDID := identity.NewKey(pk, &(identity.KeyPurposeP2PDiscovery.Value), big.NewInt(identity.KeyTypeECDSA), 0)
 	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
 	sPk, err := utils.SliceToByte32(accKeys[identity.KeyPurposeSigning.Name].PublicKey)
 	assert.NoError(t, err)
-	keyDID = identity.NewKey(sPk, &(identity.KeyPurposeSigning.Value), big.NewInt(identity.KeyTypeECDSA))
+	keyDID = identity.NewKey(sPk, &(identity.KeyPurposeSigning.Value), big.NewInt(identity.KeyTypeECDSA), 0)
 	err = idService.AddKey(ctx, keyDID)
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
