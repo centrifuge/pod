@@ -472,7 +472,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Nil(t, err)
 	r := &mockRepo{}
 	av = anchoredValidator(r)
-	r.On("GetDocumentRootOf", anchorID).Return(nil, errors.New("error")).Once()
+	r.On("GetAnchor", anchorID).Return(nil, time.Now(), errors.New("error")).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
@@ -486,7 +486,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	docRoot := anchors.RandomDocumentRoot()
 	r = &mockRepo{}
 	av = anchoredValidator(r)
-	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	r.On("GetAnchor", anchorID).Return(docRoot, time.Now(), nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
@@ -496,13 +496,29 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "mismatched document roots")
 
-	// success
+	// anchored after max allowed time
 	r = &mockRepo{}
 	av = anchoredValidator(r)
-	r.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	tm := time.Now()
+	r.On("GetAnchor", anchorID).Return(docRoot, tm, nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
+	model.On("Timestamp").Return(tm.Add(-MaxAuthoredToCommitDuration-1), nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	r.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document was anchored after max allowed time for anchor")
+
+	// success
+	r = &mockRepo{}
+	av = anchoredValidator(r)
+	r.On("GetAnchor", anchorID).Return(docRoot, time.Now(), nil).Once()
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(anchorID[:]).Once()
+	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
+	model.On("Timestamp").Return(time.Now(), nil).Once()
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	r.AssertExpectations(t)
@@ -516,5 +532,45 @@ func TestPostAnchoredValidator(t *testing.T) {
 
 func TestSignatureRequestValidator(t *testing.T) {
 	srv := SignatureRequestValidator(testingidentity.GenerateRandomDID(), nil)
-	assert.Len(t, srv, 2)
+	assert.Len(t, srv, 3)
+
+}
+
+func TestDocumentAuthorValidator(t *testing.T) {
+	did := testingidentity.GenerateRandomDID()
+	av := documentAuthorValidator(did)
+
+	// fail
+	model := new(mockModel)
+	model.On("Author").Return(testingidentity.GenerateRandomDID()).Once()
+	err := av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document sender is not the author")
+
+	// success
+	model = new(mockModel)
+	model.On("Author").Return(did).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Nil(t, err)
+}
+
+func TestDocumentTimestampForSigningValidator(t *testing.T) {
+	av := documentTimestampForSigningValidator()
+
+	// fail
+	model := new(mockModel)
+	model.On("Timestamp").Return(time.Now().UTC().Add(-MaxAuthoredToCommitDuration), nil).Once()
+	err := av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "document is too old to be signed")
+
+	// success
+	model = new(mockModel)
+	model.On("Timestamp").Return(time.Now().UTC(), nil).Once()
+	err = av.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Nil(t, err)
 }

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -82,7 +83,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB1, proofB2})
-	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
+	gotDocRoot, _, err := anchorRepo.GetAnchor(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 }
@@ -101,9 +102,10 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
-	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
+	gotDocRoot, hval, err := anchorRepo.GetAnchor(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
+	assert.True(t, time.Now().After(hval))
 }
 
 func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs [][32]byte) {
@@ -169,7 +171,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.True(t, isDone)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
-		gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorID)
+		gotDocRoot, _, err := anchorRepo.GetAnchor(anchorID)
 		assert.Nil(t, err)
 		assert.Equal(t, docRoot, gotDocRoot)
 	}

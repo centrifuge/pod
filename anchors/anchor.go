@@ -23,10 +23,6 @@ const (
 
 	// AnchorSchemaVersion as stored on public repository
 	AnchorSchemaVersion uint = 1
-
-	// MaxPreCommitToCommitDuration is the maximum allowed time period for a document to be anchored after a precommit.
-	// I.E. This is basically the maximum time period allowed for document consensus to complete as well.
-	MaxPreCommitToCommitDuration time.Duration = 120 * time.Minute
 )
 
 // AnchorID type is byte array of length AnchorIDLength

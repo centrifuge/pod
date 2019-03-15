@@ -3,6 +3,8 @@
 package testinganchors
 
 import (
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/stretchr/testify/mock"
 )
@@ -12,8 +14,8 @@ type MockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *MockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (r *MockAnchorRepo) GetAnchor(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
+	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
+	return docRoot, anchoredTime, args.Error(1)
 }

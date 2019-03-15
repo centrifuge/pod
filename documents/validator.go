@@ -10,6 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// MaxAuthoredToCommitDuration is the maximum allowed time period for a document to be anchored after a authoring it based on document timestamp.
+// I.E. This is basically the maximum time period allowed for document consensus to complete as well.
+const MaxAuthoredToCommitDuration = 120 * time.Minute
+
 // Validator is an interface every Validator (atomic or group) should implement
 type Validator interface {
 	// Validate validates the updates to the model in newState.
@@ -163,22 +167,6 @@ func documentRootValidator() Validator {
 	})
 }
 
-// documentChangePeriodValidator checks if a document anchoring is done within the allowed maximum time frame after the change
-func documentChangePeriodValidator(repository anchors.AnchorRepository) Validator {
-	return ValidatorFunc(func(_, model Model) error {
-		dr, err := model.CalculateDocumentRoot()
-		if err != nil {
-			return errors.New("failed to get document root: %v", err)
-		}
-
-		if len(dr) != idSize {
-			return errors.New("document root is invalid")
-		}
-
-		return nil
-	})
-}
-
 // documentAuthorValidator checks if a given sender DID is the document author
 func documentAuthorValidator(sender identity.DID) Validator {
 	return ValidatorFunc(func(_, model Model) error {
@@ -198,7 +186,7 @@ func documentTimestampForSigningValidator() Validator {
 			return errors.New("failed to get document timestamp: %v", err)
 		}
 
-		if tm.Before(time.Now().Add(-anchors.MaxPreCommitToCommitDuration)) {
+		if tm.Before(time.Now().UTC().Add(-MaxAuthoredToCommitDuration)) {
 			return errors.New("document is too old to be signed")
 		}
 		return nil
@@ -270,13 +258,22 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 			return errors.New("failed to get document root: %v", err)
 		}
 
-		gotRoot, err := repo.GetDocumentRootOf(anchorID)
+		gotRoot, anchoredAt, err := repo.GetAnchor(anchorID)
 		if err != nil {
 			return errors.New("failed to get document root for anchor %s from chain: %v", anchorID.String(), err)
 		}
 
 		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {
 			return errors.New("mismatched document roots")
+		}
+
+		tm, err := model.Timestamp()
+		if err != nil {
+			return errors.New("failed to get model update time: %v", err)
+		}
+
+		if tm.Add(MaxAuthoredToCommitDuration).Before(anchoredAt) {
+			return errors.New("document was anchored after max allowed time for anchor %s", anchorID.String())
 		}
 
 		return nil

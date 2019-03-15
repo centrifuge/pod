@@ -4,6 +4,7 @@ package invoice
 
 import (
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -36,10 +37,11 @@ type mockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (r *mockAnchorRepo) GetAnchor(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
+	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
+	anchoredTime, _ = args.Get(1).(time.Time)
+	return docRoot, anchoredTime, args.Error(2)
 }
 
 func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {

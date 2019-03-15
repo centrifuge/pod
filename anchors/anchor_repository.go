@@ -2,6 +2,7 @@ package anchors
 
 import (
 	"context"
+	"time"
 
 	logging "github.com/ipfs/go-log"
 )
@@ -13,6 +14,6 @@ var log = logging.Logger("anchorRepository")
 type AnchorRepository interface {
 	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan bool, err error)
 	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error)
-	GetDocumentRootOf(anchorID AnchorID) (DocumentRoot, error)
+	GetAnchor(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)
 	HasValidPreCommit(anchorID AnchorID) bool
 }
