@@ -168,8 +168,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
 		if err != nil {
 			// TODO: should pull old document from peer
-			old = nil
-			//return nil, errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+			log.Infof("failed to fetch previous document: %v", err)
 		}
 	}
 
@@ -189,6 +188,15 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		return nil, err
 	}
 	model.AppendSignatures(sig)
+
+	// Logic for receiving version n (n > 1) of the document for the first time		err = s.repo.Create(did[:], model.CurrentVersion(), model)
+	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
+	if !s.repo.Exists(did[:], model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
+		err = s.repo.Create(did[:], model.ID(), model)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrDocumentPersistence, err)
+		}
+	}
 
 	err = s.repo.Create(did[:], model.CurrentVersion(), model)
 	if err != nil {
@@ -221,10 +229,10 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
 		if err != nil {
 			// TODO(ved): we should pull the old document from the peer
-			old = nil
-			//return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+			log.Infof("failed to fetch previous document: %v", err)
 		}
 	}
+
 	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepository, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
