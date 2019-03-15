@@ -368,6 +368,17 @@ func ReceivedAnchoredDocumentValidator(
 	}
 }
 
+// RequestDocumentSignatureValidator is a validator group with the following validators
+// SignatureValidator
+// transitionsValidator
+// it should be called when a document is received over the p2p layer before signing
+func RequestDocumentSignatureValidator(idService identity.ServiceDID, collaborator identity.DID) ValidatorGroup {
+	return ValidatorGroup{
+		transitionValidator(collaborator),
+		SignatureValidator(idService),
+	}
+}
+
 // SignatureValidator is a validator group with following validators
 // baseValidator
 // signingRootValidator

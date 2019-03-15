@@ -68,8 +68,8 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
-	fromID := identity.NewDIDFromBytes(envelope.Header.SenderId)
-	err = srv.handshakeValidator.Validate(envelope.Header, &fromID, &peer)
+	collaborator := identity.NewDIDFromBytes(envelope.Header.SenderId)
+	err = srv.handshakeValidator.Validate(envelope.Header, &collaborator, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -95,7 +95,8 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.ReceiveDocumentSignatureRequest(ctx, req, identity.NewDIDFromBytes(msg.Header.SenderId))
+	collaborator := identity.NewDIDFromBytes(msg.Header.SenderId)
+	res, err := srv.RequestDocumentSignature(ctx, req, collaborator)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -113,11 +114,11 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 	return p2pEnv, nil
 }
 
-// ReceiveDocumentSignatureRequest signs the received document and returns the signature of the signingRoot
+// RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // Document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // Document will be stored to the repository for state management
-func (srv *Handler) ReceiveDocumentSignatureRequest(ctx context.Context, sigReq *p2ppb.SignatureRequest, sender identity.DID) (*p2ppb.SignatureResponse, error) {
+func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, collaborator identity.DID) (*p2ppb.SignatureResponse, error) {
 	if sigReq == nil || sigReq.Document == nil {
 		return nil, errors.New("nil document provided")
 	}
@@ -127,7 +128,7 @@ func (srv *Handler) ReceiveDocumentSignatureRequest(ctx context.Context, sigReq 
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	signature, err := srv.docSrv.ReceiveDocumentSignatureRequest(ctx, model, sender)
+	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -143,7 +144,8 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.SendAnchoredDocument(ctx, m, msg.Header.SenderId)
+	collaborator := identity.NewDIDFromBytes(msg.Header.SenderId)
+	res, err := srv.SendAnchoredDocument(ctx, m, collaborator)
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
@@ -162,7 +164,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
-func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, senderID []byte) (*p2ppb.AnchorDocumentResponse, error) {
+func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, collaborator identity.DID) (*p2ppb.AnchorDocumentResponse, error) {
 	if docReq == nil || docReq.Document == nil {
 		return nil, errors.New("nil document provided")
 	}
@@ -172,7 +174,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	err = srv.docSrv.ReceiveAnchoredDocument(ctx, model, senderID)
+	err = srv.docSrv.ReceiveAnchoredDocument(ctx, model, collaborator)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

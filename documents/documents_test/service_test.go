@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -42,15 +43,15 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
@@ -58,7 +59,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	srv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
 
 	// self failed
-	err := srv.ReceiveAnchoredDocument(context.Background(), nil, nil)
+	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
@@ -66,7 +67,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	acc, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
-	err = srv.ReceiveAnchoredDocument(ctxh, nil, nil)
+	err = srv.ReceiveAnchoredDocument(ctxh, nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
@@ -80,7 +81,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
 	ar.AssertExpectations(t)
@@ -95,17 +96,10 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
 	idSrv.AssertExpectations(t)
-
-	// document with missing previous version
-	model := new(testingdocuments.MockModel)
-	model.On("PreviousVersion").Return(utils.RandomSlice(32))
-	err = srv.ReceiveAnchoredDocument(ctxh, model, did[:])
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
@@ -127,7 +121,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 
 	// invalid transition for id3
 	id3 := testingidentity.GenerateRandomDID()
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, id3[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, id3)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Contains(t, err.Error(), "invalid document state transition")
@@ -139,7 +133,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
 	idSrv.AssertExpectations(t)
@@ -234,19 +228,61 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 
-func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
-	service, idService := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	did, err := contextutil.AccountDID(ctxh)
+func TestService_RequestDocumentSignature(t *testing.T) {
+	srv, _ := getServiceWithMockedLayers()
+
+	// self failed
+	_, err := srv.RequestDocumentSignature(context.Background(), nil, did)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// nil model
+	tc, err := configstore.NewAccount("main", cfg)
 	assert.NoError(t, err)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, true)
-	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
-	i.(*invoice.Invoice).Document.DataRoot = nil
-	i.(*invoice.Invoice).Document.SigningRoot = nil
-	signature, err := service.ReceiveDocumentSignatureRequest(ctxh, i, did)
-	assert.NotNil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = did[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.NoError(t, err)
+	_, err = srv.RequestDocumentSignature(ctxh, nil, did)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// add doc to repo
+	id := testingidentity.GenerateRandomDID()
+	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
+	idSrv := new(testingcommons.MockIdentityService)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	ar := new(mockAnchorRepo)
+	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	assert.NoError(t, err)
+	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+
+	// prepare a new version
+	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+	err = doc.AddUpdateLog(did)
+	_, err = doc.CalculateDataRoot()
+	assert.NoError(t, err)
+	sr, err := doc.CalculateSigningRoot()
+	assert.NoError(t, err)
+	sig, err := acc.SignMsg(sr)
+	assert.NoError(t, err)
+
+	doc.AppendSignatures(sig)
+	_, err = doc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	// invalid transition
+	id2 := testingidentity.GenerateRandomDID()
+	_, err = srv.RequestDocumentSignature(ctxh, doc, id2)
+	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
-	assert.Nil(t, signature)
+	assert.Contains(t, err.Error(), "invalid document state transition")
+
+	// valid transition
+	_, err = srv.RequestDocumentSignature(ctxh, doc, id)
+	assert.NoError(t, err)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {

@@ -39,7 +39,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		if err != nil {
 			return nil, err
 		}
-		return h.SendAnchoredDocument(localCtx, in, receiverID[:])
+		return h.SendAnchoredDocument(localCtx, in, receiverID)
 	}
 
 	err = s.idService.Exists(ctx, receiverID)
@@ -132,11 +132,6 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		return nil, err
 	}
 
-	senderID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
 	tc, err := s.config.GetAccount(id[:])
@@ -148,8 +143,10 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		if err != nil {
 			return nil, err
 		}
-
-		resp, err = h.ReceiveDocumentSignatureRequest(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, senderID)
+		if err != nil {
+			return nil, err
+		}
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, id)
 		if err != nil {
 			return nil, err
 		}
