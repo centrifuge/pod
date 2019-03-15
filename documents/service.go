@@ -189,7 +189,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 	model.AppendSignatures(sig)
 
-	// Logic for receiving version n (n > 1) of the document for the first time		err = s.repo.Create(did[:], model.CurrentVersion(), model)
+	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
 	if !s.repo.Exists(did[:], model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
 		err = s.repo.Create(did[:], model.ID(), model)
