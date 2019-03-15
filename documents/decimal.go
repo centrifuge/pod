@@ -22,8 +22,25 @@ type Decimal struct {
 	dec decimal.Decimal
 }
 
-// FromString takes a decimal in string format and converts it into Decimal
-func (d *Decimal) FromString(s string) error {
+// MarshalJSON marshals decimal to json bytes.
+func (d *Decimal) MarshalJSON() ([]byte, error) {
+	return d.dec.MarshalJSON()
+}
+
+// UnmarshalJSON loads json bytes to decimal
+func (d *Decimal) UnmarshalJSON(data []byte) error {
+	dec := new(decimal.Decimal)
+	err := dec.UnmarshalJSON(data)
+	if err != nil {
+		return err
+	}
+
+	d.dec = *dec
+	return nil
+}
+
+// SetString takes a decimal in string format and converts it into Decimal
+func (d *Decimal) SetString(s string) error {
 	s = strings.TrimSpace(s)
 	if len(s) < 1 {
 		return errors.New("empty string")
@@ -98,8 +115,8 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 	return decimal, nil
 }
 
-// FromBytes parse the bytes to Decimal.
-func (d *Decimal) FromBytes(dec []byte) error {
+// SetBytes parse the bytes to Decimal.
+func (d *Decimal) SetBytes(dec []byte) error {
 	if len(dec) < minByteLength {
 		return ErrInvalidDecimal
 	}
@@ -112,5 +129,80 @@ func (d *Decimal) FromBytes(dec []byte) error {
 		s = "-" + s
 	}
 
-	return d.FromString(s)
+	return d.SetString(s)
+}
+
+// DecimalsToStrings converts decimals to string.
+// nil decimal leads to empty string.
+func DecimalsToStrings(decs ...*Decimal) []string {
+	sdecs := make([]string, len(decs), len(decs))
+	for i, d := range decs {
+		if d == nil {
+			continue
+		}
+
+		sdecs[i] = d.String()
+	}
+
+	return sdecs
+}
+
+// DecimalsToBytes converts decimals to bytes
+func DecimalsToBytes(decs ...*Decimal) ([][]byte, error) {
+	dbytes := make([][]byte, len(decs), len(decs))
+	for i, d := range decs {
+		if d == nil {
+			continue
+		}
+
+		buf, err := d.Bytes()
+		if err != nil {
+			return nil, err
+		}
+
+		dbytes[i] = buf
+	}
+
+	return dbytes, nil
+}
+
+// StringsToDecimals converts string decimals to Decimal type
+func StringsToDecimals(strs ...string) ([]*Decimal, error) {
+	decs := make([]*Decimal, len(strs), len(strs))
+	for i, s := range strs {
+		if strings.TrimSpace(s) == "" {
+			continue
+		}
+
+		dec := new(Decimal)
+		err := dec.SetString(s)
+		if err != nil {
+			return nil, err
+		}
+
+		decs[i] = dec
+	}
+
+	return decs, nil
+}
+
+// BytesToDecimals converts decimals in bytes to Decimal type
+func BytesToDecimals(bytes ...[]byte) ([]*Decimal, error) {
+	decs := make([]*Decimal, len(bytes), len(bytes))
+	for i, d := range bytes {
+		d := d
+		if len(d) < 1 {
+			continue
+		}
+
+		dec := new(Decimal)
+		err := dec.SetBytes(d)
+		if err != nil {
+			return nil, err
+		}
+
+		decs[i] = dec
+	}
+
+	return decs, nil
 }

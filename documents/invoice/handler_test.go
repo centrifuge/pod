@@ -91,7 +91,7 @@ func TestGRPCHandler_Create_create_fail(t *testing.T) {
 	srv := h.service.(*mockService)
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(new(Invoice), nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(nil, transactions.NilTxID().String(), errors.New("create failed")).Once()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}}
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: "300"}}
 	_, err := h.Create(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err, "must be non nil")
@@ -129,7 +129,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := new(Invoice)
 	txID := transactions.NewTxID()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: 300}, Collaborators: []string{"0x010203040506"}}
+	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: "300"}, Collaborators: []string{"0x010203040506"}}
 	response := &clientinvoicepb.InvoiceResponse{Header: &clientinvoicepb.ResponseHeader{}}
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()

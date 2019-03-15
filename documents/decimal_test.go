@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDecimal_FromString(t *testing.T) {
+func TestDecimal(t *testing.T) {
 	tests := []struct {
 		s, res string
 		err    bool
@@ -93,7 +93,7 @@ func TestDecimal_FromString(t *testing.T) {
 
 	for _, c := range tests {
 		d := new(Decimal)
-		err := d.FromString(c.s)
+		err := d.SetString(c.s)
 		if c.err {
 			assert.Error(t, err)
 			continue
@@ -106,8 +106,16 @@ func TestDecimal_FromString(t *testing.T) {
 		assert.NoError(t, err)
 
 		d1 := new(Decimal)
-		assert.NoError(t, d1.FromBytes(b))
+		assert.NoError(t, d1.SetBytes(b))
 		assert.Equal(t, c.res, d1.String())
+
+		buf, err := d.MarshalJSON()
+		assert.NoError(t, err)
+
+		d2 := new(Decimal)
+		assert.NoError(t, d2.UnmarshalJSON(buf))
+
+		assert.Equal(t, c.res, d2.String())
 	}
 }
 
@@ -125,7 +133,7 @@ func TestDecimal_Bytes_max_byte_exceeded(t *testing.T) {
 func TestDecimal_FromBytes_min_byte_error(t *testing.T) {
 	d := new(Decimal)
 	buf := utils.RandomSlice(7)
-	err := d.FromBytes(buf)
+	err := d.SetBytes(buf)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrInvalidDecimal, err))
 }

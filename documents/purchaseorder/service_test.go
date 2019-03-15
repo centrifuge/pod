@@ -68,7 +68,7 @@ func TestService_Update(t *testing.T) {
 	// success
 	data, err := poSrv.DerivePurchaseOrderData(po)
 	assert.Nil(t, err)
-	data.OrderAmount = 100
+	data.OrderAmount = "100"
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
@@ -211,7 +211,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	po, ok := m.(*PurchaseOrder)
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, po.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, po.OrderAmount, int64(42))
+	assert.Equal(t, po.OrderAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {

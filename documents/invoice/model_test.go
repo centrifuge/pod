@@ -146,7 +146,8 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
 	inv := new(Invoice)
-	inv.loadFromP2PProtobuf(&invData)
+	err := inv.loadFromP2PProtobuf(&invData)
+	assert.NoError(t, err)
 
 	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
@@ -280,7 +281,11 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
-	i := Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	na := new(documents.Decimal)
+	assert.NoError(t, na.SetString("2"))
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("2"))
+	i := Invoice{InvoiceNumber: "3213121", NetAmount: na, GrossAmount: ga}
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
@@ -318,7 +323,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldInv := model.(*Invoice)
 	data := oldInv.getClientData()
-	data.GrossAmount = 50
+	data.GrossAmount = "50"
 	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
 	assert.NoError(t, err)
 
@@ -339,7 +344,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldInv = model.(*Invoice)
 	data = oldInv.getClientData()
-	data.GrossAmount = 55
+	data.GrossAmount = "55"
 	data.Currency = "INR"
 	err = inv.PrepareNewVersion(inv, data, nil)
 	assert.NoError(t, err)

@@ -4,6 +4,7 @@ package documents_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -279,8 +280,10 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			NextVersion:        next,
 		}
 
+		ga := new(documents.Decimal)
+		assert.NoError(t, ga.SetString(fmt.Sprint(i+1)))
 		inv := &invoice.Invoice{
-			GrossAmount:  int64(i + 1),
+			GrossAmount:  ga,
 			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 		}
 
@@ -307,8 +310,10 @@ func TestService_GetVersion_successful(t *testing.T) {
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     currentVersion,
 	}
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
@@ -337,8 +342,10 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 		CurrentVersion:     documentIdentifier,
 	}
 
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
@@ -365,8 +372,10 @@ func TestService_GetVersion_error(t *testing.T) {
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     currentVersion,
 	}
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 	err = testRepo().Create(accountID, currentVersion, inv)
@@ -406,8 +415,10 @@ func TestService_Exists(t *testing.T) {
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     documentIdentifier,
 	}
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
