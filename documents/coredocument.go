@@ -605,7 +605,7 @@ func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
 // AddUpdateLog adds a log to the model to persist an update related meta data such as author
 func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
 	cd.Document.Author = account[:]
-	cd.Document.Timestamp, err = utils.ToTimestampProper(time.Now().UTC())
+	cd.Document.Timestamp, err = utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return err
 	}

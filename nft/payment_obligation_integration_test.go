@@ -79,6 +79,8 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 	invSrv := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
+	tm, err := utils.ToTimestamp(dueDate)
+	assert.NoError(t, err)
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
@@ -88,7 +90,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 			GrossAmount:   123,
 			NetAmount:     123,
 			Currency:      "EUR",
-			DueDate:       utils.ToTimestamp(dueDate),
+			DueDate:       tm,
 		},
 	})
 	assert.NoError(t, err, "should not error out when creating invoice model")

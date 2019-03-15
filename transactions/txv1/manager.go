@@ -165,10 +165,15 @@ func (s *manager) GetTransactionStatus(accountID identity.DID, id transactions.T
 		lastUpdated = log.CreatedAt.UTC()
 	}
 
+	tm, err := utils.ToTimestamp(lastUpdated)
+	if err != nil {
+		return nil, err
+	}
+
 	return &transactionspb.TransactionStatusResponse{
 		TransactionId: tx.ID.String(),
 		Status:        string(tx.Status),
 		Message:       msg,
-		LastUpdated:   utils.ToTimestamp(lastUpdated),
+		LastUpdated:   tm,
 	}, nil
 }

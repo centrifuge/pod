@@ -196,7 +196,7 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 }
 
 func TestP2PService_basicChecks(t *testing.T) {
-	tm, err := utils.ToTimestampProper(time.Now())
+	tm, err := utils.ToTimestamp(time.Now())
 	assert.NoError(t, err)
 	tests := []struct {
 		header *p2ppb.Header

@@ -67,8 +67,6 @@ type hostManager struct {
 	// tempHosts are hosts created at runtime, they should be part of niceHosts/naughtyHosts as well
 	tempHosts map[string]*host
 
-	// TODO create evil hosts such as William (or Eve)
-
 	// canc is the cancel signal for all hosts
 	canc context.CancelFunc
 
@@ -320,10 +318,10 @@ func (h *host) live(c context.Context) error {
 	signal.Notify(controlC, os.Interrupt)
 	select {
 	case err := <-feedback:
-		log.Info(h.name+" encountered error ", err)
+		log.Errorf("%s encountered error %v", h.name, err)
 		return err
 	case sig := <-controlC:
-		log.Info(h.name+" shutting down because of ", sig)
+		log.Errorf("%s shutting down because of %s", h.name, sig.String())
 		canc()
 		err := <-feedback
 		return err
