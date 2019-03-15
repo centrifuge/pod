@@ -222,11 +222,9 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
 		if err != nil {
 			// TODO(ved): we should pull the old document from the peer
-			old = nil
-			//return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
+			return errors.NewTypedError(ErrDocumentNotFound, errors.New("previous version of the document not found"))
 		}
 	}
-
 	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepository, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
