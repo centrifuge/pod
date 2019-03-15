@@ -54,7 +54,7 @@ func (d *Decimal) SetString(s string) error {
 
 	s = fd.String()
 	sd := strings.Split(s, ".")
-	if len(sd) >= 2 && len(sd[1]) > decimalPrecision {
+	if len(sd) == 2 && len(sd[1]) > decimalPrecision {
 		return errors.New("exceeded max precision value 18: current %d", len(sd[1]))
 	}
 
@@ -89,7 +89,7 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 	sd := strings.Split(s, ".")
 
 	fraction := make([]byte, maxFractionByteLength)
-	if len(sd) >= 2 {
+	if len(sd) == 2 {
 		fraction, err = byteutils.IntBytesFromString(sd[1])
 		if err != nil {
 			return nil, err
