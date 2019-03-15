@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -235,7 +234,11 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
+	ts, err := utils.ToTimestampProper(time.Now().UTC())
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentNotification, err)
+	}
+
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
 		AccountId:    did.String(),
