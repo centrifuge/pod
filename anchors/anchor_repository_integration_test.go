@@ -83,7 +83,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB1, proofB2})
-	gotDocRoot, _, err := anchorRepo.GetAnchor(anchorIDTyped)
+	gotDocRoot, _, err := anchorRepo.GetAnchorData(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 }
@@ -102,7 +102,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
-	gotDocRoot, hval, err := anchorRepo.GetAnchor(anchorIDTyped)
+	gotDocRoot, hval, err := anchorRepo.GetAnchorData(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 	assert.True(t, time.Now().After(hval))
@@ -171,7 +171,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.True(t, isDone)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
-		gotDocRoot, _, err := anchorRepo.GetAnchor(anchorID)
+		gotDocRoot, _, err := anchorRepo.GetAnchorData(anchorID)
 		assert.Nil(t, err)
 		assert.Equal(t, docRoot, gotDocRoot)
 	}

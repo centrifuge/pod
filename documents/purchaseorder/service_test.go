@@ -37,7 +37,7 @@ type mockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *mockAnchorRepo) GetAnchor(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
+func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
 	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
 	anchoredTime, _ = args.Get(1).(time.Time)

@@ -512,7 +512,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Nil(t, err)
 	r := &mockRepo{}
 	av = anchoredValidator(r)
-	r.On("GetAnchor", anchorID).Return(nil, time.Now(), errors.New("error")).Once()
+	r.On("GetAnchorData", anchorID).Return(nil, time.Now(), errors.New("error")).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
@@ -526,7 +526,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	docRoot := anchors.RandomDocumentRoot()
 	r = &mockRepo{}
 	av = anchoredValidator(r)
-	r.On("GetAnchor", anchorID).Return(docRoot, time.Now(), nil).Once()
+	r.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
@@ -540,7 +540,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	r = &mockRepo{}
 	av = anchoredValidator(r)
 	tm := time.Now()
-	r.On("GetAnchor", anchorID).Return(docRoot, tm, nil).Once()
+	r.On("GetAnchorData", anchorID).Return(docRoot, tm, nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
@@ -554,7 +554,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// success
 	r = &mockRepo{}
 	av = anchoredValidator(r)
-	r.On("GetAnchor", anchorID).Return(docRoot, time.Now(), nil).Once()
+	r.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
