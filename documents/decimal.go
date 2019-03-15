@@ -11,10 +11,10 @@ import (
 
 const (
 	decimalPrecision      = 18
-	maxIntegerLength      = 23
+	maxIntegerByteLength  = 23
 	maxFractionByteLength = 8
-	minByteLength         = 9
-	maxByteLength         = 32
+	minDecimalByteLength  = 9
+	maxDecimalByteLength  = 32
 )
 
 // Decimal holds a fixed point decimal
@@ -63,7 +63,7 @@ func (d *Decimal) SetString(s string) error {
 		return errors.NewTypedError(ErrInvalidDecimal, err)
 	}
 
-	if len(integer) > maxIntegerLength {
+	if len(integer) > maxIntegerByteLength {
 		return errors.NewTypedError(ErrInvalidDecimal, errors.New("integer exceeded max supported value"))
 	}
 
@@ -108,7 +108,7 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 
 	// sanity check
 	// happens if we have done some calculations post conversion to Decimal.
-	if len(decimal) > maxByteLength {
+	if len(decimal) > maxDecimalByteLength {
 		return nil, errors.New("max byte length exceeded")
 	}
 
@@ -117,7 +117,7 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 
 // SetBytes parse the bytes to Decimal.
 func (d *Decimal) SetBytes(dec []byte) error {
-	if len(dec) < minByteLength {
+	if len(dec) < minDecimalByteLength {
 		return ErrInvalidDecimal
 	}
 
