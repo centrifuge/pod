@@ -78,7 +78,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar := new(mockAnchorRepo)
 	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
-	ar.On("GetAnchor", mock.Anything).Return(dr, time.Now(), nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
 	assert.Error(t, err)
@@ -93,7 +93,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
-	ar.On("GetAnchor", mock.Anything).Return(dr, time.Now(), nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
 	assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(ndr)
 	assert.NoError(t, err)
-	ar.On("GetAnchor", mock.Anything).Return(dr, time.Now(), nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2[:])
 	assert.NoError(t, err)
@@ -160,7 +160,7 @@ type mockAnchorRepo struct {
 
 var mockAnchor *mockAnchorRepo
 
-func (r *mockAnchorRepo) GetAnchor(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
+func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
 	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
 	anchoredTime, _ = args.Get(1).(time.Time)
@@ -174,7 +174,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 	assert.NoError(t, err)
 	docRoot, err := anchors.ToDocumentRoot(dr)
 	assert.NoError(t, err)
-	mockAnchor.On("GetAnchor", anchorID).Return(docRoot, time.Now(), nil).Once()
+	mockAnchor.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	return idService
 }
 

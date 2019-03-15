@@ -280,7 +280,7 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 			return errors.New("failed to get document root: %v", err)
 		}
 
-		gotRoot, anchoredAt, err := repo.GetAnchor(anchorID)
+		gotRoot, anchoredAt, err := repo.GetAnchorData(anchorID)
 		if err != nil {
 			return errors.New("failed to get document root for anchor %s from chain: %v", anchorID.String(), err)
 		}

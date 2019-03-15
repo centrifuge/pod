@@ -363,7 +363,7 @@ func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, d
 	return c, args.Error(1)
 }
 
-func (m mockRepo) GetAnchor(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
+func (m mockRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := m.Called(anchorID)
 	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
 	anchoredTime, _ = args.Get(1).(time.Time)
@@ -471,7 +471,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", identity.NewDIDFromBytes(didb), sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
-	repo.On("GetAnchor", aid).Return(nil, time.Now(), errors.New("error"))
+	repo.On("GetAnchorData", aid).Return(nil, time.Now(), errors.New("error"))
 	dp.anchorRepository = repo
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -497,7 +497,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	dp.identityService = srv
 	repo = mockRepo{}
-	repo.On("GetAnchor", aid).Return(dr, time.Now(), nil).Once()
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
 	dp.anchorRepository = repo
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -522,7 +522,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", identity.NewDIDFromBytes(didb), sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
-	repo.On("GetAnchor", aid).Return(dr, time.Now(), nil).Once()
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
 	dp.anchorRepository = repo
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -549,7 +549,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", identity.NewDIDFromBytes(didb), sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
-	repo.On("GetAnchor", aid).Return(dr, time.Now(), nil).Once()
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
 	client := new(p2pClient)
 	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
 	dp.anchorRepository = repo
@@ -578,7 +578,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv.On("ValidateSignature", identity.NewDIDFromBytes(didb), sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
-	repo.On("GetAnchor", aid).Return(dr, time.Now(), nil).Once()
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
 	client = new(p2pClient)
 	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
 	dp.anchorRepository = repo
