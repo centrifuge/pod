@@ -8,13 +8,7 @@ import (
 )
 
 // ToTimestamp converts time.Time to timestamp.TimeStamp.
-func ToTimestamp(time time.Time) *timestamp.Timestamp {
-	ts, _ := ptypes.TimestampProto(time)
-	return ts
-}
-
-// ToTimestampProper converts time.Time to timestamp.TimeStamp.
-func ToTimestampProper(time time.Time) (*timestamp.Timestamp, error) {
+func ToTimestamp(time time.Time) (*timestamp.Timestamp, error) {
 	return ptypes.TimestampProto(time)
 }
 

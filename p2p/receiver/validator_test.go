@@ -82,9 +82,12 @@ func TestValidate_peerValidator(t *testing.T) {
 	err := sv.Validate(nil, nil, nil)
 	assert.Error(t, err)
 
+	tm, err := utils.ToTimestamp(time.Now())
+	assert.NoError(t, err)
+
 	// Nil centID
 	header := &p2ppb.Header{
-		Timestamp: utils.ToTimestamp(time.Now()),
+		Timestamp: tm,
 	}
 	err = sv.Validate(header, nil, nil)
 	assert.Error(t, err)
@@ -109,14 +112,16 @@ func TestValidate_handshakeValidator(t *testing.T) {
 
 	idService := &testingcommons.MockIdentityService{}
 	hv := HandshakeValidator(cfg.GetNetworkID(), idService)
+	tm, err := utils.ToTimestamp(time.Now())
+	assert.NoError(t, err)
 
 	// Incompatible version network and wrong signature
 	header := &p2ppb.Header{
 		NodeVersion:       "version",
 		NetworkIdentifier: 52,
-		Timestamp:         utils.ToTimestamp(time.Now()),
+		Timestamp:         tm,
 	}
-	err := hv.Validate(header, nil, nil)
+	err = hv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Incompatible version, correct network

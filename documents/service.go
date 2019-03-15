@@ -231,7 +231,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	ts, err := utils.ToTimestampProper(time.Now().UTC())
+	ts, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentNotification, err)
 	}
