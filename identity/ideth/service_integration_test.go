@@ -129,14 +129,15 @@ func TestService_RevokeKey(t *testing.T) {
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	response, err := idSrv.GetKey(*did, testKey.GetKey())
-	assert.Equal(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be not revoked")
+	assert.Equal(t, uint32(0), response.RevokedAt, "key should be not revoked")
 
-	idSrv.RevokeKey(aCtx, testKey.GetKey())
+	err = idSrv.RevokeKey(aCtx, testKey.GetKey())
+	assert.NoError(t, err)
 
 	//check if key is revoked
 	response, err = idSrv.GetKey(*did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
-	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
+	assert.NotEqual(t, uint32(0), response.RevokedAt, "key should be revoked")
 
 	resetDefaultCentID()
 }

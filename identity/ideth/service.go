@@ -247,8 +247,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	txID, done, err = i.txManager.ExecuteWithinTX(context.Background(), DID, utxID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
-	return txID, done, err
+	return i.txManager.ExecuteWithinTX(context.Background(), DID, utxID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
