@@ -73,8 +73,10 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
-
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -124,7 +126,10 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 
 	response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
 	txID = getTransactionID(t, response)
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	assert.Nil(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
