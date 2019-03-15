@@ -12,13 +12,11 @@ import (
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
 	proofWithMultipleFields_successful(t, typeInvoice)
-
 }
 
 func TestProofWithMultipleFields_po_successful(t *testing.T) {
 	t.Parallel()
 	proofWithMultipleFields_successful(t, typePO)
-
 }
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
@@ -28,7 +26,10 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	// Alice shares a document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -42,7 +43,6 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 	checkProof(proofFromAlice, documentType, docIdentifier)
 	checkProof(proofFromBob, documentType, docIdentifier)
-
 }
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
@@ -61,5 +61,4 @@ func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier 
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()
 	objProof.Path("$.field_proofs[1].property").String().Equal(compactPrefix + prop2)
 	objProof.Path("$.field_proofs[1].sorted_hashes").NotNull()
-
 }
