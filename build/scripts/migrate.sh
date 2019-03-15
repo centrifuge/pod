@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Allow passing parent directory as a parameter
 PARENT_DIR=$1
 if [ -z ${PARENT_DIR} ];

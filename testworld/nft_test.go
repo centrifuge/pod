@@ -3,8 +3,12 @@
 package testworld
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -90,6 +94,17 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	if proofPrefix == typePO {
 		proofPrefix = poPrefix
 	}
+	acc, err := alice.host.configService.GetAccount(alice.id[:])
+	if err != nil {
+		t.Error(err)
+	}
+	keys, err := acc.GetKeys()
+	if err != nil {
+		t.Error(err)
+	}
+	signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 
 	// mint an NFT
 	test := struct {
@@ -102,7 +117,7 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 			"identifier":                docIdentifier,
 			"registryAddress":           doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", documents.CDTreePrefix + ".next_version"},
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,

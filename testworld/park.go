@@ -242,6 +242,7 @@ type host struct {
 	p2pClient          documents.Client
 	anchorProcessor    documents.AnchorProcessor
 	docSrv             documents.Service
+	configService      config.Service
 }
 
 func newHost(
@@ -296,6 +297,7 @@ func (h *host) init() error {
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.anchorProcessor = h.bootstrappedCtx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
 	h.docSrv = h.bootstrappedCtx[documents.BootstrappedDocumentService].(documents.Service)
+	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	return nil
 }
 

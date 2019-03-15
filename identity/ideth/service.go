@@ -29,12 +29,14 @@ type contract interface {
 	GetKey(opts *bind.CallOpts, _key [32]byte) (struct {
 		Key       [32]byte
 		Purposes  []*big.Int
-		RevokedAt *big.Int
+		RevokedAt uint32
 	}, error)
 
-	IsSignedWithPurpose(opts *bind.CallOpts, message [32]byte, _signature []byte, _purpose *big.Int) (bool, error)
-
-	GetKeysByPurpose(opts *bind.CallOpts, purpose *big.Int) ([][32]byte, error)
+	GetKeysByPurpose(opts *bind.CallOpts, purpose *big.Int) (struct {
+		KeysByPurpose [][32]byte
+		KeyTypes      []*big.Int
+		KeysRevokedAt []uint32
+	}, error)
 
 	// Ethereum Transactions
 	AddKey(opts *bind.TransactOpts, _key [32]byte, _purpose *big.Int, _keyType *big.Int) (*types.Transaction, error)
@@ -230,68 +232,56 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 
 }
 
-// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-func (i service) IsSignedWithPurpose(did id.DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
-	contract, opts, _, err := i.prepareCall(did)
-	if err != nil {
-		return false, err
-	}
-
-	return contract.IsSignedWithPurpose(opts, message, signature, purpose)
-
-}
-
 // RawExecute calls the execute method on the identity contract
-func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) error {
+// TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) (txID id.IDTX, done chan bool, err error) {
+	utxID := contextutil.TX(ctx)
 	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
-		return err
+		return transactions.NilTxID(), nil, err
 	}
 	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
-		return err
+		return transactions.NilTxID(), nil, err
 	}
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
-	if err != nil {
-		return err
-	}
-
-	isDone := <-done
-	// non async task
-	if !isDone {
-		return errors.New("raw execute TX failed: txID:%s", txID.String())
-
-	}
-	return nil
-
+	return i.txManager.ExecuteWithinTX(context.Background(), DID, utxID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
-func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
-	abi, err := abi.JSON(strings.NewReader(contractAbi))
+// TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
+func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID id.IDTX, done chan bool, err error) {
+	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
-		return err
+		return transactions.NilTxID(), nil, err
 	}
 
 	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
-	data, err := abi.Pack(methodName, args...)
+	data, err := abiObj.Pack(methodName, args...)
 	if err != nil {
-		return err
+		return transactions.NilTxID(), nil, err
 	}
 	return i.RawExecute(ctx, to, data)
 }
 
-func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([][32]byte, error) {
+func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
 	}
 
-	return contract.GetKeysByPurpose(opts, purpose)
+	keyStruct, err := contract.GetKeysByPurpose(opts, purpose)
+	if err != nil {
+		return nil, err
+	}
+
+	var keyResp []id.KeyDID
+	for i, k := range keyStruct.KeysByPurpose {
+		keyResp = append(keyResp, id.NewKey(k, purpose, keyStruct.KeyTypes[i], keyStruct.KeysRevokedAt[i]))
+	}
+	return keyResp, nil
 
 }
 
@@ -303,12 +293,12 @@ func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
 	}
 
 	lastKey := keys[len(keys)-1]
-	key, err := i.GetKey(did, lastKey)
+	key, err := i.GetKey(did, lastKey.GetKey())
 	if err != nil {
 		return "", err
 	}
 
-	if key.RevokedAt.Cmp(big.NewInt(0)) != 0 {
+	if key.RevokedAt != 0 {
 		return "", errors.New("current p2p key has been revoked")
 	}
 
@@ -353,10 +343,10 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 	}
 
 	// if revoked
-	if ethKey.RevokedAt.Cmp(big.NewInt(0)) > 0 {
+	if ethKey.RevokedAt > 0 {
 		// if a specific time for validation is provided then we validate if a revoked key was revoked before the provided time
 		if validateAt != nil {
-			revokedAtBlock, err := i.client.GetEthClient().BlockByNumber(ctx, ethKey.RevokedAt)
+			revokedAtBlock, err := i.client.GetEthClient().BlockByNumber(ctx, big.NewInt(int64(ethKey.RevokedAt)))
 			if err != nil {
 				return err
 			}
@@ -403,7 +393,7 @@ func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.
 			return nil, err
 		}
 		v := id.GetPurposeByName(k).Value
-		keys[k] = id.NewKey(pk32, &v, big.NewInt(id.KeyTypeECDSA))
+		keys[k] = id.NewKey(pk32, &v, big.NewInt(id.KeyTypeECDSA), 0)
 	}
 	return keys, nil
 }

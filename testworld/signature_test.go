@@ -90,7 +90,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Revoke Key
-	RevokeKey(t, eve.host.idService, keys[0], eve.id, ctxh)
+	RevokeKey(t, eve.host.idService, keys[0].GetKey(), eve.id, ctxh)
 
 	res := createDocument(bob.httpExpect, bob.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{eve.id.String()}))
 	txID := getTransactionID(t, res)
@@ -166,7 +166,7 @@ func GetSigningKeyPair(t *testing.T, idService identity.ServiceDID, identityDID 
 	address32Bytes := convertKeyTo32Bytes(publicKey)
 
 	// Test Key
-	testKey := identity.NewKey(address32Bytes, &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}))
+	testKey := identity.NewKey(address32Bytes, &(identity.KeyPurposeSigning.Value), utils.ByteSliceToBigInt([]byte{123}), 0)
 
 	// Add Key
 	AddKey(t, idService, testKey, identityDID, ctx)

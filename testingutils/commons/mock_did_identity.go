@@ -39,21 +39,15 @@ func (i *MockIdentityService) GetKey(did identity.DID, key [32]byte) (*identity.
 }
 
 // RawExecute calls the execute method on the identity contract
-func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte) error {
+func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte) (txID identity.IDTX, done chan bool, err error) {
 	args := i.Called(ctx, to, data)
-	return args.Error(0)
+	return args.Get(0).(identity.IDTX), args.Get(1).(chan bool), args.Error(2)
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
-func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error {
+func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID identity.IDTX, done chan bool, err error) {
 	a := i.Called(ctx, to, contractAbi, methodName, args)
-	return a.Error(0)
-}
-
-// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-func (i *MockIdentityService) IsSignedWithPurpose(did identity.DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
-	args := i.Called(did, message, signature, purpose)
-	return args.Get(0).(bool), args.Error(1)
+	return a.Get(0).(identity.IDTX), a.Get(1).(chan bool), a.Error(2)
 }
 
 // AddMultiPurposeKey adds a key with multiple purposes
@@ -109,9 +103,9 @@ func (i *MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string,
 }
 
 // GetKeysByPurpose returns keys grouped by purpose from the identity contract.
-func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([][32]byte, error) {
+func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([]identity.KeyDID, error) {
 	args := i.Called(did, purpose)
-	return args.Get(0).([][32]byte), args.Error(1)
+	return args.Get(0).([]identity.KeyDID), args.Error(1)
 }
 
 // MockIdentityFactory implements Service
