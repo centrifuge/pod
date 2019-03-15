@@ -209,11 +209,33 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			return errors.New("atleast one signature expected")
 		}
 
+		collaborators, err := model.GetSignerCollaborators(model.Author())
+		if err != nil {
+			return errors.New("could not get signer collaborators")
+		}
+
 		authorFound := false
 		for _, sig := range signatures {
 			sigDID := identity.NewDIDFromBytes(sig.SignerId)
 			if model.Author().Equal(sigDID) {
 				authorFound = true
+			}
+
+			// we only care about validating that signer is part of signing collaborators and not the other way around
+			// since a collaborator can decide to not sign a document and the protocol still defines it as a valid state for a model.
+			collaboratorFound := false
+			for _, cb := range collaborators {
+				if sigDID.Equal(cb) {
+					collaboratorFound = true
+				}
+			}
+
+			// signer is not found in signing collaborators and he is not the author either
+			if !collaboratorFound && !model.Author().Equal(sigDID) {
+				err = errors.AppendError(
+					err,
+					errors.New("signature_%s verification failed: signer is not part of the signing collaborators", hexutil.Encode(sig.SignerId)))
+				continue
 			}
 
 			tm, terr := model.Timestamp()
