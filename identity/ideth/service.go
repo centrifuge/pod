@@ -236,8 +236,8 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) (utxID uuid.UUID, done chan bool, err error) {
-	txID := contextutil.TX(ctx)
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) (txID id.IDTX, done chan bool, err error) {
+	utxID := contextutil.TX(ctx)
 	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return uuid.Nil, nil, err
@@ -249,14 +249,13 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	txID, done, err = i.txManager.ExecuteWithinTX(context.Background(), DID, txID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
-	utxID = uuid.UUID(txID)
-	return utxID, done, err
+	txID, done, err = i.txManager.ExecuteWithinTX(context.Background(), DID, utxID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	return txID, done, err
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (utxID uuid.UUID, done chan bool, err error) {
+func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID id.IDTX, done chan bool, err error) {
 	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		return uuid.Nil, nil, err

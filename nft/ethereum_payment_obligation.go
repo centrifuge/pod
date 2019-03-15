@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
 	"time"
 
@@ -185,7 +184,6 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			errOut <- err
 			return
 		}
-		txID = transactions.TxID(utxID)
 		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract.",
 			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
 
@@ -202,9 +200,11 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		isDone = <-done
 		if !isDone {
 			// some problem occurred in a child task
-			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
+			errOut <- errors.New("mint nft failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), utxID)
 			return
 		}
+
+		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
 
 		errOut <- nil
 		return
@@ -288,8 +288,8 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var proofs = make([][][32]byte, len(proofspb))
 
 	// TODO remove later
-	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	log.Info(json.MarshalIndent(proof, "", "  "))
+	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
+	//log.Info(json.MarshalIndent(proof, "", "  "))
 
 	for i, p := range proofspb {
 		salt32, err := utils.SliceToByte32(p.Salt)

@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/satori/go.uuid"
 )
 
 const (
@@ -181,6 +180,12 @@ func NewDIDFromBytes(bAddr []byte) DID {
 //	return NewDID(common.BytesToAddress(addressByte)), nil
 //}
 
+// IDTX abstracts transactions.TxID for identity package
+type IDTX interface {
+	String() string
+	Bytes() []byte
+}
+
 // Factory is the interface for factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
@@ -199,10 +204,10 @@ type ServiceDID interface {
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte) (utxID uuid.UUID, done chan bool, err error)
+	RawExecute(ctx context.Context, to common.Address, data []byte) (txID IDTX, done chan bool, err error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (utxID uuid.UUID, done chan bool, err error)
+	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan bool, err error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error

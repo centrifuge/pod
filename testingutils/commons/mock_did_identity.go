@@ -6,8 +6,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/satori/go.uuid"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
@@ -41,15 +39,15 @@ func (i *MockIdentityService) GetKey(did identity.DID, key [32]byte) (*identity.
 }
 
 // RawExecute calls the execute method on the identity contract
-func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte) (utxID uuid.UUID, done chan bool, err error) {
+func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte) (txID identity.IDTX, done chan bool, err error) {
 	args := i.Called(ctx, to, data)
-	return args.Get(0).(uuid.UUID), args.Get(1).(chan bool), args.Error(2)
+	return args.Get(0).(identity.IDTX), args.Get(1).(chan bool), args.Error(2)
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
-func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (utxID uuid.UUID, done chan bool, err error) {
+func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID identity.IDTX, done chan bool, err error) {
 	a := i.Called(ctx, to, contractAbi, methodName, args)
-	return a.Get(0).(uuid.UUID), a.Get(1).(chan bool), a.Error(2)
+	return a.Get(0).(identity.IDTX), a.Get(1).(chan bool), a.Error(2)
 }
 
 // AddMultiPurposeKey adds a key with multiple purposes
