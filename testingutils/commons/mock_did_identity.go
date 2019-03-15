@@ -52,12 +52,6 @@ func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, co
 	return a.Get(0).(uuid.UUID), a.Get(1).(chan bool), a.Error(2)
 }
 
-// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-func (i *MockIdentityService) IsSignedWithPurpose(did identity.DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
-	args := i.Called(did, message, signature, purpose)
-	return args.Get(0).(bool), args.Error(1)
-}
-
 // AddMultiPurposeKey adds a key with multiple purposes
 func (i *MockIdentityService) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
 	args := i.Called(ctx, key, purposes, keyType)
@@ -111,9 +105,9 @@ func (i *MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string,
 }
 
 // GetKeysByPurpose returns keys grouped by purpose from the identity contract.
-func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([][32]byte, error) {
+func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([]identity.KeyDID, error) {
 	args := i.Called(did, purpose)
-	return args.Get(0).([][32]byte), args.Error(1)
+	return args.Get(0).([]identity.KeyDID), args.Error(1)
 }
 
 // MockIdentityFactory implements Service

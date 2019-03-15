@@ -20,6 +20,7 @@ type anchorRepositoryContract interface {
 	GetAnchorById(opts *bind.CallOpts, id *big.Int) (struct {
 		AnchorId     *big.Int
 		DocumentRoot [32]byte
+		BlockNumber  uint32
 	}, error)
 	HasValidPreCommit(opts *bind.CallOpts, anchorId *big.Int) (bool, error)
 }

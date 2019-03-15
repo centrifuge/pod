@@ -28,7 +28,7 @@ var (
 )
 
 // IdentityContractABI is the input ABI used to generate the binding from.
-const IdentityContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"keyHash\",\"type\":\"bytes32\"}],\"name\":\"getKey\",\"outputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"},{\"name\":\"revokedAt\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"},{\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"addMultiPurposeKey\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purpose\",\"type\":\"uint256\"},{\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"addKey\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"}],\"name\":\"revokeKey\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addressToKey\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"purpose\",\"type\":\"uint256\"}],\"name\":\"getKeysByPurpose\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purpose\",\"type\":\"uint256\"}],\"name\":\"keyHasPurpose\",\"outputs\":[{\"name\":\"found\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"managementAddress\",\"type\":\"address\"},{\"name\":\"keys\",\"type\":\"bytes32[]\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":true,\"name\":\"purpose\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"KeyAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":true,\"name\":\"revokedAt\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"KeyRevoked\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"execute\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"},{\"name\":\"result\",\"type\":\"bytes\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"message\",\"type\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"bytes\"},{\"name\":\"purpose\",\"type\":\"uint256\"}],\"name\":\"isSignedWithPurpose\",\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const IdentityContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"keyHash\",\"type\":\"bytes32\"}],\"name\":\"getKey\",\"outputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"},{\"name\":\"revokedAt\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"},{\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"addMultiPurposeKey\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purpose\",\"type\":\"uint256\"},{\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"addKey\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"}],\"name\":\"revokeKey\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"addressToKey\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"purpose\",\"type\":\"uint256\"}],\"name\":\"getKeysByPurpose\",\"outputs\":[{\"name\":\"keysByPurpose\",\"type\":\"bytes32[]\"},{\"name\":\"keyTypes\",\"type\":\"uint256[]\"},{\"name\":\"keysRevokedAt\",\"type\":\"uint32[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"key\",\"type\":\"bytes32\"},{\"name\":\"purpose\",\"type\":\"uint256\"}],\"name\":\"keyHasPurpose\",\"outputs\":[{\"name\":\"found\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"managementAddress\",\"type\":\"address\"},{\"name\":\"keys\",\"type\":\"bytes32[]\"},{\"name\":\"purposes\",\"type\":\"uint256[]\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":true,\"name\":\"purpose\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"KeyAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"key\",\"type\":\"bytes32\"},{\"indexed\":true,\"name\":\"revokedAt\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"keyType\",\"type\":\"uint256\"}],\"name\":\"KeyRevoked\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"execute\",\"outputs\":[{\"name\":\"success\",\"type\":\"bool\"},{\"name\":\"result\",\"type\":\"bytes\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // IdentityContract is an auto generated Go binding around an Ethereum contract.
 type IdentityContract struct {
@@ -200,16 +200,16 @@ func (_IdentityContract *IdentityContractCallerSession) AddressToKey(addr common
 
 // GetKey is a free data retrieval call binding the contract method 0x12aaac70.
 //
-// Solidity: function getKey(keyHash bytes32) constant returns(key bytes32, purposes uint256[], revokedAt uint256)
+// Solidity: function getKey(keyHash bytes32) constant returns(key bytes32, purposes uint256[], revokedAt uint32)
 func (_IdentityContract *IdentityContractCaller) GetKey(opts *bind.CallOpts, keyHash [32]byte) (struct {
 	Key       [32]byte
 	Purposes  []*big.Int
-	RevokedAt *big.Int
+	RevokedAt uint32
 }, error) {
 	ret := new(struct {
 		Key       [32]byte
 		Purposes  []*big.Int
-		RevokedAt *big.Int
+		RevokedAt uint32
 	})
 	out := ret
 	err := _IdentityContract.contract.Call(opts, out, "getKey", keyHash)
@@ -218,76 +218,64 @@ func (_IdentityContract *IdentityContractCaller) GetKey(opts *bind.CallOpts, key
 
 // GetKey is a free data retrieval call binding the contract method 0x12aaac70.
 //
-// Solidity: function getKey(keyHash bytes32) constant returns(key bytes32, purposes uint256[], revokedAt uint256)
+// Solidity: function getKey(keyHash bytes32) constant returns(key bytes32, purposes uint256[], revokedAt uint32)
 func (_IdentityContract *IdentityContractSession) GetKey(keyHash [32]byte) (struct {
 	Key       [32]byte
 	Purposes  []*big.Int
-	RevokedAt *big.Int
+	RevokedAt uint32
 }, error) {
 	return _IdentityContract.Contract.GetKey(&_IdentityContract.CallOpts, keyHash)
 }
 
 // GetKey is a free data retrieval call binding the contract method 0x12aaac70.
 //
-// Solidity: function getKey(keyHash bytes32) constant returns(key bytes32, purposes uint256[], revokedAt uint256)
+// Solidity: function getKey(keyHash bytes32) constant returns(key bytes32, purposes uint256[], revokedAt uint32)
 func (_IdentityContract *IdentityContractCallerSession) GetKey(keyHash [32]byte) (struct {
 	Key       [32]byte
 	Purposes  []*big.Int
-	RevokedAt *big.Int
+	RevokedAt uint32
 }, error) {
 	return _IdentityContract.Contract.GetKey(&_IdentityContract.CallOpts, keyHash)
 }
 
 // GetKeysByPurpose is a free data retrieval call binding the contract method 0x9010f726.
 //
-// Solidity: function getKeysByPurpose(purpose uint256) constant returns(bytes32[])
-func (_IdentityContract *IdentityContractCaller) GetKeysByPurpose(opts *bind.CallOpts, purpose *big.Int) ([][32]byte, error) {
-	var (
-		ret0 = new([][32]byte)
-	)
-	out := ret0
+// Solidity: function getKeysByPurpose(purpose uint256) constant returns(keysByPurpose bytes32[], keyTypes uint256[], keysRevokedAt uint32[])
+func (_IdentityContract *IdentityContractCaller) GetKeysByPurpose(opts *bind.CallOpts, purpose *big.Int) (struct {
+	KeysByPurpose [][32]byte
+	KeyTypes      []*big.Int
+	KeysRevokedAt []uint32
+}, error) {
+	ret := new(struct {
+		KeysByPurpose [][32]byte
+		KeyTypes      []*big.Int
+		KeysRevokedAt []uint32
+	})
+	out := ret
 	err := _IdentityContract.contract.Call(opts, out, "getKeysByPurpose", purpose)
-	return *ret0, err
+	return *ret, err
 }
 
 // GetKeysByPurpose is a free data retrieval call binding the contract method 0x9010f726.
 //
-// Solidity: function getKeysByPurpose(purpose uint256) constant returns(bytes32[])
-func (_IdentityContract *IdentityContractSession) GetKeysByPurpose(purpose *big.Int) ([][32]byte, error) {
+// Solidity: function getKeysByPurpose(purpose uint256) constant returns(keysByPurpose bytes32[], keyTypes uint256[], keysRevokedAt uint32[])
+func (_IdentityContract *IdentityContractSession) GetKeysByPurpose(purpose *big.Int) (struct {
+	KeysByPurpose [][32]byte
+	KeyTypes      []*big.Int
+	KeysRevokedAt []uint32
+}, error) {
 	return _IdentityContract.Contract.GetKeysByPurpose(&_IdentityContract.CallOpts, purpose)
 }
 
 // GetKeysByPurpose is a free data retrieval call binding the contract method 0x9010f726.
 //
-// Solidity: function getKeysByPurpose(purpose uint256) constant returns(bytes32[])
-func (_IdentityContract *IdentityContractCallerSession) GetKeysByPurpose(purpose *big.Int) ([][32]byte, error) {
+// Solidity: function getKeysByPurpose(purpose uint256) constant returns(keysByPurpose bytes32[], keyTypes uint256[], keysRevokedAt uint32[])
+func (_IdentityContract *IdentityContractCallerSession) GetKeysByPurpose(purpose *big.Int) (struct {
+	KeysByPurpose [][32]byte
+	KeyTypes      []*big.Int
+	KeysRevokedAt []uint32
+}, error) {
 	return _IdentityContract.Contract.GetKeysByPurpose(&_IdentityContract.CallOpts, purpose)
-}
-
-// IsSignedWithPurpose is a free data retrieval call binding the contract method 0x8699fd2b.
-//
-// Solidity: function isSignedWithPurpose(message bytes32, signature bytes, purpose uint256) constant returns(valid bool)
-func (_IdentityContract *IdentityContractCaller) IsSignedWithPurpose(opts *bind.CallOpts, message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _IdentityContract.contract.Call(opts, out, "isSignedWithPurpose", message, signature, purpose)
-	return *ret0, err
-}
-
-// IsSignedWithPurpose is a free data retrieval call binding the contract method 0x8699fd2b.
-//
-// Solidity: function isSignedWithPurpose(message bytes32, signature bytes, purpose uint256) constant returns(valid bool)
-func (_IdentityContract *IdentityContractSession) IsSignedWithPurpose(message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
-	return _IdentityContract.Contract.IsSignedWithPurpose(&_IdentityContract.CallOpts, message, signature, purpose)
-}
-
-// IsSignedWithPurpose is a free data retrieval call binding the contract method 0x8699fd2b.
-//
-// Solidity: function isSignedWithPurpose(message bytes32, signature bytes, purpose uint256) constant returns(valid bool)
-func (_IdentityContract *IdentityContractCallerSession) IsSignedWithPurpose(message [32]byte, signature []byte, purpose *big.Int) (bool, error) {
-	return _IdentityContract.Contract.IsSignedWithPurpose(&_IdentityContract.CallOpts, message, signature, purpose)
 }
 
 // KeyHasPurpose is a free data retrieval call binding the contract method 0xd202158d.

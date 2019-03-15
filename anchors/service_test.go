@@ -24,11 +24,13 @@ type mockAnchorRepo struct {
 func (m *mockAnchorRepo) GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
+	BlockNumber  uint32
 }, error) {
 	args := m.Called(opts, anchorID)
 	type Response struct {
 		AnchorId     *big.Int
 		DocumentRoot [32]byte
+		BlockNumber  uint32
 	}
 	r := Response{}
 	dr := args.Get(0).([32]byte)

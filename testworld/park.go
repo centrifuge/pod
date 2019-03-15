@@ -237,6 +237,7 @@ type host struct {
 	createConfig       bool
 	multiAccount       bool
 	accounts           []string
+	configService      config.Service
 }
 
 func newHost(
@@ -288,9 +289,7 @@ func (h *host) init() error {
 	}
 	h.identity = identity.NewDIDFromBytes(idBytes)
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
-	if err != nil {
-		return err
-	}
+	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	return nil
 }
 
