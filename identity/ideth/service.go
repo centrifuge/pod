@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/satori/go.uuid"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -240,11 +238,11 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 	utxID := contextutil.TX(ctx)
 	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
-		return uuid.Nil, nil, err
+		return transactions.NilTxID(), nil, err
 	}
 	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
-		return uuid.Nil, nil, err
+		return transactions.NilTxID(), nil, err
 	}
 
 	// default: no ether should be send
@@ -258,13 +256,13 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID id.IDTX, done chan bool, err error) {
 	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
-		return uuid.Nil, nil, err
+		return transactions.NilTxID(), nil, err
 	}
 
 	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
 	data, err := abiObj.Pack(methodName, args...)
 	if err != nil {
-		return uuid.Nil, nil, err
+		return transactions.NilTxID(), nil, err
 	}
 	return i.RawExecute(ctx, to, data)
 }

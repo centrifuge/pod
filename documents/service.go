@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -49,8 +48,8 @@ type Service interface {
 	// CreateProofsForVersion creates proofs for a particular version of the document given the fields
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
-	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error)
+	// ReceiveDocumentSignatureRequest Validates and Signs document received over the p2p layer
+	ReceiveDocumentSignatureRequest(ctx context.Context, model Model, sender identity.DID) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
@@ -150,13 +149,13 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error) {
+func (s service) ReceiveDocumentSignatureRequest(ctx context.Context, model Model, sender identity.DID) (*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	if err := SignatureRequestValidator(s.idService).Validate(nil, model); err != nil {
+	if err := SignatureRequestValidator(sender, s.idService).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -232,7 +231,11 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
+	ts, err := utils.ToTimestampProper(time.Now().UTC())
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentNotification, err)
+	}
+
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
 		AccountId:    did.String(),

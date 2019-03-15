@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -77,7 +78,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar := new(mockAnchorRepo)
 	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
 	assert.Error(t, err)
@@ -92,7 +93,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
 	assert.NoError(t, err)
@@ -136,7 +137,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(ndr)
 	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2[:])
 	assert.NoError(t, err)
@@ -159,10 +160,11 @@ type mockAnchorRepo struct {
 
 var mockAnchor *mockAnchorRepo
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
+	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
+	anchoredTime, _ = args.Get(1).(time.Time)
+	return docRoot, anchoredTime, args.Error(2)
 }
 
 // Functions returns service mocks
@@ -172,7 +174,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 	assert.NoError(t, err)
 	docRoot, err := anchors.ToDocumentRoot(dr)
 	assert.NoError(t, err)
-	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	mockAnchor.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	return idService
 }
 
@@ -235,11 +237,13 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	did, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
 	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, true)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
-	signature, err := service.RequestDocumentSignature(ctxh, i)
+	signature, err := service.ReceiveDocumentSignatureRequest(ctxh, i, did)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, signature)

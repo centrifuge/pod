@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -28,7 +26,9 @@ import (
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
@@ -81,7 +81,7 @@ func TestMain(m *testing.M) {
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	req := &p2ppb.SignatureRequest{}
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.ReceiveDocumentSignatureRequest(context.Background(), req, testingidentity.GenerateRandomDID())
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }

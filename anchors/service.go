@@ -3,6 +3,7 @@ package anchors
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -48,12 +49,13 @@ func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
 	return r
 }
 
-// GetDocumentRootOf takes an anchorID and returns the corresponding documentRoot from the chain.
-func (s *service) GetDocumentRootOf(anchorID AnchorID) (docRoot DocumentRoot, err error) {
+// GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
+func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := s.client.GetGethCallOpts(false)
 	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())
-	return r.DocumentRoot, err
+	blk, err := s.client.GetEthClient().BlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
+	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), err
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract

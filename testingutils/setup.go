@@ -41,17 +41,20 @@ func RunSmartContractMigrations() {
 	}
 
 	var err error
+	var out []byte
 	projDir := GetProjectDir()
 	migrationScript := path.Join(projDir, "build", "scripts", "migrate.sh")
 	for i := 0; i < 3; i++ {
-		log.Infof("Trying to migrate contracts for the %d th time", i)
-		_, err = exec.Command(migrationScript, projDir).Output()
+		fmt.Printf("Trying to migrate contracts for the %d th time\n", i)
+		out, err = exec.Command(migrationScript, projDir).CombinedOutput()
+		fmt.Println(string(out))
 		if err == nil {
 			return
 		}
 	}
+
 	// trying 3 times to migrate didnt work
-	log.Fatal(err)
+	log.Fatal(err, string(out))
 }
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
