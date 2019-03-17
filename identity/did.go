@@ -183,6 +183,7 @@ func NewDIDFromBytes(bAddr []byte) DID {
 // Factory is the interface for factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
+	IdentityExists(did *DID) (exists bool, err error)
 	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 

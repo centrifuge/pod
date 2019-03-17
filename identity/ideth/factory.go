@@ -97,6 +97,15 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 
 }
 
+func (s *factory) IdentityExists(did *id.DID) (exists bool, err error) {
+	opts, _ := s.client.GetGethCallOpts(false)
+	valid, err := s.factoryContract.CreatedIdentity(opts, did.ToAddress())
+	if err != nil {
+		return false, err
+	}
+	return valid, nil
+}
+
 func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
@@ -142,12 +151,14 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		log.Infof("[Recovered] Found race condition creating identity, calculatedDID[%s] vs createdDID[%s]", calcIdentityAddress.Hex(), createdAddr.Hex())
 	}
 
-	err = isIdentityContract(createdAddr, s.client)
+	createdDID = id.NewDID(createdAddr)
+	exists, err := s.IdentityExists(&createdDID)
 	if err != nil {
 		return nil, err
 	}
-
-	createdDID = id.NewDID(createdAddr)
+	if !exists {
+		return nil, errors.New("Identity %s not found in factory registry", createdDID.String())
+	}
 
 	return &createdDID, nil
 }
