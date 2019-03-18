@@ -228,7 +228,7 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
 
-	drTree, err := cd.DocumentRootTree()
+	drTree, err := cd.DocumentRootTree(false)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +240,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	if err != nil {
 		return nil, errors.New("failed to generate core Document tree: %v", err)
 	}
-	srHash, err := cd.GetSigningRootHash()
+	srHash, err := cd.GetSigningRootProof()
 	if err != nil {
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}
@@ -311,7 +311,7 @@ func (cd *CoreDocument) GetSigningRootProof() (hash []byte, err error) {
 
 // GetSignaturesRootHash returns the hash needed to create proofs from SignaturesRoot to DocumentRoot
 func (cd *CoreDocument) GetSignaturesRootHash() (hash []byte, err error) {
-	tree, err := cd.getSignatureDataTree()
+	tree, err := cd.getSignatureDataTree(false)
 	if err != nil {
 		return
 	}
