@@ -82,8 +82,8 @@ const (
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
 
-	// ErrEmptyCollabs must be used when a given collaborators array is empty
-	ErrEmptyCollabs = errors.Error("empty collaborators")
+	// ErrInvalidDecimal must be used when given decimal is invalid
+	ErrInvalidDecimal = errors.Error("invalid decimal")
 )
 
 // Error wraps an error with specific key

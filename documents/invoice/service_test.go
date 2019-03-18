@@ -85,7 +85,7 @@ func TestService_Update(t *testing.T) {
 	// success
 	data, err := invSrv.DeriveInvoiceData(model)
 	assert.Nil(t, err)
-	data.GrossAmount = 100
+	data.GrossAmount = "100"
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
@@ -149,7 +149,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
 		Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
 		Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
-		GrossAmount: 42,
+		GrossAmount: "42",
 		ExtraData:   "some data",
 		Currency:    "EUR",
 	}
@@ -231,7 +231,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	inv, ok := m.(*Invoice)
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, inv.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, inv.GrossAmount, int64(42))
+	assert.Equal(t, inv.GrossAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {
