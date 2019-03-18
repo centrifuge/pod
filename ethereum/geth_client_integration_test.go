@@ -79,6 +79,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
+	t.Parallel()
 	howMany := 5
 	confChannel := make(chan ethereum.Client, howMany)
 	for ix := 0; ix < howMany; ix++ {

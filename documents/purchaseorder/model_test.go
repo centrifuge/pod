@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
@@ -269,4 +270,60 @@ func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	return po
+}
+
+func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
+	po := createPurchaseOrder(t)
+	id1 := defaultDID
+	id2 := testingidentity.GenerateRandomDID()
+	id3 := testingidentity.GenerateRandomDID()
+
+	// wrong type
+	err := po.CollaboratorCanUpdate(new(mockModel), id1)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
+	assert.NoError(t, testRepo().Create(id1[:], po.CurrentVersion(), po))
+
+	// update the document
+	model, err := testRepo().Get(id1[:], po.CurrentVersion())
+	assert.NoError(t, err)
+	oldPO := model.(*PurchaseOrder)
+	data := oldPO.getClientData()
+	data.OrderAmount = 50
+	err = po.PrepareNewVersion(po, data, []string{id3.String()})
+	assert.NoError(t, err)
+
+	// id1 should have permission
+	assert.NoError(t, oldPO.CollaboratorCanUpdate(po, id1))
+
+	// id2 should fail since it doesn't have the permission to update
+	assert.Error(t, oldPO.CollaboratorCanUpdate(po, id2))
+
+	// update the id3 rules to update only order amount
+	po.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
+	po.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	assert.NoError(t, testRepo().Create(id1[:], po.CurrentVersion(), po))
+
+	// fetch the document
+	model, err = testRepo().Get(id1[:], po.CurrentVersion())
+	assert.NoError(t, err)
+	oldPO = model.(*PurchaseOrder)
+	data = oldPO.getClientData()
+	data.OrderAmount = 55
+	data.Currency = "INR"
+	err = po.PrepareNewVersion(po, data, nil)
+	assert.NoError(t, err)
+
+	// id1 should have permission
+	assert.NoError(t, oldPO.CollaboratorCanUpdate(po, id1))
+
+	// id2 should fail since it doesn't have the permission to update
+	assert.Error(t, oldPO.CollaboratorCanUpdate(po, id2))
+
+	// id3 should fail with just one error since changing Currency is not allowed
+	err = oldPO.CollaboratorCanUpdate(po, id3)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+	assert.Contains(t, err.Error(), "po.currency")
 }

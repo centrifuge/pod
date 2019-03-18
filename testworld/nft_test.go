@@ -3,8 +3,12 @@
 package testworld
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -69,8 +73,10 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
-
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -88,6 +94,17 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	if proofPrefix == typePO {
 		proofPrefix = poPrefix
 	}
+	acc, err := alice.host.configService.GetAccount(alice.id[:])
+	if err != nil {
+		t.Error(err)
+	}
+	keys, err := acc.GetKeys()
+	if err != nil {
+		t.Error(err)
+	}
+	signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 
 	// mint an NFT
 	test := struct {
@@ -100,7 +117,7 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 			"identifier":                docIdentifier,
 			"registryAddress":           doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", documents.CDTreePrefix + ".next_version"},
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,
@@ -109,7 +126,10 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 
 	response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
 	txID = getTransactionID(t, response)
-	waitTillStatus(t, alice.httpExpect, alice.id.String(), txID, "success")
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	assert.Nil(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")

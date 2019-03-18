@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	crypto2 "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
@@ -73,7 +73,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 
 	// Make a host that listens on the given multiaddress
 	// first obtain the keys configured
-	priv, pub, err := s.createSigningKey(nc.GetP2PKeyPair())
+	priv, pub, err := crypto2.ObtainP2PKeypair(nc.GetP2PKeyPair())
 	if err != nil {
 		startupErr <- err
 		return
@@ -118,26 +118,6 @@ func (s *peer) initProtocols() error {
 func (s *peer) InitProtocolForDID(DID *identity.DID) {
 	p := p2pcommon.ProtocolForDID(DID)
 	s.mes.Init(p)
-}
-
-func (s *peer) createSigningKey(pubKey, privKey string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {
-	// Create the signing key for the host
-	publicKey, privateKey, err := cented25519.GetSigningKeyPair(pubKey, privKey)
-	if err != nil {
-		return nil, nil, errors.New("failed to get keys: %v", err)
-	}
-
-	var key []byte
-	key = append(key, privateKey...)
-	key = append(key, publicKey...)
-
-	priv, err = crypto.UnmarshalEd25519PrivateKey(key)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	pub = priv.GetPublic()
-	return priv, pub, nil
 }
 
 // makeBasicHost creates a LibP2P host with a peer ID listening on the given port

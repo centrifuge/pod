@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 )
@@ -89,7 +88,8 @@ func peerValidator(idService identity.ServiceDID) Validator {
 		if err != nil {
 			return err
 		}
-		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value))
+
+		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value), nil)
 	})
 }
 

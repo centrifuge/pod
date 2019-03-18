@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -17,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
@@ -238,8 +242,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoice_CreateProofs(t *testing.T) {
-	i, err := createInvoice(t)
-	assert.Nil(t, err)
+	i := createInvoice(t)
 	rk := i.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := i.CreateProofs([]string{"invoice.invoice_number", pf, documents.CDTreePrefix + ".document_type"})
@@ -268,16 +271,71 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.True(t, valid)
 }
 
-func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, err := createInvoice(t)
+func TestInvoice_CreateNFTProofs(t *testing.T) {
+	tc, err := configstore.NewAccount("main", cfg)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	assert.NoError(t, err)
+	i := new(Invoice)
+	invPayload := testingdocuments.CreateInvoicePayload()
+	invPayload.Data.DueDate = &timestamp.Timestamp{Seconds: time.Now().Unix()}
+	invPayload.Data.InvoiceStatus = "unpaid"
+	invPayload.Collaborators = []string{defaultDID.String()}
+
+	err = i.InitInvoiceInput(invPayload, defaultDID.String())
+	assert.NoError(t, err)
+	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
+	assert.NoError(t, err)
+	i.AppendSignatures(sig)
+	_, err = i.CalculateDataRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateSigningRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	keys, err := tc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
-	_, err = i.CreateProofs([]string{"nonexisting"})
+	assert.NotNil(t, proof)
+	tree, err := i.CoreDocument.DocumentRootTree()
+	assert.NoError(t, err)
+	assert.Len(t, proofFields, 8)
+
+	// Validate invoice_gross_amount
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate signing_root
+	valid, err = tree.ValidateProof(proof[5])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate signature
+	valid, err = tree.ValidateProof(proof[6])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate next_version
+	valid, err = tree.ValidateProof(proof[7])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
+	i := createInvoice(t)
+	_, err := i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, err := createInvoice(t)
-	assert.Nil(t, err)
+	i := createInvoice(t)
 	assert.Equal(t, i.CoreDocument.ID(), i.ID())
 }
 
@@ -290,7 +348,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
 }
 
-func createInvoice(t *testing.T) (*Invoice, error) {
+func createInvoice(t *testing.T) *Invoice {
 	i := new(Invoice)
 	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), defaultDID.String())
 	assert.NoError(t, err)
@@ -300,5 +358,61 @@ func createInvoice(t *testing.T) (*Invoice, error) {
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	return i, nil
+	return i
+}
+
+func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
+	inv := createInvoice(t)
+	id1 := defaultDID
+	id2 := testingidentity.GenerateRandomDID()
+	id3 := testingidentity.GenerateRandomDID()
+
+	// wrong type
+	err := inv.CollaboratorCanUpdate(new(mockModel), id1)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
+	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
+
+	// update the document
+	model, err := testRepo().Get(id1[:], inv.CurrentVersion())
+	assert.NoError(t, err)
+	oldInv := model.(*Invoice)
+	data := oldInv.getClientData()
+	data.GrossAmount = 50
+	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
+	assert.NoError(t, err)
+
+	// id1 should have permission
+	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
+
+	// id2 should fail since it doesn't have the permission to update
+	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
+
+	// update the id3 rules to update only gross amount
+	inv.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	inv.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
+	inv.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
+
+	// fetch the document
+	model, err = testRepo().Get(id1[:], inv.CurrentVersion())
+	assert.NoError(t, err)
+	oldInv = model.(*Invoice)
+	data = oldInv.getClientData()
+	data.GrossAmount = 55
+	data.Currency = "INR"
+	err = inv.PrepareNewVersion(inv, data, nil)
+	assert.NoError(t, err)
+
+	// id1 should have permission
+	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
+
+	// id2 should fail since it doesn't have the permission to update
+	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
+
+	// id3 should fail with just one error since changing Currency is not allowed
+	err = oldInv.CollaboratorCanUpdate(inv, id3)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+	assert.Contains(t, err.Error(), "invoice.currency")
 }

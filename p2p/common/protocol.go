@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -114,11 +117,18 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 	if err != nil {
 		return nil, err
 	}
+
+	tm, err := utils.ToTimestamp(time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+
 	p2pheader := &p2ppb.Header{
 		SenderId:          centIDBytes,
 		NodeVersion:       version.GetVersion().String(),
 		NetworkIdentifier: networkID,
 		Type:              messageType.String(),
+		Timestamp:         tm,
 	}
 
 	body, err := proto.Marshal(mes)

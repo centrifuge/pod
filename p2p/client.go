@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -40,7 +39,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		if err != nil {
 			return nil, err
 		}
-		return h.SendAnchoredDocument(localCtx, in, receiverID[:])
+		return h.SendAnchoredDocument(localCtx, in, receiverID)
 	}
 
 	err = s.idService.Exists(ctx, receiverID)
@@ -144,8 +143,10 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		if err != nil {
 			return nil, err
 		}
-
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd})
+		if err != nil {
+			return nil, err
+		}
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, id)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +190,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		header = recvEnvelope.Header
 	}
 
-	err = validateSignatureResp(s.idService, id, cd.SigningRoot, header, resp)
+	err = validateSignatureResp(id, header, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -271,9 +272,7 @@ func convertClientError(recv *p2ppb.Envelope) error {
 }
 
 func validateSignatureResp(
-	identityService identity.ServiceDID,
 	receiver identity.DID,
-	signingRoot []byte,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {
 
@@ -282,14 +281,9 @@ func validateSignatureResp(
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	err := ideth.ValidateCentrifugeIDBytes(resp.Signature.EntityId, receiver)
+	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, err.Error())
-	}
-
-	err = identityService.ValidateSignature(resp.Signature, signingRoot)
-	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
 	return nil
 }
