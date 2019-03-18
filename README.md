@@ -88,9 +88,9 @@ git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/cen
 # run your local geth node for the first time
 ./build/scripts/docker/run.sh dev
 
-# You can, however, already run unit/integration tests
-./build/scripts/tests/run_unit_tests.sh
-./build/scripts/tests/run_integration_tests.sh
+# You can already run unit/integration tests
+go test --tags="unit" ./...
+go test --tags="integration" ./...
 ```
 
 ## Running Tests
@@ -101,13 +101,15 @@ dep ensure
 ```
 Run only unit tests
 ```bash
-./build/scripts/tests/run_unit_tests.sh
+go test --tags="unit" ./...
 ```
 
-Run only integration Tests:
+Run only integration tests:
 ```bash
-./build/scripts/tests/run_integration_tests.sh
+go test --tags="integration" ./...
 ```
+
+For Testworld tests, please refer to the [Testworld README](testworld/README.md)
 
 To run integration/functional tests a few other components need to be set up.
 - Geth node needs to be up and running
@@ -122,8 +124,7 @@ Run the whole test-suite with
 ./build/scripts/test_wrapper.sh
 ```
 
-
-
+Please note that this testing script is intended for CI testing. Please use the `go test` commands for unit and integration testing.
 
 ### Running tests continuously while developing
 
