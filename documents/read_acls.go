@@ -208,7 +208,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 		pfKeys = append(pfKeys, pks...)
 	}
 
-	signaturesTree, err := cd.getSignatureDataTree()
+	signaturesTree, err := cd.getSignatureDataTree(false)
 	if err != nil {
 		return nil, errors.New("failed to get signatures tree: %v", err)
 	}

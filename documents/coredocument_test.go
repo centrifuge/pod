@@ -192,7 +192,7 @@ func TestGetSigningProofHash(t *testing.T) {
 	_, err = cd.CalculateDocumentRoot()
 	assert.Nil(t, err)
 
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.getSignatureDataTree(false)
 	assert.Nil(t, err)
 
 	valid, err := proofs.ValidateProofSortedHashes(cd.Document.SigningRoot, [][]byte{signatureTree.RootHash()}, cd.Document.DocumentRoot, sha256.New())
