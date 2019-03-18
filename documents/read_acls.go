@@ -183,7 +183,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (prfs []*proofspb.Proof, err error) {
 
 	if len(cd.Document.DataRoot) != idSize {
 		return nil, ErrDataRootInvalid
@@ -208,9 +208,9 @@ func (cd *CoreDocument) CreateNFTProofs(
 		pfKeys = append(pfKeys, pks...)
 	}
 
-	signingRootProofHashes, err := cd.GetSigningRootProof()
+	signaturesTree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return nil, errors.New("failed to generate signing root proofs: %v", err)
+		return nil, errors.New("failed to get signatures tree: %v", err)
 	}
 
 	cdTree, err := cd.documentTree(docType)
@@ -218,12 +218,8 @@ func (cd *CoreDocument) CreateNFTProofs(
 		return nil, errors.New("failed to generate core Document tree: %v", err)
 	}
 
-	proofs, missedProofs := generateProofs(cdTree, pfKeys, append([][]byte{cd.Document.DataRoot}, signingRootProofHashes...))
-	if len(missedProofs) != 0 {
-		return nil, errors.New("failed to create proofs for fields %v", missedProofs)
-	}
-
-	return proofs, nil
+	treeProofs := map[string]*TreeProof{CDTreePrefix: newTreeProof(cdTree, append([][]byte{cd.Document.DataRoot}, signaturesTree.RootHash()))}
+	return generateProofs(pfKeys, treeProofs)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice

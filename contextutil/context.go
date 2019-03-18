@@ -56,7 +56,7 @@ func AccountDID(ctx context.Context) (identity.DID, error) {
 	return identity.NewDIDFromBytes(didBytes), nil
 }
 
-// Account extracts the TenanConfig from the given context value
+// Account extracts the TenantConfig from the given context value
 func Account(ctx context.Context) (config.Account, error) {
 	tc, ok := ctx.Value(self).(config.Account)
 	if !ok {

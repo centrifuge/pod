@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -50,10 +49,10 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error
+	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
 
 	// Create validates and persists Model and returns a Updated model
 	Create(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error)
@@ -150,13 +149,30 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
+	idBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	did := identity.NewDIDFromBytes(idBytes)
+	if model == nil {
+		return nil, ErrDocumentNil
+	}
 
-	if err := SignatureRequestValidator(s.idService).Validate(nil, model); err != nil {
+	var old Model
+	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
+		old, err = s.repo.Get(did[:], model.PreviousVersion())
+		if err != nil {
+			// TODO: should pull old document from peer
+			log.Infof("failed to fetch previous document: %v", err)
+		}
+	}
+
+	if err := RequestDocumentSignatureValidator(s.idService, collaborator).Validate(old, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -167,11 +183,6 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 
 	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 
-	tenantID, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
 	sig, err := acc.SignMsg(sr)
 	if err != nil {
 		return nil, err
@@ -180,14 +191,14 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
-	if !s.repo.Exists(tenantID, model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
-		err = s.repo.Create(tenantID, model.ID(), model)
+	if !s.repo.Exists(did[:], model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
+		err = s.repo.Create(did[:], model.ID(), model)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(tenantID, model.CurrentVersion(), model)
+	err = s.repo.Create(did[:], model.CurrentVersion(), model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -196,7 +207,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model) (*co
 	return sig, nil
 }
 
-func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, senderID []byte) error {
+func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return ErrDocumentConfigAccountID
@@ -207,11 +218,22 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return err
 	}
 	did := identity.NewDIDFromBytes(idBytes)
+
 	if model == nil {
-		return errors.New("no model given")
+		return ErrDocumentNil
 	}
 
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+	var old Model
+	// lets pick the old version of the document from the repo and pass this to the validator
+	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
+		old, err = s.repo.Get(did[:], model.PreviousVersion())
+		if err != nil {
+			// TODO(ved): we should pull the old document from the peer
+			log.Infof("failed to fetch previous document: %v", err)
+		}
+	}
+
+	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepository, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -220,11 +242,15 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, sende
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	ts, _ := ptypes.TimestampProto(time.Now().UTC())
+	ts, err := utils.ToTimestamp(time.Now().UTC())
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentNotification, err)
+	}
+
 	notificationMsg := &notificationpb.NotificationMessage{
 		EventType:    uint32(notification.ReceivedPayload),
 		AccountId:    did.String(),
-		FromId:       hexutil.Encode(senderID),
+		FromId:       hexutil.Encode(collaborator[:]),
 		ToId:         did.String(),
 		Recorded:     ts,
 		DocumentType: model.DocumentType(),
