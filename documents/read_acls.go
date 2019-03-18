@@ -388,8 +388,8 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	// TODO provide the time for validation here using the signature timestamp
-	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), nil)
+	ts, err := cd.Timestamp()
+	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), &ts)
 	if err != nil {
 		return err
 	}
