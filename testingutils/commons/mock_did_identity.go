@@ -122,3 +122,8 @@ func (s *MockIdentityFactory) CalculateIdentityAddress(ctx context.Context) (*co
 	args := s.Called(ctx)
 	return args.Get(0).(*common.Address), args.Error(1)
 }
+
+func (s *MockIdentityFactory) IdentityExists(did *identity.DID) (exists bool, err error) {
+	args := s.Called(did)
+	return args.Get(0).(bool), args.Error(1)
+}
