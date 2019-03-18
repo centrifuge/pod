@@ -65,7 +65,7 @@ To define a test case in Testworld, please add the new test case in the _test fi
 If there is no existing relevant _test file, please create a new _test file following the conventions of the existing _test files.
 
 You can then start the initial test run with `go test -v -tags="testworld" ./testworld`. 
-Please make sure that on this initial test run, both `runMigrations` and `createHostConfigs` have been set to `true`.
+Please make sure that on this initial test run, both `runMigrations` and `createHostConfigs` in the config file you have created following the tutorial above have been set to `true`.
 
 
 #### Speed improvements for local testing
