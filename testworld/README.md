@@ -59,8 +59,17 @@ Here you can create, run and test nodes with various behaviours to observe how t
 - Plus points if you write a test with a scenario that matches a scene in Westworld with node names matching the characters ;)
 
 ### Dev
+
+#### Defining test cases
+To define a test case in Testworld, please add the new test case in the _test file relevant to the behaviour being tested, ie: `testworld/document_consensus_test.go`. 
+If there is no existing relevant _test file, please create a new _test file following the conventions of the existing _test files.
+
+You can then start the initial test run with `go test -v -tags="testworld" ./testworld`. 
+Please make sure that on this initial test run, both `runMigrations` and `createHostConfigs` have been set to `true`.
+
+
 #### Speed improvements for local testing
 At `configs/local/local.json`,
-- Set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
+- Set `runMigrations` to `false` after the contracts are deployed, after the first test run.
 - Set `createHostConfigs` to `false` after configs have been generated in `hostconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
 
