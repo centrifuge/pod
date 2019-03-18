@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -34,6 +35,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestPreCommitAnchor_Integration(t *testing.T) {
+	t.Parallel()
 	anchorID := utils.RandomSlice(32)
 	signingRoot := utils.RandomSlice(32)
 
@@ -45,6 +47,7 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 }
 
 func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
+	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h := sha256.New()
 	_, err := h.Write(anchorIDPreImage)
@@ -80,12 +83,13 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB1, proofB2})
-	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
+	gotDocRoot, _, err := anchorRepo.GetAnchorData(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 }
 
 func TestCommitAnchor_Integration(t *testing.T) {
+	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h := sha256.New()
 	_, err := h.Write(anchorIDPreImage)
@@ -98,9 +102,10 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
-	gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorIDTyped)
+	gotDocRoot, hval, err := anchorRepo.GetAnchorData(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
+	assert.True(t, time.Now().After(hval))
 }
 
 func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs [][32]byte) {
@@ -133,6 +138,7 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
+	t.Parallel()
 	var commitDataList [5]*anchors.CommitData
 	var doneList [5]chan bool
 
@@ -165,7 +171,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.True(t, isDone)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
-		gotDocRoot, err := anchorRepo.GetDocumentRootOf(anchorID)
+		gotDocRoot, _, err := anchorRepo.GetAnchorData(anchorID)
 		assert.Nil(t, err)
 		assert.Equal(t, docRoot, gotDocRoot)
 	}

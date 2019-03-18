@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -108,9 +109,8 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	listenPort := 38202
-	cp2p := &peer{config: cfg}
 	pu, pr := c.GetP2PKeyPair()
-	priv, pub, err := cp2p.createSigningKey(pu, pr)
+	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	h, err := makeBasicHost(priv, pub, "", listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -122,9 +122,8 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	c = updateKeys(c)
 	externalIP := "100.100.100.100"
 	listenPort := 38202
-	cp2p := &peer{config: cfg}
 	pu, pr := c.GetP2PKeyPair()
-	priv, pub, err := cp2p.createSigningKey(pu, pr)
+	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
@@ -140,9 +139,8 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	c = updateKeys(c)
 	externalIP := "100.200.300.400"
 	listenPort := 38202
-	cp2p := &peer{config: cfg}
 	pu, pr := c.GetP2PKeyPair()
-	priv, pub, err := cp2p.createSigningKey(pu, pr)
+	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	h, err := makeBasicHost(priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)

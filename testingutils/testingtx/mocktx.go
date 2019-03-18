@@ -20,6 +20,10 @@ func (m MockTxManager) GetDefaultTaskTimeout() time.Duration {
 	panic("implement me")
 }
 
+func (m MockTxManager) UpdateTransactionWithValue(accountID identity.DID, id transactions.TxID, key string, value []byte) error {
+	panic("implement me")
+}
+
 func (m MockTxManager) UpdateTaskStatus(accountID identity.DID, id transactions.TxID, status transactions.Status, taskName, message string) error {
 	panic("implement me")
 }

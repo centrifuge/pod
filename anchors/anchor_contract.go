@@ -28,7 +28,7 @@ var (
 )
 
 // AnchorContractABI is the input ABI used to generate the binding from.
-const AnchorContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorCommitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorPreCommitted\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"signingRoot\",\"type\":\"bytes32\"}],\"name\":\"preCommit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorIdPreImage\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"documentProofs\",\"type\":\"bytes32[]\"}],\"name\":\"commit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"getAnchorById\",\"outputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"}],\"name\":\"hasValidPreCommit\",\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const AnchorContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorCommitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorPreCommitted\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"signingRoot\",\"type\":\"bytes32\"}],\"name\":\"preCommit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorIdPreImage\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"documentProofs\",\"type\":\"bytes32[]\"}],\"name\":\"commit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"getAnchorById\",\"outputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"blockNumber\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"}],\"name\":\"hasValidPreCommit\",\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // AnchorContract is an auto generated Go binding around an Ethereum contract.
 type AnchorContract struct {
@@ -174,14 +174,16 @@ func (_AnchorContract *AnchorContractTransactorRaw) Transact(opts *bind.Transact
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32)
+// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32, blockNumber uint32)
 func (_AnchorContract *AnchorContractCaller) GetAnchorById(opts *bind.CallOpts, id *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
+	BlockNumber  uint32
 }, error) {
 	ret := new(struct {
 		AnchorId     *big.Int
 		DocumentRoot [32]byte
+		BlockNumber  uint32
 	})
 	out := ret
 	err := _AnchorContract.contract.Call(opts, out, "getAnchorById", id)
@@ -190,20 +192,22 @@ func (_AnchorContract *AnchorContractCaller) GetAnchorById(opts *bind.CallOpts, 
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32)
+// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32, blockNumber uint32)
 func (_AnchorContract *AnchorContractSession) GetAnchorById(id *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
+	BlockNumber  uint32
 }, error) {
 	return _AnchorContract.Contract.GetAnchorById(&_AnchorContract.CallOpts, id)
 }
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32)
+// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32, blockNumber uint32)
 func (_AnchorContract *AnchorContractCallerSession) GetAnchorById(id *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
+	BlockNumber  uint32
 }, error) {
 	return _AnchorContract.Contract.GetAnchorById(&_AnchorContract.CallOpts, id)
 }

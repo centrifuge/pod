@@ -100,7 +100,8 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
-	ctxh, err := contextutil.New(context.Background(), tc)
+	txctx := contextutil.WithTX(context.Background(), d.TxID)
+	ctxh, err := contextutil.New(txctx, tc)
 	if err != nil {
 		return false, errors.New("failed to get context header: %v", err)
 	}

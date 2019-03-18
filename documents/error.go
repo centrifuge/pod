@@ -23,6 +23,9 @@ const (
 	// ErrDocumentNil must be used when the provided document through a function is nil
 	ErrDocumentNil = errors.Error("no(nil) document provided")
 
+	// ErrDocumentNotification must be used when a notification about a document could not be delivered
+	ErrDocumentNotification = errors.Error("could not notify of the document")
+
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
 	ErrDocumentInvalid = errors.Error("document is invalid")
 
@@ -78,6 +81,9 @@ const (
 
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
+
+	// ErrEmptyCollabs must be used when a given collaborators array is empty
+	ErrEmptyCollabs = errors.Error("empty collaborators")
 )
 
 // Error wraps an error with specific key

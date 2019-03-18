@@ -151,19 +151,14 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 
 func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-		tc, err := contextutil.Account(ctx)
+		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		err = model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		_, _, done, err := s.docSrv.Update(contextutil.WithTX(ctx, txID), model)
+		txctx := contextutil.WithTX(ctx, txID)
+		_, _, done, err := s.docSrv.Update(txctx, model)
 		if err != nil {
 			errOut <- err
 			return
@@ -176,36 +171,21 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(ctx, tokenID, accountID, req)
+		requestData, err := s.prepareMintRequest(txctx, tokenID, accountID, req)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
 		}
 
-		opts, err := s.ethClient.GetTxOpts(tc.GetEthereumDefaultAccountName())
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		contract, err := s.bindContract(req.RegistryAddress, s.ethClient)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contract.Mint, opts, requestData.To, requestData.TokenID,
-			requestData.TokenURI, requestData.AnchorID, requestData.Props, requestData.Values,
-			requestData.Salts, requestData.Proofs)
+		utxID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, EthereumPaymentObligationContractABI, "mint", requestData.To, requestData.TokenID,
+			requestData.TokenURI, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
 		}
-
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract. Ethereum transaction hash [%s] and Nonce [%d] and Check [%v]",
-			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String(), ethTX.Hash().String(), ethTX.Nonce(), ethTX.CheckNonce())
-		log.Infof("Transfer pending: %s\n", ethTX.Hash().String())
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract.",
+			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
@@ -217,18 +197,17 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
 		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
 
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
-		if err != nil {
-			errOut <- err
+		isDone = <-done
+		if !isDone {
+			// some problem occurred in a child task
+			errOut <- errors.New("mint nft failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), utxID)
 			return
 		}
 
-		_, err = res.Get(txMan.GetDefaultTaskTimeout())
-		if err != nil {
-			errOut <- err
-			return
-		}
+		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
+
 		errOut <- nil
+		return
 	}
 }
 
@@ -323,6 +302,10 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 		}
 		props[i] = p.GetCompactName()
 		values[i] = p.Value
+		// Scenario where it is a hashed field we copy the Hash value into the property value
+		if len(p.Value) == 0 && len(p.Salt) == 0 {
+			values[i] = p.Hash
+		}
 		salts[i] = salt32
 		proofs[i] = property
 	}
