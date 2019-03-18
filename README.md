@@ -84,10 +84,6 @@ make install
 mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
 git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
 
-
-# run your local geth node for the first time
-./build/scripts/docker/run.sh dev
-
 # You can already run unit/integration tests
 go test --tags="unit" ./...
 go test --tags="integration" ./...

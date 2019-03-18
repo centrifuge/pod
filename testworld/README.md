@@ -61,10 +61,11 @@ Here you can create, run and test nodes with various behaviours to observe how t
 ### Dev
 
 #### Defining test cases
-To define a test case in Testworld, please add the new test case in the _test file relevant to the behaviour being tested, ie: `testworld/document_consensus_test.go`. 
-If there is no existing relevant _test file, please create a new _test file following the conventions of the existing _test files.
+To define a test case in Testworld, 
+1. Please add the new test case in the _test file relevant to the behaviour being tested, ie: `testworld/document_consensus_test.go`. 
+2. If there is no existing relevant _test file, please create a new _test file following the conventions of the existing _test files.
+3. You can then start the initial test run with `go test -v -tags="testworld" ./testworld/<test file>`. 
 
-You can then start the initial test run with `go test -v -tags="testworld" ./testworld`. 
 Please make sure that on this initial test run, both `runMigrations` and `createHostConfigs` in the config file you have created following the tutorial above have been set to `true`.
 
 
