@@ -117,12 +117,18 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 	if err != nil {
 		return nil, err
 	}
+
+	tm, err := utils.ToTimestamp(time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+
 	p2pheader := &p2ppb.Header{
 		SenderId:          centIDBytes,
 		NodeVersion:       version.GetVersion().String(),
 		NetworkIdentifier: networkID,
 		Type:              messageType.String(),
-		Timestamp:         utils.ToTimestamp(time.Now()),
+		Timestamp:         tm,
 	}
 
 	body, err := proto.Marshal(mes)

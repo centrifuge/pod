@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -267,6 +270,63 @@ func TestInvoice_CreateProofs(t *testing.T) {
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestInvoice_CreateNFTProofs(t *testing.T) {
+	tc, err := configstore.NewAccount("main", cfg)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	assert.NoError(t, err)
+	i := new(Invoice)
+	invPayload := testingdocuments.CreateInvoicePayload()
+	invPayload.Data.DueDate = &timestamp.Timestamp{Seconds: time.Now().Unix()}
+	invPayload.Data.InvoiceStatus = "unpaid"
+	invPayload.Collaborators = []string{defaultDID.String()}
+
+	err = i.InitInvoiceInput(invPayload, defaultDID.String())
+	assert.NoError(t, err)
+	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
+	assert.NoError(t, err)
+	i.AppendSignatures(sig)
+	_, err = i.CalculateDataRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateSigningRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	keys, err := tc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proof, err := i.CreateProofs(proofFields)
+	assert.Nil(t, err)
+	assert.NotNil(t, proof)
+	tree, err := i.CoreDocument.DocumentRootTree()
+	assert.NoError(t, err)
+	assert.Len(t, proofFields, 8)
+
+	// Validate invoice_gross_amount
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate signing_root
+	valid, err = tree.ValidateProof(proof[5])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate signature
+	valid, err = tree.ValidateProof(proof[6])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate next_version
+	valid, err = tree.ValidateProof(proof[7])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

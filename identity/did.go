@@ -180,9 +180,16 @@ func NewDIDFromBytes(bAddr []byte) DID {
 //	return NewDID(common.BytesToAddress(addressByte)), nil
 //}
 
+// IDTX abstracts transactions.TxID for identity package
+type IDTX interface {
+	String() string
+	Bytes() []byte
+}
+
 // Factory is the interface for factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
+	IdentityExists(did *DID) (exists bool, err error)
 	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
@@ -198,13 +205,10 @@ type ServiceDID interface {
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte) error
+	RawExecute(ctx context.Context, to common.Address, data []byte) (txID IDTX, done chan bool, err error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) error
-
-	// IsSignedWithPurpose verifies if a message is signed with one of the identities specific purpose keys
-	IsSignedWithPurpose(did DID, message [32]byte, signature []byte, purpose *big.Int) (bool, error)
+	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan bool, err error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
@@ -232,14 +236,14 @@ type ServiceDID interface {
 	GetClientsP2PURLs(dids []*DID) ([]string, error)
 
 	// GetKeysByPurpose returns keys grouped by purpose from the identity contract.
-	GetKeysByPurpose(did DID, purpose *big.Int) ([][32]byte, error)
+	GetKeysByPurpose(did DID, purpose *big.Int) ([]KeyDID, error)
 }
 
 // KeyDID defines a single ERC725 identity key
 type KeyDID interface {
 	GetKey() [32]byte
 	GetPurpose() *big.Int
-	GetRevokedAt() *big.Int
+	GetRevokedAt() uint32
 	GetType() *big.Int
 }
 
@@ -247,20 +251,20 @@ type KeyDID interface {
 type KeyResponse struct {
 	Key       [32]byte
 	Purposes  []*big.Int
-	RevokedAt *big.Int
+	RevokedAt uint32
 }
 
 // Key holds the identity related details
 type key struct {
 	Key       [32]byte
 	Purpose   *big.Int
-	RevokedAt *big.Int
+	RevokedAt uint32
 	Type      *big.Int
 }
 
 //NewKey returns a new key struct
-func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int) KeyDID {
-	return &key{pk, purpose, big.NewInt(0), keyType}
+func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int, revokedAt uint32) KeyDID {
+	return &key{pk, purpose, revokedAt, keyType}
 }
 
 // GetKey returns the public key
@@ -274,7 +278,7 @@ func (idk *key) GetPurpose() *big.Int {
 }
 
 // GetRevokedAt returns the block at which the identity is revoked
-func (idk *key) GetRevokedAt() *big.Int {
+func (idk *key) GetRevokedAt() uint32 {
 	return idk.RevokedAt
 }
 

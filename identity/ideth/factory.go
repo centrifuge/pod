@@ -17,6 +17,8 @@ import (
 
 var log = logging.Logger("identity")
 
+const identityCreatedEventName = "IdentityCreated(address)"
+
 type factory struct {
 	factoryAddress  common.Address
 	factoryContract *FactoryContract
@@ -54,7 +56,7 @@ func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DI
 		log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
 		log.Infof("Transfer pending: 0x%x\n", ethTX.Hash())
 
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
+		res, err := ethereum.QueueEthTXStatusTaskWithValue(accountID, txID, ethTX.Hash(), s.queue, &transactions.TXValue{Key: identityCreatedEventName, KeyIdx: 0})
 		if err != nil {
 			errOut <- err
 			return
@@ -95,6 +97,15 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 
 }
 
+func (s *factory) IdentityExists(did *id.DID) (exists bool, err error) {
+	opts, _ := s.client.GetGethCallOpts(false)
+	valid, err := s.factoryContract.CreatedIdentity(opts, did.ToAddress())
+	if err != nil {
+		return false, err
+	}
+	return valid, nil
+}
+
 func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
@@ -107,12 +118,12 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		return nil, err
 	}
 
-	identityAddress, err := s.CalculateIdentityAddress(ctx)
+	calcIdentityAddress, err := s.CalculateIdentityAddress(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	createdDID := id.NewDID(*identityAddress)
+	createdDID := id.NewDID(*calcIdentityAddress)
 
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), createdDID, transactions.NilTxID(), "Check TX for create identity status", s.createIdentityTX(opts))
 	if err != nil {
@@ -123,12 +134,30 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	// non async task
 	if !isDone {
 		return nil, errors.New("Create Identity TX failed: txID:%s", txID.String())
-
 	}
 
-	err = isIdentityContract(*identityAddress, s.client)
+	tx, err := s.txManager.GetTransaction(createdDID, txID)
 	if err != nil {
 		return nil, err
+	}
+	idCreated, ok := tx.Values[identityCreatedEventName]
+	if !ok {
+		return nil, errors.New("Couldn't find value for %s", identityCreatedEventName)
+	}
+	createdAddr := common.BytesToAddress(idCreated.Value)
+	log.Infof("ID Created with address: %s", createdAddr.Hex())
+
+	if calcIdentityAddress.Hex() != createdAddr.Hex() {
+		log.Infof("[Recovered] Found race condition creating identity, calculatedDID[%s] vs createdDID[%s]", calcIdentityAddress.Hex(), createdAddr.Hex())
+	}
+
+	createdDID = id.NewDID(createdAddr)
+	exists, err := s.IdentityExists(&createdDID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.New("Identity %s not found in factory registry", createdDID.String())
 	}
 
 	return &createdDID, nil

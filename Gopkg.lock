@@ -57,11 +57,11 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:ead823956932d64e6271256398aa0753b03d4a6dec8f522847841ca33b98f289"
+  digest = "1:4dc9d52a48657d4eac97abd9743dd1f1ca1b00e93ff5c751cf0b9cb8e90dd41e"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "be1a93f627115fcf9978a85c4b6b8f08adf87f35"
+  revision = "c5e55d16c4cfe058ca641d2a746a665f277f0c9f"
 
 [[projects]]
   digest = "1:b7e34173572c5122fcd1dcf4b1d1e4711e82e041c7e9aebd1e3437888480cd7f"
@@ -80,11 +80,11 @@
   source = "github.com/lucasvo/centrifuge-protobufs"
 
 [[projects]]
-  digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
+  digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
+  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
   digest = "1:3b544b8a9a673543a6b0f61afefc3ad1fec1080be25f8389cca630c71f423117"

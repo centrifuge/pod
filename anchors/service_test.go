@@ -8,7 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -24,11 +23,13 @@ type mockAnchorRepo struct {
 func (m *mockAnchorRepo) GetAnchorById(opts *bind.CallOpts, anchorID *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
+	BlockNumber  uint32
 }, error) {
 	args := m.Called(opts, anchorID)
 	type Response struct {
 		AnchorId     *big.Int
 		DocumentRoot [32]byte
+		BlockNumber  uint32
 	}
 	r := Response{}
 	dr := args.Get(0).([32]byte)
@@ -74,20 +75,4 @@ func TestGenerateAnchor(t *testing.T) {
 
 	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
 
-}
-
-func TestGetDocumentRootOf(t *testing.T) {
-	repo := &mockAnchorRepo{}
-	anchorID, err := ToAnchorID(utils.RandomSlice(32))
-	assert.Nil(t, err)
-
-	ethClient := &testingcommons.MockEthClient{}
-	ethClient.On("GetGethCallOpts").Return(nil)
-	ethRepo := newService(cfg, repo, nil, ethClient, nil)
-	docRoot := utils.RandomByte32()
-	repo.On("GetAnchorById", mock.Anything, mock.Anything).Return(docRoot, nil)
-	gotRoot, err := ethRepo.GetDocumentRootOf(anchorID)
-	repo.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, docRoot[:], gotRoot[:])
 }

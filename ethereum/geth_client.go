@@ -203,11 +203,27 @@ func QueueEthTXStatusTask(
 	txID transactions.TxID,
 	txHash common.Hash,
 	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
-	return queuer.EnqueueJobWithMaxTries(EthTXStatusTaskName, map[string]interface{}{
+	return QueueEthTXStatusTaskWithValue(accountID, txID, txHash, queuer, nil)
+}
+
+// QueueEthTXStatusTaskWithValue starts a new queuing transaction check task with a filtered value.
+func QueueEthTXStatusTaskWithValue(
+	accountID identity.DID,
+	txID transactions.TxID,
+	txHash common.Hash,
+	queuer queue.TaskQueuer,
+	txValue *transactions.TXValue) (res queue.TaskResult, err error) {
+	params := map[string]interface{}{
 		transactions.TxIDParam:  txID.String(),
 		TransactionAccountParam: accountID.String(),
 		TransactionTxHashParam:  txHash.String(),
-	})
+	}
+	if txValue != nil {
+		params[TransactionEventName] = txValue.Key
+		params[TransactionEventValueIdx] = txValue.KeyIdx
+	}
+
+	return queuer.EnqueueJobWithMaxTries(EthTXStatusTaskName, params)
 }
 
 /**

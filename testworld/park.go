@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
@@ -33,6 +34,7 @@ var hostConfig = []struct {
 	{"Bob", 8085, 38205, true},
 	{"Charlie", 8086, 38206, true},
 	{"Kenny", 8087, 38207, false},
+	{"Eve", 8088, 38208, false},
 }
 
 const defaultP2PTimeout = "10s"
@@ -64,8 +66,6 @@ type hostManager struct {
 
 	// tempHosts are hosts created at runtime, they should be part of niceHosts/naughtyHosts as well
 	tempHosts map[string]*host
-
-	// TODO create evil hosts such as William (or Eve)
 
 	// canc is the cancel signal for all hosts
 	canc context.CancelFunc
@@ -237,6 +237,10 @@ type host struct {
 	createConfig       bool
 	multiAccount       bool
 	accounts           []string
+	p2pClient          documents.Client
+	anchorProcessor    documents.AnchorProcessor
+	docSrv             documents.Service
+	configService      config.Service
 }
 
 func newHost(
@@ -288,9 +292,10 @@ func (h *host) init() error {
 	}
 	h.identity = identity.NewDIDFromBytes(idBytes)
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
-	if err != nil {
-		return err
-	}
+	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
+	h.anchorProcessor = h.bootstrappedCtx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
+	h.docSrv = h.bootstrappedCtx[documents.BootstrappedDocumentService].(documents.Service)
+	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	return nil
 }
 
@@ -313,10 +318,10 @@ func (h *host) live(c context.Context) error {
 	signal.Notify(controlC, os.Interrupt)
 	select {
 	case err := <-feedback:
-		log.Info(h.name+" encountered error ", err)
+		log.Errorf("%s encountered error %v", h.name, err)
 		return err
 	case sig := <-controlC:
-		log.Info(h.name+" shutting down because of ", sig)
+		log.Errorf("%s shutting down because of %s", h.name, sig.String())
 		canc()
 		err := <-feedback
 		return err

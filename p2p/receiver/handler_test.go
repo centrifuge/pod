@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -25,10 +23,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
@@ -80,8 +80,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
+	id := testingidentity.GenerateRandomDID()
 	req := &p2ppb.SignatureRequest{}
-	resp, err := handler.RequestDocumentSignature(context.Background(), req)
+	resp, err := handler.RequestDocumentSignature(context.Background(), req, id)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, resp, "must be nil")
 }
@@ -195,7 +196,7 @@ func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 }
 
 func TestP2PService_basicChecks(t *testing.T) {
-	tm, err := utils.ToTimestampProper(time.Now())
+	tm, err := utils.ToTimestamp(time.Now())
 	assert.NoError(t, err)
 	tests := []struct {
 		header *p2ppb.Header

@@ -1,12 +1,18 @@
 package documents
 
 import (
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+// MaxAuthoredToCommitDuration is the maximum allowed time period for a document to be anchored after a authoring it based on document timestamp.
+// I.E. This is basically the maximum time period allowed for document consensus to complete as well.
+const MaxAuthoredToCommitDuration = 120 * time.Minute
 
 // Validator is an interface every Validator (atomic or group) should implement
 type Validator interface {
@@ -19,7 +25,6 @@ type ValidatorGroup []Validator
 
 //Validate will execute all group specific atomic validations
 func (group ValidatorGroup) Validate(oldState Model, newState Model) (errs error) {
-
 	for _, v := range group {
 		if err := v.Validate(oldState, newState); err != nil {
 			errs = errors.AppendError(errs, err)
@@ -162,6 +167,32 @@ func documentRootValidator() Validator {
 	})
 }
 
+// documentAuthorValidator checks if a given sender DID is the document author
+func documentAuthorValidator(sender identity.DID) Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		if !model.Author().Equal(sender) {
+			return errors.New("document sender is not the author")
+		}
+
+		return nil
+	})
+}
+
+// documentTimestampForSigningValidator checks if a given document has a timestamp recent enough to be signed
+func documentTimestampForSigningValidator() Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		tm, err := model.Timestamp()
+		if err != nil {
+			return errors.New("failed to get document timestamp: %v", err)
+		}
+
+		if tm.Before(time.Now().UTC().Add(-MaxAuthoredToCommitDuration)) {
+			return errors.New("document is too old to be signed")
+		}
+		return nil
+	})
+}
+
 // signaturesValidator validates all the signatures in the core document
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
@@ -178,11 +209,33 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			return errors.New("atleast one signature expected")
 		}
 
+		collaborators, err := model.GetSignerCollaborators(model.Author())
+		if err != nil {
+			return errors.New("could not get signer collaborators")
+		}
+
 		authorFound := false
 		for _, sig := range signatures {
 			sigDID := identity.NewDIDFromBytes(sig.SignerId)
 			if model.Author().Equal(sigDID) {
 				authorFound = true
+			}
+
+			// we only care about validating that signer is part of signing collaborators and not the other way around
+			// since a collaborator can decide to not sign a document and the protocol still defines it as a valid state for a model.
+			collaboratorFound := false
+			for _, cb := range collaborators {
+				if sigDID.Equal(cb) {
+					collaboratorFound = true
+				}
+			}
+
+			// signer is not found in signing collaborators and he is not the author either
+			if !collaboratorFound && !model.Author().Equal(sigDID) {
+				err = errors.AppendError(
+					err,
+					errors.New("signature_%s verification failed: signer is not part of the signing collaborators", hexutil.Encode(sig.SignerId)))
+				continue
 			}
 
 			tm, terr := model.Timestamp()
@@ -227,13 +280,22 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 			return errors.New("failed to get document root: %v", err)
 		}
 
-		gotRoot, err := repo.GetDocumentRootOf(anchorID)
+		gotRoot, anchoredAt, err := repo.GetAnchorData(anchorID)
 		if err != nil {
 			return errors.New("failed to get document root for anchor %s from chain: %v", anchorID.String(), err)
 		}
 
 		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {
 			return errors.New("mismatched document roots")
+		}
+
+		tm, err := model.Timestamp()
+		if err != nil {
+			return errors.New("failed to get model update time: %v", err)
+		}
+
+		if tm.Add(MaxAuthoredToCommitDuration).Before(anchoredAt) {
+			return errors.New("document was anchored after max allowed time for anchor %s", anchorID.String())
 		}
 
 		return nil
@@ -256,12 +318,17 @@ func transitionValidator(collaborator identity.DID) Validator {
 }
 
 // SignatureRequestValidator returns a validator group with following validators
+// document timestamp for signing validator
+// document author validator
 // base validator
 // signing root validator
 // signatures validator
 // should be used when node receives a document requesting for signature
-func SignatureRequestValidator(idService identity.ServiceDID) ValidatorGroup {
-	return SignatureValidator(idService)
+func SignatureRequestValidator(sender identity.DID, idService identity.ServiceDID) ValidatorGroup {
+	return ValidatorGroup{
+		documentTimestampForSigningValidator(),
+		documentAuthorValidator(sender),
+		SignatureValidator(idService)}
 }
 
 // PreAnchorValidator is a validator group with following validators
@@ -298,6 +365,17 @@ func ReceivedAnchoredDocumentValidator(
 	return ValidatorGroup{
 		transitionValidator(collaborator),
 		PostAnchoredValidator(idService, repo),
+	}
+}
+
+// RequestDocumentSignatureValidator is a validator group with the following validators
+// SignatureValidator
+// transitionsValidator
+// it should be called when a document is received over the p2p layer before signing
+func RequestDocumentSignatureValidator(idService identity.ServiceDID, collaborator identity.DID) ValidatorGroup {
+	return ValidatorGroup{
+		transitionValidator(collaborator),
+		SignatureValidator(idService),
 	}
 }
 

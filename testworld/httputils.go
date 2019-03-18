@@ -5,6 +5,7 @@ package testworld
 import (
 	"crypto/tls"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -15,13 +16,25 @@ const typeInvoice string = "invoice"
 const typePO string = "purchaseorder"
 const poPrefix string = "po"
 
+var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
+
+type httpLog struct {
+	logger httpexpect.Logger
+}
+
+func (h *httpLog) Logf(fm string, args ...interface{}) {
+	if !isRunningOnCI {
+		h.logger.Logf(fm, args...)
+	}
+}
+
 func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Expect {
 	config := httpexpect.Config{
 		BaseURL:  baseURL,
 		Client:   createInsecureClient(),
 		Reporter: httpexpect.NewAssertReporter(t),
 		Printers: []httpexpect.Printer{
-			httpexpect.NewCompactPrinter(t),
+			httpexpect.NewCurlPrinter(&httpLog{t}),
 		},
 	}
 	return httpexpect.WithConfig(config)
@@ -133,23 +146,23 @@ func createInsecureClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func waitTillStatus(t *testing.T, e *httpexpect.Expect, auth string, txID string, expectedStatus string) {
+func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
 	for {
-		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object()
-		status := resp.Path("$.status").String().Raw()
+		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
+		status := resp["status"].(string)
 
 		if status == "pending" {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
-		if status == expectedStatus {
-			break
-		} else {
-			t.Error(resp.Path("$.message").String().Raw())
+		message, ok := resp["message"].(string)
+
+		if !ok {
+			message = "Unknown error while processing transaction"
 		}
 
-		break
+		return status, message
 	}
 }
 

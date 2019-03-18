@@ -21,6 +21,9 @@ const (
 
 	// BootstrappedDocumentService is the key to bootstrapped document service
 	BootstrappedDocumentService = "BootstrappedDocumentService"
+
+	// BootstrappedAnchorProcessor is the key to bootstrapped anchor processor
+	BootstrappedAnchorProcessor = "BootstrappedAnchorProcessor"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -63,11 +66,6 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
-	if !ok {
-		return errors.New("documents config not initialised")
-	}
-
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {
 		return errors.New("queue not initialised")
@@ -78,14 +76,14 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
-	if !ok {
-		return errors.New("identity service not initialized")
-	}
-
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
 		return errors.New("anchor repository not initialised")
+	}
+
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	if !ok {
+		return errors.New("documents config not initialised")
 	}
 
 	p2pClient, ok := ctx[bootstrap.BootstrappedPeer].(Client)
@@ -93,13 +91,21 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("p2p client not initialised")
 	}
 
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	if !ok {
+		return errors.New("identity service not initialized")
+	}
+
+	dp := DefaultProcessor(didService, p2pClient, anchorRepo, cfg)
+	ctx[BootstrappedAnchorProcessor] = dp
+
 	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
 	anchorTask := &documentAnchorTask{
 		BaseTask: txv1.BaseTask{
 			TxManager: txMan,
 		},
 		config:        cfgService,
-		processor:     DefaultProcessor(didService, p2pClient, anchorRepo, cfg),
+		processor:     dp,
 		modelGetFunc:  repo.Get,
 		modelSaveFunc: repo.Update,
 	}
