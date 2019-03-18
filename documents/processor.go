@@ -184,7 +184,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	signingRootProof, err := model.GetSignaturesRootHash()
+	signingRootProof, err := model.CalculateSignaturesRoot()
 	if err != nil {
 		return errors.New("failed to get signing root proof: %v", err)
 	}

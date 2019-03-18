@@ -424,8 +424,15 @@ func (i *Invoice) CreateNFTProofs(
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+
+	tree, err := i.getDocumentDataTree()
+	if err != nil {
+		return nil, err
+	}
+
 	return i.CoreDocument.CreateNFTProofs(
 		i.DocumentType(),
+		tree,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
