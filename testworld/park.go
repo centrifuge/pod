@@ -232,6 +232,7 @@ type host struct {
 	smartContractAddrs *config.SmartContractAddresses
 	config             config.Configuration
 	identity           identity.DID
+	idFactory          identity.Factory
 	idService          identity.ServiceDID
 	node               *node.Node
 	canc               context.CancelFunc
@@ -239,8 +240,6 @@ type host struct {
 	multiAccount       bool
 	accounts           []string
 	p2pClient          documents.Client
-	anchorProcessor    documents.AnchorProcessor
-	docSrv             documents.Service
 	configService      config.Service
 	tokenRegistry      documents.TokenRegistry
 }
@@ -293,10 +292,9 @@ func (h *host) init() error {
 		return err
 	}
 	h.identity = identity.NewDIDFromBytes(idBytes)
+	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
-	h.anchorProcessor = h.bootstrappedCtx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
-	h.docSrv = h.bootstrappedCtx[documents.BootstrappedDocumentService].(documents.Service)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedPayObService].(documents.TokenRegistry)
 	return nil
