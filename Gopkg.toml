@@ -28,11 +28,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "5867af724d7bf238bb69a0432a16529603a29746"
+  revision = "786c9a69a4f74a2e1d03c2b46071a73cffe23403"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  revision = "be1a93f627115fcf9978a85c4b6b8f08adf87f35"
+  revision = "c5e55d16c4cfe058ca641d2a746a665f277f0c9f"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
@@ -44,7 +44,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
-  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
+  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[override]]
   name = "github.com/ethereum/go-ethereum"
@@ -233,6 +233,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[override]]
   name = "github.com/whyrusleeping/go-smux-multistream"
   version = "2.0.2"
+
+[[override]]
+  name = "github.com/shopspring/decimal"
+  version = "1.1.0"
 
 [[override]]
   name = "github.com/whyrusleeping/go-smux-yamux"

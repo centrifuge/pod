@@ -20,8 +20,6 @@ const (
 	multiHostMultiAccount testType = "multiHostMultiAccount"
 )
 
-var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
-
 // doctorFord manages the hosts
 var doctorFord *hostManager
 

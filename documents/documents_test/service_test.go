@@ -4,14 +4,17 @@ package documents_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -30,8 +33,8 @@ import (
 
 var testRepoGlobal documents.Repository
 var (
-	did      = testingidentity.GenerateRandomDID()
-	tenantID = did[:]
+	did       = testingidentity.GenerateRandomDID()
+	accountID = did[:]
 )
 
 var ctx = map[string]interface{}{}
@@ -41,15 +44,15 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	ibootstappers := []bootstrap.TestBootstrapper{
+	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
+	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
 }
 
@@ -57,7 +60,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	srv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
 
 	// self failed
-	err := srv.ReceiveAnchoredDocument(context.Background(), nil, nil)
+	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
@@ -65,7 +68,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	acc, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
-	err = srv.ReceiveAnchoredDocument(ctxh, nil, nil)
+	err = srv.ReceiveAnchoredDocument(ctxh, nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
@@ -73,13 +76,13 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, true)
 	idSrv := new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar := new(mockAnchorRepo)
 	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
 	ar.AssertExpectations(t)
@@ -88,26 +91,21 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	// new document with saved
 	doc, cd = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, false)
 	idSrv = new(testingcommons.MockIdentityService)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
 	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, did[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
 	idSrv.AssertExpectations(t)
 
-	// document with missing previous version
-	model := new(testingdocuments.MockModel)
-	model.On("PreviousVersion").Return(utils.RandomSlice(32))
-	err = srv.ReceiveAnchoredDocument(ctxh, model, did[:])
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
-
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+	err = doc.AddUpdateLog(did)
 	assert.NoError(t, err)
 	_, err = doc.CalculateDataRoot()
 	assert.NoError(t, err)
@@ -124,19 +122,19 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 
 	// invalid transition for id3
 	id3 := testingidentity.GenerateRandomDID()
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, id3[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, id3)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition for id2
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
 	dr, err = anchors.ToDocumentRoot(ndr)
 	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
-	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2[:])
+	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
 	idSrv.AssertExpectations(t)
@@ -145,7 +143,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentityService) {
 	repo := testRepo()
 	idService := testingcommons.MockIdentityService{}
-	idService.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
+	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
 	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
@@ -157,10 +155,11 @@ type mockAnchorRepo struct {
 
 var mockAnchor *mockAnchorRepo
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
+	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
+	anchoredTime, _ = args.Get(1).(time.Time)
+	return docRoot, anchoredTime, args.Error(2)
 }
 
 // Functions returns service mocks
@@ -170,7 +169,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 	assert.NoError(t, err)
 	docRoot, err := anchors.ToDocumentRoot(dr)
 	assert.NoError(t, err)
-	mockAnchor.On("GetDocumentRootOf", anchorID).Return(docRoot, nil).Once()
+	mockAnchor.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	return idService
 }
 
@@ -193,7 +192,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
-	assert.Nil(t, testRepo().Update(tenantID, i.CurrentVersion(), i))
+	assert.Nil(t, testRepo().Update(accountID, i.CurrentVersion(), i))
 	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get signing root")
@@ -230,17 +229,61 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
 
-func TestService_RequestDocumentSignature_SigningRootNil(t *testing.T) {
-	service, idService := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, true)
-	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
-	i.(*invoice.Invoice).Document.DataRoot = nil
-	i.(*invoice.Invoice).Document.SigningRoot = nil
-	signature, err := service.RequestDocumentSignature(ctxh, i)
-	assert.NotNil(t, err)
+func TestService_RequestDocumentSignature(t *testing.T) {
+	srv, _ := getServiceWithMockedLayers()
+
+	// self failed
+	_, err := srv.RequestDocumentSignature(context.Background(), nil, did)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// nil model
+	tc, err := configstore.NewAccount("main", cfg)
+	assert.NoError(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = did[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.NoError(t, err)
+	_, err = srv.RequestDocumentSignature(ctxh, nil, did)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// add doc to repo
+	id := testingidentity.GenerateRandomDID()
+	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
+	idSrv := new(testingcommons.MockIdentityService)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	ar := new(mockAnchorRepo)
+	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	assert.NoError(t, err)
+	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
+	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+
+	// prepare a new version
+	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	assert.NoError(t, err)
+	err = doc.AddUpdateLog(did)
+	_, err = doc.CalculateDataRoot()
+	assert.NoError(t, err)
+	sr, err := doc.CalculateSigningRoot()
+	assert.NoError(t, err)
+	sig, err := acc.SignMsg(sr)
+	assert.NoError(t, err)
+
+	doc.AppendSignatures(sig)
+	_, err = doc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	// invalid transition
+	id2 := testingidentity.GenerateRandomDID()
+	_, err = srv.RequestDocumentSignature(ctxh, doc, id2)
+	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
-	assert.Nil(t, signature)
+	assert.Contains(t, err.Error(), "invalid document state transition")
+
+	// valid transition
+	_, err = srv.RequestDocumentSignature(ctxh, doc, id)
+	assert.NoError(t, err)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
@@ -277,12 +320,14 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			NextVersion:        next,
 		}
 
+		ga := new(documents.Decimal)
+		assert.NoError(t, ga.SetString(fmt.Sprint(i+1)))
 		inv := &invoice.Invoice{
-			GrossAmount:  int64(i + 1),
+			GrossAmount:  ga,
 			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 		}
 
-		err := testRepo().Create(tenantID, version, inv)
+		err := testRepo().Create(accountID, version, inv)
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
@@ -305,13 +350,15 @@ func TestService_GetVersion_successful(t *testing.T) {
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     currentVersion,
 	}
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := testRepo().Create(tenantID, currentVersion, inv)
+	err := testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
@@ -335,12 +382,14 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 		CurrentVersion:     documentIdentifier,
 	}
 
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 	assert.Nil(t, err)
 
 	_, err = service.GetCurrentVersion(ctxh, documentIdentifier)
@@ -363,11 +412,13 @@ func TestService_GetVersion_error(t *testing.T) {
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     currentVersion,
 	}
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
-	err = testRepo().Create(tenantID, currentVersion, inv)
+	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	//random version
@@ -404,12 +455,14 @@ func TestService_Exists(t *testing.T) {
 		DocumentIdentifier: documentIdentifier,
 		CurrentVersion:     documentIdentifier,
 	}
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("60"))
 	inv := &invoice.Invoice{
-		GrossAmount:  60,
+		GrossAmount:  ga,
 		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
 	}
 
-	err = testRepo().Create(tenantID, documentIdentifier, inv)
+	err = testRepo().Create(accountID, documentIdentifier, inv)
 
 	exists := service.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "document should exist")
@@ -432,6 +485,8 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 
 	err := i.InitInvoiceInput(data, did.String())
 	assert.NoError(t, err)
+	err = i.AddUpdateLog(did)
+	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := i.CalculateSigningRoot()
@@ -450,7 +505,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 	assert.NoError(t, err)
 
 	if !skipSave {
-		err = testRepo().Create(tenantID, i.CurrentVersion(), i)
+		err = testRepo().Create(accountID, i.CurrentVersion(), i)
 		assert.NoError(t, err)
 	}
 	return i, cd

@@ -1,4 +1,4 @@
-// +build integration unit
+// +build integration unit testworld
 
 package testingdocuments
 
@@ -12,7 +12,7 @@ func CreatePOData() purchaseorderpb.PurchaseOrderData {
 	recipient := testingidentity.GenerateRandomDID()
 	return purchaseorderpb.PurchaseOrderData{
 		Recipient:   recipient[:],
-		OrderAmount: 42,
+		OrderAmount: []byte{0, 42, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
 }
 
@@ -20,7 +20,7 @@ func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
 	return &clientpurchaseorderpb.PurchaseOrderCreatePayload{
 		Data: &clientpurchaseorderpb.PurchaseOrderData{
 			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
-			OrderAmount: 42,
+			OrderAmount: "42",
 			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},

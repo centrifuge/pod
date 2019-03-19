@@ -3,6 +3,7 @@ package invoice
 import (
 	"encoding/json"
 	"reflect"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -40,12 +41,12 @@ type Invoice struct {
 	RecipientStreet  string
 	RecipientCity    string
 	RecipientZipcode string
-	RecipientCountry string // country ISO code of the recipient of this invoice
-	Currency         string // country ISO code of the recipient of this invoice
-	GrossAmount      int64  // invoice amount including tax
-	NetAmount        int64  // invoice amount excluding tax
-	TaxAmount        int64
-	TaxRate          int64
+	RecipientCountry string             // country ISO code of the recipient of this invoice
+	Currency         string             // country ISO code of the recipient of this invoice
+	GrossAmount      *documents.Decimal // invoice amount including tax
+	NetAmount        *documents.Decimal // invoice amount excluding tax
+	TaxAmount        *documents.Decimal
+	TaxRate          *documents.Decimal
 	Recipient        *identity.DID
 	Sender           *identity.DID
 	Payee            *identity.DID
@@ -79,6 +80,7 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 		extraData = hexutil.Encode(i.ExtraData)
 	}
 
+	decs := documents.DecimalsToStrings(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
 	return &clientinvoicepb.InvoiceData{
 		InvoiceNumber:    i.InvoiceNumber,
 		InvoiceStatus:    i.InvoiceStatus,
@@ -93,10 +95,10 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 		RecipientZipcode: i.RecipientZipcode,
 		RecipientCountry: i.RecipientCountry,
 		Currency:         i.Currency,
-		GrossAmount:      i.GrossAmount,
-		NetAmount:        i.NetAmount,
-		TaxAmount:        i.TaxAmount,
-		TaxRate:          i.TaxRate,
+		GrossAmount:      decs[0],
+		NetAmount:        decs[1],
+		TaxAmount:        decs[2],
+		TaxRate:          decs[3],
 		Recipient:        recipient,
 		Sender:           sender,
 		Payee:            payee,
@@ -109,7 +111,7 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
-func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
+func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 	var recipient, sender, payee []byte
 	if i.Recipient != nil {
 		recipient = i.Recipient[:]
@@ -121,6 +123,11 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 
 	if i.Payee != nil {
 		payee = i.Payee[:]
+	}
+
+	decs, err := documents.DecimalsToBytes(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
+	if err != nil {
+		return nil, err
 	}
 
 	return &invoicepb.InvoiceData{
@@ -137,10 +144,10 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 		RecipientZipcode: i.RecipientZipcode,
 		RecipientCountry: i.RecipientCountry,
 		Currency:         i.Currency,
-		GrossAmount:      i.GrossAmount,
-		NetAmount:        i.NetAmount,
-		TaxAmount:        i.TaxAmount,
-		TaxRate:          i.TaxRate,
+		GrossAmount:      decs[0],
+		NetAmount:        decs[1],
+		TaxAmount:        decs[2],
+		TaxRate:          decs[3],
 		Recipient:        recipient,
 		Sender:           sender,
 		Payee:            payee,
@@ -148,7 +155,7 @@ func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
 		DueDate:          i.DueDate,
 		DateCreated:      i.DateCreated,
 		ExtraData:        i.ExtraData,
-	}
+	}, nil
 
 }
 
@@ -184,13 +191,19 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 	i.RecipientZipcode = data.RecipientZipcode
 	i.RecipientCountry = data.RecipientCountry
 	i.Currency = data.Currency
-	i.GrossAmount = data.GrossAmount
-	i.NetAmount = data.NetAmount
-	i.TaxAmount = data.TaxAmount
-	i.TaxRate = data.TaxRate
 	i.Comment = data.Comment
 	i.DueDate = data.DueDate
 	i.DateCreated = data.DateCreated
+
+	decs, err := documents.StringsToDecimals(data.GrossAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	if err != nil {
+		return err
+	}
+
+	i.GrossAmount = decs[0]
+	i.NetAmount = decs[1]
+	i.TaxAmount = decs[2]
+	i.TaxRate = decs[3]
 
 	if data.Recipient != "" {
 		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
@@ -223,44 +236,51 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 }
 
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
-func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
-	i.InvoiceNumber = invoiceData.InvoiceNumber
-	i.InvoiceStatus = invoiceData.InvoiceStatus
-	i.SenderName = invoiceData.SenderName
-	i.SenderStreet = invoiceData.SenderStreet
-	i.SenderCity = invoiceData.SenderCity
-	i.SenderZipcode = invoiceData.SenderZipcode
-	i.SenderCountry = invoiceData.SenderCountry
-	i.RecipientName = invoiceData.RecipientName
-	i.RecipientStreet = invoiceData.RecipientStreet
-	i.RecipientCity = invoiceData.RecipientCity
-	i.RecipientZipcode = invoiceData.RecipientZipcode
-	i.RecipientCountry = invoiceData.RecipientCountry
-	i.Currency = invoiceData.Currency
-	i.GrossAmount = invoiceData.GrossAmount
-	i.NetAmount = invoiceData.NetAmount
-	i.TaxAmount = invoiceData.TaxAmount
-	i.TaxRate = invoiceData.TaxRate
+func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
+	i.InvoiceNumber = data.InvoiceNumber
+	i.InvoiceStatus = data.InvoiceStatus
+	i.SenderName = data.SenderName
+	i.SenderStreet = data.SenderStreet
+	i.SenderCity = data.SenderCity
+	i.SenderZipcode = data.SenderZipcode
+	i.SenderCountry = data.SenderCountry
+	i.RecipientName = data.RecipientName
+	i.RecipientStreet = data.RecipientStreet
+	i.RecipientCity = data.RecipientCity
+	i.RecipientZipcode = data.RecipientZipcode
+	i.RecipientCountry = data.RecipientCountry
+	i.Currency = data.Currency
 
-	if invoiceData.Recipient != nil {
-		recipient := identity.NewDIDFromBytes(invoiceData.Recipient)
+	decs, err := documents.BytesToDecimals(data.GrossAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	if err != nil {
+		return err
+	}
+
+	i.GrossAmount = decs[0]
+	i.NetAmount = decs[1]
+	i.TaxAmount = decs[2]
+	i.TaxRate = decs[3]
+
+	if data.Recipient != nil {
+		recipient := identity.NewDIDFromBytes(data.Recipient)
 		i.Recipient = &recipient
 	}
 
-	if invoiceData.Sender != nil {
-		sender := identity.NewDIDFromBytes(invoiceData.Sender)
+	if data.Sender != nil {
+		sender := identity.NewDIDFromBytes(data.Sender)
 		i.Sender = &sender
 	}
 
-	if invoiceData.Payee != nil {
-		payee := identity.NewDIDFromBytes(invoiceData.Payee)
+	if data.Payee != nil {
+		payee := identity.NewDIDFromBytes(data.Payee)
 		i.Payee = &payee
 	}
 
-	i.Comment = invoiceData.Comment
-	i.DueDate = invoiceData.DueDate
-	i.DateCreated = invoiceData.DateCreated
-	i.ExtraData = invoiceData.ExtraData
+	i.Comment = data.Comment
+	i.DueDate = data.DueDate
+	i.DateCreated = data.DateCreated
+	i.ExtraData = data.ExtraData
+	return nil
 }
 
 // getInvoiceSalts returns the invoice salts. Initialises if not present
@@ -278,7 +298,11 @@ func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.S
 
 // PackCoreDocument packs the Invoice into a CoreDocument.
 func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
-	invData := i.createP2PProtobuf()
+	invData, err := i.createP2PProtobuf()
+	if err != nil {
+		return cd, err
+	}
+
 	data, err := proto.Marshal(invData)
 	if err != nil {
 		return cd, errors.New("couldn't serialise InvoiceData: %v", err)
@@ -310,7 +334,10 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	i.loadFromP2PProtobuf(invoiceData)
+	if err := i.loadFromP2PProtobuf(invoiceData); err != nil {
+		return err
+	}
+
 	if cd.EmbeddedDataSalts == nil {
 		i.InvoiceSalts, err = i.getInvoiceSalts(invoiceData)
 		if err != nil {
@@ -353,7 +380,11 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	invProto := i.createP2PProtobuf()
+	invProto, err := i.createP2PProtobuf()
+	if err != nil {
+		return nil, err
+	}
+
 	salts, err := i.getInvoiceSalts(invProto)
 	if err != nil {
 		return nil, err
@@ -455,4 +486,19 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	rules := i.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	return documents.ValidateTransitions(rules, cf)
+}
+
+// AddUpdateLog adds a log to the model to persist an update related meta data such as author
+func (i *Invoice) AddUpdateLog(account identity.DID) (err error) {
+	return i.CoreDocument.AddUpdateLog(account)
+}
+
+// Author is the author of the document version represented by the model
+func (i *Invoice) Author() identity.DID {
+	return i.CoreDocument.Author()
+}
+
+// Timestamp is the time of update in UTC of the document version represented by the model
+func (i *Invoice) Timestamp() (time.Time, error) {
+	return i.CoreDocument.Timestamp()
 }

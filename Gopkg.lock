@@ -57,18 +57,19 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:ead823956932d64e6271256398aa0753b03d4a6dec8f522847841ca33b98f289"
+  digest = "1:4dc9d52a48657d4eac97abd9743dd1f1ca1b00e93ff5c751cf0b9cb8e90dd41e"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "be1a93f627115fcf9978a85c4b6b8f08adf87f35"
+  revision = "c5e55d16c4cfe058ca641d2a746a665f277f0c9f"
 
 [[projects]]
-  digest = "1:2effe50347612927dc56deed8bcd6cc9a9f9414a87d993466dfcba182fce96b2"
+  digest = "1:b31786ab6d78035184e27383d413db6cd271cfd8457b0df8a2f1762240f411c5"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
     "gen/go/coredocument",
+    "gen/go/entity",
     "gen/go/errors",
     "gen/go/invoice",
     "gen/go/notification",
@@ -76,14 +77,14 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "5867af724d7bf238bb69a0432a16529603a29746"
+  revision = "786c9a69a4f74a2e1d03c2b46071a73cffe23403"
 
 [[projects]]
-  digest = "1:6c7200e9917373ebe3c248ca47f9ee8a7924aa003c137cbfee2c763d7bc0643f"
+  digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "fb11151a227ae41660e15f6c10e2e22eb1556531"
+  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
   digest = "1:3ddba8bdf84eff2bedcc8e262cb87370d1301cb8ca7a3503be29a6eae25bd037"
@@ -1054,6 +1055,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:81e02c4edb639c80559c0650f9401d3e2dcc3256d1fa215382bb7c83c1db9126"
+  name = "github.com/shopspring/decimal"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
+  version = "1.1.0"
+
+[[projects]]
   digest = "1:919bb3aa6d9d0b67648c219fa4925312bc3c2872da19e818fa769e9c97a2b643"
   name = "github.com/spaolacci/murmur3"
   packages = ["."]
@@ -1489,6 +1498,7 @@
     "github.com/centrifuge/centrifuge-ethereum-contracts",
     "github.com/centrifuge/centrifuge-protobufs/documenttypes",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument",
+    "github.com/centrifuge/centrifuge-protobufs/gen/go/entity",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/notification",
@@ -1545,6 +1555,7 @@
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",
+    "github.com/shopspring/decimal",
     "github.com/spf13/cast",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",

@@ -8,6 +8,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -27,6 +28,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var did = testingidentity.GenerateRandomDID()
+
 type MockMessenger struct {
 	mock.Mock
 }
@@ -42,70 +45,61 @@ func (mm *MockMessenger) SendMessage(ctx context.Context, p libp2pPeer.ID, pmes 
 }
 
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
-	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
-	idService := getIDMocks(ctx, centrifugeId)
+	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-
-	_, cd := createCDWithEmbeddedPO(t)
-
+	cd, _ := createCDWithEmbeddedPO(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(nil, errors.New("some error"))
-	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(nil, errors.New("some error"))
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
 }
 
 func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
-	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-	assert.NoError(t, err)
-
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
-	idService := getIDMocks(ctx, centrifugeId)
+	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	_, cd := createCDWithEmbeddedPO(t)
-
+	cd, _ := createCDWithEmbeddedPO(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(testClient.createSignatureResp("", nil), nil)
-	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp("", nil), nil)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
 	assert.Nil(t, resp, "must be nil")
 }
 
-func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
-	centrifugeId, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)
 	c = updateKeys(c)
 	ctx := testingconfig.CreateAccountContext(t, c)
-	idService := getIDMocks(ctx, centrifugeId)
+	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	_, cd := createCDWithEmbeddedPO(t)
-
+	cd, _ := createCDWithEmbeddedPO(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
 	randomBytes := utils.RandomSlice(identity.DIDLength)
 	signature := &coredocumentpb.Signature{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&centrifugeId)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
-	resp, err := testClient.getSignatureForDocument(ctx, cd, centrifugeId)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
 
 	m.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
@@ -114,10 +108,10 @@ func TestGetSignatureForDocument_fail_centrifugeId(t *testing.T) {
 
 }
 
-func getIDMocks(ctx context.Context, centrifugeId identity.DID) *testingcommons.MockIdentityService {
+func getIDMocks(ctx context.Context, did identity.DID) *testingcommons.MockIdentityService {
 	idService := &testingcommons.MockIdentityService{}
-	idService.On("CurrentP2PKey", centrifugeId).Return("5dsgvJGnvAfiR3K6HCBc4hcokSfmjj", nil)
-	idService.On("Exists", ctx, centrifugeId).Return(nil)
+	idService.On("CurrentP2PKey", did).Return("5dsgvJGnvAfiR3K6HCBc4hcokSfmjj", nil)
+	idService.On("Exists", ctx, did).Return(nil)
 	return idService
 }
 
@@ -143,17 +137,34 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	return &protocolpb.P2PEnvelope{Body: reqB}
 }
 
-func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
 	po := new(purchaseorder.PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), testingidentity.GenerateRandomDID().String())
+	data := testingdocuments.CreatePOPayload()
+	if len(collaborators) > 0 {
+		var cs []string
+		for _, c := range collaborators {
+			cs = append(cs, c.String())
+		}
+		data.Collaborators = cs
+	}
+	err := po.InitPurchaseOrderInput(data, cid.String())
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateSigningRoot()
+	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
+
+	acc, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(sr)
+	assert.NoError(t, err)
+
+	po.AppendSignatures(sig)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
-	return po, cd
+
+	return cd, po
 }

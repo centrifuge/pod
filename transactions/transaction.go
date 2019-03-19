@@ -110,6 +110,9 @@ type Transaction struct {
 	// Logs are transaction log messages
 	Logs      []Log
 	CreatedAt time.Time
+
+	// Values retrieved from events
+	Values map[string]TXValue
 }
 
 // JSON returns json marshaled transaction.
@@ -136,7 +139,15 @@ func NewTransaction(identity identity.DID, description string) *Transaction {
 		Status:      Pending,
 		TaskStatus:  make(map[string]Status),
 		CreatedAt:   time.Now().UTC(),
+		Values:      make(map[string]TXValue),
 	}
+}
+
+// TXValue holds the key and value filtered by the transaction
+type TXValue struct {
+	Key    string
+	KeyIdx int
+	Value  []byte
 }
 
 // Config is the config interface for transactions package
@@ -149,6 +160,7 @@ type Manager interface {
 	// ExecuteWithinTX executes the given unit of work within a transaction
 	ExecuteWithinTX(ctx context.Context, accountID identity.DID, existingTxID TxID, desc string, work func(accountID identity.DID, txID TxID, txMan Manager, err chan<- error)) (txID TxID, done chan bool, err error)
 	GetTransaction(accountID identity.DID, id TxID) (*Transaction, error)
+	UpdateTransactionWithValue(accountID identity.DID, id TxID, key string, value []byte) error
 	UpdateTaskStatus(accountID identity.DID, id TxID, status Status, taskName, message string) error
 	GetTransactionStatus(accountID identity.DID, id TxID) (*transactionspb.TransactionStatusResponse, error)
 	WaitForTransaction(accountID identity.DID, txID TxID) error

@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -146,7 +149,8 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
 	inv := new(Invoice)
-	inv.loadFromP2PProtobuf(&invData)
+	err := inv.loadFromP2PProtobuf(&invData)
+	assert.NoError(t, err)
 
 	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
@@ -268,6 +272,63 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.True(t, valid)
 }
 
+func TestInvoice_CreateNFTProofs(t *testing.T) {
+	tc, err := configstore.NewAccount("main", cfg)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = defaultDID[:]
+	assert.NoError(t, err)
+	i := new(Invoice)
+	invPayload := testingdocuments.CreateInvoicePayload()
+	invPayload.Data.DueDate = &timestamp.Timestamp{Seconds: time.Now().Unix()}
+	invPayload.Data.InvoiceStatus = "unpaid"
+	invPayload.Collaborators = []string{defaultDID.String()}
+
+	err = i.InitInvoiceInput(invPayload, defaultDID.String())
+	assert.NoError(t, err)
+	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
+	assert.NoError(t, err)
+	i.AppendSignatures(sig)
+	_, err = i.CalculateDataRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateSigningRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	keys, err := tc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proof, err := i.CreateProofs(proofFields)
+	assert.Nil(t, err)
+	assert.NotNil(t, proof)
+	tree, err := i.CoreDocument.DocumentRootTree()
+	assert.NoError(t, err)
+	assert.Len(t, proofFields, 8)
+
+	// Validate invoice_gross_amount
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate signing_root
+	valid, err = tree.ValidateProof(proof[5])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate signature
+	valid, err = tree.ValidateProof(proof[6])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate next_version
+	valid, err = tree.ValidateProof(proof[7])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+}
+
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
 	i := createInvoice(t)
 	_, err := i.CreateProofs([]string{"nonexisting"})
@@ -280,7 +341,11 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
-	i := Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	na := new(documents.Decimal)
+	assert.NoError(t, na.SetString("2"))
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("2"))
+	i := Invoice{InvoiceNumber: "3213121", NetAmount: na, GrossAmount: ga}
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
@@ -318,7 +383,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldInv := model.(*Invoice)
 	data := oldInv.getClientData()
-	data.GrossAmount = 50
+	data.GrossAmount = "50"
 	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
 	assert.NoError(t, err)
 
@@ -339,7 +404,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldInv = model.(*Invoice)
 	data = oldInv.getClientData()
-	data.GrossAmount = 55
+	data.GrossAmount = "55"
 	data.Currency = "INR"
 	err = inv.PrepareNewVersion(inv, data, nil)
 	assert.NoError(t, err)

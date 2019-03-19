@@ -178,7 +178,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, ncd.Document.Roles[1].Collaborators[1], c2[:])
 }
 
-func TestGetSigningProofHashes(t *testing.T) {
+func TestGetSigningProofHash(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
@@ -197,11 +197,10 @@ func TestGetSigningProofHashes(t *testing.T) {
 	_, err = cd.CalculateDocumentRoot()
 	assert.Nil(t, err)
 
-	hashes, err := cd.GetSigningRootProof()
+	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(hashes))
 
-	valid, err := proofs.ValidateProofSortedHashes(cd.Document.SigningRoot, hashes, cd.Document.DocumentRoot, sha256.New())
+	valid, err := proofs.ValidateProofSortedHashes(cd.Document.SigningRoot, [][]byte{signatureTree.RootHash()}, cd.Document.DocumentRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -288,15 +287,15 @@ func TestGetDocumentRootTree(t *testing.T) {
 	cd.Document.SigningRoot = utils.RandomSlice(32)
 	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
-	_, leaf := tree.GetLeafByProperty(SigningRootField)
+	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField))
 	assert.NotNil(t, leaf)
 	assert.Equal(t, cd.Document.SigningRoot, leaf.Hash)
 
 	// Get signaturesLeaf
-	_, signaturesLeaf := tree.GetLeafByProperty(SignaturesRootField)
+	_, signaturesLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField))
 	assert.NotNil(t, signaturesLeaf)
-	assert.Equal(t, SignaturesRootField, signaturesLeaf.Property.ReadableName())
-	assert.Equal(t, compactProperties(SignaturesRootField), signaturesLeaf.Property.CompactName())
+	assert.Equal(t, fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), signaturesLeaf.Property.ReadableName())
+	assert.Equal(t, append(compactProperties(DRTreePrefix), compactProperties(SignaturesRootField)...), signaturesLeaf.Property.CompactName())
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {

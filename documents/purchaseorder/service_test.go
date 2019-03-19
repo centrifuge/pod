@@ -4,6 +4,7 @@ package purchaseorder
 
 import (
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
@@ -36,10 +37,11 @@ type mockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
+	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
+	anchoredTime, _ = args.Get(1).(time.Time)
+	return docRoot, anchoredTime, args.Error(2)
 }
 
 func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service) {
@@ -68,7 +70,7 @@ func TestService_Update(t *testing.T) {
 	// success
 	data, err := poSrv.DerivePurchaseOrderData(po)
 	assert.Nil(t, err)
-	data.OrderAmount = 100
+	data.OrderAmount = "100"
 	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
@@ -211,7 +213,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	po, ok := m.(*PurchaseOrder)
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, po.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, po.OrderAmount, int64(42))
+	assert.Equal(t, po.OrderAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {

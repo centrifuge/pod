@@ -1,4 +1,4 @@
-// +build unit integration
+// +build unit integration testworld
 
 package testingdocuments
 
@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
@@ -41,12 +42,12 @@ func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (do
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Model) (*coredocumentpb.Signature, error) {
+func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
 	args := m.Called()
 	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
 }
 
-func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, senderID []byte) error {
+func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
 	args := m.Called()
 	return args.Error(0)
 }

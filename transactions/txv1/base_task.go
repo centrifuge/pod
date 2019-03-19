@@ -38,6 +38,11 @@ func (b *BaseTask) ParseTransactionID(taskTypeName string, kwargs map[string]int
 
 // UpdateTransaction add a new log and updates the status of the transaction based on the error.
 func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string, err error) error {
+	return b.UpdateTransactionWithValue(accountID, taskTypeName, err, nil)
+}
+
+// UpdateTransactionWithValue add a new log and updates the status of the transaction based on the error and adds a value to the tx
+func (b *BaseTask) UpdateTransactionWithValue(accountID identity.DID, taskTypeName string, err error, txValue *transactions.TXValue) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}
@@ -49,5 +54,11 @@ func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string
 	}
 
 	log.Infof("Task %s successful for transaction:%v\n", taskTypeName, b.TxID.String())
+	if txValue != nil {
+		err = b.TxManager.UpdateTransactionWithValue(accountID, b.TxID, txValue.Key, txValue.Value)
+		if err != nil {
+			return err
+		}
+	}
 	return b.TxManager.UpdateTaskStatus(accountID, b.TxID, transactions.Success, taskTypeName, "")
 }
