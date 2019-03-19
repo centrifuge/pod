@@ -4,11 +4,14 @@ package nft_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -76,6 +79,8 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 	invSrv := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
+	tm, err := utils.ToTimestamp(dueDate)
+	assert.NoError(t, err)
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
@@ -85,7 +90,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 			GrossAmount:   "123",
 			NetAmount:     "123",
 			Currency:      "EUR",
-			DueDate:       utils.ToTimestamp(dueDate),
+			DueDate:       tm,
 		},
 	})
 	assert.NoError(t, err, "should not error out when creating invoice model")
@@ -125,11 +130,20 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
+	acc, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	accDIDBytes, err := acc.GetIdentityID()
+	assert.NoError(t, err)
+	keys, err := acc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
 		SubmitTokenProof:         true,
@@ -176,11 +190,20 @@ func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
 
 func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	acc, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+	accDIDBytes, err := acc.GetIdentityID()
+	assert.NoError(t, err)
+	keys, err := acc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,

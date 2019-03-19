@@ -184,12 +184,12 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	signingRootProof, err := model.GetSigningRootProof()
+	signingRootProof, err := model.GetSignaturesRootHash()
 	if err != nil {
 		return errors.New("failed to get signing root proof: %v", err)
 	}
 
-	signingRootProofHashes, err := utils.ConvertProofForEthereum(signingRootProof)
+	signingRootProofHashes, err := utils.ConvertProofForEthereum([][]byte{signingRootProof})
 	if err != nil {
 		return errors.New("failed to get signing root proof in ethereum format: %v", err)
 	}

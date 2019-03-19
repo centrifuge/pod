@@ -92,7 +92,9 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Equal(t, txs.TransactionId, txn.ID.String())
 	assert.Equal(t, string(transactions.Pending), txs.Status)
 	assert.Empty(t, txs.Message)
-	assert.Equal(t, utils.ToTimestamp(txn.CreatedAt), txs.LastUpdated)
+	tm, err := utils.ToTimestamp(txn.CreatedAt)
+	assert.NoError(t, err)
+	assert.Equal(t, tm, txs.LastUpdated)
 
 	log := transactions.NewLog("action", "some message")
 	txn.Logs = append(txn.Logs, log)
@@ -106,7 +108,9 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Equal(t, txs.TransactionId, txn.ID.String())
 	assert.Equal(t, string(transactions.Success), txs.Status)
 	assert.Equal(t, log.Message, txs.Message)
-	assert.Equal(t, utils.ToTimestamp(log.CreatedAt), txs.LastUpdated)
+	tm, err = utils.ToTimestamp(log.CreatedAt)
+	assert.NoError(t, err)
+	assert.Equal(t, tm, txs.LastUpdated)
 }
 
 func TestService_CreateTransaction(t *testing.T) {

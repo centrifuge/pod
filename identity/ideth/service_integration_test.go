@@ -14,9 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/identity"
 
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -30,7 +27,7 @@ import (
 )
 
 func getTestKey() id.KeyDID {
-	return id.NewKey(utils.RandomByte32(), utils.ByteSliceToBigInt([]byte{123}), utils.ByteSliceToBigInt([]byte{123}))
+	return id.NewKey(utils.RandomByte32(), utils.ByteSliceToBigInt([]byte{123}), utils.ByteSliceToBigInt([]byte{123}), 0)
 }
 
 func initIdentity() id.ServiceDID {
@@ -101,53 +98,6 @@ func TestServiceAddKey_fail(t *testing.T) {
 
 }
 
-func TestService_IsSignedWithPurpose(t *testing.T) {
-	// create keys
-	pk, sk, err := secp256k1.GenerateSigningKeyPair()
-	address := common.HexToAddress(secp256k1.GetAddress(pk))
-	address32Bytes := utils.AddressTo32Bytes(address)
-	assert.Nil(t, err, "should convert a address to 32 bytes")
-
-	// purpose
-	purpose := utils.ByteSliceToBigInt([]byte{123})
-	assert.Nil(t, err, "should generate signing key pair")
-
-	// deploy identity and add key with purpose
-	did := deployIdentityContract(t)
-	aCtx := getTestDIDContext(t, *did)
-	idSrv := initIdentity()
-	key := id.NewKey(address32Bytes, purpose, utils.ByteSliceToBigInt([]byte{123}))
-
-	err = idSrv.AddKey(aCtx, key)
-	assert.Nil(t, err, "add key should be successful")
-
-	// sign a msg with keypair
-	msg := utils.RandomByte32()
-	signature, err := secp256k1.SignEthereum(msg[:], sk)
-	assert.Nil(t, err, "should sign a message")
-
-	//correct signature and purpose
-	signed, err := idSrv.IsSignedWithPurpose(*did, msg, signature, purpose)
-	assert.Nil(t, err, "sign verify should not throw an error")
-	assert.True(t, signed, "signature should be correct")
-
-	//false purpose
-	falsePurpose := utils.ByteSliceToBigInt([]byte{42})
-	signed, err = idSrv.IsSignedWithPurpose(*did, msg, signature, falsePurpose)
-	assert.Nil(t, err, "sign verify should not throw an error")
-	assert.False(t, signed, "signature should be false (wrong purpose)")
-
-	//false keypair
-	_, sk2, _ := secp256k1.GenerateSigningKeyPair()
-	signature, err = secp256k1.SignEthereum(msg[:], sk2)
-	assert.Nil(t, err, "should sign a message")
-	signed, err = idSrv.IsSignedWithPurpose(*did, msg, signature, purpose)
-	assert.Nil(t, err, "sign verify should not throw an error")
-	assert.False(t, signed, "signature should be wrong key pair")
-	resetDefaultCentID()
-
-}
-
 func TestService_AddMultiPurposeKey(t *testing.T) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
@@ -179,14 +129,15 @@ func TestService_RevokeKey(t *testing.T) {
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	response, err := idSrv.GetKey(*did, testKey.GetKey())
-	assert.Equal(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be not revoked")
+	assert.Equal(t, uint32(0), response.RevokedAt, "key should be not revoked")
 
-	idSrv.RevokeKey(aCtx, testKey.GetKey())
+	err = idSrv.RevokeKey(aCtx, testKey.GetKey())
+	assert.NoError(t, err)
 
 	//check if key is revoked
 	response, err = idSrv.GetKey(*did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
-	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "key should be revoked")
+	assert.NotEqual(t, uint32(0), response.RevokedAt, "key should be revoked")
 
 	resetDefaultCentID()
 }
@@ -269,7 +220,7 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
 
 	p2pKey := utils.RandomByte32()
 
-	testKey := id.NewKey(p2pKey, &(identity.KeyPurposeP2PDiscovery.Value), utils.ByteSliceToBigInt([]byte{123}))
+	testKey := id.NewKey(p2pKey, &(identity.KeyPurposeP2PDiscovery.Value), utils.ByteSliceToBigInt([]byte{123}), 0)
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	url, err := idSrv.GetClientP2PURL(*did)
