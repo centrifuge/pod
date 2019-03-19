@@ -54,7 +54,13 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := s.client.GetGethCallOpts(false)
 	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())
+	if err != nil {
+		return docRoot, anchoredTime, err
+	}
 	blk, err := s.client.GetEthClient().BlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
+	if err != nil || blk == nil {
+		return docRoot, anchoredTime, err
+	}
 	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), err
 }
 
