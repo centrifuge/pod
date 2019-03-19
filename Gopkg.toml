@@ -28,7 +28,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "786c9a69a4f74a2e1d03c2b46071a73cffe23403"
+  revision = "ef4b1ce4b74db439613563007c9d0dfd00c54e41"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
@@ -233,10 +233,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[override]]
   name = "github.com/whyrusleeping/go-smux-multistream"
   version = "2.0.2"
-
-[[override]]
-  name = "github.com/shopspring/decimal"
-  version = "1.1.0"
 
 [[override]]
   name = "github.com/whyrusleeping/go-smux-yamux"

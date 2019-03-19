@@ -98,7 +98,7 @@ type Model interface {
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
-	ATGranteeCanRead(ctx context.Context, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
+	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
 
 	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
 	AddUpdateLog(account identity.DID) error
