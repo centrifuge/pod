@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -57,9 +59,14 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	if err != nil {
 		return docRoot, anchoredTime, err
 	}
+
 	blk, err := s.client.GetEthClient().BlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
 	if err != nil || blk == nil {
 		return docRoot, anchoredTime, err
+	}
+
+	if blk == nil {
+		return docRoot, anchoredTime, errors.New("in GetAnchorDatablock data is nil")
 	}
 	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), err
 }
