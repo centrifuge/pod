@@ -389,7 +389,13 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
 	doc, err := docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
+	if err != nil {
+		return err
+	}
 	ts, err := doc.Timestamp()
+	if err != nil {
+		return err
+	}
 	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), &ts)
 	if err != nil {
 		return err

@@ -5,6 +5,9 @@ package documents
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -22,19 +25,17 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
-	"time"
 )
 
 type MockService struct {
 	Service
 	mock.Mock
 }
+
 func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
 	args := m.Called(documentID, version)
 	return args.Get(0).(Model), args.Error(1)
 }
-
 
 func TestReadACLs_initReadRules(t *testing.T) {
 	cd, err := newCoreDocument()
