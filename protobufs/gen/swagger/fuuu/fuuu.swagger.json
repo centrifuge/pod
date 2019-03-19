@@ -1,0 +1,366 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "fuuu/fuuu.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/entity": {
+      "post": {
+        "description": "Creates an entity",
+        "operationId": "Create",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityEntityCreatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entity/{identifier}": {
+      "get": {
+        "description": "Get the current entity",
+        "operationId": "Get",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      },
+      "put": {
+        "description": "Updates an entity",
+        "operationId": "Update",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityEntityUpdatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entity/{identifier}/{version}": {
+      "get": {
+        "description": "Get a specific version of an entity",
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "entityAddress": {
+      "type": "object",
+      "properties": {
+        "is_main": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_remit_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_pay_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "address_line1": {
+          "type": "string"
+        },
+        "address_line2": {
+          "type": "string"
+        }
+      }
+    },
+    "entityBankPaymentMethod": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "address": {
+          "$ref": "#/definitions/entityAddress"
+        },
+        "holder_name": {
+          "type": "string"
+        },
+        "bank_key": {
+          "type": "string"
+        },
+        "bank_account_number": {
+          "type": "string"
+        },
+        "supported_currency": {
+          "type": "string"
+        }
+      }
+    },
+    "entityContact": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "fax": {
+          "type": "string"
+        }
+      }
+    },
+    "entityCryptoPaymentMethod": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "to": {
+          "type": "string"
+        },
+        "chain_uri": {
+          "type": "string"
+        },
+        "supported_currency": {
+          "type": "string"
+        }
+      }
+    },
+    "entityEntityCreatePayload": {
+      "type": "object",
+      "properties": {
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data": {
+          "$ref": "#/definitions/entityEntityData"
+        }
+      }
+    },
+    "entityEntityData": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string",
+          "format": "byte"
+        },
+        "legal_name": {
+          "type": "string"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityAddress"
+          },
+          "title": "address"
+        },
+        "payment_details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityPaymentDetail"
+          },
+          "title": "tax information"
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityContact"
+          },
+          "title": "Entity contact list"
+        }
+      },
+      "title": "EntityData is the default entity schema"
+    },
+    "entityEntityResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/entityResponseHeader"
+        },
+        "data": {
+          "$ref": "#/definitions/entityEntityData"
+        }
+      }
+    },
+    "entityEntityUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data": {
+          "$ref": "#/definitions/entityEntityData"
+        }
+      }
+    },
+    "entityOtherPayment": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "pay_to": {
+          "type": "string"
+        },
+        "supported_currency": {
+          "type": "string"
+        }
+      }
+    },
+    "entityPaymentDetail": {
+      "type": "object",
+      "properties": {
+        "predefined": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "fields for bank accounts and ethereum wallets"
+        },
+        "bank_payment_method": {
+          "$ref": "#/definitions/entityBankPaymentMethod"
+        },
+        "crypto_payment_method": {
+          "$ref": "#/definitions/entityCryptoPaymentMethod"
+        },
+        "other_method": {
+          "$ref": "#/definitions/entityOtherPayment"
+        }
+      }
+    },
+    "entityResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version_id": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "transaction_id": {
+          "type": "string"
+        }
+      },
+      "title": "ResponseHeader contains a set of common fields for most document"
+    }
+  }
+}

@@ -27,7 +27,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type TransactionStatusRequest struct {
-	TransactionId        string   `protobuf:"bytes,1,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	TransactionId        string   `protobuf:"bytes,1,opt,name=transaction_id,json=transactionId" json:"transaction_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -65,10 +65,10 @@ func (m *TransactionStatusRequest) GetTransactionId() string {
 }
 
 type TransactionStatusResponse struct {
-	TransactionId        string               `protobuf:"bytes,1,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
-	Status               string               `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	Message              string               `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	LastUpdated          *timestamp.Timestamp `protobuf:"bytes,4,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
+	TransactionId        string               `protobuf:"bytes,1,opt,name=transaction_id,json=transactionId" json:"transaction_id,omitempty"`
+	Status               string               `protobuf:"bytes,2,opt,name=status" json:"status,omitempty"`
+	Message              string               `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`
+	LastUpdated          *timestamp.Timestamp `protobuf:"bytes,4,opt,name=last_updated,json=lastUpdated" json:"last_updated,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -139,9 +139,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// TransactionServiceClient is the client API for TransactionService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for TransactionService service
+
 type TransactionServiceClient interface {
 	GetTransactionStatus(ctx context.Context, in *TransactionStatusRequest, opts ...grpc.CallOption) (*TransactionStatusResponse, error)
 }
@@ -156,14 +155,15 @@ func NewTransactionServiceClient(cc *grpc.ClientConn) TransactionServiceClient {
 
 func (c *transactionServiceClient) GetTransactionStatus(ctx context.Context, in *TransactionStatusRequest, opts ...grpc.CallOption) (*TransactionStatusResponse, error) {
 	out := new(TransactionStatusResponse)
-	err := c.cc.Invoke(ctx, "/transactions.TransactionService/GetTransactionStatus", in, out, opts...)
+	err := grpc.Invoke(ctx, "/transactions.TransactionService/GetTransactionStatus", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// TransactionServiceServer is the server API for TransactionService service.
+// Server API for TransactionService service
+
 type TransactionServiceServer interface {
 	GetTransactionStatus(context.Context, *TransactionStatusRequest) (*TransactionStatusResponse, error)
 }

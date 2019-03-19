@@ -27,7 +27,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type GetRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -65,8 +65,8 @@ func (m *GetRequest) GetIdentifier() string {
 }
 
 type GetVersionRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Version              string   `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Version              string   `protobuf:"bytes,2,opt,name=version" json:"version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -111,8 +111,8 @@ func (m *GetVersionRequest) GetVersion() string {
 }
 
 type PurchaseOrderCreatePayload struct {
-	Collaborators        []string           `protobuf:"bytes,1,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
-	Data                 *PurchaseOrderData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Collaborators        []string           `protobuf:"bytes,1,rep,name=collaborators" json:"collaborators,omitempty"`
+	Data                 *PurchaseOrderData `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -157,9 +157,9 @@ func (m *PurchaseOrderCreatePayload) GetData() *PurchaseOrderData {
 }
 
 type PurchaseOrderUpdatePayload struct {
-	Identifier           string             `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Collaborators        []string           `protobuf:"bytes,2,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
-	Data                 *PurchaseOrderData `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Identifier           string             `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Collaborators        []string           `protobuf:"bytes,2,rep,name=collaborators" json:"collaborators,omitempty"`
+	Data                 *PurchaseOrderData `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -211,8 +211,8 @@ func (m *PurchaseOrderUpdatePayload) GetData() *PurchaseOrderData {
 }
 
 type PurchaseOrderResponse struct {
-	Header               *ResponseHeader    `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	Data                 *PurchaseOrderData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Header               *ResponseHeader    `protobuf:"bytes,1,opt,name=header" json:"header,omitempty"`
+	Data                 *PurchaseOrderData `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -258,11 +258,11 @@ func (m *PurchaseOrderResponse) GetData() *PurchaseOrderData {
 
 // ResponseHeader contains a set of common fields for most documents
 type ResponseHeader struct {
-	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
-	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
-	State                string   `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
-	Collaborators        []string `protobuf:"bytes,4,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
-	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId" json:"document_id,omitempty"`
+	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId" json:"version_id,omitempty"`
+	State                string   `protobuf:"bytes,3,opt,name=state" json:"state,omitempty"`
+	Collaborators        []string `protobuf:"bytes,4,rep,name=collaborators" json:"collaborators,omitempty"`
+	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId" json:"transaction_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -328,42 +328,42 @@ func (m *ResponseHeader) GetTransactionId() string {
 }
 
 type PurchaseOrderData struct {
-	PoStatus string `protobuf:"bytes,24,opt,name=po_status,json=poStatus,proto3" json:"po_status,omitempty"`
+	PoStatus string `protobuf:"bytes,24,opt,name=po_status,json=poStatus" json:"po_status,omitempty"`
 	// purchase order number or reference number
-	PoNumber string `protobuf:"bytes,1,opt,name=po_number,json=poNumber,proto3" json:"po_number,omitempty"`
+	PoNumber string `protobuf:"bytes,1,opt,name=po_number,json=poNumber" json:"po_number,omitempty"`
 	// name of the ordering company
-	OrderName string `protobuf:"bytes,2,opt,name=order_name,json=orderName,proto3" json:"order_name,omitempty"`
+	OrderName string `protobuf:"bytes,2,opt,name=order_name,json=orderName" json:"order_name,omitempty"`
 	// street and address details of the ordering company
-	OrderStreet  string `protobuf:"bytes,3,opt,name=order_street,json=orderStreet,proto3" json:"order_street,omitempty"`
-	OrderCity    string `protobuf:"bytes,4,opt,name=order_city,json=orderCity,proto3" json:"order_city,omitempty"`
-	OrderZipcode string `protobuf:"bytes,5,opt,name=order_zipcode,json=orderZipcode,proto3" json:"order_zipcode,omitempty"`
+	OrderStreet  string `protobuf:"bytes,3,opt,name=order_street,json=orderStreet" json:"order_street,omitempty"`
+	OrderCity    string `protobuf:"bytes,4,opt,name=order_city,json=orderCity" json:"order_city,omitempty"`
+	OrderZipcode string `protobuf:"bytes,5,opt,name=order_zipcode,json=orderZipcode" json:"order_zipcode,omitempty"`
 	// country ISO code of the ordering company of this purchase order
-	OrderCountry string `protobuf:"bytes,6,opt,name=order_country,json=orderCountry,proto3" json:"order_country,omitempty"`
+	OrderCountry string `protobuf:"bytes,6,opt,name=order_country,json=orderCountry" json:"order_country,omitempty"`
 	// name of the recipient company
-	RecipientName    string `protobuf:"bytes,7,opt,name=recipient_name,json=recipientName,proto3" json:"recipient_name,omitempty"`
-	RecipientStreet  string `protobuf:"bytes,8,opt,name=recipient_street,json=recipientStreet,proto3" json:"recipient_street,omitempty"`
-	RecipientCity    string `protobuf:"bytes,9,opt,name=recipient_city,json=recipientCity,proto3" json:"recipient_city,omitempty"`
-	RecipientZipcode string `protobuf:"bytes,10,opt,name=recipient_zipcode,json=recipientZipcode,proto3" json:"recipient_zipcode,omitempty"`
+	RecipientName    string `protobuf:"bytes,7,opt,name=recipient_name,json=recipientName" json:"recipient_name,omitempty"`
+	RecipientStreet  string `protobuf:"bytes,8,opt,name=recipient_street,json=recipientStreet" json:"recipient_street,omitempty"`
+	RecipientCity    string `protobuf:"bytes,9,opt,name=recipient_city,json=recipientCity" json:"recipient_city,omitempty"`
+	RecipientZipcode string `protobuf:"bytes,10,opt,name=recipient_zipcode,json=recipientZipcode" json:"recipient_zipcode,omitempty"`
 	// country ISO code of the receipient of this purchase order
-	RecipientCountry string `protobuf:"bytes,11,opt,name=recipient_country,json=recipientCountry,proto3" json:"recipient_country,omitempty"`
+	RecipientCountry string `protobuf:"bytes,11,opt,name=recipient_country,json=recipientCountry" json:"recipient_country,omitempty"`
 	// ISO currency code
-	Currency string `protobuf:"bytes,12,opt,name=currency,proto3" json:"currency,omitempty"`
+	Currency string `protobuf:"bytes,12,opt,name=currency" json:"currency,omitempty"`
 	// ordering gross amount including tax
-	OrderAmount string `protobuf:"bytes,13,opt,name=order_amount,json=orderAmount,proto3" json:"order_amount,omitempty"`
+	OrderAmount string `protobuf:"bytes,13,opt,name=order_amount,json=orderAmount" json:"order_amount,omitempty"`
 	// invoice amount excluding tax
-	NetAmount string `protobuf:"bytes,14,opt,name=net_amount,json=netAmount,proto3" json:"net_amount,omitempty"`
-	TaxAmount string `protobuf:"bytes,15,opt,name=tax_amount,json=taxAmount,proto3" json:"tax_amount,omitempty"`
-	TaxRate   string `protobuf:"bytes,16,opt,name=tax_rate,json=taxRate,proto3" json:"tax_rate,omitempty"`
-	Recipient string `protobuf:"bytes,17,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	Order     string `protobuf:"bytes,18,opt,name=order,proto3" json:"order,omitempty"`
+	NetAmount string `protobuf:"bytes,14,opt,name=net_amount,json=netAmount" json:"net_amount,omitempty"`
+	TaxAmount string `protobuf:"bytes,15,opt,name=tax_amount,json=taxAmount" json:"tax_amount,omitempty"`
+	TaxRate   string `protobuf:"bytes,16,opt,name=tax_rate,json=taxRate" json:"tax_rate,omitempty"`
+	Recipient string `protobuf:"bytes,17,opt,name=recipient" json:"recipient,omitempty"`
+	Order     string `protobuf:"bytes,18,opt,name=order" json:"order,omitempty"`
 	// contact or requester or purchaser at the ordering company
-	OrderContact string `protobuf:"bytes,19,opt,name=order_contact,json=orderContact,proto3" json:"order_contact,omitempty"`
-	Comment      string `protobuf:"bytes,20,opt,name=comment,proto3" json:"comment,omitempty"`
+	OrderContact string `protobuf:"bytes,19,opt,name=order_contact,json=orderContact" json:"order_contact,omitempty"`
+	Comment      string `protobuf:"bytes,20,opt,name=comment" json:"comment,omitempty"`
 	// requested delivery date
-	DeliveryDate *timestamp.Timestamp `protobuf:"bytes,21,opt,name=delivery_date,json=deliveryDate,proto3" json:"delivery_date,omitempty"`
+	DeliveryDate *timestamp.Timestamp `protobuf:"bytes,21,opt,name=delivery_date,json=deliveryDate" json:"delivery_date,omitempty"`
 	// purchase order date
-	DateCreated          *timestamp.Timestamp `protobuf:"bytes,22,opt,name=date_created,json=dateCreated,proto3" json:"date_created,omitempty"`
-	ExtraData            string               `protobuf:"bytes,23,opt,name=extra_data,json=extraData,proto3" json:"extra_data,omitempty"`
+	DateCreated          *timestamp.Timestamp `protobuf:"bytes,22,opt,name=date_created,json=dateCreated" json:"date_created,omitempty"`
+	ExtraData            string               `protobuf:"bytes,23,opt,name=extra_data,json=extraData" json:"extra_data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -579,9 +579,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// DocumentServiceClient is the client API for DocumentService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for DocumentService service
+
 type DocumentServiceClient interface {
 	Create(ctx context.Context, in *PurchaseOrderCreatePayload, opts ...grpc.CallOption) (*PurchaseOrderResponse, error)
 	Update(ctx context.Context, in *PurchaseOrderUpdatePayload, opts ...grpc.CallOption) (*PurchaseOrderResponse, error)
@@ -599,7 +598,7 @@ func NewDocumentServiceClient(cc *grpc.ClientConn) DocumentServiceClient {
 
 func (c *documentServiceClient) Create(ctx context.Context, in *PurchaseOrderCreatePayload, opts ...grpc.CallOption) (*PurchaseOrderResponse, error) {
 	out := new(PurchaseOrderResponse)
-	err := c.cc.Invoke(ctx, "/purchaseorder.DocumentService/Create", in, out, opts...)
+	err := grpc.Invoke(ctx, "/purchaseorder.DocumentService/Create", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -608,7 +607,7 @@ func (c *documentServiceClient) Create(ctx context.Context, in *PurchaseOrderCre
 
 func (c *documentServiceClient) Update(ctx context.Context, in *PurchaseOrderUpdatePayload, opts ...grpc.CallOption) (*PurchaseOrderResponse, error) {
 	out := new(PurchaseOrderResponse)
-	err := c.cc.Invoke(ctx, "/purchaseorder.DocumentService/Update", in, out, opts...)
+	err := grpc.Invoke(ctx, "/purchaseorder.DocumentService/Update", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -617,7 +616,7 @@ func (c *documentServiceClient) Update(ctx context.Context, in *PurchaseOrderUpd
 
 func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*PurchaseOrderResponse, error) {
 	out := new(PurchaseOrderResponse)
-	err := c.cc.Invoke(ctx, "/purchaseorder.DocumentService/GetVersion", in, out, opts...)
+	err := grpc.Invoke(ctx, "/purchaseorder.DocumentService/GetVersion", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -626,14 +625,15 @@ func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRe
 
 func (c *documentServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*PurchaseOrderResponse, error) {
 	out := new(PurchaseOrderResponse)
-	err := c.cc.Invoke(ctx, "/purchaseorder.DocumentService/Get", in, out, opts...)
+	err := grpc.Invoke(ctx, "/purchaseorder.DocumentService/Get", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DocumentServiceServer is the server API for DocumentService service.
+// Server API for DocumentService service
+
 type DocumentServiceServer interface {
 	Create(context.Context, *PurchaseOrderCreatePayload) (*PurchaseOrderResponse, error)
 	Update(context.Context, *PurchaseOrderUpdatePayload) (*PurchaseOrderResponse, error)

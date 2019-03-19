@@ -28,9 +28,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type UpdateAccessTokenPayload struct {
 	// The document which should contain the access token referenced below
-	DelegatingDocumentIdentifier string `protobuf:"bytes,1,opt,name=delegating_document_identifier,json=delegatingDocumentIdentifier,proto3" json:"delegating_document_identifier,omitempty"`
+	DelegatingDocumentIdentifier string `protobuf:"bytes,1,opt,name=delegating_document_identifier,json=delegatingDocumentIdentifier" json:"delegating_document_identifier,omitempty"`
 	// The access token to be appended to the indicated document above
-	AccessTokenParams    *AccessTokenParams `protobuf:"bytes,2,opt,name=access_token_params,json=accessTokenParams,proto3" json:"access_token_params,omitempty"`
+	AccessTokenParams    *AccessTokenParams `protobuf:"bytes,2,opt,name=access_token_params,json=accessTokenParams" json:"access_token_params,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -76,9 +76,9 @@ func (m *UpdateAccessTokenPayload) GetAccessTokenParams() *AccessTokenParams {
 
 type AccessTokenParams struct {
 	// The identity being granted access to the document
-	Grantee string `protobuf:"bytes,4,opt,name=grantee,proto3" json:"grantee,omitempty"`
+	Grantee string `protobuf:"bytes,4,opt,name=grantee" json:"grantee,omitempty"`
 	// Original identifier of the document
-	DocumentIdentifier   string   `protobuf:"bytes,2,opt,name=document_identifier,json=documentIdentifier,proto3" json:"document_identifier,omitempty"`
+	DocumentIdentifier   string   `protobuf:"bytes,2,opt,name=document_identifier,json=documentIdentifier" json:"document_identifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -123,9 +123,9 @@ func (m *AccessTokenParams) GetDocumentIdentifier() string {
 }
 
 type CreateDocumentProofRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Type                 string   `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	Fields               []string `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Type                 string   `protobuf:"bytes,2,opt,name=type" json:"type,omitempty"`
+	Fields               []string `protobuf:"bytes,3,rep,name=fields" json:"fields,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -178,9 +178,9 @@ func (m *CreateDocumentProofRequest) GetFields() []string {
 
 // ResponseHeader contains a set of common fields for most documents
 type ResponseHeader struct {
-	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
-	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
-	State                string   `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId" json:"document_id,omitempty"`
+	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId" json:"version_id,omitempty"`
+	State                string   `protobuf:"bytes,3,opt,name=state" json:"state,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -232,8 +232,8 @@ func (m *ResponseHeader) GetState() string {
 }
 
 type DocumentProof struct {
-	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	FieldProofs          []*Proof        `protobuf:"bytes,2,rep,name=field_proofs,json=fieldProofs,proto3" json:"field_proofs,omitempty"`
+	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header" json:"header,omitempty"`
+	FieldProofs          []*Proof        `protobuf:"bytes,2,rep,name=field_proofs,json=fieldProofs" json:"field_proofs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -278,12 +278,12 @@ func (m *DocumentProof) GetFieldProofs() []*Proof {
 }
 
 type Proof struct {
-	Property string `protobuf:"bytes,1,opt,name=property,proto3" json:"property,omitempty"`
-	Value    string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	Salt     string `protobuf:"bytes,3,opt,name=salt,proto3" json:"salt,omitempty"`
+	Property string `protobuf:"bytes,1,opt,name=property" json:"property,omitempty"`
+	Value    string `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Salt     string `protobuf:"bytes,3,opt,name=salt" json:"salt,omitempty"`
 	// hash is filled if value & salt are not available
-	Hash                 string   `protobuf:"bytes,4,opt,name=hash,proto3" json:"hash,omitempty"`
-	SortedHashes         []string `protobuf:"bytes,5,rep,name=sorted_hashes,json=sortedHashes,proto3" json:"sorted_hashes,omitempty"`
+	Hash                 string   `protobuf:"bytes,4,opt,name=hash" json:"hash,omitempty"`
+	SortedHashes         []string `protobuf:"bytes,5,rep,name=sorted_hashes,json=sortedHashes" json:"sorted_hashes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -349,10 +349,10 @@ func (m *Proof) GetSortedHashes() []string {
 }
 
 type CreateDocumentProofForVersionRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Type                 string   `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	Version              string   `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	Fields               []string `protobuf:"bytes,4,rep,name=fields,proto3" json:"fields,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Type                 string   `protobuf:"bytes,2,opt,name=type" json:"type,omitempty"`
+	Version              string   `protobuf:"bytes,3,opt,name=version" json:"version,omitempty"`
+	Fields               []string `protobuf:"bytes,4,rep,name=fields" json:"fields,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -428,9 +428,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// DocumentServiceClient is the client API for DocumentService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for DocumentService service
+
 type DocumentServiceClient interface {
 	CreateDocumentProof(ctx context.Context, in *CreateDocumentProofRequest, opts ...grpc.CallOption) (*DocumentProof, error)
 	CreateDocumentProofForVersion(ctx context.Context, in *CreateDocumentProofForVersionRequest, opts ...grpc.CallOption) (*DocumentProof, error)
@@ -446,7 +445,7 @@ func NewDocumentServiceClient(cc *grpc.ClientConn) DocumentServiceClient {
 
 func (c *documentServiceClient) CreateDocumentProof(ctx context.Context, in *CreateDocumentProofRequest, opts ...grpc.CallOption) (*DocumentProof, error) {
 	out := new(DocumentProof)
-	err := c.cc.Invoke(ctx, "/document.DocumentService/CreateDocumentProof", in, out, opts...)
+	err := grpc.Invoke(ctx, "/document.DocumentService/CreateDocumentProof", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -455,14 +454,15 @@ func (c *documentServiceClient) CreateDocumentProof(ctx context.Context, in *Cre
 
 func (c *documentServiceClient) CreateDocumentProofForVersion(ctx context.Context, in *CreateDocumentProofForVersionRequest, opts ...grpc.CallOption) (*DocumentProof, error) {
 	out := new(DocumentProof)
-	err := c.cc.Invoke(ctx, "/document.DocumentService/CreateDocumentProofForVersion", in, out, opts...)
+	err := grpc.Invoke(ctx, "/document.DocumentService/CreateDocumentProofForVersion", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DocumentServiceServer is the server API for DocumentService service.
+// Server API for DocumentService service
+
 type DocumentServiceServer interface {
 	CreateDocumentProof(context.Context, *CreateDocumentProofRequest) (*DocumentProof, error)
 	CreateDocumentProofForVersion(context.Context, *CreateDocumentProofForVersionRequest) (*DocumentProof, error)

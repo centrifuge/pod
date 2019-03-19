@@ -27,7 +27,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type GetAccountRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -65,7 +65,7 @@ func (m *GetAccountRequest) GetIdentifier() string {
 }
 
 type GetAllAccountResponse struct {
-	Data                 []*AccountData `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Data                 []*AccountData `protobuf:"bytes,1,rep,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -103,8 +103,8 @@ func (m *GetAllAccountResponse) GetData() []*AccountData {
 }
 
 type UpdateAccountRequest struct {
-	Identifier           string       `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Data                 *AccountData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Identifier           string       `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Data                 *AccountData `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -149,9 +149,9 @@ func (m *UpdateAccountRequest) GetData() *AccountData {
 }
 
 type EthereumAccount struct {
-	Address              string   `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Key                  string   `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	Password             string   `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	Address              string   `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
+	Key                  string   `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
+	Password             string   `protobuf:"bytes,3,opt,name=password" json:"password,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -203,8 +203,8 @@ func (m *EthereumAccount) GetPassword() string {
 }
 
 type KeyPair struct {
-	Pub                  string   `protobuf:"bytes,1,opt,name=pub,proto3" json:"pub,omitempty"`
-	Pvt                  string   `protobuf:"bytes,2,opt,name=pvt,proto3" json:"pvt,omitempty"`
+	Pub                  string   `protobuf:"bytes,1,opt,name=pub" json:"pub,omitempty"`
+	Pvt                  string   `protobuf:"bytes,2,opt,name=pvt" json:"pvt,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -249,12 +249,12 @@ func (m *KeyPair) GetPvt() string {
 }
 
 type AccountData struct {
-	EthAccount                       *EthereumAccount `protobuf:"bytes,1,opt,name=eth_account,json=ethAccount,proto3" json:"eth_account,omitempty"`
-	EthDefaultAccountName            string           `protobuf:"bytes,2,opt,name=eth_default_account_name,json=ethDefaultAccountName,proto3" json:"eth_default_account_name,omitempty"`
-	ReceiveEventNotificationEndpoint string           `protobuf:"bytes,3,opt,name=receive_event_notification_endpoint,json=receiveEventNotificationEndpoint,proto3" json:"receive_event_notification_endpoint,omitempty"`
-	IdentityId                       string           `protobuf:"bytes,4,opt,name=identity_id,json=identityId,proto3" json:"identity_id,omitempty"`
-	SigningKeyPair                   *KeyPair         `protobuf:"bytes,5,opt,name=signing_key_pair,json=signingKeyPair,proto3" json:"signing_key_pair,omitempty"`
-	P2PKeyPair                       *KeyPair         `protobuf:"bytes,7,opt,name=p2p_key_pair,json=p2pKeyPair,proto3" json:"p2p_key_pair,omitempty"`
+	EthAccount                       *EthereumAccount `protobuf:"bytes,1,opt,name=eth_account,json=ethAccount" json:"eth_account,omitempty"`
+	EthDefaultAccountName            string           `protobuf:"bytes,2,opt,name=eth_default_account_name,json=ethDefaultAccountName" json:"eth_default_account_name,omitempty"`
+	ReceiveEventNotificationEndpoint string           `protobuf:"bytes,3,opt,name=receive_event_notification_endpoint,json=receiveEventNotificationEndpoint" json:"receive_event_notification_endpoint,omitempty"`
+	IdentityId                       string           `protobuf:"bytes,4,opt,name=identity_id,json=identityId" json:"identity_id,omitempty"`
+	SigningKeyPair                   *KeyPair         `protobuf:"bytes,5,opt,name=signing_key_pair,json=signingKeyPair" json:"signing_key_pair,omitempty"`
+	P2PKeyPair                       *KeyPair         `protobuf:"bytes,7,opt,name=p2p_key_pair,json=p2pKeyPair" json:"p2p_key_pair,omitempty"`
 	XXX_NoUnkeyedLiteral             struct{}         `json:"-"`
 	XXX_unrecognized                 []byte           `json:"-"`
 	XXX_sizecache                    int32            `json:"-"`
@@ -343,9 +343,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// AccountServiceClient is the client API for AccountService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for AccountService service
+
 type AccountServiceClient interface {
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*AccountData, error)
 	GetAllAccounts(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetAllAccountResponse, error)
@@ -364,7 +363,7 @@ func NewAccountServiceClient(cc *grpc.ClientConn) AccountServiceClient {
 
 func (c *accountServiceClient) GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*AccountData, error) {
 	out := new(AccountData)
-	err := c.cc.Invoke(ctx, "/account.AccountService/GetAccount", in, out, opts...)
+	err := grpc.Invoke(ctx, "/account.AccountService/GetAccount", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +372,7 @@ func (c *accountServiceClient) GetAccount(ctx context.Context, in *GetAccountReq
 
 func (c *accountServiceClient) GetAllAccounts(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetAllAccountResponse, error) {
 	out := new(GetAllAccountResponse)
-	err := c.cc.Invoke(ctx, "/account.AccountService/GetAllAccounts", in, out, opts...)
+	err := grpc.Invoke(ctx, "/account.AccountService/GetAllAccounts", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +381,7 @@ func (c *accountServiceClient) GetAllAccounts(ctx context.Context, in *empty.Emp
 
 func (c *accountServiceClient) CreateAccount(ctx context.Context, in *AccountData, opts ...grpc.CallOption) (*AccountData, error) {
 	out := new(AccountData)
-	err := c.cc.Invoke(ctx, "/account.AccountService/CreateAccount", in, out, opts...)
+	err := grpc.Invoke(ctx, "/account.AccountService/CreateAccount", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +390,7 @@ func (c *accountServiceClient) CreateAccount(ctx context.Context, in *AccountDat
 
 func (c *accountServiceClient) GenerateAccount(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*AccountData, error) {
 	out := new(AccountData)
-	err := c.cc.Invoke(ctx, "/account.AccountService/GenerateAccount", in, out, opts...)
+	err := grpc.Invoke(ctx, "/account.AccountService/GenerateAccount", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -400,14 +399,15 @@ func (c *accountServiceClient) GenerateAccount(ctx context.Context, in *empty.Em
 
 func (c *accountServiceClient) UpdateAccount(ctx context.Context, in *UpdateAccountRequest, opts ...grpc.CallOption) (*AccountData, error) {
 	out := new(AccountData)
-	err := c.cc.Invoke(ctx, "/account.AccountService/UpdateAccount", in, out, opts...)
+	err := grpc.Invoke(ctx, "/account.AccountService/UpdateAccount", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// AccountServiceServer is the server API for AccountService service.
+// Server API for AccountService service
+
 type AccountServiceServer interface {
 	GetAccount(context.Context, *GetAccountRequest) (*AccountData, error)
 	GetAllAccounts(context.Context, *empty.Empty) (*GetAllAccountResponse, error)

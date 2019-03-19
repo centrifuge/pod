@@ -29,29 +29,29 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ConfigData struct {
-	StoragePath               string               `protobuf:"bytes,1,opt,name=storage_path,json=storagePath,proto3" json:"storage_path,omitempty"`
-	P2PPort                   int32                `protobuf:"varint,2,opt,name=p2p_port,json=p2pPort,proto3" json:"p2p_port,omitempty"`
-	P2PExternalIp             string               `protobuf:"bytes,3,opt,name=p2p_external_ip,json=p2pExternalIp,proto3" json:"p2p_external_ip,omitempty"`
-	P2PConnectionTimeout      *duration.Duration   `protobuf:"bytes,4,opt,name=p2p_connection_timeout,json=p2pConnectionTimeout,proto3" json:"p2p_connection_timeout,omitempty"`
-	ServerPort                int32                `protobuf:"varint,5,opt,name=server_port,json=serverPort,proto3" json:"server_port,omitempty"`
-	ServerAddress             string               `protobuf:"bytes,6,opt,name=server_address,json=serverAddress,proto3" json:"server_address,omitempty"`
-	NumWorkers                int32                `protobuf:"varint,7,opt,name=num_workers,json=numWorkers,proto3" json:"num_workers,omitempty"`
-	WorkerWaitTimeMs          int32                `protobuf:"varint,8,opt,name=worker_wait_time_ms,json=workerWaitTimeMs,proto3" json:"worker_wait_time_ms,omitempty"`
-	EthNodeUrl                string               `protobuf:"bytes,9,opt,name=eth_node_url,json=ethNodeUrl,proto3" json:"eth_node_url,omitempty"`
-	EthContextReadWaitTimeout *duration.Duration   `protobuf:"bytes,10,opt,name=eth_context_read_wait_timeout,json=ethContextReadWaitTimeout,proto3" json:"eth_context_read_wait_timeout,omitempty"`
-	EthContextWaitTimeout     *duration.Duration   `protobuf:"bytes,11,opt,name=eth_context_wait_timeout,json=ethContextWaitTimeout,proto3" json:"eth_context_wait_timeout,omitempty"`
-	EthIntervalRetry          *duration.Duration   `protobuf:"bytes,12,opt,name=eth_interval_retry,json=ethIntervalRetry,proto3" json:"eth_interval_retry,omitempty"`
-	EthMaxRetries             uint32               `protobuf:"varint,13,opt,name=eth_max_retries,json=ethMaxRetries,proto3" json:"eth_max_retries,omitempty"`
-	EthGasPrice               uint64               `protobuf:"varint,14,opt,name=eth_gas_price,json=ethGasPrice,proto3" json:"eth_gas_price,omitempty"`
-	EthGasLimit               uint64               `protobuf:"varint,15,opt,name=eth_gas_limit,json=ethGasLimit,proto3" json:"eth_gas_limit,omitempty"`
-	TxPoolEnabled             bool                 `protobuf:"varint,16,opt,name=tx_pool_enabled,json=txPoolEnabled,proto3" json:"tx_pool_enabled,omitempty"`
-	Network                   string               `protobuf:"bytes,17,opt,name=network,proto3" json:"network,omitempty"`
-	BootstrapPeers            []string             `protobuf:"bytes,18,rep,name=bootstrap_peers,json=bootstrapPeers,proto3" json:"bootstrap_peers,omitempty"`
-	NetworkId                 uint32               `protobuf:"varint,19,opt,name=network_id,json=networkId,proto3" json:"network_id,omitempty"`
-	MainIdentity              *account.AccountData `protobuf:"bytes,20,opt,name=main_identity,json=mainIdentity,proto3" json:"main_identity,omitempty"`
-	SmartContractAddresses    map[string]string    `protobuf:"bytes,21,rep,name=smart_contract_addresses,json=smartContractAddresses,proto3" json:"smart_contract_addresses,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	SmartContractBytecode     map[string]string    `protobuf:"bytes,23,rep,name=smart_contract_bytecode,json=smartContractBytecode,proto3" json:"smart_contract_bytecode,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	PprofEnabled              bool                 `protobuf:"varint,22,opt,name=pprof_enabled,json=pprofEnabled,proto3" json:"pprof_enabled,omitempty"`
+	StoragePath               string               `protobuf:"bytes,1,opt,name=storage_path,json=storagePath" json:"storage_path,omitempty"`
+	P2PPort                   int32                `protobuf:"varint,2,opt,name=p2p_port,json=p2pPort" json:"p2p_port,omitempty"`
+	P2PExternalIp             string               `protobuf:"bytes,3,opt,name=p2p_external_ip,json=p2pExternalIp" json:"p2p_external_ip,omitempty"`
+	P2PConnectionTimeout      *duration.Duration   `protobuf:"bytes,4,opt,name=p2p_connection_timeout,json=p2pConnectionTimeout" json:"p2p_connection_timeout,omitempty"`
+	ServerPort                int32                `protobuf:"varint,5,opt,name=server_port,json=serverPort" json:"server_port,omitempty"`
+	ServerAddress             string               `protobuf:"bytes,6,opt,name=server_address,json=serverAddress" json:"server_address,omitempty"`
+	NumWorkers                int32                `protobuf:"varint,7,opt,name=num_workers,json=numWorkers" json:"num_workers,omitempty"`
+	WorkerWaitTimeMs          int32                `protobuf:"varint,8,opt,name=worker_wait_time_ms,json=workerWaitTimeMs" json:"worker_wait_time_ms,omitempty"`
+	EthNodeUrl                string               `protobuf:"bytes,9,opt,name=eth_node_url,json=ethNodeUrl" json:"eth_node_url,omitempty"`
+	EthContextReadWaitTimeout *duration.Duration   `protobuf:"bytes,10,opt,name=eth_context_read_wait_timeout,json=ethContextReadWaitTimeout" json:"eth_context_read_wait_timeout,omitempty"`
+	EthContextWaitTimeout     *duration.Duration   `protobuf:"bytes,11,opt,name=eth_context_wait_timeout,json=ethContextWaitTimeout" json:"eth_context_wait_timeout,omitempty"`
+	EthIntervalRetry          *duration.Duration   `protobuf:"bytes,12,opt,name=eth_interval_retry,json=ethIntervalRetry" json:"eth_interval_retry,omitempty"`
+	EthMaxRetries             uint32               `protobuf:"varint,13,opt,name=eth_max_retries,json=ethMaxRetries" json:"eth_max_retries,omitempty"`
+	EthGasPrice               uint64               `protobuf:"varint,14,opt,name=eth_gas_price,json=ethGasPrice" json:"eth_gas_price,omitempty"`
+	EthGasLimit               uint64               `protobuf:"varint,15,opt,name=eth_gas_limit,json=ethGasLimit" json:"eth_gas_limit,omitempty"`
+	TxPoolEnabled             bool                 `protobuf:"varint,16,opt,name=tx_pool_enabled,json=txPoolEnabled" json:"tx_pool_enabled,omitempty"`
+	Network                   string               `protobuf:"bytes,17,opt,name=network" json:"network,omitempty"`
+	BootstrapPeers            []string             `protobuf:"bytes,18,rep,name=bootstrap_peers,json=bootstrapPeers" json:"bootstrap_peers,omitempty"`
+	NetworkId                 uint32               `protobuf:"varint,19,opt,name=network_id,json=networkId" json:"network_id,omitempty"`
+	MainIdentity              *account.AccountData `protobuf:"bytes,20,opt,name=main_identity,json=mainIdentity" json:"main_identity,omitempty"`
+	SmartContractAddresses    map[string]string    `protobuf:"bytes,21,rep,name=smart_contract_addresses,json=smartContractAddresses" json:"smart_contract_addresses,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	SmartContractBytecode     map[string]string    `protobuf:"bytes,23,rep,name=smart_contract_bytecode,json=smartContractBytecode" json:"smart_contract_bytecode,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	PprofEnabled              bool                 `protobuf:"varint,22,opt,name=pprof_enabled,json=pprofEnabled" json:"pprof_enabled,omitempty"`
 	XXX_NoUnkeyedLiteral      struct{}             `json:"-"`
 	XXX_unrecognized          []byte               `json:"-"`
 	XXX_sizecache             int32                `json:"-"`
@@ -256,9 +256,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// ConfigServiceClient is the client API for ConfigService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for ConfigService service
+
 type ConfigServiceClient interface {
 	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ConfigData, error)
 }
@@ -273,14 +272,15 @@ func NewConfigServiceClient(cc *grpc.ClientConn) ConfigServiceClient {
 
 func (c *configServiceClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ConfigData, error) {
 	out := new(ConfigData)
-	err := c.cc.Invoke(ctx, "/config.ConfigService/GetConfig", in, out, opts...)
+	err := grpc.Invoke(ctx, "/config.ConfigService/GetConfig", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ConfigServiceServer is the server API for ConfigService service.
+// Server API for ConfigService service
+
 type ConfigServiceServer interface {
 	GetConfig(context.Context, *empty.Empty) (*ConfigData, error)
 }

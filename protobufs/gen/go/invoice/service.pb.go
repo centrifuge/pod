@@ -27,7 +27,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type GetRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -65,8 +65,8 @@ func (m *GetRequest) GetIdentifier() string {
 }
 
 type GetVersionRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Version              string   `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Version              string   `protobuf:"bytes,2,opt,name=version" json:"version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -111,8 +111,8 @@ func (m *GetVersionRequest) GetVersion() string {
 }
 
 type InvoiceCreatePayload struct {
-	Collaborators        []string     `protobuf:"bytes,1,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
-	Data                 *InvoiceData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Collaborators        []string     `protobuf:"bytes,1,rep,name=collaborators" json:"collaborators,omitempty"`
+	Data                 *InvoiceData `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -157,9 +157,9 @@ func (m *InvoiceCreatePayload) GetData() *InvoiceData {
 }
 
 type InvoiceUpdatePayload struct {
-	Identifier           string       `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	Collaborators        []string     `protobuf:"bytes,2,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
-	Data                 *InvoiceData `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	Identifier           string       `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Collaborators        []string     `protobuf:"bytes,2,rep,name=collaborators" json:"collaborators,omitempty"`
+	Data                 *InvoiceData `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
@@ -211,8 +211,8 @@ func (m *InvoiceUpdatePayload) GetData() *InvoiceData {
 }
 
 type InvoiceResponse struct {
-	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	Data                 *InvoiceData    `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header" json:"header,omitempty"`
+	Data                 *InvoiceData    `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -258,11 +258,11 @@ func (m *InvoiceResponse) GetData() *InvoiceData {
 
 // ResponseHeader contains a set of common fields for most document
 type ResponseHeader struct {
-	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
-	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
-	State                string   `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
-	Collaborators        []string `protobuf:"bytes,4,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
-	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId" json:"document_id,omitempty"`
+	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId" json:"version_id,omitempty"`
+	State                string   `protobuf:"bytes,3,opt,name=state" json:"state,omitempty"`
+	Collaborators        []string `protobuf:"bytes,4,rep,name=collaborators" json:"collaborators,omitempty"`
+	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId" json:"transaction_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -328,39 +328,39 @@ func (m *ResponseHeader) GetTransactionId() string {
 }
 
 type InvoiceData struct {
-	InvoiceStatus string `protobuf:"bytes,25,opt,name=invoice_status,json=invoiceStatus,proto3" json:"invoice_status,omitempty"`
+	InvoiceStatus string `protobuf:"bytes,25,opt,name=invoice_status,json=invoiceStatus" json:"invoice_status,omitempty"`
 	// invoice number or reference number
-	InvoiceNumber string `protobuf:"bytes,1,opt,name=invoice_number,json=invoiceNumber,proto3" json:"invoice_number,omitempty"`
+	InvoiceNumber string `protobuf:"bytes,1,opt,name=invoice_number,json=invoiceNumber" json:"invoice_number,omitempty"`
 	// name of the sender company
-	SenderName string `protobuf:"bytes,3,opt,name=sender_name,json=senderName,proto3" json:"sender_name,omitempty"`
+	SenderName string `protobuf:"bytes,3,opt,name=sender_name,json=senderName" json:"sender_name,omitempty"`
 	// street and address details of the sender company
-	SenderStreet  string `protobuf:"bytes,4,opt,name=sender_street,json=senderStreet,proto3" json:"sender_street,omitempty"`
-	SenderCity    string `protobuf:"bytes,5,opt,name=sender_city,json=senderCity,proto3" json:"sender_city,omitempty"`
-	SenderZipcode string `protobuf:"bytes,6,opt,name=sender_zipcode,json=senderZipcode,proto3" json:"sender_zipcode,omitempty"`
+	SenderStreet  string `protobuf:"bytes,4,opt,name=sender_street,json=senderStreet" json:"sender_street,omitempty"`
+	SenderCity    string `protobuf:"bytes,5,opt,name=sender_city,json=senderCity" json:"sender_city,omitempty"`
+	SenderZipcode string `protobuf:"bytes,6,opt,name=sender_zipcode,json=senderZipcode" json:"sender_zipcode,omitempty"`
 	// country ISO code of the sender of this invoice
-	SenderCountry string `protobuf:"bytes,7,opt,name=sender_country,json=senderCountry,proto3" json:"sender_country,omitempty"`
+	SenderCountry string `protobuf:"bytes,7,opt,name=sender_country,json=senderCountry" json:"sender_country,omitempty"`
 	// name of the recipient company
-	RecipientName    string `protobuf:"bytes,8,opt,name=recipient_name,json=recipientName,proto3" json:"recipient_name,omitempty"`
-	RecipientStreet  string `protobuf:"bytes,9,opt,name=recipient_street,json=recipientStreet,proto3" json:"recipient_street,omitempty"`
-	RecipientCity    string `protobuf:"bytes,10,opt,name=recipient_city,json=recipientCity,proto3" json:"recipient_city,omitempty"`
-	RecipientZipcode string `protobuf:"bytes,11,opt,name=recipient_zipcode,json=recipientZipcode,proto3" json:"recipient_zipcode,omitempty"`
+	RecipientName    string `protobuf:"bytes,8,opt,name=recipient_name,json=recipientName" json:"recipient_name,omitempty"`
+	RecipientStreet  string `protobuf:"bytes,9,opt,name=recipient_street,json=recipientStreet" json:"recipient_street,omitempty"`
+	RecipientCity    string `protobuf:"bytes,10,opt,name=recipient_city,json=recipientCity" json:"recipient_city,omitempty"`
+	RecipientZipcode string `protobuf:"bytes,11,opt,name=recipient_zipcode,json=recipientZipcode" json:"recipient_zipcode,omitempty"`
 	// country ISO code of the receipient of this invoice
-	RecipientCountry string `protobuf:"bytes,12,opt,name=recipient_country,json=recipientCountry,proto3" json:"recipient_country,omitempty"`
+	RecipientCountry string `protobuf:"bytes,12,opt,name=recipient_country,json=recipientCountry" json:"recipient_country,omitempty"`
 	// ISO currency code
-	Currency string `protobuf:"bytes,13,opt,name=currency,proto3" json:"currency,omitempty"`
+	Currency string `protobuf:"bytes,13,opt,name=currency" json:"currency,omitempty"`
 	// invoice amount including tax
-	GrossAmount string `protobuf:"bytes,14,opt,name=gross_amount,json=grossAmount,proto3" json:"gross_amount,omitempty"`
+	GrossAmount string `protobuf:"bytes,14,opt,name=gross_amount,json=grossAmount" json:"gross_amount,omitempty"`
 	// invoice amount excluding tax
-	NetAmount            string               `protobuf:"bytes,15,opt,name=net_amount,json=netAmount,proto3" json:"net_amount,omitempty"`
-	TaxAmount            string               `protobuf:"bytes,16,opt,name=tax_amount,json=taxAmount,proto3" json:"tax_amount,omitempty"`
-	TaxRate              string               `protobuf:"bytes,17,opt,name=tax_rate,json=taxRate,proto3" json:"tax_rate,omitempty"`
-	Recipient            string               `protobuf:"bytes,18,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	Sender               string               `protobuf:"bytes,19,opt,name=sender,proto3" json:"sender,omitempty"`
-	Payee                string               `protobuf:"bytes,20,opt,name=payee,proto3" json:"payee,omitempty"`
-	Comment              string               `protobuf:"bytes,21,opt,name=comment,proto3" json:"comment,omitempty"`
-	DueDate              *timestamp.Timestamp `protobuf:"bytes,22,opt,name=due_date,json=dueDate,proto3" json:"due_date,omitempty"`
-	DateCreated          *timestamp.Timestamp `protobuf:"bytes,23,opt,name=date_created,json=dateCreated,proto3" json:"date_created,omitempty"`
-	ExtraData            string               `protobuf:"bytes,24,opt,name=extra_data,json=extraData,proto3" json:"extra_data,omitempty"`
+	NetAmount            string               `protobuf:"bytes,15,opt,name=net_amount,json=netAmount" json:"net_amount,omitempty"`
+	TaxAmount            string               `protobuf:"bytes,16,opt,name=tax_amount,json=taxAmount" json:"tax_amount,omitempty"`
+	TaxRate              string               `protobuf:"bytes,17,opt,name=tax_rate,json=taxRate" json:"tax_rate,omitempty"`
+	Recipient            string               `protobuf:"bytes,18,opt,name=recipient" json:"recipient,omitempty"`
+	Sender               string               `protobuf:"bytes,19,opt,name=sender" json:"sender,omitempty"`
+	Payee                string               `protobuf:"bytes,20,opt,name=payee" json:"payee,omitempty"`
+	Comment              string               `protobuf:"bytes,21,opt,name=comment" json:"comment,omitempty"`
+	DueDate              *timestamp.Timestamp `protobuf:"bytes,22,opt,name=due_date,json=dueDate" json:"due_date,omitempty"`
+	DateCreated          *timestamp.Timestamp `protobuf:"bytes,23,opt,name=date_created,json=dateCreated" json:"date_created,omitempty"`
+	ExtraData            string               `protobuf:"bytes,24,opt,name=extra_data,json=extraData" json:"extra_data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -576,9 +576,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// DocumentServiceClient is the client API for DocumentService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for DocumentService service
+
 type DocumentServiceClient interface {
 	Create(ctx context.Context, in *InvoiceCreatePayload, opts ...grpc.CallOption) (*InvoiceResponse, error)
 	Update(ctx context.Context, in *InvoiceUpdatePayload, opts ...grpc.CallOption) (*InvoiceResponse, error)
@@ -596,7 +595,7 @@ func NewDocumentServiceClient(cc *grpc.ClientConn) DocumentServiceClient {
 
 func (c *documentServiceClient) Create(ctx context.Context, in *InvoiceCreatePayload, opts ...grpc.CallOption) (*InvoiceResponse, error) {
 	out := new(InvoiceResponse)
-	err := c.cc.Invoke(ctx, "/invoice.DocumentService/Create", in, out, opts...)
+	err := grpc.Invoke(ctx, "/invoice.DocumentService/Create", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -605,7 +604,7 @@ func (c *documentServiceClient) Create(ctx context.Context, in *InvoiceCreatePay
 
 func (c *documentServiceClient) Update(ctx context.Context, in *InvoiceUpdatePayload, opts ...grpc.CallOption) (*InvoiceResponse, error) {
 	out := new(InvoiceResponse)
-	err := c.cc.Invoke(ctx, "/invoice.DocumentService/Update", in, out, opts...)
+	err := grpc.Invoke(ctx, "/invoice.DocumentService/Update", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -614,7 +613,7 @@ func (c *documentServiceClient) Update(ctx context.Context, in *InvoiceUpdatePay
 
 func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*InvoiceResponse, error) {
 	out := new(InvoiceResponse)
-	err := c.cc.Invoke(ctx, "/invoice.DocumentService/GetVersion", in, out, opts...)
+	err := grpc.Invoke(ctx, "/invoice.DocumentService/GetVersion", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -623,14 +622,15 @@ func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRe
 
 func (c *documentServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*InvoiceResponse, error) {
 	out := new(InvoiceResponse)
-	err := c.cc.Invoke(ctx, "/invoice.DocumentService/Get", in, out, opts...)
+	err := grpc.Invoke(ctx, "/invoice.DocumentService/Get", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DocumentServiceServer is the server API for DocumentService service.
+// Server API for DocumentService service
+
 type DocumentServiceServer interface {
 	Create(context.Context, *InvoiceCreatePayload) (*InvoiceResponse, error)
 	Update(context.Context, *InvoiceUpdatePayload) (*InvoiceResponse, error)

@@ -26,7 +26,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ResponseHeader struct {
-	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId" json:"transaction_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -65,17 +65,17 @@ func (m *ResponseHeader) GetTransactionId() string {
 
 type NFTMintRequest struct {
 	// Document identifier
-	Identifier string `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Identifier string `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
 	// The contract address of the registry where the token should be minted
-	RegistryAddress string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress,proto3" json:"registry_address,omitempty"`
-	DepositAddress  string   `protobuf:"bytes,3,opt,name=deposit_address,json=depositAddress,proto3" json:"deposit_address,omitempty"`
-	ProofFields     []string `protobuf:"bytes,4,rep,name=proof_fields,json=proofFields,proto3" json:"proof_fields,omitempty"`
+	RegistryAddress string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress" json:"registry_address,omitempty"`
+	DepositAddress  string   `protobuf:"bytes,3,opt,name=deposit_address,json=depositAddress" json:"deposit_address,omitempty"`
+	ProofFields     []string `protobuf:"bytes,4,rep,name=proof_fields,json=proofFields" json:"proof_fields,omitempty"`
 	// proof that nft is part of document
-	SubmitTokenProof bool `protobuf:"varint,5,opt,name=submit_token_proof,json=submitTokenProof,proto3" json:"submit_token_proof,omitempty"`
+	SubmitTokenProof bool `protobuf:"varint,5,opt,name=submit_token_proof,json=submitTokenProof" json:"submit_token_proof,omitempty"`
 	// proof that nft owner can access the document if nft_grant_access is true
-	SubmitNftOwnerAccessProof bool `protobuf:"varint,7,opt,name=submit_nft_owner_access_proof,json=submitNftOwnerAccessProof,proto3" json:"submit_nft_owner_access_proof,omitempty"`
+	SubmitNftOwnerAccessProof bool `protobuf:"varint,7,opt,name=submit_nft_owner_access_proof,json=submitNftOwnerAccessProof" json:"submit_nft_owner_access_proof,omitempty"`
 	// grant nft read access to the document
-	GrantNftAccess       bool     `protobuf:"varint,8,opt,name=grant_nft_access,json=grantNftAccess,proto3" json:"grant_nft_access,omitempty"`
+	GrantNftAccess       bool     `protobuf:"varint,8,opt,name=grant_nft_access,json=grantNftAccess" json:"grant_nft_access,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -155,8 +155,8 @@ func (m *NFTMintRequest) GetGrantNftAccess() bool {
 }
 
 type NFTMintResponse struct {
-	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	TokenId              string          `protobuf:"bytes,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
+	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header" json:"header,omitempty"`
+	TokenId              string          `protobuf:"bytes,2,opt,name=token_id,json=tokenId" json:"token_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -214,9 +214,8 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// NFTServiceClient is the client API for NFTService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// Client API for NFTService service
+
 type NFTServiceClient interface {
 	MintNFT(ctx context.Context, in *NFTMintRequest, opts ...grpc.CallOption) (*NFTMintResponse, error)
 }
@@ -231,14 +230,15 @@ func NewNFTServiceClient(cc *grpc.ClientConn) NFTServiceClient {
 
 func (c *nFTServiceClient) MintNFT(ctx context.Context, in *NFTMintRequest, opts ...grpc.CallOption) (*NFTMintResponse, error) {
 	out := new(NFTMintResponse)
-	err := c.cc.Invoke(ctx, "/nft.NFTService/MintNFT", in, out, opts...)
+	err := grpc.Invoke(ctx, "/nft.NFTService/MintNFT", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// NFTServiceServer is the server API for NFTService service.
+// Server API for NFTService service
+
 type NFTServiceServer interface {
 	MintNFT(context.Context, *NFTMintRequest) (*NFTMintResponse, error)
 }
