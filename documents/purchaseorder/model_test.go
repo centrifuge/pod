@@ -251,7 +251,11 @@ func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
 }
 
 func TestPOModel_getDocumentDataTree(t *testing.T) {
-	poModel := PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2}
+	na := new(documents.Decimal)
+	assert.NoError(t, na.SetString("2"))
+	oa := new(documents.Decimal)
+	assert.NoError(t, oa.SetString("2"))
+	poModel := PurchaseOrder{PoNumber: "3213121", NetAmount: na, OrderAmount: oa}
 	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po.po_number")
@@ -289,7 +293,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldPO := model.(*PurchaseOrder)
 	data := oldPO.getClientData()
-	data.OrderAmount = 50
+	data.OrderAmount = "50"
 	err = po.PrepareNewVersion(po, data, []string{id3.String()})
 	assert.NoError(t, err)
 
@@ -310,7 +314,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldPO = model.(*PurchaseOrder)
 	data = oldPO.getClientData()
-	data.OrderAmount = 55
+	data.OrderAmount = "55"
 	data.Currency = "INR"
 	err = po.PrepareNewVersion(po, data, nil)
 	assert.NoError(t, err)

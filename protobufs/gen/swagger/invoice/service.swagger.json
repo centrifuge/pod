@@ -196,21 +196,17 @@
         },
         "gross_amount": {
           "type": "string",
-          "format": "int64",
           "title": "invoice amount including tax"
         },
         "net_amount": {
           "type": "string",
-          "format": "int64",
           "title": "invoice amount excluding tax"
         },
         "tax_amount": {
-          "type": "string",
-          "format": "int64"
+          "type": "string"
         },
         "tax_rate": {
-          "type": "string",
-          "format": "int64"
+          "type": "string"
         },
         "recipient": {
           "type": "string"
