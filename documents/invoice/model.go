@@ -3,7 +3,6 @@ package invoice
 import (
 	"encoding/json"
 	"reflect"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -486,19 +485,4 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	rules := i.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	return documents.ValidateTransitions(rules, cf)
-}
-
-// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-func (i *Invoice) AddUpdateLog(account identity.DID) (err error) {
-	return i.CoreDocument.AddUpdateLog(account)
-}
-
-// Author is the author of the document version represented by the model
-func (i *Invoice) Author() identity.DID {
-	return i.CoreDocument.Author()
-}
-
-// Timestamp is the time of update in UTC of the document version represented by the model
-func (i *Invoice) Timestamp() (time.Time, error) {
-	return i.CoreDocument.Timestamp()
 }
