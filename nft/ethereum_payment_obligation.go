@@ -204,6 +204,17 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
+		// Check if tokenID exists in registry and owner is deposit address
+		owner, err := s.OwnerOf(req.RegistryAddress, tokenID[:])
+		if err != nil {
+			errOut <- err
+			return
+		}
+		if owner.Hex() != req.DepositAddress.Hex() {
+			errOut <- errors.New("Owner for tokenID %s should be %s, instead got %s", tokenID.String(), req.DepositAddress.Hex(), owner.Hex())
+			return
+		}
+
 		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
 
 		errOut <- nil

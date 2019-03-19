@@ -92,6 +92,7 @@ func (s *manager) ExecuteWithinTX(ctx context.Context, accountID identity.DID, e
 			if e == nil && transactions.TxIDEqual(existingTxID, transactions.NilTxID()) {
 				tempTx.Status = transactions.Success
 			} else if e != nil {
+				tempTx.Logs = append(tempTx.Logs, transactions.NewLog(desc, e.Error()))
 				tempTx.Status = transactions.Failed
 			}
 			e = s.saveTransaction(tempTx)
