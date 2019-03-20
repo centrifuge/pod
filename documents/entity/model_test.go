@@ -5,14 +5,13 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"testing"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"os"
+	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -45,6 +44,25 @@ var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var configService config.Service
 var defaultDID = testingidentity.GenerateRandomDID()
+
+
+var (
+	cid         = testingidentity.GenerateRandomDID()
+	centIDBytes = cid[:]
+	accountID   = cid[:]
+)
+
+type mockAnchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+	args := r.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
+	return docRoot, args.Error(1)
+}
+
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -153,8 +171,8 @@ func TestEntityModel_getClientData(t *testing.T) {
 	data := entity.getClientData()
 	assert.NotNil(t, data, "entity data should not be nil")
 	assert.Equal(t, data.Addresses, entityData.Addresses, "addresses should match")
-	assert.Equal(t, data.Contacts, entityData.Contacts, "contacts should match")
-	assert.Equal(t, data.LegalName, entityData.LegalName, "legal name should match")
+	assert.Equal(t, data.Contacts,entityData.Contacts, "contacts should match")
+	assert.Equal(t, data.LegalName,entityData.LegalName , "legal name should match")
 }
 
 func TestEntityModel_InitEntityInput(t *testing.T) {
@@ -163,16 +181,16 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	assert.NoError(t, err)
 
 	// fail recipient
-	data := &cliententitypb.EntityData{
-		Identity:  testingidentity.GenerateRandomDID().ToAddress().Bytes(),
-		LegalName: "Company Test",
-		Contacts:  []*entitypb.Contact{{Name: "Satoshi Nakamoto"}},
-		Addresses: []*entitypb.Address{{IsMain: true,
-			AddressLine1: "Sample Street 1",
-			Zip:          "12345",
-			State:        "Germany",
-		}, {IsMain: false, State: "US"}},
-	}
+	data := &cliententitypb.EntityData	{
+		Identity: testingidentity.GenerateRandomDID().ToAddress().Bytes(),
+	LegalName:"Company Test",
+		Contacts: []*entitypb.Contact{{Name:"Satoshi Nakamoto"}},
+		Addresses:[]*entitypb.Address{{IsMain:true,
+		AddressLine1:"Sample Street 1",
+		Zip:"12345",
+		State:"Germany",
+	},{IsMain:false,State:"US"}},
+}
 	e := new(Entity)
 	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err, "should be successful")
@@ -189,6 +207,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	collabs = []string{collab1.String(), collab2.String()}
 	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Nil(t, err, "must be nil")
+
 
 }
 
@@ -270,6 +289,7 @@ func TestEntityModel_getDocumentDataTree(t *testing.T) {
 	assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
 }
 
+
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	entity := createEntity(t)
 	id1 := defaultDID
@@ -318,10 +338,12 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	// id2 should fail since it doesn't have the permission to update
 	assert.Error(t, oldEntity.CollaboratorCanUpdate(entity, id2))
 
+
 	// id3 should pass with just one error since changing Currency is not allowed
 	assert.Nil(t, oldEntity.CollaboratorCanUpdate(entity, id3))
 
 }
+
 
 type mockModel struct {
 	documents.Model
@@ -335,8 +357,8 @@ func (m *mockModel) ID() []byte {
 	return id
 }
 
-var testRepoGlobal documents.Repository
 
+var testRepoGlobal documents.Repository
 func testRepo() documents.Repository {
 	if testRepoGlobal == nil {
 		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
@@ -348,3 +370,20 @@ func testRepo() documents.Repository {
 	}
 	return testRepoGlobal
 }
+
+func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+	i := new(Entity)
+	err := i.InitEntityInput(testingdocuments.CreateEntityPayload(), cid.String())
+	assert.NoError(t, err)
+	_, err = i.CalculateDataRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateSigningRoot()
+	assert.NoError(t, err)
+	_, err = i.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	cd, err := i.PackCoreDocument()
+	assert.NoError(t, err)
+	return i, cd
+}
+
+
