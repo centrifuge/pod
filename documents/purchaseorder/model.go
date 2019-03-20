@@ -3,7 +3,6 @@ package purchaseorder
 import (
 	"encoding/json"
 	"reflect"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -465,19 +464,4 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	rules := p.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
 	return documents.ValidateTransitions(rules, cf)
-}
-
-// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-func (p *PurchaseOrder) AddUpdateLog(account identity.DID) (err error) {
-	return p.CoreDocument.AddUpdateLog(account)
-}
-
-// Author is the author of the document version represented by the model
-func (p *PurchaseOrder) Author() identity.DID {
-	return p.CoreDocument.Author()
-}
-
-// Timestamp is the time of update in UTC of the document version represented by the model
-func (p *PurchaseOrder) Timestamp() (time.Time, error) {
-	return p.CoreDocument.Timestamp()
 }
