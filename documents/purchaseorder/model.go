@@ -29,30 +29,30 @@ func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
 	*documents.CoreDocument
-	Status             string // status of the Purchase Order
-	PoNumber           string // purchase order number or reference number
-	OrderName          string // name of the ordering company
-	OrderStreet        string // street and address details of the ordering company
-	OrderCity          string
-	OrderZipcode       string
-	OrderCountry       string // country ISO code of the ordering company of this purchase order
-	RecipientName      string // name of the recipient company
-	RecipientStreet    string
-	RecipientCity      string
-	RecipientZipcode   string
-	RecipientCountry   string             // country ISO code of the recipient of this purchase order
-	Currency           string             // ISO currency code
-	OrderAmount        *documents.Decimal // ordering gross amount including tax
-	NetAmount          *documents.Decimal // invoice amount excluding tax
-	TaxAmount          *documents.Decimal
-	TaxRate            *documents.Decimal
-	Recipient          *identity.DID
-	Order              []byte
-	OrderContact       string
-	Comment            string
-	DeliveryDate       *timestamp.Timestamp // requested delivery date
-	DateCreated        *timestamp.Timestamp // purchase order date
-	ExtraData          []byte
+	Status           string // status of the Purchase Order
+	PoNumber         string // purchase order number or reference number
+	OrderName        string // name of the ordering company
+	OrderStreet      string // street and address details of the ordering company
+	OrderCity        string
+	OrderZipcode     string
+	OrderCountry     string // country ISO code of the ordering company of this purchase order
+	RecipientName    string // name of the recipient company
+	RecipientStreet  string
+	RecipientCity    string
+	RecipientZipcode string
+	RecipientCountry string             // country ISO code of the recipient of this purchase order
+	Currency         string             // ISO currency code
+	OrderAmount      *documents.Decimal // ordering gross amount including tax
+	NetAmount        *documents.Decimal // invoice amount excluding tax
+	TaxAmount        *documents.Decimal
+	TaxRate          *documents.Decimal
+	Recipient        *identity.DID
+	Order            []byte
+	OrderContact     string
+	Comment          string
+	DeliveryDate     *timestamp.Timestamp // requested delivery date
+	DateCreated      *timestamp.Timestamp // purchase order date
+	ExtraData        []byte
 }
 
 // getClientData returns the client data from the purchaseOrder model

@@ -240,7 +240,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	if err != nil {
 		return nil, errors.New("failed to generate core Document tree: %v", err)
 	}
-	srHash, err := cd.GetSigningRootProof()
+	srHash, err := cd.GetSigningRootHash()
 	if err != nil {
 		return nil, errors.New("failed to generate signing root proofs: %v", err)
 	}
@@ -296,7 +296,7 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 
 // GetSigningRootHash returns the hash needed to create a proof for fields from SigningRoot to DocumentRoot.
 // The returned proof is appended to the proofs generated from the data tree and core Document tree for a successful verification.
-func (cd *CoreDocument) GetSigningRootProof() (hash []byte, err error) {
+func (cd *CoreDocument) GetSigningRootHash() (hash []byte, err error) {
 	tree, err := cd.DocumentRootTree(false)
 	if err != nil {
 		return
