@@ -3,26 +3,14 @@
 package entity
 
 import (
-	"testing"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/gocelery"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
 )
 
 var (
@@ -41,7 +29,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
-
+/*
 func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(centIDBytes, nil)
@@ -59,7 +47,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) 
 		queueSrv,
 		ctx[transactions.BootstrappedService].(transactions.Manager))
 }
-
+/*
 func TestService_Update(t *testing.T) {
 	_, srv := getServiceWithMockedLayers()
 	invSrv := srv.(service)
@@ -388,7 +376,7 @@ func testRepo() documents.Repository {
 	}
 	return testRepoGlobal
 }
-
+*/
 func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(Entity)
 	err := i.InitEntityInput(testingdocuments.CreateEntityPayload(), cid.String())

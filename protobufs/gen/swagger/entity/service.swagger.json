@@ -163,6 +163,9 @@
         },
         "address_line2": {
           "type": "string"
+        },
+        "contact_person": {
+          "type": "string"
         }
       }
     },
@@ -310,6 +313,9 @@
         "identifier": {
           "type": "string",
           "format": "byte"
+        },
+        "type": {
+          "type": "string"
         },
         "pay_to": {
           "type": "string"

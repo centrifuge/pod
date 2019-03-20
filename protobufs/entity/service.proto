@@ -7,6 +7,7 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.entity";
 
+import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
@@ -92,56 +93,4 @@ message EntityData {
   repeated PaymentDetail payment_details = 4;
   // Entity contact list
   repeated Contact contacts = 5;
-}
-
-message Address {
-  bool is_main = 1;
-  bool is_remit_to = 2;
-  bool is_pay_to = 3;
-  string label = 4;
-  string zip = 5;
-  string state = 6;
-  string country = 7;
-  string address_line1 = 8;
-  string address_line2 = 9;
-}
-
-message BankPaymentMethod {
-  bytes identifier = 1;
-  Address address = 2;
-  string holder_name = 3;
-  string bank_key = 4;
-  string bank_account_number = 5;
-  string supported_currency = 6;
-}
-
-message CryptoPaymentMethod {
-  bytes identifier = 1;
-  string to = 2;
-  string chain_uri = 3;
-  string supported_currency = 4;
-}
-
-message OtherPayment {
-  bytes identifier = 1;
-  string pay_to = 2;
-  string supported_currency = 3;
-}
-
-message PaymentDetail {
-  // fields for bank accounts and ethereum wallets
-  bool predefined = 1;
-  oneof payment_method {
-    BankPaymentMethod bank_payment_method = 2;
-    CryptoPaymentMethod crypto_payment_method = 3;
-    OtherPayment other_method = 4;
-  }
-}
-
-message Contact {
-  string name = 1;
-  string title = 2;
-  string email = 3;
-  string phone = 4;
-  string fax = 5;
 }

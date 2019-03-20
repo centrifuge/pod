@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
@@ -38,34 +40,19 @@ type Entity struct {
 	EntitySalts *proofs.Salts
 }
 
-/*
+
 // getClientData returns the client data from the entity model
 func (e *Entity) getClientData() *cliententitypb.EntityData {
-	var recipient string
-	if e.Recipient != nil {
-		recipient = hexutil.Encode(e.Recipient[:])
-	}
-
-	var sender string
-	if e.Sender != nil {
-		sender = hexutil.Encode(e.Sender[:])
-	}
-
-	var payee string
-	if e.Payee != nil {
-		payee = hexutil.Encode(e.Payee[:])
-	}
-
-	var extraData string
-	if e.ExtraData != nil {
-		extraData = hexutil.Encode(e.ExtraData)
-	}
-
 	return &cliententitypb.EntityData{
+		Identity: e.Identity,
+		LegalName:e.LegalName,
+		Addresses:e.Addresses,
+		PaymentDetails:e.PaymentDetails,
+		Contacts:e.Contacts,
 
 	}
 
-}*/
+}
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
@@ -79,7 +66,7 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 }
 
 
-/*
+
 // InitEntityInput initialize the model based on the received parameters from the rest api call
 func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self string) error {
 	err := e.initEntityFromData(payload.Data)
@@ -99,57 +86,10 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 
 // initEntityFromData initialises entity from entityData
 func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
-	e.EntityNumber = data.EntityNumber
-	e.EntityStatus = data.EntityStatus
-	e.SenderName = data.SenderName
-	e.SenderStreet = data.SenderStreet
-	e.SenderCity = data.SenderCity
-	e.SenderZipcode = data.SenderZipcode
-	e.SenderCountry = data.SenderCountry
-	e.RecipientName = data.RecipientName
-	e.RecipientStreet = data.RecipientStreet
-	e.RecipientCity = data.RecipientCity
-	e.RecipientZipcode = data.RecipientZipcode
-	e.RecipientCountry = data.RecipientCountry
-	e.Currency = data.Currency
-	e.GrossAmount = data.GrossAmount
-	e.NetAmount = data.NetAmount
-	e.TaxAmount = data.TaxAmount
-	e.TaxRate = data.TaxRate
-	e.Comment = data.Comment
-	e.DueDate = data.DueDate
-	e.DateCreated = data.DateCreated
-
-	if data.Recipient != "" {
-		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
-			e.Recipient = &recipient
-		}
-	}
-
-	if data.Sender != "" {
-		if sender, err := identity.NewDIDFromString(data.Sender); err == nil {
-			e.Sender = &sender
-		}
-	}
-
-	if data.Payee != "" {
-		if payee, err := identity.NewDIDFromString(data.Payee); err == nil {
-			e.Payee = &payee
-		}
-	}
-
-	if data.ExtraData != "" {
-		ed, err := hexutil.Decode(data.ExtraData)
-		if err != nil {
-			return errors.NewTypedError(err, errors.New("failed to decode extra data"))
-		}
-
-		e.ExtraData = ed
-	}
-
+	e.Identity = data.Identity
 	return nil
 }
-*/
+
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
 func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
@@ -223,17 +163,17 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 
 // JSON marshals Entity into a json bytes
 func (e *Entity) JSON() ([]byte, error) {
-	return json.Marshal(i)
+	return json.Marshal(e)
 }
 
 // FromJSON unmarshals the json bytes into Entity
 func (e *Entity) FromJSON(jsonData []byte) error {
-	return json.Unmarshal(jsonData, i)
+	return json.Unmarshal(jsonData, e)
 }
 
 // Type gives the Entity type
 func (e *Entity) Type() reflect.Type {
-	return reflect.TypeOf(i)
+	return reflect.TypeOf(e)
 }
 
 // CalculateDataRoot calculates the data root and sets the root to core document.
@@ -282,7 +222,7 @@ func (*Entity) DocumentType() string {
 	return documenttypes.EntityDataTypeUrl
 }
 
-/*
+
 // PrepareNewVersion prepares new version from the old entity.
 func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators []string) error {
 	err := e.initEntityFromData(data)
@@ -297,7 +237,7 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 	}
 
 	return nil
-}*/
+}
 
 // AddNFT adds NFT to the Entity.
 func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {

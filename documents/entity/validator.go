@@ -1,10 +1,6 @@
 package entity
 
-import (
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-)
-
+/*
 // fieldValidateFunc validates the fields of the entity model
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
@@ -40,3 +36,4 @@ func UpdateValidator() documents.ValidatorGroup {
 		documents.UpdateVersionValidator(),
 	}
 }
+*/

@@ -4,7 +4,6 @@ package entity
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
@@ -17,13 +16,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -33,7 +29,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -64,7 +59,7 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		&Bootstrapper{},
+		//&Bootstrapper{}, TODO activate bootstrapper for entity
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
@@ -81,33 +76,33 @@ func TestEntity_PackCoreDocument(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 
-	inv := new(Entity)
-	assert.NoError(t, inv.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String()))
+	entity := new(Entity)
+	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String()))
 
-	cd, err := inv.PackCoreDocument()
+	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
 	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestEntity_JSON(t *testing.T) {
-	inv := new(Entity)
+	entity := new(Entity)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, inv.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String()))
+	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String()))
 
-	cd, err := inv.PackCoreDocument()
+	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
-	jsonBytes, err := inv.JSON()
+	jsonBytes, err := entity.JSON()
 	assert.Nil(t, err, "marshal to json didn't work correctly")
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
-	inv = new(Entity)
-	err = inv.FromJSON(jsonBytes)
+	entity = new(Entity)
+	err = entity.FromJSON(jsonBytes)
 	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
 
-	ncd, err := inv.PackCoreDocument()
+	ncd, err := entity.PackCoreDocument()
 	assert.Nil(t, err, "JSON unmarshal damaged entity variables")
 	assert.Equal(t, cd, ncd)
 }
@@ -134,26 +129,26 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err)
 
 	// successful
-	inv, cd := createCDWithEmbeddedEntity(t)
+	entity, cd := createCDWithEmbeddedEntity(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), inv.(*Entity).getClientData())
-	assert.Equal(t, model.ID(), inv.ID())
-	assert.Equal(t, model.CurrentVersion(), inv.CurrentVersion())
-	assert.Equal(t, model.PreviousVersion(), inv.PreviousVersion())
+	assert.Equal(t, model.getClientData(), entity.(*Entity).getClientData())
+	assert.Equal(t, model.ID(), entity.ID())
+	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
+	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
 }
-
+/*
 func TestEntityModel_getClientData(t *testing.T) {
-	invData := testingdocuments.CreateEntityData()
-	inv := new(Entity)
-	inv.loadFromP2PProtobuf(&invData)
+	entityData := testingdocuments.CreateEntityData()
+	entity := new(Entity)
+	entity.loadFromP2PProtobuf(&entityData)
 
-	data := inv.getClientData()
+	data := entity.getClientData()
 	assert.NotNil(t, data, "entity data should not be nil")
 	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, hexutil.Encode(inv.Recipient[:]), "recipient should match")
-	assert.Equal(t, data.Sender, hexutil.Encode(inv.Sender[:]), "sender should match")
-	assert.Equal(t, data.Payee, hexutil.Encode(inv.Payee[:]), "payee should match")
+	assert.Equal(t, data.Recipient, hexutil.Encode(entity.Recipient[:]), "recipient should match")
+	assert.Equal(t, data.Sender, hexutil.Encode(entity.Sender[:]), "sender should match")
+	assert.Equal(t, data.Payee, hexutil.Encode(entity.Payee[:]), "payee should match")
 }
 
 func TestEntityModel_InitEntityInput(t *testing.T) {
@@ -168,46 +163,46 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 		Recipient: "some recipient",
 		ExtraData: "some data",
 	}
-	inv := new(Entity)
-	err = inv.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
+	entity := new(Entity)
+	err = entity.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "failed to decode extra data")
-	assert.Nil(t, inv.Recipient)
-	assert.Nil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
-	assert.Nil(t, inv.ExtraData)
+	assert.Nil(t, entity.Recipient)
+	assert.Nil(t, entity.Sender)
+	assert.Nil(t, entity.Payee)
+	assert.Nil(t, entity.ExtraData)
 
 	data.ExtraData = "0x010203020301"
 	recipientDID := testingidentity.GenerateRandomDID()
 	data.Recipient = recipientDID.String()
-	err = inv.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
+	err = entity.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
-	assert.NotNil(t, inv.Recipient)
-	assert.Nil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.NotNil(t, entity.ExtraData)
+	assert.NotNil(t, entity.Recipient)
+	assert.Nil(t, entity.Sender)
+	assert.Nil(t, entity.Payee)
 
 	senderDID := testingidentity.GenerateRandomDID()
 	data.Sender = senderDID.String()
-	err = inv.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
+	err = entity.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
-	assert.NotNil(t, inv.Recipient)
-	assert.NotNil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.NotNil(t, entity.ExtraData)
+	assert.NotNil(t, entity.Recipient)
+	assert.NotNil(t, entity.Sender)
+	assert.Nil(t, entity.Payee)
 
 	payeeDID := testingidentity.GenerateRandomDID()
 	data.Payee = payeeDID.String()
-	err = inv.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
+	err = entity.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
-	assert.NotNil(t, inv.Recipient)
-	assert.NotNil(t, inv.Sender)
-	assert.NotNil(t, inv.Payee)
+	assert.NotNil(t, entity.ExtraData)
+	assert.NotNil(t, entity.Recipient)
+	assert.NotNil(t, entity.Sender)
+	assert.NotNil(t, entity.Payee)
 
 	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = entity.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -215,12 +210,12 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = inv.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = entity.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Nil(t, err, "must be nil")
-	assert.Equal(t, inv.Sender[:], senderDID[:])
-	assert.Equal(t, inv.Payee[:], payeeDID[:])
-	assert.Equal(t, inv.Recipient[:], recipientDID[:])
-	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
+	assert.Equal(t, entity.Sender[:], senderDID[:])
+	assert.Equal(t, entity.Payee[:], payeeDID[:])
+	assert.Equal(t, entity.Recipient[:], recipientDID[:])
+	assert.Equal(t, entity.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 }
 
 func TestEntityModel_calculateDataRoot(t *testing.T) {
@@ -302,57 +297,58 @@ func createEntity(t *testing.T) *Entity {
 }
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
-	inv := createEntity(t)
+	entity := createEntity(t)
 	id1 := defaultDID
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 
 	// wrong type
-	err := inv.CollaboratorCanUpdate(new(mockModel), id1)
+	err := entity.CollaboratorCanUpdate(new(mockModel), id1)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
-	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
+	assert.NoError(t, testRepo().Create(id1[:], entity.CurrentVersion(), entity))
 
 	// update the document
-	model, err := testRepo().Get(id1[:], inv.CurrentVersion())
+	model, err := testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldInv := model.(*Entity)
 	data := oldInv.getClientData()
 	data.GrossAmount = 50
-	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
+	err = entity.PrepareNewVersion(entity, data, []string{id3.String()})
 	assert.NoError(t, err)
 
 	// id1 should have permission
-	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
+	assert.NoError(t, oldInv.CollaboratorCanUpdate(entity, id1))
 
 	// id2 should fail since it doesn't have the permission to update
-	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
+	assert.Error(t, oldInv.CollaboratorCanUpdate(entity, id2))
 
 	// update the id3 rules to update only gross amount
-	inv.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	inv.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
-	inv.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
-	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
+	entity.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	entity.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
+	entity.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	assert.NoError(t, testRepo().Create(id1[:], entity.CurrentVersion(), entity))
 
 	// fetch the document
-	model, err = testRepo().Get(id1[:], inv.CurrentVersion())
+	model, err = testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldInv = model.(*Entity)
 	data = oldInv.getClientData()
 	data.GrossAmount = 55
 	data.Currency = "INR"
-	err = inv.PrepareNewVersion(inv, data, nil)
+	err = entity.PrepareNewVersion(entity, data, nil)
 	assert.NoError(t, err)
 
 	// id1 should have permission
-	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
+	assert.NoError(t, oldInv.CollaboratorCanUpdate(entity, id1))
 
 	// id2 should fail since it doesn't have the permission to update
-	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
+	assert.Error(t, oldInv.CollaboratorCanUpdate(entity, id2))
 
 	// id3 should fail with just one error since changing Currency is not allowed
-	err = oldInv.CollaboratorCanUpdate(inv, id3)
+	err = oldInv.CollaboratorCanUpdate(entity, id3)
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
 	assert.Contains(t, err.Error(), "entity.currency")
 }
+*/
