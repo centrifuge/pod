@@ -16,7 +16,7 @@ func CreateInvoiceData() invoicepb.InvoiceData {
 		Recipient:   recipient[:],
 		Sender:      sender[:],
 		Payee:       payee[:],
-		GrossAmount: 42,
+		GrossAmount: []byte{0, 42, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
 }
 
@@ -26,7 +26,7 @@ func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {
 			Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
 			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
 			Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
-			GrossAmount: 42,
+			GrossAmount: "42",
 			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
