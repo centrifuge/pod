@@ -10,12 +10,12 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -258,7 +258,7 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	invData := &invoicepb.InvoiceData{}
+	invData := new(invoicepb.InvoiceData)
 	dataSalts, err := GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
 	assert.NoError(t, err)
 

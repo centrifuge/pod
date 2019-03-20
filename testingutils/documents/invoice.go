@@ -27,7 +27,6 @@ func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {
 			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
 			Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
 			GrossAmount: "42",
-			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
 		Collaborators: []string{testingidentity.GenerateRandomDID().String()},

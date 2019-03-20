@@ -32,7 +32,7 @@ func DIDsToStrings(dids ...*DID) []string {
 			continue
 		}
 
-		strs[i] = did.String()
+		strs[i] = strings.ToLower(did.String())
 	}
 
 	return strs
@@ -56,6 +56,10 @@ func DIDsToBytes(dids ...*DID) [][]byte {
 func BytesToDIDs(bytes ...[]byte) []*DID {
 	dids := make([]*DID, len(bytes), len(bytes))
 	for i, bs := range bytes {
+		if len(bs) < 1 {
+			continue
+		}
+
 		did := NewDIDFromBytes(bs)
 		dids[i] = &did
 	}

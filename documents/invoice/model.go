@@ -303,26 +303,26 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		NetAmount:                decs[1],
 		TaxAmount:                decs[2],
 		TaxRate:                  decs[3],
-		TaxOnLineLevel:           i.TaxOnLineLevel,
-		Recipient:                dids[0],
-		Sender:                   dids[1],
-		Payee:                    dids[2],
-		Comment:                  i.Comment,
-		ShippingTerms:            i.ShippingTerms,
-		RequesterEmail:           i.RequesterEmail,
-		RequesterName:            i.RequesterName,
-		DeliveryNumber:           i.DeliveryNumber,
-		IsCreditNote:             i.IsCreditNote,
-		CreditNoteInvoiceNumber:  i.CreditNoteInvoiceNumber,
-		CreditForInvoiceDate:     i.CreditForInvoiceDate,
-		DateDue:                  i.DateDue,
-		DatePaid:                 i.DatePaid,
-		DateCreated:              i.DateCreated,
-		DateUpdated:              i.DateUpdated,
-		Attachments:              toP2PAttachments(i.Attachments),
-		LineItems:                li,
-		PaymentDetails:           pd,
-		TaxItems:                 ti,
+		//TaxOnLineLevel:           i.TaxOnLineLevel,
+		Recipient:      dids[0],
+		Sender:         dids[1],
+		Payee:          dids[2],
+		Comment:        i.Comment,
+		ShippingTerms:  i.ShippingTerms,
+		RequesterEmail: i.RequesterEmail,
+		RequesterName:  i.RequesterName,
+		DeliveryNumber: i.DeliveryNumber,
+		//IsCreditNote:             i.IsCreditNote,
+		CreditNoteInvoiceNumber: i.CreditNoteInvoiceNumber,
+		CreditForInvoiceDate:    i.CreditForInvoiceDate,
+		DateDue:                 i.DateDue,
+		DatePaid:                i.DatePaid,
+		DateCreated:             i.DateCreated,
+		DateUpdated:             i.DateUpdated,
+		Attachments:             toP2PAttachments(i.Attachments),
+		LineItems:               li,
+		PaymentDetails:          pd,
+		TaxItems:                ti,
 	}, nil
 
 }
@@ -515,7 +515,8 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 	i.NetAmount = decs[1]
 	i.TaxAmount = decs[2]
 	i.TaxRate = decs[3]
-	i.TaxOnLineLevel = data.TaxOnLineLevel
+	// TODO(ved): enable these after precise proofs are integrated
+	//i.TaxOnLineLevel = data.TaxOnLineLevel
 	i.Recipient = dids[0]
 	i.Sender = dids[1]
 	i.Payee = dids[2]
@@ -524,7 +525,7 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 	i.RequesterEmail = data.RequesterEmail
 	i.RequesterName = data.RequesterName
 	i.DeliveryNumber = data.DeliveryNumber
-	i.IsCreditNote = data.IsCreditNote
+	//i.IsCreditNote = data.IsCreditNote
 	i.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
 	i.CreditForInvoiceDate = data.CreditForInvoiceDate
 	i.DateDue = data.DateDue

@@ -178,7 +178,7 @@ func TestService_CreateProofs(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
-	proof, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
+	proof, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.ID(), proof.DocumentID)
 	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
@@ -193,7 +193,7 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	i.(*invoice.Invoice).Document.DataRoot = nil
 	i.(*invoice.Invoice).Document.SigningRoot = nil
 	assert.Nil(t, testRepo().Update(accountID, i.CurrentVersion(), i))
-	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.invoice_number"})
+	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.number"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get signing root")
 }
@@ -211,7 +211,7 @@ func TestService_CreateProofsInvalidField(t *testing.T) {
 func TestService_CreateProofsDocumentDoesntExist(t *testing.T) {
 	service, _ := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, err := service.CreateProofs(ctxh, utils.RandomSlice(32), []string{"invoice.invoice_number"})
+	_, err := service.CreateProofs(ctxh, utils.RandomSlice(32), []string{"invoice.number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 }
@@ -221,7 +221,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
-	proof, err := service.CreateProofsForVersion(ctxh, i.ID(), i.CurrentVersion(), []string{"invoice.invoice_number"})
+	proof, err := service.CreateProofsForVersion(ctxh, i.ID(), i.CurrentVersion(), []string{"invoice.number"})
 	assert.Nil(t, err)
 	assert.Equal(t, i.ID(), proof.DocumentID)
 	assert.Equal(t, i.CurrentVersion(), proof.VersionID)
@@ -290,7 +290,7 @@ func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	s, _ := getServiceWithMockedLayers()
-	_, err := s.CreateProofsForVersion(ctxh, i.ID(), utils.RandomSlice(32), []string{"invoice.invoice_number"})
+	_, err := s.CreateProofsForVersion(ctxh, i.ID(), utils.RandomSlice(32), []string{"invoice.number"})
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
 }

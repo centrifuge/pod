@@ -167,26 +167,20 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
-		Sender:    "some number",
-		Payee:     "some payee",
 		Recipient: "some recipient",
-		ExtraData: "some data",
 	}
 	inv := new(Invoice)
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Error(t, err, "must return err")
-	assert.Contains(t, err.Error(), "failed to decode extra data")
+	assert.Contains(t, err.Error(), "malformed address provided")
 	assert.Nil(t, inv.Recipient)
 	assert.Nil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
-	assert.Nil(t, inv.ExtraData)
 
-	data.ExtraData = "0x010203020301"
 	recipientDID := testingidentity.GenerateRandomDID()
 	data.Recipient = recipientDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
 	assert.Nil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
@@ -195,7 +189,6 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	data.Sender = senderDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
 	assert.NotNil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
@@ -204,12 +197,10 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	data.Payee = payeeDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
 	assert.NotNil(t, inv.Sender)
 	assert.NotNil(t, inv.Payee)
 
-	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, did.String())
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
@@ -224,7 +215,6 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.Equal(t, inv.Sender[:], senderDID[:])
 	assert.Equal(t, inv.Payee[:], payeeDID[:])
 	assert.Equal(t, inv.Recipient[:], recipientDID[:])
-	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
@@ -246,7 +236,7 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	i := createInvoice(t)
 	rk := i.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := i.CreateProofs([]string{"invoice.invoice_number", pf, documents.CDTreePrefix + ".document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.number", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.CoreDocument.DocumentRootTree()
@@ -279,8 +269,8 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	i := new(Invoice)
 	invPayload := testingdocuments.CreateInvoicePayload()
-	invPayload.Data.DueDate = &timestamp.Timestamp{Seconds: time.Now().Unix()}
-	invPayload.Data.InvoiceStatus = "unpaid"
+	invPayload.Data.DateDue = &timestamp.Timestamp{Seconds: time.Now().Unix()}
+	invPayload.Data.Status = "unpaid"
 	invPayload.Collaborators = []string{defaultDID.String()}
 
 	err = i.InitInvoiceInput(invPayload, defaultDID.String())
@@ -300,7 +290,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
-	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
@@ -345,12 +335,12 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.NoError(t, na.SetString("2"))
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("2"))
-	i := Invoice{InvoiceNumber: "3213121", NetAmount: na, GrossAmount: ga}
+	i := Invoice{Number: "3213121", NetAmount: na, GrossAmount: ga}
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
+	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
+	assert.Equal(t, "invoice.number", leaf.Property.ReadableName())
 }
 
 func createInvoice(t *testing.T) *Invoice {
