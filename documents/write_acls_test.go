@@ -524,7 +524,7 @@ func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
 	inv := invoicepb.InvoiceData{
 		InvoiceNumber: "1234556",
 		Currency:      "EUR",
-		GrossAmount:   1234,
+		GrossAmount:   []byte{0, 4, 210, 0, 0, 0, 0, 0, 0, 0, 0}, // 1234
 		SenderName:    "john doe",
 		Comment:       "Some comment",
 	}
@@ -537,7 +537,7 @@ func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
 	createTransitionRules(t, doc, id2, append(compact, []byte{0, 0, 0, 21}...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 
 	inv2 := inv
-	inv2.GrossAmount = 12340
+	inv2.GrossAmount = []byte{0, 48, 52, 0, 0, 0, 0, 0, 0, 0, 0} // 12340
 
 	// check if id1 made the update
 	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))

@@ -3,7 +3,6 @@ package purchaseorder
 import (
 	"encoding/json"
 	"reflect"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -30,30 +29,30 @@ func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
 	*documents.CoreDocument
-	Status           string // status of the Purchase Order
-	PoNumber         string // purchase order number or reference number
-	OrderName        string // name of the ordering company
-	OrderStreet      string // street and address details of the ordering company
-	OrderCity        string
-	OrderZipcode     string
-	OrderCountry     string // country ISO code of the ordering company of this purchase order
-	RecipientName    string // name of the recipient company
-	RecipientStreet  string
-	RecipientCity    string
-	RecipientZipcode string
-	RecipientCountry string // country ISO code of the recipient of this purchase order
-	Currency         string // ISO currency code
-	OrderAmount      int64  // ordering gross amount including tax
-	NetAmount        int64  // invoice amount excluding tax
-	TaxAmount        int64
-	TaxRate          int64
-	Recipient        *identity.DID
-	Order            []byte
-	OrderContact     string
-	Comment          string
-	DeliveryDate     *timestamp.Timestamp // requested delivery date
-	DateCreated      *timestamp.Timestamp // purchase order date
-	ExtraData        []byte
+	Status             string // status of the Purchase Order
+	PoNumber           string // purchase order number or reference number
+	OrderName          string // name of the ordering company
+	OrderStreet        string // street and address details of the ordering company
+	OrderCity          string
+	OrderZipcode       string
+	OrderCountry       string // country ISO code of the ordering company of this purchase order
+	RecipientName      string // name of the recipient company
+	RecipientStreet    string
+	RecipientCity      string
+	RecipientZipcode   string
+	RecipientCountry   string             // country ISO code of the recipient of this purchase order
+	Currency           string             // ISO currency code
+	OrderAmount        *documents.Decimal // ordering gross amount including tax
+	NetAmount          *documents.Decimal // invoice amount excluding tax
+	TaxAmount          *documents.Decimal
+	TaxRate            *documents.Decimal
+	Recipient          *identity.DID
+	Order              []byte
+	OrderContact       string
+	Comment            string
+	DeliveryDate       *timestamp.Timestamp // requested delivery date
+	DateCreated        *timestamp.Timestamp // purchase order date
+	ExtraData          []byte
 }
 
 // getClientData returns the client data from the purchaseOrder model
@@ -73,6 +72,7 @@ func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData
 		extraData = hexutil.Encode(p.ExtraData)
 	}
 
+	decs := documents.DecimalsToStrings(p.OrderAmount, p.NetAmount, p.TaxAmount, p.TaxRate)
 	return &clientpurchaseorderpb.PurchaseOrderData{
 		PoStatus:         p.Status,
 		PoNumber:         p.PoNumber,
@@ -87,10 +87,10 @@ func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData
 		RecipientZipcode: p.RecipientZipcode,
 		RecipientCountry: p.RecipientCountry,
 		Currency:         p.Currency,
-		OrderAmount:      p.OrderAmount,
-		NetAmount:        p.NetAmount,
-		TaxAmount:        p.TaxAmount,
-		TaxRate:          p.TaxRate,
+		OrderAmount:      decs[0],
+		NetAmount:        decs[1],
+		TaxAmount:        decs[2],
+		TaxRate:          decs[3],
 		Recipient:        recipient,
 		Order:            order,
 		OrderContact:     p.OrderContact,
@@ -103,10 +103,15 @@ func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific purchaseOrderData
-func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
+func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData, error) {
 	var recipient []byte
 	if p.Recipient != nil {
 		recipient = p.Recipient[:]
+	}
+
+	decs, err := documents.DecimalsToBytes(p.OrderAmount, p.NetAmount, p.TaxAmount, p.TaxRate)
+	if err != nil {
+		return nil, err
 	}
 
 	return &purchaseorderpb.PurchaseOrderData{
@@ -123,10 +128,10 @@ func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
 		RecipientZipcode: p.RecipientZipcode,
 		RecipientCountry: p.RecipientCountry,
 		Currency:         p.Currency,
-		OrderAmount:      p.OrderAmount,
-		NetAmount:        p.NetAmount,
-		TaxAmount:        p.TaxAmount,
-		TaxRate:          p.TaxRate,
+		OrderAmount:      decs[0],
+		NetAmount:        decs[1],
+		TaxAmount:        decs[2],
+		TaxRate:          decs[3],
 		Recipient:        recipient,
 		Order:            p.Order,
 		OrderContact:     p.OrderContact,
@@ -134,7 +139,7 @@ func (p *PurchaseOrder) createP2PProtobuf() *purchaseorderpb.PurchaseOrderData {
 		DeliveryDate:     p.DeliveryDate,
 		DateCreated:      p.DateCreated,
 		ExtraData:        p.ExtraData,
-	}
+	}, nil
 
 }
 
@@ -170,10 +175,16 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 	p.RecipientZipcode = data.RecipientZipcode
 	p.RecipientCountry = data.RecipientCountry
 	p.Currency = data.Currency
-	p.OrderAmount = data.OrderAmount
-	p.NetAmount = data.NetAmount
-	p.TaxAmount = data.TaxAmount
-	p.TaxRate = data.TaxRate
+
+	decs, err := documents.StringsToDecimals(data.OrderAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	if err != nil {
+		return err
+	}
+
+	p.OrderAmount = decs[0]
+	p.NetAmount = decs[1]
+	p.TaxAmount = decs[2]
+	p.TaxRate = decs[3]
 
 	if data.Order != "" {
 		order, err := hexutil.Decode(data.Order)
@@ -208,7 +219,7 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 }
 
 // loadFromP2PProtobuf loads the purcase order from centrifuge protobuf purchase order data
-func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderData) {
+func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderData) error {
 	p.Status = data.PoStatus
 	p.PoNumber = data.PoNumber
 	p.OrderName = data.OrderName
@@ -222,10 +233,6 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.RecipientZipcode = data.RecipientZipcode
 	p.RecipientCountry = data.RecipientCountry
 	p.Currency = data.Currency
-	p.OrderAmount = data.OrderAmount
-	p.NetAmount = data.NetAmount
-	p.TaxAmount = data.TaxAmount
-	p.TaxRate = data.TaxRate
 	p.Order = data.Order
 	p.OrderContact = data.OrderContact
 	p.Comment = data.Comment
@@ -233,15 +240,31 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.DateCreated = data.DateCreated
 	p.ExtraData = data.ExtraData
 
+	decs, err := documents.BytesToDecimals(data.OrderAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	if err != nil {
+		return err
+	}
+
+	p.OrderAmount = decs[0]
+	p.NetAmount = decs[1]
+	p.TaxAmount = decs[2]
+	p.TaxRate = decs[3]
+
 	if data.Recipient != nil {
 		recipient := identity.NewDIDFromBytes(data.Recipient)
 		p.Recipient = &recipient
 	}
+
+	return nil
 }
 
 // PackCoreDocument packs the PurchaseOrder into a Core Document
 func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
-	poData := p.createP2PProtobuf()
+	poData, err := p.createP2PProtobuf()
+	if err != nil {
+		return cd, err
+	}
+
 	data, err := proto.Marshal(poData)
 	if err != nil {
 		return cd, errors.New("failed to marshal po data: %v", err)
@@ -268,7 +291,10 @@ func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 		return err
 	}
 
-	p.loadFromP2PProtobuf(poData)
+	err = p.loadFromP2PProtobuf(poData)
+	if err != nil {
+		return err
+	}
 	p.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return err
 
@@ -303,7 +329,10 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (p *PurchaseOrder) getDocumentDataTree(mutable bool) (tree *proofs.DocumentTree, err error) {
-	poProto := p.createP2PProtobuf()
+	poProto, err := p.createP2PProtobuf()
+	if err != nil {
+		return nil, err
+	}
 	t := documents.NewDefaultTreeWithPrefix(&p.CoreDocument.Document, prefix, compactPrefix(), mutable)
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
@@ -402,19 +431,4 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	rules := p.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
-}
-
-// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-func (p *PurchaseOrder) AddUpdateLog(account identity.DID) (err error) {
-	return p.CoreDocument.AddUpdateLog(account)
-}
-
-// Author is the author of the document version represented by the model
-func (p *PurchaseOrder) Author() identity.DID {
-	return p.CoreDocument.Author()
-}
-
-// Timestamp is the time of update in UTC of the document version represented by the model
-func (p *PurchaseOrder) Timestamp() (time.Time, error) {
-	return p.CoreDocument.Timestamp()
 }

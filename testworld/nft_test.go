@@ -5,13 +5,14 @@ package testworld
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,9 +70,10 @@ func TestPaymentObligationMint_po_successful(t *testing.T) {
 func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
+	registry := alice.host.config.GetContractAddress(config.PaymentObligation)
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -115,7 +117,7 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 		map[string]interface{}{
 
 			"identifier":                docIdentifier,
-			"registryAddress":           doctorFord.getHost("Alice").config.GetContractAddress(config.PaymentObligation).String(),
+			"registryAddress":           registry.String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
 			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", proofPrefix + ".sender", proofPrefix + ".invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
@@ -130,10 +132,14 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	if status != "success" {
 		t.Error(message)
 	}
-
-	assert.Nil(t, err, "mintNFT should be successful")
+	assert.NoError(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 
+	tokenID, err := nft.TokenIDFromString(response.Value("token_id").String().Raw())
+	assert.NoError(t, err, "token ID should be correct")
+	owner, err := alice.host.tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower("0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb"), strings.ToLower(owner.Hex()))
 }
 
 func TestPaymentObligationMint_errors(t *testing.T) {

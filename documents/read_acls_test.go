@@ -3,8 +3,10 @@
 package documents
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -23,6 +25,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+type MockService struct {
+	Service
+	mock.Mock
+}
+
+func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
+	args := m.Called(documentID, version)
+	return args.Get(0).(Model), args.Error(1)
+}
 
 func TestReadACLs_initReadRules(t *testing.T) {
 	cd, err := newCoreDocument()
@@ -331,6 +343,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, _ := contextutil.Account(ctx)
 	srv := new(testingcommons.MockIdentityService)
+	docSrv := new(MockService)
 	id, err := account.GetIdentityID()
 	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
@@ -358,7 +371,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: tr,
 	}
-	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATGranteeCanRead(ctx, docSrv, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.Error(t, err, "access token not found")
 	// invalid signing key
 	tr = &p2ppb.AccessTokenRequest{
@@ -367,11 +380,14 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	}
 	dr.AccessTokenRequest = tr
 	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
-	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	m := new(mockModel)
+	docSrv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(m, nil)
+	m.On("Timestamp").Return(time.Now(), nil)
+	err = ncd.ATGranteeCanRead(ctx, docSrv, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.Error(t, err)
 	// valid key
 	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	err = ncd.ATGranteeCanRead(ctx, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
+	err = ncd.ATGranteeCanRead(ctx, docSrv, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
 	assert.NoError(t, err)
 }
 

@@ -3,7 +3,6 @@
 package testworld
 
 func defaultDocumentPayload(documentType string, collaborators []string) map[string]interface{} {
-
 	switch documentType {
 	case typeInvoice:
 		return defaultInvoicePayload(collaborators)
@@ -12,7 +11,6 @@ func defaultDocumentPayload(documentType string, collaborators []string) map[str
 	default:
 		return defaultInvoicePayload(collaborators)
 	}
-
 }
 
 func defaultPOPayload(collaborators []string) map[string]interface{} {
@@ -26,7 +24,6 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 		},
 		"collaborators": collaborators,
 	}
-
 }
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
@@ -39,10 +36,9 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 		},
 		"collaborators": collaborators,
 	}
-
 }
 
-func invoiceNFTPayload(collaborators []string) map[string]interface{} {
+func invoiceNFTPayload(collaborators []string, sender string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
 			"invoice_number": "12324",
@@ -51,12 +47,11 @@ func invoiceNFTPayload(collaborators []string) map[string]interface{} {
 			"currency":       "USD",
 			"net_amount":     "40",
 			"document_type":  "invoice",
-			"sender":         collaborators[0],
+			"sender":         sender,
 			"invoice_status": "unpaid",
 		},
 		"collaborators": collaborators,
 	}
-
 }
 
 func poNFTPayload(collaborators []string) map[string]interface{} {
@@ -70,18 +65,16 @@ func poNFTPayload(collaborators []string) map[string]interface{} {
 		},
 		"collaborators": collaborators,
 	}
-
 }
 
-func defaultNFTPayload(documentType string, collaborators []string) map[string]interface{} {
-
+func defaultNFTPayload(documentType string, collaborators []string, sender string) map[string]interface{} {
 	switch documentType {
 	case typeInvoice:
-		return invoiceNFTPayload(collaborators)
+		return invoiceNFTPayload(collaborators, sender)
 	case typePO:
 		return poNFTPayload(collaborators)
 	default:
-		return invoiceNFTPayload(collaborators)
+		return invoiceNFTPayload(collaborators, sender)
 	}
 
 }
