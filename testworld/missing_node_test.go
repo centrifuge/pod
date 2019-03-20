@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,14 +31,13 @@ func TestMissingNode_InvalidIdentity(t *testing.T) {
 
 	// Alice shares a document with a randomly generated DID
 	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{randomDID.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "failed" {
-		t.Error(message)
-	}
 
+	// Validate document is anchored correctly
+	validateAnchorDocument(t, res, alice.host.anchorRepo)
+
+	// Transaction should fail with invalid identity
 	errorMessage := "failed to send document to the node: bytecode for deployed identity contract " + randomDID.String() + " not correct"
-	assert.Contains(t, message, errorMessage)
+	assertTransactionError(t, res, alice.httpExpect, alice.id.String(), errorMessage)
 }
 
 func TestMissingNode_MissingP2PKey(t *testing.T) {
@@ -49,13 +51,13 @@ func TestMissingNode_MissingP2PKey(t *testing.T) {
 
 	// Alice shares a document with a randomly generated DID with missing P2P Key
 	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{randomDID.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "failed" {
-		t.Error(message)
-	}
 
-	assert.Contains(t, message, "missing p2p key")
+	// Validate document is anchored correctly
+	validateAnchorDocument(t, res, alice.host.anchorRepo)
+
+	// Transaction should fail with missing p2p key error
+	errorMessage := "failed to send document to the node: error fetching p2p key: missing p2p key"
+	assertTransactionError(t, res, alice.httpExpect, alice.id.String(), errorMessage)
 }
 
 // Helper Methods
@@ -84,4 +86,30 @@ func createIdentity(t *testing.T, idFactory identity.Factory, idService identity
 	assert.Nil(t, err, "should not error out when adding key to identity")
 
 	return *did
+}
+
+// Validate document is anchored correctly
+func validateAnchorDocument(t *testing.T, res *httpexpect.Object, anchorRepo anchors.AnchorRepository) {
+	versionID := getDocumentCurrentVersion(t, res)
+	versionIDBytesArray, err := hexutil.Decode(versionID)
+	assert.NoError(t, err)
+
+	anchorID, err := anchors.ToAnchorID(versionIDBytesArray)
+	assert.NoError(t, err)
+
+	docRoot, anchoredAt, err := anchorRepo.GetAnchorData(anchorID)
+	assert.NoError(t, err)
+	assert.NotNil(t, docRoot)
+	assert.NotNil(t, anchoredAt)
+}
+
+// Assert error thrown in the transaction status
+func assertTransactionError(t *testing.T, res *httpexpect.Object, httpExpect *httpexpect.Expect, identityID string, errorMessage string) {
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(httpExpect, identityID, txID)
+	if status != "failed" {
+		t.Error(message)
+	}
+
+	assert.Contains(t, message, errorMessage)
 }

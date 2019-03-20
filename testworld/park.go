@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
@@ -242,6 +243,7 @@ type host struct {
 	p2pClient          documents.Client
 	configService      config.Service
 	tokenRegistry      documents.TokenRegistry
+	anchorRepo         anchors.AnchorRepository
 }
 
 func newHost(
@@ -297,6 +299,7 @@ func (h *host) init() error {
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedPayObService].(documents.TokenRegistry)
+	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	return nil
 }
 
