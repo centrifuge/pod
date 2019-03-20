@@ -64,7 +64,7 @@
   revision = "c5e55d16c4cfe058ca641d2a746a665f277f0c9f"
 
 [[projects]]
-  digest = "1:bd19f674f48b13b3cd0336b0265893b2395f00557b9b10a29ce5df3456a998a8"
+  digest = "1:e993940bf63b8eaf82f81ff99216a8857f89d495303f538bc6201103fd186bfb"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,7 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "864a8ef4039324cebf3f23df115f50db12009d4c"
+  revision = "ef4b1ce4b74db439613563007c9d0dfd00c54e41"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -1054,6 +1054,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:81e02c4edb639c80559c0650f9401d3e2dcc3256d1fa215382bb7c83c1db9126"
+  name = "github.com/shopspring/decimal"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cd690d0c9e2447b1ef2a129a6b7b49077da89b8e"
+  version = "1.1.0"
+
+[[projects]]
   digest = "1:919bb3aa6d9d0b67648c219fa4925312bc3c2872da19e818fa769e9c97a2b643"
   name = "github.com/spaolacci/murmur3"
   packages = ["."]
@@ -1545,6 +1553,7 @@
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",
+    "github.com/shopspring/decimal",
     "github.com/spf13/cast",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",

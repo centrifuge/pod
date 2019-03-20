@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
@@ -241,6 +242,7 @@ type host struct {
 	anchorProcessor    documents.AnchorProcessor
 	docSrv             documents.Service
 	configService      config.Service
+	tokenRegistry      documents.TokenRegistry
 }
 
 func newHost(
@@ -296,6 +298,7 @@ func (h *host) init() error {
 	h.anchorProcessor = h.bootstrappedCtx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
 	h.docSrv = h.bootstrappedCtx[documents.BootstrappedDocumentService].(documents.Service)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
+	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedPayObService].(documents.TokenRegistry)
 	return nil
 }
 

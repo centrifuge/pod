@@ -335,7 +335,7 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 	// assemble token message from the token for validation
 	reqID := identity.NewDIDFromBytes(requesterID)
 	granterID := identity.NewDIDFromBytes(token.Granter)
-	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier)
+	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier, token.DocumentVersion)
 	if err != nil {
 		return err
 	}
@@ -357,7 +357,7 @@ func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 }
 
 // ATGranteeCanRead checks that the grantee of the access token can read the document requested
-func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity.ServiceDID, tokenID, docID []byte, requesterID identity.DID) (err error) {
+func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, idService identity.ServiceDID, tokenID, docID []byte, requesterID identity.DID) (err error) {
 	// find the access token
 	at, err := cd.findAT(tokenID)
 	if err != nil {
@@ -379,8 +379,15 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, idService identity
 		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	// TODO provide the time for validation here using the signature timestamp
-	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), nil)
+	doc, err := docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
+	if err != nil {
+		return err
+	}
+	ts, err := doc.Timestamp()
+	if err != nil {
+		return err
+	}
+	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), &ts)
 	if err != nil {
 		return err
 	}
@@ -394,7 +401,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 		return nil, err
 	}
 
-	at, err := assembleAccessToken(ctx, payload)
+	at, err := assembleAccessToken(ctx, payload, cd.CurrentVersion())
 	if err != nil {
 		return nil, errors.New("failed to construct access token: %v", err)
 	}
@@ -404,7 +411,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*coredocumentpb.AccessToken, error) {
+func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
 	account, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -427,7 +434,7 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 		return nil, err
 	}
 
-	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID[:], docID)
+	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID[:], docID, docVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -452,13 +459,14 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 		DocumentIdentifier: docID,
 		Signature:          sig.Signature,
 		Key:                keys[identity.KeyPurposeSigning.Name].PublicKey,
+		DocumentVersion:    docVersion,
 	}
 
 	return at, nil
 }
 
 // assembleTokenMessage assembles a token message
-func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, granteeID identity.DID, roleID []byte, docID []byte) ([]byte, error) {
+func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, granteeID identity.DID, roleID []byte, docID []byte, docVersion []byte) ([]byte, error) {
 	ids := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range ids {
 		if len(id) != idSize {
@@ -470,5 +478,6 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 	tm = append(tm, granteeID[:]...)
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
+	tm = append(tm, docVersion...)
 	return tm, nil
 }
