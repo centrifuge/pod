@@ -22,28 +22,6 @@ func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 		name                                     string
 		grantAccess, tokenProof, readAccessProof bool
 	}{
-		//{
-		//	name:        "grant access",
-		//	grantAccess: true,
-		//},
-		//
-		//{
-		//	name:       "token proof",
-		//	tokenProof: true,
-		//},
-		//
-		//{
-		//	name:        "grant access and token proof",
-		//	grantAccess: true,
-		//	tokenProof:  true,
-		//},
-		//
-		//{
-		//	name:            "grant access and read access proof",
-		//	grantAccess:     true,
-		//	readAccessProof: true,
-		//},
-
 		{
 			name:            "grant access, token proof and read access proof",
 			grantAccess:     true,

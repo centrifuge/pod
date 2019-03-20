@@ -28,11 +28,11 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"invoice_number": "12324",
-			"due_date":       "2018-09-26T23:12:37.902198664Z",
-			"gross_amount":   "40",
-			"currency":       "USD",
-			"net_amount":     "40",
+			"number":       "12324",
+			"date_due":     "2018-09-26T23:12:37.902198664Z",
+			"gross_amount": "40",
+			"currency":     "USD",
+			"net_amount":   "40",
 			"line_items": map[string]interface{}{
 				"item_number":  "12345",
 				"tax_amount":   "1.99",
@@ -47,14 +47,14 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 func invoiceNFTPayload(collaborators []string, sender string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"invoice_number": "12324",
-			"due_date":       "2018-09-26T23:12:37.902198664Z",
-			"gross_amount":   "40",
-			"currency":       "USD",
-			"net_amount":     "40",
-			"document_type":  "invoice",
-			"sender":         sender,
-			"invoice_status": "unpaid",
+			"number":        "12324",
+			"date_due":      "2018-09-26T23:12:37.902198664Z",
+			"gross_amount":  "40",
+			"currency":      "USD",
+			"net_amount":    "40",
+			"document_type": "invoice",
+			"sender":        sender,
+			"status":        "unpaid",
 		},
 		"collaborators": collaborators,
 	}
@@ -112,11 +112,11 @@ func updatedPOPayload(collaborators []string) map[string]interface{} {
 func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"invoice_number": "12324",
-			"due_date":       "2018-09-26T23:12:37.902198664Z",
-			"gross_amount":   "40",
-			"currency":       "EUR",
-			"net_amount":     "42",
+			"number":       "12324",
+			"date_due":     "2018-09-26T23:12:37.902198664Z",
+			"gross_amount": "40",
+			"currency":     "EUR",
+			"net_amount":   "42",
 		},
 		"collaborators": collaborators,
 	}

@@ -66,13 +66,6 @@ func createDocument(e *httpexpect.Expect, auth string, documentType string, stat
 	return obj
 }
 
-func failedUpdateDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/"+documentType+"/"+docIdentifier), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
 func updateDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/"+documentType+"/"+docIdentifier), auth).
 		WithJSON(payload).
