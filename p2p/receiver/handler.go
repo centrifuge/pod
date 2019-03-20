@@ -253,7 +253,7 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return err
 		}
 
-		err = m.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		err = m.ATGranteeCanRead(ctx, m, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
 		if err != nil {
 			return err
 		}

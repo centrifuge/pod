@@ -366,7 +366,7 @@ func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 }
 
 // ATGranteeCanRead checks that the grantee of the access token can read the document requested
-func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, idService identity.ServiceDID, tokenID, docID []byte, requesterID identity.DID) (err error) {
+func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, m Model, idService identity.ServiceDID, tokenID, docID []byte, requesterID identity.DID) (err error) {
 	// find the access token
 	at, err := cd.findAT(tokenID)
 	if err != nil {
@@ -388,11 +388,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	doc, err := docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
-	if err != nil {
-		return err
-	}
-	ts, err := doc.Timestamp()
+	ts, err := m.Timestamp()
 	if err != nil {
 		return err
 	}
