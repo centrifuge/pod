@@ -4,6 +4,7 @@ package txv1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -37,10 +38,11 @@ func TestService_ExecuteWithinTX_happy(t *testing.T) {
 }
 
 func TestService_ExecuteWithinTX_err(t *testing.T) {
+	errStr := "dummy"
 	cid := testingidentity.GenerateRandomDID()
 	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
-	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
-		err <- errors.New("dummy")
+	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "SomeTask", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+		err <- errors.New(errStr)
 	})
 	<-done
 	assert.NoError(t, err)
@@ -48,6 +50,9 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 	trn, err := srv.GetTransaction(cid, tid)
 	assert.NoError(t, err)
 	assert.Equal(t, transactions.Failed, trn.Status)
+	assert.Len(t, trn.Logs, 1)
+	assert.Equal(t, fmt.Sprintf("%s[SomeTask]", managerLogPrefix), trn.Logs[0].Action)
+	assert.Equal(t, errStr, trn.Logs[0].Message)
 }
 
 func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {

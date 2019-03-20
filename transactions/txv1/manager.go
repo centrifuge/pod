@@ -13,10 +13,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-
 const (
 	managerLogPrefix = "manager"
 )
+
 // extendedManager exposes package specific functions.
 type extendedManager interface {
 	transactions.Manager
