@@ -236,7 +236,7 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	i := createInvoice(t)
 	rk := i.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := i.CreateProofs([]string{"invoice.number", pf, documents.CDTreePrefix + ".document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.number", pf, documents.CDTreePrefix + ".document_type", "invoice.line_items[0].item_number", "invoice.line_items[0].description"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.CoreDocument.DocumentRootTree()
@@ -258,6 +258,15 @@ func TestInvoice_CreateProofs(t *testing.T) {
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// validate line item
+	valid, err = tree.ValidateProof(proof[3])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	valid, err = tree.ValidateProof(proof[4])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -345,7 +354,17 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 
 func createInvoice(t *testing.T) *Invoice {
 	i := new(Invoice)
-	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), defaultDID.String())
+	payload := testingdocuments.CreateInvoicePayload()
+	payload.Data.LineItems = []*clientinvoicepb.InvoiceLineItem{
+		{
+			ItemNumber:  "123456",
+			TaxAmount:   "1.99",
+			TotalAmount: "99",
+			Description: "Some description",
+		},
+	}
+
+	err := i.InitInvoiceInput(payload, defaultDID.String())
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)

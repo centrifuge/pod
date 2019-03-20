@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -115,7 +116,7 @@ func (d DID) ToAddress() common.Address {
 
 // String returns the DID as HEX String
 func (d DID) String() string {
-	return d.ToAddress().String()
+	return strings.ToLower(d.ToAddress().String())
 }
 
 // BigInt returns DID in bigInt

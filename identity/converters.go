@@ -26,13 +26,12 @@ func StringsToDIDs(strs ...string) ([]*DID, error) {
 // DIDsToStrings converts DIDs to hex strings.
 func DIDsToStrings(dids ...*DID) []string {
 	strs := make([]string, len(dids), len(dids))
-
 	for i, did := range dids {
 		if did == nil {
 			continue
 		}
 
-		strs[i] = strings.ToLower(did.String())
+		strs[i] = did.String()
 	}
 
 	return strs
