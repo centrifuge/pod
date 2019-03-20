@@ -22,7 +22,7 @@ import (
 const prefix string = "entity"
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
-func compactPrefix() []byte { return []byte{0, 1, 0, 0} }
+func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
 
 // Entity implements the documents.Model keeps track of entity related fields and state
 type Entity struct {
@@ -35,21 +35,19 @@ type Entity struct {
 	// tax information
 	PaymentDetails []*entitypb.PaymentDetail
 	// Entity contact list
-	Contacts             []*entitypb.Contact
+	Contacts []*entitypb.Contact
 
 	EntitySalts *proofs.Salts
 }
 
-
 // getClientData returns the client data from the entity model
 func (e *Entity) getClientData() *cliententitypb.EntityData {
 	return &cliententitypb.EntityData{
-		Identity: e.Identity,
-		LegalName:e.LegalName,
-		Addresses:e.Addresses,
-		PaymentDetails:e.PaymentDetails,
-		Contacts:e.Contacts,
-
+		Identity:       e.Identity,
+		LegalName:      e.LegalName,
+		Addresses:      e.Addresses,
+		PaymentDetails: e.PaymentDetails,
+		Contacts:       e.Contacts,
 	}
 
 }
@@ -57,15 +55,13 @@ func (e *Entity) getClientData() *cliententitypb.EntityData {
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 	return &entitypb.Entity{
-	Identity: e.Identity,
-	LegalName: e.LegalName,
-	Addresses: e.Addresses,
-	PaymentDetails: e.PaymentDetails,
-	Contacts: e.Contacts,
+		Identity:       e.Identity,
+		LegalName:      e.LegalName,
+		Addresses:      e.Addresses,
+		PaymentDetails: e.PaymentDetails,
+		Contacts:       e.Contacts,
 	}
 }
-
-
 
 // InitEntityInput initialize the model based on the received parameters from the rest api call
 func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self string) error {
@@ -90,14 +86,13 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 	return nil
 }
 
-
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
 func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
- e.Identity = entityData.Identity
- e.LegalName = entityData.LegalName
- e.Addresses = entityData.Addresses
- e.PaymentDetails = entityData.PaymentDetails
- e.Contacts = entityData.Contacts
+	e.Identity = entityData.Identity
+	e.LegalName = entityData.LegalName
+	e.Addresses = entityData.Addresses
+	e.PaymentDetails = entityData.PaymentDetails
+	e.Contacts = entityData.Contacts
 }
 
 // getEntitySalts returns the entity salts. Initialises if not present
@@ -221,7 +216,6 @@ func (e *Entity) CreateProofs(fields []string) (proofs []*proofspb.Proof, err er
 func (*Entity) DocumentType() string {
 	return documenttypes.EntityDataTypeUrl
 }
-
 
 // PrepareNewVersion prepares new version from the old entity.
 func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators []string) error {

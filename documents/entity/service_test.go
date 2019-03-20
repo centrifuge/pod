@@ -3,6 +3,8 @@
 package entity
 
 import (
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -10,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 var (
@@ -29,6 +30,7 @@ func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.D
 	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
+
 /*
 func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {
 	c := &testingconfig.MockConfig{}
