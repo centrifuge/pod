@@ -98,11 +98,11 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 			e.Identity = &did
 		}
 	}
-
 	e.LegalName = data.LegalName
-	e.Addresses = data.Addresses
+	//e.Addresses = data.Addresses //TODO precise proofs not supporting fields yet
 	e.PaymentDetails = data.PaymentDetails
 	e.Contacts = data.Contacts
+
 	return nil
 }
 
