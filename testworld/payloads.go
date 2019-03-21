@@ -33,11 +33,13 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 			"gross_amount": "40",
 			"currency":     "USD",
 			"net_amount":   "40",
-			"line_items": map[string]interface{}{
-				"item_number":  "12345",
-				"tax_amount":   "1.99",
-				"total_amount": "2.99",
-				"description":  "line item description",
+			"line_items": []map[string]interface{}{
+				{
+					"item_number":  "12345",
+					"tax_amount":   "1.99",
+					"total_amount": "2.99",
+					"description":  "line item description",
+				},
 			},
 		},
 		"collaborators": collaborators,
