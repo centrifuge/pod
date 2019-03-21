@@ -29,9 +29,6 @@ func TestHost_Happy(t *testing.T) {
 
 	docIdentifier := getDocumentIdentifier(t, res)
 
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
