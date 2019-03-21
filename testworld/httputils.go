@@ -90,6 +90,15 @@ func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
 	return txID
 }
 
+func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
+	versionID := resp.Value("header").Path("$.version_id").String().Raw()
+	if versionID == "" {
+		t.Error("version ID empty")
+	}
+
+	return versionID
+}
+
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/token/mint"), auth).
 		WithJSON(payload).

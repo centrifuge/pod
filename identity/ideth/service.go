@@ -292,6 +292,10 @@ func (i service) CurrentP2PKey(did id.DID) (ret string, err error) {
 		return ret, err
 	}
 
+	if len(keys) == 0 {
+		return "", errors.New("missing p2p key")
+	}
+
 	lastKey := keys[len(keys)-1]
 	key, err := i.GetKey(did, lastKey.GetKey())
 	if err != nil {
