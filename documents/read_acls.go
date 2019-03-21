@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -180,6 +181,7 @@ func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common
 // CreateNFTProofs generate proofs returns proofs for NFT minting.
 func (cd *CoreDocument) CreateNFTProofs(
 	docType string,
+	dataTree *proofs.DocumentTree,
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
@@ -208,18 +210,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 		pfKeys = append(pfKeys, pks...)
 	}
 
-	signaturesTree, err := cd.getSignatureDataTree()
-	if err != nil {
-		return nil, errors.New("failed to get signatures tree: %v", err)
-	}
-
-	cdTree, err := cd.documentTree(docType)
-	if err != nil {
-		return nil, errors.New("failed to generate core Document tree: %v", err)
-	}
-
-	treeProofs := map[string]*TreeProof{CDTreePrefix: newTreeProof(cdTree, append([][]byte{cd.Document.DataRoot}, signaturesTree.RootHash()))}
-	return generateProofs(pfKeys, treeProofs)
+	return cd.CreateProofs(docType, dataTree, pfKeys)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice
