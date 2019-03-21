@@ -68,6 +68,8 @@ type MintNFTRequest struct {
 type PaymentObligation interface {
 	// MintNFT mints an NFT
 	MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error)
+	// GetRequiredPaymentObligationProofFields returns the required proof field properties
+	GetRequiredPaymentObligationProofFields(ctx context.Context, documentID []byte) ([]string, error)
 }
 
 // MintNFTResponse holds tokenID and transaction ID.

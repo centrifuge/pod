@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -104,6 +105,31 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 
 	return requestData, nil
 
+}
+
+// GetRequiredPaymentObligationProofFields returns required proof fields for payment obligation mint
+func (s *ethereumPaymentObligation) GetRequiredPaymentObligationProofFields(ctx context.Context, documentID []byte) ([]string, error) {
+	var proofFields []string
+
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accDIDBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+
+	return proofFields, nil
 }
 
 // MintNFT mints an NFT

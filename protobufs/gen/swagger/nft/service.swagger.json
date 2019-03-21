@@ -15,6 +15,40 @@
     "application/json"
   ],
   "paths": {
+    "/nft/payment_obligation/{identifier}": {
+      "post": {
+        "description": "Mint a Payment Obligation NFT from a Centrifuge Invoice",
+        "operationId": "MintPaymentObligationNFT",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "Invice Document identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/nftNFTPaymentObligationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
+    },
     "/token/mint": {
       "post": {
         "description": "Mint an NFT from a Centrifuge Document",
@@ -89,6 +123,23 @@
         },
         "token_id": {
           "type": "string"
+        }
+      }
+    },
+    "nftNFTPaymentObligationRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "Invice Document identifier"
+        },
+        "deposit_address": {
+          "type": "string",
+          "title": "Deposit address for NFT Token created"
+        },
+        "registry_address": {
+          "type": "string",
+          "title": "The contract address of the registry where the token should be minted"
         }
       }
     },

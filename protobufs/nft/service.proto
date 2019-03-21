@@ -21,10 +21,28 @@ service NFTService {
       description: "Mint an NFT from a Centrifuge Document"
     };
   }
+  rpc MintPaymentObligationNFT(NFTPaymentObligationRequest) returns (NFTMintResponse) {
+    option (google.api.http) = {
+      post: "/nft/payment_obligation/{identifier}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Mint a Payment Obligation NFT from a Centrifuge Invoice"
+    };
+  }
 }
 
 message ResponseHeader {
   string transaction_id = 5;
+}
+
+message NFTPaymentObligationRequest {
+  // Invice Document identifier
+  string identifier = 1;
+  // Deposit address for NFT Token created
+  string deposit_address = 2;
+  // The contract address of the registry where the token should be minted
+  string registry_address = 3;
 }
 
 message NFTMintRequest {
