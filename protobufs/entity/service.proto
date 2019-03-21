@@ -85,7 +85,7 @@ message ResponseHeader {
 
 // EntityData is the default entity schema
 message EntityData {
-  bytes identity = 1;
+  string identity = 1;
   string legal_name = 2;
   // address
   repeated Address addresses = 3;

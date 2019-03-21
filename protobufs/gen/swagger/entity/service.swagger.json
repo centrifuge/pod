@@ -142,6 +142,10 @@
           "type": "boolean",
           "format": "boolean"
         },
+        "is_ship_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
         "is_pay_to": {
           "type": "boolean",
           "format": "boolean"
@@ -249,8 +253,7 @@
       "type": "object",
       "properties": {
         "identity": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "legal_name": {
           "type": "string"
