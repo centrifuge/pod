@@ -10,8 +10,8 @@ import (
 
 func TestConverters(t *testing.T) {
 	sdids := []string{
-		"0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-		"0xf72855759a39fb75fc7341139f5d7a3974c4da08",
+		"0xF72855759A39FB75fC7341139f5d7A3974d4DA08",
+		"0xF72855759A39Fb75fc7341139F5d7a3974C4dA08",
 		"",
 	}
 

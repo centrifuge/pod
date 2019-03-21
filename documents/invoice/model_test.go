@@ -155,9 +155,9 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, hexutil.Encode(inv.Recipient[:]), "recipient should match")
-	assert.Equal(t, data.Sender, hexutil.Encode(inv.Sender[:]), "sender should match")
-	assert.Equal(t, data.Payee, hexutil.Encode(inv.Payee[:]), "payee should match")
+	assert.Equal(t, data.Recipient, inv.Recipient.String(), "recipient should match")
+	assert.Equal(t, data.Sender, inv.Sender.String(), "sender should match")
+	assert.Equal(t, data.Payee, inv.Payee.String(), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {

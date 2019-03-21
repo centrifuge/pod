@@ -145,8 +145,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
-		Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
-		Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
+		Sender:      "0xed03Fa80291fF5DDC284DE6b51E716B130b05e20",
+		Recipient:   "0xEA939D5C0494b072c51565b191eE59B5D34fbf79",
 		Payee:       "some data",
 		GrossAmount: "42",
 		Currency:    "EUR",
@@ -158,7 +158,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// failed core document new version
-	payload.Data.Payee = "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c"
+	payload.Data.Payee = "0x087D8ca6A16E6ce8d9fF55672E551A2828Ab8e8C"
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -226,7 +226,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	inv, ok := m.(*Invoice)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, inv.Recipient.String(), "0xea939d5c0494b072c51565b191ee59b5d34fbf79")
+	assert.Equal(t, inv.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
 	assert.Equal(t, inv.GrossAmount.String(), "42")
 }
 
