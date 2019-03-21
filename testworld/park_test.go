@@ -5,6 +5,7 @@ package testworld
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,8 +65,8 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 	// Verify accounts are created
 	acc1 := sleepyHost.accounts[0]
 	res := getAccount(sleepyTS.httpExpect, sleepyTS.id.String(), http.StatusOK, acc1)
-	acc1Res := res.Value("identity_id").String().NotEmpty()
-	acc1Res.Equal(acc1)
+	acc1Res := strings.ToLower(res.Value("identity_id").String().NotEmpty().Raw())
+	assert.Equal(t, acc1, acc1Res)
 
 	// Stop host
 	sleepyHost.kill()
@@ -78,6 +79,6 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 
 	// Verify accounts are available after restart
 	res = getAccount(sleepyTS.httpExpect, sleepyTS.id.String(), http.StatusOK, acc1)
-	acc1Res = res.Value("identity_id").String().NotEmpty()
-	acc1Res.Equal(acc1)
+	acc1Res = strings.ToLower(res.Value("identity_id").String().NotEmpty().Raw())
+	assert.Equal(t, acc1, acc1Res)
 }

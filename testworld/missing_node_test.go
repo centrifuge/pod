@@ -6,6 +6,7 @@ import (
 	"context"
 	"math/big"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -74,7 +75,7 @@ func createIdentity(t *testing.T, idFactory identity.Factory, idService identity
 	assert.Nil(t, err)
 	did, err := idFactory.CreateIdentity(ctx)
 	assert.Nil(t, err, "should not error out when creating identity")
-	assert.Equal(t, did.String(), didAddr.String(), "Resulting Identity should have the same ID as the input")
+	assert.Equal(t, did.String(), strings.ToLower(didAddr.String()), "Resulting Identity should have the same ID as the input")
 
 	// Add Keys
 	accKeys, err := tc.GetKeys()

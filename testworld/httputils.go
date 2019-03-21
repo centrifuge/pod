@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -178,7 +179,7 @@ func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request 
 func getAccounts(accounts *httpexpect.Array) map[string]string {
 	accIDs := make(map[string]string)
 	for i := 0; i < int(accounts.Length().Raw()); i++ {
-		val := accounts.Element(i).Path("$.identity_id").String().NotEmpty().Raw()
+		val := strings.ToLower(accounts.Element(i).Path("$.identity_id").String().NotEmpty().Raw())
 		accIDs[val] = val
 	}
 	return accIDs
