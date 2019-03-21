@@ -131,6 +131,30 @@
     }
   },
   "definitions": {
+    "invoiceBinaryAttachment": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "file_type": {
+          "type": "string",
+          "title": "mime type of attached file"
+        },
+        "size": {
+          "type": "string",
+          "format": "uint64",
+          "title": "in bytes"
+        },
+        "data": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string",
+          "title": "the md5 checksum of the original file for easier verification - optional"
+        }
+      }
+    },
     "invoiceInvoiceCreatePayload": {
       "type": "object",
       "properties": {
@@ -148,20 +172,32 @@
     "invoiceInvoiceData": {
       "type": "object",
       "properties": {
-        "invoice_status": {
-          "type": "string"
-        },
-        "invoice_number": {
+        "number": {
           "type": "string",
           "title": "invoice number or reference number"
         },
-        "sender_name": {
+        "status": {
           "type": "string",
-          "title": "name of the sender company"
+          "title": "invoice status"
         },
-        "sender_street": {
+        "sender_invoice_id": {
+          "type": "string"
+        },
+        "recipient_invoice_id": {
+          "type": "string"
+        },
+        "sender_company_name": {
+          "type": "string"
+        },
+        "sender_contact_person_name": {
+          "type": "string"
+        },
+        "sender_street1": {
           "type": "string",
           "title": "street and address details of the sender company"
+        },
+        "sender_street2": {
+          "type": "string"
         },
         "sender_city": {
           "type": "string"
@@ -169,26 +205,99 @@
         "sender_zipcode": {
           "type": "string"
         },
+        "sender_state": {
+          "type": "string"
+        },
         "sender_country": {
           "type": "string",
           "title": "country ISO code of the sender of this invoice"
         },
-        "recipient_name": {
-          "type": "string",
-          "title": "name of the recipient company"
-        },
-        "recipient_street": {
+        "bill_to_company_name": {
           "type": "string"
         },
-        "recipient_city": {
+        "bill_to_contact_person_name": {
           "type": "string"
         },
-        "recipient_zipcode": {
+        "bill_to_street1": {
           "type": "string"
         },
-        "recipient_country": {
-          "type": "string",
-          "title": "country ISO code of the receipient of this invoice"
+        "bill_to_street2": {
+          "type": "string"
+        },
+        "bill_to_city": {
+          "type": "string"
+        },
+        "bill_to_zipcode": {
+          "type": "string"
+        },
+        "bill_to_state": {
+          "type": "string"
+        },
+        "bill_to_country": {
+          "type": "string"
+        },
+        "bill_to_vat_number": {
+          "type": "string"
+        },
+        "bill_to_local_tax_id": {
+          "type": "string"
+        },
+        "remit_to_company_name": {
+          "type": "string"
+        },
+        "remit_to_contact_person_name": {
+          "type": "string"
+        },
+        "remit_to_street1": {
+          "type": "string"
+        },
+        "remit_to_street2": {
+          "type": "string"
+        },
+        "remit_to_city": {
+          "type": "string"
+        },
+        "remit_to_zipcode": {
+          "type": "string"
+        },
+        "remit_to_state": {
+          "type": "string"
+        },
+        "remit_to_country": {
+          "type": "string"
+        },
+        "remit_to_vat_number": {
+          "type": "string"
+        },
+        "remit_to_local_tax_id": {
+          "type": "string"
+        },
+        "remit_to_tax_country": {
+          "type": "string"
+        },
+        "ship_to_company_name": {
+          "type": "string"
+        },
+        "ship_to_contact_person_name": {
+          "type": "string"
+        },
+        "ship_to_street1": {
+          "type": "string"
+        },
+        "ship_to_street2": {
+          "type": "string"
+        },
+        "ship_to_city": {
+          "type": "string"
+        },
+        "ship_to_zipcode": {
+          "type": "string"
+        },
+        "ship_to_state": {
+          "type": "string"
+        },
+        "ship_to_country": {
+          "type": "string"
         },
         "currency": {
           "type": "string",
@@ -208,19 +317,58 @@
         "tax_rate": {
           "type": "string"
         },
+        "tax_on_line_level": {
+          "type": "boolean",
+          "format": "boolean"
+        },
         "recipient": {
-          "type": "string"
+          "type": "string",
+          "title": "centrifuge ID of the recipient"
         },
         "sender": {
-          "type": "string"
+          "type": "string",
+          "title": "centrifuge ID of the sender"
         },
         "payee": {
-          "type": "string"
+          "type": "string",
+          "title": "centrifuge ID of the payee"
         },
         "comment": {
           "type": "string"
         },
-        "due_date": {
+        "shipping_terms": {
+          "type": "string"
+        },
+        "requester_email": {
+          "type": "string"
+        },
+        "requester_name": {
+          "type": "string"
+        },
+        "delivery_number": {
+          "type": "string",
+          "title": "number of the delivery note"
+        },
+        "is_credit_note": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "credit_note_invoice_number": {
+          "type": "string"
+        },
+        "credit_for_invoice_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date_due": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date_paid": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date_updated": {
           "type": "string",
           "format": "date-time"
         },
@@ -228,7 +376,77 @@
           "type": "string",
           "format": "date-time"
         },
-        "extra_data": {
+        "attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/invoiceBinaryAttachment"
+          }
+        },
+        "line_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/invoiceInvoiceLineItem"
+          }
+        },
+        "payment_details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/invoicePaymentDetails"
+          }
+        },
+        "tax_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/invoiceInvoiceTaxItem"
+          }
+        }
+      },
+      "title": "InvoiceData is the default invoice schema"
+    },
+    "invoiceInvoiceLineItem": {
+      "type": "object",
+      "properties": {
+        "item_number": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sender_part_no": {
+          "type": "string"
+        },
+        "price_per_unit": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "unit_of_measure": {
+          "type": "string"
+        },
+        "net_weight": {
+          "type": "string"
+        },
+        "tax_amount": {
+          "type": "string"
+        },
+        "tax_rate": {
+          "type": "string"
+        },
+        "tax_code": {
+          "type": "string"
+        },
+        "total_amount": {
+          "type": "string",
+          "title": "the total amount of the line item"
+        },
+        "purchase_order_number": {
+          "type": "string"
+        },
+        "purchase_order_item_number": {
+          "type": "string"
+        },
+        "delivery_note_number": {
           "type": "string"
         }
       }
@@ -241,6 +459,29 @@
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
+        }
+      }
+    },
+    "invoiceInvoiceTaxItem": {
+      "type": "object",
+      "properties": {
+        "item_number": {
+          "type": "string"
+        },
+        "invoice_item_number": {
+          "type": "string"
+        },
+        "tax_amount": {
+          "type": "string"
+        },
+        "tax_rate": {
+          "type": "string"
+        },
+        "tax_code": {
+          "type": "string"
+        },
+        "tax_base_amount": {
+          "type": "string"
         }
       }
     },
@@ -258,6 +499,74 @@
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
+        }
+      }
+    },
+    "invoicePaymentDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment"
+        },
+        "date_executed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payee": {
+          "type": "string",
+          "title": "centrifuge id of payee"
+        },
+        "payer": {
+          "type": "string",
+          "title": "centrifuge id of payer"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string",
+          "title": "payment reference (e.g. reference field on bank transfer)"
+        },
+        "bank_name": {
+          "type": "string"
+        },
+        "bank_address": {
+          "type": "string"
+        },
+        "bank_country": {
+          "type": "string"
+        },
+        "bank_account_number": {
+          "type": "string"
+        },
+        "bank_account_currency": {
+          "type": "string"
+        },
+        "bank_account_holder_name": {
+          "type": "string"
+        },
+        "bank_key": {
+          "type": "string"
+        },
+        "crypto_chain_uri": {
+          "type": "string",
+          "title": "the ID of the chain to use in URI format. e.g. \"ethereum://42/\u003ctokenaddress\u003e\""
+        },
+        "crypto_transaction_id": {
+          "type": "string",
+          "title": "the transaction in which the payment happened"
+        },
+        "crypto_from": {
+          "type": "string",
+          "title": "from address"
+        },
+        "crypto_to": {
+          "type": "string",
+          "title": "to address"
         }
       }
     },

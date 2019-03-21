@@ -141,7 +141,8 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 }
 
 func RevokeKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
-	idService.RevokeKey(ctx, key)
+	err := idService.RevokeKey(ctx, key)
+	assert.NoError(t, err)
 	response, err := idService.GetKey(identityDID, key)
 	assert.NoError(t, err)
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")

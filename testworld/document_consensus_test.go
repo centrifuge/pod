@@ -77,10 +77,6 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
-	//// let c update the document and fail
-	//res = failedUpdateDocument(bob.httpExpect, c, documentType, http.StatusInternalServerError, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
-	//assert.NotNil(t, res)
-
 	// b updates invoice and shares with c as well
 	res = updateDocument(bob.httpExpect, b, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
 	txID = getTransactionID(t, res)
@@ -134,10 +130,6 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
-	//// let c update the document and fail
-	//res = failedUpdateDocument(bob.httpExpect, c, documentType, http.StatusInternalServerError, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), b, c, d, e}))
-	//assert.NotNil(t, res)
-
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
 	res = updateDocument(bob.httpExpect, a, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), b, c, d, e}))
 	txID = getTransactionID(t, res)
@@ -186,10 +178,6 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
 	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
-
-	//// let charlie update the document and fail
-	//res = failedUpdateDocument(charlie.httpExpect, charlie.id.String(), documentType, http.StatusInternalServerError, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
-	//assert.NotNil(t, res)
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
