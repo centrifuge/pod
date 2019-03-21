@@ -181,7 +181,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 
 	// fail recipient
 	data := &cliententitypb.EntityData{
-		Identity:  testingidentity.GenerateRandomDID().ToAddress().Bytes(),
+		Identity:  testingidentity.GenerateRandomDID().ToAddress().String(),
 		LegalName: "Company Test",
 		Contacts:  []*entitypb.Contact{{Name: "Satoshi Nakamoto"}},
 		Addresses: []*entitypb.Address{{IsMain: true,

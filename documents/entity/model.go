@@ -2,6 +2,7 @@ package entity
 
 import (
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
 
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -28,7 +29,7 @@ func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
 type Entity struct {
 	*documents.CoreDocument
 
-	Identity  []byte
+	Identity  *identity.DID
 	LegalName string
 	// address
 	Addresses []*entitypb.Address
@@ -42,20 +43,29 @@ type Entity struct {
 
 // getClientData returns the client data from the entity model
 func (e *Entity) getClientData() *cliententitypb.EntityData {
+	var didString string
+	if e.Identity != nil {
+		didString = hexutil.Encode(e.Identity[:])
+	}
+
 	return &cliententitypb.EntityData{
-		Identity:       e.Identity,
+		Identity:       didString,
 		LegalName:      e.LegalName,
 		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
-
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
+	var didByte []byte
+	if e.Identity != nil {
+		didByte = e.Identity[:]
+	}
+
 	return &entitypb.Entity{
-		Identity:       e.Identity,
+		Identity:       didByte,
 		LegalName:      e.LegalName,
 		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
@@ -82,13 +92,27 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 
 // initEntityFromData initialises entity from entityData
 func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
-	e.Identity = data.Identity
+
+	if data.Identity != "" {
+		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
+			e.Identity = &did
+		}
+	}
+
+	e.LegalName = data.LegalName
+	e.Addresses = data.Addresses
+	e.PaymentDetails = data.PaymentDetails
+	e.Contacts = data.Contacts
 	return nil
 }
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
 func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
-	e.Identity = entityData.Identity
+	if e.Identity != nil {
+		did := identity.NewDIDFromBytes(entityData.Identity)
+		e.Identity = &did
+	}
+
 	e.LegalName = entityData.LegalName
 	e.Addresses = entityData.Addresses
 	e.PaymentDetails = entityData.PaymentDetails
