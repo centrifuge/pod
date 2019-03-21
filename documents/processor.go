@@ -176,7 +176,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 
 	rootHash, err := anchors.ToDocumentRoot(dr)
 	if err != nil {
-		return errors.New("failed to get document root: %v", err)
+		return errors.New("failed to convert document root: %v", err)
 	}
 
 	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
@@ -184,9 +184,9 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	signingRootProof, err := model.GetSignaturesRootHash()
+	signingRootProof, err := model.CalculateSignaturesRoot()
 	if err != nil {
-		return errors.New("failed to get signing root proof: %v", err)
+		return errors.New("failed to get signature root: %v", err)
 	}
 
 	signingRootProofHashes, err := utils.ConvertProofForEthereum([][]byte{signingRootProof})
