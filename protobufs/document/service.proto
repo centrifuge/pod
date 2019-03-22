@@ -121,4 +121,5 @@ message ResponseHeader {
   repeated NFT nfts = 8;
   bool anchored = 9;
   repeated AccessToken access_tokens = 10;
+  string transaction_id = 11;
 }
