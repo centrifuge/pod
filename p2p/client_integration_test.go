@@ -80,6 +80,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
 	ctxh, err := contextutil.New(context.Background(), acci)
+	assert.NoError(t, err)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)

@@ -238,7 +238,8 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 	}
 
 	var count int
-	peerCtx, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+	defer cancel()
 	for _, c := range cs {
 		count++
 		go s.getSignatureAsync(peerCtx, cd, c, in)

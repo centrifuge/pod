@@ -154,7 +154,7 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
 
 	opts, err := client.GetTxOpts(cfg.GetEthereumDefaultAccountName())
-
+	assert.NoError(t, err)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 

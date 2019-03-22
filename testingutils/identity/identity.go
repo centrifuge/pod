@@ -33,6 +33,9 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 
 	// Add Action key if it doesn't exist
 	keys, err := idService.GetKeysByPurpose(*did, &(identity.KeyPurposeAction.Value))
+	if err != nil {
+		return identity.DID{}, err
+	}
 	ctx, cancel1 := defaultWaitForTransactionMiningContext(contextTimeout)
 	ctxh, _ = contextutil.New(ctx, acc)
 	defer cancel1()

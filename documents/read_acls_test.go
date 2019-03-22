@@ -364,6 +364,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	srv := new(testingcommons.MockIdentityService)
 	docSrv := new(MockService)
 	id, err := account.GetIdentityID()
+	assert.NoError(t, err)
 	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
 	granterID := identity.NewDIDFromBytes(id)

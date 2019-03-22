@@ -73,8 +73,9 @@ func TestUnregisteredModel(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestaccountOperations(t *testing.T) {
-	repo, _, _ := getRandomStorage()
+func TestAccountOperations(t *testing.T) {
+	repo, _, err := getRandomStorage()
+	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 	id := utils.RandomSlice(32)
 	newaccount := &Account{
