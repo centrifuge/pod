@@ -35,8 +35,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for NotificationDummyService service
-
+// NotificationDummyServiceClient is the client API for NotificationDummyService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type NotificationDummyServiceClient interface {
 	Notify(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*notification.NotificationMessage, error)
 }
@@ -51,15 +52,14 @@ func NewNotificationDummyServiceClient(cc *grpc.ClientConn) NotificationDummySer
 
 func (c *notificationDummyServiceClient) Notify(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*notification.NotificationMessage, error) {
 	out := new(notification.NotificationMessage)
-	err := grpc.Invoke(ctx, "/notification.NotificationDummyService/Notify", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/notification.NotificationDummyService/Notify", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for NotificationDummyService service
-
+// NotificationDummyServiceServer is the server API for NotificationDummyService service.
 type NotificationDummyServiceServer interface {
 	Notify(context.Context, *empty.Empty) (*notification.NotificationMessage, error)
 }

@@ -51,14 +51,14 @@ func RegisterNFTServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.Ser
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -72,8 +72,8 @@ func RegisterNFTServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn 
 	return RegisterNFTServiceHandlerClient(ctx, mux, NewNFTServiceClient(conn))
 }
 
-// RegisterNFTServiceHandler registers the http handlers for service NFTService to "mux".
-// The handlers forward requests to the grpc endpoint over the given implementation of "NFTServiceClient".
+// RegisterNFTServiceHandlerClient registers the http handlers for service NFTService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "NFTServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "NFTServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "NFTServiceClient" to call the correct interceptors.

@@ -27,7 +27,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type GetRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -65,8 +65,8 @@ func (m *GetRequest) GetIdentifier() string {
 }
 
 type GetVersionRequest struct {
-	Identifier           string   `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
-	Version              string   `protobuf:"bytes,2,opt,name=version" json:"version,omitempty"`
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Version              string   `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -111,8 +111,8 @@ func (m *GetVersionRequest) GetVersion() string {
 }
 
 type EntityCreatePayload struct {
-	Collaborators        []string    `protobuf:"bytes,1,rep,name=collaborators" json:"collaborators,omitempty"`
-	Data                 *EntityData `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	Collaborators        []string    `protobuf:"bytes,1,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
+	Data                 *EntityData `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -157,9 +157,9 @@ func (m *EntityCreatePayload) GetData() *EntityData {
 }
 
 type EntityUpdatePayload struct {
-	Identifier           string      `protobuf:"bytes,1,opt,name=identifier" json:"identifier,omitempty"`
-	Collaborators        []string    `protobuf:"bytes,2,rep,name=collaborators" json:"collaborators,omitempty"`
-	Data                 *EntityData `protobuf:"bytes,3,opt,name=data" json:"data,omitempty"`
+	Identifier           string      `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	Collaborators        []string    `protobuf:"bytes,2,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
+	Data                 *EntityData `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -211,8 +211,8 @@ func (m *EntityUpdatePayload) GetData() *EntityData {
 }
 
 type EntityResponse struct {
-	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header" json:"header,omitempty"`
-	Data                 *EntityData     `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	Data                 *EntityData     `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -258,11 +258,11 @@ func (m *EntityResponse) GetData() *EntityData {
 
 // ResponseHeader contains a set of common fields for most document
 type ResponseHeader struct {
-	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId" json:"document_id,omitempty"`
-	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId" json:"version_id,omitempty"`
-	State                string   `protobuf:"bytes,3,opt,name=state" json:"state,omitempty"`
-	Collaborators        []string `protobuf:"bytes,4,rep,name=collaborators" json:"collaborators,omitempty"`
-	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId" json:"transaction_id,omitempty"`
+	DocumentId           string   `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
+	VersionId            string   `protobuf:"bytes,2,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
+	State                string   `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
+	Collaborators        []string `protobuf:"bytes,4,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
+	TransactionId        string   `protobuf:"bytes,5,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -329,14 +329,14 @@ func (m *ResponseHeader) GetTransactionId() string {
 
 // EntityData is the default entity schema
 type EntityData struct {
-	Identity  string `protobuf:"bytes,1,opt,name=identity" json:"identity,omitempty"`
-	LegalName string `protobuf:"bytes,2,opt,name=legal_name,json=legalName" json:"legal_name,omitempty"`
+	Identity  string `protobuf:"bytes,1,opt,name=identity,proto3" json:"identity,omitempty"`
+	LegalName string `protobuf:"bytes,2,opt,name=legal_name,json=legalName,proto3" json:"legal_name,omitempty"`
 	// address
-	Addresses []*entity.Address `protobuf:"bytes,3,rep,name=addresses" json:"addresses,omitempty"`
+	Addresses []*entity.Address `protobuf:"bytes,3,rep,name=addresses,proto3" json:"addresses,omitempty"`
 	// tax information
-	PaymentDetails []*entity.PaymentDetail `protobuf:"bytes,4,rep,name=payment_details,json=paymentDetails" json:"payment_details,omitempty"`
+	PaymentDetails []*entity.PaymentDetail `protobuf:"bytes,4,rep,name=payment_details,json=paymentDetails,proto3" json:"payment_details,omitempty"`
 	// Entity contact list
-	Contacts             []*entity.Contact `protobuf:"bytes,5,rep,name=contacts" json:"contacts,omitempty"`
+	Contacts             []*entity.Contact `protobuf:"bytes,5,rep,name=contacts,proto3" json:"contacts,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -419,8 +419,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for DocumentService service
-
+// DocumentServiceClient is the client API for DocumentService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type DocumentServiceClient interface {
 	Create(ctx context.Context, in *EntityCreatePayload, opts ...grpc.CallOption) (*EntityResponse, error)
 	Update(ctx context.Context, in *EntityUpdatePayload, opts ...grpc.CallOption) (*EntityResponse, error)
@@ -438,7 +439,7 @@ func NewDocumentServiceClient(cc *grpc.ClientConn) DocumentServiceClient {
 
 func (c *documentServiceClient) Create(ctx context.Context, in *EntityCreatePayload, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := grpc.Invoke(ctx, "/entity.DocumentService/Create", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/entity.DocumentService/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +448,7 @@ func (c *documentServiceClient) Create(ctx context.Context, in *EntityCreatePayl
 
 func (c *documentServiceClient) Update(ctx context.Context, in *EntityUpdatePayload, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := grpc.Invoke(ctx, "/entity.DocumentService/Update", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/entity.DocumentService/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +457,7 @@ func (c *documentServiceClient) Update(ctx context.Context, in *EntityUpdatePayl
 
 func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := grpc.Invoke(ctx, "/entity.DocumentService/GetVersion", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/entity.DocumentService/GetVersion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -465,15 +466,14 @@ func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRe
 
 func (c *documentServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := grpc.Invoke(ctx, "/entity.DocumentService/Get", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/entity.DocumentService/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for DocumentService service
-
+// DocumentServiceServer is the server API for DocumentService service.
 type DocumentServiceServer interface {
 	Create(context.Context, *EntityCreatePayload) (*EntityResponse, error)
 	Update(context.Context, *EntityUpdatePayload) (*EntityResponse, error)
