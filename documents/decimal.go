@@ -18,9 +18,6 @@ const (
 	maxDecimalByteLength  = 32
 )
 
-// minDec is the min absolute value we support
-var minDec = decimal.RequireFromString("0.1")
-
 // Decimal holds a fixed point decimal
 type Decimal struct {
 	dec decimal.Decimal
@@ -54,11 +51,6 @@ func (d *Decimal) SetString(s string) error {
 	fd, err := decimal.NewFromString(s)
 	if err != nil {
 		return errors.NewTypedError(ErrInvalidDecimal, err)
-	}
-
-	// check minimum
-	if !fd.IsZero() && fd.Abs().LessThan(minDec) {
-		return errors.NewTypedError(ErrInvalidDecimal, errors.New("decimal should be at least %s", minDec.String()))
 	}
 
 	s = fd.String()
@@ -118,6 +110,11 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 		return nil, err
 	}
 
+	// integer bytes should be atleast 8 byte, prepend Zeroes if not
+	if len(integer) < maxFractionByteLength {
+		integer = append(make([]byte, maxFractionByteLength-len(integer)), integer...)
+	}
+
 	decimal = append(decimal, integer...)
 
 	// sanity check
@@ -142,6 +139,12 @@ func (d *Decimal) SetBytes(dec []byte) error {
 	}
 
 	s := i.String()
+	// edge case for only fractions
+	// if dec is 8 bytes, then its just a fraction, so convert to string and prepend required zeroes
+	if len(dec) == maxFractionByteLength && decimalPrecision-len(s) > 0 {
+		s = strings.Repeat("0", decimalPrecision-len(s)) + s
+	}
+
 	fidx := len(s) - decimalPrecision
 	s = fmt.Sprintf("%s.%s", s[:fidx], s[fidx:])
 	if sign == 1 {
