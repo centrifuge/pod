@@ -23,11 +23,10 @@ func CreateInvoiceData() invoicepb.InvoiceData {
 func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {
 	return &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
-			Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
-			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
-			Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
+			Sender:      "0xed03Fa80291fF5DDC284DE6b51E716B130b05e20",
+			Recipient:   "0xEA939D5C0494b072c51565b191eE59B5D34fbf79",
+			Payee:       "0x087D8ca6A16E6ce8d9fF55672E551A2828Ab8e8C",
 			GrossAmount: "42",
-			ExtraData:   "0x01020302010203",
 			Currency:    "EUR",
 		},
 		Collaborators: []string{testingidentity.GenerateRandomDID().String()},
