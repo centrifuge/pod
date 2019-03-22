@@ -10,6 +10,7 @@ option java_package = "com.document";
 import "google/api/annotations.proto";
 import "precise-proofs/proofs/proto/proof.proto";
 import "protoc-gen-swagger/options/annotations.proto";
+import "centrifuge-protobufs/coredocument/coredocument.proto";
 
 // DocumentService contains all common interactions for documents
 service DocumentService {
@@ -79,25 +80,14 @@ message RequestHeader {
   repeated WriteAccess write_access = 2;
 }
 
-enum ReadAction {
-  READ_ACTION_INVALID = 0;
-  READ_ACTION_READ_SIGN = 1;
-  READ_ACTION_READ = 2;
-}
-
-enum TransitionAction {
-  TRANSITION_ACTION_INVALID = 0;
-  TRANSITION_ACTION_EDIT = 1;
-}
-
 message ReadAccess {
-  ReadAction action = 1;
+  coredocument.Action action = 1;
   repeated string collaborators = 2;
   repeated NFT nfts = 3;
 }
 
 message WriteAccess {
-  TransitionAction action = 1;
+  coredocument.TransitionAction action = 1;
   repeated string collaborators = 2;
 }
 
