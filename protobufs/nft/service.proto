@@ -37,12 +37,10 @@ message ResponseHeader {
 }
 
 message NFTPaymentObligationRequest {
-  // Invice Document identifier
+  // Invoice Document identifier
   string identifier = 1;
   // Deposit address for NFT Token created
   string deposit_address = 2;
-  // The contract address of the registry where the token should be minted
-  string registry_address = 3;
 }
 
 message NFTMintRequest {

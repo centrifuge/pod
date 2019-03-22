@@ -28,6 +28,12 @@ func (m *mockPaymentObligationService) MintNFT(ctx context.Context, request Mint
 	return resp, nil, args.Error(1)
 }
 
+func (m *mockPaymentObligationService) GetRequiredPaymentObligationProofFields(ctx context.Context, documentID []byte) ([]string, error) {
+	args := m.Called(ctx, documentID)
+	resp, _ := args.Get(0).([]string)
+	return resp, args.Error(1)
+}
+
 func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &mockPaymentObligationService{}

@@ -30,7 +30,7 @@
         "parameters": [
           {
             "name": "identifier",
-            "description": "Invice Document identifier",
+            "description": "Invoice Document identifier",
             "in": "path",
             "required": true,
             "type": "string"
@@ -131,15 +131,11 @@
       "properties": {
         "identifier": {
           "type": "string",
-          "title": "Invice Document identifier"
+          "title": "Invoice Document identifier"
         },
         "deposit_address": {
           "type": "string",
           "title": "Deposit address for NFT Token created"
-        },
-        "registry_address": {
-          "type": "string",
-          "title": "The contract address of the registry where the token should be minted"
         }
       }
     },

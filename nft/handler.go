@@ -79,10 +79,16 @@ func (g grpcHandler) MintPaymentObligationNFT(ctx context.Context, request *nftp
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
+	cfg, err := g.config.GetConfig()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+	poRegistry := cfg.GetContractAddressString(paymentObligationName)
+
 	mintReq := &nftpb.NFTMintRequest{
 		Identifier:                request.Identifier,
 		DepositAddress:            request.DepositAddress,
-		RegistryAddress:           request.RegistryAddress,
+		RegistryAddress:           poRegistry,
 		ProofFields:               proofFields,
 		GrantNftAccess:            true,
 		SubmitNftOwnerAccessProof: true,
