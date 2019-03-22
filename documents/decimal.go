@@ -123,7 +123,7 @@ func (d *Decimal) SetBytes(dec []byte) error {
 
 	sign, dec := dec[0], dec[1:]
 	fidx := len(dec) - maxFractionByteLength
-	integer, fraction := byteutils.IntBytesToString(dec[:fidx]), byteutils.IntBytesToString(dec[fidx:])
+	integer, fraction := byteutils.IntBytesToString(dec[:fidx]), byteutils.IntBytesToString(byteutils.RemoveZeroBytesSuffix(dec[fidx:]))
 	s := fmt.Sprintf("%s.%s", integer, fraction)
 	if sign == 1 {
 		s = "-" + s
