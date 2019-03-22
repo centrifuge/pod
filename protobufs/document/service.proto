@@ -54,14 +54,14 @@ message CreateDocumentProofRequest {
 }
 
 // ResponseHeader contains a set of common fields for most documents
-message ResponseHeader {
+message ProofResponseHeader {
   string document_id = 1;
   string version_id = 2;
   string state = 3;
 }
 
 message DocumentProof {
-  ResponseHeader header = 1;
+  ProofResponseHeader header = 1;
   repeated Proof field_proofs = 2;
 }
 
