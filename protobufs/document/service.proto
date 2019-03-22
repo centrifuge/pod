@@ -74,7 +74,7 @@ message CreateDocumentProofForVersionRequest {
   string version = 3;
   repeated string fields = 4;
 }
-git st
+
 message RequestHeader {
   repeated ReadAccess read_access = 1;
   repeated WriteAccess write_access = 2;
