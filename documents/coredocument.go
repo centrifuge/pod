@@ -103,7 +103,7 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 
 // NewCoreDocumentWithCollaborators generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, error) {
+func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
@@ -114,6 +114,7 @@ func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, er
 	}
 
 	cd.initReadRules(ids)
+	cd.initTransitionRules(ids, documentPrefix)
 	return cd, nil
 }
 

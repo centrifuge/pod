@@ -379,7 +379,7 @@ func TestCoreDocument_getCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids)
+	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
@@ -411,7 +411,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids)
+	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -448,7 +448,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids)
+	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
