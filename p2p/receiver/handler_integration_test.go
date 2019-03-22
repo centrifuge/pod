@@ -198,14 +198,13 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	po.AppendSignatures(resp.Signature)
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
-	po.document.SignatureDataSalts = nil
 	tree, err := po.DocumentRootTree()
-	po.document.DocumentRoot = tree.RootHash()
+	po.GetTestCoreDocWithReset().DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, err := anchors.ToAnchorID(po.document.CurrentPreimage)
+	anchorIDTyped, err := anchors.ToAnchorID(po.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(po.document.DocumentRoot)
+	docRootTyped, err := anchors.ToDocumentRoot(po.GetTestCoreDocWithReset().DocumentRoot)
 	assert.NoError(t, err)
 
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
@@ -231,12 +230,12 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	// Add signature received
 	npo.AppendSignatures(resp.Signature)
 	tree, err = npo.DocumentRootTree()
-	npo.document.DocumentRoot = tree.RootHash()
+	po.GetTestCoreDocWithReset().DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, err = anchors.ToAnchorID(npo.document.CurrentPreimage)
+	anchorIDTyped, err = anchors.ToAnchorID(npo.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err = anchors.ToDocumentRoot(npo.document.DocumentRoot)
+	docRootTyped, err = anchors.ToDocumentRoot(npo.GetTestCoreDocWithReset().DocumentRoot)
 	assert.NoError(t, err)
 	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
