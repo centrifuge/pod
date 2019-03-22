@@ -169,7 +169,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				},
 			},
 			output: documentpb.DocumentProof{
-				Header: &documentpb.ResponseHeader{
+				Header: &documentpb.ProofResponseHeader{
 					DocumentId: "0x010201",
 					VersionId:  "0x010202",
 					State:      "state",
