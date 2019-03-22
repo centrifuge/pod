@@ -10,7 +10,7 @@ option java_package = "com.document";
 import "google/api/annotations.proto";
 import "precise-proofs/proofs/proto/proof.proto";
 import "protoc-gen-swagger/options/annotations.proto";
-import "centrifuge-protobufs/coredocument/coredocument.proto";
+import "coredocument/coredocument.proto";
 
 // DocumentService contains all common interactions for documents
 service DocumentService {
@@ -74,7 +74,7 @@ message CreateDocumentProofForVersionRequest {
   string version = 3;
   repeated string fields = 4;
 }
-
+git st
 message RequestHeader {
   repeated ReadAccess read_access = 1;
   repeated WriteAccess write_access = 2;
