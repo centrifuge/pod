@@ -8,36 +8,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gavv/httpexpect"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name                                     string
-		grantAccess, tokenProof, readAccessProof bool
-	}{
-		{
-			name:            "grant access, token proof and read access proof",
-			grantAccess:     true,
-			tokenProof:      true,
-			readAccessProof: true,
-		},
-	}
-
-	for _, c := range tests {
-		t.Run("", func(t *testing.T) {
-			t.Parallel()
-			paymentObligationMint(t, typeInvoice, c.grantAccess, c.tokenProof, c.readAccessProof, false)
-		})
-	}
+	paymentObligationMint(t, typeInvoice, true, true, true, false)
 }
 
 func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
@@ -98,39 +80,24 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 		signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 
 		// mint an NFT
-		test := struct {
-			httpStatus int
-			payload    map[string]interface{}
-		}{
-			http.StatusOK,
-			map[string]interface{}{
-
-				"identifier":                docIdentifier,
-				"registryAddress":           registry.String(),
-				"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-				"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
-				"submitTokenProof":          tokenProof,
-				"submitNftOwnerAccessProof": nftReadAccessProof,
-				"grantNftAccess":            grantNFTAccess,
-			},
+		payload := map[string]interface{}{
+			"identifier":                docIdentifier,
+			"registryAddress":           registry.String(),
+			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+			"submitTokenProof":          tokenProof,
+			"submitNftOwnerAccessProof": nftReadAccessProof,
+			"grantNftAccess":            grantNFTAccess,
 		}
-		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
+		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
+
 	} else {
 		// mint a PO NFT
-		test := struct {
-			httpStatus int
-			documentID string
-			payload    map[string]interface{}
-		}{
-			http.StatusOK,
-			docIdentifier,
-			map[string]interface{}{
-
-				"identifier":     docIdentifier,
-				"depositAddress": "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			},
+		payload := map[string]interface{}{
+			"identifier":     docIdentifier,
+			"depositAddress": "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
 		}
-		response, err = alice.host.mintPONFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.documentID, test.payload)
+		response, err = alice.host.mintPONFT(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, payload)
 	}
 
 	assert.NoError(t, err, "mintNFT should be successful")
