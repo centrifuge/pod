@@ -213,19 +213,6 @@ func (cd *CoreDocument) CreateNFTProofs(
 
 		pfKeys = append(pfKeys, pks...)
 	}
-
-	signaturesTree, err := cd.getSignatureDataTree()
-	if err != nil {
-		return nil, errors.New("failed to get signatures tree: %v", err)
-	}
-
-	cdTree, err := cd.coredocTree(docType)
-	if err != nil {
-		return nil, errors.New("failed to generate core document tree: %v", err)
-	}
-
-	treeProofs := map[string]*TreeProof{CDTreePrefix: newTreeProof(cdTree, append([][]byte{cd.Document.DataRoot}, signaturesTree.RootHash()))}
-	return generateProofs(pfKeys, treeProofs)
 	return cd.CreateProofs(docType, dataTree, pfKeys)
 }
 

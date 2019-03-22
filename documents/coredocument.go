@@ -244,11 +244,11 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 // errors out when the proof generation is failed on core document tree.
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
-
 	drTree, err := cd.DocumentRootTree()
 	if err != nil {
 		return nil, err
 	}
+
 	signatureTree, err := cd.getSignatureDataTree()
 	if err != nil {
 		return nil, errors.New("failed to generate signatures tree: %v", err)

@@ -268,6 +268,7 @@ func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po := new(PurchaseOrder)
 	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), defaultDID.String())
 	assert.NoError(t, err)
+	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateSigningRoot()

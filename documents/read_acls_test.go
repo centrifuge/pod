@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -257,11 +256,11 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-
 	testTree := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
 	props := []proofs.Property{NewLeafProperty("invoice.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200})}
 	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
+	cd.GetTestCoreDocWithReset()
 	err = testTree.Generate()
 	assert.NoError(t, err)
 	cd.GetTestCoreDocWithReset().DataRoot = testTree.RootHash()
@@ -277,7 +276,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	cd.GetTestCoreDocWithReset().DataRoot = utils.RandomSlice(32)
+	cd.GetTestCoreDocWithReset().DataRoot = testTree.RootHash()
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot()
