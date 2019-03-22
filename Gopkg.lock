@@ -1498,6 +1498,7 @@
     "github.com/Masterminds/semver",
     "github.com/centrifuge/centrifuge-ethereum-contracts",
     "github.com/centrifuge/centrifuge-protobufs/documenttypes",
+    "github.com/centrifuge/centrifuge-protobufs/gen/go/common",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",

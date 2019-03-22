@@ -130,7 +130,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
-		Recipient: "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
+		Recipient: "some recipient",
 		Currency:  "EUR",
 	}
 
@@ -141,6 +141,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// failed core document new version
+	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -182,7 +183,9 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 
 	// Init fails
 	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
-		Data: &clientpurchaseorderpb.PurchaseOrderData{},
+		Data: &clientpurchaseorderpb.PurchaseOrderData{
+			Recipient: "some recipient",
+		},
 	}
 
 	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
@@ -191,6 +194,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
+	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
 	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)

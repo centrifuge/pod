@@ -19,7 +19,7 @@ func CreatePOData() purchaseorderpb.PurchaseOrderData {
 func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
 	return &clientpurchaseorderpb.PurchaseOrderCreatePayload{
 		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
+			Recipient:   "0xEA939D5C0494b072c51565b191eE59B5D34fbf79",
 			TotalAmount: "42",
 			Currency:    "EUR",
 		},
