@@ -374,6 +374,10 @@ func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[st
 	return mintNFT(e, auth, status, inv), nil
 }
 
+func (h *host) mintPONFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return mintPONFT(e, auth, status, documentID, inv), nil
+}
+
 func (h *host) createAccounts(e *httpexpect.Expect) error {
 	if !h.multiAccount {
 		return nil

@@ -3,9 +3,15 @@
 package nft
 
 import (
+	"context"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -218,6 +224,45 @@ func TestPaymentObligationService(t *testing.T) {
 			mockCfg.AssertExpectations(t)
 		})
 	}
+}
+
+func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *testing.T) {
+	service := newEthereumPaymentObligation(nil, nil, nil, nil, nil, nil, nil, nil)
+
+	//missing account in context
+	ctxh := context.Background()
+	proofList, err := service.GetRequiredPaymentObligationProofFields(ctxh)
+	assert.Error(t, err)
+	assert.Nil(t, proofList)
+
+	//error identity keys
+	tc, err := configstore.NewAccount("main", cfg)
+	assert.Nil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.EthereumAccount = &config.AccountConfig{
+		Key: "blabla",
+	}
+	ctxh, err = contextutil.New(ctxh, acc)
+	assert.Nil(t, err)
+	proofList, err = service.GetRequiredPaymentObligationProofFields(ctxh)
+	assert.Error(t, err)
+	assert.Nil(t, proofList)
+
+	//success assertions
+	tc, err = configstore.NewAccount("main", cfg)
+	assert.Nil(t, err)
+	ctxh, err = contextutil.New(ctxh, tc)
+	assert.Nil(t, err)
+	proofList, err = service.GetRequiredPaymentObligationProofFields(ctxh)
+	assert.NoError(t, err)
+	assert.Len(t, proofList, 8)
+	accDIDBytes, err := tc.GetIdentityID()
+	assert.NoError(t, err)
+	keys, err := tc.GetKeys()
+	assert.NoError(t, err)
+	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
+	assert.Equal(t, signatureSender, proofList[6])
 }
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {

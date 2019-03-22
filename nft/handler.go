@@ -67,14 +67,14 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 // MintPaymentObligationNFT will be called from the client API to mint an NFT out of an invoice payment obligation
 func (g grpcHandler) MintPaymentObligationNFT(ctx context.Context, request *nftpb.NFTPaymentObligationRequest) (*nftpb.NFTMintResponse, error) {
 	apiLog.Infof("Received request to Mint a Payment Obligation NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
-
-	docID, err := hexutil.Decode(request.Identifier)
+	ctxHeader, err := contextutil.Context(ctx, g.config)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		apiLog.Error(err)
+		return nil, err
 	}
 
 	// Get proof fields
-	proofFields, err := g.service.GetRequiredPaymentObligationProofFields(ctx, docID)
+	proofFields, err := g.service.GetRequiredPaymentObligationProofFields(ctxHeader)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
@@ -83,12 +83,12 @@ func (g grpcHandler) MintPaymentObligationNFT(ctx context.Context, request *nftp
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
-	poRegistry := cfg.GetContractAddressString(paymentObligationName)
+	poRegistry := cfg.GetContractAddress(config.PaymentObligation)
 
 	mintReq := &nftpb.NFTMintRequest{
 		Identifier:                request.Identifier,
 		DepositAddress:            request.DepositAddress,
-		RegistryAddress:           poRegistry,
+		RegistryAddress:           poRegistry.Hex(),
 		ProofFields:               proofFields,
 		GrantNftAccess:            true,
 		SubmitNftOwnerAccessProof: true,

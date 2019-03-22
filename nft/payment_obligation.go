@@ -13,9 +13,6 @@ import (
 // TokenIDLength is the length of an NFT token ID
 const TokenIDLength = 32
 
-// paymentObligationName holds the string constant of the config name
-const paymentObligationName = "paymentObligation"
-
 // TokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
 // tokenID should be random 32 bytes (32 byte = 256 bits)
 type TokenID [TokenIDLength]byte
@@ -72,7 +69,7 @@ type PaymentObligation interface {
 	// MintNFT mints an NFT
 	MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error)
 	// GetRequiredPaymentObligationProofFields returns the required proof field properties
-	GetRequiredPaymentObligationProofFields(ctx context.Context, documentID []byte) ([]string, error)
+	GetRequiredPaymentObligationProofFields(ctx context.Context) ([]string, error)
 }
 
 // MintNFTResponse holds tokenID and transaction ID.

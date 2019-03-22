@@ -108,7 +108,7 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 }
 
 // GetRequiredPaymentObligationProofFields returns required proof fields for payment obligation mint
-func (s *ethereumPaymentObligation) GetRequiredPaymentObligationProofFields(ctx context.Context, documentID []byte) ([]string, error) {
+func (s *ethereumPaymentObligation) GetRequiredPaymentObligationProofFields(ctx context.Context) ([]string, error) {
 	var proofFields []string
 
 	acc, err := contextutil.Account(ctx)
@@ -127,7 +127,7 @@ func (s *ethereumPaymentObligation) GetRequiredPaymentObligationProofFields(ctx 
 	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 
 	return proofFields, nil
 }

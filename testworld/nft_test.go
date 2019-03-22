@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gavv/httpexpect"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -33,9 +35,14 @@ func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	for _, c := range tests {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
-			paymentObligationMint(t, typeInvoice, c.grantAccess, c.tokenProof, c.readAccessProof)
+			paymentObligationMint(t, typeInvoice, c.grantAccess, c.tokenProof, c.readAccessProof, false)
 		})
 	}
+}
+
+func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
+	t.Parallel()
+	paymentObligationMint(t, typeInvoice, false, false, false, true)
 }
 
 /* TODO: testcase not stable
@@ -45,7 +52,7 @@ func TestPaymentObligationMint_po_successful(t *testing.T) {
 }
 */
 
-func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool) {
+func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.PaymentObligation)
@@ -70,47 +77,68 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
 	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
 
-	proofPrefix := documentType
-	if proofPrefix == typePO {
-		proofPrefix = poPrefix
-	}
-	acc, err := alice.host.configService.GetAccount(alice.id[:])
-	if err != nil {
-		t.Error(err)
-	}
-	keys, err := acc.GetKeys()
-	if err != nil {
-		t.Error(err)
-	}
-	signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	var response *httpexpect.Object
+	var err error
 
-	// mint an NFT
-	test := struct {
-		httpStatus int
-		payload    map[string]interface{}
-	}{
-		http.StatusOK,
-		map[string]interface{}{
+	if !poWrapper {
+		proofPrefix := documentType
+		if proofPrefix == typePO {
+			proofPrefix = poPrefix
+		}
+		acc, err := alice.host.configService.GetAccount(alice.id[:])
+		if err != nil {
+			t.Error(err)
+		}
+		keys, err := acc.GetKeys()
+		if err != nil {
+			t.Error(err)
+		}
+		signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+		signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+		signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 
-			"identifier":                docIdentifier,
-			"registryAddress":           registry.String(),
-			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
-			"submitTokenProof":          tokenProof,
-			"submitNftOwnerAccessProof": nftReadAccessProof,
-			"grantNftAccess":            grantNFTAccess,
-		},
+		// mint an NFT
+		test := struct {
+			httpStatus int
+			payload    map[string]interface{}
+		}{
+			http.StatusOK,
+			map[string]interface{}{
+
+				"identifier":                docIdentifier,
+				"registryAddress":           registry.String(),
+				"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+				"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+				"submitTokenProof":          tokenProof,
+				"submitNftOwnerAccessProof": nftReadAccessProof,
+				"grantNftAccess":            grantNFTAccess,
+			},
+		}
+		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
+	} else {
+		// mint a PO NFT
+		test := struct {
+			httpStatus int
+			documentID string
+			payload    map[string]interface{}
+		}{
+			http.StatusOK,
+			docIdentifier,
+			map[string]interface{}{
+
+				"identifier":     docIdentifier,
+				"depositAddress": "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+			},
+		}
+		response, err = alice.host.mintPONFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.documentID, test.payload)
 	}
 
-	response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
+	assert.NoError(t, err, "mintNFT should be successful")
 	txID = getTransactionID(t, response)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
-	assert.NoError(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 
 	tokenID, err := nft.TokenIDFromString(response.Value("token_id").String().Raw())

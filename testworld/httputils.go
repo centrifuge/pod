@@ -99,6 +99,15 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 	return versionID
 }
 
+func mintPONFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/nft/payment_obligation/"+documentID), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/token/mint"), auth).
 		WithJSON(payload).
