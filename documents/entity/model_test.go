@@ -5,6 +5,7 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
+
 	"os"
 	"testing"
 
@@ -47,9 +48,9 @@ var configService config.Service
 var defaultDID = testingidentity.GenerateRandomDID()
 
 var (
-	cid         = testingidentity.GenerateRandomDID()
-	centIDBytes = cid[:]
-	accountID   = cid[:]
+	did       = testingidentity.GenerateRandomDID()
+	dIDBytes  = did[:]
+	accountID = did[:]
 )
 
 type mockAnchorRepo struct {
@@ -88,7 +89,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("identityId", cid.String())
+	cfg.Set("identityId", did.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
@@ -156,7 +157,7 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	entity, cd := createCDWithEmbeddedEntity(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), entity.(*Entity).getClientData())
+	assert.Equal(t, model.getClientData(), model.getClientData(), entity.(*Entity).getClientData())
 	assert.Equal(t, model.ID(), entity.ID())
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
@@ -225,13 +226,13 @@ func TestEntityModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestEntity_CreateProofs(t *testing.T) {
-	i := createEntity(t)
-	rk := i.Document.Roles[0].RoleKey
+	e := createEntity(t)
+	rk := e.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := i.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
+	proof, err := e.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	tree, err := e.CoreDocument.DocumentRootTree()
 	assert.NoError(t, err)
 
 	// Validate entity_number
@@ -246,7 +247,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 
 	// Validate []byte value
 	acc := identity.NewDIDFromBytes(proof[1].Value)
-	assert.True(t, i.AccountCanRead(acc))
+	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
@@ -255,32 +256,32 @@ func TestEntity_CreateProofs(t *testing.T) {
 }
 
 func createEntity(t *testing.T) *Entity {
-	i := new(Entity)
-	err := i.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID.String())
+	e := new(Entity)
+	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID.String())
 	assert.NoError(t, err)
-	_, err = i.CalculateDataRoot()
+	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	_, err = e.CalculateSigningRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentRoot()
+	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	return i
+	return e
 }
 
 func TestEntityModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i := createEntity(t)
-	_, err := i.CreateProofs([]string{"nonexisting"})
+	e := createEntity(t)
+	_, err := e.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestEntityModel_GetDocumentID(t *testing.T) {
-	i := createEntity(t)
-	assert.Equal(t, i.CoreDocument.ID(), i.ID())
+	e := createEntity(t)
+	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
 func TestEntityModel_getDocumentDataTree(t *testing.T) {
-	i := Entity{LegalName: "test company"}
-	tree, err := i.getDocumentDataTree()
+	e := Entity{LegalName: "test company"}
+	tree, err := e.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("entity.legal_name")
 	assert.NotNil(t, leaf)
@@ -315,8 +316,8 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, oldEntity.CollaboratorCanUpdate(entity, id2))
 
 	// update the id3 rules to update only legal fields
-	/*entity.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	entity.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 1)*/
+	entity.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	entity.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 2)
 	entity.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], entity.CurrentVersion(), entity))
 
@@ -326,6 +327,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	oldEntity = model.(*Entity)
 	data = oldEntity.getClientData()
 	data.LegalName = "second new legal name"
+	data.Contacts = nil
 	err = entity.PrepareNewVersion(entity, data, nil)
 	assert.NoError(t, err)
 
@@ -335,8 +337,11 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	// id2 should fail since it doesn't have the permission to update
 	assert.Error(t, oldEntity.CollaboratorCanUpdate(entity, id2))
 
-	// id3 should pass with just one error since changing Currency is not allowed
-	assert.Nil(t, oldEntity.CollaboratorCanUpdate(entity, id3))
+	// id3 should pass with just one error since changing contacts is not allowed
+	err = oldEntity.CollaboratorCanUpdate(entity, id3)
+	assert.Error(t, err)
+	assert.Equal(t, 5, errors.Len(err)) //five contact fields have been changed
+	assert.Contains(t, err.Error(), "entity.contacts")
 
 }
 
@@ -367,16 +372,16 @@ func testRepo() documents.Repository {
 }
 
 func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
-	i := new(Entity)
-	err := i.InitEntityInput(testingdocuments.CreateEntityPayload(), cid.String())
+	e := new(Entity)
+	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String())
 	assert.NoError(t, err)
-	_, err = i.CalculateDataRoot()
+	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	_, err = e.CalculateSigningRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentRoot()
+	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cd, err := i.PackCoreDocument()
+	cd, err := e.PackCoreDocument()
 	assert.NoError(t, err)
-	return i, cd
+	return e, cd
 }

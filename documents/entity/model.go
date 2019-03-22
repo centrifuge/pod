@@ -2,8 +2,9 @@ package entity
 
 import (
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 
@@ -51,7 +52,7 @@ func (e *Entity) getClientData() *cliententitypb.EntityData {
 	return &cliententitypb.EntityData{
 		Identity:       didString,
 		LegalName:      e.LegalName,
-		Addresses:      e.Addresses,
+		Addresses:      e.Addresses, //todo fix boolean in precise proofs
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
@@ -67,7 +68,7 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 	return &entitypb.Entity{
 		Identity:       didByte,
 		LegalName:      e.LegalName,
-		Addresses:      e.Addresses,
+		Addresses:      nil, //e.Addresses, //todo fix boolean in precise proofs
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
@@ -92,7 +93,6 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 
 // initEntityFromData initialises entity from entityData
 func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
-
 	if data.Identity != "" {
 		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
 			e.Identity = &did
@@ -108,7 +108,7 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
 func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
-	if e.Identity != nil {
+	if entityData.Identity != nil {
 		did := identity.NewDIDFromBytes(entityData.Identity)
 		e.Identity = &did
 	}
@@ -226,6 +226,24 @@ func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	return t, nil
 }
 
+// CreateNFTProofs creates proofs specific to NFT minting.
+func (e *Entity) CreateNFTProofs(
+	account identity.DID,
+	registry common.Address,
+	tokenID []byte,
+	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+
+	tree, err := e.getDocumentDataTree()
+	if err != nil {
+		return nil, err
+	}
+
+	return e.CoreDocument.CreateNFTProofs(
+		e.DocumentType(),
+		tree,
+		account, registry, tokenID, nftUniqueProof, readAccessProof)
+}
+
 // CreateProofs generates proofs for given fields.
 func (e *Entity) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
 	tree, err := e.getDocumentDataTree()
@@ -271,17 +289,6 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {
 	return e.CoreDocument.CalculateSigningRoot(e.DocumentType())
-}
-
-// CreateNFTProofs creates proofs specific to NFT minting.
-func (e *Entity) CreateNFTProofs(
-	account identity.DID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
-	return e.CoreDocument.CreateNFTProofs(
-		e.DocumentType(),
-		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
