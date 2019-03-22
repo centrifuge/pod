@@ -10,6 +10,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -19,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -255,8 +257,16 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	cd.GetTestCoreDocWithReset().DataRoot = utils.RandomSlice(32)
+
+	testTree := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	props := []proofs.Property{NewLeafProperty("invoice.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200})}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+	cd.GetTestCoreDocWithReset().DataRoot = testTree.RootHash()
 	cd.GetTestCoreDocWithReset().EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
+
 	account := testingidentity.GenerateRandomDID()
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
@@ -322,7 +332,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	for _, c := range tests {
-		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
+		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
 			assert.Error(t, err)
 			continue

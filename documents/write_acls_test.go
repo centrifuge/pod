@@ -34,8 +34,8 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	newTree := getTree(t, &ncd, "", nil)
 
 	cf := GetChangedFields(oldTree, newTree)
-	// cf length should be len(ocd) and len(ncd) = 31 changed field
-	assert.Len(t, cf, 33)
+	// cf length should be len(ocd) and len(ncd) = 33 changed field
+	assert.Len(t, cf, 69)
 
 }
 
@@ -242,11 +242,11 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 
 	// no change
 	doc := &invoicepb.InvoiceData{
-		InvoiceNumber: "12345",
-		SenderName:    "Alice",
-		RecipientName: "Bob",
-		DateCreated:   ptypes.TimestampNow(),
-		DueDate:       dueDate,
+		Number:                  "12345",
+		SenderContactPersonName: "Alice",
+		BillToContactPersonName: "Bob",
+		DateCreated:             ptypes.TimestampNow(),
+		DateDue:                 dueDate,
 	}
 
 	oldTree := getTree(t, doc, "", nil)
@@ -256,12 +256,12 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 
 	// updated doc
 	ndoc := &invoicepb.InvoiceData{
-		InvoiceNumber: "123456", // updated
-		SenderName:    doc.SenderName,
-		RecipientName: doc.RecipientName,
-		DateCreated:   doc.DateCreated,
-		DueDate:       doc.DueDate,
-		Currency:      "EUR", // new field
+		Number:                  "123456", // updated
+		SenderContactPersonName: doc.SenderContactPersonName,
+		BillToContactPersonName: doc.BillToContactPersonName,
+		DateCreated:             doc.DateCreated,
+		DateDue:                 doc.DateDue,
+		Currency:                "EUR", // new field
 	}
 
 	oldTree = getTree(t, doc, "", nil)
@@ -271,7 +271,7 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	eprops := map[string]ChangedField{
 		hexutil.Encode([]byte{0, 0, 0, 1}): {
 			Property: []byte{0, 0, 0, 1},
-			Name:     "invoice_number",
+			Name:     "number",
 			Old:      []byte{49, 50, 51, 52, 53},
 			New:      []byte{49, 50, 51, 52, 53, 54},
 		},
@@ -302,9 +302,9 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	assert.Len(t, cf, 5)
 	eprps := map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 1}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 8}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 23}): {},
+		hexutil.Encode([]byte{0, 0, 0, 6}):  {},
+		hexutil.Encode([]byte{0, 0, 0, 44}): {},
+		hexutil.Encode([]byte{0, 0, 0, 63}): {},
 		hexutil.Encode([]byte{0, 0, 0, 22}): {},
 	}
 	testExpectedProps(t, cf, eprps)
@@ -352,7 +352,7 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 	assert.Len(t, rules, 0)
 }
 
-func createTransitionRules(t *testing.T, doc *CoreDocument, id identity.DID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
+func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
 	role := newRole()
 	role.Collaborators = append(role.Collaborators, id[:])
 	rule := &coredocumentpb.TransitionRule{
@@ -525,11 +525,11 @@ func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, do
 func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
 	doc, id1, id2, _ := prepareDocument(t)
 	inv := invoicepb.InvoiceData{
-		InvoiceNumber: "1234556",
-		Currency:      "EUR",
-		GrossAmount:   []byte{0, 4, 210, 0, 0, 0, 0, 0, 0, 0, 0}, // 1234
-		SenderName:    "john doe",
-		Comment:       "Some comment",
+		Number:                  "1234556",
+		Currency:                "EUR",
+		GrossAmount:             []byte{0, 4, 210, 0, 0, 0, 0, 0, 0, 0, 0}, // 1234
+		SenderContactPersonName: "john doe",
+		Comment:                 "Some comment",
 	}
 
 	prefix, compact := "invoice", []byte{0, 1, 0, 0}
@@ -537,7 +537,7 @@ func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
 	createTransitionRules(t, doc, id1, compact, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
 	// id2 can only update comment on invoice and nothing else
-	createTransitionRules(t, doc, id2, append(compact, []byte{0, 0, 0, 21}...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+	createTransitionRules(t, doc, id2, append(compact, []byte{0, 0, 0, 52}...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 
 	inv2 := inv
 	inv2.GrossAmount = []byte{0, 48, 52, 0, 0, 0, 0, 0, 0, 0, 0} // 12340

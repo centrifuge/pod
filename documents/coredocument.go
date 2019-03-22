@@ -253,6 +253,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	if err != nil {
 		return nil, errors.New("failed to generate signatures tree: %v", err)
 	}
+
 	cdTree, err := cd.coredocTree(docType)
 	if err != nil {
 		return nil, errors.New("failed to generate core document tree: %v", err)
@@ -271,8 +272,11 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	}
 
 	treeProofs[DRTreePrefix] = newTreeProof(drTree, nil)
+	// (dataProof => dataRoot) + cdRoot+ signatureRoot = documentRoot
 	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, signatureTree.RootHash()))
+	// (signatureProof => signatureRoot) + signingRoot = documentRoot
 	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{srHash})
+	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
 	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, signatureTree.RootHash()))
 
 	return generateProofs(fields, treeProofs)
@@ -326,12 +330,13 @@ func (cd *CoreDocument) GetSigningRootHash() (hash []byte, err error) {
 	return rootProof.Hash, err
 }
 
-// GetSignaturesRootHash returns the hash needed to create proofs from SignaturesRoot to DocumentRoot
-func (cd *CoreDocument) GetSignaturesRootHash() (hash []byte, err error) {
+// CalculateSignaturesRoot returns the signatures root of the document.
+func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 	tree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return
+		return nil, errors.New("failed to get signature tree: %v", err)
 	}
+
 	return tree.RootHash(), nil
 }
 

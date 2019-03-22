@@ -64,7 +64,7 @@
   revision = "c5e55d16c4cfe058ca641d2a746a665f277f0c9f"
 
 [[projects]]
-  digest = "1:f4d0720b3167f4ca029d137f2f5b4fe3db41fe02e94f0d86bc2c38140e7dc723"
+  digest = "1:c6c4106bf73b2ce9d7aacfac047c542a664b2734bdabb2beddb87d112d70a429"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,8 +76,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "6b635c0c813b25294dfc4c44bc683f33770c311b"
-  source = "github.com/lucasvo/centrifuge-protobufs"
+  revision = "e66943c12a10056d55966e19b2074563349eb48e"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -87,14 +86,14 @@
   revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
-  digest = "1:3b544b8a9a673543a6b0f61afefc3ad1fec1080be25f8389cca630c71f423117"
+  digest = "1:3ddba8bdf84eff2bedcc8e262cb87370d1301cb8ca7a3503be29a6eae25bd037"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "47365f90bfb4c95a2fea41c538e0e9758bfde8d7"
+  revision = "13d3af957299c614237c42cdc331f7acd7c7d201"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -234,7 +233,7 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:b2d7e82c930fd78145f944d3c5e8e900c770b9147bddf917c6fbdfe2426b7210"
+  digest = "1:1c31dba75f840ef15223c1d792a2e67e76ccd76ddc528fa23ff19320dde05463"
   name = "github.com/golang/protobuf"
   packages = [
     "descriptor",
@@ -254,8 +253,8 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
-  version = "v1.3.1"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -1521,6 +1520,7 @@
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
     "github.com/gogo/protobuf/io",
+    "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",

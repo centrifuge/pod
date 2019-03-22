@@ -220,6 +220,12 @@ func TestGetSignaturesTree(t *testing.T) {
 	cd.GetTestCoreDocWithReset().SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 	signatureTree, err := cd.getSignatureDataTree()
 
+	signatureRoot, err := cd.CalculateSignaturesRoot()
+	assert.NoError(t, err)
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureTree)
+	assert.Equal(t, signatureTree.RootHash(), signatureRoot)
+
 	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
 	assert.Equal(t, 0, lengthIdx)
 	assert.NotNil(t, lengthLeaf)
