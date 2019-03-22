@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -15,7 +14,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -29,117 +27,164 @@ func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
 	*documents.CoreDocument
-	Status             string // status of the Purchase Order
-	PoNumber           string // purchase order number or reference number
-	OrderName          string // name of the ordering company
-	OrderStreet        string // street and address details of the ordering company
-	OrderCity          string
-	OrderZipcode       string
-	OrderCountry       string // country ISO code of the ordering company of this purchase order
-	RecipientName      string // name of the recipient company
-	RecipientStreet    string
-	RecipientCity      string
-	RecipientZipcode   string
-	RecipientCountry   string             // country ISO code of the recipient of this purchase order
-	Currency           string             // ISO currency code
-	OrderAmount        *documents.Decimal // ordering gross amount including tax
-	NetAmount          *documents.Decimal // invoice amount excluding tax
-	TaxAmount          *documents.Decimal
-	TaxRate            *documents.Decimal
-	Recipient          *identity.DID
-	Order              []byte
-	OrderContact       string
-	Comment            string
-	DeliveryDate       *timestamp.Timestamp // requested delivery date
-	DateCreated        *timestamp.Timestamp // purchase order date
-	ExtraData          []byte
+	Status                  string // status of the Purchase Order
+	Number                  string // purchase order number or reference number
+	SenderOrderID           string
+	RecipientOrderID        string
+	RequisitionID           string
+	RequesterName           string
+	RequesterEmail          string
+	ShipToCompanyName       string
+	ShipToContactPersonName string
+	ShipToStreet1           string
+	ShipToStreet2           string
+	ShipToCity              string
+	ShipToZipcode           string
+	ShipToState             string
+	ShipToCountry           string
+	PaymentTerms            string
+	Currency                string
+	TotalAmount             *documents.Decimal
+	Recipient               *identity.DID
+	Sender                  *identity.DID
+	Comment                 string
+	DateSent                *timestamp.Timestamp
+	DateConfirmed           *timestamp.Timestamp
+	DateUpdated             *timestamp.Timestamp
+	DateCreated             *timestamp.Timestamp
+	Attachments             []*documents.BinaryAttachment
+	LineItems               []*LineItem
+	PaymentDetails          []*documents.PaymentDetails
+
 	PurchaseOrderSalts *proofs.Salts
+}
+
+// LineItemActivity describes a single line item activity.
+type LineItemActivity struct {
+	ItemNumber            string
+	Status                string
+	Quantity              *documents.Decimal
+	Amount                *documents.Decimal
+	ReferenceDocumentID   string
+	ReferenceDocumentItem string
+	Date                  *timestamp.Timestamp
+}
+
+// TaxItem describes a single Purchase Order tax item.
+type TaxItem struct {
+	ItemNumber              string
+	PurchaseOrderItemNumber string
+	TaxAmount               *documents.Decimal
+	TaxRate                 *documents.Decimal
+	TaxCode                 *documents.Decimal
+	TaxBaseAmount           *documents.Decimal
+}
+
+// LineItem describes a single LineItem Activity
+type LineItem struct {
+	Status            string
+	ItemNumber        string
+	Description       string
+	AmountInvoiced    *documents.Decimal
+	AmountTotal       *documents.Decimal
+	RequisitionNumber string
+	RequisitionItem   string
+	PartNumber        string
+	PricePerUnit      *documents.Decimal
+	UnitOfMeasure     *documents.Decimal
+	Quantity          *documents.Decimal
+	ReceivedQuantity  *documents.Decimal
+	DateUpdated       *timestamp.Timestamp
+	DateCreated       *timestamp.Timestamp
+	RevisionNumber    int64
+	Activities        []*LineItemActivity
+	TaxItems          []*TaxItem
 }
 
 // getClientData returns the client data from the purchaseOrder model
 func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
-	var recipient string
-	if p.Recipient != nil {
-		recipient = hexutil.Encode(p.Recipient[:])
-	}
-
-	var order string
-	if p.Order != nil {
-		order = hexutil.Encode(p.Order)
-	}
-
-	var extraData string
-	if p.ExtraData != nil {
-		extraData = hexutil.Encode(p.ExtraData)
-	}
-
-	decs := documents.DecimalsToStrings(p.OrderAmount, p.NetAmount, p.TaxAmount, p.TaxRate)
+	decs := documents.DecimalsToStrings(p.TotalAmount)
+	dids := identity.DIDsToStrings(p.Recipient, p.Sender)
 	return &clientpurchaseorderpb.PurchaseOrderData{
-		PoStatus:         p.Status,
-		PoNumber:         p.PoNumber,
-		OrderName:        p.OrderName,
-		OrderStreet:      p.OrderStreet,
-		OrderCity:        p.OrderCity,
-		OrderZipcode:     p.OrderZipcode,
-		OrderCountry:     p.OrderCountry,
-		RecipientName:    p.RecipientName,
-		RecipientStreet:  p.RecipientStreet,
-		RecipientCity:    p.RecipientCity,
-		RecipientZipcode: p.RecipientZipcode,
-		RecipientCountry: p.RecipientCountry,
-		Currency:         p.Currency,
-		OrderAmount:      decs[0],
-		NetAmount:        decs[1],
-		TaxAmount:        decs[2],
-		TaxRate:          decs[3],
-		Recipient:        recipient,
-		Order:            order,
-		OrderContact:     p.OrderContact,
-		Comment:          p.Comment,
-		DeliveryDate:     p.DeliveryDate,
-		DateCreated:      p.DateCreated,
-		ExtraData:        extraData,
+		Status:                  p.Status,
+		Number:                  p.Number,
+		SenderOrderId:           p.SenderOrderID,
+		TotalAmount:             decs[0],
+		Recipient:               dids[0],
+		Sender:                  dids[1],
+		DateCreated:             p.DateCreated,
+		DateUpdated:             p.DateUpdated,
+		RequesterName:           p.RequesterName,
+		RequesterEmail:          p.RequesterEmail,
+		Comment:                 p.Comment,
+		Currency:                p.Currency,
+		ShipToCountry:           p.ShipToCountry,
+		ShipToState:             p.ShipToState,
+		ShipToZipcode:           p.ShipToZipcode,
+		ShipToCity:              p.ShipToCity,
+		ShipToStreet1:           p.ShipToStreet1,
+		ShipToStreet2:           p.ShipToStreet2,
+		ShipToContactPersonName: p.ShipToContactPersonName,
+		ShipToCompanyName:       p.ShipToCompanyName,
+		DateConfirmed:           p.DateConfirmed,
+		DateSent:                p.DateSent,
+		PaymentTerms:            p.PaymentTerms,
+		RecipientOrderId:        p.RecipientOrderID,
+		RequisitionId:           p.RequisitionID,
+		PaymentDetails:          documents.ToClientPaymentDetails(p.PaymentDetails),
+		Attachments:             documents.ToClientAttachments(p.Attachments),
+		LineItems:               toClientLineItems(p.LineItems),
 	}
 
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific purchaseOrderData
 func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData, error) {
-	var recipient []byte
-	if p.Recipient != nil {
-		recipient = p.Recipient[:]
-	}
-
-	decs, err := documents.DecimalsToBytes(p.OrderAmount, p.NetAmount, p.TaxAmount, p.TaxRate)
+	decs, err := documents.DecimalsToBytes(p.TotalAmount)
 	if err != nil {
 		return nil, err
 	}
 
+	pd, err := documents.ToP2PPaymentDetails(p.PaymentDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	li, err := toP2PLineItems(p.LineItems)
+	if err != nil {
+		return nil, err
+	}
+
+	dids := identity.DIDsToBytes(p.Recipient, p.Sender)
 	return &purchaseorderpb.PurchaseOrderData{
-		PoStatus:         p.Status,
-		PoNumber:         p.PoNumber,
-		OrderName:        p.OrderName,
-		OrderStreet:      p.OrderStreet,
-		OrderCity:        p.OrderCity,
-		OrderZipcode:     p.OrderZipcode,
-		OrderCountry:     p.OrderCountry,
-		RecipientName:    p.RecipientName,
-		RecipientStreet:  p.RecipientStreet,
-		RecipientCity:    p.RecipientCity,
-		RecipientZipcode: p.RecipientZipcode,
-		RecipientCountry: p.RecipientCountry,
-		Currency:         p.Currency,
-		OrderAmount:      decs[0],
-		NetAmount:        decs[1],
-		TaxAmount:        decs[2],
-		TaxRate:          decs[3],
-		Recipient:        recipient,
-		Order:            p.Order,
-		OrderContact:     p.OrderContact,
-		Comment:          p.Comment,
-		DeliveryDate:     p.DeliveryDate,
-		DateCreated:      p.DateCreated,
-		ExtraData:        p.ExtraData,
+		Status:                  p.Status,
+		Number:                  p.Number,
+		SenderOrderId:           p.SenderOrderID,
+		TotalAmount:             decs[0],
+		Recipient:               dids[0],
+		Sender:                  dids[1],
+		DateCreated:             p.DateCreated,
+		DateUpdated:             p.DateUpdated,
+		RequesterName:           p.RequesterName,
+		RequesterEmail:          p.RequesterEmail,
+		Comment:                 p.Comment,
+		Currency:                p.Currency,
+		ShipToCountry:           p.ShipToCountry,
+		ShipToState:             p.ShipToState,
+		ShipToZipcode:           p.ShipToZipcode,
+		ShipToCity:              p.ShipToCity,
+		ShipToStreet1:           p.ShipToStreet1,
+		ShipToStreet2:           p.ShipToStreet2,
+		ShipToContactPersonName: p.ShipToContactPersonName,
+		ShipToCompanyName:       p.ShipToCompanyName,
+		DateConfirmed:           p.DateConfirmed,
+		DateSent:                p.DateSent,
+		PaymentTerms:            p.PaymentTerms,
+		RecipientOrderId:        p.RecipientOrderID,
+		RequisitionId:           p.RequisitionID,
+		PaymentDetails:          pd,
+		Attachments:             documents.ToP2PAttachments(p.Attachments),
+		LineItems:               li,
 	}, nil
 
 }
@@ -163,99 +208,108 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 
 // initPurchaseOrderFromData initialises purchase order from purchaseOrderData
 func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.PurchaseOrderData) error {
-	p.Status = data.PoStatus
-	p.PoNumber = data.PoNumber
-	p.OrderName = data.OrderName
-	p.OrderStreet = data.OrderStreet
-	p.OrderCity = data.OrderCity
-	p.OrderZipcode = data.OrderZipcode
-	p.OrderCountry = data.OrderCountry
-	p.RecipientName = data.RecipientName
-	p.RecipientStreet = data.RecipientStreet
-	p.RecipientCity = data.RecipientCity
-	p.RecipientZipcode = data.RecipientZipcode
-	p.RecipientCountry = data.RecipientCountry
-	p.Currency = data.Currency
-
-	decs, err := documents.StringsToDecimals(data.OrderAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	atts, err := documents.FromClientAttachments(data.Attachments)
 	if err != nil {
 		return err
 	}
 
-	p.OrderAmount = decs[0]
-	p.NetAmount = decs[1]
-	p.TaxAmount = decs[2]
-	p.TaxRate = decs[3]
-
-	if data.Order != "" {
-		order, err := hexutil.Decode(data.Order)
-		if err != nil {
-			return centerrors.Wrap(err, "failed to decode order")
-		}
-
-		p.Order = order
+	pdetails, err := documents.FromClientPaymentDetails(data.PaymentDetails)
+	if err != nil {
+		return err
 	}
 
-	p.OrderContact = data.OrderContact
+	decs, err := documents.StringsToDecimals(data.TotalAmount)
+	if err != nil {
+		return err
+	}
+
+	dids, err := identity.StringsToDIDs(data.Recipient, data.Sender)
+	if err != nil {
+		return err
+	}
+
+	li, err := fromClientLineItems(data.LineItems)
+	if err != nil {
+		return err
+	}
+
+	p.Status = data.Status
+	p.Number = data.Number
+	p.SenderOrderID = data.SenderOrderId
+	p.RecipientOrderID = data.RecipientOrderId
+	p.RequisitionID = data.RequisitionId
+	p.RequesterEmail = data.RequesterEmail
+	p.RequesterName = data.RequesterName
+	p.ShipToCompanyName = data.ShipToCompanyName
+	p.ShipToContactPersonName = data.ShipToContactPersonName
+	p.ShipToStreet1 = data.ShipToStreet1
+	p.ShipToStreet2 = data.ShipToStreet2
+	p.ShipToCity = data.ShipToCity
+	p.ShipToZipcode = data.ShipToZipcode
+	p.ShipToState = data.ShipToState
+	p.ShipToCountry = data.ShipToCountry
+	p.PaymentTerms = data.PaymentTerms
+	p.Currency = data.Currency
 	p.Comment = data.Comment
-	p.DeliveryDate = data.DeliveryDate
+	p.DateSent = data.DateSent
+	p.DateUpdated = data.DateUpdated
 	p.DateCreated = data.DateCreated
-
-	if data.Recipient != "" {
-		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
-			p.Recipient = &recipient
-		}
-	}
-
-	if data.ExtraData != "" {
-		ed, err := hexutil.Decode(data.ExtraData)
-		if err != nil {
-			return centerrors.Wrap(err, "failed to decode extra data")
-		}
-
-		p.ExtraData = ed
-	}
-
+	p.DateConfirmed = data.DateConfirmed
+	p.Attachments = atts
+	p.PaymentDetails = pdetails
+	p.TotalAmount = decs[0]
+	p.Recipient = dids[0]
+	p.Sender = dids[1]
+	p.LineItems = li
 	return nil
 }
 
 // loadFromP2PProtobuf loads the purcase order from centrifuge protobuf purchase order data
 func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderData) error {
-	p.Status = data.PoStatus
-	p.PoNumber = data.PoNumber
-	p.OrderName = data.OrderName
-	p.OrderStreet = data.OrderStreet
-	p.OrderCity = data.OrderCity
-	p.OrderZipcode = data.OrderZipcode
-	p.OrderCountry = data.OrderCountry
-	p.RecipientName = data.RecipientName
-	p.RecipientStreet = data.RecipientStreet
-	p.RecipientCity = data.RecipientCity
-	p.RecipientZipcode = data.RecipientZipcode
-	p.RecipientCountry = data.RecipientCountry
-	p.Currency = data.Currency
-	p.Order = data.Order
-	p.OrderContact = data.OrderContact
-	p.Comment = data.Comment
-	p.DeliveryDate = data.DeliveryDate
-	p.DateCreated = data.DateCreated
-	p.ExtraData = data.ExtraData
-
-	decs, err := documents.BytesToDecimals(data.OrderAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	pdetails, err := documents.FromP2PPaymentDetails(data.PaymentDetails)
 	if err != nil {
 		return err
 	}
 
-	p.OrderAmount = decs[0]
-	p.NetAmount = decs[1]
-	p.TaxAmount = decs[2]
-	p.TaxRate = decs[3]
-
-	if data.Recipient != nil {
-		recipient := identity.NewDIDFromBytes(data.Recipient)
-		p.Recipient = &recipient
+	decs, err := documents.BytesToDecimals(data.TotalAmount)
+	if err != nil {
+		return err
 	}
 
+	dids := identity.BytesToDIDs(data.Recipient, data.Sender)
+	li, err := fromP2PLineItems(data.LineItems)
+	if err != nil {
+		return err
+	}
+
+	p.Status = data.Status
+	p.Number = data.Number
+	p.SenderOrderID = data.SenderOrderId
+	p.RecipientOrderID = data.RecipientOrderId
+	p.RequisitionID = data.RequisitionId
+	p.RequesterEmail = data.RequesterEmail
+	p.RequesterName = data.RequesterName
+	p.ShipToCompanyName = data.ShipToCompanyName
+	p.ShipToContactPersonName = data.ShipToContactPersonName
+	p.ShipToStreet1 = data.ShipToStreet1
+	p.ShipToStreet2 = data.ShipToStreet2
+	p.ShipToCity = data.ShipToCity
+	p.ShipToZipcode = data.ShipToZipcode
+	p.ShipToState = data.ShipToState
+	p.ShipToCountry = data.ShipToCountry
+	p.PaymentTerms = data.PaymentTerms
+	p.Currency = data.Currency
+	p.Comment = data.Comment
+	p.DateSent = data.DateSent
+	p.DateUpdated = data.DateUpdated
+	p.DateCreated = data.DateCreated
+	p.DateConfirmed = data.DateConfirmed
+	p.Attachments = documents.FromP2PAttachments(data.Attachments)
+	p.PaymentDetails = pdetails
+	p.TotalAmount = decs[0]
+	p.Recipient = dids[0]
+	p.Sender = dids[1]
+	p.LineItems = li
 	return nil
 }
 

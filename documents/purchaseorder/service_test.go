@@ -70,8 +70,7 @@ func TestService_Update(t *testing.T) {
 	// success
 	data, err := poSrv.DerivePurchaseOrderData(po)
 	assert.Nil(t, err)
-	data.OrderAmount = "100"
-	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	data.TotalAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
 		Identifier:    hexutil.Encode(po.ID()),
@@ -132,7 +131,6 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, err)
 	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
-		ExtraData: "some data",
 		Currency:  "EUR",
 	}
 
@@ -143,7 +141,6 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// failed core document new version
-	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
 	payload.Collaborators = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -185,9 +182,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 
 	// Init fails
 	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
-		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			ExtraData: "some data",
-		},
+		Data: &clientpurchaseorderpb.PurchaseOrderData{},
 	}
 
 	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
@@ -196,12 +191,9 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
-	payload.Data.ExtraData = "0x01020304050607"
 	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
-	po := m.(*PurchaseOrder)
-	assert.Equal(t, hexutil.Encode(po.ExtraData), payload.Data.ExtraData)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -213,7 +205,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	po, ok := m.(*PurchaseOrder)
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, po.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, po.OrderAmount.String(), "42")
+	assert.Equal(t, po.TotalAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {

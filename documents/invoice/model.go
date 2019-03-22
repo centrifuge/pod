@@ -90,44 +90,12 @@ type Invoice struct {
 	DatePaid                 *timestamp.Timestamp
 	DateUpdated              *timestamp.Timestamp
 	DateCreated              *timestamp.Timestamp
-	Attachments              []*BinaryAttachment
+	Attachments              []*documents.BinaryAttachment
 	LineItems                []*LineItem
-	PaymentDetails           []*PaymentDetails
+	PaymentDetails           []*documents.PaymentDetails
 	TaxItems                 []*TaxItem
 
 	InvoiceSalts *proofs.Salts
-}
-
-// BinaryAttachment represent a single file attached to invoice.
-type BinaryAttachment struct {
-	Name     string
-	FileType string // mime type of attached file
-	Size     uint64 // in bytes
-	Data     []byte
-	Checksum []byte // the md5 checksum of the original file for easier verification
-}
-
-// PaymentDetails holds the payment related details for invoice.
-type PaymentDetails struct {
-	ID                    string // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *timestamp.Timestamp
-	Payee                 *identity.DID // centrifuge id of payee
-	Payer                 *identity.DID // centrifuge id of payer
-	Amount                *documents.Decimal
-	Currency              string
-	Reference             string // payment reference (e.g. reference field on bank transfer)
-	BankName              string
-	BankAddress           string
-	BankCountry           string
-	BankAccountNumber     string
-	BankAccountCurrency   string
-	BankAccountHolderName string
-	BankKey               string
-
-	CryptoChainURI      string // the ID of the chain to use in URI format. e.g. "ethereum://42/<tokenaddress>"
-	CryptoTransactionID string // the transaction in which the payment happened
-	CryptoFrom          string // from address
-	CryptoTo            string // to address
 }
 
 // LineItem represents a single invoice line item.
@@ -225,9 +193,9 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 		DatePaid:                 i.DatePaid,
 		DateCreated:              i.DateCreated,
 		DateUpdated:              i.DateUpdated,
-		Attachments:              toClientAttachments(i.Attachments),
+		Attachments:              documents.ToClientAttachments(i.Attachments),
 		LineItems:                toClientLineItems(i.LineItems),
-		PaymentDetails:           toClientPaymentDetails(i.PaymentDetails),
+		PaymentDetails:           documents.ToClientPaymentDetails(i.PaymentDetails),
 		TaxItems:                 toClientTaxItems(i.TaxItems),
 	}
 
@@ -245,7 +213,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		return nil, err
 	}
 
-	pd, err := toP2PPaymentDetails(i.PaymentDetails)
+	pd, err := documents.ToP2PPaymentDetails(i.PaymentDetails)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +287,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		DatePaid:                i.DatePaid,
 		DateCreated:             i.DateCreated,
 		DateUpdated:             i.DateUpdated,
-		Attachments:             toP2PAttachments(i.Attachments),
+		Attachments:             documents.ToP2PAttachments(i.Attachments),
 		LineItems:               li,
 		PaymentDetails:          pd,
 		TaxItems:                ti,
@@ -356,7 +324,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 		return err
 	}
 
-	atts, err := fromClientAttachments(data.Attachments)
+	atts, err := documents.FromClientAttachments(data.Attachments)
 	if err != nil {
 		return err
 	}
@@ -366,7 +334,7 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 		return err
 	}
 
-	pd, err := fromClientPaymentDetails(data.PaymentDetails)
+	pd, err := documents.FromClientPaymentDetails(data.PaymentDetails)
 	if err != nil {
 		return err
 	}
@@ -453,13 +421,13 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 	}
 
 	dids := identity.BytesToDIDs(data.Recipient, data.Sender, data.Payee)
-	atts := fromP2PAttachments(data.Attachments)
+	atts := documents.FromP2PAttachments(data.Attachments)
 	li, err := fromP2PLineItems(data.LineItems)
 	if err != nil {
 		return err
 	}
 
-	pd, err := fromP2PPaymentDetails(data.PaymentDetails)
+	pd, err := documents.FromP2PPaymentDetails(data.PaymentDetails)
 	if err != nil {
 		return err
 	}

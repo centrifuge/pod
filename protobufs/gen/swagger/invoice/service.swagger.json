@@ -131,7 +131,7 @@
     }
   },
   "definitions": {
-    "invoiceBinaryAttachment": {
+    "documentBinaryAttachment": {
       "type": "object",
       "properties": {
         "name": {
@@ -152,6 +152,74 @@
         "checksum": {
           "type": "string",
           "title": "the md5 checksum of the original file for easier verification - optional"
+        }
+      }
+    },
+    "documentPaymentDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment"
+        },
+        "date_executed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payee": {
+          "type": "string",
+          "title": "centrifuge id of payee"
+        },
+        "payer": {
+          "type": "string",
+          "title": "centrifuge id of payer"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string",
+          "title": "payment reference (e.g. reference field on bank transfer)"
+        },
+        "bank_name": {
+          "type": "string"
+        },
+        "bank_address": {
+          "type": "string"
+        },
+        "bank_country": {
+          "type": "string"
+        },
+        "bank_account_number": {
+          "type": "string"
+        },
+        "bank_account_currency": {
+          "type": "string"
+        },
+        "bank_account_holder_name": {
+          "type": "string"
+        },
+        "bank_key": {
+          "type": "string"
+        },
+        "crypto_chain_uri": {
+          "type": "string",
+          "title": "the ID of the chain to use in URI format. e.g. \"ethereum://42/\u003ctokenaddress\u003e\""
+        },
+        "crypto_transaction_id": {
+          "type": "string",
+          "title": "the transaction in which the payment happened"
+        },
+        "crypto_from": {
+          "type": "string",
+          "title": "from address"
+        },
+        "crypto_to": {
+          "type": "string",
+          "title": "to address"
         }
       }
     },
@@ -379,31 +447,59 @@
         "attachments": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/invoiceBinaryAttachment"
+            "$ref": "#/definitions/documentBinaryAttachment"
           }
         },
         "line_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/invoiceInvoiceLineItem"
+            "$ref": "#/definitions/invoiceLineItem"
           }
         },
         "payment_details": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/invoicePaymentDetails"
+            "$ref": "#/definitions/documentPaymentDetails"
           }
         },
         "tax_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/invoiceInvoiceTaxItem"
+            "$ref": "#/definitions/invoiceTaxItem"
           }
         }
       },
       "title": "InvoiceData is the default invoice schema"
     },
-    "invoiceInvoiceLineItem": {
+    "invoiceInvoiceResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/invoiceResponseHeader"
+        },
+        "data": {
+          "$ref": "#/definitions/invoiceInvoiceData"
+        }
+      }
+    },
+    "invoiceInvoiceUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "data": {
+          "$ref": "#/definitions/invoiceInvoiceData"
+        }
+      }
+    },
+    "invoiceLineItem": {
       "type": "object",
       "properties": {
         "item_number": {
@@ -451,125 +547,6 @@
         }
       }
     },
-    "invoiceInvoiceResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/invoiceResponseHeader"
-        },
-        "data": {
-          "$ref": "#/definitions/invoiceInvoiceData"
-        }
-      }
-    },
-    "invoiceInvoiceTaxItem": {
-      "type": "object",
-      "properties": {
-        "item_number": {
-          "type": "string"
-        },
-        "invoice_item_number": {
-          "type": "string"
-        },
-        "tax_amount": {
-          "type": "string"
-        },
-        "tax_rate": {
-          "type": "string"
-        },
-        "tax_code": {
-          "type": "string"
-        },
-        "tax_base_amount": {
-          "type": "string"
-        }
-      }
-    },
-    "invoiceInvoiceUpdatePayload": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string"
-        },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "data": {
-          "$ref": "#/definitions/invoiceInvoiceData"
-        }
-      }
-    },
-    "invoicePaymentDetails": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "title": "identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment"
-        },
-        "date_executed": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "payee": {
-          "type": "string",
-          "title": "centrifuge id of payee"
-        },
-        "payer": {
-          "type": "string",
-          "title": "centrifuge id of payer"
-        },
-        "amount": {
-          "type": "string"
-        },
-        "currency": {
-          "type": "string"
-        },
-        "reference": {
-          "type": "string",
-          "title": "payment reference (e.g. reference field on bank transfer)"
-        },
-        "bank_name": {
-          "type": "string"
-        },
-        "bank_address": {
-          "type": "string"
-        },
-        "bank_country": {
-          "type": "string"
-        },
-        "bank_account_number": {
-          "type": "string"
-        },
-        "bank_account_currency": {
-          "type": "string"
-        },
-        "bank_account_holder_name": {
-          "type": "string"
-        },
-        "bank_key": {
-          "type": "string"
-        },
-        "crypto_chain_uri": {
-          "type": "string",
-          "title": "the ID of the chain to use in URI format. e.g. \"ethereum://42/\u003ctokenaddress\u003e\""
-        },
-        "crypto_transaction_id": {
-          "type": "string",
-          "title": "the transaction in which the payment happened"
-        },
-        "crypto_from": {
-          "type": "string",
-          "title": "from address"
-        },
-        "crypto_to": {
-          "type": "string",
-          "title": "to address"
-        }
-      }
-    },
     "invoiceResponseHeader": {
       "type": "object",
       "properties": {
@@ -593,6 +570,29 @@
         }
       },
       "title": "ResponseHeader contains a set of common fields for most document"
+    },
+    "invoiceTaxItem": {
+      "type": "object",
+      "properties": {
+        "item_number": {
+          "type": "string"
+        },
+        "invoice_item_number": {
+          "type": "string"
+        },
+        "tax_amount": {
+          "type": "string"
+        },
+        "tax_rate": {
+          "type": "string"
+        },
+        "tax_code": {
+          "type": "string"
+        },
+        "tax_base_amount": {
+          "type": "string"
+        }
+      }
     }
   }
 }
