@@ -84,7 +84,7 @@ func (h grpcHandler) CreateDocumentProofForVersion(ctx context.Context, createDo
 // ConvertDocProofToClientFormat converts a DocumentProof to client api format
 func ConvertDocProofToClientFormat(proof *DocumentProof) (*documentpb.DocumentProof, error) {
 	return &documentpb.DocumentProof{
-		Header: &documentpb.ResponseHeader{
+		Header: &documentpb.ProofResponseHeader{
 			DocumentId: hexutil.Encode(proof.DocumentID),
 			VersionId:  hexutil.Encode(proof.VersionID),
 			State:      proof.State,
