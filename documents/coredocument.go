@@ -70,6 +70,15 @@ func compactProperties(key string) []byte {
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
+	// DataModified indicates that the data of the model that embeds the CoreDocument has been modified and salts needs to be generated for new fields in data precise-proof tree.
+	DataModified bool
+
+	// CoreDocModified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
+	CoreDocModified bool
+
+	// SignaturesModified indicates that the signatures have been modified and salts needs to be generated for new fields in signature precise-proof tree.
+	SignaturesModified bool
+
 	Document coredocumentpb.CoreDocument
 }
 
@@ -83,7 +92,7 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{cd}, nil
+	return &CoreDocument{Document: cd, CoreDocModified: true}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -92,9 +101,9 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 	return &CoreDocument{Document: cd}
 }
 
-// NewCoreDocumentWithCollaborators generates new core Document with a document type specified by the prefix: po or invoice.
+// NewCoreDocumentWithCollaborators generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
+func NewCoreDocumentWithCollaborators(collaborators []string) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
@@ -108,49 +117,55 @@ func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []b
 	return cd, nil
 }
 
-// ID returns the Document identifier
+// SetDataModified sets the DataModified flag to the given value
+func (cd *CoreDocument) SetDataModified(modified bool) {
+	cd.DataModified = modified
+}
+
+// ID returns the document identifier
 func (cd *CoreDocument) ID() []byte {
 	return cd.Document.DocumentIdentifier
 }
 
-// CurrentVersion returns the current version of the Document
+// CurrentVersion returns the current version of the document
 func (cd *CoreDocument) CurrentVersion() []byte {
 	return cd.Document.CurrentVersion
 }
 
-// CurrentVersionPreimage returns the current version preimage of the Document
+// CurrentVersionPreimage returns the current version preimage of the document
 func (cd *CoreDocument) CurrentVersionPreimage() []byte {
 	return cd.Document.CurrentPreimage
 }
 
-// PreviousVersion returns the previous version of the Document.
+// PreviousVersion returns the previous version of the document.
 func (cd *CoreDocument) PreviousVersion() []byte {
 	return cd.Document.PreviousVersion
 }
 
-// NextVersion returns the next version of the Document.
+// NextVersion returns the next version of the document.
 func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
 }
 
-// PreviousDocumentRoot returns the Document root of the previous version.
+// PreviousDocumentRoot returns the document root of the previous version.
 func (cd *CoreDocument) PreviousDocumentRoot() []byte {
 	return cd.Document.PreviousRoot
 }
 
-// AppendSignatures appends signatures to core Document.
+// AppendSignatures appends signatures to core document.
 func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	if cd.Document.SignatureData == nil {
 		cd.Document.SignatureData = new(coredocumentpb.SignatureData)
 	}
 	cd.Document.SignatureData.Signatures = append(cd.Document.SignatureData.Signatures, signs...)
+	cd.SignaturesModified = true
 }
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
-		return nil, errors.New("Document root is invalid")
+		return nil, errors.New("document root is invalid")
 	}
 
 	cs, err := identity.NewDIDsFromStrings(collaborators)
@@ -184,7 +199,9 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
 	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
-
+	ncd.CoreDocModified = true
+	ncd.DataModified = true
+	ncd.SignaturesModified = true
 	return ncd, nil
 
 }
@@ -222,23 +239,23 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 	return &TreeProof{tree: t, treeHashes: th}
 }
 
-// CreateProofs takes Document data tree and list to fields and generates proofs.
+// CreateProofs takes document data tree and list to fields and generates proofs.
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
-// errors out when the proof generation is failed on core Document tree.
+// errors out when the proof generation is failed on core document tree.
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
 
-	drTree, err := cd.DocumentRootTree(false)
+	drTree, err := cd.DocumentRootTree()
 	if err != nil {
 		return nil, err
 	}
-	signatureTree, err := cd.getSignatureDataTree(false)
+	signatureTree, err := cd.getSignatureDataTree()
 	if err != nil {
 		return nil, errors.New("failed to generate signatures tree: %v", err)
 	}
-	cdTree, err := cd.documentTree(docType, false)
+	cdTree, err := cd.coredocTree(docType)
 	if err != nil {
-		return nil, errors.New("failed to generate core Document tree: %v", err)
+		return nil, errors.New("failed to generate core document tree: %v", err)
 	}
 	srHash, err := cd.GetSigningRootHash()
 	if err != nil {
@@ -295,9 +312,9 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 }
 
 // GetSigningRootHash returns the hash needed to create a proof for fields from SigningRoot to DocumentRoot.
-// The returned proof is appended to the proofs generated from the data tree and core Document tree for a successful verification.
+// The returned proof is appended to the proofs generated from the data tree and core document tree for a successful verification.
 func (cd *CoreDocument) GetSigningRootHash() (hash []byte, err error) {
-	tree, err := cd.DocumentRootTree(false)
+	tree, err := cd.DocumentRootTree()
 	if err != nil {
 		return
 	}
@@ -311,7 +328,7 @@ func (cd *CoreDocument) GetSigningRootHash() (hash []byte, err error) {
 
 // GetSignaturesRootHash returns the hash needed to create proofs from SignaturesRoot to DocumentRoot
 func (cd *CoreDocument) GetSignaturesRootHash() (hash []byte, err error) {
-	tree, err := cd.getSignatureDataTree(false)
+	tree, err := cd.getSignatureDataTree()
 	if err != nil {
 		return
 	}
@@ -319,8 +336,8 @@ func (cd *CoreDocument) GetSignaturesRootHash() (hash []byte, err error) {
 }
 
 // getSignatureDataTree returns the merkle tree for the Signature Data root.
-func (cd *CoreDocument) getSignatureDataTree(mutable bool) (tree *proofs.DocumentTree, err error) {
-	tree = NewDefaultTreeWithPrefix(&cd.Document, SignaturesTreePrefix, compactProperties(SignaturesTreePrefix), mutable)
+func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
+	tree = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, compactProperties(SignaturesTreePrefix))
 	err = tree.AddLeavesFromDocument(cd.Document.SignatureData)
 	if err != nil {
 		return nil, err
@@ -330,16 +347,18 @@ func (cd *CoreDocument) getSignatureDataTree(mutable bool) (tree *proofs.Documen
 	if err != nil {
 		return nil, err
 	}
+
+	cd.SignaturesModified = false
 	return tree, nil
 }
 
-// DocumentRootTree returns the merkle tree for the Document root.
-func (cd *CoreDocument) DocumentRootTree(mutable bool) (tree *proofs.DocumentTree, err error) {
+// DocumentRootTree returns the merkle tree for the document root.
+func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	if len(cd.Document.SigningRoot) != idSize {
 		return nil, errors.New("signing root is invalid")
 	}
 
-	tree = NewDefaultTreeWithPrefix(&cd.Document, DRTreePrefix, compactProperties(DRTreePrefix), mutable)
+	tree = cd.DefaultTreeWithPrefix(DRTreePrefix, compactProperties(DRTreePrefix))
 
 	// The first leave added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
@@ -350,7 +369,7 @@ func (cd *CoreDocument) DocumentRootTree(mutable bool) (tree *proofs.DocumentTre
 		return nil, err
 	}
 	// Second leaf from the signature data tree
-	signatureTree, err := cd.getSignatureDataTree(mutable)
+	signatureTree, err := cd.getSignatureDataTree()
 	if err != nil {
 		return nil, err
 	}
@@ -371,18 +390,18 @@ func (cd *CoreDocument) DocumentRootTree(mutable bool) (tree *proofs.DocumentTre
 }
 
 // signingRootTree returns the merkle tree for the signing root.
-func (cd *CoreDocument) signingRootTree(docType string, mutable bool) (tree *proofs.DocumentTree, err error) {
+func (cd *CoreDocument) signingRootTree(docType string) (tree *proofs.DocumentTree, err error) {
 	if len(cd.Document.DataRoot) != idSize {
 		return nil, errors.New("data root is invalid")
 	}
 
-	cdTree, err := cd.documentTree(docType, mutable)
+	cdTree, err := cd.coredocTree(docType)
 	if err != nil {
 		return nil, err
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = NewDefaultTreeWithPrefix(&cd.Document, SigningTreePrefix, compactProperties(SigningTreePrefix), false)
+	tree = cd.DefaultTreeWithPrefix(SigningTreePrefix, compactProperties(SigningTreePrefix))
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
 			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(compactProperties(SigningTreePrefix), compactProperties(DataRootField)...)),
@@ -408,9 +427,9 @@ func (cd *CoreDocument) signingRootTree(docType string, mutable bool) (tree *pro
 	return tree, nil
 }
 
-// documentTree returns the merkle tree of the CoreDocument.
-func (cd *CoreDocument) documentTree(docType string, mutable bool) (tree *proofs.DocumentTree, err error) {
-	tree = NewDefaultTreeWithPrefix(&cd.Document, CDTreePrefix, compactProperties(CDTreePrefix), mutable)
+// coredocTree returns the merkle tree of the CoreDocument.
+func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
+	tree = cd.DefaultTreeWithPrefix(CDTreePrefix, compactProperties(CDTreePrefix))
 	err = tree.AddLeavesFromDocument(&cd.Document)
 	if err != nil {
 		return nil, err
@@ -438,6 +457,8 @@ func (cd *CoreDocument) documentTree(docType string, mutable bool) (tree *proofs
 	if err != nil {
 		return nil, err
 	}
+
+	cd.CoreDocModified = false
 	return tree, nil
 
 }
@@ -506,9 +527,9 @@ func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filtered
 	return filteredIDs
 }
 
-// CalculateDocumentRoot calculates the Document root of the CoreDocument.
+// CalculateDocumentRoot calculates the document root of the CoreDocument.
 func (cd *CoreDocument) CalculateDocumentRoot() ([]byte, error) {
-	tree, err := cd.DocumentRootTree(true)
+	tree, err := cd.DocumentRootTree()
 	if err != nil {
 		return nil, err
 	}
@@ -522,9 +543,9 @@ func (cd *CoreDocument) SetDataRoot(dr []byte) {
 	cd.Document.DataRoot = dr
 }
 
-// CalculateSigningRoot calculates the signing root of the core Document.
+// CalculateSigningRoot calculates the signing root of the core document.
 func (cd *CoreDocument) CalculateSigningRoot(docType string) ([]byte, error) {
-	tree, err := cd.signingRootTree(docType, true)
+	tree, err := cd.signingRootTree(docType)
 	if err != nil {
 		return nil, err
 	}
@@ -535,18 +556,17 @@ func (cd *CoreDocument) CalculateSigningRoot(docType string) ([]byte, error) {
 
 // PackCoreDocument prepares the document into a core document.
 func (cd *CoreDocument) PackCoreDocument(data *any.Any) coredocumentpb.CoreDocument {
-	// lets copy the value so that mutations on the returned doc wont be reflected on Document we are holding
+	// lets copy the value so that mutations on the returned doc wont be reflected on document we are holding
 	cdp := cd.Document
 	cdp.EmbeddedData = data
 	return cdp
 }
 
-// Signatures returns the copy of the signatures on the Document.
+// Signatures returns the copy of the signatures on the document.
 func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
 	for _, s := range cd.Document.SignatureData.Signatures {
 		signatures = append(signatures, *s)
 	}
-
 	return signatures
 }
 
@@ -557,6 +577,7 @@ func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
 	if err != nil {
 		return err
 	}
+	cd.CoreDocModified = true
 	return nil
 }
 
@@ -587,4 +608,13 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 		return err
 	}
 	return nil
+}
+
+// GetTestCoreDocWithReset must only be used by tests for manipulations. It gets the embedded coredoc protobuf.
+// All calls to this function will cause a regeneration of salts next time for precise-proof trees.
+func (cd *CoreDocument) GetTestCoreDocWithReset() *coredocumentpb.CoreDocument {
+	cd.DataModified = true
+	cd.CoreDocModified = true
+	cd.SignaturesModified = true
+	return &cd.Document
 }

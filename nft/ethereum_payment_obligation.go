@@ -204,7 +204,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
-		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
+		log.Infof("document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
 
 		errOut <- nil
 		return

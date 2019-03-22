@@ -164,7 +164,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -337,7 +337,7 @@ func (i *Invoice) Type() reflect.Type {
 
 // CalculateDataRoot calculates the data root and sets the root to core document.
 func (i *Invoice) CalculateDataRoot() ([]byte, error) {
-	t, err := i.getDocumentDataTree(true)
+	t, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
@@ -348,7 +348,7 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
-func (i *Invoice) getDocumentDataTree(mutable bool) (tree *proofs.DocumentTree, err error) {
+func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	invProto, err := i.createP2PProtobuf()
 	if err != nil {
 		return nil, err
@@ -356,7 +356,7 @@ func (i *Invoice) getDocumentDataTree(mutable bool) (tree *proofs.DocumentTree, 
 	if i.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-	t := documents.NewDefaultTreeWithPrefix(&i.CoreDocument.Document, prefix, compactPrefix(), mutable)
+	t := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -365,12 +365,14 @@ func (i *Invoice) getDocumentDataTree(mutable bool) (tree *proofs.DocumentTree, 
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
+	i.CoreDocument.SetDataModified(false)
 	return t, nil
 }
 
 // CreateProofs generates proofs for given fields.
 func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := i.getDocumentDataTree(false)
+	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -446,12 +448,12 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	}
 
 	// check invoice specific changes
-	oldTree, err := i.getDocumentDataTree(false)
+	oldTree, err := i.getDocumentDataTree()
 	if err != nil {
 		return err
 	}
 
-	newTree, err := newInv.getDocumentDataTree(false)
+	newTree, err := newInv.getDocumentDataTree()
 	if err != nil {
 		return err
 	}

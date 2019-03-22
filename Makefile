@@ -47,13 +47,13 @@ format-go: ## formats go code
 	@goimports -w .
 
 proto-lint: ## runs prototool lint
-	$(PROTOTOOL_BIN) lint
+	$(PROTOTOOL_BIN) lint protobufs
 
 proto-gen-go: ## generates the go bindings
-	$(PROTOTOOL_BIN) gen
+	$(PROTOTOOL_BIN) generate protobufs
 
 proto-all: ## runs prototool all
-	$(PROTOTOOL_BIN) all
+	$(PROTOTOOL_BIN) all protobufs
 
 gen-swagger: ## generates the swagger documentation
 	npm --prefix ./build run build_swagger

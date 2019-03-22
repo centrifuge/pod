@@ -323,6 +323,9 @@ func getTree(t *testing.T, doc proto.Message, prefix string, compact []byte) *pr
 		CompactProperties: true,
 		EnableHashSorting: true,
 		Hash:              sha256.New(),
+		Salts: func(compact []byte) (bytes []byte, e error) {
+			return utils.RandomSlice(32), nil
+		},
 	})
 
 	tree := &tr

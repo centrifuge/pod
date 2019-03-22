@@ -241,7 +241,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 
 func TestInvoice_CreateProofs(t *testing.T) {
 	i := createInvoice(t)
-	rk := i.Document.Roles[0].RoleKey
+	rk := i.GetTestCoreDocWithReset().Roles[0].RoleKey
 	cbpf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof_fields := []string{"invoice.invoice_number", cbpf, documents.CDTreePrefix + ".document_type"}
 	fmt.Println("Fields", proof_fields)
@@ -252,7 +252,7 @@ func TestInvoice_CreateProofs(t *testing.T) {
 		return
 	}
 
-	tree, err := i.CoreDocument.DocumentRootTree(false)
+	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 
 	// Validate invoice_number
@@ -352,7 +352,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i.InvoiceNumber = "321321"
 	i.NetAmount = na
 	i.GrossAmount = ga
-	tree, err := i.getDocumentDataTree(true)
+	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
 	assert.NotNil(t, leaf)
@@ -364,6 +364,7 @@ func createInvoice(t *testing.T) *Invoice {
 	i := new(Invoice)
 	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), defaultDID.String())
 	assert.NoError(t, err)
+	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateSigningRoot()
@@ -410,9 +411,9 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
 
 	// update the id3 rules to update only gross amount
-	inv.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	inv.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
-	inv.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
+	inv.CoreDocument.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
 
 	// fetch the document

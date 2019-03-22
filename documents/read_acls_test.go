@@ -106,7 +106,7 @@ func TestCoreDocument_addNFTToReadRules(t *testing.T) {
 
 func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	account := testingidentity.GenerateRandomDID()
-	cd, err := NewCoreDocumentWithCollaborators([]string{account.String()}, nil)
+	cd, err := NewCoreDocumentWithCollaborators([]string{account.String()})
 	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
@@ -255,8 +255,8 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	cd.Document.DataRoot = utils.RandomSlice(32)
-	cd.Document.EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
+	cd.GetTestCoreDocWithReset().DataRoot = utils.RandomSlice(32)
+	cd.GetTestCoreDocWithReset().EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
 	account := testingidentity.GenerateRandomDID()
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
@@ -267,7 +267,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	cd.Document.DataRoot = utils.RandomSlice(32)
+	cd.GetTestCoreDocWithReset().DataRoot = utils.RandomSlice(32)
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot()
@@ -318,7 +318,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree(false)
+	tree, err := cd.DocumentRootTree()
 	assert.NoError(t, err)
 
 	for _, c := range tests {
@@ -349,7 +349,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	granterID := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
-	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, nil)
+	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()})
 	assert.NoError(t, err)
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	payload := documentpb.AccessTokenParams{

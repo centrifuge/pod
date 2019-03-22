@@ -182,9 +182,9 @@ func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
 
 func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	cd, err := documents.NewCoreDocumentWithCollaborators(nil, nil)
+	cd, err := documents.NewCoreDocumentWithCollaborators(nil)
 	assert.NoError(t, err)
-	req := &p2ppb.AnchorDocumentRequest{Document: &cd.Document}
+	req := &p2ppb.AnchorDocumentRequest{Document: cd.GetTestCoreDocWithReset()}
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, req)
 	assert.NoError(t, err)
 

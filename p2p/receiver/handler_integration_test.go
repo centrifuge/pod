@@ -198,14 +198,14 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	po.AppendSignatures(resp.Signature)
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
-	po.Document.SignatureDataSalts = nil
+	po.document.SignatureDataSalts = nil
 	tree, err := po.DocumentRootTree()
-	po.Document.DocumentRoot = tree.RootHash()
+	po.document.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, err := anchors.ToAnchorID(po.Document.CurrentPreimage)
+	anchorIDTyped, err := anchors.ToAnchorID(po.document.CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(po.Document.DocumentRoot)
+	docRootTyped, err := anchors.ToDocumentRoot(po.document.DocumentRoot)
 	assert.NoError(t, err)
 
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
@@ -231,12 +231,12 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	// Add signature received
 	npo.AppendSignatures(resp.Signature)
 	tree, err = npo.DocumentRootTree()
-	npo.Document.DocumentRoot = tree.RootHash()
+	npo.document.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, err = anchors.ToAnchorID(npo.Document.CurrentPreimage)
+	anchorIDTyped, err = anchors.ToAnchorID(npo.document.CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err = anchors.ToDocumentRoot(npo.Document.DocumentRoot)
+	docRootTyped, err = anchors.ToDocumentRoot(npo.document.DocumentRoot)
 	assert.NoError(t, err)
 	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)
@@ -328,7 +328,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil, true, nil)
+	cd, err := po.CoreDocument.PrepareNewVersion(nil, nil)
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)

@@ -1,5 +1,5 @@
 protoc:
-  version: 3.6.1
+  version: 3.7.0
   includes:
     - ../vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
     - ../vendor/github.com/grpc-ecosystem/grpc-gateway/

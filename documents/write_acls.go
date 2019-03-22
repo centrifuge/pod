@@ -192,12 +192,12 @@ func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool
 // CollaboratorCanUpdate validates the changes made by the collaborator in the new document.
 // returns error if the transitions are not allowed for the collaborator.
 func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator identity.DID, docType string) error {
-	oldTree, err := cd.documentTree(docType, false)
+	oldTree, err := cd.coredocTree(docType)
 	if err != nil {
 		return err
 	}
 
-	newTree, err := ncd.documentTree(docType, false)
+	newTree, err := ncd.coredocTree(docType)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 	return ValidateTransitions(rules, cf)
 }
 
-// initTransitionRules initiates the transition rules for a given Core Document.
+// initTransitionRules initiates the transition rules for a given Core document.
 // Collaborators are given default edit capability over all fields of the CoreDocument and underlying documents such as invoices or purchase orders.
 // if the rules are created already, this is a no-op.
 // if collaborators are empty, it is a no-op
@@ -231,6 +231,7 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identi
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, compactProperties(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, documentPrefix, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	cd.CoreDocModified = true
 }
 
 // addNewTransitionRule creates a new transition rule with the given parameters.
@@ -243,4 +244,5 @@ func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocum
 		Roles:     [][]byte{roleKey},
 	}
 	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
+	cd.CoreDocModified = true
 }

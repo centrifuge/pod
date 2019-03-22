@@ -13,33 +13,33 @@ import (
 
 // Model is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the model if required
-// It should only handle protocol-level Document actions
+// It should only handle protocol-level document actions
 type Model interface {
 	storage.Model
 
-	// ID returns the Document identifier
+	// ID returns the document identifier
 	ID() []byte
 
-	// CurrentVersion returns the current version identifier of the Document
+	// CurrentVersion returns the current version identifier of the document
 	CurrentVersion() []byte
 
-	// CurrentVersionPreimage returns the current version pre-image of the Document. This is intended to hide the next version of an updated version of the document.
+	// CurrentVersionPreimage returns the current version pre-image of the document. This is intended to hide the next version of an updated version of the document.
 	CurrentVersionPreimage() []byte
 
-	// PreviousVersion returns the previous version identifier of the Document
+	// PreviousVersion returns the previous version identifier of the document
 	PreviousVersion() []byte
 
-	// NextVersion returns the next version identifier of the Document.
+	// NextVersion returns the next version identifier of the document.
 	NextVersion() []byte
 
-	// PackCoreDocument packs the implementing Document into a core Document
-	// Should only be called when the Document is about to be put on wire.
+	// PackCoreDocument packs the implementing document into a core document
+	// Should only be called when the document is about to be put on wire.
 	PackCoreDocument() (coredocumentpb.CoreDocument, error)
 
-	// UnpackCoreDocument takes a core Document protobuf and loads the data into the model.
+	// UnpackCoreDocument takes a core document protobuf and loads the data into the model.
 	UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 
-	// DocumentType returns the type of the Document
+	// DocumentType returns the type of the document
 	DocumentType() string
 
 	// CalculateDataRoot calculates the data root of the model.
@@ -48,7 +48,7 @@ type Model interface {
 	// CalculateSigningRoot calculates the signing root of the model.
 	CalculateSigningRoot() ([]byte, error)
 
-	// CalculateDocumentRoot returns the Document root of the model.
+	// CalculateDocumentRoot returns the document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
 
 	// GetSigningRootHash get the hash for signing root of the model.
@@ -57,13 +57,13 @@ type Model interface {
 	// GetSignaturesRootHash get hash for the signatures root of the model
 	GetSignaturesRootHash() (hash []byte, err error)
 
-	// PreviousDocumentRoot returns the Document root of the previous version.
+	// PreviousDocumentRoot returns the document root of the previous version.
 	PreviousDocumentRoot() []byte
 
 	// AppendSignatures appends the signatures to the model.
 	AppendSignatures(signatures ...*coredocumentpb.Signature)
 
-	// Signatures returns a copy of the signatures on the Document
+	// Signatures returns a copy of the signatures on the document
 	Signatures() []coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
@@ -79,11 +79,11 @@ type Model interface {
 	// IsNFTMinted checks if there is any NFT minted for the registry given
 	IsNFTMinted(tr TokenRegistry, registry common.Address) bool
 
-	// AddNFT adds an NFT to the Document.
-	// Note: The Document should be anchored after successfully adding the NFT.
+	// AddNFT adds an NFT to the document.
+	// Note: The document should be anchored after successfully adding the NFT.
 	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error
 
-	// GetCollaborators returns the collaborators of this Document.
+	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	// Note: returns all the collaborators with Read and Read_Sign permission
 	GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)

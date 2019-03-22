@@ -85,28 +85,28 @@ message ResponseHeader {
 
 message InvoiceData {
   string invoice_status = 25;
-  // invoice number or reference number 
+  // invoice number or reference number
   string invoice_number = 1;
-  // name of the sender company 
+  // name of the sender company
   string sender_name = 3;
   // street and address details of the sender company
   string sender_street = 4;
   string sender_city = 5;
   string sender_zipcode = 6;
-  // country ISO code of the sender of this invoice 
+  // country ISO code of the sender of this invoice
   string sender_country = 7;
-  // name of the recipient company 
+  // name of the recipient company
   string recipient_name = 8;
   string recipient_street = 9;
   string recipient_city = 10;
   string recipient_zipcode = 11;
-  // country ISO code of the receipient of this invoice 
+  // country ISO code of the receipient of this invoice
   string recipient_country = 12;
-  // ISO currency code 
+  // ISO currency code
   string currency = 13;
-  // invoice amount including tax 
+  // invoice amount including tax
   string gross_amount = 14;
-  // invoice amount excluding tax 
+  // invoice amount excluding tax
   string net_amount = 15;
   string tax_amount = 16;
   string tax_rate = 17;

@@ -151,7 +151,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
+	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -317,7 +317,7 @@ func (p *PurchaseOrder) Type() reflect.Type {
 
 // CalculateDataRoot calculates the data root and sets the root to core document
 func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
-	t, err := p.getDocumentDataTree(true)
+	t, err := p.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
@@ -328,12 +328,12 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
-func (p *PurchaseOrder) getDocumentDataTree(mutable bool) (tree *proofs.DocumentTree, err error) {
+func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	poProto, err := p.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(&p.CoreDocument.Document, prefix, compactPrefix(), mutable)
+	t := p.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -342,12 +342,14 @@ func (p *PurchaseOrder) getDocumentDataTree(mutable bool) (tree *proofs.Document
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
+	p.CoreDocument.SetDataModified(false)
 	return t, nil
 }
 
 // CreateProofs generates proofs for given fields.
 func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := p.getDocumentDataTree(false)
+	tree, err := p.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
@@ -418,12 +420,12 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	}
 
 	// check purchase order specific changes
-	oldTree, err := p.getDocumentDataTree(false)
+	oldTree, err := p.getDocumentDataTree()
 	if err != nil {
 		return err
 	}
 
-	newTree, err := newPo.getDocumentDataTree(false)
+	newTree, err := newPo.getDocumentDataTree()
 	if err != nil {
 		return err
 	}

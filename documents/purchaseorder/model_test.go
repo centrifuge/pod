@@ -99,15 +99,15 @@ func TestPurchaseOrder_JSON(t *testing.T) {
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
 	jsonBytes, err := po.JSON()
-	assert.Nil(t, err, "marshal to json didn't work correctly")
+	assert.NoError(t, err, "marshal to json didn't work correctly")
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
 	po = new(PurchaseOrder)
 	err = po.FromJSON(jsonBytes)
-	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
+	assert.NoError(t, err, "unmarshal JSON didn't work correctly")
 
 	ncd, err := po.PackCoreDocument()
-	assert.Nil(t, err, "JSON unmarshal damaged invoice variables")
+	assert.NoError(t, err, "JSON unmarshal damaged invoice variables")
 	assert.Equal(t, cd, ncd)
 }
 
@@ -213,12 +213,12 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 func TestPOModel_CreateProofs(t *testing.T) {
 	po := createPurchaseOrder(t)
 	assert.NotNil(t, po)
-	rk := po.Document.Roles[0].RoleKey
+	rk := po.CoreDocument.GetTestCoreDocWithReset().Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := po.CreateProofs([]string{"po.po_number", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := po.DocumentRootTree(true)
+	tree, err := po.DocumentRootTree()
 	assert.NoError(t, err)
 
 	// Validate po_number
@@ -256,7 +256,7 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	poModel.PoNumber = "123"
 	poModel.NetAmount = na
 	poModel.OrderAmount = oa
-	tree, err := poModel.getDocumentDataTree(true)
+	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po.po_number")
 	assert.NotNil(t, leaf)
@@ -305,9 +305,9 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, oldPO.CollaboratorCanUpdate(po, id2))
 
 	// update the id3 rules to update only order amount
-	po.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
-	po.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	po.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	po.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
+	po.CoreDocument.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], po.CurrentVersion(), po))
 
 	// fetch the document
