@@ -623,7 +623,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 
-	i.CoreDocument.SetDataModified(false)
+	i.SetDataModified(false)
 	return t, nil
 }
 
