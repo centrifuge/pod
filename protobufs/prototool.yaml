@@ -103,6 +103,8 @@ gen:
       invoice/invoice.proto: github.com/centrifuge/centrifuge-protobufs/gen/go/invoice
       notification/notification.proto: github.com/centrifuge/centrifuge-protobufs/gen/go/notification
       purchaseorder/purchaseorder.proto: github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder
+      entity/entity.proto: github.com/centrifuge/centrifuge-protobufs/gen/go/entity
+
 
   # Plugin overrides. For example, if you set "grpc-gpp: /usr/local/bin/grpc_cpp_plugin",
   # This will mean that a plugin named "grpc-gpp" in the plugins list will be looked for
