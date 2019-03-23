@@ -688,9 +688,6 @@ func (i *Invoice) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
-	if i.DataModified || i.SignaturesModified || i.CoreDocModified {
-		panic("Bloody hell")
-	}
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, err
