@@ -130,7 +130,7 @@
       "type": "object",
       "properties": {
         "header": {
-          "$ref": "#/definitions/documentResponseHeader"
+          "$ref": "#/definitions/documentProofResponseHeader"
         },
         "field_proofs": {
           "type": "array",
@@ -164,7 +164,7 @@
         }
       }
     },
-    "documentResponseHeader": {
+    "documentProofResponseHeader": {
       "type": "object",
       "properties": {
         "document_id": {
