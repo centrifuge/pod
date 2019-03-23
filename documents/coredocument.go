@@ -38,7 +38,7 @@ const (
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
 
-	// DRTreePrefix is the human readable prefix for core doc tree props
+	// DRTreePrefix is the human readable prefix for document root tree props
 	DRTreePrefix = "dr_tree"
 
 	// CDTreePrefix is the human readable prefix for core doc tree props
@@ -201,7 +201,6 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix
 	ncd.addCollaboratorsToReadSignRules(ucs)
 	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
 	ncd.CoreDocModified = true
-	ncd.DataModified = true
 	ncd.SignaturesModified = true
 	return ncd, nil
 

@@ -629,6 +629,9 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 
 // CreateProofs generates proofs for given fields.
 func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
+	if i.DataModified || i.SignaturesModified || i.CoreDocModified {
+		panic("Bloody hell")
+	}
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
@@ -655,6 +658,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 		return err
 	}
 
+	i.DataModified = true
 	return nil
 }
 
@@ -687,6 +691,9 @@ func (i *Invoice) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
+	if i.DataModified || i.SignaturesModified || i.CoreDocModified {
+		panic("Bloody hell")
+	}
 	tree, err := i.getDocumentDataTree()
 	if err != nil {
 		return nil, err

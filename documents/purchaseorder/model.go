@@ -375,6 +375,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 		return err
 	}
 
+	p.DataModified = true
 	return nil
 }
 

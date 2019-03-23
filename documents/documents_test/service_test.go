@@ -190,8 +190,8 @@ func TestService_CreateProofsValidationFails(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
 	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
-	i.(*invoice.Invoice).document.DataRoot = nil
-	i.(*invoice.Invoice).document.SigningRoot = nil
+	i.(*invoice.Invoice).GetTestCoreDocWithReset().DataRoot = nil
+	i.(*invoice.Invoice).GetTestCoreDocWithReset().SigningRoot = nil
 	assert.Nil(t, testRepo().Update(accountID, i.CurrentVersion(), i))
 	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.number"})
 	assert.Error(t, err)

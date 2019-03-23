@@ -33,8 +33,8 @@ func NewLeafProperty(literal string, compact []byte) proofs.Property {
 }
 
 // DocumentSaltsFunc returns a function that fetches and sets salts on the CoreDoc. The boolean mutable can be used to define if the salts function should error if a new field is encountered or not.
-func (coredoc *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error) {
-	salts := coredoc.Document.Salts
+func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error) {
+	salts := cd.Document.Salts
 	return func(compact []byte) ([]byte, error) {
 		for _, salt := range salts {
 			if bytes.Compare(salt.GetCompact(), compact) == 0 {
@@ -42,7 +42,7 @@ func (coredoc *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, e
 			}
 		}
 
-		if !coredoc.DataModified && !coredoc.CoreDocModified && !coredoc.SignaturesModified {
+		if !cd.DataModified && !cd.CoreDocModified && !cd.SignaturesModified {
 			return nil, errors.New("Salt for property %v not found", compact)
 		}
 
@@ -59,7 +59,7 @@ func (coredoc *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, e
 		}
 
 		salts = append(salts, &salt)
-		coredoc.Document.Salts = salts
+		cd.Document.Salts = salts
 		return randbytes, nil
 	}
 }
