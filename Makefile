@@ -55,7 +55,7 @@ proto-gen-go: ## generates the go bindings
 proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all
 
-    gen-swagger: ## generates the swagger documentation
+gen-swagger: ## generates the swagger documentation
 	npm --prefix ./build run build_swagger
 
 generate: ## autogenerate go files for config
