@@ -49,40 +49,34 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", nft.BootstrappedPayObService)
 	}
 
-	// documents (common)
+	// register documents (common)
 	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(configService, registry))
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
-	// invoice
-	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
-	if !ok {
-		return errors.New("invoice grpc handler not registered")
-	}
-
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invHandler)
-	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	// register document types
+	err = registerDocumentTypes(ctx,nodeObjReg,grpcServer,gwmux,addr,dopts)
 	if err != nil {
 		return err
 	}
 
-	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
-	if !ok {
-		return errors.New("purchase order grpc handler not registered")
-	}
-
-	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
-	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	// register other api endpoints
+	err = registerAPIs(ctx,cfg,payObService,configService,nodeObjReg,grpcServer,gwmux,addr,dopts)
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentObligation,configService config.Service ,nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error{
 
 	// healthcheck
 	hcCfg := cfg.(healthcheck.Config)
 	healthpb.RegisterHealthCheckServiceServer(grpcServer, healthcheck.GRPCHandler(hcCfg))
-	err = healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	err := healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
@@ -108,6 +102,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return err
 	}
 
+
 	// transactions
 	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Manager)
 	h := txv1.GRPCHandler(txSrv, configService)
@@ -116,5 +111,34 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return err
 	}
 
+	return nil
+
+}
+
+
+func registerDocumentTypes(ctx context.Context,nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+	// register invoice
+	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
+	if !ok {
+		return errors.New("invoice grpc handler not registered")
+	}
+
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invHandler)
+	err := invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	// register po
+	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
+	if !ok {
+		return errors.New("purchase order grpc handler not registered")
+	}
+
+	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
+	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
 	return nil
 }

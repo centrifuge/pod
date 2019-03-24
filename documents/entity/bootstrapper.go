@@ -1,6 +1,15 @@
 package entity
 
-/*
+import (
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transactions"
+)
+
 const (
 	// BootstrappedEntityHandler maps to grpc handler for entities
 	BootstrappedEntityHandler string = "BootstrappedEntityHandler"
@@ -56,4 +65,4 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedEntityHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }
-*/
+
