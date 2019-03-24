@@ -197,7 +197,6 @@ func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 
-	e.SetDataModified(false)
 	return t, nil
 }
 

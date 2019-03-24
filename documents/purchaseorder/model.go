@@ -343,7 +343,6 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 
-	p.CoreDocument.SetDataModified(false)
 	return t, nil
 }
 
