@@ -32,7 +32,7 @@ func NewLeafProperty(literal string, compact []byte) proofs.Property {
 	return proofs.NewProperty(literal, compact...)
 }
 
-// DocumentSaltsFunc returns a function that fetches and sets salts on the CoreDoc. The boolean mutable can be used to define if the salts function should error if a new field is encountered or not.
+// DocumentSaltsFunc returns a function that fetches and sets salts on the CoreDoc. The boolean `cd.CoreDocModified` can be used to define if the salts function should error if a new field is encountered or not.
 func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error) {
 	salts := cd.Document.Salts
 	return func(compact []byte) ([]byte, error) {

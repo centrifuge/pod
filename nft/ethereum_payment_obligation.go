@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -96,6 +97,9 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 	if err != nil {
 		return mreq, err
 	}
+
+	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	log.Debug(json.MarshalIndent(proof, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
@@ -296,10 +300,6 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
-
-	// TODO remove later
-	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	//log.Info(json.MarshalIndent(proof, "", "  "))
 
 	for i, p := range proofspb {
 		salt32, err := utils.SliceToByte32(p.Salt)
