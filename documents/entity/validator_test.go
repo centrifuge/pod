@@ -26,7 +26,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 	errs = errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
 	assert.Contains(t, errs[0].Error(), "unknown document type")
-	
+
 }
 
 func TestCreateValidator(t *testing.T) {
