@@ -1,6 +1,5 @@
 package entity
 
-
 import (
 	"context"
 
@@ -223,4 +222,3 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 
 	return inv, nil
 }
-

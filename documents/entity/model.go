@@ -92,6 +92,8 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 	if data.Identity != "" {
 		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
 			e.Identity = &did
+		} else {
+			return err
 		}
 	} else {
 		return identity.ErrMalformedAddress

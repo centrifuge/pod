@@ -17,9 +17,6 @@ func fieldValidator() documents.Validator {
 			return errors.New("unknown document type")
 		}
 
-
-
-
 		return nil
 	})
 }
@@ -38,4 +35,3 @@ func UpdateValidator() documents.ValidatorGroup {
 		documents.UpdateVersionValidator(),
 	}
 }
-
