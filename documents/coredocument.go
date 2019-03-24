@@ -70,14 +70,8 @@ func compactProperties(key string) []byte {
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
-	// DataModified indicates that the data of the model that embeds the CoreDocument has been modified and salts needs to be generated for new fields in data precise-proof tree.
-	DataModified bool
-
 	// CoreDocModified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
 	CoreDocModified bool
-
-	// SignaturesModified indicates that the signatures have been modified and salts needs to be generated for new fields in signature precise-proof tree.
-	SignaturesModified bool
 
 	Document coredocumentpb.CoreDocument
 }
@@ -120,7 +114,6 @@ func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []b
 
 // SetDataModified sets the DataModified flag to the given value
 func (cd *CoreDocument) SetDataModified(modified bool) {
-	cd.DataModified = modified
 }
 
 // ID returns the document identifier
@@ -159,7 +152,6 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 		cd.Document.SignatureData = new(coredocumentpb.SignatureData)
 	}
 	cd.Document.SignatureData.Signatures = append(cd.Document.SignatureData.Signatures, signs...)
-	cd.SignaturesModified = true
 }
 
 // PrepareNewVersion prepares the next version of the CoreDocument
@@ -201,7 +193,6 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix
 	ncd.addCollaboratorsToReadSignRules(ucs)
 	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
 	ncd.CoreDocModified = true
-	ncd.SignaturesModified = true
 	return ncd, nil
 
 }
@@ -353,7 +344,6 @@ func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err e
 		return nil, err
 	}
 
-	cd.SignaturesModified = false
 	return tree, nil
 }
 
@@ -391,6 +381,7 @@ func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error
 		return nil, err
 	}
 
+	cd.CoreDocModified = false
 	return tree, nil
 }
 
@@ -463,7 +454,6 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 		return nil, err
 	}
 
-	cd.CoreDocModified = false
 	return tree, nil
 
 }
@@ -618,8 +608,6 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 // GetTestCoreDocWithReset must only be used by tests for manipulations. It gets the embedded coredoc protobuf.
 // All calls to this function will cause a regeneration of salts next time for precise-proof trees.
 func (cd *CoreDocument) GetTestCoreDocWithReset() *coredocumentpb.CoreDocument {
-	cd.DataModified = true
 	cd.CoreDocModified = true
-	cd.SignaturesModified = true
 	return &cd.Document
 }

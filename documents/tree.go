@@ -42,7 +42,7 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 			}
 		}
 
-		if !cd.DataModified && !cd.CoreDocModified && !cd.SignaturesModified {
+		if !cd.CoreDocModified {
 			return nil, errors.New("Salt for property %v not found", compact)
 		}
 
@@ -50,7 +50,8 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 		n, err := rand.Read(randbytes)
 		if err != nil {
 			return nil, err
-		} else if n != 32 {
+		}
+		if n != 32 {
 			return nil, errors.AppendError(err, errors.New("Only read %d instead of 32 random bytes", n))
 		}
 		salt := proofspb.Salt{

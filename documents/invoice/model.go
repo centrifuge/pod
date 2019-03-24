@@ -655,7 +655,6 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 		return err
 	}
 
-	i.DataModified = true
 	return nil
 }
 
