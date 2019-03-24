@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -97,6 +98,9 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
+	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	log.Debug(json.MarshalIndent(proof, "", "  "))
+
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
 		return mreq, err
@@ -113,13 +117,6 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 		return nil, nil, err
 	}
 
-	cidBytes, err := tc.GetIdentityID()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cid := identity.NewDIDFromBytes(cidBytes)
-
 	if !req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
 		return nil, nil, errors.New("enable grant_nft_access to generate Read Access Proof")
 	}
@@ -135,8 +132,14 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
+	cidBytes, err := tc.GetIdentityID()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
+	cid := identity.NewDIDFromBytes(cidBytes)
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
@@ -207,7 +210,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		// Check if tokenID exists in registry and owner is deposit address
 		owner, err := s.OwnerOf(req.RegistryAddress, tokenID[:])
 		if err != nil {
-			errOut <- err
+			errOut <- errors.New("error while checking new NFT owner %v", err)
 			return
 		}
 		if owner.Hex() != req.DepositAddress.Hex() {
@@ -297,10 +300,6 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
-
-	// TODO remove later
-	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	//log.Info(json.MarshalIndent(proof, "", "  "))
 
 	for i, p := range proofspb {
 		salt32, err := utils.SliceToByte32(p.Salt)

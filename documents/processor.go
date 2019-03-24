@@ -196,9 +196,11 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
 	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootProofHashes)
+	if err != nil {
+		return errors.New("failed to commit anchor: %v", err)
+	}
 
 	isDone := <-done
-
 	if !isDone {
 		return errors.New("failed to commit anchor: %v", err)
 	}

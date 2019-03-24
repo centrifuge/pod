@@ -107,7 +107,6 @@ func TestEntity_PackCoreDocument(t *testing.T) {
 	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
-	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestEntity_JSON(t *testing.T) {
@@ -217,12 +216,11 @@ func TestEntityModel_calculateDataRoot(t *testing.T) {
 	m := new(Entity)
 	err = m.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String())
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, m.EntitySalts, "salts must be nil")
+	m.GetTestCoreDocWithReset()
 
 	dr, err := m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, m.EntitySalts, "salts must be created")
 }
 
 func TestEntity_CreateProofs(t *testing.T) {
@@ -259,6 +257,7 @@ func createEntity(t *testing.T) *Entity {
 	e := new(Entity)
 	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID.String())
 	assert.NoError(t, err)
+	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateSigningRoot()
@@ -279,14 +278,14 @@ func TestEntityModel_GetDocumentID(t *testing.T) {
 	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
-func TestEntityModel_getDocumentDataTree(t *testing.T) {
-	e := Entity{LegalName: "test company"}
-	tree, err := e.getDocumentDataTree()
-	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("entity.legal_name")
-	assert.NotNil(t, leaf)
-	assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
-}
+//func TestEntityModel_getDocumentDataTree(t *testing.T) {
+//	e := Entity{LegalName: "test company"}
+//	tree, err := e.getDocumentDataTree()
+//	assert.Nil(t, err, "tree should be generated without error")
+//	_, leaf := tree.GetLeafByProperty("entity.legal_name")
+//	assert.NotNil(t, leaf)
+//	assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
+//}
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	entity := createEntity(t)
@@ -375,6 +374,7 @@ func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.C
 	e := new(Entity)
 	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String())
 	assert.NoError(t, err)
+	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateSigningRoot()

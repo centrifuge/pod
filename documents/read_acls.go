@@ -44,6 +44,7 @@ func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity
 	}
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ_SIGN)
+	cd.CoreDocModified = true
 }
 
 // addNewReadRule creates a new read rule as per the role and action.
@@ -53,6 +54,7 @@ func (cd *CoreDocument) addNewReadRule(roleKey []byte, action coredocumentpb.Act
 		Roles:  [][]byte{roleKey},
 	}
 	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
+	cd.CoreDocModified = true
 }
 
 // findRole calls OnRole for every role that matches the actions passed in
@@ -85,7 +87,7 @@ func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role 
 	return false
 }
 
-// NFTOwnerCanRead checks if the nft owner/account can read the Document
+// NFTOwnerCanRead checks if the nft owner/account can read the document
 func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
 	if cd.AccountCanRead(account) {
@@ -115,7 +117,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 	return nil
 }
 
-// AccountCanRead validate if the core Document can be read by the account .
+// AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
 func (cd *CoreDocument) AccountCanRead(account identity.DID) bool {
 	// loop though read rules, check all the rules
@@ -125,7 +127,7 @@ func (cd *CoreDocument) AccountCanRead(account identity.DID) bool {
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
 
-// addNFTToReadRules adds NFT token to the read rules of core Document.
+// addNFTToReadRules adds NFT token to the read rules of core document.
 func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byte) error {
 	nft, err := ConstructNFT(registry, tokenID)
 	if err != nil {
@@ -136,13 +138,14 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 	role.Nfts = append(role.Nfts, nft)
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-	return cd.setSalts()
+	cd.CoreDocModified = true
+	return nil
 }
 
-// AddNFT returns a new CoreDocument model with nft added to the Core Document. If grantReadAccess is true, the nft is added
+// AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
 func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, false, nil)
+	ncd, err := cd.PrepareNewVersion(nil, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
@@ -164,10 +167,11 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 		}
 	}
 
-	return ncd, ncd.setSalts()
+	cd.CoreDocModified = true
+	return ncd, nil
 }
 
-// IsNFTMinted checks if the there is an NFT that is minted against this Document in the given registry.
+// IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
 func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
 	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())
 	if nft == nil {
@@ -209,7 +213,6 @@ func (cd *CoreDocument) CreateNFTProofs(
 
 		pfKeys = append(pfKeys, pks...)
 	}
-
 	return cd.CreateProofs(docType, dataTree, pfKeys)
 }
 
@@ -229,7 +232,7 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	return nft, nil
 }
 
-// isNFTInRole checks if the given nft(registry + token) is part of the core Document role.
+// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
 // If found, returns the index of the nft in the role and true
 func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) (nftIdx int, found bool) {
 	enft, err := ConstructNFT(registry, tokenID)
@@ -396,7 +399,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 
 // AddAccessToken adds the AccessToken to the document
 func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, false, nil)
+	ncd, err := cd.PrepareNewVersion(nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +410,8 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 	}
 
 	ncd.Document.AccessTokens = append(ncd.Document.AccessTokens, at)
-	return ncd, ncd.setSalts()
+	ncd.CoreDocModified = true
+	return ncd, nil
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received

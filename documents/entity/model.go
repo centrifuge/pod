@@ -38,8 +38,6 @@ type Entity struct {
 	PaymentDetails []*entitypb.PaymentDetail
 	// Entity contact list
 	Contacts []*entitypb.Contact
-
-	EntitySalts *proofs.Salts
 }
 
 // getClientData returns the client data from the entity model
@@ -119,19 +117,6 @@ func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
 	e.Contacts = entityData.Contacts
 }
 
-// getEntitySalts returns the entity salts. Initialises if not present
-func (e *Entity) getEntitySalts(entityData *entitypb.Entity) (*proofs.Salts, error) {
-	if e.EntitySalts == nil {
-		entitySalts, err := documents.GenerateNewSalts(entityData, prefix, compactPrefix())
-		if err != nil {
-			return nil, errors.New("getEntitySalts error %v", err)
-		}
-		e.EntitySalts = entitySalts
-	}
-
-	return e.EntitySalts, nil
-}
-
 // PackCoreDocument packs the Entity into a CoreDocument.
 func (e *Entity) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	entityData := e.createP2PProtobuf()
@@ -145,12 +130,7 @@ func (e *Entity) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) 
 		Value:   data,
 	}
 
-	salts, err := e.getEntitySalts(entityData)
-	if err != nil {
-		return cd, errors.New("couldn't get EntitySalts: %v", err)
-	}
-
-	return e.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
+	return e.CoreDocument.PackCoreDocument(embedData), nil
 }
 
 // UnpackCoreDocument unpacks the core document into Entity.
@@ -167,15 +147,6 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 	}
 
 	e.loadFromP2PProtobuf(entityData)
-	if cd.EmbeddedDataSalts == nil {
-		e.EntitySalts, err = e.getEntitySalts(entityData)
-		if err != nil {
-			return err
-		}
-	} else {
-		e.EntitySalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
-	}
-
 	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return nil
 }
@@ -209,13 +180,15 @@ func (e *Entity) CalculateDataRoot() ([]byte, error) {
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	entityProto := e.createP2PProtobuf()
-	salts, err := e.getEntitySalts(entityProto)
+	eProto := e.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
-	err = t.AddLeavesFromDocument(entityProto)
+	if e.CoreDocument == nil {
+		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
+	}
+	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	err = t.AddLeavesFromDocument(eProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
@@ -223,6 +196,7 @@ func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
 	return t, nil
 }
 
@@ -267,7 +241,7 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 	}
 
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
+	e.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
 	if err != nil {
 		return err
 	}
@@ -316,6 +290,6 @@ func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator ide
 	}
 
 	rules := e.CoreDocument.TransitionRulesFor(collaborator)
-	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }

@@ -29,31 +29,30 @@ func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 // PurchaseOrder implements the documents.Model keeps track of purchase order related fields and state
 type PurchaseOrder struct {
 	*documents.CoreDocument
-	Status             string // status of the Purchase Order
-	PoNumber           string // purchase order number or reference number
-	OrderName          string // name of the ordering company
-	OrderStreet        string // street and address details of the ordering company
-	OrderCity          string
-	OrderZipcode       string
-	OrderCountry       string // country ISO code of the ordering company of this purchase order
-	RecipientName      string // name of the recipient company
-	RecipientStreet    string
-	RecipientCity      string
-	RecipientZipcode   string
-	RecipientCountry   string             // country ISO code of the recipient of this purchase order
-	Currency           string             // ISO currency code
-	OrderAmount        *documents.Decimal // ordering gross amount including tax
-	NetAmount          *documents.Decimal // invoice amount excluding tax
-	TaxAmount          *documents.Decimal
-	TaxRate            *documents.Decimal
-	Recipient          *identity.DID
-	Order              []byte
-	OrderContact       string
-	Comment            string
-	DeliveryDate       *timestamp.Timestamp // requested delivery date
-	DateCreated        *timestamp.Timestamp // purchase order date
-	ExtraData          []byte
-	PurchaseOrderSalts *proofs.Salts
+	Status           string // status of the Purchase Order
+	PoNumber         string // purchase order number or reference number
+	OrderName        string // name of the ordering company
+	OrderStreet      string // street and address details of the ordering company
+	OrderCity        string
+	OrderZipcode     string
+	OrderCountry     string // country ISO code of the ordering company of this purchase order
+	RecipientName    string // name of the recipient company
+	RecipientStreet  string
+	RecipientCity    string
+	RecipientZipcode string
+	RecipientCountry string             // country ISO code of the recipient of this purchase order
+	Currency         string             // ISO currency code
+	OrderAmount      *documents.Decimal // ordering gross amount including tax
+	NetAmount        *documents.Decimal // invoice amount excluding tax
+	TaxAmount        *documents.Decimal
+	TaxRate          *documents.Decimal
+	Recipient        *identity.DID
+	Order            []byte
+	OrderContact     string
+	Comment          string
+	DeliveryDate     *timestamp.Timestamp // requested delivery date
+	DateCreated      *timestamp.Timestamp // purchase order date
+	ExtraData        []byte
 }
 
 // getClientData returns the client data from the purchaseOrder model
@@ -259,19 +258,6 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	return nil
 }
 
-// getPurchaseOrderSalts returns the purchase oder salts. Initialises if not present
-func (p *PurchaseOrder) getPurchaseOrderSalts(purchaseOrderData *purchaseorderpb.PurchaseOrderData) (*proofs.Salts, error) {
-	if p.PurchaseOrderSalts == nil {
-		poSalts, err := documents.GenerateNewSalts(purchaseOrderData, prefix, compactPrefix())
-		if err != nil {
-			return nil, errors.New("getPOSalts error %v", err)
-		}
-		p.PurchaseOrderSalts = poSalts
-	}
-
-	return p.PurchaseOrderSalts, nil
-}
-
 // PackCoreDocument packs the PurchaseOrder into a Core Document
 func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	poData, err := p.createP2PProtobuf()
@@ -289,12 +275,7 @@ func (p *PurchaseOrder) PackCoreDocument() (cd coredocumentpb.CoreDocument, err 
 		Value:   data,
 	}
 
-	salts, err := p.getPurchaseOrderSalts(poData)
-	if err != nil {
-		return cd, errors.New("failed to get po salts: %v", err)
-	}
-
-	return p.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
+	return p.CoreDocument.PackCoreDocument(embedData), nil
 }
 
 // UnpackCoreDocument unpacks the core document into PurchaseOrder
@@ -314,16 +295,6 @@ func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 	if err != nil {
 		return err
 	}
-
-	if cd.EmbeddedDataSalts == nil {
-		p.PurchaseOrderSalts, err = p.getPurchaseOrderSalts(poData)
-		if err != nil {
-			return err
-		}
-	} else {
-		p.PurchaseOrderSalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
-	}
-
 	p.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return err
 
@@ -362,11 +333,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, err
 	}
-	salts, err := p.getPurchaseOrderSalts(poProto)
-	if err != nil {
-		return nil, err
-	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
+	t := p.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -375,6 +342,7 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
 	return t, nil
 }
 
@@ -401,7 +369,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
+	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
 	if err != nil {
 		return err
 	}
@@ -469,6 +437,6 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	}
 
 	rules := p.CoreDocument.TransitionRulesFor(collaborator)
-	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
