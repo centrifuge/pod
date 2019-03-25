@@ -217,7 +217,7 @@ func (cd *CoreDocument) PrepareNewVersion1(newCollaborators Collaborators, docum
 
 	rcs := filterCollaborators(newCollaborators.ReadCollaborators, oldCs.ReadCollaborators...)
 	wcs := filterCollaborators(newCollaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
-	wcs = append(wcs, rcs...)
+	rcs = append(rcs, wcs...)
 
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
