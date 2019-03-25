@@ -77,8 +77,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "d3d720b7f20af5c9a4044ce04daea68ef05a6a59"
-  source = "github.com/vimukthi-git/centrifuge-protobufs"
+  revision = "0ef21765722a0e695d8acc4cf2e12efe33e8aa88"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
