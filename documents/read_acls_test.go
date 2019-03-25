@@ -59,7 +59,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
 	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	ncd, err := cd.PrepareNewVersion([]string{account.String()}, nil)
+	ncd, err := cd.PrepareNewVersion(nil, account.String())
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd.Document.ReadRules)
 	assert.NotNil(t, ncd.Document.Roles)

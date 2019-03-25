@@ -369,7 +369,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}

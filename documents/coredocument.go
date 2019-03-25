@@ -70,8 +70,8 @@ func compactProperties(key string) []byte {
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
-	// CoreDocModified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
-	CoreDocModified bool
+	// Modified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
+	Modified bool
 
 	Document coredocumentpb.CoreDocument
 }
@@ -91,7 +91,7 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{Document: cd, CoreDocModified: true}, nil
+	return &CoreDocument{Document: cd, Modified: true}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -161,7 +161,7 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators ...string) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
 		return nil, errors.New("document root is invalid")
 	}
@@ -197,7 +197,7 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
 	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
-	ncd.CoreDocModified = true
+	ncd.Modified = true
 	return ncd, nil
 
 }
@@ -427,7 +427,7 @@ func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error
 		return nil, err
 	}
 
-	cd.CoreDocModified = false
+	cd.Modified = false
 	return tree, nil
 }
 
@@ -686,7 +686,7 @@ func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
 	if err != nil {
 		return err
 	}
-	cd.CoreDocModified = true
+	cd.Modified = true
 	return nil
 }
 
@@ -717,11 +717,4 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 		return err
 	}
 	return nil
-}
-
-// GetTestCoreDocWithReset must only be used by tests for manipulations. It gets the embedded coredoc protobuf.
-// All calls to this function will cause a regeneration of salts next time for precise-proof trees.
-func (cd *CoreDocument) GetTestCoreDocWithReset() *coredocumentpb.CoreDocument {
-	cd.CoreDocModified = true
-	return &cd.Document
 }

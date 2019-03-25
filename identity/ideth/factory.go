@@ -49,7 +49,7 @@ func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DI
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
 			errOut <- err
-			log.Infof("Failed to send identity for creation [txHash: %s] : %v", ethTX.Hash(), err)
+			log.Infof("Failed to send identity for creation: %v", err)
 			return
 		}
 
