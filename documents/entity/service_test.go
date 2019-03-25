@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"testing"
-
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/gocelery"
@@ -122,7 +121,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
-	// failed to load from data
+	// Entity data does not contain an identity
 	old, _ := createCDWithEmbeddedEntity(t)
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
 	assert.Nil(t, err)
@@ -137,7 +136,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Error(t, err, "should fail because Identity is missing")
 	assert.Nil(t, doc)
 
-	// failed core document new version
+	// invalid collaborator identity
 	payload.Data.LegalName = "new company name"
 	payload.Collaborators = []string{"some wrong ID"}
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
