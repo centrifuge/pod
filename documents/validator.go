@@ -170,7 +170,11 @@ func documentRootValidator() Validator {
 // documentAuthorValidator checks if a given sender DID is the document author
 func documentAuthorValidator(sender identity.DID) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		if !model.Author().Equal(sender) {
+		author, err := model.Author()
+		if err != nil {
+			return err
+		}
+		if !author.Equal(sender) {
 			return errors.New("document sender is not the author")
 		}
 
@@ -208,16 +212,19 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 		if len(signatures) < 1 {
 			return errors.New("atleast one signature expected")
 		}
-
-		collaborators, err := model.GetSignerCollaborators(model.Author())
+		author, err := model.Author()
+		if err != nil {
+			return err
+		}
+		collaborators, err := model.GetSignerCollaborators(author)
 		if err != nil {
 			return errors.New("could not get signer collaborators")
 		}
 
 		authorFound := false
 		for _, sig := range signatures {
-			sigDID := identity.NewDIDFromBytes(sig.SignerId)
-			if model.Author().Equal(sigDID) {
+			sigDID, _ := identity.NewDIDFromBytes(sig.SignerId)
+			if author.Equal(sigDID) {
 				authorFound = true
 			}
 
@@ -231,7 +238,7 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 			}
 
 			// signer is not found in signing collaborators and he is not the author either
-			if !collaboratorFound && !model.Author().Equal(sigDID) {
+			if !collaboratorFound && !author.Equal(sigDID) {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: signer is not part of the signing collaborators", hexutil.Encode(sig.SignerId)))

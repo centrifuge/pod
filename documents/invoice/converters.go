@@ -320,7 +320,10 @@ func fromP2PPaymentDetails(pdetails []*invoicepb.PaymentDetails) ([]*PaymentDeta
 		if err != nil {
 			return nil, err
 		}
-		dids := identity.BytesToDIDs(detail.Payee, detail.Payer)
+		dids, err := identity.BytesToDIDs(detail.Payee, detail.Payer)
+		if err != nil {
+			return nil, err
+		}
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
 			DateExecuted:          detail.DateExecuted,

@@ -293,7 +293,10 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.identity = identity.NewDIDFromBytes(idBytes)
+	h.identity, err = identity.NewDIDFromBytes(idBytes)
+	if err != nil {
+		return err
+	}
 	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)

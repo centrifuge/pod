@@ -251,7 +251,10 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.TaxRate = decs[3]
 
 	if data.Recipient != nil {
-		recipient := identity.NewDIDFromBytes(data.Recipient)
+		recipient, err := identity.NewDIDFromBytes(data.Recipient)
+		if err != nil {
+			return err
+		}
 		p.Recipient = &recipient
 	}
 

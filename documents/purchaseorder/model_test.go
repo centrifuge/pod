@@ -232,7 +232,8 @@ func TestPOModel_CreateProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	assert.NoError(t, err)
 	assert.True(t, po.AccountCanRead(acc))
 
 	// Validate document_type

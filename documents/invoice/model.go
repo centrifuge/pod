@@ -450,7 +450,10 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 		return err
 	}
 
-	dids := identity.BytesToDIDs(data.Recipient, data.Sender, data.Payee)
+	dids, err := identity.BytesToDIDs(data.Recipient, data.Sender, data.Payee)
+	if err != nil {
+		return err
+	}
 	atts := fromP2PAttachments(data.Attachments)
 	li, err := fromP2PLineItems(data.LineItems)
 	if err != nil {

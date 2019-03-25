@@ -158,7 +158,10 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	if err != nil {
 		return nil, err
 	}
-	did := identity.NewDIDFromBytes(idBytes)
+	did, err := identity.NewDIDFromBytes(idBytes)
+	if err != nil {
+		return nil, err
+	}
 	if model == nil {
 		return nil, ErrDocumentNil
 	}
@@ -217,7 +220,10 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 	if err != nil {
 		return err
 	}
-	did := identity.NewDIDFromBytes(idBytes)
+	did, err := identity.NewDIDFromBytes(idBytes)
+	if err != nil {
+		return err
+	}
 
 	if model == nil {
 		return ErrDocumentNil
