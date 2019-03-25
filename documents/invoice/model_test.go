@@ -304,7 +304,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 8)
 
@@ -420,7 +420,6 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	// update the id3 rules to update only gross amount
 	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
 	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
-	inv.CoreDocument.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
 
 	// fetch the document
