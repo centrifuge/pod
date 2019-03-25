@@ -6,6 +6,8 @@ package documentpb
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	coredocument "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	_ "github.com/centrifuge/precise-proofs/proofs/proto"
 	proto "github.com/golang/protobuf/proto"
@@ -13,7 +15,6 @@ import (
 	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
