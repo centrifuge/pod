@@ -74,11 +74,13 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 
 	// first version of the document but not saved
 	id2 := testingidentity.GenerateRandomDID()
-	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, true)
+	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, true)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar := new(mockAnchorRepo)
-	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	docRoot, err := doc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	dr, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
@@ -89,11 +91,13 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	idSrv.AssertExpectations(t)
 
 	// new document with saved
-	doc, cd = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, false)
+	doc, _ = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id2}, false)
 	idSrv = new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar = new(mockAnchorRepo)
-	dr, err = anchors.ToDocumentRoot(cd.DocumentRoot)
+	docRoot, err = doc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	dr, err = anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
@@ -238,11 +242,13 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 
 	// add doc to repo
 	id := testingidentity.GenerateRandomDID()
-	doc, cd := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
+	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	ar := new(mockAnchorRepo)
-	dr, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	docRoot, err := doc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	dr, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)

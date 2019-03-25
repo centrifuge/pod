@@ -116,18 +116,11 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	var expectedCurrentVersion []byte
 	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
 	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
-
-	// missing DocumentRoot
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
-	ncd, err := cd.PrepareNewVersion(nil, c1.String(), c2.String())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document root is invalid")
-	assert.Nil(t, ncd)
 
 	//collaborators need to be hex string
-	cd.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
-	ncd, err = cd.PrepareNewVersion(nil, "some ID")
+	ncd, err := cd.PrepareNewVersion(nil, "some ID")
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
@@ -159,7 +152,6 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, cd.GetTestCoreDocWithReset().NextVersion, ncd.GetTestCoreDocWithReset().CurrentVersion)
 	assert.Equal(t, cd.GetTestCoreDocWithReset().CurrentVersion, ncd.GetTestCoreDocWithReset().PreviousVersion)
 	assert.Equal(t, cd.GetTestCoreDocWithReset().DocumentIdentifier, ncd.GetTestCoreDocWithReset().DocumentIdentifier)
-	assert.Equal(t, cd.GetTestCoreDocWithReset().DocumentRoot, ncd.GetTestCoreDocWithReset().PreviousRoot)
 	assert.Len(t, cd.GetTestCoreDocWithReset().Roles, 0)
 	assert.Len(t, cd.GetTestCoreDocWithReset().ReadRules, 0)
 	assert.Len(t, cd.GetTestCoreDocWithReset().TransitionRules, 0)
@@ -188,13 +180,13 @@ func TestGetSigningProofHash(t *testing.T) {
 	assert.Nil(t, err)
 
 	cd.GetTestCoreDocWithReset()
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, dr)
+	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, dr)
 	assert.Nil(t, err)
 
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
 
-	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, cd.GetTestCoreDocWithReset().DocumentRoot, sha256.New())
+	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -312,7 +304,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
 	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
+	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
@@ -361,7 +353,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 				assert.NoError(t, err)
 				assert.True(t, valid)
 			}
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, cd.GetTestCoreDocWithReset().DocumentRoot, h)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, docRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		})

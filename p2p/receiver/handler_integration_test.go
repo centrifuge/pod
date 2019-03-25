@@ -151,7 +151,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
-	_, cd := prepareDocumentForP2PHandler(t, nil)
+	po, cd := prepareDocumentForP2PHandler(t, nil)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
 	// Anchor document
@@ -159,7 +159,9 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.NoError(t, err)
 	anchorIDTyped, err := anchors.ToAnchorID(cd.CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	docRoot, err := po.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	docRootTyped, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
@@ -203,12 +205,11 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
 	tree, err := po.DocumentRootTree()
-	po.GetTestCoreDocWithReset().DocumentRoot = tree.RootHash()
 
 	// Anchor document
 	anchorIDTyped, err := anchors.ToAnchorID(po.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(po.GetTestCoreDocWithReset().DocumentRoot)
+	docRootTyped, err := anchors.ToDocumentRoot(tree.RootHash())
 	assert.NoError(t, err)
 
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
@@ -234,12 +235,11 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	// Add signature received
 	npo.AppendSignatures(resp.Signature)
 	tree, err = npo.DocumentRootTree()
-	po.GetTestCoreDocWithReset().DocumentRoot = tree.RootHash()
 
 	// Anchor document
 	anchorIDTyped, err = anchors.ToAnchorID(npo.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err = anchors.ToDocumentRoot(npo.GetTestCoreDocWithReset().DocumentRoot)
+	docRootTyped, err = anchors.ToDocumentRoot(tree.RootHash())
 	assert.NoError(t, err)
 	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
 	assert.Nil(t, err)

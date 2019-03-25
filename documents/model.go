@@ -59,10 +59,8 @@ type Model interface {
 	// CalculateSignaturesRoot returns signatures root of the model.
 	CalculateSignaturesRoot() ([]byte, error)
 
+	// DocumentRootTree returns the document root tree
 	DocumentRootTree() (tree *proofs.DocumentTree, err error)
-
-	// PreviousDocumentRoot returns the document root of the previous version.
-	PreviousDocumentRoot() []byte
 
 	// AppendSignatures appends the signatures to the model.
 	AppendSignatures(signatures ...*coredocumentpb.Signature)

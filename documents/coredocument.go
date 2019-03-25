@@ -141,11 +141,6 @@ func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
 }
 
-// PreviousDocumentRoot returns the document root of the previous version.
-func (cd *CoreDocument) PreviousDocumentRoot() []byte {
-	return cd.Document.PreviousRoot
-}
-
 // AppendSignatures appends signatures to core document.
 func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	if cd.Document.SignatureData == nil {
@@ -157,10 +152,6 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators ...string) (*CoreDocument, error) {
-	if len(cd.Document.DocumentRoot) != idSize {
-		return nil, errors.New("document root is invalid")
-	}
-
 	cs, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, err
@@ -175,7 +166,6 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators .
 	ucs := filterCollaborators(cs, oldCs...)
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
-		PreviousRoot:       cd.Document.DocumentRoot,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
 		TransitionRules:    cd.Document.TransitionRules,
@@ -530,8 +520,7 @@ func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataRoot []byte) (
 		return nil, err
 	}
 
-	cd.Document.DocumentRoot = tree.RootHash()
-	return cd.Document.DocumentRoot, nil
+	return tree.RootHash(), nil
 }
 
 // CalculateSigningRoot calculates the signing root of the core document.
