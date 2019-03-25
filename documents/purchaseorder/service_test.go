@@ -383,6 +383,7 @@ func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreD
 	po := new(PurchaseOrder)
 	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), cid.String())
 	assert.NoError(t, err)
+	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateSigningRoot()

@@ -10,7 +10,7 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PROTOTOOL_VERSION=0.4.0 PROTOTOOL_BIN=~/bin/0.4.0/prototool
+    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PROTOTOOL_VERSION=1.4.0 PROTOTOOL_BIN=~/bin/1.4.0/prototool
 
 checkout:
   post:

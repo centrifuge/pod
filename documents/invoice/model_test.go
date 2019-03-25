@@ -90,7 +90,6 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
-	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestInvoice_JSON(t *testing.T) {
@@ -224,22 +223,24 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	m := new(Invoice)
 	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String())
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
 	dr, err := m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
 }
 
 func TestInvoice_CreateProofs(t *testing.T) {
 	i := createInvoice(t)
-	rk := i.Document.Roles[0].RoleKey
+	rk := i.GetTestCoreDocWithReset().Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := i.CreateProofs([]string{"invoice.number", pf, documents.CDTreePrefix + ".document_type", "invoice.line_items[0].item_number", "invoice.line_items[0].description"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	if err != nil {
+		return
+	}
+
+	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 
 	// Validate invoice_number
@@ -344,12 +345,16 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.NoError(t, na.SetString("2"))
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("2"))
-	i := Invoice{Number: "3213121", NetAmount: na, GrossAmount: ga}
+	i := createInvoice(t)
+	i.Number = "321321"
+	i.NetAmount = na
+	i.GrossAmount = ga
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "invoice.number", leaf.Property.ReadableName())
+	assert.Equal(t, []byte(i.Number), leaf.Value)
 }
 
 func createInvoice(t *testing.T) *Invoice {
@@ -366,6 +371,7 @@ func createInvoice(t *testing.T) *Invoice {
 
 	err := i.InitInvoiceInput(payload, defaultDID.String())
 	assert.NoError(t, err)
+	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateSigningRoot()
@@ -396,6 +402,15 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
 	assert.NoError(t, err)
 
+	_, err = inv.CalculateDataRoot()
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
 	// id1 should have permission
 	assert.NoError(t, oldInv.CollaboratorCanUpdate(inv, id1))
 
@@ -403,9 +418,9 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
 
 	// update the id3 rules to update only gross amount
-	inv.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	inv.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
-	inv.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
+	inv.CoreDocument.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
 
 	// fetch the document

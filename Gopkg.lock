@@ -57,18 +57,19 @@
   revision = "cff30e1d23fc9e800b2b5b4b41ef1817dda07e9f"
 
 [[projects]]
-  digest = "1:4dc9d52a48657d4eac97abd9743dd1f1ca1b00e93ff5c751cf0b9cb8e90dd41e"
+  digest = "1:ce155efddbeafade446bef5d1516e522b2f71c04d9de98972e2e1ece5b06aac8"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "c5e55d16c4cfe058ca641d2a746a665f277f0c9f"
+  revision = "ada3d9be8c5a1a1f45d7c8a6e456194599fd1bb9"
 
 [[projects]]
-  digest = "1:c6c4106bf73b2ce9d7aacfac047c542a664b2734bdabb2beddb87d112d70a429"
+  digest = "1:aa8dada002b130fbf41864fb23a798502ef73f48dc064a6162f7862bce503e37"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
     "gen/go/coredocument",
+    "gen/go/entity",
     "gen/go/errors",
     "gen/go/invoice",
     "gen/go/notification",
@@ -76,7 +77,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "e66943c12a10056d55966e19b2074563349eb48e"
+  revision = "a640a6baee1cec51d52d137c06c1d4441a52bbf2"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -86,14 +87,14 @@
   revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
-  digest = "1:3ddba8bdf84eff2bedcc8e262cb87370d1301cb8ca7a3503be29a6eae25bd037"
+  digest = "1:3b544b8a9a673543a6b0f61afefc3ad1fec1080be25f8389cca630c71f423117"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "13d3af957299c614237c42cdc331f7acd7c7d201"
+  revision = "47365f90bfb4c95a2fea41c538e0e9758bfde8d7"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
@@ -233,7 +234,7 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:1c31dba75f840ef15223c1d792a2e67e76ccd76ddc528fa23ff19320dde05463"
+  digest = "1:b2d7e82c930fd78145f944d3c5e8e900c770b9147bddf917c6fbdfe2426b7210"
   name = "github.com/golang/protobuf"
   packages = [
     "descriptor",
@@ -253,8 +254,8 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   branch = "master"
@@ -1497,6 +1498,7 @@
     "github.com/centrifuge/centrifuge-ethereum-contracts",
     "github.com/centrifuge/centrifuge-protobufs/documenttypes",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument",
+    "github.com/centrifuge/centrifuge-protobufs/gen/go/entity",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/notification",
@@ -1520,7 +1522,6 @@
     "github.com/gavv/httpexpect",
     "github.com/go-errors/errors",
     "github.com/gogo/protobuf/io",
-    "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",

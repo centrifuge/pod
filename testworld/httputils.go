@@ -151,7 +151,11 @@ func createInsecureClient() *http.Client {
 func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
 	for {
 		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
-		status := resp["status"].(string)
+		status, ok := resp["status"].(string)
+		if !ok {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
 		if status == "pending" {
 			time.Sleep(1 * time.Second)

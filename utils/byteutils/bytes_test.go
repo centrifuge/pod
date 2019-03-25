@@ -133,34 +133,3 @@ func TestIntBytesFromString(t *testing.T) {
 		assert.Equal(t, c.res, res)
 	}
 }
-
-func TestIntBytesToString(t *testing.T) {
-	tests := []struct {
-		b   []byte
-		res string
-	}{
-		{
-			res: "0",
-		},
-
-		{
-			b:   []byte{0x4, 0xd2},
-			res: "1234",
-		},
-
-		{
-			b:   []byte{0x5, 0x6b, 0xc7, 0x5e, 0x2d, 0x63, 0xf, 0xff, 0xff},
-			res: "99999999999999999999",
-		},
-
-		{
-			b:   []byte{0, 0, 0},
-			res: "0",
-		},
-	}
-
-	for _, c := range tests {
-		res := IntBytesToString(c.b)
-		assert.Equal(t, c.res, res)
-	}
-}

@@ -10,7 +10,7 @@ option java_package = "com.nft";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// NFTService let's you mint NFTs for a document 
+// NFTService let's you mint NFTs for a document
 service NFTService {
   rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
