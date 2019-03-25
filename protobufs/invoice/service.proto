@@ -64,7 +64,6 @@ message InvoiceCreatePayload {
 }
 
 message InvoiceUpdatePayload {
-  // RequestHeader?
   string identifier = 1;
   repeated string collaborators = 2;
   InvoiceData data = 3;
