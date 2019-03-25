@@ -76,6 +76,11 @@ type CoreDocument struct {
 	Document coredocumentpb.CoreDocument
 }
 
+type Collaborators struct {
+	ReadCollaborators      []identity.DID
+	ReadWriteCollaborators []identity.DID
+}
+
 // newCoreDocument returns a new CoreDocument.
 func newCoreDocument() (*CoreDocument, error) {
 	cd := coredocumentpb.CoreDocument{
@@ -192,6 +197,47 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, documentPrefix
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
 	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
+	ncd.CoreDocModified = true
+	return ncd, nil
+
+}
+
+// PrepareNewVersion prepares the next version of the CoreDocument
+// if initSalts is true, salts will be generated for new version.
+func (cd *CoreDocument) PrepareNewVersion1(newCollaborators Collaborators, documentPrefix []byte) (*CoreDocument, error) {
+	if len(cd.Document.DocumentRoot) != idSize {
+		return nil, errors.New("document root is invalid")
+	}
+
+	// get all the old collaborators
+	oldCs, err := cd.GetCollaborators1()
+	if err != nil {
+		return nil, err
+	}
+
+	rcs := filterCollaborators(newCollaborators.ReadCollaborators, oldCs.ReadCollaborators...)
+	wcs := filterCollaborators(newCollaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
+	wcs = append(wcs, rcs...)
+
+	cdp := coredocumentpb.CoreDocument{
+		DocumentIdentifier: cd.Document.DocumentIdentifier,
+		PreviousRoot:       cd.Document.DocumentRoot,
+		Roles:              cd.Document.Roles,
+		ReadRules:          cd.Document.ReadRules,
+		TransitionRules:    cd.Document.TransitionRules,
+		Nfts:               cd.Document.Nfts,
+		AccessTokens:       cd.Document.AccessTokens,
+		SignatureData:      new(coredocumentpb.SignatureData),
+	}
+
+	err = populateVersions(&cdp, &cd.Document)
+	if err != nil {
+		return nil, err
+	}
+
+	ncd := &CoreDocument{Document: cdp}
+	ncd.addCollaboratorsToReadSignRules(rcs)
+	ncd.addCollaboratorsToTransitionRules(wcs, documentPrefix)
 	ncd.CoreDocModified = true
 	return ncd, nil
 
@@ -461,7 +507,7 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read_Sign permissions.
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {
 		return nil, err
 	}
@@ -480,9 +526,77 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) ([]identity.
 	return filterCollaborators(cs, filterIDs...), nil
 }
 
+// GetCollaborators returns the collaborators excluding the filteredIDs
+func (cd *CoreDocument) GetCollaborators1(filterIDs ...identity.DID) (Collaborators, error) {
+
+	rcs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN, coredocumentpb.Action_ACTION_READ)
+	if err != nil {
+		return Collaborators{}, err
+	}
+	wcs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	if err != nil {
+		return Collaborators{}, err
+	}
+	rc := filterCollaborators(rcs, filterIDs...)
+	wc := filterCollaborators(wcs, filterIDs...)
+
+	collabs := Collaborators{
+		ReadCollaborators:      rc,
+		ReadWriteCollaborators: wc,
+	}
+
+	return collabs, nil
+}
+
 // getCollaborators returns all the collaborators who belongs to the actions passed.
 func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
-	findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+		if len(role.Collaborators) < 1 {
+			return false
+		}
+
+		for _, c := range role.Collaborators {
+			// TODO(ved): we should ideally check the address length of 20
+			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
+			ids = append(ids, identity.NewDIDFromBytes(c))
+		}
+
+		return false
+	}, actions...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+// getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
+func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
+	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+		if len(role.Collaborators) < 1 {
+			return false
+		}
+
+		for _, c := range role.Collaborators {
+			// TODO(ved): we should ideally check the address length of 20
+			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
+			ids = append(ids, identity.NewDIDFromBytes(c))
+		}
+
+		return false
+	}, actions...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+// getWriteCollaborators returns all the collaborators which have access to the transition actions passed in.
+func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.TransitionAction) (ids []identity.DID, err error) {
+	findTransitionRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
