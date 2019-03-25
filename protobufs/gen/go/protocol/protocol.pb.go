@@ -3,9 +3,11 @@
 
 package protocolpb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type P2PEnvelope struct {
 	// serialized protobuf for the actual message
@@ -30,16 +32,17 @@ func (m *P2PEnvelope) Reset()         { *m = P2PEnvelope{} }
 func (m *P2PEnvelope) String() string { return proto.CompactTextString(m) }
 func (*P2PEnvelope) ProtoMessage()    {}
 func (*P2PEnvelope) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_51455c5a98b5b79f, []int{0}
+	return fileDescriptor_87968d26f3046c60, []int{0}
 }
+
 func (m *P2PEnvelope) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_P2PEnvelope.Unmarshal(m, b)
 }
 func (m *P2PEnvelope) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_P2PEnvelope.Marshal(b, m, deterministic)
 }
-func (dst *P2PEnvelope) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_P2PEnvelope.Merge(dst, src)
+func (m *P2PEnvelope) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_P2PEnvelope.Merge(m, src)
 }
 func (m *P2PEnvelope) XXX_Size() int {
 	return xxx_messageInfo_P2PEnvelope.Size(m)
@@ -61,9 +64,9 @@ func init() {
 	proto.RegisterType((*P2PEnvelope)(nil), "protocol.P2PEnvelope")
 }
 
-func init() { proto.RegisterFile("protocol/protocol.proto", fileDescriptor_protocol_51455c5a98b5b79f) }
+func init() { proto.RegisterFile("protocol/protocol.proto", fileDescriptor_87968d26f3046c60) }
 
-var fileDescriptor_protocol_51455c5a98b5b79f = []byte{
+var fileDescriptor_87968d26f3046c60 = []byte{
 	// 104 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2f, 0x28, 0xca, 0x2f,
 	0xc9, 0x4f, 0xce, 0xcf, 0xd1, 0x87, 0x31, 0xf4, 0xc0, 0x0c, 0x21, 0x0e, 0x18, 0x5f, 0x49, 0x91,

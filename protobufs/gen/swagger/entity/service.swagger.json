@@ -138,10 +138,25 @@
           "type": "boolean",
           "format": "boolean"
         },
+        "is_remit_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_ship_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_pay_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
         "label": {
           "type": "string"
         },
         "zip": {
+          "type": "string"
+        },
+        "state": {
           "type": "string"
         },
         "country": {
@@ -151,6 +166,9 @@
           "type": "string"
         },
         "address_line2": {
+          "type": "string"
+        },
+        "contact_person": {
           "type": "string"
         }
       }
@@ -174,7 +192,7 @@
         "bank_account_number": {
           "type": "string"
         },
-        "currency": {
+        "supported_currency": {
           "type": "string"
         }
       }
@@ -193,6 +211,9 @@
         },
         "phone": {
           "type": "string"
+        },
+        "fax": {
+          "type": "string"
         }
       }
     },
@@ -203,7 +224,13 @@
           "type": "string",
           "format": "byte"
         },
-        "account_address": {
+        "to": {
+          "type": "string"
+        },
+        "chain_uri": {
+          "type": "string"
+        },
+        "supported_currency": {
           "type": "string"
         }
       }
@@ -283,14 +310,20 @@
         }
       }
     },
-    "entityPayPalMethod": {
+    "entityOtherPayment": {
       "type": "object",
       "properties": {
         "identifier": {
           "type": "string",
           "format": "byte"
         },
-        "email": {
+        "type": {
+          "type": "string"
+        },
+        "pay_to": {
+          "type": "string"
+        },
+        "supported_currency": {
           "type": "string"
         }
       }
@@ -309,8 +342,8 @@
         "crypto_payment_method": {
           "$ref": "#/definitions/entityCryptoPaymentMethod"
         },
-        "pay_pal_method": {
-          "$ref": "#/definitions/entityPayPalMethod"
+        "other_method": {
+          "$ref": "#/definitions/entityOtherPayment"
         }
       }
     },
