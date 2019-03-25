@@ -13,6 +13,7 @@ import (
 )
 
 const typeInvoice string = "invoice"
+const typeEntity string = "entity"
 const typePO string = "purchaseorder"
 const poPrefix string = "po"
 
@@ -47,6 +48,16 @@ func getDocumentAndCheck(e *httpexpect.Expect, auth string, documentType string,
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+
+	return objGet
+}
+func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	docIdentifier := params["document_id"].(string)
+
+	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
+	objGet.Path("$.data.legal_name").String().Equal(params["legal_name"].(string))
 
 	return objGet
 }

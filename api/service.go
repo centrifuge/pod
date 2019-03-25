@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
@@ -129,7 +131,7 @@ func registerDocumentTypes(ctx context.Context,nodeObjReg map[string]interface{}
 		return err
 	}
 
-	// register po
+	// register purchase order
 	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
 	if !ok {
 		return errors.New("purchase order grpc handler not registered")
@@ -137,6 +139,18 @@ func registerDocumentTypes(ctx context.Context,nodeObjReg map[string]interface{}
 
 	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
 	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	// register entity
+	entityHandler, ok := nodeObjReg[entity.BootstrappedEntityHandler].(entitypb.DocumentServiceServer)
+	if !ok {
+		return errors.New("entity grpc handler not registered")
+	}
+
+	entitypb.RegisterDocumentServiceServer(grpcServer, entityHandler)
+	err = entitypb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
