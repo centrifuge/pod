@@ -17,14 +17,14 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.Error(t, err)
 	errs := errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
-	assert.Contains(t, errs[0].Error(), "nil document")
+	assert.Contains(t, errs[0].Error(), "no(nil) document provided")
 
 	// unknown type
 	err = fv.Validate(nil, &mockModel{})
 	assert.Error(t, err)
 	errs = errors.GetErrs(err)
 	assert.Len(t, errs, 1, "errors length must be one")
-	assert.Contains(t, errs[0].Error(), "unknown document type")
+	assert.Contains(t, errs[0].Error(), "document is of invalid type")
 
 }
 

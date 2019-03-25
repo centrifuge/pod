@@ -166,7 +166,7 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 
 	cs, err := model.GetCollaborators()
 	if err != nil {
-		return nil, errors.New("failed to get collaborators: %v", err)
+		return nil, errors.NewTypedError(documents.ErrFailedCollaborators, err)
 	}
 
 	var css []string
