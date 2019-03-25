@@ -69,7 +69,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err := doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, []byte("po"))
+	ndoc, err := doc.PrepareNewVersion([]byte("po"), testingidentity.GenerateRandomDID().String())
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
@@ -130,7 +130,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// next pre image
 	doc = ndoc
 	doc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = doc.PrepareNewVersion(nil, []byte("po"))
+	ndoc, err = doc.PrepareNewVersion([]byte("po"))
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -204,7 +204,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// read_rules
 	// transition_rules
 	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
-	ndoc, err = ndoc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, []byte("po"))
+	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), testingidentity.GenerateRandomDID().String())
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -400,7 +400,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	doc, id1, id2, docType := prepareDocument(t)
 
 	// prepare a new version of the document with out collaborators
-	ndoc, err := doc.PrepareNewVersion(nil, []byte("invoice"))
+	ndoc, err := doc.PrepareNewVersion([]byte("invoice"))
 	assert.NoError(t, err)
 
 	// if this was changed by the id1, everything should be fine
@@ -410,7 +410,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
-	ndoc, err = doc.PrepareNewVersion([]string{testingidentity.GenerateRandomDID().String()}, []byte("invoice"))
+	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), testingidentity.GenerateRandomDID().String())
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1

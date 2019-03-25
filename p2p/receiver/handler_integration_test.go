@@ -327,7 +327,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil, nil)
+	cd, err := po.CoreDocument.PrepareNewVersion(nil)
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)

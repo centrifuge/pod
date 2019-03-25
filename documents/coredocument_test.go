@@ -120,22 +120,20 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	// missing DocumentRoot
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
-	c := []string{c1.String(), c2.String()}
-	ncd, err := cd.PrepareNewVersion(c, nil)
+	ncd, err := cd.PrepareNewVersion(nil, c1.String(), c2.String())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document root is invalid")
 	assert.Nil(t, ncd)
 
 	//collaborators need to be hex string
 	cd.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
-	collabs := []string{"some ID"}
-	ncd, err = cd.PrepareNewVersion(collabs, nil)
+	ncd, err = cd.PrepareNewVersion(nil, "some ID")
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 	assert.Nil(t, ncd)
 
 	// successful preparation of new version upon addition of DocumentRoot
-	ncd, err = cd.PrepareNewVersion(c, nil)
+	ncd, err = cd.PrepareNewVersion(nil, c1.String(), c2.String())
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err := ncd.GetCollaborators()
@@ -149,7 +147,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	expectedNextVersion = h.Sum(expectedNextVersion)
 	assert.Equal(t, expectedNextVersion, ncd.GetTestCoreDocWithReset().NextVersion)
 
-	ncd, err = cd.PrepareNewVersion(c, nil)
+	ncd, err = cd.PrepareNewVersion(nil, c1.String(), c2.String())
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	cs, err = ncd.GetCollaborators()

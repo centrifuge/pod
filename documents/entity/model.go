@@ -241,7 +241,7 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 	}
 
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}

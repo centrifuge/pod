@@ -649,7 +649,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}
