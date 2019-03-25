@@ -134,7 +134,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	}
 	po.AppendSignatures(sig)
 
-	_, err = po.CalculateDocumentRoot()
+	_, err = po.CalculateDocumentRoot("", nil)
 	assert.NoError(t, err)
 
 	return po

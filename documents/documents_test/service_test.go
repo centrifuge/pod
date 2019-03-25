@@ -185,18 +185,6 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, len(proof.FieldProofs), 1)
 	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
 }
-func TestService_CreateProofsValidationFails(t *testing.T) {
-	service, idService := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	i, _ := createCDWithEmbeddedInvoice(t, ctxh, nil, false)
-	idService = mockSignatureCheck(t, i.(*invoice.Invoice), idService)
-	i.(*invoice.Invoice).GetTestCoreDocWithReset().DataRoot = nil
-	i.(*invoice.Invoice).GetTestCoreDocWithReset().SigningRoot = nil
-	assert.Nil(t, testRepo().Update(accountID, i.CurrentVersion(), i))
-	_, err := service.CreateProofs(ctxh, i.ID(), []string{"invoice.number"})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get signing root")
-}
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
 	service, idService := getServiceWithMockedLayers()

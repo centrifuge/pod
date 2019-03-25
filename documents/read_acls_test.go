@@ -263,23 +263,19 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.GetTestCoreDocWithReset()
 	err = testTree.Generate()
 	assert.NoError(t, err)
-	cd.GetTestCoreDocWithReset().DataRoot = testTree.RootHash()
 	cd.GetTestCoreDocWithReset().EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
 
 	account := testingidentity.GenerateRandomDID()
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
+	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot()
+	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	cd.GetTestCoreDocWithReset().DataRoot = testTree.RootHash()
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot()
+	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -327,7 +323,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree()
+	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	for _, c := range tests {

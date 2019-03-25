@@ -228,9 +228,9 @@ func TestEntity_CreateProofs(t *testing.T) {
 	rk := e.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := e.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	tree, err := e.CoreDocument.DocumentRootTree()
+	tree, err := e.DocumentRootTree()
 	assert.NoError(t, err)
 
 	// Validate entity_number

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/precise-proofs/proofs"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -51,11 +53,13 @@ type Model interface {
 	// CalculateDocumentRoot returns the document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
 
-	// GetSigningRootHash get the hash for signing root of the model.
-	GetSigningRootHash() (hash []byte, err error)
+	// GetSigningRootProofHash get the hash for signing root of the model.
+	GetSigningRootProofHash() (hash []byte, err error)
 
 	// CalculateSignaturesRoot returns signatures root of the model.
 	CalculateSignaturesRoot() ([]byte, error)
+
+	DocumentRootTree() (tree *proofs.DocumentTree, err error)
 
 	// PreviousDocumentRoot returns the document root of the previous version.
 	PreviousDocumentRoot() []byte

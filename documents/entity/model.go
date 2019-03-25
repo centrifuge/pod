@@ -174,7 +174,6 @@ func (e *Entity) CalculateDataRoot() ([]byte, error) {
 	}
 
 	dr := t.RootHash()
-	e.CoreDocument.SetDataRoot(dr)
 	return dr, nil
 }
 
@@ -262,7 +261,37 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {
-	return e.CoreDocument.CalculateSigningRoot(e.DocumentType())
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dr)
+}
+
+// CalculateDocumentRoot calculates the document root
+func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dr)
+}
+
+// GetSigningRootProofHash gets the signing root proof hash upto document root
+func (e *Entity) GetSigningRootProofHash() (hash []byte, err error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.GetSigningRootProofHash(e.DocumentType(), dr)
+}
+
+func (e *Entity) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dr)
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.

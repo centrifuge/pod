@@ -304,7 +304,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 8)
 
