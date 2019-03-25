@@ -286,6 +286,7 @@ func (e *Entity) GetSigningRootProofHash() (hash []byte, err error) {
 	return e.CoreDocument.GetSigningRootProofHash(e.DocumentType(), dr)
 }
 
+// DocumentRootTree creates and returns the document root tree
 func (e *Entity) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	dr, err := e.CalculateDataRoot()
 	if err != nil {

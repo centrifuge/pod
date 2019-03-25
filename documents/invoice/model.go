@@ -693,6 +693,7 @@ func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
 	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dr)
 }
 
+// DocumentRootTree creates and returns the document root tree
 func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	dr, err := i.CalculateDataRoot()
 	if err != nil {

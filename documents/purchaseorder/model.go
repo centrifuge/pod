@@ -414,6 +414,7 @@ func (p *PurchaseOrder) CalculateDocumentRoot() ([]byte, error) {
 	return p.CoreDocument.CalculateDocumentRoot(p.DocumentType(), dr)
 }
 
+// DocumentRootTree creates and returns the document root tree
 func (p *PurchaseOrder) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	dr, err := p.CalculateDataRoot()
 	if err != nil {
