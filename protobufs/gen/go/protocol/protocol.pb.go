@@ -30,7 +30,7 @@ func (m *P2PEnvelope) Reset()         { *m = P2PEnvelope{} }
 func (m *P2PEnvelope) String() string { return proto.CompactTextString(m) }
 func (*P2PEnvelope) ProtoMessage()    {}
 func (*P2PEnvelope) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_989700cde17ecb56, []int{0}
+	return fileDescriptor_protocol_51455c5a98b5b79f, []int{0}
 }
 func (m *P2PEnvelope) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_P2PEnvelope.Unmarshal(m, b)
@@ -61,9 +61,9 @@ func init() {
 	proto.RegisterType((*P2PEnvelope)(nil), "protocol.P2PEnvelope")
 }
 
-func init() { proto.RegisterFile("protocol/protocol.proto", fileDescriptor_protocol_989700cde17ecb56) }
+func init() { proto.RegisterFile("protocol/protocol.proto", fileDescriptor_protocol_51455c5a98b5b79f) }
 
-var fileDescriptor_protocol_989700cde17ecb56 = []byte{
+var fileDescriptor_protocol_51455c5a98b5b79f = []byte{
 	// 104 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2f, 0x28, 0xca, 0x2f,
 	0xc9, 0x4f, 0xce, 0xcf, 0xd1, 0x87, 0x31, 0xf4, 0xc0, 0x0c, 0x21, 0x0e, 0x18, 0x5f, 0x49, 0x91,

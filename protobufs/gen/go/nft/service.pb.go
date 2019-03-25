@@ -36,7 +36,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_10e4a4ecba67c7da, []int{0}
+	return fileDescriptor_service_4b80f475a4763eba, []int{0}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -85,7 +85,7 @@ func (m *NFTMintRequest) Reset()         { *m = NFTMintRequest{} }
 func (m *NFTMintRequest) String() string { return proto.CompactTextString(m) }
 func (*NFTMintRequest) ProtoMessage()    {}
 func (*NFTMintRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_10e4a4ecba67c7da, []int{1}
+	return fileDescriptor_service_4b80f475a4763eba, []int{1}
 }
 func (m *NFTMintRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NFTMintRequest.Unmarshal(m, b)
@@ -166,7 +166,7 @@ func (m *NFTMintResponse) Reset()         { *m = NFTMintResponse{} }
 func (m *NFTMintResponse) String() string { return proto.CompactTextString(m) }
 func (*NFTMintResponse) ProtoMessage()    {}
 func (*NFTMintResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_10e4a4ecba67c7da, []int{2}
+	return fileDescriptor_service_4b80f475a4763eba, []int{2}
 }
 func (m *NFTMintResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NFTMintResponse.Unmarshal(m, b)
@@ -278,9 +278,9 @@ var _NFTService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "nft/service.proto",
 }
 
-func init() { proto.RegisterFile("nft/service.proto", fileDescriptor_service_10e4a4ecba67c7da) }
+func init() { proto.RegisterFile("nft/service.proto", fileDescriptor_service_4b80f475a4763eba) }
 
-var fileDescriptor_service_10e4a4ecba67c7da = []byte{
+var fileDescriptor_service_4b80f475a4763eba = []byte{
 	// 484 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x92, 0xc1, 0x6e, 0x13, 0x3d,
 	0x10, 0x80, 0x95, 0xe4, 0x6f, 0x93, 0x3a, 0xfd, 0x93, 0x60, 0x38, 0xa4, 0x11, 0xa0, 0x25, 0x12,

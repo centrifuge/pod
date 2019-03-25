@@ -39,7 +39,7 @@ func (m *Pong) Reset()         { *m = Pong{} }
 func (m *Pong) String() string { return proto.CompactTextString(m) }
 func (*Pong) ProtoMessage()    {}
 func (*Pong) Descriptor() ([]byte, []int) {
-	return fileDescriptor_health_a9f2c3a17a667e6a, []int{0}
+	return fileDescriptor_health_43080449bd367ea9, []int{0}
 }
 func (m *Pong) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Pong.Unmarshal(m, b)
@@ -149,9 +149,9 @@ var _HealthCheckService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "health/health.proto",
 }
 
-func init() { proto.RegisterFile("health/health.proto", fileDescriptor_health_a9f2c3a17a667e6a) }
+func init() { proto.RegisterFile("health/health.proto", fileDescriptor_health_43080449bd367ea9) }
 
-var fileDescriptor_health_a9f2c3a17a667e6a = []byte{
+var fileDescriptor_health_43080449bd367ea9 = []byte{
 	// 266 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x8f, 0xcf, 0x4a, 0x33, 0x31,
 	0x14, 0xc5, 0x99, 0xd2, 0xaf, 0xfd, 0x8c, 0xae, 0x22, 0xc8, 0x38, 0x75, 0x31, 0x14, 0x04, 0x41,

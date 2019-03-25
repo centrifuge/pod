@@ -155,8 +155,8 @@ func TestPaymentObligationService(t *testing.T) {
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
 				cd, err := documents.NewCoreDocumentWithCollaborators(nil, nil)
 				assert.NoError(t, err)
-				cd.Document.DocumentRoot = utils.RandomSlice(32)
-				proof := getDummyProof(&cd.Document)
+				cd.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
+				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{Number: "1232", CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)

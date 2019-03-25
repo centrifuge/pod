@@ -94,8 +94,6 @@ type Invoice struct {
 	LineItems                []*LineItem
 	PaymentDetails           []*documents.PaymentDetails
 	TaxItems                 []*TaxItem
-
-	InvoiceSalts *proofs.Salts
 }
 
 // LineItem represents a single invoice line item.
@@ -507,19 +505,6 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 	return nil
 }
 
-// getInvoiceSalts returns the invoice salts. Initialises if not present
-func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
-	if i.InvoiceSalts == nil {
-		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix())
-		if err != nil {
-			return nil, errors.New("getInvoiceSalts error %v", err)
-		}
-		i.InvoiceSalts = invoiceSalts
-	}
-
-	return i.InvoiceSalts, nil
-}
-
 // PackCoreDocument packs the Invoice into a CoreDocument.
 func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
 	invData, err := i.createP2PProtobuf()
@@ -536,13 +521,7 @@ func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error)
 		TypeUrl: i.DocumentType(),
 		Value:   data,
 	}
-
-	salts, err := i.getInvoiceSalts(invData)
-	if err != nil {
-		return cd, errors.New("couldn't get InvoiceSalts: %v", err)
-	}
-
-	return i.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
+	return i.CoreDocument.PackCoreDocument(embedData), nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice.
@@ -560,15 +539,6 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 
 	if err := i.loadFromP2PProtobuf(invoiceData); err != nil {
 		return err
-	}
-
-	if cd.EmbeddedDataSalts == nil {
-		i.InvoiceSalts, err = i.getInvoiceSalts(invoiceData)
-		if err != nil {
-			return err
-		}
-	} else {
-		i.InvoiceSalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
 	}
 
 	i.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
@@ -608,12 +578,10 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, err
 	}
-
-	salts, err := i.getInvoiceSalts(invProto)
-	if err != nil {
-		return nil, err
+	if i.CoreDocument == nil {
+		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
+	t := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -622,6 +590,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
 	return t, nil
 }
 
@@ -648,7 +617,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
+	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
 	if err != nil {
 		return err
 	}
@@ -670,6 +639,12 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 // CalculateSigningRoot calculates the signing root of the document.
 func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
 	return i.CoreDocument.CalculateSigningRoot(i.DocumentType())
+}
+
+// CalculateDocumentRoot calculate the document root
+// TODO: Should we add this
+func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
+	return i.CoreDocument.CalculateDocumentRoot()
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -715,6 +690,6 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	}
 
 	rules := i.CoreDocument.TransitionRulesFor(collaborator)
-	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }

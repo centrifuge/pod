@@ -37,7 +37,7 @@ func (m *TransactionStatusRequest) Reset()         { *m = TransactionStatusReque
 func (m *TransactionStatusRequest) String() string { return proto.CompactTextString(m) }
 func (*TransactionStatusRequest) ProtoMessage()    {}
 func (*TransactionStatusRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3dc77ed74e902ae6, []int{0}
+	return fileDescriptor_service_6e7346884114ccf2, []int{0}
 }
 func (m *TransactionStatusRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransactionStatusRequest.Unmarshal(m, b)
@@ -78,7 +78,7 @@ func (m *TransactionStatusResponse) Reset()         { *m = TransactionStatusResp
 func (m *TransactionStatusResponse) String() string { return proto.CompactTextString(m) }
 func (*TransactionStatusResponse) ProtoMessage()    {}
 func (*TransactionStatusResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_3dc77ed74e902ae6, []int{1}
+	return fileDescriptor_service_6e7346884114ccf2, []int{1}
 }
 func (m *TransactionStatusResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransactionStatusResponse.Unmarshal(m, b)
@@ -203,9 +203,9 @@ var _TransactionService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "transactions/service.proto",
 }
 
-func init() { proto.RegisterFile("transactions/service.proto", fileDescriptor_service_3dc77ed74e902ae6) }
+func init() { proto.RegisterFile("transactions/service.proto", fileDescriptor_service_6e7346884114ccf2) }
 
-var fileDescriptor_service_3dc77ed74e902ae6 = []byte{
+var fileDescriptor_service_6e7346884114ccf2 = []byte{
 	// 348 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xcf, 0x4a, 0xeb, 0x40,
 	0x14, 0xc6, 0x99, 0xde, 0x4b, 0x2f, 0x77, 0x5a, 0x45, 0x06, 0x29, 0x63, 0x10, 0x0d, 0x05, 0xb5,
