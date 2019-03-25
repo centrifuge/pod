@@ -87,7 +87,6 @@ func TestPurchaseOrder_PackCoreDocument(t *testing.T) {
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
-	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestPurchaseOrder_JSON(t *testing.T) {
@@ -100,15 +99,15 @@ func TestPurchaseOrder_JSON(t *testing.T) {
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
 	jsonBytes, err := po.JSON()
-	assert.Nil(t, err, "marshal to json didn't work correctly")
+	assert.NoError(t, err, "marshal to json didn't work correctly")
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
 	po = new(PurchaseOrder)
 	err = po.FromJSON(jsonBytes)
-	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
+	assert.NoError(t, err, "unmarshal JSON didn't work correctly")
 
 	ncd, err := po.PackCoreDocument()
-	assert.Nil(t, err, "JSON unmarshal damaged invoice variables")
+	assert.NoError(t, err, "JSON unmarshal damaged invoice variables")
 	assert.Equal(t, cd, ncd)
 }
 
@@ -205,18 +204,16 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	poModel := new(PurchaseOrder)
 	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String())
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")
 
 	dr, err := poModel.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
 
 func TestPOModel_CreateProofs(t *testing.T) {
 	po := createPurchaseOrder(t)
 	assert.NotNil(t, po)
-	rk := po.Document.Roles[0].RoleKey
+	rk := po.CoreDocument.GetTestCoreDocWithReset().Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := po.CreateProofs([]string{"po.po_number", pf, documents.CDTreePrefix + ".document_type"})
 	assert.Nil(t, err)
@@ -255,18 +252,23 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	assert.NoError(t, na.SetString("2"))
 	oa := new(documents.Decimal)
 	assert.NoError(t, oa.SetString("2"))
-	poModel := PurchaseOrder{PoNumber: "3213121", NetAmount: na, OrderAmount: oa}
+	poModel := createPurchaseOrder(t)
+	poModel.PoNumber = "123"
+	poModel.NetAmount = na
+	poModel.OrderAmount = oa
 	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po.po_number")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "po.po_number", leaf.Property.ReadableName())
+	assert.Equal(t, []byte(poModel.PoNumber), leaf.Value)
 }
 
 func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po := new(PurchaseOrder)
 	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), defaultDID.String())
 	assert.NoError(t, err)
+	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateSigningRoot()
@@ -304,9 +306,9 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, oldPO.CollaboratorCanUpdate(po, id2))
 
 	// update the id3 rules to update only order amount
-	po.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
-	po.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	po.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	po.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
+	po.CoreDocument.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], po.CurrentVersion(), po))
 
 	// fetch the document

@@ -9,16 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -161,8 +160,8 @@ func TestPaymentObligationService(t *testing.T) {
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
 				cd, err := documents.NewCoreDocumentWithCollaborators(nil, nil)
 				assert.NoError(t, err)
-				cd.Document.DocumentRoot = utils.RandomSlice(32)
-				proof := getDummyProof(&cd.Document)
+				cd.GetTestCoreDocWithReset().DocumentRoot = utils.RandomSlice(32)
+				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{Number: "1232", CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
@@ -231,7 +230,7 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 
 	//missing account in context
 	ctxh := context.Background()
-	proofList, err := service.GetRequiredPaymentObligationProofFields(ctxh)
+	proofList, err := service.GetRequiredInvoiceUnpaidProofFields(ctxh)
 	assert.Error(t, err)
 	assert.Nil(t, proofList)
 
@@ -244,7 +243,7 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 	}
 	ctxh, err = contextutil.New(ctxh, acc)
 	assert.Nil(t, err)
-	proofList, err = service.GetRequiredPaymentObligationProofFields(ctxh)
+	proofList, err = service.GetRequiredInvoiceUnpaidProofFields(ctxh)
 	assert.Error(t, err)
 	assert.Nil(t, proofList)
 
@@ -253,7 +252,7 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 	assert.Nil(t, err)
 	ctxh, err = contextutil.New(ctxh, tc)
 	assert.Nil(t, err)
-	proofList, err = service.GetRequiredPaymentObligationProofFields(ctxh)
+	proofList, err = service.GetRequiredInvoiceUnpaidProofFields(ctxh)
 	assert.NoError(t, err)
 	assert.Len(t, proofList, 8)
 	accDIDBytes, err := tc.GetIdentityID()

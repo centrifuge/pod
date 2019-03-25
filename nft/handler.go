@@ -64,8 +64,8 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 	}, nil
 }
 
-// MintPaymentObligationNFT will be called from the client API to mint an NFT out of an invoice payment obligation
-func (g grpcHandler) MintPaymentObligationNFT(ctx context.Context, request *nftpb.NFTPaymentObligationRequest) (*nftpb.NFTMintResponse, error) {
+// MintInvoiceUnpaidNFT will be called from the client API to mint an NFT out of an unpaid invoice
+func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NFTMintInvoiceUnpaidRequest) (*nftpb.NFTMintResponse, error) {
 	apiLog.Infof("Received request to Mint a Payment Obligation NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
 	ctxHeader, err := contextutil.Context(ctx, g.config)
 	if err != nil {
@@ -74,7 +74,7 @@ func (g grpcHandler) MintPaymentObligationNFT(ctx context.Context, request *nftp
 	}
 
 	// Get proof fields
-	proofFields, err := g.service.GetRequiredPaymentObligationProofFields(ctxHeader)
+	proofFields, err := g.service.GetRequiredInvoiceUnpaidProofFields(ctxHeader)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}

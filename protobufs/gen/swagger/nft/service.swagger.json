@@ -15,40 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/nft/payment_obligation/{identifier}": {
-      "post": {
-        "description": "Mint a Payment Obligation NFT from a Centrifuge Invoice",
-        "operationId": "MintPaymentObligationNFT",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/nftNFTMintResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "description": "Invoice Document identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/nftNFTPaymentObligationRequest"
-            }
-          }
-        ],
-        "tags": [
-          "NFTService"
-        ]
-      }
-    },
     "/token/mint": {
       "post": {
         "description": "Mint an NFT from a Centrifuge Document",
@@ -75,9 +41,56 @@
           "NFTService"
         ]
       }
+    },
+    "/token/mint/invoice/unpaid/{identifier}": {
+      "post": {
+        "description": "Mints an NFT out of an Unpaid Centrifuge Invoice",
+        "operationId": "MintInvoiceUnpaidNFT",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "Invoice Document identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintInvoiceUnpaidRequest"
+            }
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
     }
   },
   "definitions": {
+    "nftNFTMintInvoiceUnpaidRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "Invoice Document identifier"
+        },
+        "deposit_address": {
+          "type": "string",
+          "title": "Deposit address for NFT Token created"
+        }
+      }
+    },
     "nftNFTMintRequest": {
       "type": "object",
       "properties": {
@@ -123,19 +136,6 @@
         },
         "token_id": {
           "type": "string"
-        }
-      }
-    },
-    "nftNFTPaymentObligationRequest": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string",
-          "title": "Invoice Document identifier"
-        },
-        "deposit_address": {
-          "type": "string",
-          "title": "Deposit address for NFT Token created"
         }
       }
     },

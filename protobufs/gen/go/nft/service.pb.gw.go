@@ -41,8 +41,8 @@ func request_NFTService_MintNFT_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func request_NFTService_MintPaymentObligationNFT_0(ctx context.Context, marshaler runtime.Marshaler, client NFTServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq NFTPaymentObligationRequest
+func request_NFTService_MintInvoiceUnpaidNFT_0(ctx context.Context, marshaler runtime.Marshaler, client NFTServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq NFTMintInvoiceUnpaidRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -67,7 +67,7 @@ func request_NFTService_MintPaymentObligationNFT_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
 	}
 
-	msg, err := client.MintPaymentObligationNFT(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.MintInvoiceUnpaidNFT(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
@@ -139,7 +139,7 @@ func RegisterNFTServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
-	mux.Handle("POST", pattern_NFTService_MintPaymentObligationNFT_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_NFTService_MintInvoiceUnpaidNFT_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -157,14 +157,14 @@ func RegisterNFTServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_NFTService_MintPaymentObligationNFT_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_NFTService_MintInvoiceUnpaidNFT_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_NFTService_MintPaymentObligationNFT_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_NFTService_MintInvoiceUnpaidNFT_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -174,11 +174,11 @@ func RegisterNFTServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 var (
 	pattern_NFTService_MintNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"token", "mint"}, ""))
 
-	pattern_NFTService_MintPaymentObligationNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"nft", "payment_obligation", "identifier"}, ""))
+	pattern_NFTService_MintInvoiceUnpaidNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"token", "mint", "invoice", "unpaid", "identifier"}, ""))
 )
 
 var (
 	forward_NFTService_MintNFT_0 = runtime.ForwardResponseMessage
 
-	forward_NFTService_MintPaymentObligationNFT_0 = runtime.ForwardResponseMessage
+	forward_NFTService_MintInvoiceUnpaidNFT_0 = runtime.ForwardResponseMessage
 )

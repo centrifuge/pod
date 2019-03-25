@@ -115,9 +115,9 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
-// Document signing root will be recalculated and verified
+// document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
-// Document will be stored to the repository for state management
+// document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, collaborator identity.DID) (*p2ppb.SignatureResponse, error) {
 	if sigReq == nil || sigReq.Document == nil {
 		return nil, errors.New("nil document provided")

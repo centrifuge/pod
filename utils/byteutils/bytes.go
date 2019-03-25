@@ -45,9 +45,3 @@ func IntBytesFromString(s string) ([]byte, error) {
 
 	return d.Bytes(), nil
 }
-
-// IntBytesToString converts bytes to string.
-func IntBytesToString(d []byte) string {
-	i := new(big.Int).SetBytes(d)
-	return i.String()
-}

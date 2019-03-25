@@ -99,9 +99,9 @@ var _NotificationDummyService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "notification/service.proto",
 }
 
-func init() { proto.RegisterFile("notification/service.proto", fileDescriptor_service_16073442eb60792c) }
+func init() { proto.RegisterFile("notification/service.proto", fileDescriptor_service_043984cc258ae46e) }
 
-var fileDescriptor_service_16073442eb60792c = []byte{
+var fileDescriptor_service_043984cc258ae46e = []byte{
 	// 240 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xca, 0xcb, 0x2f, 0xc9,
 	0x4c, 0xcb, 0x4c, 0x4e, 0x2c, 0xc9, 0xcc, 0xcf, 0xd3, 0x2f, 0x4e, 0x2d, 0x2a, 0xcb, 0x4c, 0x4e,

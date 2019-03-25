@@ -99,8 +99,8 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 	return versionID
 }
 
-func mintPONFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/nft/payment_obligation/"+documentID), auth).
+func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/token/mint/invoice/unpaid/"+documentID), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -158,9 +158,19 @@ func createInsecureClient() *http.Client {
 }
 
 func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
+	emptyResponseTolerance := 5
+	emptyResponsesEncountered := 0
 	for {
 		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
-		status := resp["status"].(string)
+		status, ok := resp["status"].(string)
+		if !ok {
+			emptyResponsesEncountered++
+			if emptyResponsesEncountered > emptyResponseTolerance {
+				panic("transaction api non-responsive")
+			}
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
 		if status == "pending" {
 			time.Sleep(1 * time.Second)

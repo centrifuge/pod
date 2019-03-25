@@ -41,7 +41,7 @@ func (m *AccessTokenParams) Reset()         { *m = AccessTokenParams{} }
 func (m *AccessTokenParams) String() string { return proto.CompactTextString(m) }
 func (*AccessTokenParams) ProtoMessage()    {}
 func (*AccessTokenParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{0}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{0}
 }
 func (m *AccessTokenParams) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AccessTokenParams.Unmarshal(m, b)
@@ -88,7 +88,7 @@ func (m *CreateDocumentProofRequest) Reset()         { *m = CreateDocumentProofR
 func (m *CreateDocumentProofRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateDocumentProofRequest) ProtoMessage()    {}
 func (*CreateDocumentProofRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{1}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{1}
 }
 func (m *CreateDocumentProofRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateDocumentProofRequest.Unmarshal(m, b)
@@ -143,7 +143,7 @@ func (m *ProofResponseHeader) Reset()         { *m = ProofResponseHeader{} }
 func (m *ProofResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ProofResponseHeader) ProtoMessage()    {}
 func (*ProofResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{2}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{2}
 }
 func (m *ProofResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProofResponseHeader.Unmarshal(m, b)
@@ -196,7 +196,7 @@ func (m *DocumentProof) Reset()         { *m = DocumentProof{} }
 func (m *DocumentProof) String() string { return proto.CompactTextString(m) }
 func (*DocumentProof) ProtoMessage()    {}
 func (*DocumentProof) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{3}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{3}
 }
 func (m *DocumentProof) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DocumentProof.Unmarshal(m, b)
@@ -246,7 +246,7 @@ func (m *Proof) Reset()         { *m = Proof{} }
 func (m *Proof) String() string { return proto.CompactTextString(m) }
 func (*Proof) ProtoMessage()    {}
 func (*Proof) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{4}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{4}
 }
 func (m *Proof) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Proof.Unmarshal(m, b)
@@ -315,7 +315,7 @@ func (m *CreateDocumentProofForVersionRequest) Reset()         { *m = CreateDocu
 func (m *CreateDocumentProofForVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateDocumentProofForVersionRequest) ProtoMessage()    {}
 func (*CreateDocumentProofForVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{5}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{5}
 }
 func (m *CreateDocumentProofForVersionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateDocumentProofForVersionRequest.Unmarshal(m, b)
@@ -375,7 +375,7 @@ func (m *RequestHeader) Reset()         { *m = RequestHeader{} }
 func (m *RequestHeader) String() string { return proto.CompactTextString(m) }
 func (*RequestHeader) ProtoMessage()    {}
 func (*RequestHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{6}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{6}
 }
 func (m *RequestHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RequestHeader.Unmarshal(m, b)
@@ -422,7 +422,7 @@ func (m *ReadAccess) Reset()         { *m = ReadAccess{} }
 func (m *ReadAccess) String() string { return proto.CompactTextString(m) }
 func (*ReadAccess) ProtoMessage()    {}
 func (*ReadAccess) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{7}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{7}
 }
 func (m *ReadAccess) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadAccess.Unmarshal(m, b)
@@ -475,7 +475,7 @@ func (m *WriteAccess) Reset()         { *m = WriteAccess{} }
 func (m *WriteAccess) String() string { return proto.CompactTextString(m) }
 func (*WriteAccess) ProtoMessage()    {}
 func (*WriteAccess) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{8}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{8}
 }
 func (m *WriteAccess) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteAccess.Unmarshal(m, b)
@@ -522,7 +522,7 @@ func (m *Signature) Reset()         { *m = Signature{} }
 func (m *Signature) String() string { return proto.CompactTextString(m) }
 func (*Signature) ProtoMessage()    {}
 func (*Signature) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{9}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{9}
 }
 func (m *Signature) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Signature.Unmarshal(m, b)
@@ -576,7 +576,7 @@ func (m *NFT) Reset()         { *m = NFT{} }
 func (m *NFT) String() string { return proto.CompactTextString(m) }
 func (*NFT) ProtoMessage()    {}
 func (*NFT) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{10}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{10}
 }
 func (m *NFT) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NFT.Unmarshal(m, b)
@@ -631,7 +631,7 @@ func (m *AccessToken) Reset()         { *m = AccessToken{} }
 func (m *AccessToken) String() string { return proto.CompactTextString(m) }
 func (*AccessToken) ProtoMessage()    {}
 func (*AccessToken) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{11}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{11}
 }
 func (m *AccessToken) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AccessToken.Unmarshal(m, b)
@@ -700,7 +700,7 @@ func (m *ResponseHeader) Reset()         { *m = ResponseHeader{} }
 func (m *ResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*ResponseHeader) ProtoMessage()    {}
 func (*ResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_c0fa94b50599e466, []int{12}
+	return fileDescriptor_service_e012de1fc8a35b43, []int{12}
 }
 func (m *ResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseHeader.Unmarshal(m, b)
@@ -918,9 +918,9 @@ var _DocumentService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "document/service.proto",
 }
 
-func init() { proto.RegisterFile("document/service.proto", fileDescriptor_service_c0fa94b50599e466) }
+func init() { proto.RegisterFile("document/service.proto", fileDescriptor_service_e012de1fc8a35b43) }
 
-var fileDescriptor_service_c0fa94b50599e466 = []byte{
+var fileDescriptor_service_e012de1fc8a35b43 = []byte{
 	// 1004 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0xdd, 0x6e, 0x1b, 0x45,
 	0x14, 0xd6, 0xc6, 0x8e, 0x63, 0x9f, 0xb5, 0x53, 0x98, 0x84, 0xb2, 0x58, 0x4d, 0xbb, 0x5d, 0x02,

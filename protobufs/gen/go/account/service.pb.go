@@ -37,7 +37,7 @@ func (m *GetAccountRequest) Reset()         { *m = GetAccountRequest{} }
 func (m *GetAccountRequest) String() string { return proto.CompactTextString(m) }
 func (*GetAccountRequest) ProtoMessage()    {}
 func (*GetAccountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_bc5abe13fa112146, []int{0}
+	return fileDescriptor_service_efe448dc6af8f941, []int{0}
 }
 func (m *GetAccountRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetAccountRequest.Unmarshal(m, b)
@@ -75,7 +75,7 @@ func (m *GetAllAccountResponse) Reset()         { *m = GetAllAccountResponse{} }
 func (m *GetAllAccountResponse) String() string { return proto.CompactTextString(m) }
 func (*GetAllAccountResponse) ProtoMessage()    {}
 func (*GetAllAccountResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_bc5abe13fa112146, []int{1}
+	return fileDescriptor_service_efe448dc6af8f941, []int{1}
 }
 func (m *GetAllAccountResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetAllAccountResponse.Unmarshal(m, b)
@@ -114,7 +114,7 @@ func (m *UpdateAccountRequest) Reset()         { *m = UpdateAccountRequest{} }
 func (m *UpdateAccountRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateAccountRequest) ProtoMessage()    {}
 func (*UpdateAccountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_bc5abe13fa112146, []int{2}
+	return fileDescriptor_service_efe448dc6af8f941, []int{2}
 }
 func (m *UpdateAccountRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateAccountRequest.Unmarshal(m, b)
@@ -161,7 +161,7 @@ func (m *EthereumAccount) Reset()         { *m = EthereumAccount{} }
 func (m *EthereumAccount) String() string { return proto.CompactTextString(m) }
 func (*EthereumAccount) ProtoMessage()    {}
 func (*EthereumAccount) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_bc5abe13fa112146, []int{3}
+	return fileDescriptor_service_efe448dc6af8f941, []int{3}
 }
 func (m *EthereumAccount) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EthereumAccount.Unmarshal(m, b)
@@ -214,7 +214,7 @@ func (m *KeyPair) Reset()         { *m = KeyPair{} }
 func (m *KeyPair) String() string { return proto.CompactTextString(m) }
 func (*KeyPair) ProtoMessage()    {}
 func (*KeyPair) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_bc5abe13fa112146, []int{4}
+	return fileDescriptor_service_efe448dc6af8f941, []int{4}
 }
 func (m *KeyPair) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_KeyPair.Unmarshal(m, b)
@@ -264,7 +264,7 @@ func (m *AccountData) Reset()         { *m = AccountData{} }
 func (m *AccountData) String() string { return proto.CompactTextString(m) }
 func (*AccountData) ProtoMessage()    {}
 func (*AccountData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_bc5abe13fa112146, []int{5}
+	return fileDescriptor_service_efe448dc6af8f941, []int{5}
 }
 func (m *AccountData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AccountData.Unmarshal(m, b)
@@ -539,9 +539,9 @@ var _AccountService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "account/service.proto",
 }
 
-func init() { proto.RegisterFile("account/service.proto", fileDescriptor_service_bc5abe13fa112146) }
+func init() { proto.RegisterFile("account/service.proto", fileDescriptor_service_efe448dc6af8f941) }
 
-var fileDescriptor_service_bc5abe13fa112146 = []byte{
+var fileDescriptor_service_efe448dc6af8f941 = []byte{
 	// 706 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x51, 0x6b, 0x13, 0x4f,
 	0x10, 0xe7, 0xda, 0xfe, 0xff, 0x31, 0x73, 0x6d, 0x1a, 0x97, 0xb4, 0x1c, 0x57, 0xad, 0xc7, 0x09,
