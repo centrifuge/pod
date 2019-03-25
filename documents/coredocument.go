@@ -204,7 +204,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators .
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion1(newCollaborators Collaborators, documentPrefix []byte) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion1(documentPrefix []byte, newCollaborators Collaborators) (*CoreDocument, error) {
 	if len(cd.Document.DocumentRoot) != idSize {
 		return nil, errors.New("document root is invalid")
 	}
@@ -238,7 +238,7 @@ func (cd *CoreDocument) PrepareNewVersion1(newCollaborators Collaborators, docum
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(wcs, documentPrefix)
-	ncd.CoreDocModified = true
+	ncd.Modified = true
 	return ncd, nil
 
 }
