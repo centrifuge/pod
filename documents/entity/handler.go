@@ -1,6 +1,5 @@
 package entity
 
-
 import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -157,4 +156,3 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 
 	return resp, nil
 }
-

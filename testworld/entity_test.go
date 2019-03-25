@@ -28,12 +28,10 @@ func TestHost_BasicEntity(t *testing.T) {
 
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
-		"legal_name":    "test company",
+		"legal_name":  "test company",
 	}
 	getEntityAndCheck(alice.httpExpect, alice.id.String(), typeEntity, params)
 	getEntityAndCheck(bob.httpExpect, bob.id.String(), typeEntity, params)
 	getEntityAndCheck(charlie.httpExpect, charlie.id.String(), typeEntity, params)
 	fmt.Println("Host test success")
 }
-
-

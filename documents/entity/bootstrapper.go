@@ -65,4 +65,3 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedEntityHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }
-
