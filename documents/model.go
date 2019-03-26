@@ -102,7 +102,7 @@ type Model interface {
 	AddUpdateLog(account identity.DID) error
 
 	// Author is the author of the document version represented by the model
-	Author() identity.DID
+	Author() (identity.DID, error)
 
 	// Timestamp is the time of update in UTC of the document version represented by the model
 	Timestamp() (time.Time, error)

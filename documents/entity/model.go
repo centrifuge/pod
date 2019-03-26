@@ -107,9 +107,12 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 }
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
-func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
+func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) error {
 	if entityData.Identity != nil {
-		did := identity.NewDIDFromBytes(entityData.Identity)
+		did, err := identity.NewDIDFromBytes(entityData.Identity)
+		if err != nil {
+			return err
+		}
 		e.Identity = &did
 	}
 
@@ -117,6 +120,8 @@ func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) {
 	e.Addresses = entityData.Addresses
 	e.PaymentDetails = entityData.PaymentDetails
 	e.Contacts = entityData.Contacts
+
+	return nil
 }
 
 // PackCoreDocument packs the Entity into a CoreDocument.

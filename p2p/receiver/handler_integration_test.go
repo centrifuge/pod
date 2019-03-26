@@ -179,7 +179,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	id, err := cfg.GetIdentityID()
-	collaborator := identity.NewDIDFromBytes(id)
+	collaborator, err := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
 	resp, err := handler.SendAnchoredDocument(ctxh, &p2ppb.AnchorDocumentRequest{}, collaborator)
 	assert.NotNil(t, err)

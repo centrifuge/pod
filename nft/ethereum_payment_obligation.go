@@ -165,7 +165,10 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	did := identity.NewDIDFromBytes(didBytes)
+	did, err := identity.NewDIDFromBytes(didBytes)
+	if err != nil {
+		return nil, nil, err
+	}
 	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {

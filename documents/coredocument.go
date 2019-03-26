@@ -578,9 +578,11 @@ func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.Transiti
 		}
 
 		for _, c := range role.Collaborators {
-			// TODO(ved): we should ideally check the address length of 20
-			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
-			ids = append(ids, identity.NewDIDFromBytes(c))
+			collab, err := identity.NewDIDFromBytes(c)
+			if err != nil {
+				return false
+			}
+			ids = append(ids, collab)
 		}
 
 		return false
@@ -660,8 +662,12 @@ func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
 }
 
 // Author is the author of the document version represented by the model
-func (cd *CoreDocument) Author() identity.DID {
-	return identity.NewDIDFromBytes(cd.Document.Author)
+func (cd *CoreDocument) Author() (identity.DID, error) {
+	did, err := identity.NewDIDFromBytes(cd.Document.Author)
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return did, nil
 }
 
 // Timestamp is the time of update in UTC of the document version represented by the model

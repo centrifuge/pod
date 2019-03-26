@@ -215,7 +215,7 @@ func (cd *CoreDocument) initTransitionRules(documentPrefix []byte, collaborators
 	if len(cd.Document.Roles) > 0 && len(cd.Document.TransitionRules) > 0 {
 		return
 	}
-	if len(collaborators) < 0 {
+	if len(collaborators) == 0 {
 		return
 	}
 	cd.addCollaboratorsToTransitionRules(documentPrefix, collaborators)

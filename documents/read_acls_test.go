@@ -346,7 +346,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	id, err := account.GetIdentityID()
 	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
-	granterID := identity.NewDIDFromBytes(id)
+	granterID, err := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
 	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, nil)
 	assert.NoError(t, err)

@@ -21,7 +21,8 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 	}
 	var did *identity.DID
 	// only create identity if it doesn't exist
-	err = idService.Exists(ctxh, identity.NewDIDFromBytes(acc.IdentityID))
+	id, err := identity.NewDIDFromBytes(acc.IdentityID)
+	err = idService.Exists(ctxh, id)
 	if err != nil {
 		did, err = idFactory.CreateIdentity(ctxh)
 		if err != nil {
@@ -64,7 +65,8 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 
 func GenerateRandomDID() identity.DID {
 	r := utils.RandomSlice(identity.DIDLength)
-	return identity.NewDIDFromBytes(r)
+	did, _ := identity.NewDIDFromBytes(r)
+	return did
 }
 
 // defaultWaitForTransactionMiningContext returns context with timeout for write operations
