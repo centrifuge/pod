@@ -247,17 +247,17 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 	switch docReq.AccessType {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
 		if !m.AccountCanRead(peer) {
-			return errors.New("requester does not have access")
+			return ErrAccessDenied
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
 		registry := common.BytesToAddress(docReq.NftRegistryAddress)
 		if m.NFTOwnerCanRead(srv.tokenRegistry, registry, docReq.NftTokenId, peer) != nil {
-			return errors.New("requester does not have access")
+			return ErrAccessDenied
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
 		// check the document indicated by the delegating document identifier for the access token
 		if docReq.AccessTokenRequest == nil {
-			return errors.New("access token request is nil")
+			return ErrAccessDenied
 		}
 
 		m, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
@@ -270,7 +270,7 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return err
 		}
 	default:
-		return errors.New("invalid access type")
+		return ErrInvalidAccessType
 	}
 	return nil
 }
