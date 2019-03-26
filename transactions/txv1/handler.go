@@ -54,5 +54,9 @@ func (h grpcHandler) GetTransactionStatus(ctx context.Context, req *transactions
 		return nil, ErrInvalidAccountID
 	}
 
-	return h.srv.GetTransactionStatus(identity.NewDIDFromBytes(accID), id)
+	did, err := identity.NewDIDFromBytes(accID)
+	if err != nil {
+		return nil, err
+	}
+	return h.srv.GetTransactionStatus(did, id)
 }

@@ -52,16 +52,19 @@ func DIDsToBytes(dids ...*DID) [][]byte {
 }
 
 // BytesToDIDs converts bytes to DIDs
-func BytesToDIDs(bytes ...[]byte) []*DID {
+func BytesToDIDs(bytes ...[]byte) ([]*DID, error) {
 	dids := make([]*DID, len(bytes), len(bytes))
 	for i, bs := range bytes {
 		if len(bs) < 1 {
 			continue
 		}
 
-		did := NewDIDFromBytes(bs)
+		did, err := NewDIDFromBytes(bs)
+		if err != nil {
+			return nil, err
+		}
 		dids[i] = &did
 	}
 
-	return dids
+	return dids, nil
 }
