@@ -28,6 +28,12 @@ func (m *mockPaymentObligationService) MintNFT(ctx context.Context, request Mint
 	return resp, nil, args.Error(1)
 }
 
+func (m *mockPaymentObligationService) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+	args := m.Called(ctx)
+	resp, _ := args.Get(0).([]string)
+	return resp, args.Error(1)
+}
+
 func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &mockPaymentObligationService{}
@@ -45,6 +51,51 @@ func TestNFTMint_success(t *testing.T) {
 	mockService.On("MintNFT", mock.Anything, req).Return(nftResponse, nil)
 	handler := grpcHandler{mockConfigStore, mockService}
 	nftMintResponse, err := handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
+	mockService.AssertExpectations(t)
+	assert.Nil(t, err, "mint nft should be successful")
+	assert.Equal(t, tokID.String(), nftMintResponse.TokenId, "TokenID should have a dummy value")
+}
+
+func TestPaymentObligationNFTMint_success(t *testing.T) {
+	mockService := &mockPaymentObligationService{}
+	mockConfigStore := mockmockConfigStore()
+	tokID := big.NewInt(1)
+	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
+	nftReq := &nftpb.NFTMintInvoiceUnpaidRequest{
+		Identifier:     "0x1234567890",
+		DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
+	}
+
+	// error no account header
+	handler := grpcHandler{mockConfigStore, mockService}
+	nftMintResponse, err := handler.MintInvoiceUnpaidNFT(context.Background(), nftReq)
+	mockService.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Nil(t, nftMintResponse)
+
+	// error generate proofs
+	mockService.On("GetRequiredInvoiceUnpaidProofFields", mock.Anything).Return(nil, errors.New("fail")).Once()
+	handler = grpcHandler{mockConfigStore, mockService}
+	nftMintResponse, err = handler.MintInvoiceUnpaidNFT(testingconfig.HandlerContext(mockConfigStore), nftReq)
+	mockService.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Nil(t, nftMintResponse)
+
+	// error get config
+	mockService.On("GetRequiredInvoiceUnpaidProofFields", mock.Anything).Return([]string{"proof1", "proof2"}, nil).Once()
+	mockConfigStore.On("GetConfig").Return(cfg, errors.New("fail")).Once()
+	handler = grpcHandler{mockConfigStore, mockService}
+	nftMintResponse, err = handler.MintInvoiceUnpaidNFT(testingconfig.HandlerContext(mockConfigStore), nftReq)
+	mockService.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Nil(t, nftMintResponse)
+
+	// success assertions
+	mockService.On("MintNFT", mock.Anything, mock.Anything).Return(nftResponse, nil).Once()
+	mockService.On("GetRequiredInvoiceUnpaidProofFields", mock.Anything).Return([]string{"proof1", "proof2"}, nil).Once()
+	mockConfigStore.On("GetConfig").Return(cfg, nil).Once()
+	handler = grpcHandler{mockConfigStore, mockService}
+	nftMintResponse, err = handler.MintInvoiceUnpaidNFT(testingconfig.HandlerContext(mockConfigStore), nftReq)
 	mockService.AssertExpectations(t)
 	assert.Nil(t, err, "mint nft should be successful")
 	assert.Equal(t, tokID.String(), nftMintResponse.TokenId, "TokenID should have a dummy value")
