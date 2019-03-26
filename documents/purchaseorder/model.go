@@ -396,15 +396,6 @@ func (p *PurchaseOrder) CalculateSigningRoot() ([]byte, error) {
 	return p.CoreDocument.CalculateSigningRoot(p.DocumentType(), dr)
 }
 
-// GetSigningRootProofHash gets the signing root proof hash upto document root
-func (p *PurchaseOrder) GetSigningRootProofHash() (hash []byte, err error) {
-	dr, err := p.CalculateDataRoot()
-	if err != nil {
-		return dr, err
-	}
-	return p.CoreDocument.GetSigningRootProofHash(p.DocumentType(), dr)
-}
-
 // CalculateDocumentRoot calculates the document root
 func (p *PurchaseOrder) CalculateDocumentRoot() ([]byte, error) {
 	dr, err := p.CalculateDataRoot()

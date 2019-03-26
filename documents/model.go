@@ -52,9 +52,6 @@ type Model interface {
 	// CalculateDocumentRoot returns the document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
 
-	// GetSigningRootProofHash get the hash for signing root of the model.
-	GetSigningRootProofHash() (hash []byte, err error)
-
 	// CalculateSignaturesRoot returns signatures root of the model.
 	CalculateSignaturesRoot() ([]byte, error)
 

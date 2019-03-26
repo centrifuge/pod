@@ -239,9 +239,10 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	if err != nil {
 		return nil, errors.New("failed to generate core document tree: %v", err)
 	}
-	srHash, err := cd.GetSigningRootProofHash(docType, dataTree.RootHash())
+
+	signingRoot, err := cd.CalculateSigningRoot(docType, dataTree.RootHash())
 	if err != nil {
-		return nil, errors.New("failed to generate signing root proofs: %v", err)
+		return nil, errors.New("failed to generate signing root: %v", err)
 	}
 
 	dataRoot := dataTree.RootHash()
@@ -256,7 +257,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	// (dataProof => dataRoot) + cdRoot+ signatureRoot = documentRoot
 	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, signatureTree.RootHash()))
 	// (signatureProof => signatureRoot) + signingRoot = documentRoot
-	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{srHash})
+	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{signingRoot})
 	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
 	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, signatureTree.RootHash()))
 
@@ -294,21 +295,6 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 		prfs = append(prfs, &proof)
 	}
 	return prfs, nil
-}
-
-// GetSigningRootProofHash returns the hash needed to create a proof for fields from SigningRoot to DocumentRoot.
-// The returned proof is appended to the proofs generated from the data tree and core document tree for a successful verification.
-func (cd *CoreDocument) GetSigningRootProofHash(docType string, dataRoot []byte) (hash []byte, err error) {
-	tree, err := cd.DocumentRootTree(docType, dataRoot)
-	if err != nil {
-		return
-	}
-
-	rootProof, err := tree.CreateProof(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField))
-	if err != nil {
-		return
-	}
-	return rootProof.Hash, err
 }
 
 // CalculateSignaturesRoot returns the signatures root of the document.
