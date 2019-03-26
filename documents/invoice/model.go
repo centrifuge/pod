@@ -127,7 +127,7 @@ type TaxItem struct {
 // getClientData returns the client data from the invoice model
 func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 	decs := documents.DecimalsToStrings(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
-	dids:= identity.DIDsToStrings(i.Recipient, i.Sender, i.Payee)
+	dids := identity.DIDsToStrings(i.Recipient, i.Sender, i.Payee)
 	return &clientinvoicepb.InvoiceData{
 		Number:                   i.Number,
 		Status:                   i.Status,
