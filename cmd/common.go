@@ -105,6 +105,7 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 	dbCfg.Close()
 	log.Infof("---------Centrifuge node configuration file successfully created!---------")
 	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
+	log.Infof("Your DID is: [%s]", DID.String())
 	return nil
 }
 

@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -110,6 +111,31 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 
 }
 
+// GetRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
+func (s *ethereumPaymentObligation) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+	var proofFields []string
+
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accDIDBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+
+	return proofFields, nil
+}
+
 // MintNFT mints an NFT
 func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
@@ -132,15 +158,15 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
-	cidBytes, err := tc.GetIdentityID()
+	didBytes, err := tc.GetIdentityID()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	cid := identity.NewDIDFromBytes(cidBytes)
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Minting NFT",
+	did := identity.NewDIDFromBytes(didBytes)
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err

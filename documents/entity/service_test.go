@@ -65,7 +65,7 @@ func TestService_Update(t *testing.T) {
 
 	// success
 	data, err := eSrv.DeriveEntityData(model)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	data.LegalName = "test company"
 	data.Contacts = []*entitypb.Contact{{Name: "Mr. Test"}}
 	collab := testingidentity.GenerateRandomDID().String()
@@ -74,20 +74,20 @@ func TestService_Update(t *testing.T) {
 		Collaborators: []string{collab},
 		Data:          data,
 	})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	newData, err := eSrv.DeriveEntityData(newInv)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, data, newData)
 
 	model, _, _, err = eSrv.Update(ctxh, newInv)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, model)
 	assert.True(t, testRepo().Exists(accountID, model.ID()))
 	assert.True(t, testRepo().Exists(accountID, model.CurrentVersion()))
 	assert.True(t, testRepo().Exists(accountID, model.PreviousVersion()))
 
 	newData, err = eSrv.DeriveEntityData(model)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, data, newData)
 }
 
@@ -122,10 +122,10 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 	assert.Nil(t, doc)
 
-	// failed to load from data
+	// Entity data does not contain an identity
 	old, _ := createCDWithEmbeddedEntity(t)
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	payload.Data = &cliententitypb.EntityData{
 		LegalName: "test company",
 		Contacts:  []*entitypb.Contact{{Name: "Mr. Test"}},
@@ -137,7 +137,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Error(t, err, "should fail because Identity is missing")
 	assert.Nil(t, doc)
 
-	// failed core document new version
+	// invalid collaborator identity
 	payload.Data.LegalName = "new company name"
 	payload.Collaborators = []string{"some wrong ID"}
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
@@ -151,7 +151,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	payload.Collaborators = []string{wantCollab.String()}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
 	assert.Len(t, cs, 3)
@@ -196,7 +196,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	// success
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
 	m, err = eSrv.DeriveFromCreatePayload(ctxh, payload)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	entity := m.(*Entity)
 	assert.Equal(t, entity.LegalName, payload.Data.LegalName)
@@ -206,7 +206,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	eSrv := service{repo: testRepo()}
 	_, cd := createCDWithEmbeddedEntity(t)
 	m, err := eSrv.DeriveFromCoreDocument(cd)
-	assert.Nil(t, err, "must return model")
+	assert.NoError(t, err, "must return model")
 	assert.NotNil(t, m, "model must be non-nil")
 	entity, ok := m.(*Entity)
 	assert.True(t, ok, "must be true")
@@ -227,9 +227,9 @@ func TestService_Create(t *testing.T) {
 
 	// success
 	entity, err := eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateEntityPayload())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	m, _, _, err = eSrv.Create(ctxh, entity)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, testRepo().Exists(accountID, m.ID()))
 	assert.True(t, testRepo().Exists(accountID, m.CurrentVersion()))
 }
@@ -244,9 +244,9 @@ func TestService_DeriveEntityData(t *testing.T) {
 	// success
 	payload := testingdocuments.CreateEntityPayload()
 	entity, err := eSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
-	assert.Nil(t, err, "must be non nil")
+	assert.NoError(t, err, "must be non nil")
 	data, err := eSrv.DeriveEntityData(entity)
-	assert.Nil(t, err, "Derive must succeed")
+	assert.NoError(t, err, "Derive must succeed")
 	assert.NotNil(t, data, "data must be non nil")
 }
 
@@ -266,7 +266,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	entity, _ := createCDWithEmbeddedEntity(t)
 	r, err = eSrv.DeriveEntityResponse(entity)
 	payload := testingdocuments.CreateEntityPayload()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.LegalName)
 	assert.Contains(t, r.Header.Collaborators, did.String())
@@ -278,7 +278,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	data := doc.(*Entity).getClientData()
 	data.LegalName = "test company"
@@ -290,7 +290,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 
 	doc3Entity := doc3.(*Entity)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, doc2.LegalName, doc3Entity.LegalName)
 }
 
@@ -298,11 +298,11 @@ func TestService_GetVersion(t *testing.T) {
 	_, eSrv := getServiceWithMockedLayers()
 	entity, _ := createCDWithEmbeddedEntity(t)
 	err := testRepo().Create(accountID, entity.CurrentVersion(), entity)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	mod, err := eSrv.GetVersion(ctxh, entity.ID(), entity.CurrentVersion())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	mod, err = eSrv.GetVersion(ctxh, mod.ID(), []byte{})
 	assert.Error(t, err)
@@ -312,7 +312,7 @@ func TestService_Exists(t *testing.T) {
 	_, eSrv := getServiceWithMockedLayers()
 	entity, _ := createCDWithEmbeddedEntity(t)
 	err := testRepo().Create(accountID, entity.CurrentVersion(), entity)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	exists := eSrv.Exists(ctxh, entity.CurrentVersion())
@@ -334,7 +334,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// failed validator
 	entity, err = eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateEntityPayload())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return errors.New("validations fail")
 	})
@@ -345,9 +345,9 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// create failed
 	entity, err = eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateEntityPayload())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = eSrv.repo.Create(accountID, entity.CurrentVersion(), entity)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator())
 	assert.Nil(t, entity)
 	assert.Error(t, err)
@@ -355,8 +355,8 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// success
 	entity, err = eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateEntityPayload())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, entity)
 }

@@ -2,6 +2,7 @@ package documents
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -79,6 +80,10 @@ func (d *Decimal) String() string {
 // Bytes return the decimal in bytes.
 // sign byte + upto 23 integer bytes + 8 decimal bytes
 func (d *Decimal) Bytes() (decimal []byte, err error) {
+	if d.dec.IsZero() {
+		return make([]byte, maxDecimalByteLength), nil
+	}
+
 	var sign byte
 	if d.dec.Sign() < 0 {
 		sign = byte(1)
@@ -88,23 +93,29 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 	s := d.dec.Abs().String()
 	sd := strings.Split(s, ".")
 
-	fraction := make([]byte, maxFractionByteLength)
+	v := sd[0]
+	fraction := strings.Repeat("0", decimalPrecision)
 	if len(sd) == 2 {
-		fraction, err = byteutils.IntBytesFromString(sd[1])
-		if err != nil {
-			return nil, err
+		// add extra zeros if precision is not max
+		if cl := len(sd[1]); decimalPrecision-cl > 0 {
+			sd[1] += strings.Repeat("0", decimalPrecision-cl)
 		}
 
-		fraction = byteutils.AddZeroBytesSuffix(fraction, maxFractionByteLength)
+		fraction = sd[1]
 	}
 
-	integer, err := byteutils.IntBytesFromString(sd[0])
+	v += fraction
+	integer, err := byteutils.IntBytesFromString(v)
 	if err != nil {
 		return nil, err
 	}
 
+	// integer bytes should be atleast 8 byte, prepend Zeroes if not
+	if len(integer) < maxFractionByteLength {
+		integer = append(make([]byte, maxFractionByteLength-len(integer)), integer...)
+	}
+
 	decimal = append(decimal, integer...)
-	decimal = append(decimal, fraction...)
 
 	// sanity check
 	// happens if we have done some calculations post conversion to Decimal.
@@ -117,14 +128,25 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 
 // SetBytes parse the bytes to Decimal.
 func (d *Decimal) SetBytes(dec []byte) error {
-	if len(dec) < minDecimalByteLength {
+	if len(dec) < minDecimalByteLength || len(dec) > maxDecimalByteLength {
 		return ErrInvalidDecimal
 	}
 
 	sign, dec := dec[0], dec[1:]
-	fidx := len(dec) - maxFractionByteLength
-	integer, fraction := byteutils.IntBytesToString(dec[:fidx]), byteutils.IntBytesToString(byteutils.RemoveZeroBytesSuffix(dec[fidx:]))
-	s := fmt.Sprintf("%s.%s", integer, fraction)
+	i := new(big.Int).SetBytes(dec)
+	if i.Sign() == 0 {
+		return d.SetString(i.String())
+	}
+
+	s := i.String()
+	// edge case for only fractions
+	// if dec is 8 bytes, then its just a fraction, so convert to string and prepend required zeroes
+	if len(dec) == maxFractionByteLength && decimalPrecision-len(s) > 0 {
+		s = strings.Repeat("0", decimalPrecision-len(s)) + s
+	}
+
+	fidx := len(s) - decimalPrecision
+	s = fmt.Sprintf("%s.%s", s[:fidx], s[fidx:])
 	if sign == 1 {
 		s = "-" + s
 	}

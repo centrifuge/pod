@@ -13,29 +13,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPaymentObligationMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		name                                     string
-		grantAccess, tokenProof, readAccessProof bool
-	}{
-		{
-			name:            "grant access, token proof and read access proof",
-			grantAccess:     true,
-			tokenProof:      true,
-			readAccessProof: true,
-		},
-	}
+	paymentObligationMint(t, typeInvoice, true, true, true, false)
+}
 
-	for _, c := range tests {
-		t.Run("", func(t *testing.T) {
-			t.Parallel()
-			paymentObligationMint(t, typeInvoice, c.grantAccess, c.tokenProof, c.readAccessProof)
-		})
-	}
+func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
+	t.Parallel()
+	paymentObligationMint(t, typeInvoice, false, false, false, true)
 }
 
 /* TODO: testcase not stable
@@ -45,7 +34,7 @@ func TestPaymentObligationMint_po_successful(t *testing.T) {
 }
 */
 
-func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool) {
+func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.PaymentObligation)
@@ -70,30 +59,28 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
 	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
 
-	proofPrefix := documentType
-	if proofPrefix == typePO {
-		proofPrefix = poPrefix
-	}
-	acc, err := alice.host.configService.GetAccount(alice.id[:])
-	if err != nil {
-		t.Error(err)
-	}
-	keys, err := acc.GetKeys()
-	if err != nil {
-		t.Error(err)
-	}
-	signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	var response *httpexpect.Object
+	var err error
 
-	// mint an NFT
-	test := struct {
-		httpStatus int
-		payload    map[string]interface{}
-	}{
-		http.StatusOK,
-		map[string]interface{}{
+	if !poWrapper {
+		proofPrefix := documentType
+		if proofPrefix == typePO {
+			proofPrefix = poPrefix
+		}
+		acc, err := alice.host.configService.GetAccount(alice.id[:])
+		if err != nil {
+			t.Error(err)
+		}
+		keys, err := acc.GetKeys()
+		if err != nil {
+			t.Error(err)
+		}
+		signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+		signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+		signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 
+		// mint an NFT
+		payload := map[string]interface{}{
 			"identifier":                docIdentifier,
 			"registryAddress":           registry.String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
@@ -101,16 +88,24 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,
-		},
+		}
+		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
+
+	} else {
+		// mint a PO NFT
+		payload := map[string]interface{}{
+			"identifier":     docIdentifier,
+			"depositAddress": "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+		}
+		response, err = alice.host.mintUnpaidInvoiceNFT(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, payload)
 	}
 
-	response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
+	assert.NoError(t, err, "mintNFT should be successful")
 	txID = getTransactionID(t, response)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
-	assert.NoError(t, err, "mintNFT should be successful")
 	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 
 	tokenID, err := nft.TokenIDFromString(response.Value("token_id").String().Raw())

@@ -24,10 +24,10 @@ type Service interface {
 	DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (documents.Model, error)
 
 	// DeriveEntityData returns the entity data as client data
-	DeriveEntityData(inv documents.Model) (*cliententitypb.EntityData, error)
+	DeriveEntityData(entity documents.Model) (*cliententitypb.EntityData, error)
 
 	// DeriveEntityResponse returns the entity model in our standard client format
-	DeriveEntityResponse(inv documents.Model) (*cliententitypb.EntityResponse, error)
+	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -56,13 +56,13 @@ func DefaultService(
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
 func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
-	inv := new(Entity)
-	err := inv.UnpackCoreDocument(cd)
+	entity := new(Entity)
+	err := entity.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
 	}
 
-	return inv, nil
+	return entity, nil
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
@@ -92,44 +92,44 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	inv, ok := new.(*Entity)
+	entity, ok := new.(*Entity)
 	if !ok {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
 	}
 
 	// validate the entity
-	err = validator.Validate(old, inv)
+	err = validator.Validate(old, entity)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(selfDID[:], inv.CurrentVersion(), inv)
+	err = s.repo.Create(selfDID[:], entity.CurrentVersion(), entity)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
 	}
 
-	return inv, nil
+	return entity, nil
 }
 
 // Create takes and entity model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Create(ctx context.Context, entity documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	inv, err = s.validateAndPersist(ctx, nil, inv, CreateValidator())
+	entity, err = s.validateAndPersist(ctx, nil, entity, CreateValidator())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, inv.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
-	return inv, txID, done, nil
+	return entity, txID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -166,7 +166,7 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 
 	cs, err := model.GetCollaborators()
 	if err != nil {
-		return nil, errors.New("failed to get collaborators: %v", err)
+		return nil, errors.NewTypedError(documents.ErrFailedCollaborators, err)
 	}
 
 	var css []string
@@ -189,12 +189,12 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 
 // DeriveEntityData returns create response from entity model
 func (s service) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityData, error) {
-	inv, ok := doc.(*Entity)
+	entity, ok := doc.(*Entity)
 	if !ok {
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return inv.getClientData(), nil
+	return entity.getClientData(), nil
 }
 
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
@@ -214,11 +214,11 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 		return nil, err
 	}
 
-	inv := new(Entity)
-	err = inv.PrepareNewVersion(old, payload.Data, payload.Collaborators)
+	entity := new(Entity)
+	err = entity.PrepareNewVersion(old, payload.Data, payload.Collaborators)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load entity from data: %v", err))
 	}
 
-	return inv, nil
+	return entity, nil
 }

@@ -176,7 +176,6 @@ func (e *Entity) CalculateDataRoot() ([]byte, error) {
 	}
 
 	dr := t.RootHash()
-	e.CoreDocument.SetDataRoot(dr)
 	return dr, nil
 }
 
@@ -243,7 +242,7 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 	}
 
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}
@@ -264,7 +263,29 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {
-	return e.CoreDocument.CalculateSigningRoot(e.DocumentType())
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dr)
+}
+
+// CalculateDocumentRoot calculates the document root
+func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dr)
+}
+
+// DocumentRootTree creates and returns the document root tree
+func (e *Entity) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dr)
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.

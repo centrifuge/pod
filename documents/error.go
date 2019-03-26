@@ -73,6 +73,9 @@ const (
 	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
 	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
 
+	// ErrFailedCollaborators must be used when collaborators are not valid
+	ErrFailedCollaborators = errors.Error("invalid collaborators")
+
 	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
 	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
 

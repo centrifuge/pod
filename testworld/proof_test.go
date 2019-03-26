@@ -52,8 +52,8 @@ func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier 
 
 	if documentType == typePO {
 		compactPrefix = "0x00020000" // po prefix
-		prop1 = "0000000e"           // po.net_amount
-		prop2 = "0000000c"           // po.currency
+		prop1 = "00000012"           // po.total_amount
+		prop2 = "00000011"           // po.currency
 	}
 
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
