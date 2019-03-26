@@ -219,6 +219,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 
 	id, _ := cfg.GetIdentityID()
 	centID, err := identity.NewDIDFromBytes(id)
+	assert.NoError(t, err)
 	for _, c := range tests {
 		err := HandshakeValidator(cfg.GetNetworkID(), mockIDService).Validate(c.header, &centID, &defaultPID)
 		if err != nil {

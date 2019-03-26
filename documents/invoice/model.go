@@ -422,7 +422,7 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 	if err != nil {
 		return err
 	}
-	
+
 	atts := documents.FromP2PAttachments(data.Attachments)
 	li, err := fromP2PLineItems(data.LineItems)
 	if err != nil {

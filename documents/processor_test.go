@@ -403,7 +403,8 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	cid, _ := identity.NewDIDFromBytes(did)
+	cid, err := identity.NewDIDFromBytes(did)
+	assert.NoError(t, err)
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	err = dp.AnchorDocument(ctxh, model)
@@ -498,7 +499,8 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	cid, _ := identity.NewDIDFromBytes(didb)
+	cid, err := identity.NewDIDFromBytes(didb)
+	assert.NoError(t, err)
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
