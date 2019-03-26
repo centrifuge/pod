@@ -332,8 +332,14 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
-	reqID := identity.NewDIDFromBytes(requesterID)
-	granterID := identity.NewDIDFromBytes(token.Granter)
+	reqID, err := identity.NewDIDFromBytes(requesterID)
+	if err != nil {
+		return err
+	}
+	granterID, err := identity.NewDIDFromBytes(token.Granter)
+	if err != nil {
+		return err
+	}
 	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier, token.DocumentVersion)
 	if err != nil {
 		return err
@@ -362,8 +368,14 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 	if err != nil {
 		return err
 	}
-	granterID := identity.NewDIDFromBytes(at.Granter)
-	granteeID := identity.NewDIDFromBytes(at.Grantee)
+	granterID, err := identity.NewDIDFromBytes(at.Granter)
+	if err != nil {
+		return err
+	}
+	granteeID, err := identity.NewDIDFromBytes(at.Grantee)
+	if err != nil {
+		return err
+	}
 	// check that the peer requesting access is the same identity as the access token grantee
 	if !requesterID.Equal(granteeID) {
 		return ErrRequesterNotGrantee
@@ -421,7 +433,10 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 	if err != nil {
 		return nil, err
 	}
-	granterID := identity.NewDIDFromBytes(id)
+	granterID, err := identity.NewDIDFromBytes(id)
+	if err != nil {
+		return nil, err
+	}
 	// TODO: this roleID will be specified later with field level read access
 	roleID := utils.RandomSlice(32)
 	granteeID, err := identity.NewDIDFromString(payload.Grantee)

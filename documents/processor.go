@@ -80,7 +80,11 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	err = model.AddUpdateLog(identity.NewDIDFromBytes(id))
+	did, err := identity.NewDIDFromBytes(id)
+	if err != nil {
+		return err
+	}
+	err = model.AddUpdateLog(did)
 	if err != nil {
 		return err
 	}

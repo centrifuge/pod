@@ -105,7 +105,12 @@ func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
 		return identity.ErrMalformedAddress
 	}
 
-	e.Identity = identity.BytesToDIDs(data.Identity)[0]
+	dids, err := identity.BytesToDIDs(data.Identity)
+	if err != nil {
+		return err
+	}
+
+	e.Identity = dids[0]
 	e.LegalName = data.LegalName
 	e.Addresses = data.Addresses
 	e.PaymentDetails = data.PaymentDetails

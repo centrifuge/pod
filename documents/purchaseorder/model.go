@@ -274,7 +274,10 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 		return err
 	}
 
-	dids := identity.BytesToDIDs(data.Recipient, data.Sender)
+	dids, err := identity.BytesToDIDs(data.Recipient, data.Sender)
+	if err != nil {
+		return err
+	}
 	li, err := fromP2PLineItems(data.LineItems)
 	if err != nil {
 		return err
