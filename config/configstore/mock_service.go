@@ -18,7 +18,7 @@ func (m MockService) GenerateAccount() (config.Account, error) {
 
 func (m MockService) GetConfig() (config.Configuration, error) {
 	args := m.Called()
-	return args.Get(0).(*NodeConfig), args.Error(1)
+	return args.Get(0).(config.Configuration), args.Error(1)
 }
 
 func (m MockService) GetAccount(identifier []byte) (config.Account, error) {
