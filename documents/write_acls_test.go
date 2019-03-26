@@ -563,11 +563,11 @@ func TestWriteACLs_initTransitionRules(t *testing.T) {
 	assert.Nil(t, cd.Document.TransitionRules)
 
 	collab := []identity.DID{testingidentity.GenerateRandomDID()}
-	cd.initTransitionRules(collab, nil)
+	cd.initTransitionRules(nil, collab)
 	assert.Len(t, cd.Document.TransitionRules, 2)
 	assert.Len(t, cd.Document.Roles, 1)
 
-	cd.initTransitionRules(collab, nil)
+	cd.initTransitionRules(nil, collab)
 	assert.Len(t, cd.Document.TransitionRules, 2)
 	assert.Len(t, cd.Document.Roles, 1)
 }
