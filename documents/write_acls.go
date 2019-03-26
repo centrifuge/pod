@@ -223,7 +223,7 @@ func (cd *CoreDocument) initTransitionRules(documentPrefix []byte, collaborators
 
 // addCollaboratorsToTransitionRules adds the given collaborators to a new transition rule which defaults to
 // granting edit capability over all fields of the document.
-func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte, collaborators []identity.DID, ) {
+func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte, collaborators []identity.DID) {
 	role := newRoleWithCollaborators(collaborators)
 	if role == nil {
 		return

@@ -76,6 +76,7 @@ type CoreDocument struct {
 	Document coredocumentpb.CoreDocument
 }
 
+// CollaboratorsAccess allows us to differentiate between the types of access we want to give new collaborators
 type CollaboratorsAccess struct {
 	ReadCollaborators      []identity.DID
 	ReadWriteCollaborators []identity.DID
@@ -155,6 +156,7 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 }
 
 // TODO: replace below method with new PrepareNewVersion in integration
+
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators ...string) (*CoreDocument, error) {
@@ -489,6 +491,8 @@ func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]ide
 	return filterCollaborators(cs, filterIDs...), nil
 }
 
+// TODO: replace below method with new GetCollaborators in integration
+
 // GetCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read and Read_Sign permissions.
 func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
@@ -500,7 +504,6 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) ([]identity.
 	return filterCollaborators(cs, filterIDs...), nil
 }
 
-// TODO: replace below method with new GetCollaborators in integration
 // GetCollaborators1 returns the collaborators excluding the filteredIDs
 func (cd *CoreDocument) GetCollaborators1(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
 
@@ -532,9 +535,11 @@ func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids 
 		}
 
 		for _, c := range role.Collaborators {
-			// TODO(ved): we should ideally check the address length of 20
-			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
-			ids = append(ids, identity.NewDIDFromBytes(c))
+			did, err := identity.NewDIDFromBytes(c)
+			if err != nil {
+				return false
+			}
+			ids = append(ids, did)
 		}
 
 		return false
@@ -555,9 +560,11 @@ func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (
 		}
 
 		for _, c := range role.Collaborators {
-			// TODO(ved): we should ideally check the address length of 20
-			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
-			ids = append(ids, identity.NewDIDFromBytes(c))
+			did, err := identity.NewDIDFromBytes(c)
+			if err != nil {
+				return false
+			}
+			ids = append(ids, did)
 		}
 
 		return false
