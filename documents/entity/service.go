@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -37,6 +38,7 @@ type service struct {
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
+	factory   identity.Factory
 }
 
 // DefaultService returns the default implementation of the service.
@@ -45,12 +47,14 @@ func DefaultService(
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
+	factory identity.Factory,
 ) Service {
 	return service{
 		repo:      repo,
 		queueSrv:  queueSrv,
 		txManager: txManager,
 		Service:   srv,
+		factory:   factory,
 	}
 }
 
@@ -119,7 +123,7 @@ func (s service) Create(ctx context.Context, entity documents.Model) (documents.
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	entity, err = s.validateAndPersist(ctx, nil, entity, CreateValidator())
+	entity, err = s.validateAndPersist(ctx, nil, entity, CreateValidator(s.factory))
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -144,7 +148,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 )
@@ -51,11 +52,16 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
+	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	if !ok {
+		return errors.New("identity factory not initialised")
+	}
+
 	// register service
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager)
+		queueSrv, txManager, factory)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {

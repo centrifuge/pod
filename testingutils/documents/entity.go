@@ -1,3 +1,5 @@
+// +build unit integration
+
 package testingdocuments
 
 import (
@@ -13,11 +15,12 @@ func CreateEntityData() entitypb.Entity {
 		Identity:  did.ToAddress().Bytes(),
 		LegalName: "Company Test",
 		Contacts:  []*entitypb.Contact{{Name: "Satoshi Nakamoto"}},
-		/*Addresses: []*entitypb.Address{{IsMain: true,  TODO: precise proofs should support addresses
+		Addresses: []*entitypb.Address{{
+			IsMain:       true,
 			AddressLine1: "Sample Street 1",
 			Zip:          "12345",
 			State:        "Germany",
-		}, {IsMain: false, State: "US"}},*/
+		}, {IsMain: false, State: "US"}},
 	}
 }
 
@@ -27,11 +30,12 @@ func CreateEntityPayload() *cliententitypb.EntityCreatePayload {
 			Identity:  "0xed03Fa80291fF5DDC284DE6b51E716B130b05e20",
 			LegalName: "Company Test",
 			Contacts:  []*entitypb.Contact{{Name: "Satoshi Nakamoto"}},
-			/*Addresses: []*entitypb.Address{{IsMain: true, TODO: precise proofs should support addresses
+			Addresses: []*entitypb.Address{{
+				IsMain:       true,
 				AddressLine1: "Sample Street 1",
 				Zip:          "12345",
 				State:        "Germany",
-			}, {IsMain: false, State: "US"}}, */
+			}, {IsMain: false, State: "US"}},
 		},
 		Collaborators: []string{testingidentity.GenerateRandomDID().String()},
 	}
