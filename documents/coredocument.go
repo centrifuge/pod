@@ -196,9 +196,6 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators .
 // PrepareNewVersion1 prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion1(documentPrefix []byte, newCollaborators CollaboratorsAccess) (*CoreDocument, error) {
-	if len(cd.Document.DocumentRoot) != idSize {
-		return nil, errors.New("document root is invalid")
-	}
 
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators1()
@@ -212,7 +209,6 @@ func (cd *CoreDocument) PrepareNewVersion1(documentPrefix []byte, newCollaborato
 
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
-		PreviousRoot:       cd.Document.DocumentRoot,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
 		TransitionRules:    cd.Document.TransitionRules,
