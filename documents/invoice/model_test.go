@@ -360,7 +360,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 func createInvoice(t *testing.T) *Invoice {
 	i := new(Invoice)
 	payload := testingdocuments.CreateInvoicePayload()
-	payload.Data.LineItems = []*clientinvoicepb.InvoiceLineItem{
+	payload.Data.LineItems = []*clientinvoicepb.LineItem{
 		{
 			ItemNumber:  "123456",
 			TaxAmount:   "1.99",
