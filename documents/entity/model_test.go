@@ -5,18 +5,12 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
-
 	"os"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -24,10 +18,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -37,6 +34,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -278,14 +276,14 @@ func TestEntityModel_GetDocumentID(t *testing.T) {
 	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
-//func TestEntityModel_getDocumentDataTree(t *testing.T) {
-//	e := Entity{LegalName: "test company"}
-//	tree, err := e.getDocumentDataTree()
-//	assert.Nil(t, err, "tree should be generated without error")
-//	_, leaf := tree.GetLeafByProperty("entity.legal_name")
-//	assert.NotNil(t, leaf)
-//	assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
-//}
+func TestEntityModel_getDocumentDataTree(t *testing.T) {
+	e := createEntity(t)
+	tree, err := e.getDocumentDataTree()
+	assert.Nil(t, err, "tree should be generated without error")
+	_, leaf := tree.GetLeafByProperty("entity.legal_name")
+	assert.NotNil(t, leaf)
+	assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
+}
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	entity := createEntity(t)

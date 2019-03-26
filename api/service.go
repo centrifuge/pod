@@ -59,13 +59,13 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// register document types
-	err = registerDocumentTypes(ctx,nodeObjReg,grpcServer,gwmux,addr,dopts)
+	err = registerDocumentTypes(ctx, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
 	// register other api endpoints
-	err = registerAPIs(ctx,cfg,payObService,configService,nodeObjReg,grpcServer,gwmux,addr,dopts)
+	err = registerAPIs(ctx, cfg, payObService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	return nil
 }
 
-func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentObligation,configService config.Service ,nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error{
+func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentObligation, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 
 	// healthcheck
 	hcCfg := cfg.(healthcheck.Config)
@@ -104,7 +104,6 @@ func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentOblig
 		return err
 	}
 
-
 	// transactions
 	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Manager)
 	h := txv1.GRPCHandler(txSrv, configService)
@@ -117,8 +116,7 @@ func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentOblig
 
 }
 
-
-func registerDocumentTypes(ctx context.Context,nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// register invoice
 	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
 	if !ok {

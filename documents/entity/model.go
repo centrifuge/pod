@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"reflect"
 
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,7 +47,7 @@ func (e *Entity) getClientData() *cliententitypb.EntityData {
 	return &cliententitypb.EntityData{
 		Identity:       didString,
 		LegalName:      e.LegalName,
-		Addresses:      e.Addresses, //todo fix boolean in precise proofs
+		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
@@ -64,7 +63,7 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 	return &entitypb.Entity{
 		Identity:       didByte,
 		LegalName:      e.LegalName,
-		Addresses:      nil, //e.Addresses, //todo fix boolean in precise proofs
+		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
@@ -99,7 +98,7 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 		return identity.ErrMalformedAddress
 	}
 	e.LegalName = data.LegalName
-	//e.Addresses = data.Addresses //TODO precise proofs not supporting fields yet
+	e.Addresses = data.Addresses
 	e.PaymentDetails = data.PaymentDetails
 	e.Contacts = data.Contacts
 
