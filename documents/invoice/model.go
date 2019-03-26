@@ -642,15 +642,6 @@ func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
 	return i.CoreDocument.CalculateSigningRoot(i.DocumentType(), dr)
 }
 
-// GetSigningRootProofHash gets the signing root proof hash upto document root
-func (i *Invoice) GetSigningRootProofHash() (hash []byte, err error) {
-	dr, err := i.CalculateDataRoot()
-	if err != nil {
-		return dr, err
-	}
-	return i.CoreDocument.GetSigningRootProofHash(i.DocumentType(), dr)
-}
-
 // CalculateDocumentRoot calculates the document root
 func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
 	dr, err := i.CalculateDataRoot()
