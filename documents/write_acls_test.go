@@ -34,8 +34,8 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	newTree := getTree(t, &ncd, "", nil)
 
 	cf := GetChangedFields(oldTree, newTree)
-	// cf length should be len(ocd) and len(ncd) = 33 changed field
-	assert.Len(t, cf, 69)
+	// cf length should be len(ocd) and len(ncd) = 70 changed field
+	assert.Len(t, cf, 70)
 
 }
 
@@ -48,8 +48,8 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	cf := GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 0)
 
-	// check hashed field
-	ocd.PreviousRoot = utils.RandomSlice(32)
+	// check author field
+	ocd.Author = utils.RandomSlice(32)
 	oldTree = getTree(t, &ocd, "", nil)
 	newTree = getTree(t, &ocd, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
@@ -68,7 +68,6 @@ func testExpectedProps(t *testing.T, cf []ChangedField, eprops map[string]struct
 func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	doc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err := doc.PrepareNewVersion([]byte("po"), testingidentity.GenerateRandomDID().String())
 	assert.NoError(t, err)
 
@@ -92,7 +91,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree := getTree(t, &doc.Document, "", nil)
 	newTree := getTree(t, &ndoc.Document, "", nil)
 	cf := GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 20)
+	assert.Len(t, cf, 19)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops := map[string]struct{}{
@@ -129,13 +128,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// current pre image
 	// next pre image
 	doc = ndoc
-	doc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err = doc.PrepareNewVersion([]byte("po"))
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 6)
+	assert.Len(t, cf, 5)
 	eprops = map[string]struct{}{
 		hexutil.Encode([]byte{0, 0, 0, 4}):  {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):  {},
@@ -164,7 +162,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 21)
+	assert.Len(t, cf, 20)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
@@ -203,13 +201,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// roles (new doc will have 2 new roles different from 2 old roles)
 	// read_rules
 	// transition_rules
-	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), testingidentity.GenerateRandomDID().String())
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 16)
+	assert.Len(t, cf, 15)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop3 := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -370,7 +367,6 @@ func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, fie
 func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, string) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	doc.Document.DocumentRoot = utils.RandomSlice(32)
 	docType := documenttypes.InvoiceDataTypeUrl
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
@@ -434,7 +430,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	// read_rule changes = 2
 	// transition rule changes = 10
 	// total = 9
-	assert.Equal(t, 20, errors.Len(err))
+	assert.Equal(t, 19, errors.Len(err))
 }
 
 func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
@@ -469,7 +465,6 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 
 	// id2 went rogue and updated nft for different registry
 	registry2 := testingidentity.GenerateRandomDID()
-	ndoc.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
 
@@ -486,7 +481,6 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	field = append(compactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
 	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
-	ndoc1.Document.DocumentRoot = utils.RandomSlice(32)
 	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
 
