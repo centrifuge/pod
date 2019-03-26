@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
@@ -49,40 +51,34 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", nft.BootstrappedPayObService)
 	}
 
-	// documents (common)
+	// register documents (common)
 	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(configService, registry))
 	err := documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
-	// invoice
-	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
-	if !ok {
-		return errors.New("invoice grpc handler not registered")
-	}
-
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invHandler)
-	err = invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	// register document types
+	err = registerDocumentTypes(ctx, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
-	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
-	if !ok {
-		return errors.New("purchase order grpc handler not registered")
-	}
-
-	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
-	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	// register other api endpoints
+	err = registerAPIs(ctx, cfg, payObService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentObligation, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 
 	// healthcheck
 	hcCfg := cfg.(healthcheck.Config)
 	healthpb.RegisterHealthCheckServiceServer(grpcServer, healthcheck.GRPCHandler(hcCfg))
-	err = healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	err := healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
@@ -113,4 +109,39 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	h := txv1.GRPCHandler(txSrv, configService)
 	transactionspb.RegisterTransactionServiceServer(grpcServer, h)
 	return transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+}
+
+func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+	// register invoice
+	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
+	if !ok {
+		return errors.New("invoice grpc handler not registered")
+	}
+
+	invoicepb.RegisterDocumentServiceServer(grpcServer, invHandler)
+	err := invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	// register purchase order
+	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
+	if !ok {
+		return errors.New("purchase order grpc handler not registered")
+	}
+
+	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
+	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	// register entity
+	entityHandler, ok := nodeObjReg[entity.BootstrappedEntityHandler].(entitypb.DocumentServiceServer)
+	if !ok {
+		return errors.New("entity grpc handler not registered")
+	}
+
+	entitypb.RegisterDocumentServiceServer(grpcServer, entityHandler)
+	return entitypb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }

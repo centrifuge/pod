@@ -73,13 +73,14 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_peerValidator(t *testing.T) {
-	cID := identity.NewDIDFromBytes(id1)
+	cID, err := identity.NewDIDFromBytes(id1)
+	assert.NoError(t, err)
 
 	idService := &testingcommons.MockIdentityService{}
 	sv := peerValidator(idService)
 
 	// Nil headers
-	err := sv.Validate(nil, nil, nil)
+	err = sv.Validate(nil, nil, nil)
 	assert.Error(t, err)
 
 	tm, err := utils.ToTimestamp(time.Now())
@@ -108,7 +109,8 @@ func TestValidate_peerValidator(t *testing.T) {
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	cID := identity.NewDIDFromBytes(id1)
+	cID, err := identity.NewDIDFromBytes(id1)
+	assert.NoError(t, err)
 
 	idService := &testingcommons.MockIdentityService{}
 	hv := HandshakeValidator(cfg.GetNetworkID(), idService)

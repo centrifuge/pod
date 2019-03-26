@@ -98,7 +98,8 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 }
 
 func (s *factory) IdentityExists(did *id.DID) (exists bool, err error) {
-	opts, _ := s.client.GetGethCallOpts(false)
+	opts, cancel := s.client.GetGethCallOpts(false)
+	defer cancel()
 	valid, err := s.factoryContract.CreatedIdentity(opts, did.ToAddress())
 	if err != nil {
 		return false, err

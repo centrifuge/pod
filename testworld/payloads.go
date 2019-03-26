@@ -16,15 +16,30 @@ func defaultDocumentPayload(documentType string, collaborators []string) map[str
 func defaultPOPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"po_number":    "12324",
-			"due_date":     "2018-09-26T23:12:37.902198664Z",
-			"gross_amount": "40",
+			"number":       "12324",
+			"date_created": "2018-09-26T23:12:37.902198664Z",
+			"total_amount": "40",
 			"currency":     "USD",
-			"net_amount":   "40",
 		},
 		"collaborators": collaborators,
 	}
 }
+
+func defaultEntityPayload(identity string, collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"identity":   identity,
+			"legal_name": "test company",
+			"contacts": []map[string]interface{}{
+				{
+					"name": "test name",
+				},
+			},
+		},
+		"collaborators": collaborators,
+	}
+}
+
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
@@ -65,10 +80,10 @@ func invoiceNFTPayload(collaborators []string, sender string) map[string]interfa
 func poNFTPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"po_number":     "123245",
-			"due_date":      "2018-09-26T23:12:37.902198664Z",
+			"number":        "123245",
+			"date_created":  "2018-09-26T23:12:37.902198664Z",
 			"currency":      "USD",
-			"net_amount":    "40",
+			"total_amount":  "40",
 			"document_type": "po",
 		},
 		"collaborators": collaborators,
@@ -101,10 +116,10 @@ func updatedDocumentPayload(documentType string, collaborators []string) map[str
 func updatedPOPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"po_number":  "12324",
-			"due_date":   "2018-09-26T23:12:37.902198664Z",
-			"currency":   "EUR",
-			"net_amount": "42",
+			"number":       "12324",
+			"date_created": "2018-09-26T23:12:37.902198664Z",
+			"currency":     "EUR",
+			"total_amount": "42",
 		},
 		"collaborators": collaborators,
 	}
@@ -135,6 +150,6 @@ func defaultProofPayload(documentType string) map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"type":   "http://github.com/centrifuge/centrifuge-protobufs/purchaseorder/#purchaseorder.PurchaseOrderData",
-		"fields": []string{"po.net_amount", "po.currency"},
+		"fields": []string{"po.total_amount", "po.currency"},
 	}
 }

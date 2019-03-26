@@ -19,7 +19,8 @@ func TestConverters(t *testing.T) {
 	assert.NoError(t, err)
 
 	bdids := DIDsToBytes(dids...)
-	cdids := BytesToDIDs(bdids...)
+	cdids, err := BytesToDIDs(bdids...)
+	assert.NoError(t, err)
 
 	esdids := DIDsToStrings(cdids...)
 	assert.Equal(t, sdids, esdids)

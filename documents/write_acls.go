@@ -22,7 +22,7 @@ type ChangedField struct {
 // GetChangedFields takes two document trees and returns the compact property, old and new value of the fields that are changed in new tree.
 // Properties may have been added to the new tree or removed from the new tree.
 // In Either case, since the new tree is different from old, that is considered a change.
-func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string) (changedFields []ChangedField) {
+func GetChangedFields(oldTree, newTree *proofs.DocumentTree) (changedFields []ChangedField) {
 	oldProps := oldTree.PropertyOrder()
 	newProps := newTree.PropertyOrder()
 
@@ -30,7 +30,7 @@ func GetChangedFields(oldTree, newTree *proofs.DocumentTree, lengthSuffix string
 	props := make(map[string]proofs.Property)
 	for _, p := range append(oldProps, newProps...) {
 		// we can ignore the length property since any change in slice or map will return in addition or deletion of properties in the new tree
-		if p.Text == lengthSuffix {
+		if p.Text == proofs.DefaultReadablePropertyLengthSuffix {
 			continue
 		}
 
@@ -192,22 +192,22 @@ func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool
 // CollaboratorCanUpdate validates the changes made by the collaborator in the new document.
 // returns error if the transitions are not allowed for the collaborator.
 func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator identity.DID, docType string) error {
-	oldTree, err := cd.documentTree(docType)
+	oldTree, err := cd.coredocTree(docType)
 	if err != nil {
 		return err
 	}
 
-	newTree, err := ncd.documentTree(docType)
+	newTree, err := ncd.coredocTree(docType)
 	if err != nil {
 		return err
 	}
 
-	cf := GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := GetChangedFields(oldTree, newTree)
 	rules := cd.TransitionRulesFor(collaborator)
 	return ValidateTransitions(rules, cf)
 }
 
-// initTransitionRules initiates the transition rules for a given Core Document.
+// initTransitionRules initiates the transition rules for a given Core document.
 // Collaborators are given default edit capability over all fields of the CoreDocument and underlying documents such as invoices or purchase orders.
 // if the rules are created already, this is a no-op.
 // if collaborators are empty, it is a no-op
@@ -231,6 +231,7 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identi
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, compactProperties(CDTreePrefix), coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, documentPrefix, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	cd.Modified = true
 }
 
 // addNewTransitionRule creates a new transition rule with the given parameters.
@@ -243,4 +244,5 @@ func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocum
 		Roles:     [][]byte{roleKey},
 	}
 	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
+	cd.Modified = true
 }

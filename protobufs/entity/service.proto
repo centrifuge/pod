@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package entity;
+
+option go_package = "entitypb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.entity";
+
+import "entity/entity.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// DocumentService contains all common interactions for entity document
+service DocumentService {
+  rpc Create(EntityCreatePayload) returns (EntityResponse) {
+    option (google.api.http) = {
+      post: "/entity"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates an entity"
+    };
+  }
+  rpc Update(EntityUpdatePayload) returns (EntityResponse) {
+    option (google.api.http) = {
+      put: "/entity/{identifier}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Updates an entity"
+    };
+  }
+  rpc GetVersion(GetVersionRequest) returns (EntityResponse) {
+    option (google.api.http) = {
+      get: "/entity/{identifier}/{version}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get a specific version of an entity"
+    };
+  }
+  rpc Get(GetRequest) returns (EntityResponse) {
+    option (google.api.http) = {
+      get: "/entity/{identifier}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get the current entity"
+    };
+  }
+}
+
+message GetRequest {
+  string identifier = 1;
+}
+
+message GetVersionRequest {
+  string identifier = 1;
+  string version = 2;
+}
+
+message EntityCreatePayload {
+  repeated string collaborators = 1;
+  EntityData data = 2;
+}
+
+message EntityUpdatePayload {
+  string identifier = 1;
+  repeated string collaborators = 2;
+  EntityData data = 3;
+}
+
+message EntityResponse {
+  ResponseHeader header = 1;
+  EntityData data = 2;
+}
+
+// ResponseHeader contains a set of common fields for most document
+message ResponseHeader {
+  string document_id = 1;
+  string version_id = 2;
+  string state = 3;
+  repeated string collaborators = 4;
+  string transaction_id = 5;
+}
+
+// EntityData is the default entity schema
+message EntityData {
+  string identity = 1;
+  string legal_name = 2;
+  // address
+  repeated Address addresses = 3;
+  // tax information
+  repeated PaymentDetail payment_details = 4;
+  // Entity contact list
+  repeated Contact contacts = 5;
+}

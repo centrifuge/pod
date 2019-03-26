@@ -10,7 +10,7 @@ option java_package = "com.nft";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// NFTService let's you mint NFTs for a document 
+// NFTService let's you mint NFTs for a document
 service NFTService {
   rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
@@ -21,10 +21,26 @@ service NFTService {
       description: "Mint an NFT from a Centrifuge Document"
     };
   }
+  rpc MintInvoiceUnpaidNFT(NFTMintInvoiceUnpaidRequest) returns (NFTMintResponse) {
+    option (google.api.http) = {
+      post: "/token/mint/invoice/unpaid/{identifier}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Mints an NFT out of an Unpaid Centrifuge Invoice"
+    };
+  }
 }
 
 message ResponseHeader {
   string transaction_id = 5;
+}
+
+message NFTMintInvoiceUnpaidRequest {
+  // Invoice Document identifier
+  string identifier = 1;
+  // Deposit address for NFT Token created
+  string deposit_address = 2;
 }
 
 message NFTMintRequest {

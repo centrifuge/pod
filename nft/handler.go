@@ -64,6 +64,40 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 	}, nil
 }
 
+// MintInvoiceUnpaidNFT will be called from the client API to mint an NFT out of an unpaid invoice
+func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NFTMintInvoiceUnpaidRequest) (*nftpb.NFTMintResponse, error) {
+	apiLog.Infof("Received request to Mint a Payment Obligation NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
+	ctxHeader, err := contextutil.Context(ctx, g.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	// Get proof fields
+	proofFields, err := g.service.GetRequiredInvoiceUnpaidProofFields(ctxHeader)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	cfg, err := g.config.GetConfig()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+	poRegistry := cfg.GetContractAddress(config.PaymentObligation)
+
+	mintReq := &nftpb.NFTMintRequest{
+		Identifier:                request.Identifier,
+		DepositAddress:            request.DepositAddress,
+		RegistryAddress:           poRegistry.Hex(),
+		ProofFields:               proofFields,
+		GrantNftAccess:            true,
+		SubmitNftOwnerAccessProof: true,
+		SubmitTokenProof:          true,
+	}
+
+	return g.MintNFT(ctx, mintReq)
+}
+
 func validateParameters(request *nftpb.NFTMintRequest) error {
 	if !common.IsHexAddress(request.RegistryAddress) {
 		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")

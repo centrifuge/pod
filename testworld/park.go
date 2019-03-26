@@ -293,7 +293,10 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.identity = identity.NewDIDFromBytes(idBytes)
+	h.identity, err = identity.NewDIDFromBytes(idBytes)
+	if err != nil {
+		return err
+	}
 	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
@@ -372,6 +375,10 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, auth, status, inv), nil
+}
+
+func (h *host) mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return mintUnpaidInvoiceNFT(e, auth, status, documentID, inv), nil
 }
 
 func (h *host) createAccounts(e *httpexpect.Expect) error {

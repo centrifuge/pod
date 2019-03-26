@@ -13,6 +13,7 @@ import (
 )
 
 const typeInvoice string = "invoice"
+const typeEntity string = "entity"
 const typePO string = "purchaseorder"
 const poPrefix string = "po"
 
@@ -47,6 +48,16 @@ func getDocumentAndCheck(e *httpexpect.Expect, auth string, documentType string,
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+
+	return objGet
+}
+func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	docIdentifier := params["document_id"].(string)
+
+	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
+	objGet.Path("$.data.legal_name").String().Equal(params["legal_name"].(string))
 
 	return objGet
 }
@@ -99,6 +110,15 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 	return versionID
 }
 
+func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/token/mint/invoice/unpaid/"+documentID), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/token/mint"), auth).
 		WithJSON(payload).
@@ -149,9 +169,19 @@ func createInsecureClient() *http.Client {
 }
 
 func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
+	emptyResponseTolerance := 5
+	emptyResponsesEncountered := 0
 	for {
 		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
-		status := resp["status"].(string)
+		status, ok := resp["status"].(string)
+		if !ok {
+			emptyResponsesEncountered++
+			if emptyResponsesEncountered > emptyResponseTolerance {
+				panic("transaction api non-responsive")
+			}
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
 		if status == "pending" {
 			time.Sleep(1 * time.Second)

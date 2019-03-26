@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -59,8 +58,7 @@ func TestReadAccessValidator_AccountCanRead(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	account := testingidentity.GenerateRandomDID()
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
-	ncd, err := cd.PrepareNewVersion([]string{account.String()}, false, nil)
+	ncd, err := cd.PrepareNewVersion(nil, account.String())
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd.Document.ReadRules)
 	assert.NotNil(t, ncd.Document.Roles)
@@ -92,14 +90,12 @@ func TestCoreDocument_addNFTToReadRules(t *testing.T) {
 	tokenID := utils.RandomSlice(34)
 	err = cd.addNFTToReadRules(registry, tokenID)
 	assert.Error(t, err)
-	assert.Nil(t, cd.Document.CoredocumentSalts)
 	assert.Nil(t, cd.Document.ReadRules)
 	assert.Nil(t, cd.Document.Roles)
 
 	tokenID = utils.RandomSlice(32)
 	err = cd.addNFTToReadRules(registry, tokenID)
 	assert.NoError(t, err)
-	assert.NotNil(t, cd.Document.CoredocumentSalts)
 	assert.Len(t, cd.Document.ReadRules, 1)
 	assert.Equal(t, cd.Document.ReadRules[0].Action, coredocumentpb.Action_ACTION_READ)
 	assert.Len(t, cd.Document.Roles, 1)
@@ -144,7 +140,6 @@ func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	registry2 := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
 	tokenID := utils.RandomSlice(32)
@@ -163,7 +158,6 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Len(t, cd.Document.Roles[0].Nfts, 1)
 
 	tokenID = utils.RandomSlice(32)
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
@@ -181,7 +175,6 @@ func TestCoreDocument_IsNFTMinted(t *testing.T) {
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	assert.False(t, cd.IsNFTMinted(nil, registry))
 
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	tokenID := utils.RandomSlice(32)
 	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
 	cd, err = cd.AddNFT(true, registry, tokenID)
@@ -203,7 +196,6 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, pfs)
 
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
@@ -224,7 +216,6 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 	assert.Error(t, err)
 	assert.Empty(t, pf)
 
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	tokenID := utils.RandomSlice(32)
 	cd, err = cd.AddNFT(false, registry, tokenID)
 	assert.NoError(t, err)
@@ -259,37 +250,26 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	invData := new(invoicepb.InvoiceData)
-	dataSalts, err := GenerateNewSalts(invData, "invoice", []byte{1, 0, 0, 0})
-	assert.NoError(t, err)
-
-	testTree := NewDefaultTreeWithPrefix(nil, "invoice", []byte{1, 0, 0, 0})
+	testTree := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
 	props := []proofs.Property{NewLeafProperty("invoice.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200})}
 	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
+	cd.GetTestCoreDocWithReset()
 	err = testTree.Generate()
 	assert.NoError(t, err)
-	cd.Document.DataRoot = testTree.RootHash()
-	cd.Document.EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
+	cd.GetTestCoreDocWithReset().EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
 
 	account := testingidentity.GenerateRandomDID()
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	cd.Document.EmbeddedDataSalts = ConvertToProtoSalts(dataSalts)
+	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
-	assert.NoError(t, cd.setSalts())
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot()
+	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	cd.Document.DataRoot = testTree.RootHash()
-	assert.NoError(t, cd.setSalts())
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl)
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot()
+	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -337,7 +317,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree()
+	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	for _, c := range tests {
@@ -367,18 +347,16 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
-	granterID := identity.NewDIDFromBytes(id)
+	granterID, err := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
 	cd, err := NewCoreDocumentWithCollaborators([]string{granterID.String()}, nil)
 	assert.NoError(t, err)
-	cd.Document.DocumentRoot = utils.RandomSlice(32)
 	payload := documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
 		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
 	}
 	ncd, err := cd.AddAccessToken(ctx, payload)
 	assert.NoError(t, err)
-	ncd.Document.DocumentRoot = utils.RandomSlice(32)
 	at := ncd.Document.AccessTokens[0]
 	assert.NotNil(t, at)
 	// wrong token identifier
@@ -414,7 +392,6 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	m, err := newCoreDocument()
 	assert.NoError(t, err)
-	m.Document.DocumentRoot = utils.RandomSlice(32)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	account, err := contextutil.Account(ctx)
 	assert.NoError(t, err)

@@ -162,8 +162,11 @@ func NewDIDsFromStrings(ids []string) ([]DID, error) {
 }
 
 // NewDIDFromBytes returns a DID based on a bytes input
-func NewDIDFromBytes(bAddr []byte) DID {
-	return DID(common.BytesToAddress(bAddr))
+func NewDIDFromBytes(bAddr []byte) (DID, error) {
+	if len(bAddr) != DIDLength {
+		return DID{}, ErrInvalidDIDLength
+	}
+	return DID(common.BytesToAddress(bAddr)), nil
 }
 
 // IDTX abstracts transactions.TxID for identity package
@@ -302,7 +305,10 @@ type Config interface {
 
 // ValidateDIDBytes validates a centrifuge ID given as bytes
 func ValidateDIDBytes(givenDID []byte, did DID) error {
-	calcdid := NewDIDFromBytes(givenDID)
+	calcdid, err := NewDIDFromBytes(givenDID)
+	if err != nil {
+		return err
+	}
 	if !did.Equal(calcdid) {
 		return errors.New("provided bytes doesn't match centID")
 	}
