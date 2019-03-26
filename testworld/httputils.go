@@ -149,10 +149,16 @@ func createInsecureClient() *http.Client {
 }
 
 func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
+	emptyResponseTolerance := 5
+	emptyResponsesEncountered := 0
 	for {
 		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
 		status, ok := resp["status"].(string)
 		if !ok {
+			emptyResponsesEncountered++
+			if emptyResponsesEncountered > emptyResponseTolerance {
+				panic("transaction api non-responsive")
+			}
 			time.Sleep(1 * time.Second)
 			continue
 		}

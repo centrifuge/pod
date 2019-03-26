@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -44,7 +42,7 @@ type Entity struct {
 func (e *Entity) getClientData() *cliententitypb.EntityData {
 	var didString string
 	if e.Identity != nil {
-		didString = hexutil.Encode(e.Identity[:])
+		didString = e.Identity.String()
 	}
 
 	return &cliententitypb.EntityData{
@@ -94,7 +92,11 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 	if data.Identity != "" {
 		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
 			e.Identity = &did
+		} else {
+			return err
 		}
+	} else {
+		return identity.ErrMalformedAddress
 	}
 	e.LegalName = data.LegalName
 	//e.Addresses = data.Addresses //TODO precise proofs not supporting fields yet
@@ -174,7 +176,6 @@ func (e *Entity) CalculateDataRoot() ([]byte, error) {
 	}
 
 	dr := t.RootHash()
-	e.CoreDocument.SetDataRoot(dr)
 	return dr, nil
 }
 
@@ -241,7 +242,7 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 	}
 
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}
@@ -262,7 +263,38 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {
-	return e.CoreDocument.CalculateSigningRoot(e.DocumentType())
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dr)
+}
+
+// CalculateDocumentRoot calculates the document root
+func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dr)
+}
+
+// GetSigningRootProofHash gets the signing root proof hash upto document root
+func (e *Entity) GetSigningRootProofHash() (hash []byte, err error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return e.CoreDocument.GetSigningRootProofHash(e.DocumentType(), dr)
+}
+
+// DocumentRootTree creates and returns the document root tree
+func (e *Entity) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	dr, err := e.CalculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dr)
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.

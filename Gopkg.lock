@@ -64,7 +64,7 @@
   revision = "ada3d9be8c5a1a1f45d7c8a6e456194599fd1bb9"
 
 [[projects]]
-  digest = "1:90f67983eec4c86d4bdc5cb29c7129497eafa5e55eeae7b5f8f9c376af34ddcc"
+  digest = "1:f8c6e8e187679e73b7cef2ff3d1fde304874dfd5d7e3bbb019a8329328ed4a26"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -78,8 +78,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "61e4f1daaf9b8a815f0fa93232b0633335706f95"
-  source = "github.com/vedhavyas/centrifuge-protobufs"
+  revision = "f7c9e634012db2355988a34326045852266ba4e7"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -89,14 +88,14 @@
   revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
-  digest = "1:3b544b8a9a673543a6b0f61afefc3ad1fec1080be25f8389cca630c71f423117"
+  digest = "1:37231b09a3facf49d61e6c56d88383cf09899d606e7e56a7015963bcd868382a"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "47365f90bfb4c95a2fea41c538e0e9758bfde8d7"
+  revision = "f443fbe849de3fae72475c0838ec8eabf6930edd"
 
 [[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"

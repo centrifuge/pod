@@ -375,9 +375,7 @@ func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
 
-	dr := t.RootHash()
-	p.CoreDocument.SetDataRoot(dr)
-	return dr, nil
+	return t.RootHash(), nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -422,7 +420,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}
@@ -444,7 +442,38 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 // CalculateSigningRoot returns the signing root of the document.
 // Calculates it if not generated yet.
 func (p *PurchaseOrder) CalculateSigningRoot() ([]byte, error) {
-	return p.CoreDocument.CalculateSigningRoot(p.DocumentType())
+	dr, err := p.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return p.CoreDocument.CalculateSigningRoot(p.DocumentType(), dr)
+}
+
+// GetSigningRootProofHash gets the signing root proof hash upto document root
+func (p *PurchaseOrder) GetSigningRootProofHash() (hash []byte, err error) {
+	dr, err := p.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return p.CoreDocument.GetSigningRootProofHash(p.DocumentType(), dr)
+}
+
+// CalculateDocumentRoot calculates the document root
+func (p *PurchaseOrder) CalculateDocumentRoot() ([]byte, error) {
+	dr, err := p.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return p.CoreDocument.CalculateDocumentRoot(p.DocumentType(), dr)
+}
+
+// DocumentRootTree creates and returns the document root tree
+func (p *PurchaseOrder) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	dr, err := p.CalculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	return p.CoreDocument.DocumentRootTree(p.DocumentType(), dr)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.

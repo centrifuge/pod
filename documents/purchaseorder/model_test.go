@@ -324,7 +324,6 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	// update the id3 rules to update only total amount
 	po.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
 	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 18)
-	po.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
 	assert.NoError(t, testRepo().Create(id1[:], po.CurrentVersion(), po))
 
 	// fetch the document

@@ -74,7 +74,7 @@ func createIdentity(t *testing.T, idFactory identity.Factory, idService identity
 	assert.Nil(t, err)
 	did, err := idFactory.CreateIdentity(ctx)
 	assert.Nil(t, err, "should not error out when creating identity")
-	assert.Equal(t, did.String(), didAddr.String(), "Resulting Identity should have the same ID as the input")
+	acc.IdentityID = did[:]
 
 	// Add Keys
 	accKeys, err := tc.GetKeys()

@@ -566,9 +566,7 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
 
-	dr := t.RootHash()
-	i.CoreDocument.SetDataRoot(dr)
-	return dr, nil
+	return t.RootHash(), nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -616,7 +614,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, compactPrefix())
+	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
 	if err != nil {
 		return err
 	}
@@ -637,13 +635,38 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
-	return i.CoreDocument.CalculateSigningRoot(i.DocumentType())
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return i.CoreDocument.CalculateSigningRoot(i.DocumentType(), dr)
 }
 
-// CalculateDocumentRoot calculate the document root
-// TODO: Should we add this
+// GetSigningRootProofHash gets the signing root proof hash upto document root
+func (i *Invoice) GetSigningRootProofHash() (hash []byte, err error) {
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return i.CoreDocument.GetSigningRootProofHash(i.DocumentType(), dr)
+}
+
+// CalculateDocumentRoot calculates the document root
 func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
-	return i.CoreDocument.CalculateDocumentRoot()
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dr)
+}
+
+// DocumentRootTree creates and returns the document root tree
+func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dr)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.

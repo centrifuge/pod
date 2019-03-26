@@ -44,7 +44,7 @@ func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity
 	}
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ_SIGN)
-	cd.CoreDocModified = true
+	cd.Modified = true
 }
 
 // addNewReadRule creates a new read rule as per the role and action.
@@ -54,7 +54,7 @@ func (cd *CoreDocument) addNewReadRule(roleKey []byte, action coredocumentpb.Act
 		Roles:  [][]byte{roleKey},
 	}
 	cd.Document.ReadRules = append(cd.Document.ReadRules, rule)
-	cd.CoreDocModified = true
+	cd.Modified = true
 }
 
 // findRole calls OnRole for every role that matches the actions passed in
@@ -138,14 +138,14 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 	role.Nfts = append(role.Nfts, nft)
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-	cd.CoreDocModified = true
+	cd.Modified = true
 	return nil
 }
 
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
 func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, nil)
+	ncd, err := cd.PrepareNewVersion(nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
@@ -167,7 +167,7 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 		}
 	}
 
-	cd.CoreDocModified = true
+	cd.Modified = true
 	return ncd, nil
 }
 
@@ -190,10 +190,6 @@ func (cd *CoreDocument) CreateNFTProofs(
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (prfs []*proofspb.Proof, err error) {
-
-	if len(cd.Document.DataRoot) != idSize {
-		return nil, ErrDataRootInvalid
-	}
 
 	var pfKeys []string
 	if nftUniqueProof {
@@ -399,7 +395,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 
 // AddAccessToken adds the AccessToken to the document
 func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, nil)
+	ncd, err := cd.PrepareNewVersion(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +406,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 	}
 
 	ncd.Document.AccessTokens = append(ncd.Document.AccessTokens, at)
-	ncd.CoreDocModified = true
+	ncd.Modified = true
 	return ncd, nil
 }
 
