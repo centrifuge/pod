@@ -113,7 +113,7 @@ func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []b
 	}
 
 	cd.initReadRules(ids)
-	cd.initTransitionRules(ids, documentPrefix)
+	cd.initTransitionRules(documentPrefix, ids)
 	return cd, nil
 }
 
@@ -187,7 +187,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators .
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(ucs)
-	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
+	ncd.addCollaboratorsToTransitionRules(documentPrefix, ucs)
 	ncd.Modified = true
 	return ncd, nil
 
@@ -224,7 +224,7 @@ func (cd *CoreDocument) PrepareNewVersion1(documentPrefix []byte, newCollaborato
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(rcs)
-	ncd.addCollaboratorsToTransitionRules(wcs, documentPrefix)
+	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	ncd.Modified = true
 	return ncd, nil
 

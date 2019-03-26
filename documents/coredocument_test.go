@@ -166,6 +166,71 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c2[:])
 }
 
+// TODO: rename this test and delete above test with integration
+func TestCoreDocument_PrepareNewVersion1(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	h := sha256.New()
+	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
+	var expectedCurrentVersion []byte
+	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
+	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
+	c1 := testingidentity.GenerateRandomDID()
+	c2 := testingidentity.GenerateRandomDID()
+	c3 := testingidentity.GenerateRandomDID()
+	c4 := testingidentity.GenerateRandomDID()
+
+	// successful preparation of new version with new read collaborators
+	ncd, err := cd.PrepareNewVersion1(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil})
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.Contains(t, rc, c1)
+	assert.Contains(t, rc, c2)
+	h = sha256.New()
+	h.Write(ncd.GetTestCoreDocWithReset().NextPreimage)
+	var expectedNextVersion []byte
+	expectedNextVersion = h.Sum(expectedNextVersion)
+	assert.Equal(t, expectedNextVersion, ncd.GetTestCoreDocWithReset().NextVersion)
+
+	// successful preparation of new version with read and write collaborators
+	assert.NoError(t, err)
+	ncd, err = cd.PrepareNewVersion1([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}})
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	rc, err = ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	assert.NoError(t, err)
+	assert.Len(t, rc, 4)
+	assert.Contains(t, rc, c1)
+	assert.Contains(t, rc, c2)
+	assert.Contains(t, rc, c3)
+	assert.Contains(t, rc, c4)
+	wc, err := ncd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	assert.NoError(t, err)
+	// contains 2 x write collaborators because they have been added to the CD transition rules and Invoice transition rules
+	assert.Len(t, wc, 4)
+	assert.Contains(t, wc, c3)
+	assert.Contains(t, wc, c4)
+	assert.NotContains(t, wc, c1)
+	assert.NotContains(t, wc, c2)
+
+	//assert.Equal(t, cd.GetTestCoreDocWithReset().NextVersion, ncd.GetTestCoreDocWithReset().CurrentVersion)
+	//assert.Equal(t, cd.GetTestCoreDocWithReset().CurrentVersion, ncd.GetTestCoreDocWithReset().PreviousVersion)
+	//assert.Equal(t, cd.GetTestCoreDocWithReset().DocumentIdentifier, ncd.GetTestCoreDocWithReset().DocumentIdentifier)
+	//assert.Len(t, cd.GetTestCoreDocWithReset().Roles, 0)
+	//assert.Len(t, cd.GetTestCoreDocWithReset().ReadRules, 0)
+	//assert.Len(t, cd.GetTestCoreDocWithReset().TransitionRules, 0)
+	//assert.Len(t, ncd.GetTestCoreDocWithReset().Roles, 2)
+	//assert.Len(t, ncd.GetTestCoreDocWithReset().ReadRules, 1)
+	//assert.Len(t, ncd.GetTestCoreDocWithReset().TransitionRules, 2)
+	//assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators, 4)
+	//assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators[0], c1[:])
+	//assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators[1], c2[:])
+	//assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators, 2)
+	//assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[0], c1[:])
+	//assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c2[:])
+}
+
 func TestGetSigningProofHash(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
