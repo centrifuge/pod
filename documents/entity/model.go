@@ -101,10 +101,6 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
 func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
-	if len(data.Identity) < 1 {
-		return identity.ErrMalformedAddress
-	}
-
 	dids, err := identity.BytesToDIDs(data.Identity)
 	if err != nil {
 		return err

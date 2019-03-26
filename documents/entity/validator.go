@@ -20,7 +20,7 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 
 		valid, err := factory.IdentityExists(entity.Identity)
 		if err != nil || !valid {
-			return errors.New("identity not creating from identity factory")
+			return errors.New("identity not created from identity factory")
 		}
 
 		return nil
