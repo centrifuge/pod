@@ -55,10 +55,7 @@ func UpdateVersionValidator() Validator {
 			return errors.New("need both the old and new model")
 		}
 
-		dr, err := old.CalculateDocumentRoot()
-		if err != nil {
-			return errors.New("failed to get previous version document root: %v", err)
-		}
+		var err error
 		checks := []struct {
 			name string
 			a, b []byte
@@ -79,12 +76,6 @@ func UpdateVersionValidator() Validator {
 				name: "cd_current_version",
 				a:    old.NextVersion(),
 				b:    new.CurrentVersion(),
-			},
-
-			{
-				name: "cd_document_root",
-				a:    dr,
-				b:    new.PreviousDocumentRoot(),
 			},
 		}
 
