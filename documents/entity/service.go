@@ -76,13 +76,13 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientent
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
-	entityModel := new(Entity)
-	err = entityModel.InitEntityInput(payload, did.String())
+	entity := new(Entity)
+	err = entity.InitEntityInput(payload, did.String())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	return entityModel, nil
+	return entity, nil
 }
 
 // validateAndPersist validates the document, calculates the data root, and persists to DB

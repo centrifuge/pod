@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -102,6 +103,8 @@ func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []b
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
 	}
+
+	collaborators = stringutils.RemoveDuplicates(collaborators)
 	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
 		return nil, errors.New("failed to decode collaborators: %v", err)

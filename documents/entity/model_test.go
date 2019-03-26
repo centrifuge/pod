@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		//&Bootstrapper{}, TODO activate bootstrapper for entity
+		Bootstrapper{},
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
@@ -163,7 +163,8 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 func TestEntityModel_getClientData(t *testing.T) {
 	entityData := testingdocuments.CreateEntityData()
 	entity := new(Entity)
-	entity.loadFromP2PProtobuf(&entityData)
+	err := entity.loadFromP2PProtobuf(&entityData)
+	assert.NoError(t, err)
 
 	data := entity.getClientData()
 	assert.NotNil(t, data, "entity data should not be nil")

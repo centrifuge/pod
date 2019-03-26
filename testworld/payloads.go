@@ -28,7 +28,7 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 func defaultEntityPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"Identity":   "0xed03Fa80291fF5DDC284DE6b51E716B130b05e20",
+			"identity":   "0x36b264199f891762BA4B2A6574b06c2868252a8A",
 			"legal_name": "test company",
 			"contacts": []map[string]interface{}{
 				{
