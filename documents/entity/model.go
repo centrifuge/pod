@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -44,7 +42,7 @@ type Entity struct {
 func (e *Entity) getClientData() *cliententitypb.EntityData {
 	var didString string
 	if e.Identity != nil {
-		didString = hexutil.Encode(e.Identity[:])
+		didString = e.Identity.String()
 	}
 
 	return &cliententitypb.EntityData{
@@ -94,7 +92,11 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 	if data.Identity != "" {
 		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
 			e.Identity = &did
+		} else {
+			return err
 		}
+	} else {
+		return identity.ErrMalformedAddress
 	}
 	e.LegalName = data.LegalName
 	//e.Addresses = data.Addresses //TODO precise proofs not supporting fields yet
