@@ -221,10 +221,6 @@ func (cd *CoreDocument) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (prfs []*proofspb.Proof, err error) {
 
-	if len(cd.Document.DataRoot) != idSize {
-		return nil, ErrDataRootInvalid
-	}
-
 	var pfKeys []string
 	if nftUniqueProof {
 		pk, err := getNFTUniqueProofKey(cd.Document.Nfts, registry)
