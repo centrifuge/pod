@@ -532,16 +532,15 @@ func (cd *CoreDocument) GetCollaborators1(filterIDs ...identity.DID) (Collaborat
 // TODO: remove this method with new GetCollaborators
 // getCollaborators returns all the collaborators who belongs to the actions passed.
 func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
-	var e error
 	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
 
 		for _, c := range role.Collaborators {
-			did, err := identity.NewDIDFromBytes(c)
+			var did identity.DID
+			did, err = identity.NewDIDFromBytes(c)
 			if err != nil {
-				e = err
 				return false
 			}
 			ids = append(ids, did)
@@ -550,25 +549,20 @@ func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids 
 		return false
 	}, actions...)
 
-	if e != nil {
-		return nil, err
-	}
-
-	return ids, nil
+	return ids, err
 }
 
 // getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
 func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
-	var e error
 	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
 
 		for _, c := range role.Collaborators {
-			did, err := identity.NewDIDFromBytes(c)
+			var did identity.DID
+			did, err = identity.NewDIDFromBytes(c)
 			if err != nil {
-				e = err
 				return false
 			}
 			ids = append(ids, did)
@@ -577,38 +571,29 @@ func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (
 		return false
 	}, actions...)
 
-	if e != nil {
-		return nil, err
-	}
-
-	return ids, nil
+	return ids, err
 }
 
 // getWriteCollaborators returns all the collaborators which have access to the transition actions passed in.
 func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.TransitionAction) (ids []identity.DID, err error) {
-	var e error
 	findTransitionRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
 
 		for _, c := range role.Collaborators {
-			collab, err := identity.NewDIDFromBytes(c)
+			var did identity.DID
+			did, err = identity.NewDIDFromBytes(c)
 			if err != nil {
-				e = err
 				return false
 			}
-			ids = append(ids, collab)
+			ids = append(ids, did)
 		}
 
 		return false
 	}, actions...)
 
-	if e != nil {
-		return nil, err
-	}
-
-	return ids, nil
+	return ids, err
 }
 
 // filterCollaborators removes the filterIDs if any from cs and returns the result
