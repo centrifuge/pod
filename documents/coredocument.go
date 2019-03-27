@@ -156,7 +156,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators .
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {

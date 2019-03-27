@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -145,16 +146,17 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 	assert.Equal(t, model.PreviousVersion(), entityRelationship.PreviousVersion())
 }
 
-func TestEntityModel_getClientData(t *testing.T) {
+func TestEntityRelationship_getClientData(t *testing.T) {
 	entityRelationshipData := testingdocuments.CreateEntityRelationshipData()
 	er := new(EntityRelationship)
 	er.loadFromP2PProtobuf(&entityRelationshipData)
 
 	data := er.getClientData()
+	label := hexutil.Encode(er.Label)
 	assert.NotNil(t, data, "entity data should not be nil")
-	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity)
-	assert.Equal(t, data.Label, er.Label)
-	assert.Equal(t, data.TargetIdentity, er.TargetIdentity)
+	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
+	assert.Equal(t, data.Label, label)
+	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())
 }
 
 func TestEntityModel_InitEntityInput(t *testing.T) {
