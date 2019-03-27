@@ -551,7 +551,7 @@ func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids 
 	}, actions...)
 
 	if e != nil {
-		return nil, err
+		return nil, e
 	}
 
 	return ids, nil
@@ -578,7 +578,7 @@ func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (
 	}, actions...)
 
 	if e != nil {
-		return nil, err
+		return nil, e
 	}
 
 	return ids, nil
@@ -605,7 +605,7 @@ func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.Transiti
 	}, actions...)
 
 	if e != nil {
-		return nil, err
+		return nil, e
 	}
 
 	return ids, nil
