@@ -142,7 +142,7 @@ func TestEntityRelationship_getClientData(t *testing.T) {
 	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())
 }
 
-func TestEntityModel_InitEntityInput(t *testing.T) {
+func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	// successful init
 	data := &cliententitypb.EntityRelationshipData{
 		OwnerIdentity:  testingidentity.GenerateRandomDID().String(),
@@ -159,7 +159,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	assert.Contains(t, err.Error(), "malformed address provided")
 }
 
-func TestEntityModel_calculateDataRoot(t *testing.T) {
+func TestEntityRelationship_calculateDataRoot(t *testing.T) {
 	m := new(EntityRelationship)
 	err := m.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
 	assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestEntityModel_calculateDataRoot(t *testing.T) {
 	assert.False(t, utils.IsEmptyByteSlice(dr))
 }
 
-func TestEntity_CreateProofs(t *testing.T) {
+func TestEntityRelationship_CreateProofs(t *testing.T) {
 	e := createEntityRelationship(t)
 	rk := e.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
@@ -215,22 +215,27 @@ func createEntityRelationship(t *testing.T) *EntityRelationship {
 	return e
 }
 
-func TestEntityModel_createProofsFieldDoesNotExist(t *testing.T) {
+func TestEntityRelationship_createProofsFieldDoesNotExist(t *testing.T) {
 	e := createEntityRelationship(t)
 	_, err := e.CreateProofs([]string{"nonexisting"})
 	assert.Error(t, err)
 }
 
-func TestEntityModel_GetDocumentID(t *testing.T) {
+func TestEntityRelationship_GetDocumentID(t *testing.T) {
 	e := createEntityRelationship(t)
 	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
-// TODO: waiting on prefix updates/
-//func TestEntityModel_getDocumentDataTree(t *testing.T) {
-//}
+func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
+	e := createEntityRelationship(t)
+	tree, err := e.getDocumentDataTree()
+	assert.Nil(t, err, "tree should be generated without error")
+	_, leaf := tree.GetLeafByProperty("entity_relationship.owner_identity")
+	assert.NotNil(t, leaf)
+	assert.Equal(t, "entity_relationship.owner_identity", leaf.Property.ReadableName())
+}
 
-func TestEntity_CollaboratorCanUpdate(t *testing.T) {
+func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	er := createEntityRelationship(t)
 	id1, err := identity.NewDIDFromString("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20")
 	assert.NoError(t, err)
