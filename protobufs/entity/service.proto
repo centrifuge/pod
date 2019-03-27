@@ -94,3 +94,9 @@ message EntityData {
   // Entity contact list
   repeated Contact contacts = 5;
 }
+
+message EntityRelationshipData {
+  string owner_identity = 1;
+  string label = 2;
+  string target_identity = 3;
+}

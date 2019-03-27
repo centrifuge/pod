@@ -27,67 +27,35 @@ func compactPrefix() []byte { return []byte{0, 4, 0, 0} }
 type EntityRelationship struct {
 	*documents.CoreDocument
 
-	Identity  *identity.DID
-	LegalName string
-	// address
-	Addresses []*entitypb.Address
-	// tax information
-	PaymentDetails []*entitypb.PaymentDetail
-	// Entity contact list
-	Contacts []*entitypb.Contact
+	// owner of the relationship
+	OwnerIdentity *identity.DID
+	// document identifier
+	Label []byte
+	// identity which will be granted access
+	TargetIdentity *identity.DID
 }
 
-// getClientData returns the client data from the entity model
-func (e *EntityRelationship) getClientData() *cliententitypb.EntityData {
-	var didString string
-	if e.Identity != nil {
-		didString = e.Identity.String()
-	}
-
-	return &cliententitypb.EntityData{
-		Identity:       didString,
-		LegalName:      e.LegalName,
-		Addresses:      e.Addresses, //todo fix boolean in precise proofs
-		PaymentDetails: e.PaymentDetails,
-		Contacts:       e.Contacts,
-	}
-}
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
-func (e *EntityRelationship) createP2PProtobuf() *entitypb.Entity {
+func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 	var didByte []byte
-	if e.Identity != nil {
-		didByte = e.Identity[:]
+	var tidByte []byte
+	if e.OwnerIdentity != nil {
+		didByte = e.OwnerIdentity[:]
+	}
+	if e.TargetIdentity != nil {
+		tidByte = e.TargetIdentity[:]
 	}
 
-	return &entitypb.Entity{
-		Identity:       didByte,
-		LegalName:      e.LegalName,
-		Addresses:      nil, //e.Addresses, //todo fix boolean in precise proofs
-		PaymentDetails: e.PaymentDetails,
-		Contacts:       e.Contacts,
+	return &entitypb.EntityRelationship{
+		OwnerIdentity:       didByte,
+		Label:      e.Label,
+		TargetIdentity: tidByte,
 	}
-}
-
-// InitEntityInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self string) error {
-	err := e.initEntityFromData(payload.Data)
-	if err != nil {
-		return err
-	}
-
-	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	e.CoreDocument = cd
-	return nil
 }
 
 // initEntityFromData initialises entity from entityData
-func (e *EntityRelationship) initEntityFromData(data *cliententitypb.EntityData) error {
+func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb.EntityRelationshipData) error {
 	if data.Identity != "" {
 		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
 			e.Identity = &did
@@ -106,27 +74,32 @@ func (e *EntityRelationship) initEntityFromData(data *cliententitypb.EntityData)
 }
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
-func (e *EntityRelationship) loadFromP2PProtobuf(entityData *entitypb.Entity) error {
-	if entityData.Identity != nil {
-		did, err := identity.NewDIDFromBytes(entityData.Identity)
+func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
+	if entityRelationship.OwnerIdentity != nil {
+		did, err := identity.NewDIDFromBytes(entityRelationship.OwnerIdentity)
 		if err != nil {
 			return err
 		}
-		e.Identity = &did
+		e.OwnerIdentity = &did
 	}
 
-	e.LegalName = entityData.LegalName
-	e.Addresses = entityData.Addresses
-	e.PaymentDetails = entityData.PaymentDetails
-	e.Contacts = entityData.Contacts
+	if entityRelationship.TargetIdentity != nil {
+		tid, err := identity.NewDIDFromBytes(entityRelationship.TargetIdentity)
+		if err != nil {
+			return err
+		}
+		e.TargetIdentity = &tid
+	}
+
+	e.Label = entityRelationship.Label
 
 	return nil
 }
 
 // PackCoreDocument packs the Entity into a CoreDocument.
 func (e *EntityRelationship) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
-	entityData := e.createP2PProtobuf()
-	data, err := proto.Marshal(entityData)
+	entityRelationship := e.createP2PProtobuf()
+	data, err := proto.Marshal(entityRelationship)
 	if err != nil {
 		return cd, errors.New("couldn't serialise EntityData: %v", err)
 	}
@@ -146,13 +119,13 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 		return errors.New("trying to convert document with incorrect schema")
 	}
 
-	entityData := new(entitypb.Entity)
-	err := proto.Unmarshal(cd.EmbeddedData.Value, entityData)
+	entityRelationship := new(entitypb.EntityRelationship)
+	err := proto.Unmarshal(cd.EmbeddedData.Value, entityRelationship)
 	if err != nil {
 		return err
 	}
 
-	e.loadFromP2PProtobuf(entityData)
+	e.loadFromP2PProtobuf(entityRelationship)
 	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return nil
 }
@@ -235,12 +208,12 @@ func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.P
 
 // DocumentType returns the entity document type.
 func (*EntityRelationship) DocumentType() string {
-	return documenttypes.EntityDataTypeUrl
+	return documenttypes.EntityRelationshipDocumentTypeUrl
 }
 
 // PrepareNewVersion prepares new version from the old entity.
 func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators []string) error {
-	err := e.initEntityFromData(data)
+	err := e.initEntityRelationshipFromData(data)
 	if err != nil {
 		return err
 	}
