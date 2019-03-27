@@ -58,7 +58,7 @@ func (cd *CoreDocument) addNewReadRule(roleKey []byte, action coredocumentpb.Act
 }
 
 // findRole calls OnRole for every role that matches the actions passed in
-func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
+func findReadRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
 	am := make(map[int32]struct{})
 	for _, a := range actions {
 		am[int32(a)] = struct{}{}
@@ -87,7 +87,37 @@ func findRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role 
 	return false
 }
 
-// NFTOwnerCanRead checks if the nft owner/account can read the document
+// findRole calls OnRole for every role that matches the actions passed in
+func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
+	am := make(map[int32]struct{})
+	for _, a := range actions {
+		am[int32(a)] = struct{}{}
+	}
+
+	for i, rule := range cd.TransitionRules {
+		if _, ok := am[int32(rule.Action)]; !ok {
+			continue
+		}
+
+		for j, rk := range rule.Roles {
+			role, err := getRole(rk, cd.Roles)
+			if err != nil {
+				// seems like roles and rules are not in sync
+				// skip to next one
+				continue
+			}
+
+			if onRole(i, j, role) {
+				return true
+			}
+
+		}
+	}
+
+	return false
+}
+
+// NFTOwnerCanRead checks if the nft owner/account can read the Document
 func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
 	// check if the account can read the doc
 	if cd.AccountCanRead(account) {
@@ -95,7 +125,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 	}
 
 	// check if the nft is present in read rules
-	found := findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	found := findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isNFTInRole(role, registry, tokenID)
 		return found
 	}, coredocumentpb.Action_ACTION_READ)
@@ -121,7 +151,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 // Returns an error if not.
 func (cd *CoreDocument) AccountCanRead(account identity.DID) bool {
 	// loop though read rules, check all the rules
-	return findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	return findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isDIDInRole(role, account)
 		return found
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
@@ -261,7 +291,7 @@ func getReadAccessProofKeys(cd coredocumentpb.CoreDocument, registry common.Addr
 	var nftIdx int // index of the NFT in the above role
 	var rk []byte  // role key of the above role
 
-	found := findRole(cd, func(i, j int, role *coredocumentpb.Role) bool {
+	found := findReadRole(cd, func(i, j int, role *coredocumentpb.Role) bool {
 		z, found := isNFTInRole(role, registry, tokenID)
 		if found {
 			rridx = i

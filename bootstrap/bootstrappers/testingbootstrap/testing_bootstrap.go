@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -36,6 +37,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	&invoice.Bootstrapper{},
+	&entity.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
 	&nft.Bootstrapper{},
 	p2p.Bootstrapper{},

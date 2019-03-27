@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHost_Happy(t *testing.T) {
+func TestHost_BasicDocumentShare(t *testing.T) {
 	t.Parallel()
 
 	// Hosts

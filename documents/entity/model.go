@@ -3,8 +3,7 @@ package entity
 import (
 	"encoding/json"
 	"reflect"
-
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -12,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -40,15 +40,11 @@ type Entity struct {
 
 // getClientData returns the client data from the entity model
 func (e *Entity) getClientData() *cliententitypb.EntityData {
-	var didString string
-	if e.Identity != nil {
-		didString = e.Identity.String()
-	}
-
+	dids := identity.DIDsToStrings(e.Identity)
 	return &cliententitypb.EntityData{
-		Identity:       didString,
+		Identity:       dids[0],
 		LegalName:      e.LegalName,
-		Addresses:      e.Addresses, //todo fix boolean in precise proofs
+		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
@@ -56,15 +52,11 @@ func (e *Entity) getClientData() *cliententitypb.EntityData {
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
-	var didByte []byte
-	if e.Identity != nil {
-		didByte = e.Identity[:]
-	}
-
+	dids := identity.DIDsToBytes(e.Identity)
 	return &entitypb.Entity{
-		Identity:       didByte,
+		Identity:       dids[0],
 		LegalName:      e.LegalName,
-		Addresses:      nil, //e.Addresses, //todo fix boolean in precise proofs
+		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
 	}
@@ -89,38 +81,36 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 
 // initEntityFromData initialises entity from entityData
 func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
-	if data.Identity != "" {
-		if did, err := identity.NewDIDFromString(data.Identity); err == nil {
-			e.Identity = &did
-		} else {
-			return err
-		}
-	} else {
+	data.Identity = strings.TrimSpace(data.Identity)
+	if data.Identity == "" {
 		return identity.ErrMalformedAddress
 	}
+
+	dids, err := identity.StringsToDIDs(data.Identity)
+	if err != nil {
+		return errors.NewTypedError(identity.ErrMalformedAddress, err)
+	}
+
+	e.Identity = dids[0]
 	e.LegalName = data.LegalName
-	//e.Addresses = data.Addresses //TODO precise proofs not supporting fields yet
+	e.Addresses = data.Addresses
 	e.PaymentDetails = data.PaymentDetails
 	e.Contacts = data.Contacts
-
 	return nil
 }
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
-func (e *Entity) loadFromP2PProtobuf(entityData *entitypb.Entity) error {
-	if entityData.Identity != nil {
-		did, err := identity.NewDIDFromBytes(entityData.Identity)
-		if err != nil {
-			return err
-		}
-		e.Identity = &did
+func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
+	dids, err := identity.BytesToDIDs(data.Identity)
+	if err != nil {
+		return err
 	}
 
-	e.LegalName = entityData.LegalName
-	e.Addresses = entityData.Addresses
-	e.PaymentDetails = entityData.PaymentDetails
-	e.Contacts = entityData.Contacts
-
+	e.Identity = dids[0]
+	e.LegalName = data.LegalName
+	e.Addresses = data.Addresses
+	e.PaymentDetails = data.PaymentDetails
+	e.Contacts = data.Contacts
 	return nil
 }
 
@@ -153,7 +143,11 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	e.loadFromP2PProtobuf(entityData)
+	err = e.loadFromP2PProtobuf(entityData)
+	if err != nil {
+		return err
+	}
+
 	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return nil
 }
