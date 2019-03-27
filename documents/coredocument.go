@@ -3,6 +3,8 @@ package documents
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/big"
+	"reflect"
 	"strings"
 	"time"
 
@@ -69,10 +71,84 @@ func compactProperties(key string) []byte {
 	return m[key]
 }
 
+func allowedAttributeTypes(typ string) (reflect.Type, error) {
+	switch typ {
+	case "int256":
+		return reflect.TypeOf(big.Int{}), nil
+	case "bigdecimal":
+		return reflect.TypeOf(Decimal{}), nil
+	case "string":
+		return reflect.TypeOf(""), nil
+	case "bytes":
+		return reflect.TypeOf([]byte{}), nil
+	case "timestamp":
+		return reflect.TypeOf(time.Time{}), nil
+	default:
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute types"))
+	}
+}
+
+func allowedAttributeTypeNames(typ reflect.Type) (string, error) {
+	switch typ {
+	case reflect.TypeOf(big.Int{}):
+		return "int256", nil
+	case reflect.TypeOf(Decimal{}):
+		return "bigdecimal", nil
+	case reflect.TypeOf(""):
+		return "string", nil
+	case reflect.TypeOf([]byte{}):
+		return "bytes", nil
+	case reflect.TypeOf(time.Time{}):
+		return "timestamp", nil
+	default:
+		return "", errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute type names"))
+	}
+}
+
+// Attribute represents a custom attribute of a document
+type Attribute struct {
+	Type        reflect.Type
+	ReadableKey string
+	HashedKey   []byte
+	Value       interface{}
+}
+
+// NewAttribute creates a new custom attribute
+func NewAttribute(readableKey string, attributeType reflect.Type, value interface{}) (*Attribute, error) {
+	if readableKey == "" {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
+	}
+
+	if value == nil {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
+	}
+
+	if reflect.TypeOf(value) != attributeType {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
+	}
+
+	h := sha256.New()
+	_, err := h.Write([]byte(readableKey))
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDAttribute, err)
+	}
+
+	hashedKey := h.Sum(nil)
+	return &Attribute{
+		ReadableKey: readableKey,
+		HashedKey:   hashedKey,
+		Type:        attributeType,
+		Value:       value,
+	}, nil
+}
+
 // CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
 	// Modified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
 	Modified bool
+
+	// Attributes are the custom attributes added to the document
+	Attributes map[string]*Attribute
 
 	Document coredocumentpb.CoreDocument
 }
@@ -107,13 +183,13 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
-		return nil, errors.New("failed to create coredoc: %v", err)
+		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
 	}
 
 	collaborators = stringutils.RemoveDuplicates(collaborators)
 	ids, err := identity.NewDIDsFromStrings(collaborators)
 	if err != nil {
-		return nil, errors.New("failed to decode collaborators: %v", err)
+		return nil, errors.NewTypedError(ErrCollaborators, errors.New("failed to decode collaborators: %v", err))
 	}
 
 	cd.initReadRules(ids)
@@ -280,17 +356,17 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 
 	signatureTree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return nil, errors.New("failed to generate signatures tree: %v", err)
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signatures tree: %v", err))
 	}
 
 	cdTree, err := cd.coredocTree(docType)
 	if err != nil {
-		return nil, errors.New("failed to generate core document tree: %v", err)
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate core document tree: %v", err))
 	}
 
 	signingRoot, err := cd.CalculateSigningRoot(docType, dataTree.RootHash())
 	if err != nil {
-		return nil, errors.New("failed to generate signing root: %v", err)
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing root: %v", err))
 	}
 
 	dataRoot := dataTree.RootHash()
@@ -316,11 +392,11 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 func getDataTreePrefix(dataTree *proofs.DocumentTree) (string, error) {
 	props := dataTree.PropertyOrder()
 	if len(props) == 0 {
-		return "", errors.New("no properties found in data tree")
+		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data tree"))
 	}
 	fidx := strings.Split(props[0].ReadableName(), ".")
 	if len(fidx) == 1 {
-		return "", errors.New("no prefix found in data tree property")
+		return "", errors.NewTypedError(ErrCDTree, errors.New("no prefix found in data tree property"))
 	}
 	return fidx[0], nil
 }
@@ -349,7 +425,7 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 	tree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get signature tree: %v", err)
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to get signature tree: %v", err))
 	}
 
 	return tree.RootHash(), nil
@@ -413,7 +489,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree 
 // signingRootTree returns the merkle tree for the signing root.
 func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
 	if len(dataRoot) != idSize {
-		return nil, errors.New("data root is invalid")
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("data root is invalid"))
 	}
 
 	cdTree, err := cd.coredocTree(docType)
@@ -674,6 +750,35 @@ func (cd *CoreDocument) Author() (identity.DID, error) {
 // Timestamp is the time of update in UTC of the document version represented by the model
 func (cd *CoreDocument) Timestamp() (time.Time, error) {
 	return utils.FromTimestamp(cd.Document.Timestamp)
+}
+
+// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists its updated.
+func (cd *CoreDocument) AddAttribute(name string, attributeType string, value string) error {
+	// TODO value conversion and type validation of it
+	tp, err := allowedAttributeTypes(attributeType)
+	if err != nil {
+		return err
+	}
+	// for now its all string
+	nAttr, err := NewAttribute(name, tp, value)
+	if err != nil {
+		return err
+	}
+	cd.Attributes[name] = nAttr
+	return nil
+}
+
+// GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
+func (cd *CoreDocument) GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error) {
+	if attr, ok := cd.Attributes[name]; ok {
+		an, err := allowedAttributeTypeNames(attr.Type)
+		if err != nil {
+			return hashedKey, attrType, value, valueStr, err
+		}
+		// TODO convert value to its string repr
+		return attr.HashedKey, an, attr.Value, "", nil
+	}
+	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 }
 
 func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {

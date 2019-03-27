@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -619,4 +620,34 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
+}
+
+func TestNewAttribute(t *testing.T) {
+	tests := []struct {
+		name        string
+		readablekey string
+		attrType    reflect.Type
+		value       interface{}
+		at          Attribute
+		errs        bool
+	}{
+		{},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			attr, err := NewAttribute(test.readablekey, test.attrType, test.value)
+			if test.errs {
+				if assert.Error(t, err) {
+					assert.Contains(t, err.Error(), "")
+				} else {
+					t.Fail()
+				}
+			} else {
+				assert.Equal(t, attr.HashedKey, test.at.HashedKey)
+				assert.Equal(t, attr.Type, test.at.Type)
+				assert.Equal(t, attr.Value, test.at.Value)
+				assert.Equal(t, attr.ReadableKey, test.at.ReadableKey)
+			}
+		})
+	}
 }

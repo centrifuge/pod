@@ -170,7 +170,7 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 
 	cs, err := model.GetCollaborators()
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrFailedCollaborators, err)
+		return nil, errors.NewTypedError(documents.ErrCollaborators, err)
 	}
 
 	var css []string
