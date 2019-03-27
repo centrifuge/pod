@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
@@ -40,7 +39,6 @@ type EntityRelationship struct {
 func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipData {
 	var owner string
 	var target string
-	label := hexutil.Encode(e.Label)
 	if e.OwnerIdentity != nil {
 		owner = e.OwnerIdentity.String()
 	}
@@ -50,7 +48,6 @@ func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipD
 
 	return &cliententitypb.EntityRelationshipData{
 		OwnerIdentity:  owner,
-		Label:          label,
 		TargetIdentity: target,
 	}
 }
@@ -125,7 +122,7 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb
 	} else {
 		return identity.ErrMalformedAddress
 	}
-	e.Label = []byte(data.Label)
+
 	return nil
 }
 
@@ -181,7 +178,10 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 		return err
 	}
 
-	e.loadFromP2PProtobuf(entityRelationship)
+	err = e.loadFromP2PProtobuf(entityRelationship)
+	if err != nil {
+		return err
+	}
 	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return nil
 }
@@ -201,7 +201,7 @@ func (e *EntityRelationship) Type() reflect.Type {
 	return reflect.TypeOf(e)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
+// CalculateDataRoot calculates the data root.
 func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 	t, err := e.getDocumentDataTree()
 	if err != nil {

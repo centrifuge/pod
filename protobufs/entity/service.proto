@@ -97,7 +97,6 @@ message EntityData {
 
 message EntityRelationshipData {
   string owner_identity = 1;
-  string label = 2;
   string target_identity = 3;
 }
 

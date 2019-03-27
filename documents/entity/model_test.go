@@ -279,14 +279,14 @@ func TestEntityModel_GetDocumentID(t *testing.T) {
 	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
-//func TestEntityModel_getDocumentDataTree(t *testing.T) {
-//	e := Entity{LegalName: "test company"}
-//	tree, err := e.getDocumentDataTree()
-//	assert.Nil(t, err, "tree should be generated without error")
-//	_, leaf := tree.GetLeafByProperty("entity.legal_name")
-//	assert.NotNil(t, leaf)
-//	assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
-//}
+func TestEntityModel_getDocumentDataTree(t *testing.T) {
+	//e := Entity{LegalName: "test company"}
+	//tree, err := e.getDocumentDataTree()
+	//assert.Nil(t, err, "tree should be generated without error")
+	//_, leaf := tree.GetLeafByProperty("entity.legal_name")
+	//assert.NotNil(t, leaf)
+	//assert.Equal(t, "entity.legal_name", leaf.Property.ReadableName())
+}
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	entity := createEntity(t)
