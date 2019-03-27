@@ -38,24 +38,9 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var configService config.Service
-
 var (
-	did       = testingidentity.GenerateRandomDID()
-	dIDBytes  = did[:]
-	accountID = did[:]
+	did = testingidentity.GenerateRandomDID()
 )
-
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
-}
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -82,7 +67,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
@@ -149,7 +133,8 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 func TestEntityRelationship_getClientData(t *testing.T) {
 	entityRelationshipData := testingdocuments.CreateEntityRelationshipData()
 	er := new(EntityRelationship)
-	er.loadFromP2PProtobuf(&entityRelationshipData)
+	err := er.loadFromP2PProtobuf(&entityRelationshipData)
+	assert.NoError(t, err)
 
 	data := er.getClientData()
 	assert.NotNil(t, data, "entity data should not be nil")

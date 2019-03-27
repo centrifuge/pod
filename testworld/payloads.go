@@ -24,6 +24,22 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 		"collaborators": collaborators,
 	}
 }
+
+func defaultEntityPayload(identity string, collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"identity":   identity,
+			"legal_name": "test company",
+			"contacts": []map[string]interface{}{
+				{
+					"name": "test name",
+				},
+			},
+		},
+		"collaborators": collaborators,
+	}
+}
+
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{

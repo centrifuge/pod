@@ -211,19 +211,19 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 // Collaborators are given default edit capability over all fields of the CoreDocument and underlying documents such as invoices or purchase orders.
 // if the rules are created already, this is a no-op.
 // if collaborators are empty, it is a no-op
-func (cd *CoreDocument) initTransitionRules(collaborators []identity.DID, documentPrefix []byte) {
+func (cd *CoreDocument) initTransitionRules(documentPrefix []byte, collaborators []identity.DID) {
 	if len(cd.Document.Roles) > 0 && len(cd.Document.TransitionRules) > 0 {
 		return
 	}
 	if len(collaborators) == 0 {
 		return
 	}
-	cd.addCollaboratorsToTransitionRules(collaborators, documentPrefix)
+	cd.addCollaboratorsToTransitionRules(documentPrefix, collaborators)
 }
 
 // addCollaboratorsToTransitionRules adds the given collaborators to a new transition rule which defaults to
 // granting edit capability over all fields of the document.
-func (cd *CoreDocument) addCollaboratorsToTransitionRules(collaborators []identity.DID, documentPrefix []byte) {
+func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte, collaborators []identity.DID) {
 	role := newRoleWithCollaborators(collaborators)
 	if role == nil {
 		return

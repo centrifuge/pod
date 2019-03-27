@@ -3,48 +3,46 @@
 package entity
 
 import (
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
-	"testing"
-
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {
+func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingcommons.MockIdentityFactory, Service) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(dIDBytes, nil)
 	idService := testingcommons.MockIdentityService{}
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
-
+	idFactory := new(testingcommons.MockIdentityFactory)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService)
-	return idService, DefaultService(
+	return idService, idFactory, DefaultService(
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Manager))
+		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory)
 }
 
 func TestService_Update(t *testing.T) {
-	_, srv := getServiceWithMockedLayers()
+	_, idFactory, srv := getServiceWithMockedLayers()
 	eSrv := srv.(service)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -64,6 +62,7 @@ func TestService_Update(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// success
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
 	data, err := eSrv.DeriveEntityData(model)
 	assert.NoError(t, err)
 	data.LegalName = "test company"
@@ -89,10 +88,11 @@ func TestService_Update(t *testing.T) {
 	newData, err = eSrv.DeriveEntityData(model)
 	assert.NoError(t, err)
 	assert.Equal(t, data, newData)
+	idFactory.AssertExpectations(t)
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	_, eSrv := getServiceWithMockedLayers()
+	_, _, eSrv := getServiceWithMockedLayers()
 	// nil payload
 	doc, err := eSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
@@ -216,7 +216,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 
 func TestService_Create(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, srv := getServiceWithMockedLayers()
+	_, idFactory, srv := getServiceWithMockedLayers()
 	eSrv := srv.(service)
 
 	// calculate data root fails
@@ -226,16 +226,18 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// success
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
 	entity, err := eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateEntityPayload())
 	assert.NoError(t, err)
 	m, _, _, err = eSrv.Create(ctxh, entity)
 	assert.NoError(t, err)
 	assert.True(t, testRepo().Exists(accountID, m.ID()))
 	assert.True(t, testRepo().Exists(accountID, m.CurrentVersion()))
+	idFactory.AssertExpectations(t)
 }
 
 func TestService_DeriveEntityData(t *testing.T) {
-	_, eSrv := getServiceWithMockedLayers()
+	_, _, eSrv := getServiceWithMockedLayers()
 
 	// some random model
 	_, err := eSrv.DeriveEntityData(&mockModel{})
@@ -273,7 +275,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
-	_, eSrv := getServiceWithMockedLayers()
+	_, _, eSrv := getServiceWithMockedLayers()
 	doc, _ := createCDWithEmbeddedEntity(t)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -295,7 +297,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 }
 
 func TestService_GetVersion(t *testing.T) {
-	_, eSrv := getServiceWithMockedLayers()
+	_, _, eSrv := getServiceWithMockedLayers()
 	entity, _ := createCDWithEmbeddedEntity(t)
 	err := testRepo().Create(accountID, entity.CurrentVersion(), entity)
 	assert.NoError(t, err)
@@ -309,7 +311,7 @@ func TestService_GetVersion(t *testing.T) {
 }
 
 func TestService_Exists(t *testing.T) {
-	_, eSrv := getServiceWithMockedLayers()
+	_, _, eSrv := getServiceWithMockedLayers()
 	entity, _ := createCDWithEmbeddedEntity(t)
 	err := testRepo().Create(accountID, entity.CurrentVersion(), entity)
 	assert.NoError(t, err)
@@ -348,15 +350,21 @@ func TestService_calculateDataRoot(t *testing.T) {
 	assert.NoError(t, err)
 	err = eSrv.repo.Create(accountID, entity.CurrentVersion(), entity)
 	assert.NoError(t, err)
-	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator())
+	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil).Once()
+	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator(idFactory))
 	assert.Nil(t, entity)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists)
+	idFactory.AssertExpectations(t)
 
 	// success
+	idFactory = new(testingcommons.MockIdentityFactory)
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil).Once()
 	entity, err = eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateEntityPayload())
 	assert.NoError(t, err)
-	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator())
+	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator(idFactory))
 	assert.NoError(t, err)
 	assert.NotNil(t, entity)
+	idFactory.AssertExpectations(t)
 }
