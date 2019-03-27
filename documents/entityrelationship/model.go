@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
@@ -15,6 +14,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 )
@@ -36,6 +36,25 @@ type EntityRelationship struct {
 	TargetIdentity *identity.DID
 }
 
+// getClientData returns the entity relationship data from the entity relationship model
+func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipData {
+	var owner string
+	var target string
+	label := hexutil.Encode(e.Label)
+	if e.OwnerIdentity != nil {
+		owner = e.OwnerIdentity.String()
+	}
+	if e.TargetIdentity != nil {
+		target = e.TargetIdentity.String()
+	}
+
+	return &cliententitypb.EntityRelationshipData{
+		OwnerIdentity:  owner,
+		Label:          label,
+		TargetIdentity: target,
+	}
+}
+
 // createP2PProtobuf returns Centrifuge protobuf-specific EntityRelationshipData.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 	var didByte []byte
@@ -52,6 +71,37 @@ func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 		Label:          e.Label,
 		TargetIdentity: tidByte,
 	}
+}
+
+// InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
+func (e *EntityRelationship) InitEntityRelationshipInput(payload *cliententitypb.EntityRelationshipCreatePayload) error {
+	if err := e.initEntityRelationshipFromData(payload.Data); err != nil {
+		return err
+	}
+
+	cd, err := documents.NewCoreDocumentWithCollaborators([]string{payload.Data.OwnerIdentity}, compactPrefix())
+	if err != nil {
+		return errors.New("failed to init core document: %v", err)
+	}
+
+	e.CoreDocument = cd
+	return nil
+}
+
+// PrepareNewVersion prepares new version from the old entity.
+func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityRelationshipData, collaborators []string) error {
+	err := e.initEntityRelationshipFromData(data)
+	if err != nil {
+		return err
+	}
+
+	oldCD := old.(*EntityRelationship).CoreDocument
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
@@ -75,15 +125,11 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb
 	} else {
 		return identity.ErrMalformedAddress
 	}
-	if label, err := hexutil.Decode(data.Label); err == nil {
-		e.Label = label
-	} else {
-		return err
-	}
+	e.Label = []byte(data.Label)
 	return nil
 }
 
-// loadFromP2PProtobuf  loads the Entity Relationship from Centrifuge protobuf EntityRelationshipData.
+// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf EntityRelationshipData.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
 	if entityRelationship.OwnerIdentity != nil {
 		did, err := identity.NewDIDFromBytes(entityRelationship.OwnerIdentity)
@@ -263,7 +309,7 @@ func (e *EntityRelationship) DocumentRootTree() (tree *proofs.DocumentTree, err 
 func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, identity identity.DID) error {
 	newEntityRelationship, ok := updated.(*EntityRelationship)
 	if !ok {
-		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity but got %T", updated))
+		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity relationship but got %T", updated))
 	}
 
 	if !e.OwnerIdentity.Equal(identity) || !newEntityRelationship.OwnerIdentity.Equal(identity) {

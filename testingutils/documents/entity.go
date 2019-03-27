@@ -10,7 +10,7 @@ import (
 func CreateEntityData() entitypb.Entity {
 	did, _ := identity.NewDIDFromString("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20")
 	return entitypb.Entity{
-		Identity:  did.ToAddress().Bytes(),
+		Identity:  did[:],
 		LegalName: "Company Test",
 		Contacts:  []*entitypb.Contact{{Name: "Satoshi Nakamoto"}},
 		/*Addresses: []*entitypb.Address{{IsMain: true,  TODO: precise proofs should support addresses
