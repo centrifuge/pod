@@ -4,16 +4,13 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func CreateEntityRelationshipData() entitypb.EntityRelationship {
 	did, _ := identity.NewDIDFromString("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20")
 	did2, _ := identity.NewDIDFromString("0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
-	label, _ := hexutil.Decode("Relationship Test")
 	return entitypb.EntityRelationship{
 		OwnerIdentity:  did[:],
-		Label: label,
 		TargetIdentity:  did2[:],
 	}
 }
