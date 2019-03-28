@@ -265,10 +265,11 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 
 func TestFilterMintProofs(t *testing.T) {
 	service := newEthereumPaymentObligation(nil, nil, nil, nil, nil, nil, nil, nil)
+	indexKey := utils.RandomSlice(52)
 	docProof := &documents.DocumentProof{
 		FieldProofs: []*proofspb.Proof{
 			{
-				Property: proofs.ReadableName("prop1"),
+				Property: proofs.CompactName([]byte{10, 100, 5, 20, 69, 1, 0, 1}...),
 				Value:    utils.RandomSlice(32),
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),
@@ -279,7 +280,7 @@ func TestFilterMintProofs(t *testing.T) {
 				},
 			},
 			{
-				Property: proofs.ReadableName(fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)),
+				Property: proofs.CompactName(append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)...),
 				Value:    utils.RandomSlice(32),
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),
@@ -290,7 +291,7 @@ func TestFilterMintProofs(t *testing.T) {
 				},
 			},
 			{
-				Property: proofs.ReadableName(fmt.Sprintf("%s.signatures[0x1234567890].signature", documents.SignaturesTreePrefix)),
+				Property: proofs.CompactName(append([]byte{3, 0, 0, 0, 0, 0, 0, 1}, append(indexKey, []byte{0, 0, 0, 4}...)...)...),
 				Value:    utils.RandomSlice(32),
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),

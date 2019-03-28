@@ -284,13 +284,13 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, 0, lengthIdx)
 	assert.NotNil(t, lengthLeaf)
 	assert.Equal(t, SignaturesTreePrefix+".signatures.length", lengthLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
 
 	signerKey := hexutil.Encode(sig.SignatureId)
 	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
 	assert.NotNil(t, signerLeaf)
 	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
 	assert.Equal(t, sig.SignerId, signerLeaf.Value)
 }
 
@@ -344,7 +344,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	_, signaturesLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField))
 	assert.NotNil(t, signaturesLeaf)
 	assert.Equal(t, fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), signaturesLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(DRTreePrefix), compactProperties(SignaturesRootField)...), signaturesLeaf.Property.CompactName())
+	assert.Equal(t, append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...), signaturesLeaf.Property.CompactName())
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {

@@ -2,10 +2,13 @@ package nft
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 
 	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 
@@ -71,11 +74,14 @@ func newEthereumPaymentObligation(
 }
 
 func (s *ethereumPaymentObligation) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
-	var nonFilteredProofsLiteral = []string{fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)}
-	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s.signatures\\[.*\\].signature", documents.SignaturesTreePrefix)}
+	// Compact properties
+	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
+	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
+	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
+	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
 
 	for i, p := range docProof.FieldProofs {
-		if !utils.ContainsString(nonFilteredProofsLiteral, p.GetReadableName()) && !stringutils.ContainsStringMatchInSlice(nonFilteredProofsMatch, p.GetReadableName()) {
+		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
 			docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
 		}
 	}
@@ -87,7 +93,6 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 	if err != nil {
 		return mreq, err
 	}
-	docProofs = s.filterMintProofs(docProofs)
 
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
@@ -104,6 +109,8 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
+	docProofs = s.filterMintProofs(docProofs)
+
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		return mreq, err

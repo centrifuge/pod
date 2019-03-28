@@ -52,7 +52,8 @@ const (
 	SignaturesTreePrefix = "signatures_tree"
 )
 
-func compactProperties(key string) []byte {
+// CompactProperties returns the compact property for a given prefix
+func CompactProperties(key string) []byte {
 	m := map[string][]byte{
 		CDRootField:         {0, 0, 0, 7},
 		DataRootField:       {0, 0, 0, 5},
@@ -357,7 +358,7 @@ func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 
 // getSignatureDataTree returns the merkle tree for the Signature Data root.
 func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
-	tree = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, compactProperties(SignaturesTreePrefix))
+	tree = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
 	err = tree.AddLeavesFromDocument(cd.Document.SignatureData)
 	if err != nil {
 		return nil, err
@@ -378,13 +379,13 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree 
 		return nil, err
 	}
 
-	tree = cd.DefaultTreeWithPrefix(DRTreePrefix, compactProperties(DRTreePrefix))
+	tree = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
 
 	// The first leave added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
 		Hash:     signingRoot,
 		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(compactProperties(DRTreePrefix), compactProperties(SigningRootField)...))})
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...))})
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +397,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree 
 	err = tree.AddLeaf(proofs.LeafNode{
 		Hash:     signatureTree.RootHash(),
 		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), append(compactProperties(DRTreePrefix), compactProperties(SignaturesRootField)...))})
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...))})
 	if err != nil {
 		return nil, err
 	}
@@ -422,15 +423,15 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = cd.DefaultTreeWithPrefix(SigningTreePrefix, compactProperties(SigningTreePrefix))
+	tree = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(compactProperties(SigningTreePrefix), compactProperties(DataRootField)...)),
+			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(DataRootField)...)),
 			Hash:     dataRoot,
 			Hashed:   true,
 		},
 		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, CDRootField), append(compactProperties(SigningTreePrefix), compactProperties(CDRootField)...)),
+			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, CDRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(CDRootField)...)),
 			Hash:     cdTree.RootHash(),
 			Hashed:   true,
 		},
@@ -450,13 +451,13 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 
 // coredocTree returns the merkle tree of the CoreDocument.
 func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree = cd.DefaultTreeWithPrefix(CDTreePrefix, compactProperties(CDTreePrefix))
+	tree = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
 	err = tree.AddLeavesFromDocument(&cd.Document)
 	if err != nil {
 		return nil, err
 	}
 
-	dtProp := NewLeafProperty(fmt.Sprintf("%s.%s", CDTreePrefix, DocumentTypeField), append(compactProperties(CDTreePrefix), compactProperties(DocumentTypeField)...))
+	dtProp := NewLeafProperty(fmt.Sprintf("%s.%s", CDTreePrefix, DocumentTypeField), append(CompactProperties(CDTreePrefix), CompactProperties(DocumentTypeField)...))
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
 		Property: dtProp,

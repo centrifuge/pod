@@ -372,7 +372,7 @@ func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, s
 	id2 := testingidentity.GenerateRandomDID()
 
 	// id1 will have rights to update all the fields in the core document
-	createTransitionRules(t, doc, id1, compactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+	createTransitionRules(t, doc, id1, CompactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
 	// id2 will have write access to only identifiers
 	// id2 is the bad actor
@@ -386,7 +386,7 @@ func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, s
 	}
 
 	for _, f := range fields {
-		createTransitionRules(t, doc, id2, append(compactProperties(CDTreePrefix), f...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+		createTransitionRules(t, doc, id2, append(CompactProperties(CDTreePrefix), f...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	}
 
 	return doc, id1, id2, docType
@@ -452,7 +452,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 
 	// add a specific rule that allow id2 to update specific nft registry
 	field := append(registry.ToAddress().Bytes(), make([]byte, 12, 12)...)
-	field = append(compactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
+	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
 	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
@@ -478,7 +478,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 
 	// add a rule for id2 that will allow any nft update
-	field = append(compactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
+	field = append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
 	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
 	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
