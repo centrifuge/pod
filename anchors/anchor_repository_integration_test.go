@@ -82,7 +82,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	assert.True(t, valid)
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{proofB1, proofB2})
+	commitAnchor(t, anchorIDPreImage, documentRoot, proofB1)
 	gotDocRoot, _, err := anchorRepo.GetAnchorData(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
@@ -101,20 +101,20 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
 	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
-	commitAnchor(t, anchorIDPreImage, documentRoot, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	commitAnchor(t, anchorIDPreImage, documentRoot, utils.RandomByte32())
 	gotDocRoot, hval, err := anchorRepo.GetAnchorData(anchorIDTyped)
 	assert.Nil(t, err)
 	assert.Equal(t, docRootTyped, gotDocRoot)
 	assert.True(t, time.Now().After(hval))
 }
 
-func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProofs [][32]byte) {
+func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProof [32]byte) {
 	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
 	assert.NoError(t, err)
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProofs)
+	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProof)
 
 	isDone := <-done
 
@@ -154,12 +154,12 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		currentAnchorId, err := anchors.ToAnchorID(cAnchorId)
 		assert.NoError(t, err)
 		currentDocumentRoot := utils.RandomByte32()
-		documentProofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
+		documentProof := utils.RandomByte32()
 		hd, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
-		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProofs)
+		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProof)
 		ctx := testingconfig.CreateAccountContext(t, cfg)
-		doneList[ix], err = anchorRepo.CommitAnchor(ctx, anchorIDPreImageID, currentDocumentRoot, documentProofs)
+		doneList[ix], err = anchorRepo.CommitAnchor(ctx, anchorIDPreImageID, currentDocumentRoot, documentProof)
 		if err != nil {
 			t.Fatalf("Error commit Anchor %v", err)
 		}

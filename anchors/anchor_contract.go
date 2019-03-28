@@ -28,7 +28,7 @@ var (
 )
 
 // AnchorContractABI is the input ABI used to generate the binding from.
-const AnchorContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorCommitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorPreCommitted\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"signingRoot\",\"type\":\"bytes32\"}],\"name\":\"preCommit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorIdPreImage\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"documentProofs\",\"type\":\"bytes32[]\"}],\"name\":\"commit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"getAnchorById\",\"outputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"blockNumber\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"}],\"name\":\"hasValidPreCommit\",\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
+const AnchorContractABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorCommitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"anchorId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"blockHeight\",\"type\":\"uint32\"}],\"name\":\"AnchorPreCommitted\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"signingRoot\",\"type\":\"bytes32\"}],\"name\":\"preCommit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorIdPreImage\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"proof\",\"type\":\"bytes32\"}],\"name\":\"commit\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"getAnchorById\",\"outputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"},{\"name\":\"blockNumber\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"anchorId\",\"type\":\"uint256\"}],\"name\":\"hasValidPreCommit\",\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // AnchorContract is an auto generated Go binding around an Ethereum contract.
 type AnchorContract struct {
@@ -238,25 +238,25 @@ func (_AnchorContract *AnchorContractCallerSession) HasValidPreCommit(anchorId *
 	return _AnchorContract.Contract.HasValidPreCommit(&_AnchorContract.CallOpts, anchorId)
 }
 
-// Commit is a paid mutator transaction binding the contract method 0x58522947.
+// Commit is a paid mutator transaction binding the contract method 0x1cd98bce.
 //
-// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, documentProofs bytes32[]) returns()
-func (_AnchorContract *AnchorContractTransactor) Commit(opts *bind.TransactOpts, anchorIdPreImage *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error) {
-	return _AnchorContract.contract.Transact(opts, "commit", anchorIdPreImage, documentRoot, documentProofs)
+// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, proof bytes32) returns()
+func (_AnchorContract *AnchorContractTransactor) Commit(opts *bind.TransactOpts, anchorIdPreImage *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error) {
+	return _AnchorContract.contract.Transact(opts, "commit", anchorIdPreImage, documentRoot, proof)
 }
 
-// Commit is a paid mutator transaction binding the contract method 0x58522947.
+// Commit is a paid mutator transaction binding the contract method 0x1cd98bce.
 //
-// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, documentProofs bytes32[]) returns()
-func (_AnchorContract *AnchorContractSession) Commit(anchorIdPreImage *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error) {
-	return _AnchorContract.Contract.Commit(&_AnchorContract.TransactOpts, anchorIdPreImage, documentRoot, documentProofs)
+// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, proof bytes32) returns()
+func (_AnchorContract *AnchorContractSession) Commit(anchorIdPreImage *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error) {
+	return _AnchorContract.Contract.Commit(&_AnchorContract.TransactOpts, anchorIdPreImage, documentRoot, proof)
 }
 
-// Commit is a paid mutator transaction binding the contract method 0x58522947.
+// Commit is a paid mutator transaction binding the contract method 0x1cd98bce.
 //
-// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, documentProofs bytes32[]) returns()
-func (_AnchorContract *AnchorContractTransactorSession) Commit(anchorIdPreImage *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error) {
-	return _AnchorContract.Contract.Commit(&_AnchorContract.TransactOpts, anchorIdPreImage, documentRoot, documentProofs)
+// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, proof bytes32) returns()
+func (_AnchorContract *AnchorContractTransactorSession) Commit(anchorIdPreImage *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error) {
+	return _AnchorContract.Contract.Commit(&_AnchorContract.TransactOpts, anchorIdPreImage, documentRoot, proof)
 }
 
 // PreCommit is a paid mutator transaction binding the contract method 0x53b36015.

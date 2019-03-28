@@ -360,8 +360,8 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProofs [][32]byte) (done chan bool, err error) {
-	args := m.Called(anchorID, documentRoot, documentProofs)
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan bool, err error) {
+	args := m.Called(anchorID, documentRoot, documentProof)
 	c, _ := args.Get(0).(chan bool)
 	return c, args.Error(1)
 }

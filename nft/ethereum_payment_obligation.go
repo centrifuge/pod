@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/utils/stringutils"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -68,11 +70,24 @@ func newEthereumPaymentObligation(
 	}
 }
 
+func (s *ethereumPaymentObligation) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
+	var nonFilteredProofsLiteral = []string{fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)}
+	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s.signatures\\[.*\\].signature", documents.SignaturesTreePrefix)}
+
+	for i, p := range docProof.FieldProofs {
+		if !utils.ContainsString(nonFilteredProofsLiteral, p.GetReadableName()) && !stringutils.ContainsStringMatchInSlice(nonFilteredProofsMatch, p.GetReadableName()) {
+			docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
+		}
+	}
+	return docProof
+}
+
 func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
 	}
+	docProofs = s.filterMintProofs(docProofs)
 
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {

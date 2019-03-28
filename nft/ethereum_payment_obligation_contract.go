@@ -28,7 +28,7 @@ var (
 )
 
 // EthereumPaymentObligationContractABI is the input ABI used to generate the binding from.
-const EthereumPaymentObligationContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getAnchorRegistry\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getIdentityFactory\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"tokenURI\",\"type\":\"string\"}],\"name\":\"PaymentObligationMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getTokenDetails\",\"outputs\":[{\"name\":\"grossAmount\",\"type\":\"bytes\"},{\"name\":\"currency\",\"type\":\"bytes\"},{\"name\":\"dueDate\",\"type\":\"bytes\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"},{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"tokenURI\",\"type\":\"string\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"properties\",\"type\":\"bytes[]\"},{\"name\":\"values\",\"type\":\"bytes[]\"},{\"name\":\"salts\",\"type\":\"bytes32[]\"},{\"name\":\"proofs\",\"type\":\"bytes32[][]\"}],\"name\":\"mint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const EthereumPaymentObligationContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getAnchorRegistry\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getIdentityFactory\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"tokenURI\",\"type\":\"string\"}],\"name\":\"PaymentObligationMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getTokenDetails\",\"outputs\":[{\"name\":\"invoiceSender\",\"type\":\"address\"},{\"name\":\"grossAmount\",\"type\":\"bytes\"},{\"name\":\"currency\",\"type\":\"bytes\"},{\"name\":\"dueDate\",\"type\":\"bytes\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"nextAnchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"isTokenLatestDocument\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"},{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"tokenURI\",\"type\":\"string\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"properties\",\"type\":\"bytes[]\"},{\"name\":\"values\",\"type\":\"bytes[]\"},{\"name\":\"salts\",\"type\":\"bytes32[]\"},{\"name\":\"proofs\",\"type\":\"bytes32[][]\"}],\"name\":\"mint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // EthereumPaymentObligationContract is an auto generated Go binding around an Ethereum contract.
 type EthereumPaymentObligationContract struct {
@@ -278,20 +278,24 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(tokenId uint256) constant returns(grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, documentRoot bytes32)
+// Solidity: function getTokenDetails(tokenId uint256) constant returns(invoiceSender address, grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, nextAnchorId uint256, documentRoot bytes32)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) GetTokenDetails(opts *bind.CallOpts, tokenId *big.Int) (struct {
-	GrossAmount  []byte
-	Currency     []byte
-	DueDate      []byte
-	AnchorId     *big.Int
-	DocumentRoot [32]byte
+	InvoiceSender common.Address
+	GrossAmount   []byte
+	Currency      []byte
+	DueDate       []byte
+	AnchorId      *big.Int
+	NextAnchorId  *big.Int
+	DocumentRoot  [32]byte
 }, error) {
 	ret := new(struct {
-		GrossAmount  []byte
-		Currency     []byte
-		DueDate      []byte
-		AnchorId     *big.Int
-		DocumentRoot [32]byte
+		InvoiceSender common.Address
+		GrossAmount   []byte
+		Currency      []byte
+		DueDate       []byte
+		AnchorId      *big.Int
+		NextAnchorId  *big.Int
+		DocumentRoot  [32]byte
 	})
 	out := ret
 	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "getTokenDetails", tokenId)
@@ -300,26 +304,30 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(tokenId uint256) constant returns(grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, documentRoot bytes32)
+// Solidity: function getTokenDetails(tokenId uint256) constant returns(invoiceSender address, grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, nextAnchorId uint256, documentRoot bytes32)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) GetTokenDetails(tokenId *big.Int) (struct {
-	GrossAmount  []byte
-	Currency     []byte
-	DueDate      []byte
-	AnchorId     *big.Int
-	DocumentRoot [32]byte
+	InvoiceSender common.Address
+	GrossAmount   []byte
+	Currency      []byte
+	DueDate       []byte
+	AnchorId      *big.Int
+	NextAnchorId  *big.Int
+	DocumentRoot  [32]byte
 }, error) {
 	return _EthereumPaymentObligationContract.Contract.GetTokenDetails(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(tokenId uint256) constant returns(grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, documentRoot bytes32)
+// Solidity: function getTokenDetails(tokenId uint256) constant returns(invoiceSender address, grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, nextAnchorId uint256, documentRoot bytes32)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) GetTokenDetails(tokenId *big.Int) (struct {
-	GrossAmount  []byte
-	Currency     []byte
-	DueDate      []byte
-	AnchorId     *big.Int
-	DocumentRoot [32]byte
+	InvoiceSender common.Address
+	GrossAmount   []byte
+	Currency      []byte
+	DueDate       []byte
+	AnchorId      *big.Int
+	NextAnchorId  *big.Int
+	DocumentRoot  [32]byte
 }, error) {
 	return _EthereumPaymentObligationContract.Contract.GetTokenDetails(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
@@ -348,6 +356,32 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSessi
 // Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error) {
 	return _EthereumPaymentObligationContract.Contract.IsApprovedForAll(&_EthereumPaymentObligationContract.CallOpts, owner, operator)
+}
+
+// IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
+//
+// Solidity: function isTokenLatestDocument(tokenId uint256) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) IsTokenLatestDocument(opts *bind.CallOpts, tokenId *big.Int) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "isTokenLatestDocument", tokenId)
+	return *ret0, err
+}
+
+// IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
+//
+// Solidity: function isTokenLatestDocument(tokenId uint256) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) IsTokenLatestDocument(tokenId *big.Int) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.IsTokenLatestDocument(&_EthereumPaymentObligationContract.CallOpts, tokenId)
+}
+
+// IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
+//
+// Solidity: function isTokenLatestDocument(tokenId uint256) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) IsTokenLatestDocument(tokenId *big.Int) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.IsTokenLatestDocument(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.

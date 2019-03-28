@@ -17,7 +17,7 @@ type AnchorRepository interface {
 	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan bool, err error)
 
 	// CommitAnchor will send a commit transaction to Ethereum.
-	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error)
+	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan bool, error)
 
 	// GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 	GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)

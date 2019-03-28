@@ -263,6 +263,52 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 	assert.Equal(t, signatureSender, proofList[6])
 }
 
+func TestFilterMintProofs(t *testing.T) {
+	service := newEthereumPaymentObligation(nil, nil, nil, nil, nil, nil, nil, nil)
+	docProof := &documents.DocumentProof{
+		FieldProofs: []*proofspb.Proof{
+			{
+				Property: proofs.ReadableName("prop1"),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+			{
+				Property: proofs.ReadableName(fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+			{
+				Property: proofs.ReadableName(fmt.Sprintf("%s.signatures[0x1234567890].signature", documents.SignaturesTreePrefix)),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+		},
+	}
+
+	docProofAux := service.filterMintProofs(docProof)
+	assert.Len(t, docProofAux.FieldProofs[0].SortedHashes, 2)
+	assert.Len(t, docProofAux.FieldProofs[1].SortedHashes, 3)
+	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
+}
+
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
 	v1, _ := hexutil.Decode("0x76616c756531")
 	v2, _ := hexutil.Decode("0x76616c756532")

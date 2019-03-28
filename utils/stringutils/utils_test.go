@@ -33,3 +33,21 @@ func TestRemoveDuplicates(t *testing.T) {
 		assert.Equal(t, c.res, res)
 	}
 }
+
+func TestContainsStringMatch(t *testing.T) {
+	m := "some.something\\[.*\\].any"
+	str := "some.something[0x1234567890].any"
+	assert.True(t, ContainsStringMatch(m, str))
+
+	m = "nothing"
+	assert.False(t, ContainsStringMatch(m, str))
+}
+
+func TestContainsStringMatchInSlice(t *testing.T) {
+	m := []string{"some.something\\[.*\\].any", "blabla"}
+	str := "some.something[0x1234567890].any"
+	assert.True(t, ContainsStringMatchInSlice(m, str))
+
+	m = []string{"nothing", "blabla"}
+	assert.False(t, ContainsStringMatchInSlice(m, str))
+}
