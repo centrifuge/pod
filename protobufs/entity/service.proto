@@ -88,3 +88,21 @@ message EntityData {
   // Entity contact list
   repeated Contact contacts = 5;
 }
+
+message EntityRelationshipData {
+  string owner_identity = 1;
+  string target_identity = 3;
+}
+
+message EntityRelationshipCreatePayload {
+  EntityRelationshipData data = 1;
+}
+
+message EntityRelationshipUpdatePayload {
+  EntityRelationshipData data = 1;
+}
+
+message EntityRelationshipResponse {
+  document.ResponseHeader header = 1;
+  EntityRelationshipData data = 2;
+}
