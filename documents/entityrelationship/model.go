@@ -37,36 +37,19 @@ type EntityRelationship struct {
 
 // getClientData returns the entity relationship data from the entity relationship model
 func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipData {
-	var owner string
-	var target string
-	if e.OwnerIdentity != nil {
-		owner = e.OwnerIdentity.String()
-	}
-	if e.TargetIdentity != nil {
-		target = e.TargetIdentity.String()
-	}
-
+	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
 	return &cliententitypb.EntityRelationshipData{
-		OwnerIdentity:  owner,
-		TargetIdentity: target,
+		OwnerIdentity:  dids[0],
+		TargetIdentity: dids[1],
 	}
 }
 
 // createP2PProtobuf returns Centrifuge protobuf-specific EntityRelationshipData.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
-	var didByte []byte
-	var tidByte []byte
-	if e.OwnerIdentity != nil {
-		didByte = e.OwnerIdentity[:]
-	}
-	if e.TargetIdentity != nil {
-		tidByte = e.TargetIdentity[:]
-	}
-
+	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
 	return &entitypb.EntityRelationship{
-		OwnerIdentity:  didByte,
-		Label:          e.Label,
-		TargetIdentity: tidByte,
+		OwnerIdentity:  dids[0],
+		TargetIdentity: dids[1],
 	}
 }
 
@@ -103,49 +86,23 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *client
 
 // initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
 func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb.EntityRelationshipData) error {
-	if data.OwnerIdentity != "" {
-		if did, err := identity.NewDIDFromString(data.OwnerIdentity); err == nil {
-			e.OwnerIdentity = &did
-		} else {
-			return err
-		}
-	} else {
-		return identity.ErrMalformedAddress
+	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
+	if err != nil {
+		return err
 	}
-
-	if data.TargetIdentity != "" {
-		if did, err := identity.NewDIDFromString(data.TargetIdentity); err == nil {
-			e.TargetIdentity = &did
-		} else {
-			return err
-		}
-	} else {
-		return identity.ErrMalformedAddress
-	}
-
+	e.OwnerIdentity = dids[0]
+	e.TargetIdentity = dids[1]
 	return nil
 }
 
 // loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf EntityRelationshipData.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
-	if entityRelationship.OwnerIdentity != nil {
-		did, err := identity.NewDIDFromBytes(entityRelationship.OwnerIdentity)
-		if err != nil {
-			return err
-		}
-		e.OwnerIdentity = &did
+	dids, err := identity.BytesToDIDs(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
+	if err != nil {
+		return err
 	}
-
-	if entityRelationship.TargetIdentity != nil {
-		tid, err := identity.NewDIDFromBytes(entityRelationship.TargetIdentity)
-		if err != nil {
-			return err
-		}
-		e.TargetIdentity = &tid
-	}
-
-	e.Label = entityRelationship.Label
-
+	e.OwnerIdentity = dids[0]
+	e.TargetIdentity = dids[1]
 	return nil
 }
 
@@ -222,12 +179,10 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
 	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
-	err = t.AddLeavesFromDocument(eProto)
-	if err != nil {
+	if err := t.AddLeavesFromDocument(eProto); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	err = t.Generate()
-	if err != nil {
+	if err := t.Generate(); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 
