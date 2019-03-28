@@ -60,28 +60,21 @@ message GetVersionRequest {
 }
 
 message PurchaseOrderCreatePayload {
-  repeated string collaborators = 1;
-  PurchaseOrderData data = 2;
+  repeated document.ReadAccess read_access = 1;
+  repeated document.WriteAccess write_access = 2;
+  PurchaseOrderData data = 3;
 }
 
 message PurchaseOrderUpdatePayload {
   string identifier = 1;
-  repeated string collaborators = 2;
-  PurchaseOrderData data = 3;
+  repeated document.ReadAccess read_access = 2;
+  repeated document.WriteAccess write_access = 3;
+  PurchaseOrderData data = 4;
 }
 
 message PurchaseOrderResponse {
-  ResponseHeader header = 1;
+  document.ResponseHeader header = 1;
   PurchaseOrderData data = 2;
-}
-
-// ResponseHeader contains a set of common fields for most documents
-message ResponseHeader {
-  string document_id = 1;
-  string version_id = 2;
-  string state = 3;
-  repeated string collaborators = 4;
-  string transaction_id = 5;
 }
 
 message PurchaseOrderData {

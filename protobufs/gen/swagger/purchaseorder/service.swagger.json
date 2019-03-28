@@ -131,6 +131,41 @@
     }
   },
   "definitions": {
+    "coredocumentAction": {
+      "type": "string",
+      "enum": [
+        "ACTION_INVALID",
+        "ACTION_READ_SIGN",
+        "ACTION_READ"
+      ],
+      "default": "ACTION_INVALID",
+      "description": "Action defines the set of actions a collaborator can/have per document.\n\n - ACTION_READ_SIGN: read_sign represents reading as well the sign the documents. We will pick this one when requesting the signatures.\n - ACTION_READ: read represents just reading the doc/fields"
+    },
+    "coredocumentTransitionAction": {
+      "type": "string",
+      "enum": [
+        "TRANSITION_ACTION_INVALID",
+        "TRANSITION_ACTION_EDIT"
+      ],
+      "default": "TRANSITION_ACTION_INVALID"
+    },
+    "documentAccessToken": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "granter": {
+          "type": "string"
+        },
+        "grantee": {
+          "type": "string"
+        },
+        "document_identifier": {
+          "type": "string"
+        }
+      }
+    },
     "documentBinaryAttachment": {
       "type": "object",
       "properties": {
@@ -152,6 +187,20 @@
         "checksum": {
           "type": "string",
           "title": "the md5 checksum of the original file for easier verification - optional"
+        }
+      }
+    },
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
         }
       }
     },
@@ -220,6 +269,109 @@
         "crypto_to": {
           "type": "string",
           "title": "to address"
+        }
+      }
+    },
+    "documentReadAccess": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/coredocumentAction"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
+        }
+      }
+    },
+    "documentResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "read_access": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentReadAccess"
+          }
+        },
+        "write_access": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentWriteAccess"
+          }
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentSignature"
+          }
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
+        },
+        "anchored": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "access_tokens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentAccessToken"
+          }
+        },
+        "transaction_id": {
+          "type": "string"
+        }
+      }
+    },
+    "documentSignature": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "valid": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "documentWriteAccess": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/coredocumentTransitionAction"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -321,10 +473,16 @@
     "purchaseorderPurchaseOrderCreatePayload": {
       "type": "object",
       "properties": {
-        "collaborators": {
+        "read_access": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/documentReadAccess"
+          }
+        },
+        "write_access": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentWriteAccess"
           }
         },
         "data": {
@@ -441,7 +599,7 @@
       "type": "object",
       "properties": {
         "header": {
-          "$ref": "#/definitions/purchaseorderResponseHeader"
+          "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
@@ -454,40 +612,22 @@
         "identifier": {
           "type": "string"
         },
-        "collaborators": {
+        "read_access": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/documentReadAccess"
+          }
+        },
+        "write_access": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentWriteAccess"
           }
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
         }
       }
-    },
-    "purchaseorderResponseHeader": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "version_id": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string"
-        },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "transaction_id": {
-          "type": "string"
-        }
-      },
-      "title": "ResponseHeader contains a set of common fields for most documents"
     },
     "purchaseorderTaxItem": {
       "type": "object",

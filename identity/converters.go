@@ -1,6 +1,8 @@
 package identity
 
-import "strings"
+import (
+	"strings"
+)
 
 // StringsToDIDs converts hex strings to DIDs.
 func StringsToDIDs(strs ...string) ([]*DID, error) {
@@ -67,4 +69,31 @@ func BytesToDIDs(bytes ...[]byte) ([]*DID, error) {
 	}
 
 	return dids, nil
+}
+
+// DIDsPointers returns the pointers to DIDs
+func DIDsPointers(dids ...DID) []*DID {
+	var pdids []*DID
+	for _, did := range dids {
+		did := did
+		pdids = append(pdids, &did)
+	}
+
+	return pdids
+}
+
+// FromPointerDIDs return pointer DIDs to value DIDs
+func FromPointerDIDs(pdids ...*DID) []DID {
+	dids := make([]DID, len(pdids), len(pdids))
+	for i, pdid := range pdids {
+		pdid := pdid
+		if pdid == nil {
+			dids[i] = DID{}
+			continue
+		}
+
+		dids[i] = *pdid
+	}
+
+	return dids
 }
