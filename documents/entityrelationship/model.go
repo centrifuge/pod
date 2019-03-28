@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
@@ -38,38 +37,19 @@ type EntityRelationship struct {
 
 // getClientData returns the entity relationship data from the entity relationship model
 func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipData {
-	var owner string
-	var target string
-	label := hexutil.Encode(e.Label)
-	if e.OwnerIdentity != nil {
-		owner = e.OwnerIdentity.String()
-	}
-	if e.TargetIdentity != nil {
-		target = e.TargetIdentity.String()
-	}
-
+	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
 	return &cliententitypb.EntityRelationshipData{
-		OwnerIdentity:  owner,
-		Label:          label,
-		TargetIdentity: target,
+		OwnerIdentity:  dids[0],
+		TargetIdentity: dids[1],
 	}
 }
 
 // createP2PProtobuf returns Centrifuge protobuf-specific EntityRelationshipData.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
-	var didByte []byte
-	var tidByte []byte
-	if e.OwnerIdentity != nil {
-		didByte = e.OwnerIdentity[:]
-	}
-	if e.TargetIdentity != nil {
-		tidByte = e.TargetIdentity[:]
-	}
-
+	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
 	return &entitypb.EntityRelationship{
-		OwnerIdentity:  didByte,
-		Label:          e.Label,
-		TargetIdentity: tidByte,
+		OwnerIdentity:  dids[0],
+		TargetIdentity: dids[1],
 	}
 }
 
@@ -106,49 +86,23 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *client
 
 // initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
 func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb.EntityRelationshipData) error {
-	if data.OwnerIdentity != "" {
-		if did, err := identity.NewDIDFromString(data.OwnerIdentity); err == nil {
-			e.OwnerIdentity = &did
-		} else {
-			return err
-		}
-	} else {
-		return identity.ErrMalformedAddress
+	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
+	if err != nil {
+		return err
 	}
-
-	if data.TargetIdentity != "" {
-		if did, err := identity.NewDIDFromString(data.TargetIdentity); err == nil {
-			e.TargetIdentity = &did
-		} else {
-			return err
-		}
-	} else {
-		return identity.ErrMalformedAddress
-	}
-	e.Label = []byte(data.Label)
+	e.OwnerIdentity = dids[0]
+	e.TargetIdentity = dids[1]
 	return nil
 }
 
 // loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf EntityRelationshipData.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
-	if entityRelationship.OwnerIdentity != nil {
-		did, err := identity.NewDIDFromBytes(entityRelationship.OwnerIdentity)
-		if err != nil {
-			return err
-		}
-		e.OwnerIdentity = &did
+	dids, err := identity.BytesToDIDs(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
+	if err != nil {
+		return err
 	}
-
-	if entityRelationship.TargetIdentity != nil {
-		tid, err := identity.NewDIDFromBytes(entityRelationship.TargetIdentity)
-		if err != nil {
-			return err
-		}
-		e.TargetIdentity = &tid
-	}
-
-	e.Label = entityRelationship.Label
-
+	e.OwnerIdentity = dids[0]
+	e.TargetIdentity = dids[1]
 	return nil
 }
 
@@ -181,7 +135,10 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 		return err
 	}
 
-	e.loadFromP2PProtobuf(entityRelationship)
+	err = e.loadFromP2PProtobuf(entityRelationship)
+	if err != nil {
+		return err
+	}
 	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
 	return nil
 }
@@ -201,7 +158,7 @@ func (e *EntityRelationship) Type() reflect.Type {
 	return reflect.TypeOf(e)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
+// CalculateDataRoot calculates the data root.
 func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 	t, err := e.getDocumentDataTree()
 	if err != nil {
@@ -222,34 +179,23 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
 	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
-	err = t.AddLeavesFromDocument(eProto)
-	if err != nil {
+	if err := t.AddLeavesFromDocument(eProto); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-	err = t.Generate()
-	if err != nil {
+	if err := t.Generate(); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
 
 	return t, nil
 }
 
-// CreateNFTProofs creates proofs specific to NFT minting.
+// CreateNFTProofs creates proofs specific to NFT minting. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
 func (e *EntityRelationship) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
-
-	tree, err := e.getDocumentDataTree()
-	if err != nil {
-		return nil, err
-	}
-
-	return e.CoreDocument.CreateNFTProofs(
-		e.DocumentType(),
-		tree,
-		account, registry, tokenID, nftUniqueProof, readAccessProof)
+	panic(documents.ErrNotImplemented)
 }
 
 // CreateProofs generates proofs for given fields.
@@ -262,20 +208,14 @@ func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.P
 	return e.CoreDocument.CreateProofs(e.DocumentType(), tree, fields)
 }
 
-// DocumentType returns the entity relationship document type.
+// DocumentType returns the entity relationship document type. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
 func (*EntityRelationship) DocumentType() string {
 	return documenttypes.EntityRelationshipDocumentTypeUrl
 }
 
 // AddNFT adds NFT to the EntityRelationship.
 func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
-	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID)
-	if err != nil {
-		return err
-	}
-
-	e.CoreDocument = cd
-	return nil
+	panic(documents.ErrNotImplemented)
 }
 
 // CalculateSigningRoot calculates the signing root of the document.

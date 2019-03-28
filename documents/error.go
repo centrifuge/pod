@@ -87,6 +87,9 @@ const (
 
 	// ErrIdentityNotOwner must be used when an identity which does not own the entity relationship attempts to update the document
 	ErrIdentityNotOwner = errors.Error("identity attempting to update the document does not own this entity relationship")
+
+	// ErrNotImplemented must be used when an method has not been implemented
+	ErrNotImplemented = errors.Error("Method not implemented")
 )
 
 // Error wraps an error with specific key

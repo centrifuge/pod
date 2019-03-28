@@ -4,10 +4,10 @@ package entityrelationship
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -30,6 +30,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -37,24 +38,9 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var configService config.Service
-
 var (
-	did       = testingidentity.GenerateRandomDID()
-	dIDBytes  = did[:]
-	accountID = did[:]
+	did = testingidentity.GenerateRandomDID()
 )
-
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
-}
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
@@ -76,13 +62,11 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		//&Bootstrapper{}, TODO activate bootstrapper for entity
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
@@ -149,21 +133,19 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 func TestEntityRelationship_getClientData(t *testing.T) {
 	entityRelationshipData := testingdocuments.CreateEntityRelationshipData()
 	er := new(EntityRelationship)
-	er.loadFromP2PProtobuf(&entityRelationshipData)
+	err := er.loadFromP2PProtobuf(&entityRelationshipData)
+	assert.NoError(t, err)
 
 	data := er.getClientData()
-	label := hexutil.Encode(er.Label)
 	assert.NotNil(t, data, "entity data should not be nil")
 	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
-	assert.Equal(t, data.Label, label)
 	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())
 }
 
-func TestEntityModel_InitEntityInput(t *testing.T) {
+func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	// successful init
 	data := &cliententitypb.EntityRelationshipData{
 		OwnerIdentity:  testingidentity.GenerateRandomDID().String(),
-		Label:          "Relationship Test",
 		TargetIdentity: testingidentity.GenerateRandomDID().String(),
 	}
 	e := new(EntityRelationship)
@@ -177,7 +159,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	assert.Contains(t, err.Error(), "malformed address provided")
 }
 
-func TestEntityModel_calculateDataRoot(t *testing.T) {
+func TestEntityRelationship_calculateDataRoot(t *testing.T) {
 	m := new(EntityRelationship)
 	err := m.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
 	assert.NoError(t, err)
@@ -188,36 +170,35 @@ func TestEntityModel_calculateDataRoot(t *testing.T) {
 	assert.False(t, utils.IsEmptyByteSlice(dr))
 }
 
-// TODO: proofs to support entity relationship prefixes
-func TestEntity_CreateProofs(t *testing.T) {
-	//e := createEntityRelationship(t)
-	//rk := e.Document.Roles[0].RoleKey
-	//pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	//proof, err := e.CreateProofs([]string{"entityrelationship.owner_identity", pf, documents.CDTreePrefix + ".document_type"})
-	//assert.NoError(t, err)
-	//assert.NotNil(t, proof)
-	//tree, err := e.DocumentRootTree()
-	//assert.NoError(t, err)
-	//
-	//// Validate entity_number
-	//valid, err := tree.ValidateProof(proof[0])
-	//assert.Nil(t, err)
-	//assert.True(t, valid)
-	//
-	//// Validate roles
-	//valid, err = tree.ValidateProof(proof[1])
-	//assert.Nil(t, err)
-	//assert.True(t, valid)
-	//
-	//// Validate []byte value
-	//acc, err := identity.NewDIDFromBytes(proof[1].Value)
-	//assert.NoError(t, err)
-	//assert.True(t, e.AccountCanRead(acc))
-	//
-	//// Validate document_type
-	//valid, err = tree.ValidateProof(proof[2])
-	//assert.Nil(t, err)
-	//assert.True(t, valid)
+func TestEntityRelationship_CreateProofs(t *testing.T) {
+	e := createEntityRelationship(t)
+	rk := e.Document.Roles[0].RoleKey
+	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
+	proof, err := e.CreateProofs([]string{"entity_relationship.owner_identity", pf, documents.CDTreePrefix + ".document_type"})
+	assert.NoError(t, err)
+	assert.NotNil(t, proof)
+	tree, err := e.DocumentRootTree()
+	assert.NoError(t, err)
+
+	// Validate entity_number
+	valid, err := tree.ValidateProof(proof[0])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate roles
+	valid, err = tree.ValidateProof(proof[1])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate []byte value
+	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	assert.NoError(t, err)
+	assert.True(t, e.AccountCanRead(acc))
+
+	// Validate document_type
+	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
 }
 
 func createEntityRelationship(t *testing.T) *EntityRelationship {
@@ -234,22 +215,32 @@ func createEntityRelationship(t *testing.T) *EntityRelationship {
 	return e
 }
 
-func TestEntityModel_createProofsFieldDoesNotExist(t *testing.T) {
+func TestEntityRelationship_createProofsFieldDoesNotExist(t *testing.T) {
 	e := createEntityRelationship(t)
 	_, err := e.CreateProofs([]string{"nonexisting"})
 	assert.Error(t, err)
 }
 
-func TestEntityModel_GetDocumentID(t *testing.T) {
+func TestEntityRelationship_GetDocumentID(t *testing.T) {
 	e := createEntityRelationship(t)
 	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
-// TODO: waiting on prefix updates/
-//func TestEntityModel_getDocumentDataTree(t *testing.T) {
-//}
+func TestEntityRelationship_GetDocumentType(t *testing.T) {
+	e := createEntityRelationship(t)
+	assert.Equal(t, documenttypes.EntityRelationshipDocumentTypeUrl, e.DocumentType())
+}
 
-func TestEntity_CollaboratorCanUpdate(t *testing.T) {
+func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
+	e := createEntityRelationship(t)
+	tree, err := e.getDocumentDataTree()
+	assert.Nil(t, err, "tree should be generated without error")
+	_, leaf := tree.GetLeafByProperty("entity_relationship.owner_identity")
+	assert.NotNil(t, leaf)
+	assert.Equal(t, "entity_relationship.owner_identity", leaf.Property.ReadableName())
+}
+
+func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	er := createEntityRelationship(t)
 	id1, err := identity.NewDIDFromString("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20")
 	assert.NoError(t, err)
