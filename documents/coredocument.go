@@ -114,10 +114,6 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 	return cd, nil
 }
 
-// SetDataModified sets the DataModified flag to the given value
-func (cd *CoreDocument) SetDataModified(modified bool) {
-}
-
 // ID returns the document identifier
 func (cd *CoreDocument) ID() []byte {
 	return cd.Document.DocumentIdentifier
@@ -195,7 +191,7 @@ func newRole() *coredocumentpb.Role {
 // newRoleWithCollaborators creates a new Role and adds the given collaborators to this Role.
 // The Role is then returned.
 // The operation returns a nil Role if no collaborators are provided.
-func newRoleWithCollaborators(collaborators []identity.DID) *coredocumentpb.Role {
+func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Role {
 	if len(collaborators) == 0 {
 		return nil
 	}
@@ -437,14 +433,13 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read_Sign permissions.
-// TODO(ved): this should return both read_sign and write collaborators
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	cs, err := cd.GetCollaborators(filterIDs...)
 	if err != nil {
 		return nil, err
 	}
 
-	return filterCollaborators(cs, filterIDs...), nil
+	return cs.ReadWriteCollaborators, nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs
@@ -453,42 +448,19 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (Collaborato
 	if err != nil {
 		return CollaboratorsAccess{}, err
 	}
+
 	wcs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	if err != nil {
 		return CollaboratorsAccess{}, err
 	}
+
 	rc := filterCollaborators(rcs, filterIDs...)
 	wc := filterCollaborators(wcs, filterIDs...)
-
-	collabs := CollaboratorsAccess{
+	rc = filterCollaborators(rc, wc...)
+	return CollaboratorsAccess{
 		ReadCollaborators:      rc,
 		ReadWriteCollaborators: wc,
-	}
-
-	return collabs, nil
-}
-
-// TODO: remove this method with new GetCollaborators
-// getCollaborators returns all the collaborators who belongs to the actions passed.
-func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
-	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		if len(role.Collaborators) < 1 {
-			return false
-		}
-
-		for _, c := range role.Collaborators {
-			var did identity.DID
-			did, err = identity.NewDIDFromBytes(c)
-			if err != nil {
-				return false
-			}
-			ids = append(ids, did)
-		}
-
-		return false
-	}, actions...)
-
-	return ids, err
+	}, nil
 }
 
 // getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
@@ -510,7 +482,7 @@ func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (
 		return false
 	}, actions...)
 
-	return ids, err
+	return identity.RemoveDuplicateDIDs(ids), err
 }
 
 // getWriteCollaborators returns all the collaborators which have access to the transition actions passed in.
@@ -532,7 +504,7 @@ func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.Transiti
 		return false
 	}, actions...)
 
-	return ids, err
+	return identity.RemoveDuplicateDIDs(ids), err
 }
 
 // filterCollaborators removes the filterIDs if any from cs and returns the result

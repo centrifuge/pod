@@ -60,15 +60,15 @@ message GetVersionRequest {
 }
 
 message EntityCreatePayload {
-  repeated document.ReadAccess read_access = 1;
-  repeated document.WriteAccess write_access = 2;
+  document.ReadAccess read_access = 1;
+  document.WriteAccess write_access = 2;
   EntityData data = 3;
 }
 
 message EntityUpdatePayload {
   string identifier = 1;
-  repeated document.ReadAccess read_access = 2;
-  repeated document.WriteAccess write_access = 3;
+  document.ReadAccess read_access = 2;
+  document.WriteAccess write_access = 3;
   EntityData data = 4;
 }
 

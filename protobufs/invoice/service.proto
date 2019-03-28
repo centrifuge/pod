@@ -60,15 +60,15 @@ message GetVersionRequest {
 }
 
 message InvoiceCreatePayload {
-  repeated document.ReadAccess read_access = 1;
-  repeated document.WriteAccess write_access = 2;
+  document.ReadAccess read_access = 1;
+  document.WriteAccess write_access = 2;
   InvoiceData data = 3;
 }
 
 message InvoiceUpdatePayload {
   string identifier = 1;
-  repeated document.ReadAccess read_access = 2;
-  repeated document.WriteAccess write_access = 3;
+  document.ReadAccess read_access = 2;
+  document.WriteAccess write_access = 3;
   InvoiceData data = 4;
 }
 

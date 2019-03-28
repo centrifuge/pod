@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -19,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	cid       = testingidentity.GenerateRandomDID()
-	accountID = cid[:]
+	did       = testingidentity.GenerateRandomDID()
+	accountID = did[:]
 )
 
 type mockAnchorRepo struct {
@@ -73,9 +73,9 @@ func TestService_Update(t *testing.T) {
 	data.TotalAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
-		Identifier:    hexutil.Encode(po.ID()),
-		Collaborators: []string{collab},
-		Data:          data,
+		Identifier:  hexutil.Encode(po.ID()),
+		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		Data:        data,
 	})
 	assert.Nil(t, err)
 	newData, err := poSrv.DerivePurchaseOrderData(newPO)
@@ -142,21 +142,20 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// failed core document new version
 	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
-	payload.Collaborators = []string{"some wrong ID"}
+	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.Collaborators = []string{wantCollab.String()}
+	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
-	assert.Len(t, cs, 3)
-	assert.Contains(t, cs, wantCollab)
+	assert.Len(t, cs.ReadWriteCollaborators, 3)
+	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
 	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
@@ -272,7 +271,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Equal(t, []string{cid.String(), payload.Collaborators[0]}, r.Header.Collaborators)
+	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -286,7 +285,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	data := doc.(*PurchaseOrder).getClientData()
 	data.Currency = "INR"
 	doc2 := new(PurchaseOrder)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, nil))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := poSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -377,7 +376,7 @@ func testRepo() documents.Repository {
 
 func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), cid.String())
+	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did)
 	assert.NoError(t, err)
 	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()

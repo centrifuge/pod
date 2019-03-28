@@ -274,11 +274,11 @@ func FromP2PPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetai
 }
 
 // FromClientCollaboratorAccess converts client collaborator access to CollaboratorsAccess
-func FromClientCollaboratorAccess(racess []*documentpb.ReadAccess, waccess []*documentpb.WriteAccess) (ca CollaboratorsAccess, err error) {
+func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *documentpb.WriteAccess) (ca CollaboratorsAccess, err error) {
 	wmap, rmap := make(map[string]struct{}), make(map[string]struct{})
 	var wcs, rcs []string
-	for _, wa := range waccess {
-		for _, c := range wa.Collaborators {
+	if waccess != nil {
+		for _, c := range waccess.Collaborators {
 			c = strings.ToLower(c)
 			if _, ok := wmap[c]; ok {
 				continue
@@ -289,8 +289,9 @@ func FromClientCollaboratorAccess(racess []*documentpb.ReadAccess, waccess []*do
 		}
 	}
 
-	for _, ra := range racess {
-		for _, c := range ra.Collaborators {
+	if racess != nil {
+		for _, c := range racess.Collaborators {
+			c = strings.ToLower(c)
 			if _, ok := wmap[c]; ok {
 				continue
 			}
@@ -321,10 +322,10 @@ func FromClientCollaboratorAccess(racess []*documentpb.ReadAccess, waccess []*do
 }
 
 // ToClientCollaboratorAccess converts CollaboratorAccess to client collaborator access
-func ToClientCollaboratorAccess(ca CollaboratorsAccess) ([]*documentpb.ReadAccess, []*documentpb.WriteAccess) {
+func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess, *documentpb.WriteAccess) {
 	rcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadCollaborators...)...)
 	wcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadWriteCollaborators...)...)
-	return []*documentpb.ReadAccess{{Collaborators: rcs}}, []*documentpb.WriteAccess{{Collaborators: wcs}}
+	return &documentpb.ReadAccess{Collaborators: rcs}, &documentpb.WriteAccess{Collaborators: wcs}
 }
 
 // DeriveResponseHeader derives common response header for model
@@ -335,21 +336,22 @@ func DeriveResponseHeader(model Model) (*documentpb.ResponseHeader, error) {
 	}
 
 	rcs, wcs := ToClientCollaboratorAccess(cs)
-	author, err := model.Author()
-	if err != nil {
-		return nil, err
-	}
-
-	time, err := model.Timestamp()
-	if err != nil {
-		return nil, err
-	}
+	// TODO(ved): we need to update log for NewCoreDocumentWithCollaborators and PrepareNewVersion
+	//author, err := model.Author()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//time, err := model.Timestamp()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return &documentpb.ResponseHeader{
-		DocumentId:  hexutil.Encode(model.ID()),
-		Version:     hexutil.Encode(model.CurrentVersion()),
-		Author:      author.String(),
-		CreatedAt:   time.UTC().String(),
+		DocumentId: hexutil.Encode(model.ID()),
+		Version:    hexutil.Encode(model.CurrentVersion()),
+		//Author:      author.String(),
+		//CreatedAt:   time.UTC().String(),
 		ReadAccess:  rcs,
 		WriteAccess: wcs,
 	}, nil

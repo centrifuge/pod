@@ -97,3 +97,20 @@ func FromPointerDIDs(pdids ...*DID) []DID {
 
 	return dids
 }
+
+// RemoveDuplicateDIDs removes duplicate DIDs
+func RemoveDuplicateDIDs(dids []DID) []DID {
+	m := make(map[string]struct{})
+	var res []DID
+	for _, did := range dids {
+		ls := strings.ToLower(did.String())
+		if _, ok := m[ls]; ok {
+			continue
+		}
+
+		res = append(res, did)
+		m[ls] = struct{}{}
+	}
+
+	return res
+}

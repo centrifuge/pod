@@ -71,7 +71,7 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 
 	ca, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
 	if err != nil {
-		return errors.New("failed to get convert collaborators: %v", err)
+		return errors.New("failed to decode collaborator: %v", err)
 	}
 
 	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)

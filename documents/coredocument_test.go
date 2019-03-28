@@ -147,8 +147,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Contains(t, rc, c4)
 	wc, err := ncd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
-	// contains 2 x write collaborators because they have been added to the CD transition rules and Invoice transition rules
-	assert.Len(t, wc, 4)
+	assert.Len(t, wc, 2)
 	assert.Contains(t, wc, c3)
 	assert.Contains(t, wc, c4)
 	assert.NotContains(t, wc, c1)
@@ -365,55 +364,24 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 }
 
-// TODO: delete this test after integration
-func TestCoreDocument_getCollaborators(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	id2 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
-	assert.NoError(t, err)
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 1)
-	assert.Equal(t, cs[0], id1)
-
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 0)
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
-	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 1)
-	assert.Equal(t, cs[0], id2)
-
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 2)
-	assert.Contains(t, cs, id1)
-	assert.Contains(t, cs, id2)
-}
-
 func TestCoreDocument_getReadCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
+	cas := CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{id1},
+	}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Equal(t, cs[0], id1)
 
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
+	cs, err = cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ)
@@ -431,61 +399,61 @@ func TestCoreDocument_getReadCollaborators(t *testing.T) {
 func TestCoreDocument_getWriteCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
-	id := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(id, []byte("inv"))
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), cas)
 	assert.NoError(t, err)
 	cs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
-	// 2 transition rules, one for CD and one for Invoice document
-	assert.Len(t, cs, 2)
+	assert.Len(t, cs, 1)
 
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 
 	cs, err = cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
-	assert.Len(t, cs, 3)
-	assert.Equal(t, cs[2], id2)
+	assert.Len(t, cs, 2)
+	assert.Equal(t, cs[1], id2)
 }
 
 func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
-	assert.Equal(t, cs.ReadCollaborators[0], id1)
+	assert.Len(t, cs.ReadCollaborators, 0)
+	assert.Len(t, cs.ReadWriteCollaborators, 1)
 	assert.Equal(t, cs.ReadWriteCollaborators[0], id1)
-	assert.Equal(t, cs.ReadWriteCollaborators[1], id1)
 
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
-	assert.Len(t, cs.ReadCollaborators, 2)
-	assert.Contains(t, cs.ReadCollaborators, id1)
+	assert.Len(t, cs.ReadCollaborators, 1)
 	assert.Contains(t, cs.ReadCollaborators, id2)
+	assert.Len(t, cs.ReadWriteCollaborators, 1)
+	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 
 	cs, err = cd.GetCollaborators(id2)
 	assert.NoError(t, err)
-	assert.Len(t, cs.ReadCollaborators, 1)
-	assert.Contains(t, cs.ReadCollaborators, id1)
+	assert.Len(t, cs.ReadCollaborators, 0)
+	assert.Len(t, cs.ReadWriteCollaborators, 1)
+	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 
-	role2 := newRole()
-	role2.Collaborators = append(role.Collaborators, id3[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role2)
+	role2 := newRoleWithCollaborators(id3)
+	cd.Document.Roles = append(cd.Document.Roles, role2)
 	cd.addNewTransitionRule(role2.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
-	assert.Len(t, cs.ReadWriteCollaborators, 4)
+	assert.Len(t, cs.ReadCollaborators, 1)
+	assert.Contains(t, cs.ReadCollaborators, id2)
+	assert.Len(t, cs.ReadWriteCollaborators, 2)
 	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 	assert.Contains(t, cs.ReadWriteCollaborators, id3)
 }
@@ -493,8 +461,8 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
@@ -505,9 +473,8 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
 
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetSignerCollaborators()

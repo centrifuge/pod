@@ -91,16 +91,12 @@ func TestCollaboratorAccess(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
-	rcs := []*documentpb.ReadAccess{
-		{
-			Collaborators: []string{id1.String(), id2.String()},
-		},
+	rcs := &documentpb.ReadAccess{
+		Collaborators: []string{id1.String(), id2.String()},
 	}
 
-	wcs := []*documentpb.WriteAccess{
-		{
-			Collaborators: []string{id2.String(), id3.String()},
-		},
+	wcs := &documentpb.WriteAccess{
+		Collaborators: []string{id2.String(), id3.String()},
 	}
 
 	ca, err := FromClientCollaboratorAccess(rcs, wcs)
@@ -109,18 +105,16 @@ func TestCollaboratorAccess(t *testing.T) {
 	assert.Len(t, ca.ReadWriteCollaborators, 2)
 
 	grcs, gwcs := ToClientCollaboratorAccess(ca)
-	assert.Len(t, grcs, 1)
-	assert.Len(t, grcs[0].Collaborators, 1)
-	assert.Equal(t, grcs[0].Collaborators[0], id1.String())
-	assert.Len(t, gwcs, 1)
-	assert.Len(t, gwcs[0].Collaborators, 2)
-	assert.Contains(t, gwcs[0].Collaborators, id2.String(), id3.String())
+	assert.Len(t, grcs.Collaborators, 1)
+	assert.Equal(t, grcs.Collaborators[0], id1.String())
+	assert.Len(t, gwcs.Collaborators, 2)
+	assert.Contains(t, gwcs.Collaborators, id2.String(), id3.String())
 
-	wcs[0].Collaborators[0] = "wrg id"
+	wcs.Collaborators[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
 
-	rcs[0].Collaborators[0] = "wrg id"
+	rcs.Collaborators[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
 }

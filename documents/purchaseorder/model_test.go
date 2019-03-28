@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -69,7 +70,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("identityId", cid.String())
+	cfg.Set("identityId", did.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
@@ -82,7 +83,7 @@ func TestPurchaseOrder_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	po := new(PurchaseOrder)
-	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String()))
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did))
 
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
@@ -94,7 +95,7 @@ func TestPurchaseOrder_JSON(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String()))
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did))
 
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
@@ -164,26 +165,26 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 		Recipient: "some recipient",
 	}
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "malformed address provided")
 	assert.Nil(t, poModel.Recipient)
 
 	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
 	assert.NotNil(t, poModel.Recipient)
 
 	collabs := []string{"0x010102040506", "some id"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, did.String())
-	assert.Contains(t, err.Error(), "failed to decode collaborator")
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
 	assert.Nil(t, err, "must be nil")
 
 	did, err = identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
@@ -196,7 +197,7 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String())
+	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did)
 	assert.Nil(t, err, "Init must pass")
 
 	dr, err := poModel.CalculateDataRoot()
@@ -283,7 +284,7 @@ func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 			},
 		},
 	}
-	err := po.InitPurchaseOrderInput(payload, defaultDID.String())
+	err := po.InitPurchaseOrderInput(payload, defaultDID)
 	assert.NoError(t, err)
 	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
@@ -313,7 +314,9 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	oldPO := model.(*PurchaseOrder)
 	data := oldPO.getClientData()
 	data.TotalAmount = "50"
-	err = po.PrepareNewVersion(po, data, []string{id3.String()})
+	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{id3},
+	})
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -334,7 +337,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	data = oldPO.getClientData()
 	data.TotalAmount = "55"
 	data.Currency = "INR"
-	err = po.PrepareNewVersion(po, data, nil)
+	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 
 	// id1 should have permission

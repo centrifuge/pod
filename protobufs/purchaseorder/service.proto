@@ -60,15 +60,15 @@ message GetVersionRequest {
 }
 
 message PurchaseOrderCreatePayload {
-  repeated document.ReadAccess read_access = 1;
-  repeated document.WriteAccess write_access = 2;
+  document.ReadAccess read_access = 1;
+  document.WriteAccess write_access = 2;
   PurchaseOrderData data = 3;
 }
 
 message PurchaseOrderUpdatePayload {
   string identifier = 1;
-  repeated document.ReadAccess read_access = 2;
-  repeated document.WriteAccess write_access = 3;
+  document.ReadAccess read_access = 2;
+  document.WriteAccess write_access = 3;
   PurchaseOrderData data = 4;
 }
 

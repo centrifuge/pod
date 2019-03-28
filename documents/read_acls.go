@@ -38,7 +38,7 @@ func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
 // The operation is no-op if no collaborators are provided.
 // The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
 func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
-	role := newRoleWithCollaborators(collaborators)
+	role := newRoleWithCollaborators(collaborators...)
 	if role == nil {
 		return
 	}

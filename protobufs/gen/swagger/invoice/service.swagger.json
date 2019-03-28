@@ -131,41 +131,6 @@
     }
   },
   "definitions": {
-    "coredocumentAction": {
-      "type": "string",
-      "enum": [
-        "ACTION_INVALID",
-        "ACTION_READ_SIGN",
-        "ACTION_READ"
-      ],
-      "default": "ACTION_INVALID",
-      "description": "Action defines the set of actions a collaborator can/have per document.\n\n - ACTION_READ_SIGN: read_sign represents reading as well the sign the documents. We will pick this one when requesting the signatures.\n - ACTION_READ: read represents just reading the doc/fields"
-    },
-    "coredocumentTransitionAction": {
-      "type": "string",
-      "enum": [
-        "TRANSITION_ACTION_INVALID",
-        "TRANSITION_ACTION_EDIT"
-      ],
-      "default": "TRANSITION_ACTION_INVALID"
-    },
-    "documentAccessToken": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string"
-        },
-        "granter": {
-          "type": "string"
-        },
-        "grantee": {
-          "type": "string"
-        },
-        "document_identifier": {
-          "type": "string"
-        }
-      }
-    },
     "documentBinaryAttachment": {
       "type": "object",
       "properties": {
@@ -187,20 +152,6 @@
         "checksum": {
           "type": "string",
           "title": "the md5 checksum of the original file for easier verification - optional"
-        }
-      }
-    },
-    "documentNFT": {
-      "type": "object",
-      "properties": {
-        "registry": {
-          "type": "string"
-        },
-        "token_id": {
-          "type": "string"
-        },
-        "owner": {
-          "type": "string"
         }
       }
     },
@@ -275,19 +226,10 @@
     "documentReadAccess": {
       "type": "object",
       "properties": {
-        "action": {
-          "$ref": "#/definitions/coredocumentAction"
-        },
         "collaborators": {
           "type": "array",
           "items": {
             "type": "string"
-          }
-        },
-        "nfts": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentNFT"
           }
         }
       }
@@ -308,65 +250,19 @@
           "type": "string"
         },
         "read_access": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentReadAccess"
-          }
+          "$ref": "#/definitions/documentReadAccess"
         },
         "write_access": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentWriteAccess"
-          }
-        },
-        "signatures": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentSignature"
-          }
-        },
-        "nfts": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentNFT"
-          }
-        },
-        "anchored": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "access_tokens": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentAccessToken"
-          }
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "transaction_id": {
           "type": "string"
         }
       }
     },
-    "documentSignature": {
-      "type": "object",
-      "properties": {
-        "identity": {
-          "type": "string"
-        },
-        "key": {
-          "type": "string"
-        },
-        "valid": {
-          "type": "boolean",
-          "format": "boolean"
-        }
-      }
-    },
     "documentWriteAccess": {
       "type": "object",
       "properties": {
-        "action": {
-          "$ref": "#/definitions/coredocumentTransitionAction"
-        },
         "collaborators": {
           "type": "array",
           "items": {
@@ -379,16 +275,10 @@
       "type": "object",
       "properties": {
         "read_access": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentReadAccess"
-          }
+          "$ref": "#/definitions/documentReadAccess"
         },
         "write_access": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentWriteAccess"
-          }
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
@@ -647,16 +537,10 @@
           "type": "string"
         },
         "read_access": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentReadAccess"
-          }
+          "$ref": "#/definitions/documentReadAccess"
         },
         "write_access": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/documentWriteAccess"
-          }
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
