@@ -50,9 +50,6 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
-	// ErrDataRootInvalid must be used when the data root is invalid
-	ErrDataRootInvalid = errors.Error("data root is invalid")
-
 	// Read ACL errors
 
 	// ErrNftNotFound must be used when the NFT is not found in the document
@@ -87,6 +84,12 @@ const (
 
 	// ErrInvalidDecimal must be used when given decimal is invalid
 	ErrInvalidDecimal = errors.Error("invalid decimal")
+
+	// ErrIdentityNotOwner must be used when an identity which does not own the entity relationship attempts to update the document
+	ErrIdentityNotOwner = errors.Error("identity attempting to update the document does not own this entity relationship")
+
+	// ErrNotImplemented must be used when an method has not been implemented
+	ErrNotImplemented = errors.Error("Method not implemented")
 )
 
 // Error wraps an error with specific key
