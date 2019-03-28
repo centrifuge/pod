@@ -65,9 +65,24 @@ networks:
     ethereumNetworkId: 3
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x1ba18b61337fa121339339b554730c0e70b9a81c"
-      anchorRepository: "0xff5f35f6f3910ed66a24b6e55542e66b868416a3"
-      paymentObligation: "0x48c25e7639e888e667f20d30b96653de054251d8"
+      identityFactory: "0xF86177b275E4Fcb2Ab5A3FcF5E46aab51f73D7a6"
+      anchorRepository: "0xf630d8bE5664C7FB1234CEf48b6A729cEe3B71D8"
+      paymentObligation: "0x9eee8FbE3E29c96cC944F0eeC1594fe1b633dABe"
+
+  # Main net test network
+  embarcaderotest:
+    # Numeric ID of the Centrifuge network
+    id: 54
+    bootstrapPeers:
+      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
+      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    # Ethereum network ID - Ropsten
+    ethereumNetworkId: 1
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0x2257a0B7E513582c36B127c4E0d142F8B98273a3"
+      anchorRepository: "0x62e58B399adc033e6e404978D16D54123f4C10Bc"
+      paymentObligation: "0xB6b76DCD6A456D5d9FfF7D18F562D3854f11a5C9"
 
 # Data Storage
 storage:
@@ -112,10 +127,10 @@ ethereum:
   defaultAccountName: "main"
   # Location of the ethereum client node (we require ws or ipc to be able to catch events)
   nodeURL: http://localhost:9545
-  # Default gas price
+  # TODO remove (not used)
   gasPrice: 1000000000
   # Default gas limit
-  gasLimit: 4712388
+  gasLimit: 1000000
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum
