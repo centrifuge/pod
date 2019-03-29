@@ -2,6 +2,8 @@ package identity
 
 import (
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 // StringsToDIDs converts hex strings to DIDs.
@@ -76,6 +78,11 @@ func DIDsPointers(dids ...DID) []*DID {
 	var pdids []*DID
 	for _, did := range dids {
 		did := did
+		if utils.IsEmptyAddress(did.ToAddress()) {
+			pdids = append(pdids, nil)
+			continue
+		}
+
 		pdids = append(pdids, &did)
 	}
 

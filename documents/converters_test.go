@@ -5,10 +5,14 @@ package documents
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestBinaryAttachments(t *testing.T) {
@@ -117,4 +121,34 @@ func TestCollaboratorAccess(t *testing.T) {
 	rcs.Collaborators[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
+}
+
+func TestDeriveResponseHeader(t *testing.T) {
+	model := new(mockModel)
+	model.On("GetCollaborators", mock.Anything).Return(CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
+	_, err := DeriveResponseHeader(model)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error fetching collaborators")
+	model.AssertExpectations(t)
+
+	id := utils.RandomSlice(32)
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+	ca := CollaboratorsAccess{
+		ReadCollaborators:      []identity.DID{did1},
+		ReadWriteCollaborators: []identity.DID{did2},
+	}
+	model = new(mockModel)
+	model.On("GetCollaborators", mock.Anything).Return(ca, nil).Once()
+	model.On("ID").Return(id).Once()
+	model.On("CurrentVersion").Return(id).Once()
+	resp, err := DeriveResponseHeader(model)
+	assert.NoError(t, err)
+	assert.Equal(t, hexutil.Encode(id), resp.DocumentId)
+	assert.Equal(t, hexutil.Encode(id), resp.Version)
+	assert.Len(t, resp.ReadAccess.Collaborators, 1)
+	assert.Equal(t, resp.ReadAccess.Collaborators[0], did1.String())
+	assert.Len(t, resp.WriteAccess.Collaborators, 1)
+	assert.Equal(t, resp.WriteAccess.Collaborators[0], did2.String())
+	model.AssertExpectations(t)
 }
