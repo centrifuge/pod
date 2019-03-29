@@ -69,7 +69,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 
-	payobdat, err := findContractDeployJSON("PaymentObligation.json")
+	payobdat, err := findContractDeployJSON("InvoiceUnpaidNFT.json")
 	if err != nil {
 		panic(err)
 	}
@@ -158,7 +158,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
-	//RunSmartContractMigrations()
+	RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
