@@ -21,7 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"

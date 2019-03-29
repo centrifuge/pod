@@ -3,7 +3,7 @@ package testingdocuments
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entityrelationship"
 )
 
 func CreateEntityRelationshipData() entitypb.EntityRelationship {
