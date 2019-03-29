@@ -3,13 +3,15 @@ package entityrelationship
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	relationshippb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -21,16 +23,16 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives Entity from clientPayload
-	DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityRelationshipCreatePayload) (documents.Model, error)
+	DeriveFromCreatePayload(ctx context.Context, payload *relationshippb.EntityRelationshipCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives entity model from update payload
-	DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityRelationshipUpdatePayload) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload *relationshippb.EntityRelationshipUpdatePayload) (documents.Model, error)
 
 	// DeriveEntityRelationshipData returns the entity relationship data as client data
-	DeriveEntityRelationshipData(entity documents.Model) (*cliententitypb.EntityRelationshipData, error)
+	DeriveEntityRelationshipData(entity documents.Model) (*relationshippb.EntityRelationshipData, error)
 
 	// DeriveEntityRelationshipResponse returns the entity relationship model in our standard client format
-	DeriveEntityRelationshipResponse(entity documents.Model) (*cliententitypb.EntityRelationshipResponse, error)
+	DeriveEntityRelationshipResponse(entity documents.Model) (*relationshippb.EntityRelationshipResponse, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -75,7 +77,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityRelationshipCreatePayload) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(ctx context.Context, payload *relationshippb.EntityRelationshipCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -162,7 +164,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 }
 
 // DeriveEntityResponse returns create response from entity model
-func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.EntityRelationshipResponse, error) {
+func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*relationshippb.EntityRelationshipResponse, error) {
 	data, err := s.DeriveEntityRelationshipData(model)
 	if err != nil {
 		return nil, err
@@ -178,13 +180,12 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*clien
 		css = append(css, c.String())
 	}
 
-	h := &cliententitypb.ResponseHeader{
-		DocumentId:    hexutil.Encode(model.ID()),
-		VersionId:     hexutil.Encode(model.CurrentVersion()),
-		Collaborators: css,
+	h := &documentpb.ResponseHeader{
+		DocumentId: hexutil.Encode(model.ID()),
+		Version:    hexutil.Encode(model.CurrentVersion()),
 	}
 
-	return &cliententitypb.EntityRelationshipResponse{
+	return &relationshippb.EntityRelationshipResponse{
 		Header: h,
 		Data:   data,
 	}, nil
@@ -192,7 +193,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*clien
 }
 
 // DeriveEntityData returns create response from entity model
-func (s service) DeriveEntityRelationshipData(doc documents.Model) (*cliententitypb.EntityRelationshipData, error) {
+func (s service) DeriveEntityRelationshipData(doc documents.Model) (*relationshippb.EntityRelationshipData, error) {
 	er, ok := doc.(*EntityRelationship)
 	if !ok {
 		return nil, documents.ErrDocumentInvalidType
@@ -202,7 +203,7 @@ func (s service) DeriveEntityRelationshipData(doc documents.Model) (*cliententit
 }
 
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
-func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityRelationshipUpdatePayload) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *relationshippb.EntityRelationshipUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
@@ -221,6 +222,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 		}
 	}
 	er := new(EntityRelationship)
+	// revoke access token here
 	err = er.PrepareNewVersion(old, payload.Data, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load entity from data: %v", err))
