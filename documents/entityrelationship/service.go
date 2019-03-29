@@ -230,3 +230,27 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *relations
 
 	return er, nil
 }
+
+// Get returns the entity relationship requested
+func (s service) Get(ctx context.Context, payload *relationshippb.EntityRelationshipData) (documents.Model, error) {
+	if payload == nil {
+		return nil, documents.ErrDocumentNil
+	}
+	dids, err := identity.StringsToDIDs(payload.OwnerIdentity, payload.TargetIdentity)
+	if err != nil {
+		return nil, err
+	}
+	models, err := s.storage.GetAllByPrefix(payload.OwnerIdentity)
+	if err != nil {
+		return nil, err
+	}
+	var er documents.Model
+	for _, m := range models {
+		if m.(*EntityRelationship).TargetIdentity == dids[1] {
+		// return corresponding entity data
+		er = m.(*EntityRelationship)
+		}
+	}
+
+	return er, nil
+}

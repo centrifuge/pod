@@ -15,10 +15,10 @@
     "application/json"
   ],
   "paths": {
-    "/entityrelationship": {
+    "/entity/{data.owner_identity}/share/{data.target_identity}": {
       "post": {
         "description": "Creates an entity relationship",
-        "operationId": "Create",
+        "operationId": "Share",
         "responses": {
           "200": {
             "description": "",
@@ -28,6 +28,18 @@
           }
         },
         "parameters": [
+          {
+            "name": "data.owner_identity",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "data.target_identity",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
           {
             "name": "body",
             "in": "body",
@@ -42,10 +54,10 @@
         ]
       }
     },
-    "/entityrelationship/{data.owner_identity}/{data.target_identity}": {
+    "/entity/{data.owner_identity}/{data.target_identity}": {
       "put": {
-        "description": "Updates an entity relationship",
-        "operationId": "Update",
+        "description": "Revokes the access token for the target identity on the relevant entity relationship",
+        "operationId": "Revoke",
         "responses": {
           "200": {
             "description": "",
@@ -83,13 +95,13 @@
     },
     "/entityrelationship/{owner_identity}": {
       "get": {
-        "description": "Get the current entity",
+        "description": "Get entity data",
         "operationId": "Get",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityrelationshipEntityRelationshipResponse"
+              "$ref": "#/definitions/entityEntityData"
             }
           }
         },
@@ -266,13 +278,188 @@
         }
       }
     },
+    "entityAddress": {
+      "type": "object",
+      "properties": {
+        "is_main": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_remit_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_ship_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "is_pay_to": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "address_line1": {
+          "type": "string"
+        },
+        "address_line2": {
+          "type": "string"
+        },
+        "contact_person": {
+          "type": "string"
+        }
+      }
+    },
+    "entityBankPaymentMethod": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "address": {
+          "$ref": "#/definitions/entityAddress"
+        },
+        "holder_name": {
+          "type": "string"
+        },
+        "bank_key": {
+          "type": "string"
+        },
+        "bank_account_number": {
+          "type": "string"
+        },
+        "supported_currency": {
+          "type": "string"
+        }
+      }
+    },
+    "entityContact": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "fax": {
+          "type": "string"
+        }
+      }
+    },
+    "entityCryptoPaymentMethod": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "to": {
+          "type": "string"
+        },
+        "chain_uri": {
+          "type": "string"
+        },
+        "supported_currency": {
+          "type": "string"
+        }
+      }
+    },
+    "entityEntityData": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "legal_name": {
+          "type": "string"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityAddress"
+          },
+          "title": "address"
+        },
+        "payment_details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityPaymentDetail"
+          },
+          "title": "tax information"
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityContact"
+          },
+          "title": "Entity contact list"
+        }
+      },
+      "title": "EntityData is the default entity schema"
+    },
+    "entityOtherPayment": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "format": "byte"
+        },
+        "type": {
+          "type": "string"
+        },
+        "pay_to": {
+          "type": "string"
+        },
+        "supported_currency": {
+          "type": "string"
+        }
+      }
+    },
+    "entityPaymentDetail": {
+      "type": "object",
+      "properties": {
+        "predefined": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "fields for bank accounts and ethereum wallets"
+        },
+        "bank_payment_method": {
+          "$ref": "#/definitions/entityBankPaymentMethod"
+        },
+        "crypto_payment_method": {
+          "$ref": "#/definitions/entityCryptoPaymentMethod"
+        },
+        "other_method": {
+          "$ref": "#/definitions/entityOtherPayment"
+        }
+      }
+    },
     "entityrelationshipEntityRelationshipCreatePayload": {
       "type": "object",
       "properties": {
         "data": {
           "$ref": "#/definitions/entityrelationshipEntityRelationshipData"
         }
-      }
+      },
+      "title": "combine these two?"
     },
     "entityrelationshipEntityRelationshipData": {
       "type": "object",

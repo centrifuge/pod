@@ -15,22 +15,22 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // DocumentService contains all common interactions for entity document
 service DocumentService {
-    rpc Create(EntityRelationshipCreatePayload) returns (EntityRelationshipResponse) {
+    rpc Share(EntityRelationshipCreatePayload) returns (EntityRelationshipResponse) {
         option (google.api.http) = {
-      post: "/entityrelationship"
+      post: "/entity/{data.owner_identity}/share/{data.target_identity}"
       body: "*"
     };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Creates an entity relationship"
     };
     }
-    rpc Update(EntityRelationshipUpdatePayload) returns (EntityRelationshipResponse) {
+    rpc Revoke(EntityRelationshipUpdatePayload) returns (EntityRelationshipResponse) {
         option (google.api.http) = {
-      put: "/entityrelationship/{data.owner_identity}/{data.target_identity}"
+      put: "/entity/{data.owner_identity}/{data.target_identity}"
       body: "*"
     };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates an entity relationship"
+      description: "Revokes the access token for the target identity on the relevant entity relationship"
     };
     }
     rpc Get(EntityRelationshipData) returns (entity.EntityData) {
@@ -38,17 +38,17 @@ service DocumentService {
       get: "/entityrelationship/{owner_identity}"
     };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the current entity"
+      description: "Get entity data"
     };
     }
 }
-
 
 message EntityRelationshipData {
 string owner_identity = 1;
 string target_identity = 2;
 }
 
+//combine these two?
 message EntityRelationshipCreatePayload {
 EntityRelationshipData data = 1;
 }
