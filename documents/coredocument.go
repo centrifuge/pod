@@ -454,9 +454,8 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (Collaborato
 		return CollaboratorsAccess{}, err
 	}
 
-	rc := filterCollaborators(rcs, filterIDs...)
 	wc := filterCollaborators(wcs, filterIDs...)
-	rc = filterCollaborators(rc, wc...)
+	rc := filterCollaborators(rcs, append(wc, filterIDs...)...)
 	return CollaboratorsAccess{
 		ReadCollaborators:      rc,
 		ReadWriteCollaborators: wc,
