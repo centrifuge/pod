@@ -174,16 +174,13 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 	if err != nil {
 		return nil, err
 	}
-
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-
 	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err := t.AddLeavesFromDocument(eProto); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
-
 	if err := t.Generate(); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
