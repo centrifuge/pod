@@ -305,7 +305,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	if po == nil {
 		payload := testingdocuments.CreatePOPayload()
 		po = new(purchaseorder.PurchaseOrder)
-		err = po.InitPurchaseOrderInput(payload, defaultDID.String())
+		err = po.InitPurchaseOrderInput(payload, defaultDID)
 		assert.NoError(t, err)
 	}
 	err = po.AddUpdateLog(defaultDID)
@@ -331,7 +331,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil)
+	cd, err := po.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)
