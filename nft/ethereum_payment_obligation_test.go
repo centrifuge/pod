@@ -158,7 +158,7 @@ func TestPaymentObligationService(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
-				cd, err := documents.NewCoreDocumentWithCollaborators(nil, nil)
+				cd, err := documents.NewCoreDocumentWithCollaborators(nil, documents.CollaboratorsAccess{})
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}

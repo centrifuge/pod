@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -69,9 +70,9 @@ func TestService_Update(t *testing.T) {
 	data.Contacts = []*entitypb.Contact{{Name: "Mr. Test"}}
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := eSrv.DeriveFromUpdatePayload(ctxh, &cliententitypb.EntityUpdatePayload{
-		Identifier:    hexutil.Encode(model.ID()),
-		Collaborators: []string{collab},
-		Data:          data,
+		Identifier:  hexutil.Encode(model.ID()),
+		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		Data:        data,
 	})
 	assert.NoError(t, err)
 	newData, err := eSrv.DeriveEntityData(newInv)
@@ -139,23 +140,21 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// invalid collaborator identity
 	payload.Data.LegalName = "new company name"
-	payload.Collaborators = []string{"some wrong ID"}
+	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-
-	payload.Collaborators = []string{wantCollab.String()}
+	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
-	assert.Len(t, cs, 3)
-	assert.Contains(t, cs, wantCollab)
+	assert.Len(t, cs.ReadWriteCollaborators, 3)
+	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
 	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
@@ -267,11 +266,11 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	// success
 	entity, _ := createCDWithEmbeddedEntity(t)
 	r, err = eSrv.DeriveEntityResponse(entity)
-	payload := testingdocuments.CreateEntityPayload()
 	assert.NoError(t, err)
+	payload := testingdocuments.CreateEntityPayload()
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.LegalName)
-	assert.Contains(t, r.Header.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -285,7 +284,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	data := doc.(*Entity).getClientData()
 	data.LegalName = "test company"
 	doc2 := new(Entity)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, nil))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := eSrv.GetCurrentVersion(ctxh, doc.ID())

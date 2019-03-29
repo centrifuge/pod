@@ -77,7 +77,7 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientinv
 	}
 
 	invoiceModel := new(Invoice)
-	err = invoiceModel.InitInvoiceInput(payload, did.String())
+	err = invoiceModel.InitInvoiceInput(payload, did)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -164,20 +164,9 @@ func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.
 		return nil, err
 	}
 
-	cs, err := model.GetCollaborators()
+	h, err := documents.DeriveResponseHeader(model)
 	if err != nil {
-		return nil, errors.New("failed to get collaborators: %v", err)
-	}
-
-	var css []string
-	for _, c := range cs {
-		css = append(css, c.String())
-	}
-
-	h := &clientinvoicepb.ResponseHeader{
-		DocumentId:    hexutil.Encode(model.ID()),
-		VersionId:     hexutil.Encode(model.CurrentVersion()),
-		Collaborators: css,
+		return nil, errors.New("failed to derive response: %v", err)
 	}
 
 	return &clientinvoicepb.InvoiceResponse{
@@ -214,9 +203,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 		return nil, err
 	}
 
-	inv := new(Invoice)
-	err = inv.PrepareNewVersion(old, payload.Data, payload.Collaborators)
+	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
 	if err != nil {
+		return nil, err
+	}
+
+	inv := new(Invoice)
+	if err := inv.PrepareNewVersion(old, payload.Data, cs); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load invoice from data: %v", err))
 	}
 

@@ -21,7 +21,9 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 			"total_amount": "40",
 			"currency":     "USD",
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 }
 
@@ -36,7 +38,9 @@ func defaultEntityPayload(identity string, collaborators []string) map[string]in
 				},
 			},
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 }
 
@@ -57,7 +61,9 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 				},
 			},
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 }
 
@@ -73,7 +79,9 @@ func invoiceNFTPayload(collaborators []string, sender string) map[string]interfa
 			"sender":        sender,
 			"status":        "unpaid",
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 }
 
@@ -86,7 +94,9 @@ func poNFTPayload(collaborators []string) map[string]interface{} {
 			"total_amount":  "40",
 			"document_type": "po",
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 }
 
@@ -121,7 +131,9 @@ func updatedPOPayload(collaborators []string) map[string]interface{} {
 			"currency":     "EUR",
 			"total_amount": "42",
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 
 }
@@ -135,7 +147,9 @@ func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 			"currency":     "EUR",
 			"net_amount":   "42",
 		},
-		"collaborators": collaborators,
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
 	}
 
 }

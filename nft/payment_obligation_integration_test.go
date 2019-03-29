@@ -82,7 +82,6 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	tm, err := utils.ToTimestamp(dueDate)
 	assert.NoError(t, err)
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
-		Collaborators: []string{},
 		Data: &invoicepb.InvoiceData{
 			Sender:      did.String(),
 			Number:      "2132131",

@@ -63,14 +63,19 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 }
 
 // InitEntityInput initialize the model based on the received parameters from the rest api call
-func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self string) error {
+func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self identity.DID) error {
 	err := e.initEntityFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
+	ca, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
+	if err != nil {
+		return errors.New("failed to decode collaborator: %v", err)
+	}
+
+	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)
+	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), ca)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -234,14 +239,14 @@ func (*Entity) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old entity.
-func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators []string) error {
+func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators documents.CollaboratorsAccess) error {
 	err := e.initEntityFromData(data)
 	if err != nil {
 		return err
 	}
 
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
 	if err != nil {
 		return err
 	}

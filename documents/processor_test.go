@@ -119,10 +119,10 @@ func (m *mockModel) Timestamp() (time.Time, error) {
 	return dr, args.Error(1)
 }
 
-func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
 	args := m.Called(filterIDs)
-	cids, _ := args.Get(0).([]identity.DID)
-	return cids, args.Error(1)
+	cas, _ := args.Get(0).(CollaboratorsAccess)
+	return cas, args.Error(1)
 }
 
 func (m *mockModel) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {

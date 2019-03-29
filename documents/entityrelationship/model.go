@@ -59,7 +59,9 @@ func (e *EntityRelationship) InitEntityRelationshipInput(payload *cliententitypb
 		return err
 	}
 
-	cd, err := documents.NewCoreDocumentWithCollaborators([]string{payload.Data.OwnerIdentity}, compactPrefix())
+	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), documents.CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{*e.OwnerIdentity},
+	})
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -76,7 +78,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *client
 	}
 
 	oldCD := old.(*EntityRelationship).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix())
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{})
 	if err != nil {
 		return err
 	}

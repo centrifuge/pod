@@ -7,7 +7,6 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.document";
 
-import "coredocument/coredocument.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "precise-proofs/proofs/proto/proof.proto";
@@ -117,19 +116,16 @@ message PaymentDetails {
 }
 
 message RequestHeader {
-  repeated ReadAccess read_access = 1;
-  repeated WriteAccess write_access = 2;
+  ReadAccess read_access = 1;
+  WriteAccess write_access = 2;
 }
 
 message ReadAccess {
-  coredocument.Action action = 1;
-  repeated string collaborators = 2;
-  repeated NFT nfts = 3;
+  repeated string collaborators = 1;
 }
 
 message WriteAccess {
-  coredocument.TransitionAction action = 1;
-  repeated string collaborators = 2;
+  repeated string collaborators = 1;
 }
 
 message Signature {
@@ -156,11 +152,7 @@ message ResponseHeader {
   string version = 2;
   string author = 3;
   string created_at = 4;
-  repeated ReadAccess read_access = 5;
-  repeated WriteAccess write_access = 6;
-  repeated Signature signatures = 7;
-  repeated NFT nfts = 8;
-  bool anchored = 9;
-  repeated AccessToken access_tokens = 10;
-  string transaction_id = 11;
+  ReadAccess read_access = 5;
+  WriteAccess write_access = 6;
+  string transaction_id = 7;
 }
