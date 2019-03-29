@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package entityrelationship;
+
+option go_package = "entityrelationshipb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.entityrelationship";
+
+import "entity/service.proto";
+import "document/service.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+
+// DocumentService contains all common interactions for entity document
+service DocumentService {
+    rpc Create(EntityRelationshipCreatePayload) returns (EntityRelationshipResponse) {
+        option (google.api.http) = {
+      post: "/entityrelationship"
+      body: "*"
+    };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Creates an entity relationship"
+    };
+    }
+    rpc Update(EntityRelationshipUpdatePayload) returns (EntityRelationshipResponse) {
+        option (google.api.http) = {
+      put: "/entityrelationship/{data.owner_identity}/{data.target_identity}"
+      body: "*"
+    };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Updates an entity relationship"
+    };
+    }
+    rpc Get(EntityRelationshipData) returns (entity.EntityData) {
+        option (google.api.http) = {
+      get: "/entityrelationship/{owner_identity}"
+    };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get the current entity"
+    };
+    }
+}
+
+
+message EntityRelationshipData {
+string owner_identity = 1;
+string target_identity = 2;
+}
+
+message EntityRelationshipCreatePayload {
+EntityRelationshipData data = 1;
+}
+
+message EntityRelationshipUpdatePayload {
+EntityRelationshipData data = 1;
+}
+
+message EntityRelationshipResponse {
+document.ResponseHeader header = 1;
+EntityRelationshipData data = 2;
+}
+

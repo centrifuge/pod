@@ -2,8 +2,8 @@ package entityrelationship
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/storage"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -36,9 +37,11 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
+	storage   storage.Repository
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
+	factory   identity.Factory
 }
 
 // DefaultService returns the default implementation of the service.
@@ -47,12 +50,16 @@ func DefaultService(
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
+	factory identity.Factory,
+	storage storage.Repository,
 ) Service {
 	return service{
 		repo:      repo,
 		queueSrv:  queueSrv,
 		txManager: txManager,
 		Service:   srv,
+		factory:   factory,
+		storage:   storage,
 	}
 }
 
@@ -116,7 +123,7 @@ func (s service) Create(ctx context.Context, entityRelationship documents.Model)
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	entityRelationship, err = s.validateAndPersist(ctx, nil, entityRelationship, CreateValidator())
+	entityRelationship, err = s.validateAndPersist(ctx, nil, entityRelationship, CreateValidator(s.factory))
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -141,7 +148,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
@@ -199,10 +206,20 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 	if payload == nil || payload.Data == nil {
 		return nil, documents.ErrDocumentNil
 	}
-	documents.Repository.Get(payload.Data.OwnerIdentity)
-	models, err := storage.Repository.GetAllByPrefix(prefix)
-
-
+	dids, err := identity.StringsToDIDs(payload.Data.OwnerIdentity, payload.Data.TargetIdentity)
+	if err != nil {
+		return nil, err
+	}
+	models, err := s.storage.GetAllByPrefix(payload.Data.OwnerIdentity)
+	if err != nil {
+		return nil, err
+	}
+	var old documents.Model
+	for _, m := range models {
+		if m.(*EntityRelationship).TargetIdentity == dids[1] {
+			old = m.(*EntityRelationship)
+		}
+	}
 	er := new(EntityRelationship)
 	err = er.PrepareNewVersion(old, payload.Data, nil)
 	if err != nil {

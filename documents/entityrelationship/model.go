@@ -134,7 +134,6 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 	if err != nil {
 		return err
 	}
-
 	err = e.loadFromP2PProtobuf(entityRelationship)
 	if err != nil {
 		return err
@@ -175,13 +174,16 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 	if err != nil {
 		return nil, err
 	}
+
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
+
 	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err := t.AddLeavesFromDocument(eProto); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
 	if err := t.Generate(); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
@@ -208,12 +210,12 @@ func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.P
 	return e.CoreDocument.CreateProofs(e.DocumentType(), tree, fields)
 }
 
-// DocumentType returns the entity relationship document type. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
+// DocumentType returns the entity relationship document type.
 func (*EntityRelationship) DocumentType() string {
 	return documenttypes.EntityRelationshipDocumentTypeUrl
 }
 
-// AddNFT adds NFT to the EntityRelationship.
+// AddNFT adds NFT to the EntityRelationship. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
 func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
 	panic(documents.ErrNotImplemented)
 }

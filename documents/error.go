@@ -90,6 +90,9 @@ const (
 
 	// ErrNotImplemented must be used when an method has not been implemented
 	ErrNotImplemented = errors.Error("Method not implemented")
+
+	// Handler errors
+
 )
 
 // Error wraps an error with specific key
