@@ -72,7 +72,7 @@ networks:
   # Main net test network
   embarcaderotest:
     # Numeric ID of the Centrifuge network
-    id: 54
+    id: 10
     bootstrapPeers:
       - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
       - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"

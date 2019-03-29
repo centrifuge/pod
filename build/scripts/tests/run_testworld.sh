@@ -2,7 +2,7 @@
 
 echo "Running Testworld"
 
-cleanup="pkill -f testworld; ls testworld/hostconfigs/* | grep testworld | grep -v README.md | tr -d : | xargs rm -rf"
+cleanup="pkill -f \"go-centrifuge/testworld\"; ls testworld/hostconfigs/* | grep testworld | grep -v README.md | tr -d : | xargs rm -rf"
 
 eval "$cleanup"
 
