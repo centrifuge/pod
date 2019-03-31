@@ -28,7 +28,7 @@ var (
 )
 
 // EthereumPaymentObligationContractABI is the input ABI used to generate the binding from.
-const EthereumPaymentObligationContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getAnchorRegistry\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getIdentityFactory\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"tokenURI\",\"type\":\"string\"}],\"name\":\"PaymentObligationMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getTokenDetails\",\"outputs\":[{\"name\":\"invoiceSender\",\"type\":\"address\"},{\"name\":\"grossAmount\",\"type\":\"bytes\"},{\"name\":\"currency\",\"type\":\"bytes\"},{\"name\":\"dueDate\",\"type\":\"bytes\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"},{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"tokenURI\",\"type\":\"string\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"properties\",\"type\":\"bytes[]\"},{\"name\":\"values\",\"type\":\"bytes[]\"},{\"name\":\"salts\",\"type\":\"bytes32[]\"},{\"name\":\"proofs\",\"type\":\"bytes32[][]\"}],\"name\":\"mint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const EthereumPaymentObligationContractABI = "[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getAnchorRegistry\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getIdentityFactory\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"InvoiceUnpaidMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getTokenDetails\",\"outputs\":[{\"name\":\"invoiceSender\",\"type\":\"address\"},{\"name\":\"grossAmount\",\"type\":\"bytes\"},{\"name\":\"currency\",\"type\":\"bytes\"},{\"name\":\"dueDate\",\"type\":\"bytes\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"nextAnchorId\",\"type\":\"uint256\"},{\"name\":\"documentRoot\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"isTokenLatestDocument\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"tokenUriBase\",\"type\":\"string\"},{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"},{\"name\":\"tokenUriBase\",\"type\":\"string\"},{\"name\":\"anchorRegistry\",\"type\":\"address\"},{\"name\":\"identityFactory\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"anchorId\",\"type\":\"uint256\"},{\"name\":\"properties\",\"type\":\"bytes[]\"},{\"name\":\"values\",\"type\":\"bytes[]\"},{\"name\":\"salts\",\"type\":\"bytes32[]\"},{\"name\":\"proofs\",\"type\":\"bytes32[][]\"}],\"name\":\"mint\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // EthereumPaymentObligationContract is an auto generated Go binding around an Ethereum contract.
 type EthereumPaymentObligationContract struct {
@@ -278,13 +278,14 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, bytes32 documentRoot)
+// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, uint256 nextAnchorId, bytes32 documentRoot)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) GetTokenDetails(opts *bind.CallOpts, tokenId *big.Int) (struct {
 	InvoiceSender common.Address
 	GrossAmount   []byte
 	Currency      []byte
 	DueDate       []byte
 	AnchorId      *big.Int
+	NextAnchorId  *big.Int
 	DocumentRoot  [32]byte
 }, error) {
 	ret := new(struct {
@@ -293,6 +294,7 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 		Currency      []byte
 		DueDate       []byte
 		AnchorId      *big.Int
+		NextAnchorId  *big.Int
 		DocumentRoot  [32]byte
 	})
 	out := ret
@@ -302,13 +304,14 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCalle
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, bytes32 documentRoot)
+// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, uint256 nextAnchorId, bytes32 documentRoot)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) GetTokenDetails(tokenId *big.Int) (struct {
 	InvoiceSender common.Address
 	GrossAmount   []byte
 	Currency      []byte
 	DueDate       []byte
 	AnchorId      *big.Int
+	NextAnchorId  *big.Int
 	DocumentRoot  [32]byte
 }, error) {
 	return _EthereumPaymentObligationContract.Contract.GetTokenDetails(&_EthereumPaymentObligationContract.CallOpts, tokenId)
@@ -316,13 +319,14 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSessi
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, bytes32 documentRoot)
+// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, uint256 nextAnchorId, bytes32 documentRoot)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) GetTokenDetails(tokenId *big.Int) (struct {
 	InvoiceSender common.Address
 	GrossAmount   []byte
 	Currency      []byte
 	DueDate       []byte
 	AnchorId      *big.Int
+	NextAnchorId  *big.Int
 	DocumentRoot  [32]byte
 }, error) {
 	return _EthereumPaymentObligationContract.Contract.GetTokenDetails(&_EthereumPaymentObligationContract.CallOpts, tokenId)
@@ -352,6 +356,32 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSessi
 // Solidity: function isApprovedForAll(address owner, address operator) constant returns(bool)
 func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error) {
 	return _EthereumPaymentObligationContract.Contract.IsApprovedForAll(&_EthereumPaymentObligationContract.CallOpts, owner, operator)
+}
+
+// IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
+//
+// Solidity: function isTokenLatestDocument(uint256 tokenId) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCaller) IsTokenLatestDocument(opts *bind.CallOpts, tokenId *big.Int) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _EthereumPaymentObligationContract.contract.Call(opts, out, "isTokenLatestDocument", tokenId)
+	return *ret0, err
+}
+
+// IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
+//
+// Solidity: function isTokenLatestDocument(uint256 tokenId) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) IsTokenLatestDocument(tokenId *big.Int) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.IsTokenLatestDocument(&_EthereumPaymentObligationContract.CallOpts, tokenId)
+}
+
+// IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
+//
+// Solidity: function isTokenLatestDocument(uint256 tokenId) constant returns(bool)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractCallerSession) IsTokenLatestDocument(tokenId *big.Int) (bool, error) {
+	return _EthereumPaymentObligationContract.Contract.IsTokenLatestDocument(&_EthereumPaymentObligationContract.CallOpts, tokenId)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
@@ -583,46 +613,46 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTrans
 	return _EthereumPaymentObligationContract.Contract.Approve(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x8f15b414.
+// Initialize is a paid mutator transaction binding the contract method 0xd6d0faee.
 //
-// Solidity: function initialize(string name, string symbol, address anchorRegistry, address identityFactory) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Initialize(opts *bind.TransactOpts, name string, symbol string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "initialize", name, symbol, anchorRegistry, identityFactory)
+// Solidity: function initialize(string name, string symbol, string tokenUriBase, address anchorRegistry, address identityFactory) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Initialize(opts *bind.TransactOpts, name string, symbol string, tokenUriBase string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "initialize", name, symbol, tokenUriBase, anchorRegistry, identityFactory)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x8f15b414.
+// Initialize is a paid mutator transaction binding the contract method 0xd6d0faee.
 //
-// Solidity: function initialize(string name, string symbol, address anchorRegistry, address identityFactory) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Initialize(name string, symbol string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Initialize(&_EthereumPaymentObligationContract.TransactOpts, name, symbol, anchorRegistry, identityFactory)
+// Solidity: function initialize(string name, string symbol, string tokenUriBase, address anchorRegistry, address identityFactory) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Initialize(name string, symbol string, tokenUriBase string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Initialize(&_EthereumPaymentObligationContract.TransactOpts, name, symbol, tokenUriBase, anchorRegistry, identityFactory)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x8f15b414.
+// Initialize is a paid mutator transaction binding the contract method 0xd6d0faee.
 //
-// Solidity: function initialize(string name, string symbol, address anchorRegistry, address identityFactory) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Initialize(name string, symbol string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Initialize(&_EthereumPaymentObligationContract.TransactOpts, name, symbol, anchorRegistry, identityFactory)
+// Solidity: function initialize(string name, string symbol, string tokenUriBase, address anchorRegistry, address identityFactory) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Initialize(name string, symbol string, tokenUriBase string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Initialize(&_EthereumPaymentObligationContract.TransactOpts, name, symbol, tokenUriBase, anchorRegistry, identityFactory)
 }
 
-// Mint is a paid mutator transaction binding the contract method 0x525b006f.
+// Mint is a paid mutator transaction binding the contract method 0xc15778db.
 //
-// Solidity: function mint(address to, uint256 tokenId, string tokenURI, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Mint(opts *bind.TransactOpts, to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.contract.Transact(opts, "mint", to, tokenId, tokenURI, anchorId, properties, values, salts, proofs)
+// Solidity: function mint(address to, uint256 tokenId, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactor) Mint(opts *bind.TransactOpts, to common.Address, tokenId *big.Int, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.contract.Transact(opts, "mint", to, tokenId, anchorId, properties, values, salts, proofs)
 }
 
-// Mint is a paid mutator transaction binding the contract method 0x525b006f.
+// Mint is a paid mutator transaction binding the contract method 0xc15778db.
 //
-// Solidity: function mint(address to, uint256 tokenId, string tokenURI, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId, tokenURI, anchorId, properties, values, salts, proofs)
+// Solidity: function mint(address to, uint256 tokenId, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractSession) Mint(to common.Address, tokenId *big.Int, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId, anchorId, properties, values, salts, proofs)
 }
 
-// Mint is a paid mutator transaction binding the contract method 0x525b006f.
+// Mint is a paid mutator transaction binding the contract method 0xc15778db.
 //
-// Solidity: function mint(address to, uint256 tokenId, string tokenURI, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Mint(to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
-	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId, tokenURI, anchorId, properties, values, salts, proofs)
+// Solidity: function mint(address to, uint256 tokenId, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractTransactorSession) Mint(to common.Address, tokenId *big.Int, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
+	return _EthereumPaymentObligationContract.Contract.Mint(&_EthereumPaymentObligationContract.TransactOpts, to, tokenId, anchorId, properties, values, salts, proofs)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
@@ -980,9 +1010,9 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilte
 	}), nil
 }
 
-// EthereumPaymentObligationContractPaymentObligationMintedIterator is returned from FilterPaymentObligationMinted and is used to iterate over the raw logs and unpacked data for PaymentObligationMinted events raised by the EthereumPaymentObligationContract contract.
-type EthereumPaymentObligationContractPaymentObligationMintedIterator struct {
-	Event *EthereumPaymentObligationContractPaymentObligationMinted // Event containing the contract specifics and raw log
+// EthereumPaymentObligationContractInvoiceUnpaidMintedIterator is returned from FilterInvoiceUnpaidMinted and is used to iterate over the raw logs and unpacked data for InvoiceUnpaidMinted events raised by the EthereumPaymentObligationContract contract.
+type EthereumPaymentObligationContractInvoiceUnpaidMintedIterator struct {
+	Event *EthereumPaymentObligationContractInvoiceUnpaidMinted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -996,7 +1026,7 @@ type EthereumPaymentObligationContractPaymentObligationMintedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *EthereumPaymentObligationContractPaymentObligationMintedIterator) Next() bool {
+func (it *EthereumPaymentObligationContractInvoiceUnpaidMintedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1005,7 +1035,7 @@ func (it *EthereumPaymentObligationContractPaymentObligationMintedIterator) Next
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(EthereumPaymentObligationContractPaymentObligationMinted)
+			it.Event = new(EthereumPaymentObligationContractInvoiceUnpaidMinted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1020,7 +1050,7 @@ func (it *EthereumPaymentObligationContractPaymentObligationMintedIterator) Next
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(EthereumPaymentObligationContractPaymentObligationMinted)
+		it.Event = new(EthereumPaymentObligationContractInvoiceUnpaidMinted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1036,43 +1066,42 @@ func (it *EthereumPaymentObligationContractPaymentObligationMintedIterator) Next
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *EthereumPaymentObligationContractPaymentObligationMintedIterator) Error() error {
+func (it *EthereumPaymentObligationContractInvoiceUnpaidMintedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *EthereumPaymentObligationContractPaymentObligationMintedIterator) Close() error {
+func (it *EthereumPaymentObligationContractInvoiceUnpaidMintedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// EthereumPaymentObligationContractPaymentObligationMinted represents a PaymentObligationMinted event raised by the EthereumPaymentObligationContract contract.
-type EthereumPaymentObligationContractPaymentObligationMinted struct {
-	To       common.Address
-	TokenId  *big.Int
-	TokenURI string
-	Raw      types.Log // Blockchain specific contextual infos
+// EthereumPaymentObligationContractInvoiceUnpaidMinted represents a InvoiceUnpaidMinted event raised by the EthereumPaymentObligationContract contract.
+type EthereumPaymentObligationContractInvoiceUnpaidMinted struct {
+	To      common.Address
+	TokenId *big.Int
+	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterPaymentObligationMinted is a free log retrieval operation binding the contract event 0xe2e4e975c4de5fbb1416db2c5ff8e2f4108bbfcdfd27a1a1eb03935cbfa3b8f9.
+// FilterInvoiceUnpaidMinted is a free log retrieval operation binding the contract event 0xe9f9737bf32cf7f57402bb284ec5157185fc537f6ac44948bcb96c6c782f01e5.
 //
-// Solidity: event PaymentObligationMinted(address to, uint256 tokenId, string tokenURI)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterPaymentObligationMinted(opts *bind.FilterOpts) (*EthereumPaymentObligationContractPaymentObligationMintedIterator, error) {
+// Solidity: event InvoiceUnpaidMinted(address to, uint256 tokenId)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) FilterInvoiceUnpaidMinted(opts *bind.FilterOpts) (*EthereumPaymentObligationContractInvoiceUnpaidMintedIterator, error) {
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "PaymentObligationMinted")
+	logs, sub, err := _EthereumPaymentObligationContract.contract.FilterLogs(opts, "InvoiceUnpaidMinted")
 	if err != nil {
 		return nil, err
 	}
-	return &EthereumPaymentObligationContractPaymentObligationMintedIterator{contract: _EthereumPaymentObligationContract.contract, event: "PaymentObligationMinted", logs: logs, sub: sub}, nil
+	return &EthereumPaymentObligationContractInvoiceUnpaidMintedIterator{contract: _EthereumPaymentObligationContract.contract, event: "InvoiceUnpaidMinted", logs: logs, sub: sub}, nil
 }
 
-// WatchPaymentObligationMinted is a free log subscription operation binding the contract event 0xe2e4e975c4de5fbb1416db2c5ff8e2f4108bbfcdfd27a1a1eb03935cbfa3b8f9.
+// WatchInvoiceUnpaidMinted is a free log subscription operation binding the contract event 0xe9f9737bf32cf7f57402bb284ec5157185fc537f6ac44948bcb96c6c782f01e5.
 //
-// Solidity: event PaymentObligationMinted(address to, uint256 tokenId, string tokenURI)
-func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchPaymentObligationMinted(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractPaymentObligationMinted) (event.Subscription, error) {
+// Solidity: event InvoiceUnpaidMinted(address to, uint256 tokenId)
+func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilterer) WatchInvoiceUnpaidMinted(opts *bind.WatchOpts, sink chan<- *EthereumPaymentObligationContractInvoiceUnpaidMinted) (event.Subscription, error) {
 
-	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "PaymentObligationMinted")
+	logs, sub, err := _EthereumPaymentObligationContract.contract.WatchLogs(opts, "InvoiceUnpaidMinted")
 	if err != nil {
 		return nil, err
 	}
@@ -1082,8 +1111,8 @@ func (_EthereumPaymentObligationContract *EthereumPaymentObligationContractFilte
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(EthereumPaymentObligationContractPaymentObligationMinted)
-				if err := _EthereumPaymentObligationContract.contract.UnpackLog(event, "PaymentObligationMinted", log); err != nil {
+				event := new(EthereumPaymentObligationContractInvoiceUnpaidMinted)
+				if err := _EthereumPaymentObligationContract.contract.UnpackLog(event, "InvoiceUnpaidMinted", log); err != nil {
 					return err
 				}
 				event.Raw = log
