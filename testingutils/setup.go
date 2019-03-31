@@ -69,7 +69,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 
-	payobdat, err := findContractDeployJSON("PaymentObligation.json")
+	payobdat, err := findContractDeployJSON("InvoiceUnpaidNFT.json")
 	if err != nil {
 		panic(err)
 	}

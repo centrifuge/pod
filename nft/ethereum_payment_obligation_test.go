@@ -263,6 +263,53 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 	assert.Equal(t, signatureSender, proofList[6])
 }
 
+func TestFilterMintProofs(t *testing.T) {
+	service := newEthereumPaymentObligation(nil, nil, nil, nil, nil, nil, nil, nil)
+	indexKey := utils.RandomSlice(52)
+	docProof := &documents.DocumentProof{
+		FieldProofs: []*proofspb.Proof{
+			{
+				Property: proofs.CompactName([]byte{10, 100, 5, 20, 69, 1, 0, 1}...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+			{
+				Property: proofs.CompactName(append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+			{
+				Property: proofs.CompactName(append([]byte{3, 0, 0, 0, 0, 0, 0, 1}, append(indexKey, []byte{0, 0, 0, 4}...)...)...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+		},
+	}
+
+	docProofAux := service.filterMintProofs(docProof)
+	assert.Len(t, docProofAux.FieldProofs[0].SortedHashes, 2)
+	assert.Len(t, docProofAux.FieldProofs[1].SortedHashes, 3)
+	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
+}
+
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
 	v1, _ := hexutil.Decode("0x76616c756531")
 	v2, _ := hexutil.Decode("0x76616c756532")

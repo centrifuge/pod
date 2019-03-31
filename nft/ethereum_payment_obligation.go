@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -16,6 +17,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -68,6 +71,21 @@ func newEthereumPaymentObligation(
 	}
 }
 
+func (s *ethereumPaymentObligation) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
+	// Compact properties
+	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
+	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
+	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
+	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
+
+	for i, p := range docProof.FieldProofs {
+		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
+			docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
+		}
+	}
+	return docProof
+}
+
 func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
@@ -89,6 +107,8 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
+	docProofs = s.filterMintProofs(docProofs)
+
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		return mreq, err
@@ -210,8 +230,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-		utxID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, EthereumPaymentObligationContractABI, "mint", requestData.To, requestData.TokenID,
-			requestData.TokenURI, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		utxID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, EthereumPaymentObligationContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
