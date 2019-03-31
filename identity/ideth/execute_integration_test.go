@@ -67,7 +67,7 @@ func TestExecute_successful(t *testing.T) {
 	testAnchorId, _ := anchors.ToAnchorID(hashed)
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
-	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
+	proofs := utils.RandomByte32()
 
 	// call execute
 	_, done, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorIdPreimage.BigInt(), testRootHash, proofs)
@@ -90,7 +90,7 @@ func TestExecute_fail_falseMethodName(t *testing.T) {
 	rootHash := utils.RandomSlice(32)
 	testRootHash, _ := anchors.ToDocumentRoot(rootHash)
 
-	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
+	proofs := utils.RandomByte32()
 
 	_, _, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "fakeMethod", testAnchorId.BigInt(), testRootHash, proofs)
 	assert.Error(t, err, "should throw an error because method is not existing in abi")
@@ -151,7 +151,7 @@ func TestAnchorWithoutExecute_successful(t *testing.T) {
 func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorContract, anchorId anchors.AnchorID, rootHash anchors.DocumentRoot) *ethereum.WatchTransaction {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	proofs := [][anchors.DocumentProofLength]byte{utils.RandomByte32()}
+	proofs := utils.RandomByte32()
 
 	opts, err := client.GetTxOpts(cfg.GetEthereumDefaultAccountName())
 
