@@ -138,33 +138,33 @@ func TestCreateProofData(t *testing.T) {
 	}
 }
 
-type MockPaymentObligation struct {
+type MockInvoiceUnpaid struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
+func (m *MockInvoiceUnpaid) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
 	args := m.Called(opts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
 
-func TestPaymentObligationService(t *testing.T) {
+func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
+		mocker  func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
+			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
 				cd, err := documents.NewCoreDocumentWithCollaborators(nil, documents.CollaboratorsAccess{})
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}
 				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{Number: "1232", CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
-				paymentObligationMock := &MockPaymentObligation{}
+				invoiceUnpaidMock := &MockInvoiceUnpaid{}
 				idServiceMock := testingcommons.MockIdentityService{}
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
@@ -187,7 +187,7 @@ func TestPaymentObligationService(t *testing.T) {
 				txMan := &testingtx.MockTxManager{}
 				txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).Return(transactions.NilTxID(), make(chan bool), nil)
-				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv, txMan
+				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, txMan
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
@@ -201,8 +201,8 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
-			service := newEthereumPaymentObligation(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
-				return &EthereumPaymentObligationContract{}, nil
+			service := newEthInvoiceUnpaid(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
+				return &InvoiceUnpaidContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
@@ -224,8 +224,8 @@ func TestPaymentObligationService(t *testing.T) {
 	}
 }
 
-func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *testing.T) {
-	service := newEthereumPaymentObligation(nil, nil, nil, nil, nil, nil, nil, nil)
+func TestEthereumInvoiceUnpaid_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
+	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
 
 	//missing account in context
 	ctxh := context.Background()
@@ -264,7 +264,7 @@ func TestEthereumPaymentObligation_GetRequiredPaymentObligationProofFields(t *te
 }
 
 func TestFilterMintProofs(t *testing.T) {
-	service := newEthereumPaymentObligation(nil, nil, nil, nil, nil, nil, nil, nil)
+	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
 	indexKey := utils.RandomSlice(52)
 	docProof := &documents.DocumentProof{
 		FieldProofs: []*proofspb.Proof{
