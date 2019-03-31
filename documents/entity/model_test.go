@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
-	ctx[nft.BootstrappedPayObService] = new(testingdocuments.MockRegistry)
+	ctx[nft.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},

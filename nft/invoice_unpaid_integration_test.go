@@ -37,7 +37,7 @@ var cfg config.Configuration
 var cfgService config.Service
 var idService identity.ServiceDID
 var idFactory identity.Factory
-var payOb nft.PaymentObligation
+var InvoiceUnpaid nft.InvoiceUnpaid
 var txManager transactions.Manager
 var tokenRegistry documents.TokenRegistry
 
@@ -49,9 +49,9 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	payOb = ctx[nft.BootstrappedPayObService].(nft.PaymentObligation)
+	InvoiceUnpaid = ctx[nft.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
-	tokenRegistry = ctx[nft.BootstrappedPayObService].(documents.TokenRegistry)
+	tokenRegistry = ctx[nft.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -104,13 +104,13 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	// call mint
 	// assert no error
 	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
-	registry := cfg.GetContractAddress(config.PaymentObligation)
+	registry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
 	return ctx, id, registry, depositAddr, invSrv, cid
 }
 
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
-	resp, done, err := payOb.MintNFT(ctx, req)
+	resp, done, err := InvoiceUnpaid.MintNFT(ctx, req)
 	assert.NoError(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
@@ -125,7 +125,7 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	return tokenID
 }
 
-func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
+func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
@@ -160,7 +160,7 @@ func TestPaymentObligationService_mint_grant_read_access(t *testing.T) {
 	assert.Equal(t, enft, newNFT)
 
 	// try to mint the NFT again
-	_, _, err = payOb.MintNFT(ctx, req)
+	_, _, err = InvoiceUnpaid.MintNFT(ctx, req)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
@@ -176,14 +176,14 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 		SubmitNFTReadAccessProof: nftReadAccess,
 	}
 
-	_, _, err := payOb.MintNFT(ctx, req)
+	_, _, err := InvoiceUnpaid.MintNFT(ctx, req)
 	assert.Error(t, err)
 	if !nftReadAccess {
 		assert.True(t, errors.IsOfType(documents.ErrNFTRoleMissing, err))
 	}
 }
 
-func TestEthereumPaymentObligation_MintNFT_no_grant_access(t *testing.T) {
+func TestEthereumInvoiceUnpaid_MintNFT_no_grant_access(t *testing.T) {
 	failMintNFT(t, false, true)
 }
 
@@ -219,7 +219,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	assert.Len(t, cd.Roles, roleCount)
 }
 
-func TestEthereumPaymentObligation_MintNFT(t *testing.T) {
+func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{

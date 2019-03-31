@@ -12,7 +12,7 @@ networks:
     contractAddresses:
       identityFactory: ""
       anchorRepository: ""
-      paymentObligation: ""
+      invoiceUnpaid: ""
 
   # Main development testnet network (Rinkeby)
   russianhill:
@@ -28,7 +28,7 @@ networks:
     contractAddresses: 
       identityFactory: "0x9ebDD8B7b2e701c9f7d90F81a9716562cAC554b3"
       anchorRepository: "0x36e3b8b9fff60A1e031fd07671298d05745cfBa2"
-      paymentObligation: "0xE1624AE4766ef3aA4300122D5EAa5a4eA7fC5978"
+      invoiceUnpaid: "0xE1624AE4766ef3aA4300122D5EAa5a4eA7fC5978"
 
   # Kovan test network
   bernalheights:
@@ -51,7 +51,7 @@ networks:
     contractAddresses:
       identityFactory: "0x366b41162a53fd75d95d31dD6d1C4d83bD436BBe"
       anchorRepository: "0x75BacB92A30e7Ef1D38c2a31B4F2935d39F678c2"
-      paymentObligation: "0x8780e1143036b4c979fE253128a48074093f1987"
+      invoiceUnpaid: "0x8780e1143036b4c979fE253128a48074093f1987"
 
   # Ropsten test network
   dogpatch:
@@ -67,7 +67,7 @@ networks:
     contractAddresses:
       identityFactory: "0xF86177b275E4Fcb2Ab5A3FcF5E46aab51f73D7a6"
       anchorRepository: "0xf630d8bE5664C7FB1234CEf48b6A729cEe3B71D8"
-      paymentObligation: "0x9eee8FbE3E29c96cC944F0eeC1594fe1b633dABe"
+      invoiceUnpaid: "0x9eee8FbE3E29c96cC944F0eeC1594fe1b633dABe"
 
   # Main net test network
   embarcaderotest:
@@ -82,7 +82,7 @@ networks:
     contractAddresses:
       identityFactory: "0x2257a0B7E513582c36B127c4E0d142F8B98273a3"
       anchorRepository: "0x62e58B399adc033e6e404978D16D54123f4C10Bc"
-      paymentObligation: "0xB6b76DCD6A456D5d9FfF7D18F562D3854f11a5C9"
+      invoiceUnpaid: "0xB6b76DCD6A456D5d9FfF7D18F562D3854f11a5C9"
 
 # Data Storage
 storage:
