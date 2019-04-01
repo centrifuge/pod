@@ -156,6 +156,22 @@ func TestCoreDocument_ID(t *testing.T) {
 	assert.Equal(t, cd.Document.DocumentIdentifier, cd.ID())
 }
 
+func TestCoreDocument_NewCoreDocumentWithCollaborators(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+	c := &CollaboratorsAccess{
+		ReadCollaborators: []identity.DID{did1},
+		ReadWriteCollaborators: []identity.DID{did2},
+	}
+	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), *c)
+	assert.NoError(t, err)
+
+	collabs, err := cd.GetCollaborators(identity.DID{})
+	assert.NoError(t, err)
+	assert.Equal(t, did1, collabs.ReadCollaborators[0])
+	assert.Equal(t, did2, collabs.ReadWriteCollaborators[0])
+}
+
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
