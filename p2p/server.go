@@ -24,6 +24,7 @@ import (
 	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	pstoremem "github.com/libp2p/go-libp2p-peerstore/pstoremem"
 	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
@@ -136,7 +137,10 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstore.NewPeerstore()
+	ps := pstore.NewPeerstore(
+		pstoremem.NewKeyBook(),
+		pstoremem.NewAddrBook(),
+		pstoremem.NewPeerMetadata())
 
 	// Add the keys to the peerstore
 	// for this peer ID.
