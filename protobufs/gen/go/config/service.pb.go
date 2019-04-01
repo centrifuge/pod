@@ -6,6 +6,8 @@ package configpb
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	account "github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	proto "github.com/golang/protobuf/proto"
 	duration "github.com/golang/protobuf/ptypes/duration"
@@ -13,7 +15,6 @@ import (
 	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
