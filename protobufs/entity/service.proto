@@ -122,6 +122,7 @@ message EntityWithReleationships {
 }
 
 message EntityRelationPayload {
+  // entity identifier
   string identifier = 1;
   string target_identity = 2;
 }
