@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
