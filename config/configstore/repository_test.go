@@ -83,7 +83,7 @@ func TestAccountOperations(t *testing.T) {
 		EthereumDefaultAccountName: "main",
 	}
 	repo.RegisterAccount(&Account{})
-	err := repo.CreateAccount(id, newaccount)
+	err = repo.CreateAccount(id, newaccount)
 	assert.Nil(t, err)
 
 	// Create account already exist
