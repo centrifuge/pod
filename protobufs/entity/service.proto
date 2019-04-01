@@ -48,6 +48,26 @@ service DocumentService {
       description: "Get the current entity"
     };
   }
+  // Entity Relation Share
+  rpc Share(EntityRelationPayload) returns (EntityResponse) {
+    option (google.api.http) = {
+      post: "/entity/share/{identifier}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Share the entity document with others"
+    };
+  }
+  // Entity Relation Revoke
+  rpc Revoke(EntityRelationPayload) returns (EntityResponse) {
+    option (google.api.http) = {
+      post: "/entity/revoke/{identifier}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "revoke a entity document share"
+    };
+  }
 }
 
 message GetRequest {
@@ -74,7 +94,13 @@ message EntityUpdatePayload {
 
 message EntityResponse {
   document.ResponseHeader header = 1;
-  EntityData data = 2;
+  EntityWithReleationships data = 2;
+}
+
+message Relationship {
+  string identity = 1;
+  bool active = 2;
+  string last_update_at_entity_version = 3;
 }
 
 // EntityData is the default entity schema
@@ -89,20 +115,13 @@ message EntityData {
   repeated Contact contacts = 5;
 }
 
-message EntityRelationshipData {
-  string owner_identity = 1;
-  string target_identity = 3;
+// Entity Relationships
+message EntityWithReleationships {
+  EntityData entity = 1;
+  repeated Relationship relationships = 6;
 }
 
-message EntityRelationshipCreatePayload {
-  EntityRelationshipData data = 1;
-}
-
-message EntityRelationshipUpdatePayload {
-  EntityRelationshipData data = 1;
-}
-
-message EntityRelationshipResponse {
-  document.ResponseHeader header = 1;
-  EntityRelationshipData data = 2;
+message EntityRelationPayload {
+  string identifier = 1;
+  string target_identity = 2;
 }
