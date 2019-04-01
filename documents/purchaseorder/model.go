@@ -188,14 +188,19 @@ func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData,
 }
 
 // InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, self string) error {
+func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, self identity.DID) error {
 	err := p.initPurchaseOrderFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
+	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
+	if err != nil {
+		return err
+	}
+
+	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
+	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), cs)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -416,14 +421,14 @@ func (*PurchaseOrder) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old invoice.
-func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurchaseorderpb.PurchaseOrderData, collaborators []string) error {
+func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurchaseorderpb.PurchaseOrderData, collaborators documents.CollaboratorsAccess) error {
 	err := p.initPurchaseOrderFromData(data)
 	if err != nil {
 		return err
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
+	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
 	if err != nil {
 		return err
 	}

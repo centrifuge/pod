@@ -17,12 +17,12 @@ var apiLog = logging.Logger("nft-api")
 
 type grpcHandler struct {
 	config  config.Service
-	service PaymentObligation
+	service InvoiceUnpaid
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config config.Service, payOb PaymentObligation) nftpb.NFTServiceServer {
-	return &grpcHandler{config: config, service: payOb}
+func GRPCHandler(config config.Service, InvoiceUnpaid InvoiceUnpaid) nftpb.NFTServiceServer {
+	return &grpcHandler{config: config, service: InvoiceUnpaid}
 }
 
 // MintNFT will be called from the client API to mint an NFT
@@ -66,7 +66,7 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 
 // MintInvoiceUnpaidNFT will be called from the client API to mint an NFT out of an unpaid invoice
 func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NFTMintInvoiceUnpaidRequest) (*nftpb.NFTMintResponse, error) {
-	apiLog.Infof("Received request to Mint a Payment Obligation NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
+	apiLog.Infof("Received request to Mint an Invoice Unpaid NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
 	ctxHeader, err := contextutil.Context(ctx, g.config)
 	if err != nil {
 		apiLog.Error(err)
@@ -83,7 +83,7 @@ func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NF
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
-	poRegistry := cfg.GetContractAddress(config.PaymentObligation)
+	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
 	mintReq := &nftpb.NFTMintRequest{
 		Identifier:                request.Identifier,

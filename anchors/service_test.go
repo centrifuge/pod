@@ -60,13 +60,10 @@ func TestGenerateAnchor(t *testing.T) {
 	currentDocumentRoot := utils.RandomByte32()
 	documentProof := utils.RandomByte32()
 
-	var documentProofs [][32]byte
-	documentProofs = append(documentProofs, documentProof)
-
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, documentProofs)
+	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, documentProof)
 
 	anchorID, _ := ToAnchorID(currentAnchorID[:])
 	docRoot, _ := ToDocumentRoot(documentRoot32Bytes[:])
@@ -74,6 +71,6 @@ func TestGenerateAnchor(t *testing.T) {
 	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
 
-	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
+	assert.Equal(t, commitData.DocumentProof, documentProof, "Anchor should have the document proofs")
 
 }

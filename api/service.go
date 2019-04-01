@@ -46,9 +46,9 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	payObService, ok := nodeObjReg[nft.BootstrappedPayObService].(nft.PaymentObligation)
+	InvoiceUnpaidService, ok := nodeObjReg[nft.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	if !ok {
-		return errors.New("failed to get %s", nft.BootstrappedPayObService)
+		return errors.New("failed to get %s", nft.BootstrappedInvoiceUnpaid)
 	}
 
 	// register documents (common)
@@ -65,7 +65,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// register other api endpoints
-	err = registerAPIs(ctx, cfg, payObService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
+	err = registerAPIs(ctx, cfg, InvoiceUnpaidService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	return nil
 }
 
-func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentObligation, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 
 	// healthcheck
 	hcCfg := cfg.(healthcheck.Config)
@@ -84,7 +84,7 @@ func registerAPIs(ctx context.Context, cfg Config, payObService nft.PaymentOblig
 	}
 
 	// nft api
-	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, payObService))
+	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, InvoiceUnpaidService))
 	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err

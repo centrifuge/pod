@@ -24,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -70,7 +71,7 @@ func TestMain(m *testing.M) {
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
-	ctx[nft.BootstrappedPayObService] = new(testingdocuments.MockRegistry)
+	ctx[nft.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -99,7 +100,7 @@ func TestEntity_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	entity := new(Entity)
-	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String()))
+	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did))
 
 	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
@@ -111,7 +112,7 @@ func TestEntity_JSON(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String()))
+	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did))
 
 	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
@@ -189,12 +190,12 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 		}, {IsMain: false, State: "US"}},
 	}
 	e := new(Entity)
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did.String())
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did)
 	assert.Nil(t, err, "should be successful")
 
 	e = new(Entity)
 	collabs := []string{"0x010102040506", "some id"}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -202,7 +203,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
 	assert.Nil(t, err, "must be nil")
 
 }
@@ -212,7 +213,7 @@ func TestEntityModel_calculateDataRoot(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 	m := new(Entity)
-	err = m.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String())
+	err = m.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
 	assert.Nil(t, err, "Init must pass")
 	m.GetTestCoreDocWithReset()
 
@@ -254,7 +255,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 
 func createEntity(t *testing.T) *Entity {
 	e := new(Entity)
-	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID.String())
+	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID)
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
@@ -304,7 +305,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	oldEntity := model.(*Entity)
 	data := oldEntity.getClientData()
 	data.LegalName = "new legal name"
-	err = entity.PrepareNewVersion(entity, data, []string{id3.String()})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}})
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -325,7 +326,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	data = oldEntity.getClientData()
 	data.LegalName = "second new legal name"
 	data.Contacts = nil
-	err = entity.PrepareNewVersion(entity, data, nil)
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -370,9 +371,8 @@ func testRepo() documents.Repository {
 
 func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	e := new(Entity)
-	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did.String())
+	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
 	assert.NoError(t, err)
-	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateSigningRoot()

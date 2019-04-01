@@ -68,7 +68,7 @@ func testExpectedProps(t *testing.T, cf []ChangedField, eprops map[string]struct
 func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	ndoc, err := doc.PrepareNewVersion([]byte("po"), testingidentity.GenerateRandomDID().String())
+	ndoc, err := doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}})
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
@@ -128,7 +128,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// current pre image
 	// next pre image
 	doc = ndoc
-	ndoc, err = doc.PrepareNewVersion([]byte("po"))
+	ndoc, err = doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{})
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -201,7 +201,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// roles (new doc will have 2 new roles different from 2 old roles)
 	// read_rules
 	// transition_rules
-	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), testingidentity.GenerateRandomDID().String())
+	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}})
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -372,7 +372,7 @@ func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, s
 	id2 := testingidentity.GenerateRandomDID()
 
 	// id1 will have rights to update all the fields in the core document
-	createTransitionRules(t, doc, id1, compactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+	createTransitionRules(t, doc, id1, CompactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
 	// id2 will have write access to only identifiers
 	// id2 is the bad actor
@@ -386,7 +386,7 @@ func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, s
 	}
 
 	for _, f := range fields {
-		createTransitionRules(t, doc, id2, append(compactProperties(CDTreePrefix), f...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+		createTransitionRules(t, doc, id2, append(CompactProperties(CDTreePrefix), f...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	}
 
 	return doc, id1, id2, docType
@@ -396,7 +396,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	doc, id1, id2, docType := prepareDocument(t)
 
 	// prepare a new version of the document with out collaborators
-	ndoc, err := doc.PrepareNewVersion([]byte("invoice"))
+	ndoc, err := doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{})
 	assert.NoError(t, err)
 
 	// if this was changed by the id1, everything should be fine
@@ -406,7 +406,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
-	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), testingidentity.GenerateRandomDID().String())
+	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}})
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1
@@ -452,7 +452,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 
 	// add a specific rule that allow id2 to update specific nft registry
 	field := append(registry.ToAddress().Bytes(), make([]byte, 12, 12)...)
-	field = append(compactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
+	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
 	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
@@ -478,7 +478,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 
 	// add a rule for id2 that will allow any nft update
-	field = append(compactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
+	field = append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
 	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
 	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
