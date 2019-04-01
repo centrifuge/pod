@@ -80,7 +80,11 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	err = model.AddUpdateLog(identity.NewDIDFromBytes(id))
+	did, err := identity.NewDIDFromBytes(id)
+	if err != nil {
+		return err
+	}
+	err = model.AddUpdateLog(did)
 	if err != nil {
 		return err
 	}
@@ -176,7 +180,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 
 	rootHash, err := anchors.ToDocumentRoot(dr)
 	if err != nil {
-		return errors.New("failed to get document root: %v", err)
+		return errors.New("failed to convert document root: %v", err)
 	}
 
 	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
@@ -184,21 +188,23 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	signingRootProof, err := model.GetSignaturesRootHash()
+	signingRootProof, err := model.CalculateSignaturesRoot()
 	if err != nil {
-		return errors.New("failed to get signing root proof: %v", err)
+		return errors.New("failed to get signature root: %v", err)
 	}
 
-	signingRootProofHashes, err := utils.ConvertProofForEthereum([][]byte{signingRootProof})
+	signingRootHash, err := utils.SliceToByte32(signingRootProof)
 	if err != nil {
 		return errors.New("failed to get signing root proof in ethereum format: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootProofHashes)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootHash)
+	if err != nil {
+		return errors.New("failed to commit anchor: %v", err)
+	}
 
 	isDone := <-done
-
 	if !isDone {
 		return errors.New("failed to commit anchor: %v", err)
 	}

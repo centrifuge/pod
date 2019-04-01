@@ -20,7 +20,7 @@ func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProof"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofRequest{
 		Identifier: "0xc32b1400b8c66e54448bec863233682d19c770b94ea8d90e1cf02f3bb8ca7da4",
 		Type:       serviceName,
@@ -40,7 +40,7 @@ func TestGrpcHandler_CreateDocumentProofUnableToLocateService(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProofUnableToLocateService"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofRequest{
 		Identifier: "0x11111111111111", // invalid
 		Type:       "wrongService",
@@ -56,7 +56,7 @@ func TestGrpcHandler_CreateDocumentProofInvalidHex(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProofInvalidHex"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofRequest{
 		Identifier: "0x1111111111111", // invalid
 		Type:       serviceName,
@@ -72,7 +72,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProofForVersion"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x11111111111111",
 		Version:    "0x1212121212",
@@ -94,7 +94,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionUnableToLocateService(t *testi
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProofForVersionUnableToLocateService"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x11111111111111",
 		Version:    "0x1212121212",
@@ -111,7 +111,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForId(t *testing.T) 
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProofForVersionInvalidHexForId"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x111111111111111",
 		Version:    "0x1212121212",
@@ -128,7 +128,7 @@ func TestGrpcHandler_CreateDocumentProofForVersionInvalidHexForVersion(t *testin
 	registry := documents.NewServiceRegistry()
 	serviceName := "CreateDocumentProofForVersionInvalidHexForVersion"
 	service := &testingdocuments.MockService{}
-	registry.Register(serviceName, service)
+	assert.NoError(t, registry.Register(serviceName, service))
 	req := &documentpb.CreateDocumentProofForVersionRequest{
 		Identifier: "0x11111111111111",
 		Version:    "0x12121212121",
@@ -169,7 +169,7 @@ func TestConvertDocProofToClientFormat(t *testing.T) {
 				},
 			},
 			output: documentpb.DocumentProof{
-				Header: &documentpb.ResponseHeader{
+				Header: &documentpb.ProofResponseHeader{
 					DocumentId: "0x010201",
 					VersionId:  "0x010202",
 					State:      "state",

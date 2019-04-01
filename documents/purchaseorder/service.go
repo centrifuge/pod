@@ -143,13 +143,13 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpop
 		return nil, documents.ErrDocumentNil
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	self, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
 	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payload, selfDID.String())
+	err = po.InitPurchaseOrderInput(payload, self)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -174,9 +174,14 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 		return nil, err
 	}
 
+	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
+	if err != nil {
+		return nil, err
+	}
+
 	// load purchase order data
 	po := new(PurchaseOrder)
-	err = po.PrepareNewVersion(old, payload.Data, payload.Collaborators)
+	err = po.PrepareNewVersion(old, payload.Data, cs)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
 	}
@@ -201,20 +206,9 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		return nil, err
 	}
 
-	cs, err := doc.GetCollaborators()
+	h, err := documents.DeriveResponseHeader(doc)
 	if err != nil {
 		return nil, err
-	}
-
-	var css []string
-	for _, c := range cs {
-		css = append(css, c.String())
-	}
-
-	h := &clientpopb.ResponseHeader{
-		DocumentId:    hexutil.Encode(doc.ID()),
-		VersionId:     hexutil.Encode(doc.CurrentVersion()),
-		Collaborators: css,
 	}
 
 	return &clientpopb.PurchaseOrderResponse{

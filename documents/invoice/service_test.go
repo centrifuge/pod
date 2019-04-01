@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -85,13 +86,12 @@ func TestService_Update(t *testing.T) {
 	// success
 	data, err := invSrv.DeriveInvoiceData(model)
 	assert.Nil(t, err)
-	data.GrossAmount = 100
-	data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
+	data.GrossAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
-		Identifier:    hexutil.Encode(model.ID()),
-		Collaborators: []string{collab},
-		Data:          data,
+		Identifier:  hexutil.Encode(model.ID()),
+		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		Data:        data,
 	})
 	assert.Nil(t, err)
 	newData, err := invSrv.DeriveInvoiceData(newInv)
@@ -146,11 +146,10 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err = testRepo().Create(accountID, old.CurrentVersion(), old)
 	assert.Nil(t, err)
 	payload.Data = &clientinvoicepb.InvoiceData{
-		Sender:      "0xed03fa80291ff5ddc284de6b51e716b130b05e20",
-		Recipient:   "0xea939d5c0494b072c51565b191ee59b5d34fbf79",
-		Payee:       "0x087d8ca6a16e6ce8d9ff55672e551a2828ab8e8c",
-		GrossAmount: 42,
-		ExtraData:   "some data",
+		Sender:      "0xed03Fa80291fF5DDC284DE6b51E716B130b05e20",
+		Recipient:   "0xEA939D5C0494b072c51565b191eE59B5D34fbf79",
+		Payee:       "some data",
+		GrossAmount: "42",
 		Currency:    "EUR",
 	}
 
@@ -160,23 +159,21 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, doc)
 
 	// failed core document new version
-	payload.Data.ExtraData = hexutil.Encode(utils.RandomSlice(32))
-	payload.Collaborators = []string{"some wrong ID"}
+	payload.Data.Payee = "0x087D8ca6A16E6ce8d9fF55672E551A2828Ab8e8C"
+	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentPrepareCoreDocument, err))
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-
-	payload.Collaborators = []string{wantCollab.String()}
+	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
-	assert.Len(t, cs, 3)
-	assert.Contains(t, cs, wantCollab)
+	assert.Len(t, cs.ReadWriteCollaborators, 3)
+	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
 	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
@@ -204,7 +201,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	// Init fails
 	payload := &clientinvoicepb.InvoiceCreatePayload{
 		Data: &clientinvoicepb.InvoiceData{
-			ExtraData: "some data",
+			Payee: "some payee",
 		},
 	}
 
@@ -214,12 +211,10 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
-	payload.Data.ExtraData = "0x01020304050607"
+	payload.Data.Payee = testingidentity.GenerateRandomDID().String()
 	m, err = invSrv.DeriveFromCreatePayload(ctxh, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
-	inv := m.(*Invoice)
-	assert.Equal(t, hexutil.Encode(inv.ExtraData), payload.Data.ExtraData)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -231,7 +226,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	inv, ok := m.(*Invoice)
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, inv.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, inv.GrossAmount, int64(42))
+	assert.Equal(t, inv.GrossAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {
@@ -288,7 +283,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	payload := testingdocuments.CreateInvoicePayload()
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.Collaborators, cid.String())
+	assert.Contains(t, r.Header.WriteAccess.Collaborators, cid.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -302,7 +297,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	data := doc.(*Invoice).getClientData()
 	data.Currency = "INR"
 	doc2 := new(Invoice)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, nil))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := invSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -393,8 +388,9 @@ func testRepo() documents.Repository {
 
 func createCDWithEmbeddedInvoice(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(Invoice)
-	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid.String())
+	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid)
 	assert.NoError(t, err)
+	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateSigningRoot()

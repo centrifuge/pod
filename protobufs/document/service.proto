@@ -8,6 +8,7 @@ option java_outer_classname = "ServiceProto";
 option java_package = "com.document";
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 import "precise-proofs/proofs/proto/proof.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
@@ -33,13 +34,6 @@ service DocumentService {
   }
 }
 
-message UpdateAccessTokenPayload {
-  // The document which should contain the access token referenced below
-  string delegating_document_identifier = 1;
-  // The access token to be appended to the indicated document above
-  AccessTokenParams access_token_params = 2;
-}
-
 message AccessTokenParams {
   // The identity being granted access to the document
   string grantee = 4;
@@ -54,14 +48,14 @@ message CreateDocumentProofRequest {
 }
 
 // ResponseHeader contains a set of common fields for most documents
-message ResponseHeader {
+message ProofResponseHeader {
   string document_id = 1;
   string version_id = 2;
   string state = 3;
 }
 
 message DocumentProof {
-  ResponseHeader header = 1;
+  ProofResponseHeader header = 1;
   repeated Proof field_proofs = 2;
 }
 
@@ -79,4 +73,86 @@ message CreateDocumentProofForVersionRequest {
   string type = 2;
   string version = 3;
   repeated string fields = 4;
+}
+
+message BinaryAttachment {
+  string name = 1;
+  //mime type of attached file
+  string file_type = 2;
+  // in bytes
+  uint64 size = 3;
+  string data = 4;
+  //the md5 checksum of the original file for easier verification - optional
+  string checksum = 5;
+}
+
+message PaymentDetails {
+  //identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
+  string id = 1;
+  google.protobuf.Timestamp date_executed = 2;
+  //centrifuge id of payee
+  string payee = 3;
+  //centrifuge id of payer
+  string payer = 4;
+  string amount = 5;
+  string currency = 6;
+  //payment reference (e.g. reference field on bank transfer)
+  string reference = 7;
+  string bank_name = 8;
+  string bank_address = 9;
+  string bank_country = 10;
+  string bank_account_number = 11;
+  string bank_account_currency = 12;
+  string bank_account_holder_name = 13;
+  string bank_key = 14;
+  //the ID of the chain to use in URI format. e.g. "ethereum://42/<tokenaddress>"
+  string crypto_chain_uri = 15;
+  //the transaction in which the payment happened
+  string crypto_transaction_id = 16;
+  //from address
+  string crypto_from = 17;
+  //to address
+  string crypto_to = 18;
+}
+
+message RequestHeader {
+  ReadAccess read_access = 1;
+  WriteAccess write_access = 2;
+}
+
+message ReadAccess {
+  repeated string collaborators = 1;
+}
+
+message WriteAccess {
+  repeated string collaborators = 1;
+}
+
+message Signature {
+  string identity = 1;
+  string key = 2; // can be blank if the signature is missing
+  bool valid = 3; // OR: status = valid or missing
+}
+
+message NFT {
+  string registry = 1;
+  string token_id = 2;
+  string owner = 3; // read owner from Ethereum and empty when used in POST/PUT
+}
+
+message AccessToken {
+  string identifier = 1;
+  string granter = 2;
+  string grantee = 3;
+  string document_identifier = 4;
+}
+
+message ResponseHeader {
+  string document_id = 1;
+  string version = 2;
+  string author = 3;
+  string created_at = 4;
+  ReadAccess read_access = 5;
+  WriteAccess write_access = 6;
+  string transaction_id = 7;
 }

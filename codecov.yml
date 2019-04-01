@@ -1,0 +1,6 @@
+ignore:
+  - protobufs/gen/**/* 
+  - identity/ideth/factory_contract.go
+  - identity/ideth/identity_contract.go
+  - anchors/anchor_contract.go
+  - nft/invoice_unpaid_contract.go

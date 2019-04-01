@@ -38,7 +38,7 @@ const (
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
 
-	// DRTreePrefix is the human readable prefix for core doc tree props
+	// DRTreePrefix is the human readable prefix for document root tree props
 	DRTreePrefix = "dr_tree"
 
 	// CDTreePrefix is the human readable prefix for core doc tree props
@@ -51,7 +51,8 @@ const (
 	SignaturesTreePrefix = "signatures_tree"
 )
 
-func compactProperties(key string) []byte {
+// CompactProperties returns the compact property for a given prefix
+func CompactProperties(key string) []byte {
 	m := map[string][]byte{
 		CDRootField:         {0, 0, 0, 7},
 		DataRootField:       {0, 0, 0, 5},
@@ -70,7 +71,16 @@ func compactProperties(key string) []byte {
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
+	// Modified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
+	Modified bool
+
 	Document coredocumentpb.CoreDocument
+}
+
+// CollaboratorsAccess allows us to differentiate between the types of access we want to give new collaborators
+type CollaboratorsAccess struct {
+	ReadCollaborators      []identity.DID
+	ReadWriteCollaborators []identity.DID
 }
 
 // newCoreDocument returns a new CoreDocument.
@@ -83,69 +93,54 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{cd}, nil
+	return &CoreDocument{Document: cd, Modified: true}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
 func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
-	cd.EmbeddedDataSalts = nil
 	cd.EmbeddedData = nil
 	return &CoreDocument{Document: cd}
 }
 
-// NewCoreDocumentWithCollaborators generates new core Document with a document type specified by the prefix: po or invoice.
+// NewCoreDocumentWithCollaborators generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(collaborators []string, documentPrefix []byte) (*CoreDocument, error) {
+func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.New("failed to create coredoc: %v", err)
 	}
 
-	ids, err := identity.NewDIDsFromStrings(collaborators)
-	if err != nil {
-		return nil, errors.New("failed to decode collaborators: %v", err)
-	}
-
-	cd.initReadRules(ids)
-	cd.initTransitionRules(ids, documentPrefix)
-	if err := cd.setSalts(); err != nil {
-		return nil, err
-	}
-
+	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
+	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
 	return cd, nil
 }
 
-// ID returns the Document identifier
+// ID returns the document identifier
 func (cd *CoreDocument) ID() []byte {
 	return cd.Document.DocumentIdentifier
 }
 
-// CurrentVersion returns the current version of the Document
+// CurrentVersion returns the current version of the document
 func (cd *CoreDocument) CurrentVersion() []byte {
 	return cd.Document.CurrentVersion
 }
 
-// CurrentVersionPreimage returns the current version preimage of the Document
+// CurrentVersionPreimage returns the current version preimage of the document
 func (cd *CoreDocument) CurrentVersionPreimage() []byte {
 	return cd.Document.CurrentPreimage
 }
 
-// PreviousVersion returns the previous version of the Document.
+// PreviousVersion returns the previous version of the document.
 func (cd *CoreDocument) PreviousVersion() []byte {
 	return cd.Document.PreviousVersion
 }
 
-// NextVersion returns the next version of the Document.
+// NextVersion returns the next version of the document.
 func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
 }
 
-// PreviousDocumentRoot returns the Document root of the previous version.
-func (cd *CoreDocument) PreviousDocumentRoot() []byte {
-	return cd.Document.PreviousRoot
-}
-
-// AppendSignatures appends signatures to core Document.
+// AppendSignatures appends signatures to core document.
 func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	if cd.Document.SignatureData == nil {
 		cd.Document.SignatureData = new(coredocumentpb.SignatureData)
@@ -153,44 +148,21 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	cd.Document.SignatureData.Signatures = append(cd.Document.SignatureData.Signatures, signs...)
 }
 
-// setSalts generate salts for core Document.
-// This is no-op if the salts are already generated.
-func (cd *CoreDocument) setSalts() error {
-	if cd.Document.CoredocumentSalts != nil {
-		return nil
-	}
-
-	pSalts, err := GenerateNewSalts(&cd.Document, CDTreePrefix, compactProperties(CDTreePrefix))
-	if err != nil {
-		return err
-	}
-
-	cd.Document.CoredocumentSalts = ConvertToProtoSalts(pSalts)
-	return nil
-}
-
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool, documentPrefix []byte) (*CoreDocument, error) {
-	if len(cd.Document.DocumentRoot) != idSize {
-		return nil, errors.New("Document root is invalid")
-	}
-
-	cs, err := identity.NewDIDsFromStrings(collaborators)
-	if err != nil {
-		return nil, err
-	}
-
+func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
 		return nil, err
 	}
 
-	ucs := filterCollaborators(cs, oldCs...)
+	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
+	wcs := filterCollaborators(collaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
+	rcs = append(rcs, wcs...)
+
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
-		PreviousRoot:       cd.Document.DocumentRoot,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
 		TransitionRules:    cd.Document.TransitionRules,
@@ -205,19 +177,11 @@ func (cd *CoreDocument) PrepareNewVersion(collaborators []string, initSalts bool
 	}
 
 	ncd := &CoreDocument{Document: cdp}
-	ncd.addCollaboratorsToReadSignRules(ucs)
-	ncd.addCollaboratorsToTransitionRules(ucs, documentPrefix)
-
-	if !initSalts {
-		return ncd, nil
-	}
-
-	err = ncd.setSalts()
-	if err != nil {
-		return nil, errors.New("failed to init salts: %v", err)
-	}
-
+	ncd.addCollaboratorsToReadSignRules(rcs)
+	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
+	ncd.Modified = true
 	return ncd, nil
+
 }
 
 // newRole returns a new role with random role key
@@ -228,7 +192,7 @@ func newRole() *coredocumentpb.Role {
 // newRoleWithCollaborators creates a new Role and adds the given collaborators to this Role.
 // The Role is then returned.
 // The operation returns a nil Role if no collaborators are provided.
-func newRoleWithCollaborators(collaborators []identity.DID) *coredocumentpb.Role {
+func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Role {
 	if len(collaborators) == 0 {
 		return nil
 	}
@@ -253,27 +217,29 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 	return &TreeProof{tree: t, treeHashes: th}
 }
 
-// CreateProofs takes Document data tree and list to fields and generates proofs.
+// CreateProofs takes document data tree and list to fields and generates proofs.
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
-// errors out when the proof generation is failed on core Document tree.
+// errors out when the proof generation is failed on core document tree.
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
-
-	drTree, err := cd.DocumentRootTree()
+	drTree, err := cd.DocumentRootTree(docType, dataTree.RootHash())
 	if err != nil {
 		return nil, err
 	}
+
 	signatureTree, err := cd.getSignatureDataTree()
 	if err != nil {
 		return nil, errors.New("failed to generate signatures tree: %v", err)
 	}
-	cdTree, err := cd.documentTree(docType)
+
+	cdTree, err := cd.coredocTree(docType)
 	if err != nil {
-		return nil, errors.New("failed to generate core Document tree: %v", err)
+		return nil, errors.New("failed to generate core document tree: %v", err)
 	}
-	srHash, err := cd.GetSigningRootHash()
+
+	signingRoot, err := cd.CalculateSigningRoot(docType, dataTree.RootHash())
 	if err != nil {
-		return nil, errors.New("failed to generate signing root proofs: %v", err)
+		return nil, errors.New("failed to generate signing root: %v", err)
 	}
 
 	dataRoot := dataTree.RootHash()
@@ -285,8 +251,11 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	}
 
 	treeProofs[DRTreePrefix] = newTreeProof(drTree, nil)
+	// (dataProof => dataRoot) + cdRoot+ signatureRoot = documentRoot
 	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, signatureTree.RootHash()))
-	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{srHash})
+	// (signatureProof => signatureRoot) + signingRoot = documentRoot
+	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{signingRoot})
+	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
 	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, signatureTree.RootHash()))
 
 	return generateProofs(fields, treeProofs)
@@ -325,51 +294,19 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 	return prfs, nil
 }
 
-// GetSigningRootHash returns the hash needed to create a proof for fields from SigningRoot to DocumentRoot.
-// The returned proof is appended to the proofs generated from the data tree and core Document tree for a successful verification.
-func (cd *CoreDocument) GetSigningRootHash() (hash []byte, err error) {
-	tree, err := cd.DocumentRootTree()
-	if err != nil {
-		return
-	}
-
-	rootProof, err := tree.CreateProof(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField))
-	if err != nil {
-		return
-	}
-	return rootProof.Hash, err
-}
-
-// GetSignaturesRootHash returns the hash needed to create proofs from SignaturesRoot to DocumentRoot
-func (cd *CoreDocument) GetSignaturesRootHash() (hash []byte, err error) {
+// CalculateSignaturesRoot returns the signatures root of the document.
+func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 	tree, err := cd.getSignatureDataTree()
 	if err != nil {
-		return
+		return nil, errors.New("failed to get signature tree: %v", err)
 	}
+
 	return tree.RootHash(), nil
 }
 
-// setSignatureDataSalts generate salts for SignatureData.
-// This is no-op if the salts are already generated.
-func (cd *CoreDocument) setSignatureDataSalts() ([]*coredocumentpb.DocumentSalt, error) {
-	if cd.Document.SignatureDataSalts == nil {
-		proofSalts, err := GenerateNewSalts(cd.Document.SignatureData, SignaturesTreePrefix, compactProperties(SignaturesTreePrefix))
-		if err != nil {
-			return nil, err
-		}
-		cd.Document.SignatureDataSalts = ConvertToProtoSalts(proofSalts)
-	}
-	return cd.Document.SignatureDataSalts, nil
-}
-
 // getSignatureDataTree returns the merkle tree for the Signature Data root.
-func (cd *CoreDocument) getSignatureDataTree() (*proofs.DocumentTree, error) {
-	signatureSalts, err := cd.setSignatureDataSalts()
-	if err != nil {
-		return nil, err
-	}
-	tree := NewDefaultTreeWithPrefix(ConvertToProofSalts(signatureSalts), SignaturesTreePrefix, compactProperties(SignaturesTreePrefix))
-
+func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
+	tree = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
 	err = tree.AddLeavesFromDocument(cd.Document.SignatureData)
 	if err != nil {
 		return nil, err
@@ -379,26 +316,27 @@ func (cd *CoreDocument) getSignatureDataTree() (*proofs.DocumentTree, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return tree, nil
 }
 
-// DocumentRootTree returns the merkle tree for the Document root.
-func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	if len(cd.Document.SigningRoot) != idSize {
-		return nil, errors.New("signing root is invalid")
-	}
-
-	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(cd.Document.CoredocumentSalts), DRTreePrefix, compactProperties(DRTreePrefix))
-
-	// The first leave added is the signing_root
-	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     cd.Document.SigningRoot,
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(compactProperties(DRTreePrefix), compactProperties(SigningRootField)...))})
+// DocumentRootTree returns the merkle tree for the document root.
+func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
+	signingRoot, err := cd.CalculateSigningRoot(docType, dataRoot)
 	if err != nil {
 		return nil, err
 	}
 
+	tree = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+
+	// The first leave added is the signing_root
+	err = tree.AddLeaf(proofs.LeafNode{
+		Hash:     signingRoot,
+		Hashed:   true,
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...))})
+	if err != nil {
+		return nil, err
+	}
 	// Second leaf from the signature data tree
 	signatureTree, err := cd.getSignatureDataTree()
 	if err != nil {
@@ -407,7 +345,7 @@ func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error
 	err = tree.AddLeaf(proofs.LeafNode{
 		Hash:     signatureTree.RootHash(),
 		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), append(compactProperties(DRTreePrefix), compactProperties(SignaturesRootField)...))})
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...))})
 	if err != nil {
 		return nil, err
 	}
@@ -417,30 +355,31 @@ func (cd *CoreDocument) DocumentRootTree() (tree *proofs.DocumentTree, err error
 		return nil, err
 	}
 
+	cd.Modified = false
 	return tree, nil
 }
 
 // signingRootTree returns the merkle tree for the signing root.
-func (cd *CoreDocument) signingRootTree(docType string) (tree *proofs.DocumentTree, err error) {
-	if len(cd.Document.DataRoot) != idSize {
+func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
+	if len(dataRoot) != idSize {
 		return nil, errors.New("data root is invalid")
 	}
 
-	cdTree, err := cd.documentTree(docType)
+	cdTree, err := cd.coredocTree(docType)
 	if err != nil {
 		return nil, err
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(cd.Document.CoredocumentSalts), SigningTreePrefix, compactProperties(SigningTreePrefix))
+	tree = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(compactProperties(SigningTreePrefix), compactProperties(DataRootField)...)),
-			Hash:     cd.Document.DataRoot,
+			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(DataRootField)...)),
+			Hash:     dataRoot,
 			Hashed:   true,
 		},
 		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, CDRootField), append(compactProperties(SigningTreePrefix), compactProperties(CDRootField)...)),
+			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, CDRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(CDRootField)...)),
 			Hash:     cdTree.RootHash(),
 			Hashed:   true,
 		},
@@ -458,15 +397,15 @@ func (cd *CoreDocument) signingRootTree(docType string) (tree *proofs.DocumentTr
 	return tree, nil
 }
 
-// documentTree returns the merkle tree of the core Document.
-func (cd *CoreDocument) documentTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree = NewDefaultTreeWithPrefix(ConvertToProofSalts(cd.Document.CoredocumentSalts), CDTreePrefix, compactProperties(CDTreePrefix))
+// coredocTree returns the merkle tree of the CoreDocument.
+func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
+	tree = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
 	err = tree.AddLeavesFromDocument(&cd.Document)
 	if err != nil {
 		return nil, err
 	}
 
-	dtProp := NewLeafProperty(fmt.Sprintf("%s.%s", CDTreePrefix, DocumentTypeField), append(compactProperties(CDTreePrefix), compactProperties(DocumentTypeField)...))
+	dtProp := NewLeafProperty(fmt.Sprintf("%s.%s", CDTreePrefix, DocumentTypeField), append(CompactProperties(CDTreePrefix), CompactProperties(DocumentTypeField)...))
 	// Adding document type as it is an excluded field in the tree
 	documentTypeNode := proofs.LeafNode{
 		Property: dtProp,
@@ -496,46 +435,76 @@ func (cd *CoreDocument) documentTree(docType string) (tree *proofs.DocumentTree,
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read_Sign permissions.
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	cs, err := cd.GetCollaborators(filterIDs...)
 	if err != nil {
 		return nil, err
 	}
 
-	return filterCollaborators(cs, filterIDs...), nil
+	return cs.ReadWriteCollaborators, nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs
-// returns collaborators with Read and Read_Sign permissions.
-func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN, coredocumentpb.Action_ACTION_READ)
+func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
+	rcs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN, coredocumentpb.Action_ACTION_READ)
 	if err != nil {
-		return nil, err
+		return CollaboratorsAccess{}, err
 	}
 
-	return filterCollaborators(cs, filterIDs...), nil
+	wcs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	if err != nil {
+		return CollaboratorsAccess{}, err
+	}
+
+	wc := filterCollaborators(wcs, filterIDs...)
+	rc := filterCollaborators(rcs, append(wc, filterIDs...)...)
+	return CollaboratorsAccess{
+		ReadCollaborators:      rc,
+		ReadWriteCollaborators: wc,
+	}, nil
 }
 
-// getCollaborators returns all the collaborators who belongs to the actions passed.
-func (cd *CoreDocument) getCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
-	findRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+// getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
+func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
+	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
 
 		for _, c := range role.Collaborators {
-			// TODO(ved): we should ideally check the address length of 20
-			// we will still keep the error return to the function so that once check is in, we don't have to refactor this function
-			ids = append(ids, identity.NewDIDFromBytes(c))
+			var did identity.DID
+			did, err = identity.NewDIDFromBytes(c)
+			if err != nil {
+				return false
+			}
+			ids = append(ids, did)
 		}
 
 		return false
 	}, actions...)
 
-	if err != nil {
-		return nil, err
-	}
+	return identity.RemoveDuplicateDIDs(ids), err
+}
 
-	return ids, nil
+// getWriteCollaborators returns all the collaborators which have access to the transition actions passed in.
+func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.TransitionAction) (ids []identity.DID, err error) {
+	findTransitionRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+		if len(role.Collaborators) < 1 {
+			return false
+		}
+
+		for _, c := range role.Collaborators {
+			var did identity.DID
+			did, err = identity.NewDIDFromBytes(c)
+			if err != nil {
+				return false
+			}
+			ids = append(ids, did)
+		}
+
+		return false
+	}, actions...)
+
+	return identity.RemoveDuplicateDIDs(ids), err
 }
 
 // filterCollaborators removes the filterIDs if any from cs and returns the result
@@ -557,48 +526,39 @@ func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filtered
 	return filteredIDs
 }
 
-// CalculateDocumentRoot calculates the Document root of the core Document.
-func (cd *CoreDocument) CalculateDocumentRoot() ([]byte, error) {
-	tree, err := cd.DocumentRootTree()
+// CalculateDocumentRoot calculates the document root of the CoreDocument.
+func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataRoot []byte) ([]byte, error) {
+	tree, err := cd.DocumentRootTree(docType, dataRoot)
 	if err != nil {
 		return nil, err
 	}
 
-	cd.Document.DocumentRoot = tree.RootHash()
-	return cd.Document.DocumentRoot, nil
+	return tree.RootHash(), nil
 }
 
-// SetDataRoot sets the document data root to core document.
-func (cd *CoreDocument) SetDataRoot(dr []byte) {
-	cd.Document.DataRoot = dr
-}
-
-// CalculateSigningRoot calculates the signing root of the core Document.
-func (cd *CoreDocument) CalculateSigningRoot(docType string) ([]byte, error) {
-	tree, err := cd.signingRootTree(docType)
+// CalculateSigningRoot calculates the signing root of the core document.
+func (cd *CoreDocument) CalculateSigningRoot(docType string, dataRoot []byte) ([]byte, error) {
+	tree, err := cd.signingRootTree(docType, dataRoot)
 	if err != nil {
 		return nil, err
 	}
 
-	cd.Document.SigningRoot = tree.RootHash()
-	return cd.Document.SigningRoot, nil
+	return tree.RootHash(), nil
 }
 
 // PackCoreDocument prepares the document into a core document.
-func (cd *CoreDocument) PackCoreDocument(data *any.Any, salts []*coredocumentpb.DocumentSalt) coredocumentpb.CoreDocument {
-	// lets copy the value so that mutations on the returned doc wont be reflected on Document we are holding
+func (cd *CoreDocument) PackCoreDocument(data *any.Any) coredocumentpb.CoreDocument {
+	// lets copy the value so that mutations on the returned doc wont be reflected on document we are holding
 	cdp := cd.Document
 	cdp.EmbeddedData = data
-	cdp.EmbeddedDataSalts = salts
 	return cdp
 }
 
-// Signatures returns the copy of the signatures on the Document.
+// Signatures returns the copy of the signatures on the document.
 func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
 	for _, s := range cd.Document.SignatureData.Signatures {
 		signatures = append(signatures, *s)
 	}
-
 	return signatures
 }
 
@@ -609,12 +569,17 @@ func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
 	if err != nil {
 		return err
 	}
+	cd.Modified = true
 	return nil
 }
 
 // Author is the author of the document version represented by the model
-func (cd *CoreDocument) Author() identity.DID {
-	return identity.NewDIDFromBytes(cd.Document.Author)
+func (cd *CoreDocument) Author() (identity.DID, error) {
+	did, err := identity.NewDIDFromBytes(cd.Document.Author)
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return did, nil
 }
 
 // Timestamp is the time of update in UTC of the document version represented by the model

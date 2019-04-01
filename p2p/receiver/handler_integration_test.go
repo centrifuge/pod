@@ -82,7 +82,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = cfgService.CreateAccount(acc)
 	assert.NoError(t, err)
-	_, cd := prepareDocumentForP2PHandler(t, nil)
+	po, cd := prepareDocumentForP2PHandler(t, nil)
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctxh, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 
 	pub, _ := acc.GetP2PKeyPair()
@@ -99,7 +99,9 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	resp := resolveSignatureResponse(t, p2pResp)
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), cd.SigningRoot), "signature must be valid")
+	signingRoot, err := po.CalculateSigningRoot()
+	assert.NoError(t, err)
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
@@ -124,7 +126,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.NoError(t, err)
 
 	// we can update the document so that there are two versions in the repo
-	_, ncd := updateDocumentForP2Phandler(t, po)
+	po, ncd := updateDocumentForP2Phandler(t, po)
 	assert.NotEqual(t, cd.DocumentIdentifier, ncd.CurrentVersion)
 
 	// invalid transition for non-collaborator id
@@ -138,7 +140,9 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), ncd.SigningRoot), "signature must be valid")
+	signingRoot, err := po.CalculateSigningRoot()
+	assert.NoError(t, err)
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
 
 	// document already exists
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
@@ -147,7 +151,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 }
 
 func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
-	_, cd := prepareDocumentForP2PHandler(t, nil)
+	po, cd := prepareDocumentForP2PHandler(t, nil)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
 	// Anchor document
@@ -155,10 +159,12 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.NoError(t, err)
 	anchorIDTyped, err := anchors.ToAnchorID(cd.CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(cd.DocumentRoot)
+	docRoot, err := po.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	docRootTyped, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -173,7 +179,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 func TestHandler_SendAnchoredDocument_EmptyDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	id, err := cfg.GetIdentityID()
-	collaborator := identity.NewDIDFromBytes(id)
+	collaborator, err := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
 	resp, err := handler.SendAnchoredDocument(ctxh, &p2ppb.AnchorDocumentRequest{}, collaborator)
 	assert.NotNil(t, err)
@@ -198,17 +204,15 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	po.AppendSignatures(resp.Signature)
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
-	po.Document.SignatureDataSalts = nil
 	tree, err := po.DocumentRootTree()
-	po.Document.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, err := anchors.ToAnchorID(po.Document.CurrentPreimage)
+	anchorIDTyped, err := anchors.ToAnchorID(po.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(po.Document.DocumentRoot)
+	docRootTyped, err := anchors.ToDocumentRoot(tree.RootHash())
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -231,14 +235,13 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	// Add signature received
 	npo.AppendSignatures(resp.Signature)
 	tree, err = npo.DocumentRootTree()
-	npo.Document.DocumentRoot = tree.RootHash()
 
 	// Anchor document
-	anchorIDTyped, err = anchors.ToAnchorID(npo.Document.CurrentPreimage)
+	anchorIDTyped, err = anchors.ToAnchorID(npo.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err = anchors.ToDocumentRoot(npo.Document.DocumentRoot)
+	docRootTyped, err = anchors.ToDocumentRoot(tree.RootHash())
 	assert.NoError(t, err)
-	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor = <-anchorConfirmations
@@ -302,7 +305,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	if po == nil {
 		payload := testingdocuments.CreatePOPayload()
 		po = new(purchaseorder.PurchaseOrder)
-		err = po.InitPurchaseOrderInput(payload, defaultDID.String())
+		err = po.InitPurchaseOrderInput(payload, defaultDID)
 		assert.NoError(t, err)
 	}
 	err = po.AddUpdateLog(defaultDID)
@@ -328,7 +331,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil, true, nil)
+	cd, err := po.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)

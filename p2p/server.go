@@ -108,7 +108,10 @@ func (s *peer) initProtocols() error {
 		if err != nil {
 			return err
 		}
-		DID := identity.NewDIDFromBytes(accID)
+		DID, err := identity.NewDIDFromBytes(accID)
+		if err != nil {
+			return err
+		}
 		protocols = append(protocols, p2pcommon.ProtocolForDID(&DID))
 	}
 	s.mes.Init(protocols...)

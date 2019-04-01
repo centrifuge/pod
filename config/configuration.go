@@ -51,13 +51,13 @@ const (
 	// IdentityRegistry is the contract name for IdentityRegistry
 	IdentityRegistry ContractName = "identityRegistry"
 
-	// PaymentObligation is the contract name for PaymentObligation
-	PaymentObligation ContractName = "paymentObligation"
+	// InvoiceUnpaidNFT is the contract name for InvoiceUnpaidNFT
+	InvoiceUnpaidNFT ContractName = "invoiceUnpaid"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
 func ContractNames() [5]ContractName {
-	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, PaymentObligation}
+	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, InvoiceUnpaidNFT}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -473,7 +473,7 @@ func (c *configuration) initializeViper() {
 
 // SmartContractAddresses encapsulates the smart contract addresses
 type SmartContractAddresses struct {
-	IdentityFactoryAddr, AnchorRepositoryAddr, PaymentObligationAddr string
+	IdentityFactoryAddr, AnchorRepositoryAddr, InvoiceUnpaidAddr string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -543,7 +543,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
 		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
 		v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
-		v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
+		v.Set("networks."+network+".contractAddresses.invoiceUnpaid", smartContractAddresses.InvoiceUnpaidAddr)
 	}
 
 	v.SetConfigFile(targetDataDir + "/config.yaml")
@@ -558,5 +558,5 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
 	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
-	c.v.Set("networks."+network+".contractAddresses.paymentObligation", smartContractAddresses.PaymentObligationAddr)
+	c.v.Set("networks."+network+".contractAddresses.invoiceUnpaid", smartContractAddresses.InvoiceUnpaidAddr)
 }

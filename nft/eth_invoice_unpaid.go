@@ -2,6 +2,9 @@ package nft
 
 import (
 	"context"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -14,6 +17,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -32,29 +37,29 @@ type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 }
 
-// ethereumPaymentObligation handles all interactions related to minting of NFTs for payment obligations on Ethereum
-type ethereumPaymentObligation struct {
+// ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
+type ethInvoiceUnpaid struct {
 	cfg             Config
 	identityService identity.ServiceDID
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
-	bindContract    func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error)
+	bindContract    func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error)
 	txManager       transactions.Manager
 	blockHeightFunc func() (height uint64, err error)
 }
 
-// newEthereumPaymentObligation creates ethereumPaymentObligation given the parameters
-func newEthereumPaymentObligation(
+// newEthInvoiceUnpaid creates InvoiceUnpaid given the parameters
+func newEthInvoiceUnpaid(
 	cfg Config,
 	identityService identity.ServiceDID,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
-	bindContract func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error),
+	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
 	txManager transactions.Manager,
-	blockHeightFunc func() (uint64, error)) *ethereumPaymentObligation {
-	return &ethereumPaymentObligation{
+	blockHeightFunc func() (uint64, error)) *ethInvoiceUnpaid {
+	return &ethInvoiceUnpaid{
 		cfg:             cfg,
 		identityService: identityService,
 		ethClient:       ethClient,
@@ -66,7 +71,22 @@ func newEthereumPaymentObligation(
 	}
 }
 
-func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
+func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
+	// Compact properties
+	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
+	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
+	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
+	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
+
+	for i, p := range docProof.FieldProofs {
+		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
+			docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
+		}
+	}
+	return docProof
+}
+
+func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
@@ -87,6 +107,8 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
+	docProofs = s.filterMintProofs(docProofs)
+
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		return mreq, err
@@ -97,6 +119,9 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 		return mreq, err
 	}
 
+	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	log.Debug(json.MarshalIndent(proof, "", "  "))
+
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
 		return mreq, err
@@ -106,19 +131,37 @@ func (s *ethereumPaymentObligation) prepareMintRequest(ctx context.Context, toke
 
 }
 
+// GetRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
+func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+	var proofFields []string
+
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accDIDBytes, err := acc.GetIdentityID()
+	if err != nil {
+		return nil, err
+	}
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+
+	return proofFields, nil
+}
+
 // MintNFT mints an NFT
-func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
+func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	cidBytes, err := tc.GetIdentityID()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cid := identity.NewDIDFromBytes(cidBytes)
 
 	if !req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
 		return nil, nil, errors.New("enable grant_nft_access to generate Read Access Proof")
@@ -135,9 +178,18 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
+	didBytes, err := tc.GetIdentityID()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Minting NFT",
+	did, err := identity.NewDIDFromBytes(didBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err
@@ -149,7 +201,7 @@ func (s *ethereumPaymentObligation) MintNFT(ctx context.Context, req MintNFTRequ
 	}, done, nil
 }
 
-func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
@@ -178,18 +230,16 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 		}
 
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-		utxID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, EthereumPaymentObligationContractABI, "mint", requestData.To, requestData.TokenID,
-			requestData.TokenURI, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		utxID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, InvoiceUnpaidContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
 		}
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to payment obligation contract.",
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
 			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
-		log.Debugf("TokenURI: %s", requestData.TokenURI)
 		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID.Bytes()))
 		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
 		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
@@ -204,6 +254,17 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 			return
 		}
 
+		// Check if tokenID exists in registry and owner is deposit address
+		owner, err := s.OwnerOf(req.RegistryAddress, tokenID[:])
+		if err != nil {
+			errOut <- errors.New("error while checking new NFT owner %v", err)
+			return
+		}
+		if owner.Hex() != req.DepositAddress.Hex() {
+			errOut <- errors.New("Owner for tokenID %s should be %s, instead got %s", tokenID.String(), req.DepositAddress.Hex(), owner.Hex())
+			return
+		}
+
 		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
 
 		errOut <- nil
@@ -212,7 +273,7 @@ func (s *ethereumPaymentObligation) minter(ctx context.Context, tokenID TokenID,
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
-func (s *ethereumPaymentObligation) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
+func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
 	contract, err := s.bindContract(registry, s.ethClient)
 	if err != nil {
 		return owner, errors.New("failed to bind the registry contract: %v", err)
@@ -232,9 +293,6 @@ type MintRequest struct {
 
 	// TokenID is the ID for the minted token
 	TokenID *big.Int
-
-	// TokenURI is the metadata uri
-	TokenURI string
 
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
 	AnchorID *big.Int
@@ -265,7 +323,6 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 	return MintRequest{
 		To:           to,
 		TokenID:      tokenID.BigInt(),
-		TokenURI:     tokenID.URI(),
 		AnchorID:     anchorID.BigInt(),
 		NextAnchorID: nextAnchorID.BigInt(),
 		Props:        proofData.Props,
@@ -286,10 +343,6 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
 	var proofs = make([][][32]byte, len(proofspb))
-
-	// TODO remove later
-	//proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{FieldProofs: proofspb})
-	//log.Info(json.MarshalIndent(proof, "", "  "))
 
 	for i, p := range proofspb {
 		salt32, err := utils.SliceToByte32(p.Salt)
@@ -313,8 +366,8 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
 }
 
-func bindContract(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
-	return NewEthereumPaymentObligationContract(address, client.GetEthClient())
+func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
+	return NewInvoiceUnpaidContract(address, client.GetEthClient())
 }
 
 // Following are utility methods for nft parameter debugging purposes (Don't remove)

@@ -191,7 +191,7 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 		return nil, errors.New("failed to create new transaction opts: %v", err)
 	}
 
-	opts.GasPrice = gc.config.GetEthereumGasPrice()
+	opts.GasPrice = nil // use oracle
 	opts.GasLimit = gc.config.GetEthereumGasLimit()
 	opts.Context = context.Background()
 	return opts, nil

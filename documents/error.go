@@ -50,9 +50,6 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
-	// ErrDataRootInvalid must be used when the data root is invalid
-	ErrDataRootInvalid = errors.Error("data root is invalid")
-
 	// Read ACL errors
 
 	// ErrNftNotFound must be used when the NFT is not found in the document
@@ -73,6 +70,9 @@ const (
 	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
 	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
 
+	// ErrFailedCollaborators must be used when collaborators are not valid
+	ErrFailedCollaborators = errors.Error("invalid collaborators")
+
 	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
 	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
 
@@ -82,8 +82,14 @@ const (
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
 
-	// ErrEmptyCollabs must be used when a given collaborators array is empty
-	ErrEmptyCollabs = errors.Error("empty collaborators")
+	// ErrInvalidDecimal must be used when given decimal is invalid
+	ErrInvalidDecimal = errors.Error("invalid decimal")
+
+	// ErrIdentityNotOwner must be used when an identity which does not own the entity relationship attempts to update the document
+	ErrIdentityNotOwner = errors.Error("identity attempting to update the document does not own this entity relationship")
+
+	// ErrNotImplemented must be used when an method has not been implemented
+	ErrNotImplemented = errors.Error("Method not implemented")
 )
 
 // Error wraps an error with specific key
