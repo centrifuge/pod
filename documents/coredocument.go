@@ -1,8 +1,11 @@
 package documents
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"strings"
 	"time"
 
@@ -112,6 +115,28 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
+	return cd, nil
+}
+
+// NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
+// It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
+func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, targetID identity.DID, documentID []byte) (*CoreDocument, error) {
+	did := &CollaboratorsAccess{
+		ReadCollaborators: []identity.DID{targetID},
+		ReadWriteCollaborators: nil,
+	}
+	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, *did)
+	if err != nil {
+		return nil, err
+	}
+	at := &documentpb.AccessTokenParams{
+		Grantee: targetID.String(),
+		DocumentIdentifier: hexutil.Encode(documentID),
+	}
+	cd, err = cd.AddAccessToken(ctx, *at)
+	if err != nil {
+		return nil, err
+	}
 	return cd, nil
 }
 
