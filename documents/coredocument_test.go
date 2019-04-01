@@ -107,6 +107,55 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 	}
 }
 
+func TestCoreDocument_CurrentVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.CurrentVersion(), cd.Document.CurrentVersion)
+}
+
+func TestCoreDocument_PreviousVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.PreviousVersion(), cd.Document.PreviousVersion)
+}
+
+func TestCoreDocument_NextVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.NextVersion(), cd.Document.NextVersion)
+}
+
+func TestCoreDocument_CurrentVersionPreimage(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.CurrentVersionPreimage(), cd.Document.CurrentPreimage)
+}
+
+func TestCoreDocument_Author(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	did := testingidentity.GenerateRandomDID()
+	cd.Document.Author = did[:]
+	a, err := cd.Author()
+	assert.NoError(t, err)
+
+	aID, err := identity.NewDIDFromBytes(cd.Document.Author)
+	assert.NoError(t, err)
+	assert.Equal(t, a, aID)
+}
+
+func TestCoreDocument_ID(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.Document.DocumentIdentifier, cd.ID())
+}
+
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
