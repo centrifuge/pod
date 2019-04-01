@@ -132,10 +132,11 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 	if err != nil {
 		return nil, err
 	}
-	cd, err = cd.AddAccessToken(ctx, params)
+	at, err := assembleAccessToken(ctx, params, cd.CurrentVersion())
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to construct access token: %v", err)
 	}
+	cd.Document.AccessTokens = append(cd.Document.AccessTokens, at)
 	return cd, nil
 }
 
