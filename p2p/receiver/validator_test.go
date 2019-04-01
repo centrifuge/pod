@@ -6,18 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 )
 
 var id1 = []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
@@ -73,13 +69,14 @@ func TestValidate_networkValidator(t *testing.T) {
 }
 
 func TestValidate_peerValidator(t *testing.T) {
-	cID := identity.NewDIDFromBytes(id1)
+	cID, err := identity.NewDIDFromBytes(id1)
+	assert.NoError(t, err)
 
 	idService := &testingcommons.MockIdentityService{}
 	sv := peerValidator(idService)
 
 	// Nil headers
-	err := sv.Validate(nil, nil, nil)
+	err = sv.Validate(nil, nil, nil)
 	assert.Error(t, err)
 
 	tm, err := utils.ToTimestamp(time.Now())
@@ -108,7 +105,8 @@ func TestValidate_peerValidator(t *testing.T) {
 }
 
 func TestValidate_handshakeValidator(t *testing.T) {
-	cID := identity.NewDIDFromBytes(id1)
+	cID, err := identity.NewDIDFromBytes(id1)
+	assert.NoError(t, err)
 
 	idService := &testingcommons.MockIdentityService{}
 	hv := HandshakeValidator(cfg.GetNetworkID(), idService)

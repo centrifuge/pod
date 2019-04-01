@@ -47,13 +47,13 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
 	compactPrefix := "0x00010000" // invoice prefix
-	prop1 := "0000000f"           // invoice.net_amount
+	prop1 := "0000002d"           // invoice.net_amount
 	prop2 := "0000000d"           // invoice.currency
 
 	if documentType == typePO {
 		compactPrefix = "0x00020000" // po prefix
-		prop1 = "0000000e"           // po.net_amount
-		prop2 = "0000000c"           // po.currency
+		prop1 = "00000012"           // po.total_amount
+		prop2 = "00000011"           // po.currency
 	}
 
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)

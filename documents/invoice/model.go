@@ -3,7 +3,6 @@ package invoice
 import (
 	"encoding/json"
 	"reflect"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -15,7 +14,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -30,138 +28,285 @@ func compactPrefix() []byte { return []byte{0, 1, 0, 0} }
 type Invoice struct {
 	*documents.CoreDocument
 
-	InvoiceNumber    string // invoice number or reference number
-	InvoiceStatus    string // invoice status
-	SenderName       string // name of the sender company
-	SenderStreet     string // street and address details of the sender company
-	SenderCity       string
-	SenderZipcode    string // country ISO code of the sender of this invoice
-	SenderCountry    string
-	RecipientName    string // name of the recipient company
-	RecipientStreet  string
-	RecipientCity    string
-	RecipientZipcode string
-	RecipientCountry string // country ISO code of the recipient of this invoice
-	Currency         string // country ISO code of the recipient of this invoice
-	GrossAmount      int64  // invoice amount including tax
-	NetAmount        int64  // invoice amount excluding tax
-	TaxAmount        int64
-	TaxRate          int64
-	Recipient        *identity.DID
-	Sender           *identity.DID
-	Payee            *identity.DID
-	Comment          string
-	DueDate          *timestamp.Timestamp
-	DateCreated      *timestamp.Timestamp
-	ExtraData        []byte
+	Number                   string // invoice number or reference number
+	Status                   string // invoice status
+	SenderInvoiceID          string
+	RecipientInvoiceID       string
+	SenderCompanyName        string
+	SenderContactPersonName  string
+	SenderStreet1            string // street and address details of the sender company
+	SenderStreet2            string
+	SenderCity               string
+	SenderZipcode            string
+	SenderState              string
+	SenderCountry            string // country ISO code of the sender of this invoice
+	BillToCompanyName        string
+	BillToContactPersonName  string
+	BillToStreet1            string
+	BillToStreet2            string
+	BillToCity               string
+	BillToZipcode            string
+	BillToState              string
+	BillToCountry            string
+	BillToVatNumber          string
+	BillToLocalTaxID         string
+	RemitToCompanyName       string
+	RemitToContactPersonName string
+	RemitToStreet1           string
+	RemitToStreet2           string
+	RemitToCity              string
+	RemitToZipcode           string
+	RemitToState             string
+	RemitToCountry           string
+	RemitToVatNumber         string
+	RemitToLocalTaxID        string
+	RemitToTaxCountry        string
+	ShipToCompanyName        string
+	ShipToContactPersonName  string
+	ShipToStreet1            string
+	ShipToStreet2            string
+	ShipToCity               string
+	ShipToZipcode            string
+	ShipToState              string
+	ShipToCountry            string
+	Currency                 string             // ISO currency code
+	GrossAmount              *documents.Decimal // invoice amount including tax
+	NetAmount                *documents.Decimal // invoice amount excluding tax
+	TaxAmount                *documents.Decimal
+	TaxRate                  *documents.Decimal
+	TaxOnLineLevel           bool
+	Recipient                *identity.DID // centrifuge ID of the recipient
+	Sender                   *identity.DID // centrifuge ID of the sender
+	Payee                    *identity.DID // centrifuge ID of the payee
+	Comment                  string
+	ShippingTerms            string
+	RequesterEmail           string
+	RequesterName            string
+	DeliveryNumber           string // number of the delivery note
+	IsCreditNote             bool
+	CreditNoteInvoiceNumber  string
+	CreditForInvoiceDate     *timestamp.Timestamp
+	DateDue                  *timestamp.Timestamp
+	DatePaid                 *timestamp.Timestamp
+	DateUpdated              *timestamp.Timestamp
+	DateCreated              *timestamp.Timestamp
+	Attachments              []*documents.BinaryAttachment
+	LineItems                []*LineItem
+	PaymentDetails           []*documents.PaymentDetails
+	TaxItems                 []*TaxItem
+}
 
-	InvoiceSalts *proofs.Salts
+// LineItem represents a single invoice line item.
+type LineItem struct {
+	ItemNumber              string
+	Description             string
+	SenderPartNo            string
+	PricePerUnit            *documents.Decimal
+	Quantity                *documents.Decimal
+	UnitOfMeasure           string
+	NetWeight               *documents.Decimal
+	TaxAmount               *documents.Decimal
+	TaxRate                 *documents.Decimal
+	TaxCode                 *documents.Decimal
+	TotalAmount             *documents.Decimal // the total amount of the line item
+	PurchaseOrderNumber     string
+	PurchaseOrderItemNumber string
+	DeliveryNoteNumber      string
+}
+
+// TaxItem represents a single invoice tax item.
+type TaxItem struct {
+	ItemNumber        string
+	InvoiceItemNumber string
+	TaxAmount         *documents.Decimal
+	TaxRate           *documents.Decimal
+	TaxCode           *documents.Decimal
+	TaxBaseAmount     *documents.Decimal
 }
 
 // getClientData returns the client data from the invoice model
 func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
-	var recipient string
-	if i.Recipient != nil {
-		recipient = hexutil.Encode(i.Recipient[:])
-	}
-
-	var sender string
-	if i.Sender != nil {
-		sender = hexutil.Encode(i.Sender[:])
-	}
-
-	var payee string
-	if i.Payee != nil {
-		payee = hexutil.Encode(i.Payee[:])
-	}
-
-	var extraData string
-	if i.ExtraData != nil {
-		extraData = hexutil.Encode(i.ExtraData)
-	}
-
+	decs := documents.DecimalsToStrings(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
+	dids := identity.DIDsToStrings(i.Recipient, i.Sender, i.Payee)
 	return &clientinvoicepb.InvoiceData{
-		InvoiceNumber:    i.InvoiceNumber,
-		InvoiceStatus:    i.InvoiceStatus,
-		SenderName:       i.SenderName,
-		SenderStreet:     i.SenderStreet,
-		SenderCity:       i.SenderCity,
-		SenderZipcode:    i.SenderZipcode,
-		SenderCountry:    i.SenderCountry,
-		RecipientName:    i.RecipientName,
-		RecipientStreet:  i.RecipientStreet,
-		RecipientCity:    i.RecipientCity,
-		RecipientZipcode: i.RecipientZipcode,
-		RecipientCountry: i.RecipientCountry,
-		Currency:         i.Currency,
-		GrossAmount:      i.GrossAmount,
-		NetAmount:        i.NetAmount,
-		TaxAmount:        i.TaxAmount,
-		TaxRate:          i.TaxRate,
-		Recipient:        recipient,
-		Sender:           sender,
-		Payee:            payee,
-		Comment:          i.Comment,
-		DueDate:          i.DueDate,
-		DateCreated:      i.DateCreated,
-		ExtraData:        extraData,
+		Number:                   i.Number,
+		Status:                   i.Status,
+		SenderInvoiceId:          i.SenderInvoiceID,
+		RecipientInvoiceId:       i.RecipientInvoiceID,
+		SenderCompanyName:        i.SenderCompanyName,
+		SenderContactPersonName:  i.SenderContactPersonName,
+		SenderStreet1:            i.SenderStreet1,
+		SenderStreet2:            i.SenderStreet2,
+		SenderCity:               i.SenderCity,
+		SenderZipcode:            i.SenderZipcode,
+		SenderState:              i.SenderState,
+		SenderCountry:            i.SenderCountry,
+		BillToCompanyName:        i.BillToCompanyName,
+		BillToContactPersonName:  i.BillToContactPersonName,
+		BillToStreet1:            i.BillToStreet1,
+		BillToStreet2:            i.BillToStreet2,
+		BillToCity:               i.BillToCity,
+		BillToZipcode:            i.BillToZipcode,
+		BillToState:              i.BillToState,
+		BillToCountry:            i.BillToCountry,
+		BillToLocalTaxId:         i.BillToLocalTaxID,
+		BillToVatNumber:          i.BillToVatNumber,
+		RemitToCompanyName:       i.RemitToCompanyName,
+		RemitToContactPersonName: i.RemitToContactPersonName,
+		RemitToStreet1:           i.RemitToStreet1,
+		RemitToStreet2:           i.RemitToStreet2,
+		RemitToCity:              i.RemitToCity,
+		RemitToCountry:           i.RemitToCountry,
+		RemitToState:             i.RemitToState,
+		RemitToZipcode:           i.RemitToZipcode,
+		RemitToLocalTaxId:        i.RemitToLocalTaxID,
+		RemitToTaxCountry:        i.RemitToTaxCountry,
+		RemitToVatNumber:         i.RemitToVatNumber,
+		ShipToCompanyName:        i.ShipToCompanyName,
+		ShipToContactPersonName:  i.ShipToContactPersonName,
+		ShipToStreet1:            i.ShipToStreet1,
+		ShipToStreet2:            i.ShipToStreet2,
+		ShipToCity:               i.ShipToCity,
+		ShipToState:              i.ShipToState,
+		ShipToCountry:            i.ShipToCountry,
+		ShipToZipcode:            i.ShipToZipcode,
+		Currency:                 i.Currency,
+		GrossAmount:              decs[0],
+		NetAmount:                decs[1],
+		TaxAmount:                decs[2],
+		TaxRate:                  decs[3],
+		TaxOnLineLevel:           i.TaxOnLineLevel,
+		Recipient:                dids[0],
+		Sender:                   dids[1],
+		Payee:                    dids[2],
+		Comment:                  i.Comment,
+		ShippingTerms:            i.ShippingTerms,
+		RequesterEmail:           i.RequesterEmail,
+		RequesterName:            i.RequesterName,
+		DeliveryNumber:           i.DeliveryNumber,
+		IsCreditNote:             i.IsCreditNote,
+		CreditNoteInvoiceNumber:  i.CreditNoteInvoiceNumber,
+		CreditForInvoiceDate:     i.CreditForInvoiceDate,
+		DateDue:                  i.DateDue,
+		DatePaid:                 i.DatePaid,
+		DateCreated:              i.DateCreated,
+		DateUpdated:              i.DateUpdated,
+		Attachments:              documents.ToClientAttachments(i.Attachments),
+		LineItems:                toClientLineItems(i.LineItems),
+		PaymentDetails:           documents.ToClientPaymentDetails(i.PaymentDetails),
+		TaxItems:                 toClientTaxItems(i.TaxItems),
 	}
 
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
-func (i *Invoice) createP2PProtobuf() *invoicepb.InvoiceData {
-	var recipient, sender, payee []byte
-	if i.Recipient != nil {
-		recipient = i.Recipient[:]
+func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
+	decs, err := documents.DecimalsToBytes(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
+	if err != nil {
+		return nil, err
 	}
 
-	if i.Sender != nil {
-		sender = i.Sender[:]
+	li, err := toP2PLineItems(i.LineItems)
+	if err != nil {
+		return nil, err
 	}
 
-	if i.Payee != nil {
-		payee = i.Payee[:]
+	pd, err := documents.ToP2PPaymentDetails(i.PaymentDetails)
+	if err != nil {
+		return nil, err
 	}
 
+	ti, err := toP2PTaxItems(i.TaxItems)
+	if err != nil {
+		return nil, err
+	}
+
+	dids := identity.DIDsToBytes(i.Recipient, i.Sender, i.Payee)
 	return &invoicepb.InvoiceData{
-		InvoiceNumber:    i.InvoiceNumber,
-		InvoiceStatus:    i.InvoiceStatus,
-		SenderName:       i.SenderName,
-		SenderStreet:     i.SenderStreet,
-		SenderCity:       i.SenderCity,
-		SenderZipcode:    i.SenderZipcode,
-		SenderCountry:    i.SenderCountry,
-		RecipientName:    i.RecipientName,
-		RecipientStreet:  i.RecipientStreet,
-		RecipientCity:    i.RecipientCity,
-		RecipientZipcode: i.RecipientZipcode,
-		RecipientCountry: i.RecipientCountry,
-		Currency:         i.Currency,
-		GrossAmount:      i.GrossAmount,
-		NetAmount:        i.NetAmount,
-		TaxAmount:        i.TaxAmount,
-		TaxRate:          i.TaxRate,
-		Recipient:        recipient,
-		Sender:           sender,
-		Payee:            payee,
-		Comment:          i.Comment,
-		DueDate:          i.DueDate,
-		DateCreated:      i.DateCreated,
-		ExtraData:        i.ExtraData,
-	}
+		Number:                   i.Number,
+		Status:                   i.Status,
+		SenderInvoiceId:          i.SenderInvoiceID,
+		RecipientInvoiceId:       i.RecipientInvoiceID,
+		SenderCompanyName:        i.SenderCompanyName,
+		SenderContactPersonName:  i.SenderContactPersonName,
+		SenderStreet1:            i.SenderStreet1,
+		SenderStreet2:            i.SenderStreet2,
+		SenderCity:               i.SenderCity,
+		SenderZipcode:            i.SenderZipcode,
+		SenderState:              i.SenderState,
+		SenderCountry:            i.SenderCountry,
+		BillToCompanyName:        i.BillToCompanyName,
+		BillToContactPersonName:  i.BillToContactPersonName,
+		BillToStreet1:            i.BillToStreet1,
+		BillToStreet2:            i.BillToStreet2,
+		BillToCity:               i.BillToCity,
+		BillToZipcode:            i.BillToZipcode,
+		BillToState:              i.BillToState,
+		BillToCountry:            i.BillToCountry,
+		BillToLocalTaxId:         i.BillToLocalTaxID,
+		BillToVatNumber:          i.BillToVatNumber,
+		RemitToCompanyName:       i.RemitToCompanyName,
+		RemitToContactPersonName: i.RemitToContactPersonName,
+		RemitToStreet1:           i.RemitToStreet1,
+		RemitToStreet2:           i.RemitToStreet2,
+		RemitToCity:              i.RemitToCity,
+		RemitToCountry:           i.RemitToCountry,
+		RemitToState:             i.RemitToState,
+		RemitToZipcode:           i.RemitToZipcode,
+		RemitToLocalTaxId:        i.RemitToLocalTaxID,
+		RemitToTaxCountry:        i.RemitToTaxCountry,
+		RemitToVatNumber:         i.RemitToVatNumber,
+		ShipToCompanyName:        i.ShipToCompanyName,
+		ShipToContactPersonName:  i.ShipToContactPersonName,
+		ShipToStreet1:            i.ShipToStreet1,
+		ShipToStreet2:            i.ShipToStreet2,
+		ShipToCity:               i.ShipToCity,
+		ShipToState:              i.ShipToState,
+		ShipToCountry:            i.ShipToCountry,
+		ShipToZipcode:            i.ShipToZipcode,
+		Currency:                 i.Currency,
+		GrossAmount:              decs[0],
+		NetAmount:                decs[1],
+		TaxAmount:                decs[2],
+		TaxRate:                  decs[3],
+		//TaxOnLineLevel:           i.TaxOnLineLevel,
+		Recipient:      dids[0],
+		Sender:         dids[1],
+		Payee:          dids[2],
+		Comment:        i.Comment,
+		ShippingTerms:  i.ShippingTerms,
+		RequesterEmail: i.RequesterEmail,
+		RequesterName:  i.RequesterName,
+		DeliveryNumber: i.DeliveryNumber,
+		//IsCreditNote:             i.IsCreditNote,
+		CreditNoteInvoiceNumber: i.CreditNoteInvoiceNumber,
+		CreditForInvoiceDate:    i.CreditForInvoiceDate,
+		DateDue:                 i.DateDue,
+		DatePaid:                i.DatePaid,
+		DateCreated:             i.DateCreated,
+		DateUpdated:             i.DateUpdated,
+		Attachments:             documents.ToP2PAttachments(i.Attachments),
+		LineItems:               li,
+		PaymentDetails:          pd,
+		TaxItems:                ti,
+	}, nil
 
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self string) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self identity.DID) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
+	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
+	if err != nil {
+		return err
+	}
+
+	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
+	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), cs)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -172,114 +317,209 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 
 // initInvoiceFromData initialises invoice from invoiceData
 func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
-	i.InvoiceNumber = data.InvoiceNumber
-	i.InvoiceStatus = data.InvoiceStatus
-	i.SenderName = data.SenderName
-	i.SenderStreet = data.SenderStreet
+	decs, err := documents.StringsToDecimals(data.GrossAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	if err != nil {
+		return err
+	}
+
+	dids, err := identity.StringsToDIDs(data.Recipient, data.Sender, data.Payee)
+	if err != nil {
+		return err
+	}
+
+	atts, err := documents.FromClientAttachments(data.Attachments)
+	if err != nil {
+		return err
+	}
+
+	li, err := fromClientLineItems(data.LineItems)
+	if err != nil {
+		return err
+	}
+
+	pd, err := documents.FromClientPaymentDetails(data.PaymentDetails)
+	if err != nil {
+		return err
+	}
+
+	ti, err := fromClientTaxItems(data.TaxItems)
+	if err != nil {
+		return err
+	}
+
+	i.Number = data.Number
+	i.Status = data.Status
+	i.SenderInvoiceID = data.SenderInvoiceId
+	i.RecipientInvoiceID = data.RecipientInvoiceId
+	i.SenderCompanyName = data.SenderCompanyName
+	i.SenderContactPersonName = data.SenderContactPersonName
+	i.SenderStreet1 = data.SenderStreet1
+	i.SenderStreet2 = data.SenderStreet2
 	i.SenderCity = data.SenderCity
 	i.SenderZipcode = data.SenderZipcode
+	i.SenderState = data.SenderState
 	i.SenderCountry = data.SenderCountry
-	i.RecipientName = data.RecipientName
-	i.RecipientStreet = data.RecipientStreet
-	i.RecipientCity = data.RecipientCity
-	i.RecipientZipcode = data.RecipientZipcode
-	i.RecipientCountry = data.RecipientCountry
+	i.BillToCompanyName = data.BillToCompanyName
+	i.BillToContactPersonName = data.BillToContactPersonName
+	i.BillToStreet1 = data.BillToStreet1
+	i.BillToStreet2 = data.BillToStreet2
+	i.BillToCity = data.BillToCity
+	i.BillToZipcode = data.BillToZipcode
+	i.BillToState = data.BillToState
+	i.BillToCountry = data.BillToCountry
+	i.BillToVatNumber = data.BillToVatNumber
+	i.BillToLocalTaxID = data.BillToLocalTaxId
+	i.RemitToCompanyName = data.RemitToCompanyName
+	i.RemitToContactPersonName = data.RemitToContactPersonName
+	i.RemitToStreet1 = data.RemitToStreet1
+	i.RemitToStreet2 = data.RemitToStreet2
+	i.RemitToCity = data.RemitToCity
+	i.RemitToZipcode = data.RemitToZipcode
+	i.RemitToState = data.RemitToState
+	i.RemitToCountry = data.RemitToCountry
+	i.RemitToVatNumber = data.RemitToVatNumber
+	i.RemitToLocalTaxID = data.RemitToLocalTaxId
+	i.RemitToTaxCountry = data.RemitToTaxCountry
+	i.ShipToCompanyName = data.ShipToCompanyName
+	i.ShipToContactPersonName = data.ShipToContactPersonName
+	i.ShipToStreet1 = data.ShipToStreet1
+	i.ShipToStreet2 = data.ShipToStreet2
+	i.ShipToCity = data.ShipToCity
+	i.ShipToZipcode = data.ShipToZipcode
+	i.ShipToState = data.ShipToState
+	i.ShipToCountry = data.ShipToCountry
 	i.Currency = data.Currency
-	i.GrossAmount = data.GrossAmount
-	i.NetAmount = data.NetAmount
-	i.TaxAmount = data.TaxAmount
-	i.TaxRate = data.TaxRate
+	i.GrossAmount = decs[0]
+	i.NetAmount = decs[1]
+	i.TaxAmount = decs[2]
+	i.TaxRate = decs[3]
+	i.TaxOnLineLevel = data.TaxOnLineLevel
+	i.Recipient = dids[0]
+	i.Sender = dids[1]
+	i.Payee = dids[2]
 	i.Comment = data.Comment
-	i.DueDate = data.DueDate
+	i.ShippingTerms = data.ShippingTerms
+	i.RequesterEmail = data.RequesterEmail
+	i.RequesterName = data.RequesterName
+	i.DeliveryNumber = data.DeliveryNumber
+	i.IsCreditNote = data.IsCreditNote
+	i.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
+	i.CreditForInvoiceDate = data.CreditForInvoiceDate
+	i.DateDue = data.DateDue
+	i.DatePaid = data.DatePaid
+	i.DateUpdated = data.DateUpdated
 	i.DateCreated = data.DateCreated
-
-	if data.Recipient != "" {
-		if recipient, err := identity.NewDIDFromString(data.Recipient); err == nil {
-			i.Recipient = &recipient
-		}
-	}
-
-	if data.Sender != "" {
-		if sender, err := identity.NewDIDFromString(data.Sender); err == nil {
-			i.Sender = &sender
-		}
-	}
-
-	if data.Payee != "" {
-		if payee, err := identity.NewDIDFromString(data.Payee); err == nil {
-			i.Payee = &payee
-		}
-	}
-
-	if data.ExtraData != "" {
-		ed, err := hexutil.Decode(data.ExtraData)
-		if err != nil {
-			return errors.NewTypedError(err, errors.New("failed to decode extra data"))
-		}
-
-		i.ExtraData = ed
-	}
-
+	i.Attachments = atts
+	i.LineItems = li
+	i.PaymentDetails = pd
+	i.TaxItems = ti
 	return nil
 }
 
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
-func (i *Invoice) loadFromP2PProtobuf(invoiceData *invoicepb.InvoiceData) {
-	i.InvoiceNumber = invoiceData.InvoiceNumber
-	i.InvoiceStatus = invoiceData.InvoiceStatus
-	i.SenderName = invoiceData.SenderName
-	i.SenderStreet = invoiceData.SenderStreet
-	i.SenderCity = invoiceData.SenderCity
-	i.SenderZipcode = invoiceData.SenderZipcode
-	i.SenderCountry = invoiceData.SenderCountry
-	i.RecipientName = invoiceData.RecipientName
-	i.RecipientStreet = invoiceData.RecipientStreet
-	i.RecipientCity = invoiceData.RecipientCity
-	i.RecipientZipcode = invoiceData.RecipientZipcode
-	i.RecipientCountry = invoiceData.RecipientCountry
-	i.Currency = invoiceData.Currency
-	i.GrossAmount = invoiceData.GrossAmount
-	i.NetAmount = invoiceData.NetAmount
-	i.TaxAmount = invoiceData.TaxAmount
-	i.TaxRate = invoiceData.TaxRate
-
-	if invoiceData.Recipient != nil {
-		recipient := identity.NewDIDFromBytes(invoiceData.Recipient)
-		i.Recipient = &recipient
+func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
+	decs, err := documents.BytesToDecimals(data.GrossAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
+	if err != nil {
+		return err
 	}
 
-	if invoiceData.Sender != nil {
-		sender := identity.NewDIDFromBytes(invoiceData.Sender)
-		i.Sender = &sender
+	dids, err := identity.BytesToDIDs(data.Recipient, data.Sender, data.Payee)
+	if err != nil {
+		return err
 	}
 
-	if invoiceData.Payee != nil {
-		payee := identity.NewDIDFromBytes(invoiceData.Payee)
-		i.Payee = &payee
+	atts := documents.FromP2PAttachments(data.Attachments)
+	li, err := fromP2PLineItems(data.LineItems)
+	if err != nil {
+		return err
 	}
 
-	i.Comment = invoiceData.Comment
-	i.DueDate = invoiceData.DueDate
-	i.DateCreated = invoiceData.DateCreated
-	i.ExtraData = invoiceData.ExtraData
-}
-
-// getInvoiceSalts returns the invoice salts. Initialises if not present
-func (i *Invoice) getInvoiceSalts(invoiceData *invoicepb.InvoiceData) (*proofs.Salts, error) {
-	if i.InvoiceSalts == nil {
-		invoiceSalts, err := documents.GenerateNewSalts(invoiceData, prefix, compactPrefix())
-		if err != nil {
-			return nil, errors.New("getInvoiceSalts error %v", err)
-		}
-		i.InvoiceSalts = invoiceSalts
+	pd, err := documents.FromP2PPaymentDetails(data.PaymentDetails)
+	if err != nil {
+		return err
 	}
 
-	return i.InvoiceSalts, nil
+	ti, err := fromP2PTaxItems(data.TaxItems)
+	if err != nil {
+		return err
+	}
+
+	i.Number = data.Number
+	i.Status = data.Status
+	i.SenderInvoiceID = data.SenderInvoiceId
+	i.RecipientInvoiceID = data.RecipientInvoiceId
+	i.SenderCompanyName = data.SenderCompanyName
+	i.SenderContactPersonName = data.SenderContactPersonName
+	i.SenderStreet1 = data.SenderStreet1
+	i.SenderStreet2 = data.SenderStreet2
+	i.SenderCity = data.SenderCity
+	i.SenderZipcode = data.SenderZipcode
+	i.SenderState = data.SenderState
+	i.SenderCountry = data.SenderCountry
+	i.BillToCompanyName = data.BillToCompanyName
+	i.BillToContactPersonName = data.BillToContactPersonName
+	i.BillToStreet1 = data.BillToStreet1
+	i.BillToStreet2 = data.BillToStreet2
+	i.BillToCity = data.BillToCity
+	i.BillToZipcode = data.BillToZipcode
+	i.BillToState = data.BillToState
+	i.BillToCountry = data.BillToCountry
+	i.BillToVatNumber = data.BillToVatNumber
+	i.BillToLocalTaxID = data.BillToLocalTaxId
+	i.RemitToCompanyName = data.RemitToCompanyName
+	i.RemitToContactPersonName = data.RemitToContactPersonName
+	i.RemitToStreet1 = data.RemitToStreet1
+	i.RemitToStreet2 = data.RemitToStreet2
+	i.RemitToCity = data.RemitToCity
+	i.RemitToZipcode = data.RemitToZipcode
+	i.RemitToState = data.RemitToState
+	i.RemitToCountry = data.RemitToCountry
+	i.RemitToVatNumber = data.RemitToVatNumber
+	i.RemitToLocalTaxID = data.RemitToLocalTaxId
+	i.RemitToTaxCountry = data.RemitToTaxCountry
+	i.ShipToCompanyName = data.ShipToCompanyName
+	i.ShipToContactPersonName = data.ShipToContactPersonName
+	i.ShipToStreet1 = data.ShipToStreet1
+	i.ShipToStreet2 = data.ShipToStreet2
+	i.ShipToCity = data.ShipToCity
+	i.ShipToZipcode = data.ShipToZipcode
+	i.ShipToState = data.ShipToState
+	i.ShipToCountry = data.ShipToCountry
+	i.Currency = data.Currency
+	i.GrossAmount = decs[0]
+	i.NetAmount = decs[1]
+	i.TaxAmount = decs[2]
+	i.TaxRate = decs[3]
+	i.TaxOnLineLevel = data.TaxOnLineLevel
+	i.Recipient = dids[0]
+	i.Sender = dids[1]
+	i.Payee = dids[2]
+	i.Comment = data.Comment
+	i.ShippingTerms = data.ShippingTerms
+	i.RequesterEmail = data.RequesterEmail
+	i.RequesterName = data.RequesterName
+	i.DeliveryNumber = data.DeliveryNumber
+	i.IsCreditNote = data.IsCreditNote
+	i.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
+	i.CreditForInvoiceDate = data.CreditForInvoiceDate
+	i.DateDue = data.DateDue
+	i.DatePaid = data.DatePaid
+	i.DateUpdated = data.DateUpdated
+	i.DateCreated = data.DateCreated
+	i.Attachments = atts
+	i.LineItems = li
+	i.PaymentDetails = pd
+	i.TaxItems = ti
+	return nil
 }
 
 // PackCoreDocument packs the Invoice into a CoreDocument.
 func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
-	invData := i.createP2PProtobuf()
+	invData, err := i.createP2PProtobuf()
+	if err != nil {
+		return cd, err
+	}
+
 	data, err := proto.Marshal(invData)
 	if err != nil {
 		return cd, errors.New("couldn't serialise InvoiceData: %v", err)
@@ -289,13 +529,7 @@ func (i *Invoice) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error)
 		TypeUrl: i.DocumentType(),
 		Value:   data,
 	}
-
-	salts, err := i.getInvoiceSalts(invData)
-	if err != nil {
-		return cd, errors.New("couldn't get InvoiceSalts: %v", err)
-	}
-
-	return i.CoreDocument.PackCoreDocument(embedData, documents.ConvertToProtoSalts(salts)), nil
+	return i.CoreDocument.PackCoreDocument(embedData), nil
 }
 
 // UnpackCoreDocument unpacks the core document into Invoice.
@@ -311,14 +545,8 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	i.loadFromP2PProtobuf(invoiceData)
-	if cd.EmbeddedDataSalts == nil {
-		i.InvoiceSalts, err = i.getInvoiceSalts(invoiceData)
-		if err != nil {
-			return err
-		}
-	} else {
-		i.InvoiceSalts = documents.ConvertToProofSalts(cd.EmbeddedDataSalts)
+	if err := i.loadFromP2PProtobuf(invoiceData); err != nil {
+		return err
 	}
 
 	i.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
@@ -347,19 +575,19 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
 
-	dr := t.RootHash()
-	i.CoreDocument.SetDataRoot(dr)
-	return dr, nil
+	return t.RootHash(), nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	invProto := i.createP2PProtobuf()
-	salts, err := i.getInvoiceSalts(invProto)
+	invProto, err := i.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
-	t := documents.NewDefaultTreeWithPrefix(salts, prefix, compactPrefix())
+	if i.CoreDocument == nil {
+		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
+	}
+	t := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -368,6 +596,7 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
+
 	return t, nil
 }
 
@@ -387,14 +616,14 @@ func (*Invoice) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old invoice.
-func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators []string) error {
+func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess) error {
 	err := i.initInvoiceFromData(data)
 	if err != nil {
 		return err
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(collaborators, true, compactPrefix())
+	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
 	if err != nil {
 		return err
 	}
@@ -415,7 +644,29 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
-	return i.CoreDocument.CalculateSigningRoot(i.DocumentType())
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return i.CoreDocument.CalculateSigningRoot(i.DocumentType(), dr)
+}
+
+// CalculateDocumentRoot calculates the document root
+func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return dr, err
+	}
+	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dr)
+}
+
+// DocumentRootTree creates and returns the document root tree
+func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
+	dr, err := i.CalculateDataRoot()
+	if err != nil {
+		return nil, err
+	}
+	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dr)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -424,8 +675,15 @@ func (i *Invoice) CreateNFTProofs(
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+
+	tree, err := i.getDocumentDataTree()
+	if err != nil {
+		return nil, err
+	}
+
 	return i.CoreDocument.CreateNFTProofs(
 		i.DocumentType(),
+		tree,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
@@ -454,21 +712,6 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	}
 
 	rules := i.CoreDocument.TransitionRulesFor(collaborator)
-	cf := documents.GetChangedFields(oldTree, newTree, proofs.DefaultSaltsLengthSuffix)
+	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
-}
-
-// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-func (i *Invoice) AddUpdateLog(account identity.DID) (err error) {
-	return i.CoreDocument.AddUpdateLog(account)
-}
-
-// Author is the author of the document version represented by the model
-func (i *Invoice) Author() identity.DID {
-	return i.CoreDocument.Author()
-}
-
-// Timestamp is the time of update in UTC of the document version represented by the model
-func (i *Invoice) Timestamp() (time.Time, error) {
-	return i.CoreDocument.Timestamp()
 }

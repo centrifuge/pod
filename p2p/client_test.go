@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -137,7 +138,7 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	return &protocolpb.P2PEnvelope{Body: reqB}
 }
 
-func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
+func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
 	po := new(purchaseorder.PurchaseOrder)
 	data := testingdocuments.CreatePOPayload()
 	if len(collaborators) > 0 {
@@ -145,9 +146,10 @@ func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, cid identity.DID,
 		for _, c := range collaborators {
 			cs = append(cs, c.String())
 		}
-		data.Collaborators = cs
+
+		data.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
 	}
-	err := po.InitPurchaseOrderInput(data, cid.String())
+	err := po.InitPurchaseOrderInput(data, did)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -26,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -38,6 +37,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
-	ctx[nft.BootstrappedPayObService] = new(testingdocuments.MockRegistry)
+	ctx[nft.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -85,12 +85,11 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	inv := new(Invoice)
-	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String()))
+	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
-	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestInvoice_JSON(t *testing.T) {
@@ -98,7 +97,7 @@ func TestInvoice_JSON(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String()))
+	assert.NoError(t, inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
@@ -149,14 +148,15 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
 	inv := new(Invoice)
-	inv.loadFromP2PProtobuf(&invData)
+	err := inv.loadFromP2PProtobuf(&invData)
+	assert.NoError(t, err)
 
 	data := inv.getClientData()
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, hexutil.Encode(inv.Recipient[:]), "recipient should match")
-	assert.Equal(t, data.Sender, hexutil.Encode(inv.Sender[:]), "sender should match")
-	assert.Equal(t, data.Payee, hexutil.Encode(inv.Payee[:]), "payee should match")
+	assert.Equal(t, data.Recipient, inv.Recipient.String(), "recipient should match")
+	assert.Equal(t, data.Sender, inv.Sender.String(), "sender should match")
+	assert.Equal(t, data.Payee, inv.Payee.String(), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
@@ -166,64 +166,54 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	// fail recipient
 	data := &clientinvoicepb.InvoiceData{
-		Sender:    "some number",
-		Payee:     "some payee",
 		Recipient: "some recipient",
-		ExtraData: "some data",
 	}
 	inv := new(Invoice)
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Error(t, err, "must return err")
-	assert.Contains(t, err.Error(), "failed to decode extra data")
+	assert.Contains(t, err.Error(), "malformed address provided")
 	assert.Nil(t, inv.Recipient)
 	assert.Nil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
-	assert.Nil(t, inv.ExtraData)
 
-	data.ExtraData = "0x010203020301"
 	recipientDID := testingidentity.GenerateRandomDID()
 	data.Recipient = recipientDID.String()
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
 	assert.Nil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
 
 	senderDID := testingidentity.GenerateRandomDID()
 	data.Sender = senderDID.String()
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
 	assert.NotNil(t, inv.Sender)
 	assert.Nil(t, inv.Payee)
 
 	payeeDID := testingidentity.GenerateRandomDID()
 	data.Payee = payeeDID.String()
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.ExtraData)
 	assert.NotNil(t, inv.Recipient)
 	assert.NotNil(t, inv.Sender)
 	assert.NotNil(t, inv.Payee)
 
-	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, did.String())
-	assert.Contains(t, err.Error(), "failed to decode collaborator")
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Sender[:], senderDID[:])
 	assert.Equal(t, inv.Payee[:], payeeDID[:])
 	assert.Equal(t, inv.Recipient[:], recipientDID[:])
-	assert.Equal(t, inv.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
@@ -231,24 +221,26 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 	m := new(Invoice)
-	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did.String())
+	err = m.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did)
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, m.InvoiceSalts, "salts must be nil")
 
 	dr, err := m.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, m.InvoiceSalts, "salts must be created")
 }
 
 func TestInvoice_CreateProofs(t *testing.T) {
 	i := createInvoice(t)
-	rk := i.Document.Roles[0].RoleKey
+	rk := i.GetTestCoreDocWithReset().Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := i.CreateProofs([]string{"invoice.invoice_number", pf, documents.CDTreePrefix + ".document_type"})
+	proof, err := i.CreateProofs([]string{"invoice.number", pf, documents.CDTreePrefix + ".document_type", "invoice.line_items[0].item_number", "invoice.line_items[0].description"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	if err != nil {
+		return
+	}
+
+	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 
 	// Validate invoice_number
@@ -262,11 +254,21 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	assert.NoError(t, err)
 	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// validate line item
+	valid, err = tree.ValidateProof(proof[3])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	valid, err = tree.ValidateProof(proof[4])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -278,11 +280,10 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	i := new(Invoice)
 	invPayload := testingdocuments.CreateInvoicePayload()
-	invPayload.Data.DueDate = &timestamp.Timestamp{Seconds: time.Now().Unix()}
-	invPayload.Data.InvoiceStatus = "unpaid"
-	invPayload.Collaborators = []string{defaultDID.String()}
-
-	err = i.InitInvoiceInput(invPayload, defaultDID.String())
+	invPayload.Data.DateDue = &timestamp.Timestamp{Seconds: time.Now().Unix()}
+	invPayload.Data.Status = "unpaid"
+	invPayload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{defaultDID.String()}}
+	err = i.InitInvoiceInput(invPayload, defaultDID)
 	assert.NoError(t, err)
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
@@ -299,11 +300,11 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
-	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.due_date", "invoice.sender", "invoice.invoice_status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.CoreDocument.DocumentRootTree()
+	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 8)
 
@@ -340,18 +341,37 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 }
 
 func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
-	i := Invoice{InvoiceNumber: "3213121", NetAmount: 2, GrossAmount: 2}
+	na := new(documents.Decimal)
+	assert.NoError(t, na.SetString("2"))
+	ga := new(documents.Decimal)
+	assert.NoError(t, ga.SetString("2"))
+	i := createInvoice(t)
+	i.Number = "321321"
+	i.NetAmount = na
+	i.GrossAmount = ga
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("invoice.invoice_number")
+	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, "invoice.invoice_number", leaf.Property.ReadableName())
+	assert.Equal(t, "invoice.number", leaf.Property.ReadableName())
+	assert.Equal(t, []byte(i.Number), leaf.Value)
 }
 
 func createInvoice(t *testing.T) *Invoice {
 	i := new(Invoice)
-	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), defaultDID.String())
+	payload := testingdocuments.CreateInvoicePayload()
+	payload.Data.LineItems = []*clientinvoicepb.LineItem{
+		{
+			ItemNumber:  "123456",
+			TaxAmount:   "1.99",
+			TotalAmount: "99",
+			Description: "Some description",
+		},
+	}
+
+	err := i.InitInvoiceInput(payload, defaultDID)
 	assert.NoError(t, err)
+	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateSigningRoot()
@@ -378,8 +398,19 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldInv := model.(*Invoice)
 	data := oldInv.getClientData()
-	data.GrossAmount = 50
-	err = inv.PrepareNewVersion(inv, data, []string{id3.String()})
+	data.GrossAmount = "50"
+	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{id3},
+	})
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateDataRoot()
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	_, err = inv.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -389,9 +420,8 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, oldInv.CollaboratorCanUpdate(inv, id2))
 
 	// update the id3 rules to update only gross amount
-	inv.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	inv.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
-	inv.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
+	inv.CoreDocument.GetTestCoreDocWithReset().TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 14)
 	assert.NoError(t, testRepo().Create(id1[:], inv.CurrentVersion(), inv))
 
 	// fetch the document
@@ -399,9 +429,9 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldInv = model.(*Invoice)
 	data = oldInv.getClientData()
-	data.GrossAmount = 55
+	data.GrossAmount = "55"
 	data.Currency = "INR"
-	err = inv.PrepareNewVersion(inv, data, nil)
+	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 
 	// id1 should have permission

@@ -85,11 +85,11 @@ type PreCommitData struct {
 
 // CommitData holds required document details for anchoring
 type CommitData struct {
-	BlockHeight    uint64
-	AnchorID       AnchorID
-	DocumentRoot   DocumentRoot
-	DocumentProofs [][DocumentProofLength]byte
-	SchemaVersion  uint
+	BlockHeight   uint64
+	AnchorID      AnchorID
+	DocumentRoot  DocumentRoot
+	DocumentProof [DocumentProofLength]byte
+	SchemaVersion uint
 }
 
 // WatchCommit holds the commit data received from ethereum event
@@ -119,12 +119,12 @@ func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot) (preCommitDat
 }
 
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (commitData *CommitData) {
+func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
 	return &CommitData{
-		BlockHeight:    blockHeight,
-		AnchorID:       anchorID,
-		DocumentRoot:   documentRoot,
-		DocumentProofs: documentProofs,
+		BlockHeight:   blockHeight,
+		AnchorID:      anchorID,
+		DocumentRoot:  documentRoot,
+		DocumentProof: proof,
 	}
 }
 

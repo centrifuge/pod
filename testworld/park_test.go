@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHost_Happy(t *testing.T) {
+func TestHost_BasicDocumentShare(t *testing.T) {
 	t.Parallel()
 
 	// Hosts
@@ -29,9 +29,6 @@ func TestHost_Happy(t *testing.T) {
 
 	docIdentifier := getDocumentIdentifier(t, res)
 
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",

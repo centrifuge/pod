@@ -47,13 +47,13 @@ format-go: ## formats go code
 	@goimports -w .
 
 proto-lint: ## runs prototool lint
-	$(PROTOTOOL_BIN) lint
+	$(PROTOTOOL_BIN) lint protobufs
 
 proto-gen-go: ## generates the go bindings
-	$(PROTOTOOL_BIN) gen
+	$(PROTOTOOL_BIN) generate protobufs
 
 proto-all: ## runs prototool all
-	$(PROTOTOOL_BIN) all
+	$(PROTOTOOL_BIN) all protobufs
 
 gen-swagger: ## generates the swagger documentation
 	npm --prefix ./build run build_swagger
@@ -79,11 +79,11 @@ gen-abi-bindings: install-deps abigen-install
 	npm install --prefix tmp/contracts @centrifuge/ethereum-contracts@${CONTRACTS_VERSION}
 	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
 	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/PaymentObligation.json | jq '.abi' > tmp/contracts/po.abi
+	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/InvoiceUnpaid.json | jq '.abi' > tmp/contracts/po.abi
 	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
 	@abigen --abi tmp/contracts/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
 	@abigen --abi tmp/contracts/ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract.go
-	@abigen --abi tmp/contracts/po.abi --pkg nft --type EthereumPaymentObligationContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/ethereum_payment_obligation_contract.go
+	@abigen --abi tmp/contracts/po.abi --pkg nft --type InvoiceUnpaidContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/invoice_unpaid_contract.go
 	@abigen --abi tmp/contracts/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 

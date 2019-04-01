@@ -17,12 +17,12 @@ var apiLog = logging.Logger("nft-api")
 
 type grpcHandler struct {
 	config  config.Service
-	service PaymentObligation
+	service InvoiceUnpaid
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config config.Service, payOb PaymentObligation) nftpb.NFTServiceServer {
-	return &grpcHandler{config: config, service: payOb}
+func GRPCHandler(config config.Service, InvoiceUnpaid InvoiceUnpaid) nftpb.NFTServiceServer {
+	return &grpcHandler{config: config, service: InvoiceUnpaid}
 }
 
 // MintNFT will be called from the client API to mint an NFT
@@ -62,6 +62,40 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 		TokenId: resp.TokenID,
 		Header:  &nftpb.ResponseHeader{TransactionId: resp.TransactionID},
 	}, nil
+}
+
+// MintInvoiceUnpaidNFT will be called from the client API to mint an NFT out of an unpaid invoice
+func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NFTMintInvoiceUnpaidRequest) (*nftpb.NFTMintResponse, error) {
+	apiLog.Infof("Received request to Mint an Invoice Unpaid NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
+	ctxHeader, err := contextutil.Context(ctx, g.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	// Get proof fields
+	proofFields, err := g.service.GetRequiredInvoiceUnpaidProofFields(ctxHeader)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+
+	cfg, err := g.config.GetConfig()
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
+	}
+	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
+
+	mintReq := &nftpb.NFTMintRequest{
+		Identifier:                request.Identifier,
+		DepositAddress:            request.DepositAddress,
+		RegistryAddress:           poRegistry.Hex(),
+		ProofFields:               proofFields,
+		GrantNftAccess:            true,
+		SubmitNftOwnerAccessProof: true,
+		SubmitTokenProof:          true,
+	}
+
+	return g.MintNFT(ctx, mintReq)
 }
 
 func validateParameters(request *nftpb.NFTMintRequest) error {

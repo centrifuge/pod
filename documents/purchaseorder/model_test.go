@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -52,7 +53,7 @@ func TestMain(m *testing.M) {
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
-	ctx[nft.BootstrappedPayObService] = new(testingdocuments.MockRegistry)
+	ctx[nft.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -69,7 +70,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("identityId", cid.String())
+	cfg.Set("identityId", did.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
@@ -82,12 +83,11 @@ func TestPurchaseOrder_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	po := new(PurchaseOrder)
-	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String()))
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did))
 
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
-	assert.NotNil(t, cd.EmbeddedDataSalts)
 }
 
 func TestPurchaseOrder_JSON(t *testing.T) {
@@ -95,20 +95,20 @@ func TestPurchaseOrder_JSON(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String()))
+	assert.NoError(t, po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did))
 
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
 	jsonBytes, err := po.JSON()
-	assert.Nil(t, err, "marshal to json didn't work correctly")
+	assert.NoError(t, err, "marshal to json didn't work correctly")
 	assert.True(t, json.Valid(jsonBytes), "json format not correct")
 
 	po = new(PurchaseOrder)
 	err = po.FromJSON(jsonBytes)
-	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
+	assert.NoError(t, err, "unmarshal JSON didn't work correctly")
 
 	ncd, err := po.PackCoreDocument()
-	assert.Nil(t, err, "JSON unmarshal damaged invoice variables")
+	assert.NoError(t, err, "JSON unmarshal damaged invoice variables")
 	assert.Equal(t, cd, ncd)
 }
 
@@ -146,12 +146,13 @@ func TestPO_UnpackCoreDocument(t *testing.T) {
 func TestPOModel_getClientData(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
 	poModel := new(PurchaseOrder)
-	poModel.loadFromP2PProtobuf(&poData)
+	err := poModel.loadFromP2PProtobuf(&poData)
+	assert.NoError(t, err)
 
 	data := poModel.getClientData()
 	assert.NotNil(t, data, "purchase order data should not be nil")
-	assert.Equal(t, data.OrderAmount, data.OrderAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, hexutil.Encode(poModel.Recipient[:]), "recipient should match")
+	assert.Equal(t, data.TotalAmount, data.TotalAmount, "gross amount must match")
+	assert.Equal(t, data.Recipient, poModel.Recipient.String(), "recipient should match")
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
@@ -162,40 +163,33 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	// fail recipient
 	data := &clientpurchaseorderpb.PurchaseOrderData{
 		Recipient: "some recipient",
-		ExtraData: "some data",
 	}
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did)
 	assert.Error(t, err, "must return err")
-	assert.Contains(t, err.Error(), "failed to decode extra data")
+	assert.Contains(t, err.Error(), "malformed address provided")
 	assert.Nil(t, poModel.Recipient)
-	assert.Nil(t, poModel.ExtraData)
 
-	data.ExtraData = "0x010203020301"
 	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
-
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, poModel.ExtraData)
 	assert.NotNil(t, poModel.Recipient)
 
-	data.ExtraData = "0x010203020301"
 	collabs := []string{"0x010102040506", "some id"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, did.String())
-	assert.Contains(t, err.Error(), "failed to decode collaborator")
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, Collaborators: collabs}, did.String())
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
 	assert.Nil(t, err, "must be nil")
 
 	did, err = identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
 	assert.NoError(t, err)
 	assert.Equal(t, poModel.Recipient[:], did[:])
-	assert.Equal(t, poModel.ExtraData[:], []byte{1, 2, 3, 2, 3, 1})
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
@@ -203,22 +197,20 @@ func TestPOModel_calculateDataRoot(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 	poModel := new(PurchaseOrder)
-	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did.String())
+	err = poModel.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did)
 	assert.Nil(t, err, "Init must pass")
-	assert.Nil(t, poModel.PurchaseOrderSalts, "salts must be nil")
 
 	dr, err := poModel.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
-	assert.NotNil(t, poModel.PurchaseOrderSalts, "salts must be created")
 }
 
 func TestPOModel_CreateProofs(t *testing.T) {
 	po := createPurchaseOrder(t)
 	assert.NotNil(t, po)
-	rk := po.Document.Roles[0].RoleKey
+	rk := po.CoreDocument.GetTestCoreDocWithReset().Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := po.CreateProofs([]string{"po.po_number", pf, documents.CDTreePrefix + ".document_type"})
+	proof, err := po.CreateProofs([]string{"po.number", pf, documents.CDTreePrefix + ".document_type", "po.line_items[0].status"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := po.DocumentRootTree()
@@ -235,11 +227,17 @@ func TestPOModel_CreateProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	assert.NoError(t, err)
 	assert.True(t, po.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = tree.ValidateProof(proof[2])
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// validate line items
+	valid, err = tree.ValidateProof(proof[3])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -251,18 +249,44 @@ func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
 }
 
 func TestPOModel_getDocumentDataTree(t *testing.T) {
-	poModel := PurchaseOrder{PoNumber: "3213121", NetAmount: 2, OrderAmount: 2}
+	na := new(documents.Decimal)
+	assert.NoError(t, na.SetString("2"))
+	poModel := createPurchaseOrder(t)
+	poModel.Number = "123"
+	poModel.TotalAmount = na
 	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("po.po_number")
+	_, leaf := tree.GetLeafByProperty("po.number")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, "po.po_number", leaf.Property.ReadableName())
+	assert.Equal(t, "po.number", leaf.Property.ReadableName())
+	assert.Equal(t, []byte(poModel.Number), leaf.Value)
 }
 
 func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), defaultDID.String())
+	payload := testingdocuments.CreatePOPayload()
+	payload.Data.LineItems = []*clientpurchaseorderpb.LineItem{
+		{
+			Status:      "pending",
+			AmountTotal: "1.1",
+			Activities: []*clientpurchaseorderpb.LineItemActivity{
+				{
+					ItemNumber: "12345",
+					Status:     "pending",
+					Amount:     "1.1",
+				},
+			},
+			TaxItems: []*clientpurchaseorderpb.TaxItem{
+				{
+					ItemNumber: "12345",
+					TaxAmount:  "1.1",
+				},
+			},
+		},
+	}
+	err := po.InitPurchaseOrderInput(payload, defaultDID)
 	assert.NoError(t, err)
+	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateSigningRoot()
@@ -289,8 +313,10 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldPO := model.(*PurchaseOrder)
 	data := oldPO.getClientData()
-	data.OrderAmount = 50
-	err = po.PrepareNewVersion(po, data, []string{id3.String()})
+	data.TotalAmount = "50"
+	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{id3},
+	})
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -299,10 +325,9 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	// id2 should fail since it doesn't have the permission to update
 	assert.Error(t, oldPO.CollaboratorCanUpdate(po, id2))
 
-	// update the id3 rules to update only order amount
+	// update the id3 rules to update only total amount
 	po.CoreDocument.Document.TransitionRules[3].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT
-	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 13)
-	po.CoreDocument.Document.DocumentRoot = utils.RandomSlice(32)
+	po.CoreDocument.Document.TransitionRules[3].Field = append(compactPrefix(), 0, 0, 0, 18)
 	assert.NoError(t, testRepo().Create(id1[:], po.CurrentVersion(), po))
 
 	// fetch the document
@@ -310,9 +335,9 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldPO = model.(*PurchaseOrder)
 	data = oldPO.getClientData()
-	data.OrderAmount = 55
+	data.TotalAmount = "55"
 	data.Currency = "INR"
-	err = po.PrepareNewVersion(po, data, nil)
+	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 
 	// id1 should have permission

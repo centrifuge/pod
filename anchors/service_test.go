@@ -46,7 +46,8 @@ func TestCorrectCommitSignatureGen(t *testing.T) {
 	correctCommitSignature := "0x4a73286521114f528967674bae4ecdc6cc94789255495429a7f58ca3ef0158ae257dd02a0ccb71d817e480d06f60f640ec021ade2ff90fe601bb7a5f4ddc569700"
 	testPrivateKey, _ := hexutil.Decode("0x17e063fa17dd8274b09c14b253697d9a20afff74ace3c04fdb1b9c814ce0ada5")
 	anchorIDTyped, _ := ToAnchorID(anchorID)
-	centIdTyped := identity.NewDIDFromBytes(address)
+	centIdTyped, err := identity.NewDIDFromBytes(address)
+	assert.NoError(t, err)
 	docRootTyped, _ := ToDocumentRoot(documentRoot)
 	messageToSign := GenerateCommitHash(anchorIDTyped, centIdTyped, docRootTyped)
 	assert.Equal(t, correctCommitToSign, hexutil.Encode(messageToSign), "messageToSign not calculated correctly")
@@ -59,13 +60,10 @@ func TestGenerateAnchor(t *testing.T) {
 	currentDocumentRoot := utils.RandomByte32()
 	documentProof := utils.RandomByte32()
 
-	var documentProofs [][32]byte
-	documentProofs = append(documentProofs, documentProof)
-
 	var documentRoot32Bytes [32]byte
 	copy(documentRoot32Bytes[:], currentDocumentRoot[:32])
 
-	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, documentProofs)
+	commitData := NewCommitData(0, currentAnchorID, documentRoot32Bytes, documentProof)
 
 	anchorID, _ := ToAnchorID(currentAnchorID[:])
 	docRoot, _ := ToDocumentRoot(documentRoot32Bytes[:])
@@ -73,6 +71,6 @@ func TestGenerateAnchor(t *testing.T) {
 	assert.Equal(t, commitData.AnchorID, anchorID, "Anchor should have the passed ID")
 	assert.Equal(t, commitData.DocumentRoot, docRoot, "Anchor should have the passed document root")
 
-	assert.Equal(t, commitData.DocumentProofs, documentProofs, "Anchor should have the document proofs")
+	assert.Equal(t, commitData.DocumentProof, documentProof, "Anchor should have the document proofs")
 
 }

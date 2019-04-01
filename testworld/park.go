@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
@@ -18,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
@@ -223,7 +225,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
-	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr, p2pTimeout string
+	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
 	apiPort, p2pPort   int64
 	bootstrapNodes     []string
 	bootstrappedCtx    map[string]interface{}
@@ -231,6 +233,7 @@ type host struct {
 	smartContractAddrs *config.SmartContractAddresses
 	config             config.Configuration
 	identity           identity.DID
+	idFactory          identity.Factory
 	idService          identity.ServiceDID
 	node               *node.Node
 	canc               context.CancelFunc
@@ -238,9 +241,9 @@ type host struct {
 	multiAccount       bool
 	accounts           []string
 	p2pClient          documents.Client
-	anchorProcessor    documents.AnchorProcessor
-	docSrv             documents.Service
 	configService      config.Service
+	tokenRegistry      documents.TokenRegistry
+	anchorRepo         anchors.AnchorRepository
 }
 
 func newHost(
@@ -290,12 +293,16 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
-	h.identity = identity.NewDIDFromBytes(idBytes)
+	h.identity, err = identity.NewDIDFromBytes(idBytes)
+	if err != nil {
+		return err
+	}
+	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
-	h.anchorProcessor = h.bootstrappedCtx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
-	h.docSrv = h.bootstrappedCtx[documents.BootstrappedDocumentService].(documents.Service)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
+	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	return nil
 }
 
@@ -368,6 +375,10 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, auth, status, inv), nil
+}
+
+func (h *host) mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return mintUnpaidInvoiceNFT(e, auth, status, documentID, inv), nil
 }
 
 func (h *host) createAccounts(e *httpexpect.Expect) error {

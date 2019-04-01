@@ -68,7 +68,10 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	if err != nil {
 		return convertToErrorEnvelop(err)
 	}
-	collaborator := identity.NewDIDFromBytes(envelope.Header.SenderId)
+	collaborator, err := identity.NewDIDFromBytes(envelope.Header.SenderId)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
 	err = srv.handshakeValidator.Validate(envelope.Header, &collaborator, &peer)
 	if err != nil {
 		return convertToErrorEnvelop(err)
@@ -95,7 +98,10 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return convertToErrorEnvelop(err)
 	}
 
-	collaborator := identity.NewDIDFromBytes(msg.Header.SenderId)
+	collaborator, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
 	res, err := srv.RequestDocumentSignature(ctx, req, collaborator)
 	if err != nil {
 		return convertToErrorEnvelop(err)
@@ -115,9 +121,9 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 }
 
 // RequestDocumentSignature signs the received document and returns the signature of the signingRoot
-// Document signing root will be recalculated and verified
+// document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
-// Document will be stored to the repository for state management
+// document will be stored to the repository for state management
 func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, collaborator identity.DID) (*p2ppb.SignatureResponse, error) {
 	if sigReq == nil || sigReq.Document == nil {
 		return nil, errors.New("nil document provided")
@@ -144,7 +150,10 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return convertToErrorEnvelop(err)
 	}
 
-	collaborator := identity.NewDIDFromBytes(msg.Header.SenderId)
+	collaborator, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
 	res, err := srv.SendAnchoredDocument(ctx, m, collaborator)
 	if err != nil {
 		return convertToErrorEnvelop(err)
@@ -190,7 +199,10 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return convertToErrorEnvelop(err)
 	}
 
-	requesterCentID := identity.NewDIDFromBytes(msg.Header.SenderId)
+	requesterCentID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	if err != nil {
+		return convertToErrorEnvelop(err)
+	}
 
 	res, err := srv.GetDocument(ctx, m, requesterCentID)
 	if err != nil {
@@ -235,17 +247,17 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 	switch docReq.AccessType {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:
 		if !m.AccountCanRead(peer) {
-			return errors.New("requester does not have access")
+			return ErrAccessDenied
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
 		registry := common.BytesToAddress(docReq.NftRegistryAddress)
 		if m.NFTOwnerCanRead(srv.tokenRegistry, registry, docReq.NftTokenId, peer) != nil {
-			return errors.New("requester does not have access")
+			return ErrAccessDenied
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
 		// check the document indicated by the delegating document identifier for the access token
 		if docReq.AccessTokenRequest == nil {
-			return errors.New("access token request is nil")
+			return ErrAccessDenied
 		}
 
 		m, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
@@ -253,12 +265,12 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return err
 		}
 
-		err = m.ATGranteeCanRead(ctx, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		err = m.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
 		if err != nil {
 			return err
 		}
 	default:
-		return errors.New("invalid access type")
+		return ErrInvalidAccessType
 	}
 	return nil
 }

@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	// BootstrappedPayObService is the key to PaymentObligationService in bootstrap context.
-	BootstrappedPayObService = "BootstrappedPayObService"
+	// BootstrappedInvoiceUnpaid is the key to InvoiceUnpaid NFT in bootstrap context.
+	BootstrappedInvoiceUnpaid = "BootstrappedInvoiceUnpaid"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-// Bootstrap initializes the payment obligation contract
+// Bootstrap initializes the invoice unpaid contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfg, err := configstore.RetrieveConfig(false, ctx)
 	if err != nil {
@@ -54,7 +54,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	payOb := newEthereumPaymentObligation(
+	InvoiceUnpaid := newEthInvoiceUnpaid(
 		cfg,
 		idService,
 		client,
@@ -69,6 +69,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
-	ctx[BootstrappedPayObService] = payOb
+	ctx[BootstrappedInvoiceUnpaid] = InvoiceUnpaid
 	return nil
 }

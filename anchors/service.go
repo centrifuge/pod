@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -17,7 +18,7 @@ import (
 
 type anchorRepositoryContract interface {
 	PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte) (*types.Transaction, error)
-	Commit(opts *bind.TransactOpts, anchorId *big.Int, documentRoot [32]byte, documentProofs [][32]byte) (*types.Transaction, error)
+	Commit(opts *bind.TransactOpts, anchorId *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error)
 	GetAnchorById(opts *bind.CallOpts, id *big.Int) (struct {
 		AnchorId     *big.Int
 		DocumentRoot [32]byte
@@ -54,7 +55,18 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, _ := s.client.GetGethCallOpts(false)
 	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())
+	if err != nil {
+		return docRoot, anchoredTime, err
+	}
+
 	blk, err := s.client.GetEthClient().BlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
+	if err != nil || blk == nil {
+		return docRoot, anchoredTime, err
+	}
+
+	if blk == nil {
+		return docRoot, anchoredTime, errors.New("in GetAnchorDatablock data is nil")
+	}
 	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), err
 }
 
@@ -96,7 +108,6 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
 func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-
 		ethTX, err := s.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
@@ -134,7 +145,7 @@ func getDID(ctx context.Context) (identity.DID, error) {
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, documentProofs [][32]byte) (chan bool, error) {
+func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan bool, error) {
 	did, err := getDID(ctx)
 	if err != nil {
 		return nil, err
@@ -158,15 +169,14 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return nil, err
 	}
 
-	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, documentProofs)
+	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, proof)
 
 	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
 	_, done, err := s.txManager.ExecuteWithinTX(ctx, did, txID, "Check TX for anchor commit",
-		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProofs))
+		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProof))
 	if err != nil {
 		return nil, err
 	}
 
 	return done, nil
-
 }

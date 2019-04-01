@@ -3,16 +3,21 @@
 package nft
 
 import (
+	"context"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -133,34 +138,33 @@ func TestCreateProofData(t *testing.T) {
 	}
 }
 
-type MockPaymentObligation struct {
+type MockInvoiceUnpaid struct {
 	mock.Mock
 }
 
-func (m *MockPaymentObligation) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
+func (m *MockInvoiceUnpaid) Mint(opts *bind.TransactOpts, _to common.Address, _tokenId *big.Int, _tokenURI string, _anchorId *big.Int, _merkleRoot [32]byte, _values []string, _salts [][32]byte, _proofs [][][32]byte) (*types.Transaction, error) {
 	args := m.Called(opts, _to, _tokenId, _tokenURI, _anchorId, _merkleRoot, _values, _salts, _proofs)
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
 
-func TestPaymentObligationService(t *testing.T) {
+func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
+		mocker  func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockPaymentObligation, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
-				cd, err := documents.NewCoreDocumentWithCollaborators(nil, nil)
+			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingtx.MockTxManager) {
+				cd, err := documents.NewCoreDocumentWithCollaborators(nil, documents.CollaboratorsAccess{})
 				assert.NoError(t, err)
-				cd.Document.DocumentRoot = utils.RandomSlice(32)
-				proof := getDummyProof(&cd.Document)
+				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{InvoiceNumber: "1232", CoreDocument: cd}, nil)
+				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{Number: "1232", CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
-				paymentObligationMock := &MockPaymentObligation{}
+				invoiceUnpaidMock := &MockInvoiceUnpaid{}
 				idServiceMock := testingcommons.MockIdentityService{}
 				ethClientMock := testingcommons.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
@@ -183,7 +187,7 @@ func TestPaymentObligationService(t *testing.T) {
 				txMan := &testingtx.MockTxManager{}
 				txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).Return(transactions.NilTxID(), make(chan bool), nil)
-				return docServiceMock, paymentObligationMock, idServiceMock, ethClientMock, configMock, queueSrv, txMan
+				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, txMan
 			},
 			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
 			nil,
@@ -197,8 +201,8 @@ func TestPaymentObligationService(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
-			service := newEthereumPaymentObligation(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*EthereumPaymentObligationContract, error) {
-				return &EthereumPaymentObligationContract{}, nil
+			service := newEthInvoiceUnpaid(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
+				return &InvoiceUnpaidContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
@@ -218,6 +222,92 @@ func TestPaymentObligationService(t *testing.T) {
 			mockCfg.AssertExpectations(t)
 		})
 	}
+}
+
+func TestEthereumInvoiceUnpaid_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
+	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
+
+	//missing account in context
+	ctxh := context.Background()
+	proofList, err := service.GetRequiredInvoiceUnpaidProofFields(ctxh)
+	assert.Error(t, err)
+	assert.Nil(t, proofList)
+
+	//error identity keys
+	tc, err := configstore.NewAccount("main", cfg)
+	assert.Nil(t, err)
+	acc := tc.(*configstore.Account)
+	acc.EthereumAccount = &config.AccountConfig{
+		Key: "blabla",
+	}
+	ctxh, err = contextutil.New(ctxh, acc)
+	assert.Nil(t, err)
+	proofList, err = service.GetRequiredInvoiceUnpaidProofFields(ctxh)
+	assert.Error(t, err)
+	assert.Nil(t, proofList)
+
+	//success assertions
+	tc, err = configstore.NewAccount("main", cfg)
+	assert.Nil(t, err)
+	ctxh, err = contextutil.New(ctxh, tc)
+	assert.Nil(t, err)
+	proofList, err = service.GetRequiredInvoiceUnpaidProofFields(ctxh)
+	assert.NoError(t, err)
+	assert.Len(t, proofList, 8)
+	accDIDBytes, err := tc.GetIdentityID()
+	assert.NoError(t, err)
+	keys, err := tc.GetKeys()
+	assert.NoError(t, err)
+	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
+	assert.Equal(t, signatureSender, proofList[6])
+}
+
+func TestFilterMintProofs(t *testing.T) {
+	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
+	indexKey := utils.RandomSlice(52)
+	docProof := &documents.DocumentProof{
+		FieldProofs: []*proofspb.Proof{
+			{
+				Property: proofs.CompactName([]byte{10, 100, 5, 20, 69, 1, 0, 1}...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+			{
+				Property: proofs.CompactName(append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+			{
+				Property: proofs.CompactName(append([]byte{3, 0, 0, 0, 0, 0, 0, 1}, append(indexKey, []byte{0, 0, 0, 4}...)...)...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
+		},
+	}
+
+	docProofAux := service.filterMintProofs(docProof)
+	assert.Len(t, docProofAux.FieldProofs[0].SortedHashes, 2)
+	assert.Len(t, docProofAux.FieldProofs[1].SortedHashes, 3)
+	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
 }
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {

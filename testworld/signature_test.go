@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -108,10 +109,12 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	for _, c := range collaborators {
 		cs = append(cs, hexutil.Encode(c))
 	}
-	payload.Collaborators = cs
+	payload.WriteAccess = &documentpb.WriteAccess{
+		Collaborators: cs,
+	}
 
 	po := new(purchaseorder.PurchaseOrder)
-	err := po.InitPurchaseOrderInput(payload, identityDID.String())
+	err := po.InitPurchaseOrderInput(payload, identityDID)
 	assert.NoError(t, err)
 
 	err = po.AddUpdateLog(identityDID)
@@ -141,7 +144,8 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 }
 
 func RevokeKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
-	idService.RevokeKey(ctx, key)
+	err := idService.RevokeKey(ctx, key)
+	assert.NoError(t, err)
 	response, err := idService.GetKey(identityDID, key)
 	assert.NoError(t, err)
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")

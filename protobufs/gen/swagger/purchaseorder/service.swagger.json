@@ -131,7 +131,99 @@
     }
   },
   "definitions": {
-    "purchaseorderPurchaseOrderCreatePayload": {
+    "documentBinaryAttachment": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "file_type": {
+          "type": "string",
+          "title": "mime type of attached file"
+        },
+        "size": {
+          "type": "string",
+          "format": "uint64",
+          "title": "in bytes"
+        },
+        "data": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string",
+          "title": "the md5 checksum of the original file for easier verification - optional"
+        }
+      }
+    },
+    "documentPaymentDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment"
+        },
+        "date_executed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payee": {
+          "type": "string",
+          "title": "centrifuge id of payee"
+        },
+        "payer": {
+          "type": "string",
+          "title": "centrifuge id of payer"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string",
+          "title": "payment reference (e.g. reference field on bank transfer)"
+        },
+        "bank_name": {
+          "type": "string"
+        },
+        "bank_address": {
+          "type": "string"
+        },
+        "bank_country": {
+          "type": "string"
+        },
+        "bank_account_number": {
+          "type": "string"
+        },
+        "bank_account_currency": {
+          "type": "string"
+        },
+        "bank_account_holder_name": {
+          "type": "string"
+        },
+        "bank_key": {
+          "type": "string"
+        },
+        "crypto_chain_uri": {
+          "type": "string",
+          "title": "the ID of the chain to use in URI format. e.g. \"ethereum://42/\u003ctokenaddress\u003e\""
+        },
+        "crypto_transaction_id": {
+          "type": "string",
+          "title": "the transaction in which the payment happened"
+        },
+        "crypto_from": {
+          "type": "string",
+          "title": "from address"
+        },
+        "crypto_to": {
+          "type": "string",
+          "title": "to address"
+        }
+      }
+    },
+    "documentReadAccess": {
       "type": "object",
       "properties": {
         "collaborators": {
@@ -139,6 +231,149 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "documentResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
+        },
+        "transaction_id": {
+          "type": "string"
+        }
+      }
+    },
+    "documentWriteAccess": {
+      "type": "object",
+      "properties": {
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "purchaseorderLineItem": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "item_number": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "amount_invoiced": {
+          "type": "string"
+        },
+        "amount_total": {
+          "type": "string"
+        },
+        "requisition_number": {
+          "type": "string"
+        },
+        "requisition_item": {
+          "type": "string"
+        },
+        "part_no": {
+          "type": "string"
+        },
+        "price_per_unit": {
+          "type": "string"
+        },
+        "unit_of_measure": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "received_quantity": {
+          "type": "string"
+        },
+        "date_updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date_created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revision_number": {
+          "type": "string",
+          "format": "int64"
+        },
+        "activities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/purchaseorderLineItemActivity"
+          }
+        },
+        "tax_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/purchaseorderTaxItem"
+          }
+        }
+      }
+    },
+    "purchaseorderLineItemActivity": {
+      "type": "object",
+      "properties": {
+        "item_number": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "description": "delivered, returned, credited, invoiced, paid, ..."
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "reference_document_id": {
+          "type": "string",
+          "description": "depending on status delivery note, invoice, ..."
+        },
+        "reference_document_item": {
+          "type": "string",
+          "title": "line item from the reference document"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "purchaseorderPurchaseOrderCreatePayload": {
+      "type": "object",
+      "properties": {
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
@@ -148,95 +383,105 @@
     "purchaseorderPurchaseOrderData": {
       "type": "object",
       "properties": {
-        "po_status": {
+        "status": {
           "type": "string"
         },
-        "po_number": {
+        "number": {
           "type": "string",
           "title": "purchase order number or reference number"
         },
-        "order_name": {
-          "type": "string",
-          "title": "name of the ordering company"
-        },
-        "order_street": {
-          "type": "string",
-          "title": "street and address details of the ordering company"
-        },
-        "order_city": {
+        "sender_order_id": {
           "type": "string"
         },
-        "order_zipcode": {
+        "recipient_order_id": {
           "type": "string"
         },
-        "order_country": {
-          "type": "string",
-          "title": "country ISO code of the ordering company of this purchase order"
-        },
-        "recipient_name": {
-          "type": "string",
-          "title": "name of the recipient company"
-        },
-        "recipient_street": {
+        "requisition_id": {
           "type": "string"
         },
-        "recipient_city": {
+        "requester_name": {
           "type": "string"
         },
-        "recipient_zipcode": {
+        "requester_email": {
           "type": "string"
         },
-        "recipient_country": {
-          "type": "string",
-          "title": "country ISO code of the receipient of this purchase order"
+        "ship_to_company_name": {
+          "type": "string"
+        },
+        "ship_to_contact_person_name": {
+          "type": "string"
+        },
+        "ship_to_street1": {
+          "type": "string"
+        },
+        "ship_to_street2": {
+          "type": "string"
+        },
+        "ship_to_city": {
+          "type": "string"
+        },
+        "ship_to_zipcode": {
+          "type": "string"
+        },
+        "ship_to_state": {
+          "type": "string"
+        },
+        "ship_to_country": {
+          "type": "string"
+        },
+        "payment_terms": {
+          "type": "string"
         },
         "currency": {
-          "type": "string",
-          "title": "ISO currency code"
+          "type": "string"
         },
-        "order_amount": {
-          "type": "string",
-          "format": "int64",
-          "title": "ordering gross amount including tax"
-        },
-        "net_amount": {
-          "type": "string",
-          "format": "int64",
-          "title": "invoice amount excluding tax"
-        },
-        "tax_amount": {
-          "type": "string",
-          "format": "int64"
-        },
-        "tax_rate": {
-          "type": "string",
-          "format": "int64"
+        "total_amount": {
+          "type": "string"
         },
         "recipient": {
-          "type": "string"
-        },
-        "order": {
-          "type": "string"
-        },
-        "order_contact": {
           "type": "string",
-          "title": "contact or requester or purchaser at the ordering company"
+          "title": "centrifuge ID of the recipient"
+        },
+        "sender": {
+          "type": "string",
+          "title": "centrifuge ID of the sender"
         },
         "comment": {
           "type": "string"
         },
-        "delivery_date": {
+        "date_sent": {
           "type": "string",
-          "format": "date-time",
-          "title": "requested delivery date"
+          "format": "date-time"
+        },
+        "date_confirmed": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date_updated": {
+          "type": "string",
+          "format": "date-time"
         },
         "date_created": {
           "type": "string",
-          "format": "date-time",
-          "title": "purchase order date"
+          "format": "date-time"
         },
-        "extra_data": {
-          "type": "string"
+        "attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentBinaryAttachment"
+          }
+        },
+        "line_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/purchaseorderLineItem"
+          }
+        },
+        "payment_details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentPaymentDetails"
+          }
         }
       }
     },
@@ -244,7 +489,7 @@
       "type": "object",
       "properties": {
         "header": {
-          "$ref": "#/definitions/purchaseorderResponseHeader"
+          "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
@@ -257,40 +502,39 @@
         "identifier": {
           "type": "string"
         },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/purchaseorderPurchaseOrderData"
         }
       }
     },
-    "purchaseorderResponseHeader": {
+    "purchaseorderTaxItem": {
       "type": "object",
       "properties": {
-        "document_id": {
+        "item_number": {
           "type": "string"
         },
-        "version_id": {
+        "purchase_order_item_number": {
           "type": "string"
         },
-        "state": {
+        "tax_amount": {
           "type": "string"
         },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "tax_rate": {
+          "type": "string"
         },
-        "transaction_id": {
+        "tax_code": {
+          "type": "string"
+        },
+        "tax_base_amount": {
           "type": "string"
         }
-      },
-      "title": "ResponseHeader contains a set of common fields for most documents"
+      }
     }
   }
 }

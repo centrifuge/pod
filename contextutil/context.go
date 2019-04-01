@@ -53,7 +53,11 @@ func AccountDID(ctx context.Context) (identity.DID, error) {
 	if err != nil {
 		return identity.DID{}, err
 	}
-	return identity.NewDIDFromBytes(didBytes), nil
+	did, err := identity.NewDIDFromBytes(didBytes)
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return did, nil
 }
 
 // Account extracts the TenantConfig from the given context value
