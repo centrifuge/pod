@@ -49,9 +49,9 @@ service DocumentService {
     };
   }
   // Entity Relation Share
-  rpc Share(EntityRelationPayload) returns (EntityResponse) {
+  rpc Share(EntityRelationshipPayload) returns (EntityResponse) {
     option (google.api.http) = {
-      post: "/entity/share/{identifier}"
+      post: "/entity/{identifier}/share"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -59,13 +59,13 @@ service DocumentService {
     };
   }
   // Entity Relation Revoke
-  rpc Revoke(EntityRelationPayload) returns (EntityResponse) {
+  rpc Revoke(EntityRelationshipPayload) returns (EntityResponse) {
     option (google.api.http) = {
-      post: "/entity/revoke/{identifier}"
+      post: "/entity/{identifier}/revoke"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "revoke a entity document share"
+      description: "revoke an entity document share"
     };
   }
 }
@@ -94,7 +94,7 @@ message EntityUpdatePayload {
 
 message EntityResponse {
   document.ResponseHeader header = 1;
-  EntityWithReleationships data = 2;
+  EntityDataResponse data = 2;
 }
 
 message Relationship {
@@ -116,12 +116,12 @@ message EntityData {
 }
 
 // Entity Relationships
-message EntityWithReleationships {
+message EntityDataResponse {
   EntityData entity = 1;
-  repeated Relationship relationships = 6;
+  repeated Relationship relationships = 2;
 }
 
-message EntityRelationPayload {
+message EntityRelationshipPayload {
   // entity identifier
   string identifier = 1;
   string target_identity = 2;

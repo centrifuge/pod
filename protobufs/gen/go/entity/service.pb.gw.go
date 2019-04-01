@@ -138,7 +138,7 @@ func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func request_DocumentService_Share_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EntityRelationPayload
+	var protoReq EntityRelationshipPayload
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -169,7 +169,7 @@ func request_DocumentService_Share_0(ctx context.Context, marshaler runtime.Mars
 }
 
 func request_DocumentService_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EntityRelationPayload
+	var protoReq EntityRelationshipPayload
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -423,9 +423,9 @@ var (
 
 	pattern_DocumentService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
 
-	pattern_DocumentService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"entity", "share", "identifier"}, ""))
+	pattern_DocumentService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
 
-	pattern_DocumentService_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"entity", "revoke", "identifier"}, ""))
+	pattern_DocumentService_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "revoke"}, ""))
 )
 
 var (

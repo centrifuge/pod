@@ -42,74 +42,6 @@
         ]
       }
     },
-    "/entity/revoke/{identifier}": {
-      "post": {
-        "summary": "Entity Relation Revoke",
-        "description": "revoke a entity document share",
-        "operationId": "Revoke",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityEntityRelationPayload"
-            }
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      }
-    },
-    "/entity/share/{identifier}": {
-      "post": {
-        "summary": "Entity Relation Share",
-        "description": "Share the entity document with others",
-        "operationId": "Share",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityEntityRelationPayload"
-            }
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      }
-    },
     "/entity/{identifier}": {
       "get": {
         "description": "Get the current entity",
@@ -158,6 +90,76 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/entityEntityUpdatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entity/{identifier}/revoke": {
+      "post": {
+        "summary": "Entity Relation Revoke",
+        "description": "revoke an entity document share",
+        "operationId": "Revoke",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "entity identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityEntityRelationshipPayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entity/{identifier}/share": {
+      "post": {
+        "summary": "Entity Relation Share",
+        "description": "Share the entity document with others",
+        "operationId": "Share",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "entity identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityEntityRelationshipPayload"
             }
           }
         ],
@@ -398,11 +400,27 @@
       },
       "title": "EntityData is the default entity schema"
     },
-    "entityEntityRelationPayload": {
+    "entityEntityDataResponse": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "$ref": "#/definitions/entityEntityData"
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityRelationship"
+          }
+        }
+      },
+      "title": "Entity Relationships"
+    },
+    "entityEntityRelationshipPayload": {
       "type": "object",
       "properties": {
         "identifier": {
-          "type": "string"
+          "type": "string",
+          "title": "entity identifier"
         },
         "target_identity": {
           "type": "string"
@@ -416,7 +434,7 @@
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/entityEntityWithReleationships"
+          "$ref": "#/definitions/entityEntityDataResponse"
         }
       }
     },
@@ -436,21 +454,6 @@
           "$ref": "#/definitions/entityEntityData"
         }
       }
-    },
-    "entityEntityWithReleationships": {
-      "type": "object",
-      "properties": {
-        "entity": {
-          "$ref": "#/definitions/entityEntityData"
-        },
-        "relationships": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/entityRelationship"
-          }
-        }
-      },
-      "title": "Entity Relationships"
     },
     "entityOtherPayment": {
       "type": "object",
