@@ -160,7 +160,7 @@ func TestCoreDocument_NewCoreDocumentWithCollaborators(t *testing.T) {
 	did1 := testingidentity.GenerateRandomDID()
 	did2 := testingidentity.GenerateRandomDID()
 	c := &CollaboratorsAccess{
-		ReadCollaborators: []identity.DID{did1},
+		ReadCollaborators:      []identity.DID{did1},
 		ReadWriteCollaborators: []identity.DID{did2},
 	}
 	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), *c)
