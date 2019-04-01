@@ -39,7 +39,8 @@ func init() {
 
 			pwd, err := terminal.ReadPassword(int(syscall.Stdin))
 			if err != nil {
-				log.Fatal(err)
+				// lets take empty password
+				log.Error(err)
 			}
 
 			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil)
