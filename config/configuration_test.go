@@ -42,5 +42,5 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Nil(t, err, "must be nil, config file should be created")
 	c := LoadConfiguration(v.ConfigFileUsed())
 	assert.False(t, c.IsPProfEnabled(), "pprof is disabled by default")
-	os.Remove(targetDir)
+	assert.NoError(t, os.RemoveAll(targetDir))
 }
