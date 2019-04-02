@@ -100,7 +100,6 @@ message EntityResponse {
 message Relationship {
   string identity = 1;
   bool active = 2;
-  string last_update_at_entity_version = 3;
 }
 
 // EntityData is the default entity schema
