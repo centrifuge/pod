@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -112,6 +114,29 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
+	return cd, nil
+}
+
+// NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
+// It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
+func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params documentpb.AccessTokenParams) (*CoreDocument, error) {
+	did, err := identity.StringsToDIDs(params.Grantee)
+	if err != nil {
+		return nil, err
+	}
+	collaborators := &CollaboratorsAccess{
+		ReadCollaborators:      []identity.DID{*did[0]},
+		ReadWriteCollaborators: nil,
+	}
+	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, *collaborators)
+	if err != nil {
+		return nil, err
+	}
+	at, err := assembleAccessToken(ctx, params, cd.CurrentVersion())
+	if err != nil {
+		return nil, errors.New("failed to construct access token: %v", err)
+	}
+	cd.Document.AccessTokens = append(cd.Document.AccessTokens, at)
 	return cd, nil
 }
 

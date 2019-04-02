@@ -108,12 +108,7 @@ func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.Invo
 	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Manager)
 	h := txv1.GRPCHandler(txSrv, configService)
 	transactionspb.RegisterTransactionServiceServer(grpcServer, h)
-	if err := transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts); err != nil {
-		return err
-	}
-
-	return nil
-
+	return transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }
 
 func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
@@ -148,9 +143,5 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 	}
 
 	entitypb.RegisterDocumentServiceServer(grpcServer, entityHandler)
-	err = entitypb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-	return nil
+	return entitypb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }

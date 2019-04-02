@@ -458,6 +458,7 @@ func TestService_Exists(t *testing.T) {
 	}
 
 	err = testRepo().Create(accountID, documentIdentifier, inv)
+	assert.NoError(t, err)
 
 	exists := service.Exists(ctxh, documentIdentifier)
 	assert.True(t, exists, "document should exist")

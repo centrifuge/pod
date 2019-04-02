@@ -81,7 +81,9 @@ func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
 	accountCfg1, err := NewAccount("main", cfg)
+	assert.NoError(t, err)
 	accountCfg2, err := NewAccount("main", cfg)
+	assert.NoError(t, err)
 	tco := accountCfg1.(*Account)
 	tco.EthereumAccount = nil
 	tcs := []config.Account{tco, accountCfg2}
@@ -99,7 +101,9 @@ func TestGrpcHandler_GetAllAccounts(t *testing.T) {
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
 	accountCfg1, err := NewAccount("main", cfg)
+	assert.NoError(t, err)
 	accountCfg2, err := NewAccount("main", cfg)
+	assert.NoError(t, err)
 	acc := accountCfg2.(*Account)
 	acc.IdentityID = []byte("0x123456789")
 	tc1pb, err := accountCfg1.CreateProtobuf()

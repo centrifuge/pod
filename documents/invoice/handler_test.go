@@ -186,11 +186,13 @@ func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	srv := h.service.(*mockService)
 	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
 	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
+	assert.Error(t, err)
 	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
 	payload.Version = "0x0x"
 	payload.Identifier = "0x01"
 
 	res, err = h.GetVersion(testingconfig.HandlerContext(configService), payload)
+	assert.Error(t, err)
 	assert.EqualError(t, err, "version is invalid: invalid hex string")
 	payload.Version = "0x00"
 	payload.Identifier = "0x01"
