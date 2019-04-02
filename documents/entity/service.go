@@ -175,9 +175,9 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 
 	return &cliententitypb.EntityResponse{
 		Header: h,
-		Data:   &cliententitypb.EntityDataResponse{
-			Entity:data,
-			Relationships:nil,
+		Data: &cliententitypb.EntityDataResponse{
+			Entity:        data,
+			Relationships: nil,
 		},
 	}, nil
 
