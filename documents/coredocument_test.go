@@ -268,6 +268,17 @@ func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
 	assert.Equal(t, role.Collaborators[1], did2[:])
 }
 
+func TestCoreDocument_AddUpdateLog(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	err = cd.AddUpdateLog(did1)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.Document.Author, did1[:])
+	assert.True(t, cd.Modified)
+}
+
 func TestGetSigningProofHash(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
