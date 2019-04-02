@@ -57,7 +57,7 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
-	objGet.Path("$.data.legal_name").String().Equal(params["legal_name"].(string))
+	objGet.Path("$.data.entity.legal_name").String().Equal(params["legal_name"].(string))
 
 	return objGet
 }
