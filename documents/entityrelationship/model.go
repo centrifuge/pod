@@ -34,6 +34,7 @@ type EntityRelationship struct {
 	TargetIdentity *identity.DID
 }
 
+// RelationShipdata implements the relationship fields
 type RelationShipdata struct {
 	OwnerIdentity  string
 	TargetIdentity string
