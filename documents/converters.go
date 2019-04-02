@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/common"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -270,4 +271,88 @@ func FromP2PPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetai
 	}
 
 	return details, nil
+}
+
+// FromClientCollaboratorAccess converts client collaborator access to CollaboratorsAccess
+func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *documentpb.WriteAccess) (ca CollaboratorsAccess, err error) {
+	wmap, rmap := make(map[string]struct{}), make(map[string]struct{})
+	var wcs, rcs []string
+	if waccess != nil {
+		for _, c := range waccess.Collaborators {
+			c = strings.ToLower(c)
+			if _, ok := wmap[c]; ok {
+				continue
+			}
+
+			wmap[c] = struct{}{}
+			wcs = append(wcs, c)
+		}
+	}
+
+	if racess != nil {
+		for _, c := range racess.Collaborators {
+			c = strings.ToLower(c)
+			if _, ok := wmap[c]; ok {
+				continue
+			}
+
+			if _, ok := rmap[c]; ok {
+				continue
+			}
+
+			rcs = append(rcs, c)
+			rmap[c] = struct{}{}
+		}
+	}
+
+	rdids, err := identity.StringsToDIDs(rcs...)
+	if err != nil {
+		return ca, err
+	}
+
+	wdids, err := identity.StringsToDIDs(wcs...)
+	if err != nil {
+		return ca, err
+	}
+
+	return CollaboratorsAccess{
+		ReadCollaborators:      identity.FromPointerDIDs(rdids...),
+		ReadWriteCollaborators: identity.FromPointerDIDs(wdids...),
+	}, nil
+}
+
+// ToClientCollaboratorAccess converts CollaboratorAccess to client collaborator access
+func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess, *documentpb.WriteAccess) {
+	rcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadCollaborators...)...)
+	wcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadWriteCollaborators...)...)
+	return &documentpb.ReadAccess{Collaborators: rcs}, &documentpb.WriteAccess{Collaborators: wcs}
+}
+
+// DeriveResponseHeader derives common response header for model
+func DeriveResponseHeader(model Model) (*documentpb.ResponseHeader, error) {
+	cs, err := model.GetCollaborators()
+	if err != nil {
+		return nil, errors.NewTypedError(ErrFailedCollaborators, err)
+	}
+
+	rcs, wcs := ToClientCollaboratorAccess(cs)
+	// TODO(ved): we need to update log for NewCoreDocumentWithCollaborators and PrepareNewVersion
+	//author, err := model.Author()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//time, err := model.Timestamp()
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	return &documentpb.ResponseHeader{
+		DocumentId: hexutil.Encode(model.ID()),
+		Version:    hexutil.Encode(model.CurrentVersion()),
+		//Author:      author.String(),
+		//CreatedAt:   time.UTC().String(),
+		ReadAccess:  rcs,
+		WriteAccess: wcs,
+	}, nil
 }

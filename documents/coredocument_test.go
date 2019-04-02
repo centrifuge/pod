@@ -15,12 +15,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -108,66 +109,110 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 	}
 }
 
-func TestCoreDocument_PrepareNewVersion(t *testing.T) {
+func TestCoreDocument_CurrentVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	h := sha256.New()
-	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
-	var expectedCurrentVersion []byte
-	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
-	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
-	c1 := testingidentity.GenerateRandomDID()
-	c2 := testingidentity.GenerateRandomDID()
 
-	//collaborators need to be hex string
-	ncd, err := cd.PrepareNewVersion(nil, "some ID")
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
-	assert.Nil(t, ncd)
-
-	// successful preparation of new version upon addition of DocumentRoot
-	ncd, err = cd.PrepareNewVersion(nil, c1.String(), c2.String())
-	assert.NoError(t, err)
-	assert.NotNil(t, ncd)
-	cs, err := ncd.GetCollaborators()
-	assert.NoError(t, err)
-	assert.Len(t, cs, 2)
-	assert.Contains(t, cs, c1)
-	assert.Contains(t, cs, c2)
-	h = sha256.New()
-	h.Write(ncd.GetTestCoreDocWithReset().NextPreimage)
-	var expectedNextVersion []byte
-	expectedNextVersion = h.Sum(expectedNextVersion)
-	assert.Equal(t, expectedNextVersion, ncd.GetTestCoreDocWithReset().NextVersion)
-
-	ncd, err = cd.PrepareNewVersion(nil, c1.String(), c2.String())
-	assert.NoError(t, err)
-	assert.NotNil(t, ncd)
-	cs, err = ncd.GetCollaborators()
-	assert.NoError(t, err)
-	assert.Len(t, cs, 2)
-	assert.Contains(t, cs, c1)
-	assert.Contains(t, cs, c2)
-
-	assert.Equal(t, cd.GetTestCoreDocWithReset().NextVersion, ncd.GetTestCoreDocWithReset().CurrentVersion)
-	assert.Equal(t, cd.GetTestCoreDocWithReset().CurrentVersion, ncd.GetTestCoreDocWithReset().PreviousVersion)
-	assert.Equal(t, cd.GetTestCoreDocWithReset().DocumentIdentifier, ncd.GetTestCoreDocWithReset().DocumentIdentifier)
-	assert.Len(t, cd.GetTestCoreDocWithReset().Roles, 0)
-	assert.Len(t, cd.GetTestCoreDocWithReset().ReadRules, 0)
-	assert.Len(t, cd.GetTestCoreDocWithReset().TransitionRules, 0)
-	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles, 2)
-	assert.Len(t, ncd.GetTestCoreDocWithReset().ReadRules, 1)
-	assert.Len(t, ncd.GetTestCoreDocWithReset().TransitionRules, 2)
-	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators, 2)
-	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators[0], c1[:])
-	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators[1], c2[:])
-	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators, 2)
-	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[0], c1[:])
-	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c2[:])
+	assert.Equal(t, cd.CurrentVersion(), cd.Document.CurrentVersion)
 }
 
-// TODO: rename this test and delete above test with integration
-func TestCoreDocument_PrepareNewVersion1(t *testing.T) {
+func TestCoreDocument_PreviousVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.PreviousVersion(), cd.Document.PreviousVersion)
+}
+
+func TestCoreDocument_NextVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.NextVersion(), cd.Document.NextVersion)
+}
+
+func TestCoreDocument_CurrentVersionPreimage(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.CurrentVersionPreimage(), cd.Document.CurrentPreimage)
+}
+
+func TestCoreDocument_Author(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	did := testingidentity.GenerateRandomDID()
+	cd.Document.Author = did[:]
+	a, err := cd.Author()
+	assert.NoError(t, err)
+
+	aID, err := identity.NewDIDFromBytes(cd.Document.Author)
+	assert.NoError(t, err)
+	assert.Equal(t, a, aID)
+}
+
+func TestCoreDocument_ID(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.Document.DocumentIdentifier, cd.ID())
+}
+
+func TestNewCoreDocumentWithCollaborators(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+	c := &CollaboratorsAccess{
+		ReadCollaborators:      []identity.DID{did1},
+		ReadWriteCollaborators: []identity.DID{did2},
+	}
+	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), *c)
+	assert.NoError(t, err)
+
+	collabs, err := cd.GetCollaborators(identity.DID{})
+	assert.NoError(t, err)
+	assert.Equal(t, did1, collabs.ReadCollaborators[0])
+	assert.Equal(t, did2, collabs.ReadWriteCollaborators[0])
+}
+
+func TestNewCoreDocumentWithAccessToken(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	id := hexutil.Encode(cd.Document.DocumentIdentifier)
+	did1 := testingidentity.GenerateRandomDID()
+
+	// wrong granteeID format
+	at := &documentpb.AccessTokenParams{
+		Grantee:            "random string",
+		DocumentIdentifier: id,
+	}
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.Error(t, err)
+
+	// wrong docID
+	at = &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: "random string",
+	}
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.Error(t, err)
+
+	// correct access token params
+	at = &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: id,
+	}
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.NoError(t, err)
+
+	token := ncd.Document.AccessTokens[0]
+	assert.Equal(t, token.DocumentIdentifier, cd.Document.DocumentIdentifier)
+	assert.Equal(t, token.Grantee, did1[:])
+	assert.NotEqual(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
+}
+
+func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	h := sha256.New()
@@ -181,7 +226,7 @@ func TestCoreDocument_PrepareNewVersion1(t *testing.T) {
 	c4 := testingidentity.GenerateRandomDID()
 
 	// successful preparation of new version with new read collaborators
-	ncd, err := cd.PrepareNewVersion1(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil})
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
@@ -195,7 +240,7 @@ func TestCoreDocument_PrepareNewVersion1(t *testing.T) {
 
 	// successful preparation of new version with read and write collaborators
 	assert.NoError(t, err)
-	ncd, err = cd.PrepareNewVersion1([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}})
+	ncd, err = cd.PrepareNewVersion([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}})
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	rc, err = ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
@@ -207,8 +252,7 @@ func TestCoreDocument_PrepareNewVersion1(t *testing.T) {
 	assert.Contains(t, rc, c4)
 	wc, err := ncd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
-	// contains 2 x write collaborators because they have been added to the CD transition rules and Invoice transition rules
-	assert.Len(t, wc, 4)
+	assert.Len(t, wc, 2)
 	assert.Contains(t, wc, c3)
 	assert.Contains(t, wc, c4)
 	assert.NotContains(t, wc, c1)
@@ -229,6 +273,27 @@ func TestCoreDocument_PrepareNewVersion1(t *testing.T) {
 	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators, 2)
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[0], c3[:])
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c4[:])
+}
+
+func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+
+	role := newRoleWithCollaborators(did1, did2)
+	assert.Len(t, role.Collaborators, 2)
+	assert.Equal(t, role.Collaborators[0], did1[:])
+	assert.Equal(t, role.Collaborators[1], did2[:])
+}
+
+func TestCoreDocument_AddUpdateLog(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	err = cd.AddUpdateLog(did1)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.Document.Author, did1[:])
+	assert.True(t, cd.Modified)
 }
 
 func TestGetSigningProofHash(t *testing.T) {
@@ -284,13 +349,13 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, 0, lengthIdx)
 	assert.NotNil(t, lengthLeaf)
 	assert.Equal(t, SignaturesTreePrefix+".signatures.length", lengthLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
 
 	signerKey := hexutil.Encode(sig.SignatureId)
 	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
 	assert.NotNil(t, signerLeaf)
 	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
 	assert.Equal(t, sig.SignerId, signerLeaf.Value)
 }
 
@@ -344,7 +409,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 	_, signaturesLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField))
 	assert.NotNil(t, signaturesLeaf)
 	assert.Equal(t, fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), signaturesLeaf.Property.ReadableName())
-	assert.Equal(t, append(compactProperties(DRTreePrefix), compactProperties(SignaturesRootField)...), signaturesLeaf.Property.CompactName())
+	assert.Equal(t, append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...), signaturesLeaf.Property.CompactName())
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
@@ -425,55 +490,24 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 }
 
-// TODO: delete this test after integration
-func TestCoreDocument_getCollaborators(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	id2 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
-	assert.NoError(t, err)
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 1)
-	assert.Equal(t, cs[0], id1)
-
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 0)
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
-	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 1)
-	assert.Equal(t, cs[0], id2)
-
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 2)
-	assert.Contains(t, cs, id1)
-	assert.Contains(t, cs, id2)
-}
-
 func TestCoreDocument_getReadCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
+	cas := CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{id1},
+	}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
-	cs, err := cd.getCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
+	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Equal(t, cs[0], id1)
 
-	cs, err = cd.getCollaborators(coredocumentpb.Action_ACTION_READ)
+	cs, err = cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ)
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ)
@@ -491,100 +525,61 @@ func TestCoreDocument_getReadCollaborators(t *testing.T) {
 func TestCoreDocument_getWriteCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
-	id := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(id, []byte("inv"))
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), cas)
 	assert.NoError(t, err)
 	cs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
-	// 2 transition rules, one for CD and one for Invoice document
-	assert.Len(t, cs, 2)
+	assert.Len(t, cs, 1)
 
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 
 	cs, err = cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
-	assert.Len(t, cs, 3)
-	assert.Equal(t, cs[2], id2)
+	assert.Len(t, cs, 2)
+	assert.Equal(t, cs[1], id2)
 }
 
-// TODO: delete this test after integration
 func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
-	assert.Len(t, cs, 1)
-	assert.Equal(t, cs[0], id1)
+	assert.Len(t, cs.ReadCollaborators, 0)
+	assert.Len(t, cs.ReadWriteCollaborators, 1)
+	assert.Equal(t, cs.ReadWriteCollaborators[0], id1)
 
-	cs, err = cd.GetCollaborators(id1)
-	assert.NoError(t, err)
-	assert.Len(t, cs, 0)
-
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
-	assert.Len(t, cs, 2)
-	assert.Contains(t, cs, id1)
-	assert.Contains(t, cs, id2)
+	assert.Len(t, cs.ReadCollaborators, 1)
+	assert.Contains(t, cs.ReadCollaborators, id2)
+	assert.Len(t, cs.ReadWriteCollaborators, 1)
+	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 
 	cs, err = cd.GetCollaborators(id2)
 	assert.NoError(t, err)
-	assert.Len(t, cs, 1)
-	assert.Contains(t, cs, id1)
+	assert.Len(t, cs.ReadCollaborators, 0)
+	assert.Len(t, cs.ReadWriteCollaborators, 1)
+	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 
-	role2 := newRole()
-	role2.Collaborators = append(role.Collaborators, id3[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role2)
+	role2 := newRoleWithCollaborators(id3)
+	cd.Document.Roles = append(cd.Document.Roles, role2)
 	cd.addNewTransitionRule(role2.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
-}
-
-func TestCoreDocument_GetCollaborators1(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	id2 := testingidentity.GenerateRandomDID()
-	id3 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
-	assert.NoError(t, err)
-	cs, err := cd.GetCollaborators1()
-	assert.NoError(t, err)
-	assert.Equal(t, cs.ReadCollaborators[0], id1)
-	assert.Equal(t, cs.ReadWriteCollaborators[0], id1)
-	assert.Equal(t, cs.ReadWriteCollaborators[1], id1)
-
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
-	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-
-	cs, err = cd.GetCollaborators1()
-	assert.NoError(t, err)
-	assert.Len(t, cs.ReadCollaborators, 2)
-	assert.Contains(t, cs.ReadCollaborators, id1)
-	assert.Contains(t, cs.ReadCollaborators, id2)
-
-	cs, err = cd.GetCollaborators1(id2)
+	cs, err = cd.GetCollaborators()
 	assert.NoError(t, err)
 	assert.Len(t, cs.ReadCollaborators, 1)
-	assert.Contains(t, cs.ReadCollaborators, id1)
-
-	role2 := newRole()
-	role2.Collaborators = append(role.Collaborators, id3[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role2)
-	cd.addNewTransitionRule(role2.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
-	cs, err = cd.GetCollaborators1()
-	assert.NoError(t, err)
-	assert.Len(t, cs.ReadWriteCollaborators, 4)
+	assert.Contains(t, cs.ReadCollaborators, id2)
+	assert.Len(t, cs.ReadWriteCollaborators, 2)
 	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 	assert.Contains(t, cs.ReadWriteCollaborators, id3)
 }
@@ -592,8 +587,8 @@ func TestCoreDocument_GetCollaborators1(t *testing.T) {
 func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
-	ids := []string{id1.String()}
-	cd, err := NewCoreDocumentWithCollaborators(ids, nil)
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
@@ -604,9 +599,8 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 0)
 
-	role := newRole()
-	role.Collaborators = append(role.Collaborators, id2[:])
-	cd.GetTestCoreDocWithReset().Roles = append(cd.GetTestCoreDocWithReset().Roles, role)
+	role := newRoleWithCollaborators(id2)
+	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
 
 	cs, err = cd.GetSignerCollaborators()

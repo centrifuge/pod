@@ -223,7 +223,7 @@
         }
       }
     },
-    "invoiceInvoiceCreatePayload": {
+    "documentReadAccess": {
       "type": "object",
       "properties": {
         "collaborators": {
@@ -231,6 +231,54 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "documentResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
+        },
+        "transaction_id": {
+          "type": "string"
+        }
+      }
+    },
+    "documentWriteAccess": {
+      "type": "object",
+      "properties": {
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "invoiceInvoiceCreatePayload": {
+      "type": "object",
+      "properties": {
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
@@ -475,7 +523,7 @@
       "type": "object",
       "properties": {
         "header": {
-          "$ref": "#/definitions/invoiceResponseHeader"
+          "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
@@ -488,11 +536,11 @@
         "identifier": {
           "type": "string"
         },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/invoiceInvoiceData"
@@ -546,30 +594,6 @@
           "type": "string"
         }
       }
-    },
-    "invoiceResponseHeader": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "version_id": {
-          "type": "string"
-        },
-        "state": {
-          "type": "string"
-        },
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "transaction_id": {
-          "type": "string"
-        }
-      },
-      "title": "ResponseHeader contains a set of common fields for most document"
     },
     "invoiceTaxItem": {
       "type": "object",

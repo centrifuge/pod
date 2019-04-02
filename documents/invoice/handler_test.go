@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/transactions"
@@ -129,8 +130,10 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := new(Invoice)
 	txID := transactions.NewTxID()
-	payload := &clientinvoicepb.InvoiceCreatePayload{Data: &clientinvoicepb.InvoiceData{GrossAmount: "300"}, Collaborators: []string{"0x010203040506"}}
-	response := &clientinvoicepb.InvoiceResponse{Header: &clientinvoicepb.ResponseHeader{}}
+	payload := &clientinvoicepb.InvoiceCreatePayload{
+		Data:        &clientinvoicepb.InvoiceData{GrossAmount: "300"},
+		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{"0x010203040506"}}}
+	response := &clientinvoicepb.InvoiceResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()
 	srv.On("DeriveInvoiceResponse", model).Return(response, nil)
@@ -183,11 +186,13 @@ func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	srv := h.service.(*mockService)
 	payload := &clientinvoicepb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
 	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
+	assert.Error(t, err)
 	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
 	payload.Version = "0x0x"
 	payload.Identifier = "0x01"
 
 	res, err = h.GetVersion(testingconfig.HandlerContext(configService), payload)
+	assert.Error(t, err)
 	assert.EqualError(t, err, "version is invalid: invalid hex string")
 	payload.Version = "0x00"
 	payload.Identifier = "0x01"
@@ -267,7 +272,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	ctx := testingconfig.HandlerContext(configService)
 	txID := transactions.NewTxID()
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
-	resp := &clientinvoicepb.InvoiceResponse{Header: new(clientinvoicepb.ResponseHeader)}
+	resp := &clientinvoicepb.InvoiceResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
 	srv.On("Update", mock.Anything, model).Return(model, txID.String(), nil).Once()
 	srv.On("DeriveInvoiceResponse", model).Return(resp, nil).Once()

@@ -17,27 +17,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPaymentObligationMint_invoice_successful(t *testing.T) {
+func TestInvoiceUnpaidMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t, typeInvoice, true, true, true, false)
+	invoiceUnpaidMint(t, typeInvoice, true, true, true, false)
 }
 
 func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t, typeInvoice, false, false, false, true)
+	invoiceUnpaidMint(t, typeInvoice, false, false, false, true)
 }
 
 /* TODO: testcase not stable
-func TestPaymentObligationMint_po_successful(t *testing.T) {
+func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
 	t.Parallel()
-	paymentObligationMint(t, typePO)
+	invoiceUnpaidMint(t, typePO)
 }
 */
 
-func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) {
+func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := alice.host.config.GetContractAddress(config.PaymentObligation)
+	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
 
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
@@ -115,7 +115,7 @@ func paymentObligationMint(t *testing.T, documentType string, grantNFTAccess, to
 	assert.Equal(t, strings.ToLower("0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb"), strings.ToLower(owner.Hex()))
 }
 
-func TestPaymentObligationMint_errors(t *testing.T) {
+func TestInvoiceUnpaidMint_errors(t *testing.T) {
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	tests := []struct {

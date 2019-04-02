@@ -4,6 +4,8 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
@@ -44,4 +46,15 @@ func IntBytesFromString(s string) ([]byte, error) {
 	}
 
 	return d.Bytes(), nil
+}
+
+// ContainsBytesInSlice returns bool if byte slice is contained in input
+func ContainsBytesInSlice(slice [][]byte, b []byte) bool {
+	for _, s := range slice {
+		if utils.IsSameByteSlice(s, b) {
+			return true
+		}
+	}
+
+	return false
 }

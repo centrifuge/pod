@@ -7,6 +7,7 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.entity";
 
+import "document/service.proto";
 import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
@@ -59,28 +60,21 @@ message GetVersionRequest {
 }
 
 message EntityCreatePayload {
-  repeated string collaborators = 1;
-  EntityData data = 2;
+  document.ReadAccess read_access = 1;
+  document.WriteAccess write_access = 2;
+  EntityData data = 3;
 }
 
 message EntityUpdatePayload {
   string identifier = 1;
-  repeated string collaborators = 2;
-  EntityData data = 3;
+  document.ReadAccess read_access = 2;
+  document.WriteAccess write_access = 3;
+  EntityData data = 4;
 }
 
 message EntityResponse {
-  ResponseHeader header = 1;
+  document.ResponseHeader header = 1;
   EntityData data = 2;
-}
-
-// ResponseHeader contains a set of common fields for most document
-message ResponseHeader {
-  string document_id = 1;
-  string version_id = 2;
-  string state = 3;
-  repeated string collaborators = 4;
-  string transaction_id = 5;
 }
 
 // EntityData is the default entity schema
@@ -93,4 +87,22 @@ message EntityData {
   repeated PaymentDetail payment_details = 4;
   // Entity contact list
   repeated Contact contacts = 5;
+}
+
+message EntityRelationshipData {
+  string owner_identity = 1;
+  string target_identity = 3;
+}
+
+message EntityRelationshipCreatePayload {
+  EntityRelationshipData data = 1;
+}
+
+message EntityRelationshipUpdatePayload {
+  EntityRelationshipData data = 1;
+}
+
+message EntityRelationshipResponse {
+  document.ResponseHeader header = 1;
+  EntityRelationshipData data = 2;
 }

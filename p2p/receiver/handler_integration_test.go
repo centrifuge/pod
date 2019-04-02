@@ -164,7 +164,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -212,7 +212,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, err := anchors.ToDocumentRoot(tree.RootHash())
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -241,7 +241,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	docRootTyped, err = anchors.ToDocumentRoot(tree.RootHash())
 	assert.NoError(t, err)
-	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, [][anchors.DocumentProofLength]byte{utils.RandomByte32()})
+	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor = <-anchorConfirmations
@@ -305,7 +305,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	if po == nil {
 		payload := testingdocuments.CreatePOPayload()
 		po = new(purchaseorder.PurchaseOrder)
-		err = po.InitPurchaseOrderInput(payload, defaultDID.String())
+		err = po.InitPurchaseOrderInput(payload, defaultDID)
 		assert.NoError(t, err)
 	}
 	err = po.AddUpdateLog(defaultDID)
@@ -331,7 +331,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil)
+	cd, err := po.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{})
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)
