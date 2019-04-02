@@ -393,6 +393,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()
 	c.On("GetServerPort").Return(8080).Once()
 	c.On("GetServerAddress").Return("dummyServer").Once()
+	c.On("GetGRPCPort").Return(28202).Once()
 	c.On("GetNumWorkers").Return(2).Once()
 	c.On("GetWorkerWaitTimeMS").Return(1).Once()
 	c.On("GetEthereumNodeURL").Return("dummyNode").Once()
