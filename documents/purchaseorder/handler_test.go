@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -110,7 +111,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive response fails")
 
 	// success
-	eresp := &clientpopb.PurchaseOrderResponse{Header: new(clientpopb.ResponseHeader)}
+	eresp := &clientpopb.PurchaseOrderResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, model).Return(model, transactions.NilTxID().String(), nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
@@ -126,8 +127,9 @@ func TestGrpcHandler_Update(t *testing.T) {
 	h := getHandler()
 	p := testingdocuments.CreatePOPayload()
 	req := &clientpopb.PurchaseOrderUpdatePayload{
-		Data:          p.Data,
-		Collaborators: p.Collaborators,
+		Data:        p.Data,
+		ReadAccess:  p.ReadAccess,
+		WriteAccess: p.WriteAccess,
 	}
 	ctx := testingconfig.HandlerContext(configService)
 	model := &testingdocuments.MockModel{}
@@ -164,7 +166,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	assert.Contains(t, err.Error(), "derive response fails")
 
 	// success
-	eresp := &clientpopb.PurchaseOrderResponse{Header: new(clientpopb.ResponseHeader)}
+	eresp := &clientpopb.PurchaseOrderResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, req).Return(model, nil).Once()
 	srv.On("Update", mock.Anything, model).Return(model, transactions.NilTxID().String(), nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
@@ -209,11 +211,13 @@ func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	srv := h.service.(*mockService)
 	payload := &clientpopb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
 	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
+	assert.Error(t, err)
 	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
 	payload.Version = "0x0x"
 	payload.Identifier = "0x01"
 
 	res, err = h.GetVersion(testingconfig.HandlerContext(configService), payload)
+	assert.Error(t, err)
 	assert.EqualError(t, err, "version is invalid: invalid hex string")
 	payload.Version = "0x00"
 	payload.Identifier = "0x01"

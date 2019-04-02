@@ -193,13 +193,13 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get signature root: %v", err)
 	}
 
-	signingRootProofHashes, err := utils.ConvertProofForEthereum([][]byte{signingRootProof})
+	signingRootHash, err := utils.SliceToByte32(signingRootProof)
 	if err != nil {
 		return errors.New("failed to get signing root proof in ethereum format: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootProofHashes)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootHash)
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}

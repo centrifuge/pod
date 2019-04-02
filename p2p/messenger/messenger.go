@@ -253,16 +253,15 @@ func (ms *messageSender) prep() error {
 
 	// set the p2p timeout as the connection timeout
 	timeoutCtx, canc := context.WithTimeout(ms.mes.ctx, ms.mes.timeout)
+	defer canc()
 	nstr, err := ms.mes.host.NewStream(timeoutCtx, ms.p, ms.protoc)
 	if err != nil {
-		canc()
 		return err
 	}
 
 	ms.r = ggio.NewDelimitedReader(nstr, MessageSizeMax)
 	ms.w = newBufferedDelimitedWriter(nstr)
 	ms.s = nstr
-
 	return nil
 }
 

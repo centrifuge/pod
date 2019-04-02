@@ -84,7 +84,7 @@ type Model interface {
 	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	// Note: returns all the collaborators with Read and Read_Sign permission
-	GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)
+	GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error)
 
 	// GetSignerCollaborators works like GetCollaborators except it returns only those with Read_Sign permission.
 	GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)

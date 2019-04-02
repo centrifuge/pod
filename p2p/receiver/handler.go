@@ -229,7 +229,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 		return nil, err
 	}
 
-	if srv.validateDocumentAccess(ctx, docReq, model, requester) != nil {
+	if err = srv.validateDocumentAccess(ctx, docReq, model, requester); err != nil {
 		return nil, err
 	}
 

@@ -119,10 +119,10 @@ func (m *mockModel) Timestamp() (time.Time, error) {
 	return dr, args.Error(1)
 }
 
-func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
 	args := m.Called(filterIDs)
-	cids, _ := args.Get(0).([]identity.DID)
-	return cids, args.Error(1)
+	cas, _ := args.Get(0).(CollaboratorsAccess)
+	return cas, args.Error(1)
 }
 
 func (m *mockModel) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
@@ -360,8 +360,8 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProofs [][32]byte) (done chan bool, err error) {
-	args := m.Called(anchorID, documentRoot, documentProofs)
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan bool, err error) {
+	args := m.Called(anchorID, documentRoot, documentProof)
 	c, _ := args.Get(0).(chan bool)
 	return c, args.Error(1)
 }

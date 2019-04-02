@@ -88,7 +88,8 @@ func TestCentAPIServer_StartListenError(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
-	ctx, _ := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
+	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
+	defer cancel()
 	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -105,7 +106,8 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup

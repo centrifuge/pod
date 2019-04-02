@@ -102,7 +102,7 @@ func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
-	versionID := resp.Value("header").Path("$.version_id").String().Raw()
+	versionID := resp.Value("header").Path("$.version").String().Raw()
 	if versionID == "" {
 		t.Error("version ID empty")
 	}

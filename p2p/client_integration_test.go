@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -80,6 +81,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
 	ctxh, err := contextutil.New(context.Background(), acci)
+	assert.NoError(t, err)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
@@ -132,9 +134,9 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	for _, c := range collaborators {
 		cs = append(cs, hexutil.Encode(c))
 	}
-	payalod.Collaborators = cs
+	payalod.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
 	po := new(purchaseorder.PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payalod, defaultDID.String())
+	err = po.InitPurchaseOrderInput(payalod, defaultDID)
 	assert.NoError(t, err)
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)

@@ -225,7 +225,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
-	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, paymentObligationAddr, p2pTimeout string
+	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
 	apiPort, p2pPort   int64
 	bootstrapNodes     []string
 	bootstrappedCtx    map[string]interface{}
@@ -301,7 +301,7 @@ func (h *host) init() error {
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
-	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedPayObService].(documents.TokenRegistry)
+	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	return nil
 }

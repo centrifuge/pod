@@ -294,14 +294,19 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self string) error {
+func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self identity.DID) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
 		return err
 	}
 
-	collaborators := append([]string{self}, payload.Collaborators...)
-	cd, err := documents.NewCoreDocumentWithCollaborators(collaborators, compactPrefix())
+	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
+	if err != nil {
+		return err
+	}
+
+	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
+	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), cs)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -611,14 +616,14 @@ func (*Invoice) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old invoice.
-func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators []string) error {
+func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess) error {
 	err := i.initInvoiceFromData(data)
 	if err != nil {
 		return err
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators...)
+	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
 	if err != nil {
 		return err
 	}

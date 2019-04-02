@@ -81,7 +81,7 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientent
 	}
 
 	entity := new(Entity)
-	err = entity.InitEntityInput(payload, did.String())
+	err = entity.InitEntityInput(payload, did)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -168,20 +168,9 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 		return nil, err
 	}
 
-	cs, err := model.GetCollaborators()
+	h, err := documents.DeriveResponseHeader(model)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrCollaborators, err)
-	}
-
-	var css []string
-	for _, c := range cs {
-		css = append(css, c.String())
-	}
-
-	h := &cliententitypb.ResponseHeader{
-		DocumentId:    hexutil.Encode(model.ID()),
-		VersionId:     hexutil.Encode(model.CurrentVersion()),
-		Collaborators: css,
+		return nil, err
 	}
 
 	return &cliententitypb.EntityResponse{
@@ -218,8 +207,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 		return nil, err
 	}
 
+	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
+	if err != nil {
+		return nil, err
+	}
+
 	entity := new(Entity)
-	err = entity.PrepareNewVersion(old, payload.Data, payload.Collaborators)
+	err = entity.PrepareNewVersion(old, payload.Data, cs)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load entity from data: %v", err))
 	}

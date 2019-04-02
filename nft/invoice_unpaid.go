@@ -43,12 +43,6 @@ func (t TokenID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(t[:])
 }
 
-// URI gets the URI for this token
-func (t TokenID) URI() string {
-	// TODO please fix this
-	return "http:=//www.centrifuge.io/DUMMY_URI_SERVICE"
-}
-
 func (t TokenID) String() string {
 	return hexutil.Encode(t[:])
 }
@@ -64,8 +58,8 @@ type MintNFTRequest struct {
 	SubmitNFTReadAccessProof bool
 }
 
-// PaymentObligation handles transactions related to minting of NFTs
-type PaymentObligation interface {
+// InvoiceUnpaid handles transactions related to minting of NFTs for unpaid invoices
+type InvoiceUnpaid interface {
 	// MintNFT mints an NFT
 	MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error)
 	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
