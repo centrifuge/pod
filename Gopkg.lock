@@ -187,7 +187,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
-  version = "v1.0.0"
 
 [[projects]]
   digest = "1:aacef5f5e45685f2aeda5534d0a750dee6859de7e9088cdd06192787bb01ae6d"
@@ -217,7 +216,6 @@
   version = "v1.2.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:1ba1d79f2810270045c328ae5d674321db34e3aae468eb4233883b473c5c0467"
   name = "github.com/golang/glog"
   packages = ["."]
@@ -225,7 +223,7 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  digest = "1:b6e2d4c5827f6f731c88d3d52647520be06a932e8221e5f1687fa55702f515b9"
+  digest = "1:b2d7e82c930fd78145f944d3c5e8e900c770b9147bddf917c6fbdfe2426b7210"
   name = "github.com/golang/protobuf"
   packages = [
     "descriptor",
@@ -243,7 +241,6 @@
     "ptypes/empty",
     "ptypes/struct",
     "ptypes/timestamp",
-    "ptypes/wrappers",
   ]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
@@ -293,11 +290,10 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:d26054aef028b782f9b65c29f17b8b6a5c75e302b6656f370b9c0788b1e35a00"
+  digest = "1:fbce563e8f11fde364d451c7df043b88eb7776444cd7875a99e837e4aedd65cb"
   name = "github.com/grpc-ecosystem/grpc-gateway"
   packages = [
     "codegenerator",
-    "internal",
     "protoc-gen-grpc-gateway",
     "protoc-gen-grpc-gateway/descriptor",
     "protoc-gen-grpc-gateway/generator",
@@ -305,11 +301,11 @@
     "protoc-gen-grpc-gateway/httprule",
     "protoc-gen-swagger/options",
     "runtime",
+    "runtime/internal",
     "utilities",
   ]
   pruneopts = "T"
-  revision = "20f268a412e5b342ebfb1a0eef7c3b7bd6c260ea"
-  version = "v1.8.5"
+  revision = "8558711daa6c2853489043207b563dceacbc19cf"
 
 [[projects]]
   digest = "1:43c609cba7aa615eaae5aa8f2ddba65dc1b2d3af7bc434f738238df8d3797ddb"
@@ -1428,13 +1424,11 @@
   revision = "d61658bd2e18010be0e21349cc92b1b706e35146"
 
 [[projects]]
-  digest = "1:1b3955d2e55cb397314d7dd6ff3ed1e786940332b0d06c815683d918d3b2c129"
+  digest = "1:f969b1b8bcb2a5162a5dc797b261eff0c2f099d7fc63c143ada31b002709f6a5"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
-    "googleapis/api/httpbody",
     "googleapis/rpc/status",
-    "protobuf/field_mask",
   ]
   pruneopts = "UT"
   revision = "5a2fd4cab2d6d4a18e70c34937662526cd0c4bd1"
