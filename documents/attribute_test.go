@@ -1,7 +1,9 @@
 package documents
 
 import (
+	"math/big"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -12,6 +14,7 @@ func TestNewAttribute(t *testing.T) {
 	testdecimal := new(Decimal)
 	err := testdecimal.SetString("5.1321312")
 	assert.NoError(t, err)
+	ttime := time.Now()
 	tests := []struct {
 		name        string
 		readableKey string
@@ -70,19 +73,19 @@ func TestNewAttribute(t *testing.T) {
 			false,
 			"",
 		},
-		//{
-		//	"int256",
-		//	"int256",
-		//	Int256,
-		//	testdecimal,
-		//	&attribute{
-		//		attrType:    Int256,
-		//		readableKey: "int256",
-		//		value:       big.NewInt(123),
-		//	},
-		//	false,
-		//	"",
-		//},
+		{
+			"int256",
+			"int256",
+			Int256,
+			big.NewInt(123),
+			&attribute{
+				attrType:    Int256,
+				readableKey: "int256",
+				value:       big.NewInt(123),
+			},
+			false,
+			"",
+		},
 		{
 			"bigdecimal",
 			"bigdecimal",
@@ -92,6 +95,32 @@ func TestNewAttribute(t *testing.T) {
 				attrType:    BigDec,
 				readableKey: "bigdecimal",
 				value:       testdecimal,
+			},
+			false,
+			"",
+		},
+		{
+			"bytes",
+			"bytes",
+			Byts,
+			[]byte{1},
+			&attribute{
+				attrType:    Byts,
+				readableKey: "bytes",
+				value:       []byte{1},
+			},
+			false,
+			"",
+		},
+		{
+			"timestamp",
+			"timestamp",
+			Timestmp,
+			ttime.Unix(),
+			&attribute{
+				attrType:    Timestmp,
+				readableKey: "timestamp",
+				value:       ttime.Unix(),
 			},
 			false,
 			"",
@@ -111,10 +140,12 @@ func TestNewAttribute(t *testing.T) {
 				assert.NoError(t, err)
 				hashedKey, err := crypto.Sha256Hash([]byte(test.at.readableKey))
 				assert.NoError(t, err)
-				assert.Equal(t, attr.hashedKey, hashedKey)
-				assert.Equal(t, attr.attrType, test.at.attrType)
-				assert.Equal(t, attr.value, test.at.value)
-				assert.Equal(t, attr.readableKey, test.at.readableKey)
+				if assert.NotNil(t, attr) {
+					assert.Equal(t, attr.hashedKey, hashedKey)
+					assert.Equal(t, attr.attrType, test.at.attrType)
+					assert.Equal(t, attr.value, test.at.value)
+					assert.Equal(t, attr.readableKey, test.at.readableKey)
+				}
 			}
 		})
 	}

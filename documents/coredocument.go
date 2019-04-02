@@ -592,9 +592,14 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists its updated.
 func (cd *CoreDocument) AddAttribute(name string, attributeType AllowedAttributeType, value string) error {
+	// TODO convert value from string to correct type
+	// For now its only string that is supported
 	nAttr, err := newAttribute(name, attributeType, value)
 	if err != nil {
 		return err
+	}
+	if cd.Attributes == nil {
+		cd.Attributes = make(map[string]*attribute)
 	}
 	cd.Attributes[name] = nAttr
 	return nil

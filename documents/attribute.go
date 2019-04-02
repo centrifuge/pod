@@ -3,7 +3,6 @@ package documents
 import (
 	"math/big"
 	"reflect"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,17 +17,26 @@ func (a AllowedAttributeType) String() string {
 }
 
 const (
-	Int256   AllowedAttributeType = "int256"
-	BigDec   AllowedAttributeType = "bigdecimal"
-	Str      AllowedAttributeType = "string"
-	Byts     AllowedAttributeType = "bytes"
+	// Int256 is the standard integer custom attribute type
+	Int256 AllowedAttributeType = "int256"
+
+	// BigDec is the standard big decimal custom attribute type
+	BigDec AllowedAttributeType = "bigdecimal"
+
+	// Str is the standard string custom attribute type
+	Str AllowedAttributeType = "string"
+
+	// Byts is the standard bytes custom attribute type
+	Byts AllowedAttributeType = "bytes"
+
+	// Timestmp is the standard time stamp custom attribute type
 	Timestmp AllowedAttributeType = "timestamp"
 )
 
 func allowedAttributeTypes(typ AllowedAttributeType) (reflect.Type, error) {
 	switch typ {
 	case Int256:
-		// TODO use our own type for int256 with checks
+		// TODO IMPORTANT!!! use our own type for int256 with size checks
 		return reflect.TypeOf(&big.Int{}), nil
 	case BigDec:
 		return reflect.TypeOf(&Decimal{}), nil
@@ -37,7 +45,7 @@ func allowedAttributeTypes(typ AllowedAttributeType) (reflect.Type, error) {
 	case Byts:
 		return reflect.TypeOf([]byte{}), nil
 	case Timestmp:
-		return reflect.TypeOf(&time.Time{}), nil
+		return reflect.TypeOf(int64(1)), nil
 	default:
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute types"))
 	}
