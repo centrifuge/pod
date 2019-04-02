@@ -103,6 +103,9 @@ nodeHostname: 0.0.0.0
 # Port where API Server listens to
 nodePort: 8082
 
+# Port where GRPC server listens to
+grpcPort: 28202
+
 # Peer-to-peer configurations
 p2p:
   # Specify External IP where the node can be reached at if behind NAT

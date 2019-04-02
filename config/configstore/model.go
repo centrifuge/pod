@@ -46,6 +46,7 @@ type NodeConfig struct {
 	P2PConnectionTimeout           time.Duration
 	ServerPort                     int
 	ServerAddress                  string
+	GRPCPort                       int
 	NumWorkers                     int
 	TaskRetries                    int
 	WorkerWaitTimeMS               int
@@ -148,6 +149,11 @@ func (nc *NodeConfig) GetServerPort() int {
 // GetServerAddress refer the interface
 func (nc *NodeConfig) GetServerAddress() string {
 	return nc.ServerAddress
+}
+
+// GetGRPCPort returns grpc port
+func (nc *NodeConfig) GetGRPCPort() int {
+	return nc.GRPCPort
 }
 
 // GetNumWorkers refer the interface

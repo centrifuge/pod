@@ -136,6 +136,11 @@ func (m *mockConfig) GetServerPort() int {
 	return args.Get(0).(int)
 }
 
+func (m *mockConfig) GetGRPCPort() int {
+	args := m.Called()
+	return args.Int(0)
+}
+
 func (m *mockConfig) GetServerAddress() string {
 	args := m.Called()
 	return args.Get(0).(string)
