@@ -182,11 +182,29 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	id := hexutil.Encode(cd.Document.DocumentIdentifier)
 	did1 := testingidentity.GenerateRandomDID()
+
+	// wrong granteeID format
 	at := &documentpb.AccessTokenParams{
-		Grantee:            did1.String(),
+		Grantee:            "random string",
 		DocumentIdentifier: id,
 	}
 	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.Error(t, err)
+
+	// wrong docID
+	at = &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: "random string",
+	}
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.Error(t, err)
+
+	// correct access token params
+	at = &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: id,
+	}
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
 	assert.NoError(t, err)
 
 	token := ncd.Document.AccessTokens[0]
