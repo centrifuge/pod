@@ -8,6 +8,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -156,7 +159,7 @@ func TestCoreDocument_ID(t *testing.T) {
 	assert.Equal(t, cd.Document.DocumentIdentifier, cd.ID())
 }
 
-func TestCoreDocument_NewCoreDocumentWithCollaborators(t *testing.T) {
+func TestNewCoreDocumentWithCollaborators(t *testing.T) {
 	did1 := testingidentity.GenerateRandomDID()
 	did2 := testingidentity.GenerateRandomDID()
 	c := &CollaboratorsAccess{
@@ -170,6 +173,26 @@ func TestCoreDocument_NewCoreDocumentWithCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, did1, collabs.ReadCollaborators[0])
 	assert.Equal(t, did2, collabs.ReadWriteCollaborators[0])
+}
+
+func TestNewCoreDocumentWithAccessToken(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	id := hexutil.Encode(cd.Document.DocumentIdentifier)
+	did1 := testingidentity.GenerateRandomDID()
+	at := &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: id,
+	}
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.NoError(t, err)
+
+	token := ncd.Document.AccessTokens[0]
+	assert.Equal(t, token.DocumentIdentifier, cd.Document.DocumentIdentifier)
+	assert.Equal(t, token.Grantee, did1[:])
+	assert.NotEqual(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
 }
 
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
