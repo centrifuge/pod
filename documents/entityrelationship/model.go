@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,16 +34,21 @@ type EntityRelationship struct {
 	TargetIdentity *identity.DID
 }
 
+type RelationShipdata struct {
+	OwnerIdentity  string
+	TargetIdentity string
+}
+
 // getClientData returns the entity relationship data from the entity relationship model
-func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipData {
+func (e *EntityRelationship) getClientData() *RelationShipdata {
 	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
-	return &cliententitypb.EntityRelationshipData{
+	return &RelationShipdata{
 		OwnerIdentity:  dids[0],
 		TargetIdentity: dids[1],
 	}
 }
 
-// createP2PProtobuf returns Centrifuge protobuf-specific EntityRelationshipData.
+// createP2PProtobuf returns Centrifuge protobuf-specific RelationShipdata.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
 	return &entitypb.EntityRelationship{
@@ -54,8 +58,8 @@ func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 }
 
 // InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityRelationshipInput(payload *cliententitypb.EntityRelationshipCreatePayload) error {
-	if err := e.initEntityRelationshipFromData(payload.Data); err != nil {
+func (e *EntityRelationship) InitEntityRelationshipInput(data *RelationShipdata) error {
+	if err := e.initEntityRelationshipFromData(data); err != nil {
 		return err
 	}
 
@@ -71,7 +75,7 @@ func (e *EntityRelationship) InitEntityRelationshipInput(payload *cliententitypb
 }
 
 // PrepareNewVersion prepares new version from the old entity.
-func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityRelationshipData, collaborators []string) error {
+func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *RelationShipdata, collaborators []string) error {
 	err := e.initEntityRelationshipFromData(data)
 	if err != nil {
 		return err
@@ -87,7 +91,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *client
 }
 
 // initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
-func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb.EntityRelationshipData) error {
+func (e *EntityRelationship) initEntityRelationshipFromData(data *RelationShipdata) error {
 	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
 	if err != nil {
 		return err
@@ -97,7 +101,7 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb
 	return nil
 }
 
-// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf EntityRelationshipData.
+// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf RelationShipdata.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
 	dids, err := identity.BytesToDIDs(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
 	if err != nil {
