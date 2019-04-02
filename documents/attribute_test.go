@@ -27,7 +27,7 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"readable key empty",
 			"",
-			Str,
+			StrType,
 			"",
 			nil,
 			true,
@@ -36,7 +36,7 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"value nil",
 			"somekey",
-			Str,
+			StrType,
 			nil,
 			nil,
 			true,
@@ -45,7 +45,7 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"type mismatch",
 			"somekey",
-			Str,
+			StrType,
 			12,
 			nil,
 			true,
@@ -63,10 +63,10 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"string",
 			"string",
-			Str,
+			StrType,
 			"someval",
 			&attribute{
-				attrType:    Str,
+				attrType:    StrType,
 				readableKey: "string",
 				value:       "someval",
 			},
@@ -76,10 +76,10 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"int256",
 			"int256",
-			Int256,
+			Int256Type,
 			big.NewInt(123),
 			&attribute{
-				attrType:    Int256,
+				attrType:    Int256Type,
 				readableKey: "int256",
 				value:       big.NewInt(123),
 			},
@@ -89,10 +89,10 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"bigdecimal",
 			"bigdecimal",
-			BigDec,
+			BigDecType,
 			testdecimal,
 			&attribute{
-				attrType:    BigDec,
+				attrType:    BigDecType,
 				readableKey: "bigdecimal",
 				value:       testdecimal,
 			},
@@ -102,10 +102,10 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"bytes",
 			"bytes",
-			Byts,
+			BytsType,
 			[]byte{1},
 			&attribute{
-				attrType:    Byts,
+				attrType:    BytsType,
 				readableKey: "bytes",
 				value:       []byte{1},
 			},
@@ -115,10 +115,10 @@ func TestNewAttribute(t *testing.T) {
 		{
 			"timestamp",
 			"timestamp",
-			Timestmp,
+			TimestmpType,
 			ttime.Unix(),
 			&attribute{
-				attrType:    Timestmp,
+				attrType:    TimestmpType,
 				readableKey: "timestamp",
 				value:       ttime.Unix(),
 			},

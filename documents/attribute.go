@@ -17,34 +17,34 @@ func (a AllowedAttributeType) String() string {
 }
 
 const (
-	// Int256 is the standard integer custom attribute type
-	Int256 AllowedAttributeType = "int256"
+	// Int256Type is the standard integer custom attribute type
+	Int256Type AllowedAttributeType = "int256"
 
-	// BigDec is the standard big decimal custom attribute type
-	BigDec AllowedAttributeType = "bigdecimal"
+	// BigDecType is the standard big decimal custom attribute type
+	BigDecType AllowedAttributeType = "bigdecimal"
 
-	// Str is the standard string custom attribute type
-	Str AllowedAttributeType = "string"
+	// StrType is the standard string custom attribute type
+	StrType AllowedAttributeType = "string"
 
-	// Byts is the standard bytes custom attribute type
-	Byts AllowedAttributeType = "bytes"
+	// BytsType is the standard bytes custom attribute type
+	BytsType AllowedAttributeType = "bytes"
 
-	// Timestmp is the standard time stamp custom attribute type
-	Timestmp AllowedAttributeType = "timestamp"
+	// TimestmpType is the standard time stamp custom attribute type
+	TimestmpType AllowedAttributeType = "timestamp"
 )
 
 func allowedAttributeTypes(typ AllowedAttributeType) (reflect.Type, error) {
 	switch typ {
-	case Int256:
+	case Int256Type:
 		// TODO IMPORTANT!!! use our own type for int256 with size checks
 		return reflect.TypeOf(&big.Int{}), nil
-	case BigDec:
+	case BigDecType:
 		return reflect.TypeOf(&Decimal{}), nil
-	case Str:
+	case StrType:
 		return reflect.TypeOf(""), nil
-	case Byts:
+	case BytsType:
 		return reflect.TypeOf([]byte{}), nil
-	case Timestmp:
+	case TimestmpType:
 		return reflect.TypeOf(int64(1)), nil
 	default:
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute types"))

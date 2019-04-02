@@ -50,6 +50,5 @@ func Sha256Hash(value []byte) (hash []byte, err error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	hash = h.Sum(nil)
-	return hash, nil
+	return h.Sum(nil), nil
 }

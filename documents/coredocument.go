@@ -590,7 +590,7 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 	return utils.FromTimestamp(cd.Document.Timestamp)
 }
 
-// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists its updated.
+// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 func (cd *CoreDocument) AddAttribute(name string, attributeType AllowedAttributeType, value string) error {
 	// TODO convert value from string to correct type
 	// For now its only string that is supported
@@ -612,6 +612,12 @@ func (cd *CoreDocument) GetAttribute(name string) (hashedKey []byte, attrType st
 		return attr.hashedKey, string(attr.attrType), attr.value, "", nil
 	}
 	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
+}
+
+// DeleteAttribute deletes a custom attribute from the model
+func (cd *CoreDocument) DeleteAttribute(name string) error {
+	delete(cd.Attributes, name)
+	return nil
 }
 
 func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {
