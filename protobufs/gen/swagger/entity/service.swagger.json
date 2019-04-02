@@ -501,9 +501,6 @@
         "active": {
           "type": "boolean",
           "format": "boolean"
-        },
-        "last_update_at_entity_version": {
-          "type": "string"
         }
       }
     }
