@@ -3,8 +3,6 @@ package documents
 import (
 	"crypto/sha256"
 	"fmt"
-	"math/big"
-	"reflect"
 	"strings"
 	"time"
 
@@ -71,84 +69,13 @@ func CompactProperties(key string) []byte {
 	return m[key]
 }
 
-func allowedAttributeTypes(typ string) (reflect.Type, error) {
-	switch typ {
-	case "int256":
-		return reflect.TypeOf(big.Int{}), nil
-	case "bigdecimal":
-		return reflect.TypeOf(Decimal{}), nil
-	case "string":
-		return reflect.TypeOf(""), nil
-	case "bytes":
-		return reflect.TypeOf([]byte{}), nil
-	case "timestamp":
-		return reflect.TypeOf(time.Time{}), nil
-	default:
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute types"))
-	}
-}
-
-func allowedAttributeTypeNames(typ reflect.Type) (string, error) {
-	switch typ {
-	case reflect.TypeOf(big.Int{}):
-		return "int256", nil
-	case reflect.TypeOf(Decimal{}):
-		return "bigdecimal", nil
-	case reflect.TypeOf(""):
-		return "string", nil
-	case reflect.TypeOf([]byte{}):
-		return "bytes", nil
-	case reflect.TypeOf(time.Time{}):
-		return "timestamp", nil
-	default:
-		return "", errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute type names"))
-	}
-}
-
-// Attribute represents a custom attribute of a document
-type Attribute struct {
-	Type        reflect.Type
-	ReadableKey string
-	HashedKey   []byte
-	Value       interface{}
-}
-
-// NewAttribute creates a new custom attribute
-func NewAttribute(readableKey string, attributeType reflect.Type, value interface{}) (*Attribute, error) {
-	if readableKey == "" {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
-	}
-
-	if value == nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
-	}
-
-	if reflect.TypeOf(value) != attributeType {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
-	}
-
-	h := sha256.New()
-	_, err := h.Write([]byte(readableKey))
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, err)
-	}
-
-	hashedKey := h.Sum(nil)
-	return &Attribute{
-		ReadableKey: readableKey,
-		HashedKey:   hashedKey,
-		Type:        attributeType,
-		Value:       value,
-	}, nil
-}
-
 // CoreDocument is a wrapper for CoreDocument Protobuf.
 type CoreDocument struct {
 	// Modified indicates that the CoreDocument has been modified and salts needs to be generated for new fields in coredoc precise-proof tree.
 	Modified bool
 
 	// Attributes are the custom attributes added to the document
-	Attributes map[string]*Attribute
+	Attributes map[string]*attribute
 
 	Document coredocumentpb.CoreDocument
 }
@@ -664,14 +591,8 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists its updated.
-func (cd *CoreDocument) AddAttribute(name string, attributeType string, value string) error {
-	// TODO value conversion and type validation of it
-	tp, err := allowedAttributeTypes(attributeType)
-	if err != nil {
-		return err
-	}
-	// for now its all string
-	nAttr, err := NewAttribute(name, tp, value)
+func (cd *CoreDocument) AddAttribute(name string, attributeType AllowedAttributeType, value string) error {
+	nAttr, err := newAttribute(name, attributeType, value)
 	if err != nil {
 		return err
 	}
@@ -682,12 +603,8 @@ func (cd *CoreDocument) AddAttribute(name string, attributeType string, value st
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
 func (cd *CoreDocument) GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error) {
 	if attr, ok := cd.Attributes[name]; ok {
-		an, err := allowedAttributeTypeNames(attr.Type)
-		if err != nil {
-			return hashedKey, attrType, value, valueStr, err
-		}
 		// TODO convert value to its string repr
-		return attr.HashedKey, an, attr.Value, "", nil
+		return attr.hashedKey, string(attr.attrType), attr.value, "", nil
 	}
 	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 }

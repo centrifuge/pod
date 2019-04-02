@@ -39,11 +39,17 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (
 // GenerateHashPair generates a preimage and hash pair. This is useful in a commit reveal scheme such as what we use for anchor pre-commit > commit flow.
 func GenerateHashPair(preimageSize int) (preimage, hash []byte, err error) {
 	preimage = utils.RandomSlice(preimageSize)
+	hash, err = Sha256Hash(preimage)
+	return preimage, hash, err
+}
+
+// Sha256Hash wraps inconvenient sha256 hashing ops
+func Sha256Hash(value []byte) (hash []byte, err error) {
 	h := sha256.New()
-	_, err = h.Write(preimage)
+	_, err = h.Write(value)
 	if err != nil {
-		return []byte{}, []byte{}, err
+		return []byte{}, err
 	}
-	hash = h.Sum(hash)
-	return preimage, hash, nil
+	hash = h.Sum(nil)
+	return hash, nil
 }

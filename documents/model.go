@@ -111,7 +111,7 @@ type Model interface {
 	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
 
 	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists its updated.
-	AddAttribute(name string, attributeType string, value string) error
+	AddAttribute(name string, attributeType AllowedAttributeType, value string) error
 
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
 	GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error)
