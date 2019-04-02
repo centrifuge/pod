@@ -50,6 +50,20 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
+	// Coredoc errors
+
+	// ErrCDCreate must be used for coredoc creation/generation errors
+	ErrCDCreate = errors.Error("error creating core document")
+
+	// ErrCollaborators must be used when collaborators are not valid
+	ErrCollaborators = errors.Error("invalid collaborators")
+
+	// ErrCDTree must be used when there are errors during precise-proof tree and root generation
+	ErrCDTree = errors.Error("error when generating trees/roots")
+
+	// ErrCDAttribute must be used when there are errors caused by custom model attributes
+	ErrCDAttribute = errors.Error("model attribute error")
+
 	// Read ACL errors
 
 	// ErrNftNotFound must be used when the NFT is not found in the document
@@ -70,9 +84,6 @@ const (
 	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
 	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
 
-	// ErrFailedCollaborators must be used when collaborators are not valid
-	ErrFailedCollaborators = errors.Error("invalid collaborators")
-
 	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
 	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
 
@@ -81,6 +92,8 @@ const (
 
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
+
+	// others
 
 	// ErrInvalidDecimal must be used when given decimal is invalid
 	ErrInvalidDecimal = errors.Error("invalid decimal")

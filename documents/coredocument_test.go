@@ -614,3 +614,21 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
 }
+
+func TestCoreDocument_AddAttribute(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	assert.NoError(t, err)
+	err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
+	assert.NoError(t, err)
+	assert.True(t, len(cd.Attributes) == 1)
+
+	hashedKey, attrType, val, _, err := cd.GetAttribute("com.basf.deliverynote.chemicalnumber")
+	assert.NoError(t, err)
+	assert.True(t, len(hashedKey) > 0)
+	assert.Equal(t, attrType, StrType.String())
+	assert.Equal(t, val, "100")
+
+	// TODO add tests for each type + failures, once converters are ready
+}
