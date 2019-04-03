@@ -146,7 +146,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	assert.NoError(t, err)
 	payload := &entitypb.RelationshipData{
 		OwnerIdentity:  selfDID.String(),
-		TargetIdentity: "0x5f9132e0f92952abcb154a9b34563891ffe1aacb",
+		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
 	}
 	assert.Equal(t, payload.TargetIdentity, r.Relationship.TargetIdentity)
 	assert.Equal(t, payload.OwnerIdentity, r.Relationship.OwnerIdentity)

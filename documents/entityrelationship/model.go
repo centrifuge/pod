@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"

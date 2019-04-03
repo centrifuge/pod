@@ -8,10 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -19,15 +15,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -83,7 +82,7 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 	assert.NoError(t, err)
 	return &entitypb.RelationshipData{
 		OwnerIdentity:  selfDID.String(),
-		TargetIdentity: "0x5f9132e0f92952abcb154a9b34563891ffe1aacb",
+		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
 	}
 }
 
