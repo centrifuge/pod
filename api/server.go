@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -39,7 +38,6 @@ var (
 type Config interface {
 	GetServerAddress() string
 	GetServerPort() int
-	GetGRPCPort() int
 	GetNetworkString() string
 	IsPProfEnabled() bool
 }
@@ -58,7 +56,11 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	defer wg.Done()
 
 	apiAddr := c.config.GetServerAddress()
-	grpcAddr := fmt.Sprintf("%s:%d", grpcAddress, c.config.GetGRPCPort())
+	grpcAddr, _, err := utils.GetFreeAddrPort()
+	if err != nil {
+		startupErr <- errors.New("failed to get random port for grpc: %v", err)
+		return
+	}
 
 	// set http error interceptor
 	runtime.HTTPError = httpResponseInterceptor
@@ -69,7 +71,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err := registerServices(ctx, c.config, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
+	err = registerServices(ctx, c.config, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
 	if err != nil {
 		startupErr <- err
 		return

@@ -83,7 +83,6 @@ type Configuration interface {
 	GetP2PConnectionTimeout() time.Duration
 	GetServerPort() int
 	GetServerAddress() string
-	GetGRPCPort() int
 	GetNumWorkers() int
 	GetWorkerWaitTimeMS() int
 	GetTaskRetries() int
@@ -279,11 +278,6 @@ func (c *configuration) GetServerPort() int {
 // GetServerAddress returns the defined server address of form host:port in the config.
 func (c *configuration) GetServerAddress() string {
 	return fmt.Sprintf("%s:%s", c.GetString("nodeHostname"), c.GetString("nodePort"))
-}
-
-// GetGRPCPort returns the defined server port in the config.
-func (c *configuration) GetGRPCPort() int {
-	return c.GetInt("grpcPort")
 }
 
 // GetNumWorkers returns number of queue workers defined in the config.
@@ -492,7 +486,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
-	grpcPort := args["grpcPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
@@ -531,7 +524,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", apiHost)
 	v.Set("nodePort", apiPort)
-	v.Set("grpcPort", grpcPort)
 	v.Set("p2p.port", p2pPort)
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)

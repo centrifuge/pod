@@ -46,7 +46,6 @@ type NodeConfig struct {
 	P2PConnectionTimeout           time.Duration
 	ServerPort                     int
 	ServerAddress                  string
-	GRPCPort                       int
 	NumWorkers                     int
 	TaskRetries                    int
 	WorkerWaitTimeMS               int
@@ -149,11 +148,6 @@ func (nc *NodeConfig) GetServerPort() int {
 // GetServerAddress refer the interface
 func (nc *NodeConfig) GetServerAddress() string {
 	return nc.ServerAddress
-}
-
-// GetGRPCPort returns grpc port
-func (nc *NodeConfig) GetGRPCPort() int {
-	return nc.GRPCPort
 }
 
 // GetNumWorkers refer the interface
@@ -324,7 +318,6 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 		P2PConnectionTimeout:      &duration.Duration{Seconds: int64(nc.P2PConnectionTimeout.Seconds())},
 		ServerPort:                int32(nc.ServerPort),
 		ServerAddress:             nc.ServerAddress,
-		GrpcServerPort:            int32(nc.GRPCPort),
 		NumWorkers:                int32(nc.NumWorkers),
 		WorkerWaitTimeMs:          int32(nc.WorkerWaitTimeMS),
 		EthContextReadWaitTimeout: &duration.Duration{Seconds: int64(nc.EthereumContextReadWaitTimeout.Seconds())},
@@ -380,7 +373,6 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	nc.P2PConnectionTimeout = time.Duration(data.P2PConnectionTimeout.Seconds)
 	nc.ServerPort = int(data.ServerPort)
 	nc.ServerAddress = data.ServerAddress
-	nc.GRPCPort = int(data.GrpcServerPort)
 	nc.NumWorkers = int(data.NumWorkers)
 	nc.WorkerWaitTimeMS = int(data.WorkerWaitTimeMs)
 	nc.EthereumNodeURL = data.EthNodeUrl
@@ -460,7 +452,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		P2PConnectionTimeout:           c.GetP2PConnectionTimeout(),
 		ServerPort:                     c.GetServerPort(),
 		ServerAddress:                  c.GetServerAddress(),
-		GRPCPort:                       c.GetGRPCPort(),
 		NumWorkers:                     c.GetNumWorkers(),
 		WorkerWaitTimeMS:               c.GetWorkerWaitTimeMS(),
 		EthereumNodeURL:                c.GetEthereumNodeURL(),

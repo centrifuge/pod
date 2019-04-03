@@ -172,10 +172,6 @@
         "pprof_enabled": {
           "type": "boolean",
           "format": "boolean"
-        },
-        "grpc_server_port": {
-          "type": "integer",
-          "format": "int32"
         }
       }
     }

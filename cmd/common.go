@@ -36,7 +36,7 @@ func CreateConfig(
 	accountKeyPath,
 	accountPassword,
 	network, apiHost string,
-	apiPort, p2pPort, grpcPort int64,
+	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess, preCommitEnabled bool,
 	p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses) error {
@@ -51,7 +51,6 @@ func CreateConfig(
 		"apiHost":           apiHost,
 		"apiPort":           apiPort,
 		"p2pPort":           p2pPort,
-		"grpcPort":          grpcPort,
 		"p2pConnectTimeout": p2pConnectionTimeout,
 		"txpoolaccess":      txPoolAccess,
 		"preCommitEnabled":  preCommitEnabled,

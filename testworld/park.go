@@ -28,15 +28,15 @@ import (
 var log = logging.Logger("host")
 
 var hostConfig = []struct {
-	name                       string
-	apiPort, p2pPort, grpcPort int64
-	multiAccount               bool
+	name             string
+	apiPort, p2pPort int64
+	multiAccount     bool
 }{
-	{"Alice", 8084, 38204, 28204, false},
-	{"Bob", 8085, 38205, 28305, true},
-	{"Charlie", 8086, 38206, 28306, true},
-	{"Kenny", 8087, 38207, 28207, false},
-	{"Eve", 8088, 38208, 28208, false},
+	{"Alice", 8084, 38204, false},
+	{"Bob", 8085, 38205, true},
+	{"Charlie", 8086, 38206, true},
+	{"Kenny", 8087, 38207, false},
+	{"Eve", 8088, 38208, false},
 }
 
 const defaultP2PTimeout = "10s"
@@ -112,7 +112,7 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", r.twConfigName, defaultP2PTimeout, 8081, 38201, 28201, createConfig, false, nil)
+	r.bernard = r.createHost("Bernard", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, h.grpcPort, createConfig, h.multiAccount, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -175,8 +175,8 @@ func (r *hostManager) addNiceHost(name string, host *host) {
 	r.niceHosts[name] = host
 }
 
-func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort, grpcPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	tempHost := r.createHost(name, twConfigName, p2pTimeout, apiPort, p2pPort, grpcPort, createConfig, multiAccount, bootstraps)
+func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	tempHost := r.createHost(name, twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
 	r.tempHosts[name] = tempHost
 	return tempHost
 }
@@ -195,7 +195,7 @@ func (r *hostManager) startTempHost(name string) error {
 	return nil
 }
 
-func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort, grpcPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
 	return newHost(
 		name,
 		r.ethNodeUrl,
@@ -205,7 +205,7 @@ func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort,
 		"127.0.0.1",
 		twConfigName,
 		p2pTimeout,
-		apiPort, p2pPort, grpcPort, bootstraps,
+		apiPort, p2pPort, bootstraps,
 		r.txPoolAccess,
 		createConfig,
 		multiAccount,
@@ -227,29 +227,29 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 type host struct {
 	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
-	apiPort, p2pPort, grpcPort int64
-	bootstrapNodes             []string
-	bootstrappedCtx            map[string]interface{}
-	txPoolAccess               bool
-	smartContractAddrs         *config.SmartContractAddresses
-	config                     config.Configuration
-	identity                   identity.DID
-	idFactory                  identity.Factory
-	idService                  identity.ServiceDID
-	node                       *node.Node
-	canc                       context.CancelFunc
-	createConfig               bool
-	multiAccount               bool
-	accounts                   []string
-	p2pClient                  documents.Client
-	configService              config.Service
-	tokenRegistry              documents.TokenRegistry
-	anchorRepo                 anchors.AnchorRepository
+	apiPort, p2pPort   int64
+	bootstrapNodes     []string
+	bootstrappedCtx    map[string]interface{}
+	txPoolAccess       bool
+	smartContractAddrs *config.SmartContractAddresses
+	config             config.Configuration
+	identity           identity.DID
+	idFactory          identity.Factory
+	idService          identity.ServiceDID
+	node               *node.Node
+	canc               context.CancelFunc
+	createConfig       bool
+	multiAccount       bool
+	accounts           []string
+	p2pClient          documents.Client
+	configService      config.Service
+	tokenRegistry      documents.TokenRegistry
+	anchorRepo         anchors.AnchorRepository
 }
 
 func newHost(
 	name, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string,
-	apiPort, p2pPort, grpcPort int64,
+	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess, createConfig, multiAccount bool,
 	smartContractAddrs *config.SmartContractAddresses,
@@ -262,7 +262,6 @@ func newHost(
 		network:            network,
 		apiHost:            apiHost,
 		apiPort:            apiPort,
-		grpcPort:           grpcPort,
 		p2pPort:            p2pPort,
 		p2pTimeout:         p2pTimeout,
 		bootstrapNodes:     bootstraps,
@@ -276,7 +275,7 @@ func newHost(
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.grpcPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
 		if err != nil {
 			return err
 		}

@@ -13,7 +13,7 @@ import (
 
 var (
 	apiHost, targetDataDir, ethNodeURL, accountKeyPath, network string
-	apiPort, grpcPort, p2pPort                                  int64
+	apiPort, p2pPort                                            int64
 	bootstraps                                                  []string
 	txPoolAccess                                                bool
 )
@@ -41,7 +41,7 @@ func init() {
 				log.Error(err)
 			}
 
-			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiHost, apiPort, p2pPort, grpcPort, bootstraps, txPoolAccess, false, "", nil)
+			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiHost, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
@@ -61,7 +61,6 @@ func init() {
 	createConfigCmd.Flags().StringVarP(&apiHost, "nodeHost", "s", "127.0.0.1", "API server host")
 	createConfigCmd.Flags().StringVarP(&accountKeyPath, "accountkeypath", "z", home+"/datadir/main.key", "Path of Ethereum Account Key JSON file")
 	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")
-	createConfigCmd.Flags().Int64VarP(&grpcPort, "grpcPort", "g", 28202, "GRPC Port")
 	createConfigCmd.Flags().Int64VarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")
 	createConfigCmd.Flags().StringVarP(&network, "network", "n", "russianhill", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
