@@ -350,7 +350,7 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 		var fErr error
 		// wait upto 10 seconds(hard timeout) for the host to be live
 		for i := 0; i < 10; i++ {
-			res, err := c.Get(fmt.Sprintf("https://localhost:%d/ping", h.config.GetServerPort()))
+			res, err := c.Get(fmt.Sprintf("http://localhost:%d/ping", h.config.GetServerPort()))
 			fErr = err
 			if err != nil {
 				time.Sleep(time.Second)
@@ -409,7 +409,7 @@ func (h *host) loadAccounts(e *httpexpect.Expect) error {
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
-	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
+	return createInsecureClientWithExpect(t, fmt.Sprintf("http://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.DID, error) {
