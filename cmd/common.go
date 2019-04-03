@@ -30,7 +30,16 @@ func generateKeys(config config.Configuration) {
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
-func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess bool, preCommitEnabled bool, p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses) error {
+func CreateConfig(
+	targetDataDir,
+	ethNodeURL,
+	accountKeyPath,
+	accountPassword,
+	network, apiHost string,
+	apiPort, p2pPort int64,
+	bootstraps []string,
+	txPoolAccess, preCommitEnabled bool,
+	p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses) error {
 
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
@@ -39,6 +48,7 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 		"network":           network,
 		"ethNodeURL":        ethNodeURL,
 		"bootstraps":        bootstraps,
+		"apiHost":           apiHost,
 		"apiPort":           apiPort,
 		"p2pPort":           p2pPort,
 		"p2pConnectTimeout": p2pConnectionTimeout,

@@ -489,6 +489,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
+	apiHost := args["apiHost"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -521,7 +522,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("anchoring.precommit", preCommitEnabled)
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
-	v.Set("nodeHostname", "0.0.0.0")
+	v.Set("nodeHostname", apiHost)
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
 	if p2pConnectTimeout != "" {
