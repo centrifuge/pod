@@ -60,7 +60,7 @@ func (i service) prepareTransaction(ctx context.Context, did id.DID) (contract, 
 		return nil, nil, err
 	}
 
-	opts, err := i.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
+	opts, err := i.client.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, nil, err

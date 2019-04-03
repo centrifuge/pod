@@ -4,19 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -37,9 +35,6 @@ const (
 
 	// TransactionStatusSuccess contains the flag for a successful receipt.status
 	TransactionStatusSuccess uint64 = 1
-
-	// ErrTransactionFailed error when transaction failed
-	ErrTransactionFailed = errors.Error("Transaction failed")
 )
 
 // WatchTransaction holds the transaction status received form chain event
@@ -113,7 +108,7 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 
 	accountID, ok := kwargs[TransactionAccountParam].(string)
 	if !ok {
-		return errors.New("missing account ID")
+		return errors.NewTypedError(ErrEthTransaction, errors.New("missing account ID"))
 	}
 
 	tst.accountID, err = identity.NewDIDFromString(accountID)
@@ -124,11 +119,11 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 	// parse txHash
 	txHash, ok := kwargs[TransactionTxHashParam]
 	if !ok {
-		return errors.New("undefined kwarg " + TransactionTxHashParam)
+		return errors.NewTypedError(ErrEthTransaction, errors.New("undefined kwarg "+TransactionTxHashParam))
 	}
 	tst.txHash, ok = txHash.(string)
 	if !ok {
-		return errors.New("malformed kwarg [%s]", TransactionTxHashParam)
+		return errors.NewTypedError(ErrEthTransaction, errors.New("malformed kwarg [%s]", TransactionTxHashParam))
 	}
 
 	// parse txEventName and index
@@ -136,11 +131,11 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 	if ok {
 		tst.eventName, ok = txEventName.(string)
 		if !ok {
-			return errors.New("malformed kwarg [%s]", TransactionEventName)
+			return errors.NewTypedError(ErrEthTransaction, errors.New("malformed kwarg [%s]", TransactionEventName))
 		}
 		txEventValueIdx, ok := kwargs[TransactionEventValueIdx]
 		if !ok {
-			return errors.New("undefined kwarg " + TransactionEventValueIdx)
+			return errors.NewTypedError(ErrEthTransaction, errors.New("undefined kwarg "+TransactionEventValueIdx))
 		}
 		tst.eventValueIdx, err = GetInt(txEventValueIdx)
 		if err != nil {
@@ -153,7 +148,7 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 	if ok {
 		td, err := queue.GetDuration(tdRaw)
 		if err != nil {
-			return errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error())
+			return errors.NewTypedError(ErrEthTransaction, errors.New("malformed kwarg [%s] because [%s]", queue.TimeoutParam, err.Error()))
 		}
 		tst.timeout = td
 	}
@@ -165,7 +160,7 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 func GetInt(key interface{}) (int, error) {
 	f64, ok := key.(float64)
 	if !ok {
-		return 0, errors.New("Could not parse interface to float64")
+		return 0, errors.NewTypedError(ErrEthTransaction, errors.New("Could not parse interface to float64"))
 	}
 	return int(f64), nil
 }
@@ -184,7 +179,7 @@ func (tst *TransactionStatusTask) getEventValueFromTransactionReceipt(ctx contex
 			}
 		}
 	}
-	return nil, errors.New("Event [%s] with value idx [%d] not found", event, idxValue)
+	return nil, errors.NewTypedError(ErrEthTransaction, errors.New("Event [%s] with value idx [%d] not found", event, idxValue))
 }
 
 func (tst *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, txHash string) error {
