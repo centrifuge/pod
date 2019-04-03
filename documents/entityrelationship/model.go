@@ -92,7 +92,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entity
 	return nil
 }
 
-// initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
+// initEntityRelationshipFromData initialises an EntityRelationship from RelationshipData.
 func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.RelationshipData) error {
 	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
 	if err != nil {
@@ -103,7 +103,7 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.Rela
 	return nil
 }
 
-// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf RelationShipdata.
+// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
 	dids, err := identity.BytesToDIDs(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
 	if err != nil {

@@ -9,9 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	entitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -37,7 +36,6 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	storage   storage.Repository
 	repo      documents.Repository
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
@@ -51,7 +49,6 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,
-	storage storage.Repository,
 ) Service {
 	return service{
 		repo:      repo,
@@ -59,7 +56,6 @@ func DefaultService(
 		txManager: txManager,
 		Service:   srv,
 		factory:   factory,
-		storage:   storage,
 	}
 }
 
