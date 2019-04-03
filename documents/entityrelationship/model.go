@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
+	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
@@ -34,16 +36,10 @@ type EntityRelationship struct {
 	TargetIdentity *identity.DID
 }
 
-// RelationShipdata implements the relationship fields
-type RelationShipdata struct {
-	OwnerIdentity  string
-	TargetIdentity string
-}
-
 // getClientData returns the entity relationship data from the entity relationship model
-func (e *EntityRelationship) getClientData() *RelationShipdata {
+func (e *EntityRelationship) getClientData() *entitypb2.RelationshipData {
 	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
-	return &RelationShipdata{
+	return &entitypb2.RelationshipData{
 		OwnerIdentity:  dids[0],
 		TargetIdentity: dids[1],
 	}
@@ -59,7 +55,7 @@ func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 }
 
 // InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityRelationshipInput(data *RelationShipdata) error {
+func (e *EntityRelationship) InitEntityRelationshipInput(data *entitypb2.RelationshipData) error {
 	if err := e.initEntityRelationshipFromData(data); err != nil {
 		return err
 	}
@@ -76,7 +72,7 @@ func (e *EntityRelationship) InitEntityRelationshipInput(data *RelationShipdata)
 }
 
 // PrepareNewVersion prepares new version from the old entity.
-func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *RelationShipdata, collaborators []string) error {
+func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entitypb2.RelationshipData, collaborators []string) error {
 	err := e.initEntityRelationshipFromData(data)
 	if err != nil {
 		return err
@@ -92,7 +88,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *Relati
 }
 
 // initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
-func (e *EntityRelationship) initEntityRelationshipFromData(data *RelationShipdata) error {
+func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.RelationshipData) error {
 	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
 	if err != nil {
 		return err

@@ -124,7 +124,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/entityEntityRelationshipPayload"
+              "$ref": "#/definitions/entityRelationshipPayload"
             }
           }
         ],
@@ -159,7 +159,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/entityEntityRelationshipPayload"
+              "$ref": "#/definitions/entityRelationshipPayload"
             }
           }
         ],
@@ -415,18 +415,6 @@
       },
       "title": "Entity Relationships"
     },
-    "entityEntityRelationshipPayload": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string",
-          "title": "entity identifier"
-        },
-        "target_identity": {
-          "type": "string"
-        }
-      }
-    },
     "entityEntityResponse": {
       "type": "object",
       "properties": {
@@ -501,6 +489,18 @@
         "active": {
           "type": "boolean",
           "format": "boolean"
+        }
+      }
+    },
+    "entityRelationshipPayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "entity identifier"
+        },
+        "target_identity": {
+          "type": "string"
         }
       }
     }
