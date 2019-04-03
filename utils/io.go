@@ -9,13 +9,20 @@ import (
 )
 
 // WriteKeyToPemFile writes encode of key and purpose to the file
-func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) error {
+func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) (err error) {
 	f, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
 
-	defer f.Close()
+	defer func() {
+		if err != nil {
+			return
+		}
+
+		err = f.Close()
+	}()
+
 	block := &pem.Block{
 		Type:  keyPurpose,
 		Bytes: key,
