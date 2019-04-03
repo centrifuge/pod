@@ -38,6 +38,9 @@ var AccountHeaderKey struct{}
 // ContractName is a type to indicate a contract name parameter
 type ContractName string
 
+// ContractOp is a type to indicate a contract operation name parameter
+type ContractOp string
+
 const (
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
@@ -53,11 +56,34 @@ const (
 
 	// InvoiceUnpaidNFT is the contract name for InvoiceUnpaidNFT
 	InvoiceUnpaidNFT ContractName = "invoiceUnpaid"
+
+	// IDCreate identity creation operation
+	IDCreate ContractOp = "idCreate"
+
+	// IDAddKey identity add key operation
+	IDAddKey ContractOp = "idAddKey"
+
+	// IDRevocKey identity key revocation operation
+	IDRevocKey ContractOp = "idRevocKey"
+
+	// AnchorCommit anchor commit operation
+	AnchorCommit ContractOp = "anchorCommit"
+
+	// AnchorPreCommit anchor pre-commit operation
+	AnchorPreCommit ContractOp = "anchorPreCommit"
+
+	// NftMint nft minting operation
+	NftMint ContractOp = "nftMint"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
 func ContractNames() [5]ContractName {
 	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, InvoiceUnpaidNFT}
+}
+
+// ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
+func ContractOps() [6]ContractOp {
+	return [6]ContractOp{IDCreate, IDAddKey, IDRevocKey, AnchorCommit, AnchorPreCommit, NftMint}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -92,7 +118,7 @@ type Configuration interface {
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
 	GetEthereumMaxGasPrice() *big.Int
-	GetEthereumGasLimit() uint64
+	GetEthereumGasLimit(op ContractOp) uint64
 	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
 	GetNetworkKey(k string) string
@@ -332,8 +358,8 @@ func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
 }
 
 // GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasLimit() uint64 {
-	return cast.ToUint64(c.get("ethereum.gasLimit"))
+func (c *configuration) GetEthereumGasLimit(op ContractOp) uint64 {
+	return cast.ToUint64(c.get(fmt.Sprintf("ethereum.gasLimits.%s", string(op))))
 }
 
 // GetEthereumDefaultAccountName returns the default account to use for the transaction.

@@ -130,8 +130,14 @@ ethereum:
   # maximum allowed gas price to pay for a transaction in wei
   # 20 Gwei now
   maxGasPrice: 20000000000
-  # Default gas limit
-  gasLimit: 1000000
+  # Gas limits for different Ethereum operations
+  gasLimits:
+    idCreate: 1000000
+    idAddKey: 300000
+    idRevocKey: 55000
+    anchorCommit: 85000
+    anchorPreCommit: 100000
+    nftMint: 900000
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum

@@ -31,7 +31,6 @@ var gcMu sync.RWMutex
 // Config defines functions to get ethereum details
 type Config interface {
 	GetEthereumMaxGasPrice() *big.Int
-	GetEthereumGasLimit() uint64
 	GetEthereumNodeURL() string
 	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
 	GetEthereumIntervalRetry() time.Duration
@@ -190,7 +189,7 @@ func (gc *gethClient) getGethTxOpts(ctx context.Context, accountName string) (*b
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
 	}
-	opts.GasLimit = gc.config.GetEthereumGasLimit()
+	// Note that gasLimit is must be set at a later point based on the operation performed
 	opts.Context = ctx
 	return opts, nil
 }

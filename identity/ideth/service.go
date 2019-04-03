@@ -48,10 +48,18 @@ type contract interface {
 	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
 
+func methodToOp(method string) config.ContractOp {
+	m := map[string]config.ContractOp{
+		"mint": config.NftMint,
+	}
+	return m[method]
+}
+
 type service struct {
 	client    ethereum.Client
 	txManager transactions.Manager
 	queue     *queue.Server
+	config    id.Config
 }
 
 func (i service) prepareTransaction(ctx context.Context, did id.DID) (contract, *bind.TransactOpts, error) {
@@ -98,8 +106,8 @@ func (i service) bindContract(did id.DID) (contract, error) {
 }
 
 // NewService creates a instance of the identity service
-func NewService(client ethereum.Client, txManager transactions.Manager, queue *queue.Server) id.ServiceDID {
-	return service{client: client, txManager: txManager, queue: queue}
+func NewService(client ethereum.Client, txManager transactions.Manager, queue *queue.Server, conf id.Config) id.ServiceDID {
+	return service{client: client, txManager: txManager, queue: queue, config: conf}
 }
 
 func logTxHash(tx *types.Transaction) {
@@ -119,6 +127,7 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 		return err
 	}
 
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
 	log.Info("Add key to identity contract %s", DID.ToAddress().String())
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
@@ -148,6 +157,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 		return err
 	}
 
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
@@ -175,6 +185,7 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevocKey)
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
@@ -234,7 +245,7 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) (txID id.IDTX, done chan bool, err error) {
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan bool, err error) {
 	utxID := contextutil.TX(ctx)
 	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
@@ -263,7 +274,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	if err != nil {
 		return transactions.NilTxID(), nil, err
 	}
-	return i.RawExecute(ctx, to, data)
+	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
 func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, error) {
