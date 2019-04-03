@@ -99,7 +99,7 @@ accounts:
   keystore: /tmp/accounts
 
 # Interface where the API and P2P Server listens to
-nodeHostname: 0.0.0.0
+nodeHostname: 127.0.0.1
 # Port where API Server listens to
 nodePort: 8082
 

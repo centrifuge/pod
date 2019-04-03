@@ -202,6 +202,7 @@ func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort,
 		r.accountKeyPath,
 		r.accountPassword,
 		r.network,
+		"0.0.0.0",
 		twConfigName,
 		p2pTimeout,
 		apiPort, p2pPort, bootstraps,
@@ -224,7 +225,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 }
 
 type host struct {
-	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network,
+	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
 	apiPort, p2pPort   int64
 	bootstrapNodes     []string
@@ -247,7 +248,7 @@ type host struct {
 }
 
 func newHost(
-	name, ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName, p2pTimeout string,
+	name, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string,
 	apiPort, p2pPort int64,
 	bootstraps []string,
 	txPoolAccess, createConfig, multiAccount bool,
@@ -259,6 +260,7 @@ func newHost(
 		accountKeyPath:     accountKeyPath,
 		accountPassword:    accountPassword,
 		network:            network,
+		apiHost:            apiHost,
 		apiPort:            apiPort,
 		p2pPort:            p2pPort,
 		p2pTimeout:         p2pTimeout,
@@ -273,7 +275,7 @@ func newHost(
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
 		if err != nil {
 			return err
 		}
@@ -348,7 +350,7 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 		var fErr error
 		// wait upto 10 seconds(hard timeout) for the host to be live
 		for i := 0; i < 10; i++ {
-			res, err := c.Get(fmt.Sprintf("https://localhost:%d/ping", h.config.GetServerPort()))
+			res, err := c.Get(fmt.Sprintf("http://localhost:%d/ping", h.config.GetServerPort()))
 			fErr = err
 			if err != nil {
 				time.Sleep(time.Second)
@@ -407,7 +409,7 @@ func (h *host) loadAccounts(e *httpexpect.Expect) error {
 }
 
 func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
-	return createInsecureClientWithExpect(t, fmt.Sprintf("https://localhost:%d", h.config.GetServerPort()))
+	return createInsecureClientWithExpect(t, fmt.Sprintf("http://localhost:%d", h.config.GetServerPort()))
 }
 
 func (h *host) id() (identity.DID, error) {

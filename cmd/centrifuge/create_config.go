@@ -11,14 +11,12 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var targetDataDir string
-var ethNodeURL string
-var accountKeyPath string
-var network string
-var apiPort int64
-var p2pPort int64
-var bootstraps []string
-var txPoolAccess bool
+var (
+	apiHost, targetDataDir, ethNodeURL, accountKeyPath, network string
+	apiPort, p2pPort                                            int64
+	bootstraps                                                  []string
+	txPoolAccess                                                bool
+)
 
 func init() {
 	home, err := homedir.Dir()
@@ -43,7 +41,7 @@ func init() {
 				log.Error(err)
 			}
 
-			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil)
+			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiHost, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
@@ -60,6 +58,7 @@ func init() {
 
 	createConfigCmd.Flags().StringVarP(&targetDataDir, "targetdir", "t", home+"/datadir", "Target Data Dir")
 	createConfigCmd.Flags().StringVarP(&ethNodeURL, "ethnodeurl", "e", "http://127.0.0.1:9545", "URL of Ethereum Client Node")
+	createConfigCmd.Flags().StringVarP(&apiHost, "nodeHost", "s", "127.0.0.1", "API server host")
 	createConfigCmd.Flags().StringVarP(&accountKeyPath, "accountkeypath", "z", home+"/datadir/main.key", "Path of Ethereum Account Key JSON file")
 	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")
 	createConfigCmd.Flags().Int64VarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")

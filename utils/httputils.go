@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"net"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 	"gopkg.in/resty.v1"
 )
 
@@ -16,4 +19,16 @@ func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode
 	}
 
 	return resp.StatusCode(), nil
+}
+
+// GetFreeAddrPort returns a loopback address and port that can be listened from.
+// Note: port is included in the address.
+func GetFreeAddrPort() (string, int, error) {
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return "", 0, errors.New("failed to get a random free port")
+	}
+
+	defer l.Close()
+	return l.Addr().String(), l.Addr().(*net.TCPAddr).Port, nil
 }
