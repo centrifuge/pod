@@ -10,14 +10,12 @@ import (
 
 // WriteKeyToPemFile writes encode of key and purpose to the file
 func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) error {
-	// we are going with 0622 so that when umask is applied, we will get 0600 file permission
-	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0622)
+	f, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
 
 	defer f.Close()
-
 	block := &pem.Block{
 		Type:  keyPurpose,
 		Bytes: key,
@@ -26,7 +24,7 @@ func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) error {
 		return err
 	}
 
-	return nil
+	return f.Chmod(os.FileMode(0600))
 }
 
 // ReadKeyFromPemFile reads the pem file and returns the key with matching key purpose
