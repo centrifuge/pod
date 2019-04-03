@@ -91,7 +91,7 @@ type Configuration interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
-	GetEthereumGasPrice() *big.Int
+	GetEthereumMaxGasPrice() *big.Int
 	GetEthereumGasLimit() uint64
 	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
@@ -320,9 +320,14 @@ func (c *configuration) GetEthereumMaxRetries() int {
 	return c.GetInt("ethereum.maxRetries")
 }
 
-// GetEthereumGasPrice returns the gas price to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasPrice() *big.Int {
-	return big.NewInt(cast.ToInt64(c.get("ethereum.gasPrice")))
+// GetEthereumMaxGasPrice returns the gas price to use for a ethereum transaction.
+func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
+	n := new(big.Int)
+	n, ok := n.SetString(c.GetString("ethereum.maxGasPrice"), 10)
+	if !ok {
+		log.Error("could not read ethereum.maxGasPrice")
+	}
+	return n
 }
 
 // GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
