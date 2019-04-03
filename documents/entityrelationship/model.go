@@ -1,10 +1,11 @@
 package entityrelationship
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 
-	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -12,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -55,14 +57,17 @@ func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 }
 
 // InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityRelationshipInput(data *entitypb2.RelationshipData) error {
+func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, entityID string, data *entitypb2.RelationshipData) error {
 	if err := e.initEntityRelationshipFromData(data); err != nil {
 		return err
 	}
 
-	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), documents.CollaboratorsAccess{
-		ReadWriteCollaborators: []identity.DID{*e.OwnerIdentity},
-	})
+	params := documentpb.AccessTokenParams{
+		Grantee:            data.TargetIdentity,
+		DocumentIdentifier: entityID,
+	}
+
+	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}

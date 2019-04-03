@@ -21,7 +21,7 @@ type Service interface {
 	documents.Service
 
 	// DeriverFromPayload derives Entity from clientPayload
-	DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipData) (documents.Model, error)
+	DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives entity model from update payload
 	DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error)
@@ -75,14 +75,22 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 }
 
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
-func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipData) (documents.Model, error) {
+func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error) {
 	if payload == nil {
 		return nil, documents.ErrDocumentNil
 	}
 
 	er := new(EntityRelationship)
-	err := er.InitEntityRelationshipInput(payload)
+	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
+		return nil, err
+	}
+	owner := selfDID.String()
+	rd := &entitypb.RelationshipData{
+		OwnerIdentity:  owner,
+		TargetIdentity: payload.TargetIdentity,
+	}
+	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
@@ -117,6 +125,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes and entity model and does required validation checks, tries to persist to DB
+// For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
 func (s service) Create(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -137,6 +146,7 @@ func (s service) Create(ctx context.Context, entityRelationship documents.Model)
 }
 
 // Update finds the old document, validates the new version and persists the updated document
+// For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
 // TODO
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	return nil, contextutil.TX(ctx), nil, nil
