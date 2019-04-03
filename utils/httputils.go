@@ -21,7 +21,7 @@ func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode
 	return resp.StatusCode(), nil
 }
 
-// GetFreePort returns a loopback address and port that can be listened from.
+// GetFreeAddrPort returns a loopback address and port that can be listened from.
 // Note: port is included in the address.
 func GetFreeAddrPort() (string, int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
