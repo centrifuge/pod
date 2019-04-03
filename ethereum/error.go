@@ -15,6 +15,6 @@ const (
 	// ErrEthTransaction is a generic error type to be used for Ethereum errors
 	ErrEthTransaction = errors.Error("error on ethereum tx layer")
 
-	// ErrEthUrl is used when failed to parse ethereum node URL
-	ErrEthUrl = errors.Error("failed to parse ethereum node URL")
+	// ErrEthURL is used when failed to parse ethereum node URL
+	ErrEthURL = errors.Error("failed to parse ethereum node URL")
 )

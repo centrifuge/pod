@@ -95,12 +95,12 @@ func NewGethClient(config Config) (Client, error) {
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {
-		return nil, errors.NewTypedError(ErrEthUrl, err)
+		return nil, errors.NewTypedError(ErrEthURL, err)
 	}
 
 	c, err := rpc.Dial(u.String())
 	if err != nil {
-		return nil, errors.NewTypedError(ErrEthUrl, err)
+		return nil, errors.NewTypedError(ErrEthURL, err)
 	}
 
 	return &gethClient{
