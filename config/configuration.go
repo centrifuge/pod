@@ -325,7 +325,8 @@ func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
 	n := new(big.Int)
 	n, ok := n.SetString(c.GetString("ethereum.maxGasPrice"), 10)
 	if !ok {
-		log.Error("could not read ethereum.maxGasPrice")
+		// node must not continue to run
+		log.Panic("could not read ethereum.maxGasPrice")
 	}
 	return n
 }
