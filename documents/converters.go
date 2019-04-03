@@ -332,11 +332,11 @@ func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess,
 func DeriveResponseHeader(model Model) (*documentpb.ResponseHeader, error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {
-		return nil, errors.NewTypedError(ErrFailedCollaborators, err)
+		return nil, errors.NewTypedError(ErrCollaborators, err)
 	}
 
 	rcs, wcs := ToClientCollaboratorAccess(cs)
-	// TODO(ved): we need to update log for NewCoreDocumentWithCollaborators and PrepareNewVersion
+	// TODO(ved): we need to update log for NewCoreDocumentWithCollaborators and PrepareNewVersion. Please don't do this without further discussion since this affects consensus validations.
 	//author, err := model.Author()
 	//if err != nil {
 	//	return nil, err
