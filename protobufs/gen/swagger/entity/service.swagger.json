@@ -97,6 +97,107 @@
           "DocumentService"
         ]
       }
+    },
+    "/entity/{identifier}/revoke": {
+      "post": {
+        "summary": "Entity Relation Revoke",
+        "description": "revoke an entity document share",
+        "operationId": "Revoke",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "entity identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityEntityRelationshipPayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entity/{identifier}/share": {
+      "post": {
+        "summary": "Entity Relation Share",
+        "description": "Share the entity document with others",
+        "operationId": "Share",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "entity identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityEntityRelationshipPayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entity/{identifier}/{version}": {
+      "get": {
+        "description": "Get a specific version of an entity",
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -299,6 +400,33 @@
       },
       "title": "EntityData is the default entity schema"
     },
+    "entityEntityDataResponse": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "$ref": "#/definitions/entityEntityData"
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityRelationship"
+          }
+        }
+      },
+      "title": "Entity Relationships"
+    },
+    "entityEntityRelationshipPayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "entity identifier"
+        },
+        "target_identity": {
+          "type": "string"
+        }
+      }
+    },
     "entityEntityResponse": {
       "type": "object",
       "properties": {
@@ -306,7 +434,7 @@
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/entityEntityData"
+          "$ref": "#/definitions/entityEntityDataResponse"
         }
       }
     },
@@ -361,6 +489,18 @@
         },
         "other_method": {
           "$ref": "#/definitions/entityOtherPayment"
+        }
+      }
+    },
+    "entityRelationship": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     }

@@ -21,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -72,9 +71,18 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
+func CreateRelationShipData() *RelationShipdata {
+	did, _ := identity.NewDIDFromString("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20")
+	did2, _ := identity.NewDIDFromString("0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
+	return &RelationShipdata{
+		OwnerIdentity:  did.String(),
+		TargetIdentity: did2.String(),
+	}
+}
+
 func TestEntityRelationship_PackCoreDocument(t *testing.T) {
 	er := new(EntityRelationship)
-	assert.NoError(t, er.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload()))
+	assert.NoError(t, er.InitEntityRelationshipInput(CreateRelationShipData()))
 
 	cd, err := er.PackCoreDocument()
 	assert.NoError(t, err)
@@ -83,7 +91,7 @@ func TestEntityRelationship_PackCoreDocument(t *testing.T) {
 
 func TestEntityRelationship_JSON(t *testing.T) {
 	er := new(EntityRelationship)
-	assert.NoError(t, er.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload()))
+	assert.NoError(t, er.InitEntityRelationshipInput(CreateRelationShipData()))
 
 	cd, err := er.PackCoreDocument()
 	assert.NoError(t, err)
@@ -144,24 +152,24 @@ func TestEntityRelationship_getClientData(t *testing.T) {
 
 func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	// successful init
-	data := &cliententitypb.EntityRelationshipData{
+	data := RelationShipdata{
 		OwnerIdentity:  testingidentity.GenerateRandomDID().String(),
 		TargetIdentity: testingidentity.GenerateRandomDID().String(),
 	}
 	e := new(EntityRelationship)
-	err := e.InitEntityRelationshipInput(&cliententitypb.EntityRelationshipCreatePayload{Data: data})
+	err := e.InitEntityRelationshipInput(&data)
 	assert.NoError(t, err)
 
 	// invalid did
 	e = new(EntityRelationship)
 	data.TargetIdentity = "some random string"
-	err = e.InitEntityRelationshipInput(&cliententitypb.EntityRelationshipCreatePayload{Data: data})
+	err = e.InitEntityRelationshipInput(&data)
 	assert.Contains(t, err.Error(), "malformed address provided")
 }
 
 func TestEntityRelationship_calculateDataRoot(t *testing.T) {
 	m := new(EntityRelationship)
-	err := m.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
+	err := m.InitEntityRelationshipInput(CreateRelationShipData())
 	assert.NoError(t, err)
 	m.GetTestCoreDocWithReset()
 
@@ -203,7 +211,7 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 
 func createEntityRelationship(t *testing.T) *EntityRelationship {
 	e := new(EntityRelationship)
-	err := e.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
+	err := e.InitEntityRelationshipInput(CreateRelationShipData())
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
@@ -294,7 +302,7 @@ func testRepo() documents.Repository {
 
 func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	e := new(EntityRelationship)
-	err := e.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
+	err := e.InitEntityRelationshipInput(CreateRelationShipData())
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
