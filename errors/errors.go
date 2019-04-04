@@ -156,6 +156,7 @@ func IsOfType(terr, err error) bool {
 	return err.Error() == terr.Error()
 }
 
+// Mask returns the mask for the error
 func Mask(err error) error {
 	if errt, ok := err.(TypedError); ok {
 		return errt.Mask()
