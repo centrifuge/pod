@@ -37,6 +37,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	&invoice.Bootstrapper{},
+	&entityrelationship.Bootstrapper{},
 	&entity.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
 	&nft.Bootstrapper{},

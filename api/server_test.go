@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -51,6 +53,7 @@ func TestMain(m *testing.M) {
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		&invoice.Bootstrapper{},
+		&entityrelationship.Bootstrapper{},
 		&entity.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},

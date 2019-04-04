@@ -3,6 +3,8 @@ package entity
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -39,6 +41,7 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
+	erService entityrelationship.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -48,6 +51,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,
+	erService entityrelationship.Service,
 ) Service {
 	return service{
 		repo:      repo,
@@ -55,6 +59,7 @@ func DefaultService(
 		txManager: txManager,
 		Service:   srv,
 		factory:   factory,
+		erService: erService,
 	}
 }
 
