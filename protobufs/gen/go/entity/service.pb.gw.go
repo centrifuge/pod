@@ -138,7 +138,7 @@ func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marsha
 }
 
 func request_DocumentService_Share_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EntityRelationshipPayload
+	var protoReq RelationshipPayload
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -169,7 +169,7 @@ func request_DocumentService_Share_0(ctx context.Context, marshaler runtime.Mars
 }
 
 func request_DocumentService_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EntityRelationshipPayload
+	var protoReq RelationshipPayload
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
