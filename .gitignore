@@ -11,3 +11,4 @@ coverage.txt
 *.swp
 *.swo
 testworld/hostconfigs/*
+.DS_Store
