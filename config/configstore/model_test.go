@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
@@ -41,11 +40,6 @@ func (m *mockConfig) JSON() ([]byte, error) {
 func (m *mockConfig) FromJSON(json []byte) error {
 	args := m.Called(json)
 	return args.Error(0)
-}
-
-func (m *mockConfig) CreateProtobuf() *configpb.ConfigData {
-	args := m.Called()
-	return args.Get(0).(*configpb.ConfigData)
 }
 
 func (m *mockConfig) IsSet(key string) bool {
@@ -271,26 +265,6 @@ func TestNewAccountConfig(t *testing.T) {
 	_, err := NewAccount("name", c)
 	assert.NoError(t, err)
 	c.AssertExpectations(t)
-}
-
-func TestNodeConfigProtobuf(t *testing.T) {
-	c := createMockConfig()
-	nc := NewNodeConfig(c)
-	c.AssertExpectations(t)
-
-	ncpb := nc.CreateProtobuf()
-	assert.Equal(t, nc.GetStoragePath(), ncpb.StoragePath)
-	assert.Equal(t, nc.GetServerPort(), int(ncpb.ServerPort))
-	i, err := nc.GetIdentityID()
-	assert.Nil(t, err)
-	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(ncpb.MainIdentity.IdentityId).Hex())
-
-	ncCopy := new(NodeConfig)
-	err = ncCopy.loadFromProtobuf(ncpb)
-	assert.NoError(t, err)
-	assert.Equal(t, ncpb.StoragePath, ncCopy.StoragePath)
-	assert.Equal(t, int(ncpb.ServerPort), ncCopy.ServerPort)
-	assert.Equal(t, ncpb.MainIdentity.IdentityId, common.HexToAddress(ncpb.MainIdentity.IdentityId).Hex())
 }
 
 func TestAccountProtobuf_validationFailures(t *testing.T) {
