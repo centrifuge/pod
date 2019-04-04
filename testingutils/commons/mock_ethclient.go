@@ -36,8 +36,8 @@ func (m *MockEthClient) GetNodeURL() *url.URL {
 	return args.Get(0).(*url.URL)
 }
 
-func (m *MockEthClient) GetTxOpts(accountName string) (*bind.TransactOpts, error) {
-	args := m.Called(accountName)
+func (m *MockEthClient) GetTxOpts(ctx context.Context, accountName string) (*bind.TransactOpts, error) {
+	args := m.Called(ctx, accountName)
 	return args.Get(0).(*bind.TransactOpts), args.Error(1)
 }
 

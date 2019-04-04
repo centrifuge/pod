@@ -40,6 +40,7 @@ import (
 	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
@@ -178,7 +179,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "dial attempt failed: failed to dial <peer.ID")
+		assert.Contains(t, err.Error(), "dial attempt failed: no good addresses")
 	}
 
 	// 6. handler nil response
@@ -221,7 +222,10 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstore.NewPeerstore()
+	ps := pstore.NewPeerstore(
+		pstoremem.NewKeyBook(),
+		pstoremem.NewAddrBook(),
+		pstoremem.NewPeerMetadata())
 
 	// Add the keys to the peerstore
 	// for this peer ID.

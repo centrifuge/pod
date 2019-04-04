@@ -112,6 +112,15 @@ type Model interface {
 
 	// IsDIDCollaborator returns true if the did is a collaborator of the document
 	IsDIDCollaborator(did identity.DID) (bool, error)
+
+	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
+	AddAttribute(name string, attributeType AllowedAttributeType, value string) error
+
+	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
+	GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error)
+
+	// DeleteAttribute deletes a custom attribute from the model
+	DeleteAttribute(name string) error
 }
 
 // TokenRegistry defines NFT related functions.

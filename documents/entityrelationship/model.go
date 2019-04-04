@@ -1,6 +1,7 @@
 package entityrelationship
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 
@@ -10,7 +11,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,15 +38,15 @@ type EntityRelationship struct {
 }
 
 // getClientData returns the entity relationship data from the entity relationship model
-func (e *EntityRelationship) getClientData() *cliententitypb.EntityRelationshipData {
+func (e *EntityRelationship) getClientData() *entitypb2.RelationshipData {
 	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
-	return &cliententitypb.EntityRelationshipData{
+	return &entitypb2.RelationshipData{
 		OwnerIdentity:  dids[0],
 		TargetIdentity: dids[1],
 	}
 }
 
-// createP2PProtobuf returns Centrifuge protobuf-specific EntityRelationshipData.
+// createP2PProtobuf returns Centrifuge protobuf-specific RelationShipdata.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
 	return &entitypb.EntityRelationship{
@@ -54,14 +56,17 @@ func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 }
 
 // InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityRelationshipInput(payload *cliententitypb.EntityRelationshipCreatePayload) error {
-	if err := e.initEntityRelationshipFromData(payload.Data); err != nil {
+func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, entityID string, data *entitypb2.RelationshipData) error {
+	if err := e.initEntityRelationshipFromData(data); err != nil {
 		return err
 	}
 
-	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), documents.CollaboratorsAccess{
-		ReadWriteCollaborators: []identity.DID{*e.OwnerIdentity},
-	})
+	params := documentpb.AccessTokenParams{
+		Grantee:            data.TargetIdentity,
+		DocumentIdentifier: entityID,
+	}
+
+	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -71,7 +76,7 @@ func (e *EntityRelationship) InitEntityRelationshipInput(payload *cliententitypb
 }
 
 // PrepareNewVersion prepares new version from the old entity.
-func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityRelationshipData, collaborators []string) error {
+func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entitypb2.RelationshipData, collaborators []string) error {
 	err := e.initEntityRelationshipFromData(data)
 	if err != nil {
 		return err
@@ -86,8 +91,8 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *client
 	return nil
 }
 
-// initEntityRelationshipFromData initialises an EntityRelationship from entityRelationshipData.
-func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb.EntityRelationshipData) error {
+// initEntityRelationshipFromData initialises an EntityRelationship from RelationshipData.
+func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.RelationshipData) error {
 	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
 	if err != nil {
 		return err
@@ -97,7 +102,7 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *cliententitypb
 	return nil
 }
 
-// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf EntityRelationshipData.
+// loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
 	dids, err := identity.BytesToDIDs(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
 	if err != nil {
@@ -191,13 +196,13 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 	return t, nil
 }
 
-// CreateNFTProofs creates proofs specific to NFT minting. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
+// CreateNFTProofs is not implemented for EntityRelationship.
 func (e *EntityRelationship) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
-	panic(documents.ErrNotImplemented)
+	return nil, documents.ErrNotImplemented
 }
 
 // CreateProofs generates proofs for given fields.
@@ -210,14 +215,14 @@ func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.P
 	return e.CoreDocument.CreateProofs(e.DocumentType(), tree, fields)
 }
 
-// DocumentType returns the entity relationship document type. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
+// DocumentType returns the entity relationship document type.
 func (*EntityRelationship) DocumentType() string {
 	return documenttypes.EntityRelationshipDocumentTypeUrl
 }
 
-// AddNFT adds NFT to the EntityRelationship.
+// AddNFT is not implemented for EntityRelationship
 func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
-	panic(documents.ErrNotImplemented)
+	return documents.ErrNotImplemented
 }
 
 // CalculateSigningRoot calculates the signing root of the document.

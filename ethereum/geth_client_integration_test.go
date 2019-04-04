@@ -3,23 +3,23 @@
 package ethereum_test
 
 import (
+	"context"
+	"math/big"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
@@ -93,8 +93,22 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 	}
 }
 
-func TestNewGethClient(t *testing.T) {
+func TestGethClient_GetTxOpts(t *testing.T) {
 	gc, err := ethereum.NewGethClient(cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, gc)
+
+	opts, err := gc.GetTxOpts(context.Background(), "main")
+	assert.NoError(t, err)
+	assert.True(t, opts.GasPrice.Cmp(big.NewInt(20000000000)) == 0)
+
+	cfg.Set("ethereum.maxGasPrice", 10000000000)
+	gc, err = ethereum.NewGethClient(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, gc)
+	opts, err = gc.GetTxOpts(context.Background(), "main")
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "is greater than max allowed")
+	}
+	assert.True(t, opts == nil)
 }

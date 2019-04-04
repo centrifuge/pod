@@ -15,16 +15,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
@@ -39,7 +41,8 @@ import (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var (
-	did = testingidentity.GenerateRandomDID()
+	did      = testingidentity.GenerateRandomDID()
+	entityID = hexutil.Encode(utils.RandomSlice(32))
 )
 
 func TestMain(m *testing.M) {
@@ -72,18 +75,59 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
+func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	selfDID, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
+	return &entitypb.RelationshipData{
+		OwnerIdentity:  selfDID.String(),
+		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
+	}
+}
+
+type mockAnchorRepo struct {
+	mock.Mock
+	anchors.AnchorRepository
+}
+
+func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+	args := r.Called(anchorID)
+	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
+	return docRoot, args.Error(1)
+}
+
 func TestEntityRelationship_PackCoreDocument(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	er := new(EntityRelationship)
-	assert.NoError(t, er.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload()))
+	assert.NoError(t, er.InitEntityRelationshipInput(ctxh, entityID, CreateRelationshipData(t)))
 
 	cd, err := er.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
 }
 
+func TestEntityRelationship_PrepareNewVersion(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	selfDID, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
+
+	m, _ := createCDWithEmbeddedEntityRelationship(t)
+	old := m.(*EntityRelationship)
+	data := &entitypb.RelationshipData{
+		OwnerIdentity:  selfDID.String(),
+		TargetIdentity: "random string",
+	}
+	err = old.PrepareNewVersion(old, data, nil)
+	assert.Error(t, err)
+
+	err = old.PrepareNewVersion(old, CreateRelationshipData(t), nil)
+	assert.NoError(t, err)
+}
+
 func TestEntityRelationship_JSON(t *testing.T) {
 	er := new(EntityRelationship)
-	assert.NoError(t, er.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload()))
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	assert.NoError(t, er.InitEntityRelationshipInput(ctxh, entityID, CreateRelationshipData(t)))
 
 	cd, err := er.PackCoreDocument()
 	assert.NoError(t, err)
@@ -131,37 +175,41 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 }
 
 func TestEntityRelationship_getClientData(t *testing.T) {
-	entityRelationshipData := testingdocuments.CreateEntityRelationshipData()
+	entityRelationship := testingdocuments.CreateRelationship()
 	er := new(EntityRelationship)
-	err := er.loadFromP2PProtobuf(&entityRelationshipData)
+	err := er.loadFromP2PProtobuf(entityRelationship)
 	assert.NoError(t, err)
 
 	data := er.getClientData()
-	assert.NotNil(t, data, "entity data should not be nil")
+	assert.NotNil(t, data, "entity relationship data should not be nil")
 	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
 	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())
 }
 
 func TestEntityRelationship_InitEntityInput(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	selfDID, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
 	// successful init
-	data := &cliententitypb.EntityRelationshipData{
-		OwnerIdentity:  testingidentity.GenerateRandomDID().String(),
+	data := &entitypb.RelationshipData{
+		OwnerIdentity:  selfDID.String(),
 		TargetIdentity: testingidentity.GenerateRandomDID().String(),
 	}
 	e := new(EntityRelationship)
-	err := e.InitEntityRelationshipInput(&cliententitypb.EntityRelationshipCreatePayload{Data: data})
+	err = e.InitEntityRelationshipInput(ctxh, entityID, data)
 	assert.NoError(t, err)
 
 	// invalid did
 	e = new(EntityRelationship)
 	data.TargetIdentity = "some random string"
-	err = e.InitEntityRelationshipInput(&cliententitypb.EntityRelationshipCreatePayload{Data: data})
+	err = e.InitEntityRelationshipInput(ctxh, entityID, data)
 	assert.Contains(t, err.Error(), "malformed address provided")
 }
 
 func TestEntityRelationship_calculateDataRoot(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	m := new(EntityRelationship)
-	err := m.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
+	err := m.InitEntityRelationshipInput(ctxh, entityID, CreateRelationshipData(t))
 	assert.NoError(t, err)
 	m.GetTestCoreDocWithReset()
 
@@ -202,8 +250,9 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 }
 
 func createEntityRelationship(t *testing.T) *EntityRelationship {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	e := new(EntityRelationship)
-	err := e.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
+	err := e.InitEntityRelationshipInput(ctxh, entityID, CreateRelationshipData(t))
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
@@ -244,10 +293,9 @@ func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	er := createEntityRelationship(t)
 	id1, err := identity.NewDIDFromString("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20")
 	assert.NoError(t, err)
-	id2 := testingidentity.GenerateRandomDID()
 
 	// wrong type
-	err = er.CollaboratorCanUpdate(new(mockModel), id2)
+	err = er.CollaboratorCanUpdate(new(mockModel), id1)
 	assert.Error(t, err)
 
 	// update doc
@@ -258,11 +306,14 @@ func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	// attempted updater is not owner of the relationship
 	oldRelationship := model.(*EntityRelationship)
 	assert.NoError(t, err)
-	err = er.CollaboratorCanUpdate(oldRelationship, id2)
+	err = er.CollaboratorCanUpdate(oldRelationship, id1)
 	assert.Contains(t, err.Error(), "identity attempting to update the document does not own this entity relationship")
 
 	// attempted updater is owner of the relationship
-	err = er.CollaboratorCanUpdate(oldRelationship, id1)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	selfDID, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
+	err = er.CollaboratorCanUpdate(oldRelationship, selfDID)
 	assert.NoError(t, err)
 }
 
@@ -293,8 +344,9 @@ func testRepo() documents.Repository {
 }
 
 func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	e := new(EntityRelationship)
-	err := e.InitEntityRelationshipInput(testingdocuments.CreateEntityRelationshipPayload())
+	err := e.InitEntityRelationshipInput(ctxh, entityID, CreateRelationshipData(t))
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()

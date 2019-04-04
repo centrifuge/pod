@@ -270,8 +270,8 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	r, err = eSrv.DeriveEntityResponse(entity)
 	assert.NoError(t, err)
 	payload := testingdocuments.CreateEntityPayload()
-	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Contacts[0].Name)
-	assert.Equal(t, payload.Data.LegalName, r.Data.LegalName)
+	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)
+	assert.Equal(t, payload.Data.LegalName, r.Data.Entity.LegalName)
 	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
 }
 
