@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"

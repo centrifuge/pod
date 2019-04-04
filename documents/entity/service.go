@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
