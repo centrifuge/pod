@@ -63,8 +63,8 @@ const (
 	// IDAddKey identity add key operation
 	IDAddKey ContractOp = "idAddKey"
 
-	// IDRevocKey identity key revocation operation
-	IDRevocKey ContractOp = "idRevocKey"
+	// IDRevokeKey identity key revocation operation
+	IDRevokeKey ContractOp = "idRevokeKey"
 
 	// AnchorCommit anchor commit operation
 	AnchorCommit ContractOp = "anchorCommit"
@@ -83,7 +83,7 @@ func ContractNames() [5]ContractName {
 
 // ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
 func ContractOps() [6]ContractOp {
-	return [6]ContractOp{IDCreate, IDAddKey, IDRevocKey, AnchorCommit, AnchorPreCommit, NftMint}
+	return [6]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint}
 }
 
 // Configuration defines the methods that a config type should implement.

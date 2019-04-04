@@ -187,7 +187,7 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
-	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevocKey)
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevokeKey)
 	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {

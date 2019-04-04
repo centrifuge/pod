@@ -2,9 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"io"
-	"io/ioutil"
 	"math/big"
 	"net/url"
 	"reflect"
@@ -20,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -85,15 +81,12 @@ type gethClient struct {
 	client    *ethclient.Client
 	rpcClient *rpc.Client
 	host      *url.URL
+	accounts  map[string]*bind.TransactOpts
+	accMu     sync.Mutex // accMu to protect accounts
 	config    Config
 
 	// txMu to ensure one transaction at a time per client
 	txMu sync.Mutex
-
-	// privKeys is the private key cache for eth accounts that have already been read and decrypted
-	privKeys map[string]*ecdsa.PrivateKey
-	// privKeyMu is a lock to protect the privKeys map
-	privKeyMu sync.Mutex
 }
 
 // NewGethClient returns an gethClient which implements Client
@@ -113,10 +106,10 @@ func NewGethClient(config Config) (Client, error) {
 		client:    ethclient.NewClient(c),
 		rpcClient: c,
 		host:      u,
+		accounts:  make(map[string]*bind.TransactOpts),
 		txMu:      sync.Mutex{},
 		config:    config,
-		privKeys:  make(map[string]*ecdsa.PrivateKey),
-		privKeyMu: sync.Mutex{},
+		accMu:     sync.Mutex{},
 	}, nil
 }
 
@@ -142,60 +135,37 @@ func (gc *gethClient) defaultReadContext() (ctx context.Context, cancelFunc cont
 }
 
 // GetTxOpts returns a cached options if available else creates and returns new options
-func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (*bind.TransactOpts, error) {
-	privKey, err := gc.getPrivKey(accountName)
+// TODO change upstream context in NFT or tx manager instead of passing background context internally
+func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *bind.TransactOpts, err error) {
+	gc.accMu.Lock()
+	defer gc.accMu.Unlock()
+
+	if opts, ok := gc.accounts[accountName]; ok {
+		return gc.copyOpts(context.Background(), opts)
+	}
+
+	txOpts, err := gc.getGethTxOpts(accountName)
 	if err != nil {
 		return nil, err
 	}
 
-	opts := bind.NewKeyedTransactor(privKey)
+	gc.accounts[accountName] = txOpts
+	return gc.copyOpts(context.Background(), txOpts)
+}
+
+// copyOpts copies tx opts each time to avoid any race conditions when modifying, for example gasLimit
+func (gc *gethClient) copyOpts(ctx context.Context, original *bind.TransactOpts) (nOpts *bind.TransactOpts, err error) {
+	nOpts = &bind.TransactOpts{
+		From:   original.From,
+		Signer: original.Signer,
+	}
+	nOpts.GasPrice, err = gc.getOptimalGasPrice(ctx) // use oracle
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
 	}
-
-	opts.GasPrice, err = gc.getOptimalGasPrice(context.Background()) // use oracle
-	if err != nil {
-		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
-	}
-
 	// Note that gasLimit is must be set at a later point based on the operation performed
-	opts.Context = context.Background()
-	return opts, nil
-}
-
-// getPrivKey gets the priv key for the account
-func (gc *gethClient) getPrivKey(accountName string) (*ecdsa.PrivateKey, error) {
-	account, err := gc.config.GetEthereumAccount(accountName)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to get ethereum account: %v", err))
-	}
-
-	gc.privKeyMu.Lock()
-	defer gc.privKeyMu.Unlock()
-	privKey, ok := gc.privKeys[accountName]
-	if !ok {
-		privKey, err = readKey(strings.NewReader(account.Key), account.Password)
-		if err != nil {
-			return nil, err
-		}
-		gc.privKeys[accountName] = privKey
-	}
-
-	return privKey, nil
-}
-
-// readKey reads and decrypts a private key
-func readKey(keyin io.Reader, passphrase string) (*ecdsa.PrivateKey, error) {
-	json, err := ioutil.ReadAll(keyin)
-	if err != nil {
-		return nil, err
-	}
-
-	key, err := keystore.DecryptKey(json, passphrase)
-	if err != nil {
-		return nil, err
-	}
-	return key.PrivateKey, nil
+	nOpts.Context = ctx
+	return nOpts, nil
 }
 
 // GetEthClient returns the ethereum client
@@ -220,7 +190,7 @@ func (gc *gethClient) TransactionReceipt(ctx context.Context, txHash common.Hash
 
 // getGethTxOpts retrieves the geth transaction options for the given account name. The account name influences which configuration
 // is used.
-func (gc *gethClient) getGethTxOpts(ctx context.Context, accountName string) (*bind.TransactOpts, error) {
+func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, error) {
 	account, err := gc.config.GetEthereumAccount(accountName)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to get ethereum account: %v", err))
@@ -230,13 +200,6 @@ func (gc *gethClient) getGethTxOpts(ctx context.Context, accountName string) (*b
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
 	}
-
-	opts.GasPrice, err = gc.getOptimalGasPrice(ctx) // use oracle
-	if err != nil {
-		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
-	}
-	// Note that gasLimit is must be set at a later point based on the operation performed
-	opts.Context = context.Background()
 	return opts, nil
 }
 
