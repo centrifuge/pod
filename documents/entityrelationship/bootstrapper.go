@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	// BootstrappedEntityHandler maps to grpc handler for entities
-	BootstrappedEntityrelationService string = "BootstrappedEntityrelationService"
+	// BootstrappedEntityRelationshipService maps to the service for entity relationships
+	BootstrappedEntityRelationshipService string = "BootstrappedEntityRelationshipService"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -31,13 +31,17 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document service not initialised")
 	}
 
-	repo, ok := ctx[documents.BootstrappedDocumentRepository].(storage.Repository)
+	db, ok := ctx[storage.BootstrappedDB].(storage.Repository)
+	if !ok {
+		return errors.New("storage repository not initialised")
+	}
+
+	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
 	if !ok {
 		return errors.New("document db repository not initialised")
 	}
 
-	entityRepo := newDBRepository(repo)
-
+	entityRepo := newDBRepository(db, repo)
 	repo.Register(&EntityRelationship{})
 
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
@@ -61,12 +65,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		entityRepo,
 		queueSrv, txManager, factory)
 
-	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
+	err := registry.Register(documenttypes.EntityRelationshipDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register entity service: %v", err)
 	}
 
-	ctx[BootstrappedEntityrelationService] = srv
+	ctx[BootstrappedEntityRelationshipService] = srv
 
 	return nil
 }

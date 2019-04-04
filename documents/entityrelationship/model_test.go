@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -218,6 +220,18 @@ func TestEntityRelationship_calculateDataRoot(t *testing.T) {
 	assert.False(t, utils.IsEmptyByteSlice(dr))
 }
 
+func TestEntityRelationship_AddNFT(t *testing.T) {
+	m := new(EntityRelationship)
+	err := m.AddNFT(true, common.Address{}, nil)
+	assert.Error(t, err)
+}
+
+func TestEntityRelationship_CreateNFTProofs(t *testing.T) {
+	m := new(EntityRelationship)
+	_, err := m.CreateNFTProofs(did, common.Address{}, utils.RandomSlice(32), true, true)
+	assert.Error(t, err)
+}
+
 func TestEntityRelationship_CreateProofs(t *testing.T) {
 	e := createEntityRelationship(t)
 	rk := e.Document.Roles[0].RoleKey
@@ -330,6 +344,7 @@ func (m *mockModel) ID() []byte {
 }
 
 var testRepoGlobal repository
+var testDocRepoGlobal documents.Repository
 
 func testEntityRepo() repository {
 	if testRepoGlobal == nil {
@@ -338,24 +353,27 @@ func testEntityRepo() repository {
 			panic(err)
 		}
 		db := leveldb.NewLevelDBRepository(ldb)
-		testRepoGlobal = newDBRepository(db)
+		if testDocRepoGlobal == nil {
+			testDocRepoGlobal = documents.NewDBRepository(db)
+		}
+		testRepoGlobal = newDBRepository(db, testDocRepoGlobal)
 		testRepoGlobal.Register(&EntityRelationship{})
 	}
 	return testRepoGlobal
 }
 
-func testRepoDoc() documents.Repository {
-	var testRepoDoc documents.Repository
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		testRepoDoc := documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-		testRepoDoc.Register(&EntityRelationship{})
-	}
-	return testRepoDoc
-}
+//func testRepoDoc() documents.Repository {
+//	var testRepoDoc documents.Repository
+//	if testRepoGlobal == nil {
+//		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+//		if err != nil {
+//			panic(err)
+//		}
+//		testRepoDoc := documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+//		testRepoDoc.Register(&EntityRelationship{})
+//	}
+//	return testRepoDoc
+//}
 
 func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)

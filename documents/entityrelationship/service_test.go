@@ -32,9 +32,8 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(testingcommons.MockIdentityFactory)
 	entityRepo := testEntityRepo()
-	testRepoDoc := testRepoDoc()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(testRepoDoc, mockAnchor, documents.NewServiceRegistry(), &idService)
+	docSrv := documents.DefaultService(entityRepo, mockAnchor, documents.NewServiceRegistry(), &idService)
 	return idService, idFactory, DefaultService(
 		docSrv,
 		entityRepo,

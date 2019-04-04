@@ -23,9 +23,9 @@ type repo struct {
 }
 
 // newDBRepository creates instance of Config repository
-func newDBRepository(db storage.Repository) repository {
-	r :=  &repo{db: db}
-	r.Repository = documents.NewDBRepository(db)
+func newDBRepository(db storage.Repository, docRepo documents.Repository) repository {
+	r := &repo{db: db}
+	r.Repository = docRepo
 	return r
 }
 

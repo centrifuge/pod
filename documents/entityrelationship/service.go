@@ -2,7 +2,6 @@ package entityrelationship
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/storage"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -202,7 +201,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	if payload == nil {
 		return nil, documents.ErrDocumentNil
 	}
-
+	return nil, nil
 	// get latest old version of the document
 }
 

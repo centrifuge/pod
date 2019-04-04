@@ -58,7 +58,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity factory not initialised")
 	}
 
-	erService, ok := ctx[entityrelationship.BootstrappedEntityrelationService].(entityrelationship.Service)
+	erService, ok := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
 	if !ok {
 		return errors.New("entity relation service not initialised")
 	}
