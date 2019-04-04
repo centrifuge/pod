@@ -452,6 +452,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 	return ncd, nil
 }
 
+// DeleteAccessToken deletes an access token on the Document
 func (cd *CoreDocument) DeleteAccessToken(ctx context.Context, granteeID string) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
 	if err != nil {
