@@ -255,6 +255,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte,
 	if err != nil {
 		return transactions.NilTxID(), nil, err
 	}
+	opts.GasLimit = gasLimit
 
 	// default: no ether should be send
 	value := big.NewInt(0)

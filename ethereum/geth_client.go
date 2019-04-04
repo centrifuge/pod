@@ -81,8 +81,6 @@ type gethClient struct {
 	client    *ethclient.Client
 	rpcClient *rpc.Client
 	host      *url.URL
-	accounts  map[string]*bind.TransactOpts
-	accMu     sync.Mutex // accMu to protect accounts
 	config    Config
 
 	// txMu to ensure one transaction at a time per client
@@ -106,9 +104,7 @@ func NewGethClient(config Config) (Client, error) {
 		client:    ethclient.NewClient(c),
 		rpcClient: c,
 		host:      u,
-		accounts:  make(map[string]*bind.TransactOpts),
 		txMu:      sync.Mutex{},
-		accMu:     sync.Mutex{},
 		config:    config,
 	}, nil
 }
@@ -136,19 +132,11 @@ func (gc *gethClient) defaultReadContext() (ctx context.Context, cancelFunc cont
 
 // GetTxOpts returns a cached options if available else creates and returns new options
 func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (*bind.TransactOpts, error) {
-	gc.accMu.Lock()
-	defer gc.accMu.Unlock()
-
-	if opts, ok := gc.accounts[accountName]; ok {
-		return opts, nil
-	}
-
 	txOpts, err := gc.getGethTxOpts(ctx, accountName)
 	if err != nil {
 		return nil, err
 	}
 
-	gc.accounts[accountName] = txOpts
 	return txOpts, nil
 }
 

@@ -34,7 +34,7 @@ func initIdentity() id.ServiceDID {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	return NewService(client, txManager, queue, nil)
+	return NewService(client, txManager, queue, cfg)
 }
 
 func getTestDIDContext(t *testing.T, did id.DID) context.Context {
