@@ -3,6 +3,7 @@ package entityrelationship
 import (
 	"context"
 
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -36,7 +37,7 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      documents.Repository
+	repo      repository
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
@@ -45,7 +46,7 @@ type service struct {
 // DefaultService returns the default implementation of the service.
 func DefaultService(
 	srv documents.Service,
-	repo documents.Repository,
+	repo repository,
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,

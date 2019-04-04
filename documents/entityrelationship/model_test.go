@@ -299,12 +299,12 @@ func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, err)
 
 	// update doc
-	assert.NoError(t, testRepo().Create(id1[:], er.CurrentVersion(), er))
-	model, err := testRepo().Get(id1[:], er.CurrentVersion())
+	assert.NoError(t, testEntityRepo().Create(id1[:], er.CurrentVersion(), er))
+	model, err := testEntityRepo().Get(id1[:], er.CurrentVersion())
 	assert.NoError(t, err)
 
 	// attempted updater is not owner of the relationship
-	oldRelationship := model.(*EntityRelationship)
+	oldRelationship := model
 	assert.NoError(t, err)
 	err = er.CollaboratorCanUpdate(oldRelationship, id1)
 	assert.Contains(t, err.Error(), "identity attempting to update the document does not own this entity relationship")
@@ -329,18 +329,32 @@ func (m *mockModel) ID() []byte {
 	return id
 }
 
-var testRepoGlobal documents.Repository
+var testRepoGlobal repository
 
-func testRepo() documents.Repository {
+func testEntityRepo() repository {
 	if testRepoGlobal == nil {
 		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
 		if err != nil {
 			panic(err)
 		}
-		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+		db := leveldb.NewLevelDBRepository(ldb)
+		testRepoGlobal = newDBRepository(db)
 		testRepoGlobal.Register(&EntityRelationship{})
 	}
 	return testRepoGlobal
+}
+
+func testRepoDoc() documents.Repository {
+	var testRepoDoc documents.Repository
+	if testRepoGlobal == nil {
+		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+		if err != nil {
+			panic(err)
+		}
+		testRepoDoc := documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+		testRepoDoc.Register(&EntityRelationship{})
+	}
+	return testRepoDoc
 }
 
 func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {

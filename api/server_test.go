@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"os"
 	"sync"
 	"testing"
@@ -51,6 +52,7 @@ func TestMain(m *testing.M) {
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		&invoice.Bootstrapper{},
+		&entityrelationship.Bootstrapper{},
 		&entity.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},
