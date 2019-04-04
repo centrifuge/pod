@@ -109,6 +109,9 @@ type Model interface {
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
 	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
+
+	// IsDIDCollaborator returns true if the did is a collaborator of the document
+	IsDIDCollaborator(did identity.DID) (bool, error)
 }
 
 // TokenRegistry defines NFT related functions.

@@ -225,26 +225,6 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 	return s.get(ctx, documentID, version)
 }
 
-// isDIDaCollaborator returns true if the did is a collaborator of the document
-func (s service) isDIDaCollaborator(ctx context.Context, did identity.DID, model documents.Model) (bool, error) {
-	collAccess, err := model.GetCollaborators()
-	if err != nil {
-		return false, err
-	}
-
-	for _, d := range collAccess.ReadWriteCollaborators {
-		if d == did {
-			return true, nil
-		}
-	}
-	for _, d := range collAccess.ReadCollaborators {
-		if d == did {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -264,7 +244,8 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		if err != nil {
 			return nil, err
 		}
-		isCollaborator, err = s.isDIDaCollaborator(ctx, selfDID, entity)
+
+		isCollaborator, err = entity.IsDIDCollaborator(selfDID)
 		if err != nil {
 			return nil, err
 		}
