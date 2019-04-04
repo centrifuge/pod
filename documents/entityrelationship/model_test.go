@@ -362,19 +362,6 @@ func testEntityRepo() repository {
 	return testRepoGlobal
 }
 
-//func testRepoDoc() documents.Repository {
-//	var testRepoDoc documents.Repository
-//	if testRepoGlobal == nil {
-//		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-//		if err != nil {
-//			panic(err)
-//		}
-//		testRepoDoc := documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-//		testRepoDoc.Register(&EntityRelationship{})
-//	}
-//	return testRepoDoc
-//}
-
 func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	e := new(EntityRelationship)
