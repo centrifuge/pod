@@ -201,6 +201,22 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	if payload == nil {
 		return nil, documents.ErrDocumentNil
 	}
+
+	eID, err := hexutil.Decode(payload.Identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	did, err := identity.StringsToDIDs(payload.TargetIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := s.repo.Find(eID, *did[0])
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 	// get latest old version of the document
 }
