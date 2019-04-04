@@ -153,7 +153,7 @@ func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (*bind.
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
 	}
 
-	opts.GasPrice, err = gc.getOptimalGasPrice(ctx) // use oracle
+	opts.GasPrice, err = gc.getOptimalGasPrice(context.Background()) // use oracle
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
 	}
