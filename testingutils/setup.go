@@ -10,7 +10,6 @@ import (
 	"path"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	logging "github.com/ipfs/go-log"
 	"github.com/savaki/jq"
@@ -158,7 +157,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
-	RunSmartContractMigrations()
+	//RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

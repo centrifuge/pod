@@ -185,7 +185,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 
 	err = srv.docSrv.ReceiveAnchoredDocument(ctx, model, collaborator)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, errors.Mask(err).Error())
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
 	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
