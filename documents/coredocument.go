@@ -663,3 +663,23 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 	}
 	return nil
 }
+
+// IsDIDCollaborator returns true if the did is a collaborator of the document
+func (cd *CoreDocument) IsDIDCollaborator(did identity.DID) (bool, error) {
+	collAccess, err := cd.GetCollaborators()
+	if err != nil {
+		return false, err
+	}
+
+	for _, d := range collAccess.ReadWriteCollaborators {
+		if d == did {
+			return true, nil
+		}
+	}
+	for _, d := range collAccess.ReadCollaborators {
+		if d == did {
+			return true, nil
+		}
+	}
+	return false, nil
+}

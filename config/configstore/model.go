@@ -15,9 +15,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/duration"
 )
 
 // ErrNilParameter used as nil parameter type
@@ -292,6 +294,45 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, nc)
 }
 
+// CreateProtobuf creates protobuf for config
+func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
+	return &configpb.ConfigData{
+		MainIdentity: &accountpb.AccountData{
+			EthAccount: &accountpb.EthereumAccount{
+				Address:  common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
+				Key:      nc.MainIdentity.EthereumAccount.Key,
+				Password: nc.MainIdentity.EthereumAccount.Password,
+			},
+			EthDefaultAccountName:            nc.MainIdentity.EthereumDefaultAccountName,
+			IdentityId:                       common.BytesToAddress(nc.MainIdentity.IdentityID).Hex(),
+			ReceiveEventNotificationEndpoint: nc.MainIdentity.ReceiveEventNotificationEndpoint,
+			SigningKeyPair: &accountpb.KeyPair{
+				Pub: nc.MainIdentity.SigningKeyPair.Pub,
+				Pvt: nc.MainIdentity.SigningKeyPair.Priv,
+			},
+		},
+		StoragePath:               nc.StoragePath,
+		P2PPort:                   int32(nc.P2PPort),
+		P2PExternalIp:             nc.P2PExternalIP,
+		P2PConnectionTimeout:      &duration.Duration{Seconds: int64(nc.P2PConnectionTimeout.Seconds())},
+		ServerPort:                int32(nc.ServerPort),
+		ServerAddress:             nc.ServerAddress,
+		NumWorkers:                int32(nc.NumWorkers),
+		WorkerWaitTimeMs:          int32(nc.WorkerWaitTimeMS),
+		EthContextReadWaitTimeout: &duration.Duration{Seconds: int64(nc.EthereumContextReadWaitTimeout.Seconds())},
+		EthContextWaitTimeout:     &duration.Duration{Seconds: int64(nc.EthereumContextWaitTimeout.Seconds())},
+		EthIntervalRetry:          &duration.Duration{Seconds: int64(nc.EthereumIntervalRetry.Seconds())},
+		EthGasPrice:               nc.EthereumMaxGasPrice.Uint64(),
+		EthGasLimit:               0,
+		TxPoolEnabled:             nc.TxPoolAccessEnabled,
+		Network:                   nc.NetworkString,
+		NetworkId:                 nc.NetworkID,
+		PprofEnabled:              nc.PprofEnabled,
+		SmartContractAddresses:    convertAddressesToStringMap(nc.SmartContractAddresses),
+		SmartContractBytecode:     convertBytecodeToStringMap(nc.SmartContractBytecode),
+	}
+}
+
 func convertAddressesToStringMap(addresses map[config.ContractName]common.Address) map[string]string {
 	m := make(map[string]string)
 	for k, v := range addresses {
@@ -306,6 +347,55 @@ func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string
 		m[string(k)] = v
 	}
 	return m
+}
+
+func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
+	identityID := common.HexToAddress(data.MainIdentity.IdentityId).Bytes()
+
+	nc.MainIdentity = Account{
+		EthereumAccount: &config.AccountConfig{
+			Address:  data.MainIdentity.EthAccount.Address,
+			Key:      data.MainIdentity.EthAccount.Key,
+			Password: data.MainIdentity.EthAccount.Password,
+		},
+		EthereumDefaultAccountName:       data.MainIdentity.EthDefaultAccountName,
+		IdentityID:                       identityID,
+		ReceiveEventNotificationEndpoint: data.MainIdentity.ReceiveEventNotificationEndpoint,
+		SigningKeyPair: KeyPair{
+			Pub:  data.MainIdentity.SigningKeyPair.Pub,
+			Priv: data.MainIdentity.SigningKeyPair.Pvt,
+		},
+	}
+	nc.StoragePath = data.StoragePath
+	nc.P2PPort = int(data.P2PPort)
+	nc.P2PExternalIP = data.P2PExternalIp
+	nc.P2PConnectionTimeout = time.Duration(data.P2PConnectionTimeout.Seconds)
+	nc.ServerPort = int(data.ServerPort)
+	nc.ServerAddress = data.ServerAddress
+	nc.NumWorkers = int(data.NumWorkers)
+	nc.WorkerWaitTimeMS = int(data.WorkerWaitTimeMs)
+	nc.EthereumNodeURL = data.EthNodeUrl
+	nc.EthereumContextReadWaitTimeout = time.Duration(data.EthContextReadWaitTimeout.Seconds)
+	nc.EthereumContextWaitTimeout = time.Duration(data.EthContextWaitTimeout.Seconds)
+	nc.EthereumIntervalRetry = time.Duration(data.EthIntervalRetry.Seconds)
+	nc.EthereumMaxRetries = int(data.EthMaxRetries)
+	nc.EthereumMaxGasPrice = big.NewInt(int64(data.EthGasPrice))
+	nc.EthereumGasLimits = nil
+	nc.TxPoolAccessEnabled = data.TxPoolEnabled
+	nc.NetworkString = data.Network
+	nc.BootstrapPeers = data.BootstrapPeers
+	nc.NetworkID = data.NetworkId
+	var err error
+	nc.SmartContractAddresses, err = convertStringMapToSmartContractAddresses(data.SmartContractAddresses)
+	if err != nil {
+		return err
+	}
+	nc.SmartContractBytecode, err = convertStringMapToSmartContractBytecode(data.SmartContractBytecode)
+	if err != nil {
+		return err
+	}
+	nc.PprofEnabled = data.PprofEnabled
+	return nil
 }
 
 func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[config.ContractName]common.Address, error) {

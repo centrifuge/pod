@@ -156,12 +156,12 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 	return resp, nil
 }
 
-func (h *grpcHandler) Share(ctx context.Context, payload *cliententitypb.EntityRelationshipPayload) (*cliententitypb.EntityResponse, error) {
+func (h *grpcHandler) Share(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
 	//TODO not implmented yet
 	return nil, nil
 }
 
-func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.EntityRelationshipPayload) (*cliententitypb.EntityResponse, error) {
+func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
 	//TODO not implmented yet
 	return nil, nil
 }
