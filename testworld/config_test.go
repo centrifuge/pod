@@ -11,14 +11,8 @@ func TestConfig_Happy(t *testing.T) {
 	t.Parallel()
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	// check charlies node config
-	res := getNodeConfig(charlie.httpExpect, charlie.id.String(), http.StatusOK)
-	accountID := res.Value("main_identity").Path("$.identity_id").String().NotEmpty()
-
-	accountID.Equal(charlie.id.String())
-
 	// check charlies main account
-	res = getAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK, charlie.id.String())
+	res := getAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK, charlie.id.String())
 	accountID2 := res.Value("identity_id").String().NotEmpty()
 	accountID2.Equal(charlie.id.String())
 

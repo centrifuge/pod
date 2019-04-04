@@ -20,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
@@ -138,9 +137,6 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
-
-	// CreateProtobuf creates protobuf
-	CreateProtobuf() *configpb.ConfigData
 }
 
 // Account exposes account options
@@ -196,10 +192,6 @@ func (c *configuration) JSON() ([]byte, error) {
 
 func (c *configuration) FromJSON(json []byte) error {
 	panic("irrelevant, configuration#FromJSON must not be used")
-}
-
-func (c *configuration) CreateProtobuf() *configpb.ConfigData {
-	panic("irrelevant, configuration#CreateProtobuf must not be used")
 }
 
 // AccountConfig holds the account details.
