@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/healthcheck"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
@@ -86,13 +85,6 @@ func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.Invo
 	// nft api
 	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, InvoiceUnpaidService))
 	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-
-	// config api
-	configpb.RegisterConfigServiceServer(grpcServer, configstore.GRPCHandler(configService))
-	err = configpb.RegisterConfigServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}

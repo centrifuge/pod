@@ -49,7 +49,7 @@ service DocumentService {
     };
   }
   // Entity Relation Share
-  rpc Share(EntityRelationshipPayload) returns (EntityResponse) {
+  rpc Share(RelationshipPayload) returns (EntityResponse) {
     option (google.api.http) = {
       post: "/entity/{identifier}/share"
       body: "*"
@@ -59,7 +59,7 @@ service DocumentService {
     };
   }
   // Entity Relation Revoke
-  rpc Revoke(EntityRelationshipPayload) returns (EntityResponse) {
+  rpc Revoke(RelationshipPayload) returns (EntityResponse) {
     option (google.api.http) = {
       post: "/entity/{identifier}/revoke"
       body: "*"
@@ -120,8 +120,20 @@ message EntityDataResponse {
   repeated Relationship relationships = 2;
 }
 
-message EntityRelationshipPayload {
+message RelationshipPayload {
   // entity identifier
   string identifier = 1;
   string target_identity = 2;
+}
+
+message RelationshipData {
+  // DID of relationship owner
+  string owner_identity = 1;
+  // DID of target identity
+  string target_identity = 2;
+}
+
+message RelationshipResponse {
+  document.ResponseHeader header = 1;
+  RelationshipData relationship = 2;
 }

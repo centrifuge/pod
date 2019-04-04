@@ -61,10 +61,8 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest := &MockTransactionRequest{}
 
 	gc := &gethClient{
-		accounts: make(map[string]*bind.TransactOpts),
-		accMu:    sync.Mutex{},
-		txMu:     sync.Mutex{},
-		config:   cfg,
+		txMu:   sync.Mutex{},
+		config: cfg,
 	}
 
 	SetClient(gc)

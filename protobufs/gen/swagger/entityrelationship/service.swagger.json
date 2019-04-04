@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "entity/service.proto",
+    "title": "entityrelationship/service.proto",
     "version": "version not set"
   },
   "schemes": [
@@ -15,141 +15,27 @@
     "application/json"
   ],
   "paths": {
-    "/entity": {
+    "/entity/{data.owner_identity}/share/{data.target_identity}": {
       "post": {
-        "description": "Creates an entity",
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityEntityCreatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      }
-    },
-    "/entity/{identifier}": {
-      "get": {
-        "description": "Get the current entity",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      },
-      "put": {
-        "description": "Updates an entity",
-        "operationId": "Update",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityEntityUpdatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      }
-    },
-    "/entity/{identifier}/revoke": {
-      "post": {
-        "summary": "Entity Relation Revoke",
-        "description": "revoke an entity document share",
-        "operationId": "Revoke",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "description": "entity identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityRelationshipPayload"
-            }
-          }
-        ],
-        "tags": [
-          "DocumentService"
-        ]
-      }
-    },
-    "/entity/{identifier}/share": {
-      "post": {
-        "summary": "Entity Relation Share",
-        "description": "Share the entity document with others",
+        "description": "Creates an entity relationship",
         "operationId": "Share",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
+              "$ref": "#/definitions/entityrelationshipEntityRelationshipResponse"
             }
           }
         },
         "parameters": [
           {
-            "name": "identifier",
-            "description": "entity identifier",
+            "name": "data.owner_identity",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "data.target_identity",
             "in": "path",
             "required": true,
             "type": "string"
@@ -159,7 +45,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/entityRelationshipPayload"
+              "$ref": "#/definitions/entityrelationshipEntityRelationshipCreatePayload"
             }
           }
         ],
@@ -168,29 +54,68 @@
         ]
       }
     },
-    "/entity/{identifier}/{version}": {
-      "get": {
-        "description": "Get a specific version of an entity",
-        "operationId": "GetVersion",
+    "/entity/{data.owner_identity}/{data.target_identity}": {
+      "put": {
+        "description": "Revokes the access token for the target identity on the relevant entity relationship",
+        "operationId": "Revoke",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
+              "$ref": "#/definitions/entityrelationshipEntityRelationshipResponse"
             }
           }
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "data.owner_identity",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "version",
+            "name": "data.target_identity",
             "in": "path",
             "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityrelationshipEntityRelationshipUpdatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
+    "/entityrelationship/{owner_identity}": {
+      "get": {
+        "description": "Get entity data",
+        "operationId": "Get",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "owner_identity",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "target_identity",
+            "in": "query",
+            "required": false,
             "type": "string"
           }
         ],
@@ -201,13 +126,71 @@
     }
   },
   "definitions": {
+    "coredocumentAction": {
+      "type": "string",
+      "enum": [
+        "ACTION_INVALID",
+        "ACTION_READ_SIGN",
+        "ACTION_READ"
+      ],
+      "default": "ACTION_INVALID",
+      "description": "Action defines the set of actions a collaborator can/have per document.\n\n - ACTION_READ_SIGN: read_sign represents reading as well the sign the documents. We will pick this one when requesting the signatures.\n - ACTION_READ: read represents just reading the doc/fields"
+    },
+    "coredocumentTransitionAction": {
+      "type": "string",
+      "enum": [
+        "TRANSITION_ACTION_INVALID",
+        "TRANSITION_ACTION_EDIT"
+      ],
+      "default": "TRANSITION_ACTION_INVALID"
+    },
+    "documentAccessToken": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "granter": {
+          "type": "string"
+        },
+        "grantee": {
+          "type": "string"
+        },
+        "document_identifier": {
+          "type": "string"
+        }
+      }
+    },
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        }
+      }
+    },
     "documentReadAccess": {
       "type": "object",
       "properties": {
+        "action": {
+          "$ref": "#/definitions/coredocumentAction"
+        },
         "collaborators": {
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
           }
         }
       }
@@ -228,19 +211,65 @@
           "type": "string"
         },
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentReadAccess"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentWriteAccess"
+          }
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentSignature"
+          }
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
+        },
+        "anchored": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "access_tokens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentAccessToken"
+          }
         },
         "transaction_id": {
           "type": "string"
         }
       }
     },
+    "documentSignature": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "valid": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
     "documentWriteAccess": {
       "type": "object",
       "properties": {
+        "action": {
+          "$ref": "#/definitions/coredocumentTransitionAction"
+        },
         "collaborators": {
           "type": "array",
           "items": {
@@ -353,20 +382,6 @@
         }
       }
     },
-    "entityEntityCreatePayload": {
-      "type": "object",
-      "properties": {
-        "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
-        },
-        "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
-        },
-        "data": {
-          "$ref": "#/definitions/entityEntityData"
-        }
-      }
-    },
     "entityEntityData": {
       "type": "object",
       "properties": {
@@ -399,49 +414,6 @@
         }
       },
       "title": "EntityData is the default entity schema"
-    },
-    "entityEntityDataResponse": {
-      "type": "object",
-      "properties": {
-        "entity": {
-          "$ref": "#/definitions/entityEntityData"
-        },
-        "relationships": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/entityRelationship"
-          }
-        }
-      },
-      "title": "Entity Relationships"
-    },
-    "entityEntityResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/documentResponseHeader"
-        },
-        "data": {
-          "$ref": "#/definitions/entityEntityDataResponse"
-        }
-      }
-    },
-    "entityEntityUpdatePayload": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string"
-        },
-        "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
-        },
-        "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
-        },
-        "data": {
-          "$ref": "#/definitions/entityEntityData"
-        }
-      }
     },
     "entityOtherPayment": {
       "type": "object",
@@ -480,27 +452,42 @@
         }
       }
     },
-    "entityRelationship": {
+    "entityrelationshipEntityRelationshipCreatePayload": {
       "type": "object",
       "properties": {
-        "identity": {
-          "type": "string"
-        },
-        "active": {
-          "type": "boolean",
-          "format": "boolean"
+        "data": {
+          "$ref": "#/definitions/entityrelationshipEntityRelationshipData"
         }
-      }
+      },
+      "title": "combine these two?"
     },
-    "entityRelationshipPayload": {
+    "entityrelationshipEntityRelationshipData": {
       "type": "object",
       "properties": {
-        "identifier": {
-          "type": "string",
-          "title": "entity identifier"
+        "owner_identity": {
+          "type": "string"
         },
         "target_identity": {
           "type": "string"
+        }
+      }
+    },
+    "entityrelationshipEntityRelationshipResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "data": {
+          "$ref": "#/definitions/entityrelationshipEntityRelationshipData"
+        }
+      }
+    },
+    "entityrelationshipEntityRelationshipUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/entityrelationshipEntityRelationshipData"
         }
       }
     }

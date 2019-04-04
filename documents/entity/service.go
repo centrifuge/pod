@@ -223,3 +223,46 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 
 	return entity, nil
 }
+
+func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
+	return s.get(ctx, documentID, version)
+}
+
+func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	isCollaborator := false
+	var entity documents.Model
+
+	if s.Service.Exists(ctx, documentID) {
+		if version == nil {
+			entity, err = s.Service.GetCurrentVersion(ctx, documentID)
+		} else {
+			entity, err = s.Service.GetVersion(ctx, documentID, version)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		isCollaborator, err = entity.IsDIDCollaborator(selfDID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if isCollaborator {
+		// todo add relationship array
+		return entity, nil
+	}
+
+	// todo call entityRelationship service and request Entity document from other collaborators
+	return nil, documents.ErrDocumentNotFound
+}
+
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+	return s.get(ctx, documentID, nil)
+
+}
