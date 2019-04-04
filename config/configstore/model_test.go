@@ -182,7 +182,7 @@ func (m *mockConfig) GetEthereumMaxRetries() int {
 	return args.Get(0).(int)
 }
 
-func (m *mockConfig) GetEthereumGasPrice() *big.Int {
+func (m *mockConfig) GetEthereumMaxGasPrice() *big.Int {
 	args := m.Called()
 	return args.Get(0).(*big.Int)
 }
@@ -401,7 +401,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	c.On("GetEthereumIntervalRetry").Return(time.Second).Once()
 	c.On("GetEthereumMaxRetries").Return(1).Once()
-	c.On("GetEthereumGasPrice").Return(big.NewInt(1)).Once()
+	c.On("GetEthereumMaxGasPrice").Return(big.NewInt(1)).Once()
 	c.On("GetEthereumGasLimit").Return(uint64(100)).Once()
 	c.On("GetTxPoolAccessEnabled").Return(true).Once()
 	c.On("GetNetworkString").Return("somehill").Once()

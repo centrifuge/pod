@@ -113,7 +113,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		return nil, err
 	}
 
-	opts, err := s.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
+	opts, err := s.client.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, err

@@ -8,16 +8,15 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -54,7 +53,7 @@ type NodeConfig struct {
 	EthereumContextWaitTimeout     time.Duration
 	EthereumIntervalRetry          time.Duration
 	EthereumMaxRetries             int
-	EthereumGasPrice               *big.Int
+	EthereumMaxGasPrice            *big.Int
 	EthereumGasLimit               uint64
 	TxPoolAccessEnabled            bool
 	NetworkString                  string
@@ -190,9 +189,9 @@ func (nc *NodeConfig) GetEthereumMaxRetries() int {
 	return nc.EthereumMaxRetries
 }
 
-// GetEthereumGasPrice refer the interface
-func (nc *NodeConfig) GetEthereumGasPrice() *big.Int {
-	return nc.EthereumGasPrice
+// GetEthereumMaxGasPrice refer the interface
+func (nc *NodeConfig) GetEthereumMaxGasPrice() *big.Int {
+	return nc.EthereumMaxGasPrice
 }
 
 // GetEthereumGasLimit refer the interface
@@ -323,7 +322,7 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 		EthContextReadWaitTimeout: &duration.Duration{Seconds: int64(nc.EthereumContextReadWaitTimeout.Seconds())},
 		EthContextWaitTimeout:     &duration.Duration{Seconds: int64(nc.EthereumContextWaitTimeout.Seconds())},
 		EthIntervalRetry:          &duration.Duration{Seconds: int64(nc.EthereumIntervalRetry.Seconds())},
-		EthGasPrice:               nc.EthereumGasPrice.Uint64(),
+		EthGasPrice:               nc.EthereumMaxGasPrice.Uint64(),
 		EthGasLimit:               nc.EthereumGasLimit,
 		TxPoolEnabled:             nc.TxPoolAccessEnabled,
 		Network:                   nc.NetworkString,
@@ -380,7 +379,7 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	nc.EthereumContextWaitTimeout = time.Duration(data.EthContextWaitTimeout.Seconds)
 	nc.EthereumIntervalRetry = time.Duration(data.EthIntervalRetry.Seconds)
 	nc.EthereumMaxRetries = int(data.EthMaxRetries)
-	nc.EthereumGasPrice = big.NewInt(int64(data.EthGasPrice))
+	nc.EthereumMaxGasPrice = big.NewInt(int64(data.EthGasPrice))
 	nc.EthereumGasLimit = data.EthGasLimit
 	nc.TxPoolAccessEnabled = data.TxPoolEnabled
 	nc.NetworkString = data.Network
@@ -459,7 +458,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		EthereumContextWaitTimeout:     c.GetEthereumContextWaitTimeout(),
 		EthereumIntervalRetry:          c.GetEthereumIntervalRetry(),
 		EthereumMaxRetries:             c.GetEthereumMaxRetries(),
-		EthereumGasPrice:               c.GetEthereumGasPrice(),
+		EthereumMaxGasPrice:            c.GetEthereumMaxGasPrice(),
 		EthereumGasLimit:               c.GetEthereumGasLimit(),
 		TxPoolAccessEnabled:            c.GetTxPoolAccessEnabled(),
 		NetworkString:                  c.GetNetworkString(),

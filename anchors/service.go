@@ -85,7 +85,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	txID := contextutil.TX(ctx)
 
 	conn := s.client
-	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
+	opts, err := conn.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	txID := contextutil.TX(ctx)
 
 	conn := s.client
-	opts, err := conn.GetTxOpts(tc.GetEthereumDefaultAccountName())
+	opts, err := conn.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, err
 	}
