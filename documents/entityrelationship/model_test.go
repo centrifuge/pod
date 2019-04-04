@@ -79,7 +79,6 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	selfDID, err := contextutil.AccountDID(ctxh)
 	assert.NoError(t, err)
-	assert.NoError(t, err)
 	return &entitypb.RelationshipData{
 		OwnerIdentity:  selfDID.String(),
 		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
@@ -105,6 +104,24 @@ func TestEntityRelationship_PackCoreDocument(t *testing.T) {
 	cd, err := er.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
+}
+
+func TestEntityRelationship_PrepareNewVersion(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	selfDID, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
+
+	m, _ := createCDWithEmbeddedEntityRelationship(t)
+	old := m.(*EntityRelationship)
+	data := &entitypb.RelationshipData{
+		OwnerIdentity:  selfDID.String(),
+		TargetIdentity: "random string",
+	}
+	err = old.PrepareNewVersion(old, data, nil)
+	assert.Error(t, err)
+
+	err = old.PrepareNewVersion(old, CreateRelationshipData(t), nil)
+	assert.NoError(t, err)
 }
 
 func TestEntityRelationship_JSON(t *testing.T) {

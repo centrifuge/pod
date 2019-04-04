@@ -5,6 +5,8 @@ package entityrelationship
 import (
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -76,8 +78,12 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	selfDID, err := contextutil.AccountDID(ctxh)
 	assert.NoError(t, err)
 	eSrv := service{repo: testRepo()}
+	empty := coredocumentpb.CoreDocument{}
+	m, err := eSrv.DeriveFromCoreDocument(empty)
+	assert.Error(t, err)
+
 	_, cd := createCDWithEmbeddedEntityRelationship(t)
-	m, err := eSrv.DeriveFromCoreDocument(cd)
+	m, err = eSrv.DeriveFromCoreDocument(cd)
 	assert.NoError(t, err, "must return model")
 	assert.NotNil(t, m, "model must be non-nil")
 	relationship, ok := m.(*EntityRelationship)

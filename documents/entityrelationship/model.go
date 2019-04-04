@@ -196,13 +196,13 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 	return t, nil
 }
 
-// CreateNFTProofs creates proofs specific to NFT minting. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
+// CreateNFTProofs is not implemented for EntityRelationship.
 func (e *EntityRelationship) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
-	panic(documents.ErrNotImplemented)
+	return nil, documents.ErrNotImplemented
 }
 
 // CreateProofs generates proofs for given fields.
@@ -220,9 +220,9 @@ func (*EntityRelationship) DocumentType() string {
 	return documenttypes.EntityRelationshipDocumentTypeUrl
 }
 
-// AddNFT adds NFT to the EntityRelationship. THIS IS NOT IMPLEMENTED FOR ENTITY RELATIONSHIP.
+// AddNFT is not implemented for EntityRelationship
 func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
-	panic(documents.ErrNotImplemented)
+	return documents.ErrNotImplemented
 }
 
 // CalculateSigningRoot calculates the signing root of the document.
