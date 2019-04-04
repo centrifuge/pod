@@ -112,6 +112,7 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
+	MaskErrors() bool
 
 	// CreateProtobuf creates protobuf
 	CreateProtobuf() *configpb.ConfigData
@@ -417,6 +418,11 @@ func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
+}
+
+// MaskErrors returns true if masking errors is enabled
+func (c *configuration) MaskErrors() bool {
+	return c.GetBool("debug.maskErrors")
 }
 
 // GetPrecommitEnabled returns true if precommit for anchors is enabled
