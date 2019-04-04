@@ -546,7 +546,7 @@
   version = "v0.0.1"
 
 [[projects]]
-  digest = "1:6a5eebc0f2dedffacbb45e2e685b1868980f69bb5f2eecd4f87b989ac16a7c8b"
+  digest = "1:64e3ef913636209f096d3750a8e8137f7432925730ddcb15ccb66044f1a7df3a"
   name = "github.com/libp2p/go-libp2p"
   packages = [
     ".",
@@ -559,19 +559,19 @@
     "p2p/protocol/ping",
   ]
   pruneopts = "T"
-  revision = "28eb467dc4e6079b2ee1f039db3cac92bb47010d"
-  version = "v0.0.5"
+  revision = "9a5a43777294ea1f4337ae90604c26c2aad8765a"
+  version = "v0.0.3"
 
 [[projects]]
-  digest = "1:950086c33d4580a2eef0eb7ca8845cea95be3e4c30c8b96e2694d52dd2623807"
+  digest = "1:50b59552968891b1a76a2cb8cdfab8fcec1ef7e9f6b52a370e3272d52bdf0cc6"
   name = "github.com/libp2p/go-libp2p-autonat"
   packages = [
     ".",
     "pb",
   ]
   pruneopts = "UT"
-  revision = "c6b40f96419660dc6a55e811d4e3299f2e3deffe"
-  version = "v0.0.3"
+  revision = "16d66b2ad60fc6b6956b0c2bd332111a94db6dbb"
+  version = "v0.0.2"
 
 [[projects]]
   digest = "1:0594d9b7872c30fc9ca10ba52548a15e65c49b4b00d0265edb169c6642e2057c"
@@ -628,7 +628,7 @@
   version = "v0.0.1"
 
 [[projects]]
-  digest = "1:b580f818f7026b4c26c70a94ecd8b76689fb5c903fd79c73d05641a2c5073920"
+  digest = "1:b273f9bd6b11b2236307458e4277a713d03dc0aa68511a3a0b562441bda30f86"
   name = "github.com/libp2p/go-libp2p-kad-dht"
   packages = [
     ".",
@@ -637,8 +637,8 @@
     "providers",
   ]
   pruneopts = "UT"
-  revision = "ec1ba23f0ba7fc028c848201e1763cca0b190dd9"
-  version = "v0.0.7"
+  revision = "6433bf68f37d2f292683f15076e80e3f72ede4c8"
+  version = "v0.0.6"
 
 [[projects]]
   digest = "1:26df3b5a2463f1586156b48c7da8fcc1957111aa2751d5afdd431ff619fda4af"
@@ -806,12 +806,12 @@
   version = "v0.0.1"
 
 [[projects]]
-  digest = "1:bf12fbd51fb864c9e2cb688581d3c14551a8c3d1c2fa60c9ad405c532e1b9d42"
+  digest = "1:b37fa22b6d64e00712af8ad491c42bcb9a48c71390111b9cce5978511bdad7c0"
   name = "github.com/libp2p/go-reuseport-transport"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c7583c88df654a2ecd621e863f661783d79b64d1"
-  version = "v0.0.2"
+  revision = "a38ecc623029c60063f999d16a7b62c1053adfc3"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:28994f656f7bd53b2f506641d72878250583051bd86477ab8129c613c8437ee3"
@@ -822,20 +822,20 @@
   version = "v0.0.1"
 
 [[projects]]
-  digest = "1:32b1b70c98be85d88229af2ba0cceb9954e7ef88c3f7e90f95a8ea2deb32c0d3"
+  digest = "1:dc759a08537b0057aafc75054ce7c0f83e45442da475d446079e9a82174e1dd1"
   name = "github.com/libp2p/go-tcp-transport"
   packages = ["."]
   pruneopts = "UT"
-  revision = "42717ef323c6cd024d3196d18bc1b7657c453d6d"
-  version = "v0.0.2"
+  revision = "69079ce9b2140ebe9e750c70ac30b94fef08f627"
+  version = "v0.0.1"
 
 [[projects]]
-  digest = "1:fe4581341f14aba2ef06749c5f2fc6483d4354b25e3c6e0094a4135082a22ed2"
+  digest = "1:a39747119cc6dd75a4df3e65aba7b43fd264a3f6c3eea8e2622762ae2e3caac7"
   name = "github.com/libp2p/go-ws-transport"
   packages = ["."]
   pruneopts = "UT"
-  revision = "93daaa611babb322b314d33c6c6ad26298f55f56"
-  version = "v0.0.2"
+  revision = "2114e839891f0a824d9a36919165fed197522d87"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:53e8c5c79716437e601696140e8b1801aae4204f4ec54a504333702a49572c4f"
@@ -989,12 +989,12 @@
   version = "v1.2"
 
 [[projects]]
-  digest = "1:e0f50a07c0def90588d69f77178712c6fdc67eb6576365f551cce98b44b501bf"
+  digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   pruneopts = "UT"
-  revision = "63909f0a90ab0f36909e8e044e46ace10cf13ba2"
-  version = "v1.3.0"
+  revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
@@ -1356,7 +1356,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ae0871ffc791e8d000f15ff3d1bb7d490dcef03aa3a050f1523272d66e9cf93c"
+  digest = "1:30d79a7786136afb612559f0f18766abef329ee1bdde840e696d7fcf869211d1"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -1364,7 +1364,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "81d4e9dc473e5e8c933f2aaeba2a3d81efb9aed2"
+  revision = "9eb1bfa1ce65ae8a6ff3114b0aaf9a41a6cf3560"
 
 [[projects]]
   digest = "1:436b24586f8fee329e0dd65fd67c817681420cda1d7f934345c13fe78c212a73"
@@ -1560,6 +1560,7 @@
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
+    "github.com/pkg/errors",
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",
