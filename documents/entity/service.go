@@ -3,10 +3,10 @@ package entity
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -262,7 +262,18 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		return entity, nil
 	}
 
-	// todo call entityRelationship service and request Entity document from other collaborators
+	return s.requestEntityFromCollaborator(documentID, version)
+}
+
+func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
+	/*
+		todo not implemented yet
+		er, err := s.erService.GetEntityRelation(documentID,version)
+		if err != nil {
+			return nil, err
+		}
+
+	*/
 	return nil, documents.ErrDocumentNotFound
 }
 
