@@ -58,18 +58,16 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity factory not initialised")
 	}
 
-
 	erService, ok := ctx[entityrelationship.BootstrappedEntityrelationService].(entityrelationship.Service)
 	if !ok {
 		return errors.New("entity relation service not initialised")
 	}
 
-
 	// register service
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, factory,erService)
+		queueSrv, txManager, factory, erService)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {

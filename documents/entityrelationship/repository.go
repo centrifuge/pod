@@ -25,10 +25,10 @@ type repository interface {
 	Register(model *EntityRelationship)
 
 	// Find returns a EntityRelationship based on a entity id and a targetDID
-	Find(entityIdentifier []byte,targetDID identity.DID) (*EntityRelationship, error)
+	Find(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error)
 
 	// EntityExists returns true if a entity relationship exists for a given entity identifier and target did
-	EntityExists(entityIdentifier []byte,targetDID identity.DID) (bool, error)
+	EntityExists(entityIdentifier []byte, targetDID identity.DID) (bool, error)
 }
 
 type repo struct {
@@ -81,13 +81,13 @@ func (r *repo) Update(accountID, id []byte, model EntityRelationship) error {
 }
 
 // Find returns a EntityRelationship based on a entity id and a targetDID
-func (r *repo) Find(entityIdentifier []byte,targetDID identity.DID) (*EntityRelationship, error) {
+func (r *repo) Find(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error) {
 	// todo not implemented
 	return nil, nil
 }
 
 // EntityExists returns true if a entity relationship exists for a given entity identifier and target did
-func (r *repo) EntityExists(entityIdentifier []byte,targetDID identity.DID) (bool, error) {
+func (r *repo) EntityExists(entityIdentifier []byte, targetDID identity.DID) (bool, error) {
 	// todo not implemented
 	return false, nil
 }

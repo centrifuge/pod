@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
-
 const (
 	// BootstrappedEntityHandler maps to grpc handler for entities
 	BootstrappedEntityrelationService string = "BootstrappedEntityrelationService"
@@ -36,7 +35,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if !ok {
 		return errors.New("document db repository not initialised")
 	}
-
 
 	entityRepo := newDBRepository(repo)
 

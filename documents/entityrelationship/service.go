@@ -3,7 +3,6 @@ package entityrelationship
 import (
 	"context"
 
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
