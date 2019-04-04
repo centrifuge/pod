@@ -7,15 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/stretchr/testify/assert"
 )
 
 var identityService identity.ServiceDID

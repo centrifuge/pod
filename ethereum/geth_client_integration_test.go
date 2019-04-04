@@ -94,6 +94,7 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 }
 
 func TestGethClient_GetTxOpts(t *testing.T) {
+	cfg.Set("ethereum.maxGasPrice", 30000000000)
 	gc, err := ethereum.NewGethClient(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, gc)
@@ -107,8 +108,18 @@ func TestGethClient_GetTxOpts(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, gc)
 	opts, err = gc.GetTxOpts(context.Background(), "main")
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "is greater than max allowed")
-	}
-	assert.True(t, opts == nil)
+	assert.True(t, opts.GasPrice.Cmp(big.NewInt(10000000000)) == 0)
+}
+
+func BenchmarkGethClient_GetTxOpts(b *testing.B) {
+	gc, err := ethereum.NewGethClient(cfg)
+	assert.NoError(b, err)
+	assert.NotNil(b, gc)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			opts, err := gc.GetTxOpts(context.Background(), "main")
+			assert.NoError(b, err)
+			assert.True(b, opts.GasPrice.Cmp(big.NewInt(20000000000)) == 0)
+		}
+	})
 }

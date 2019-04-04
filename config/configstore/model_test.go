@@ -8,9 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -187,8 +186,8 @@ func (m *mockConfig) GetEthereumMaxGasPrice() *big.Int {
 	return args.Get(0).(*big.Int)
 }
 
-func (m *mockConfig) GetEthereumGasLimit() uint64 {
-	args := m.Called()
+func (m *mockConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
+	args := m.Called(op)
 	return args.Get(0).(uint64)
 }
 
@@ -402,7 +401,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetEthereumIntervalRetry").Return(time.Second).Once()
 	c.On("GetEthereumMaxRetries").Return(1).Once()
 	c.On("GetEthereumMaxGasPrice").Return(big.NewInt(1)).Once()
-	c.On("GetEthereumGasLimit").Return(uint64(100)).Once()
+	c.On("GetEthereumGasLimit", mock.Anything).Return(uint64(100))
 	c.On("GetTxPoolAccessEnabled").Return(true).Once()
 	c.On("GetNetworkString").Return("somehill").Once()
 	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()

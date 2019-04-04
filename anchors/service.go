@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -90,6 +91,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return nil, err
 	}
 
+	opts.GasLimit = s.config.GetEthereumGasLimit(config.AnchorPreCommit)
 	pc := newPreCommitData(anchorID, signingRoot)
 	if err != nil {
 		return confirmations, err
@@ -164,6 +166,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return nil, err
 	}
 
+	opts.GasLimit = s.config.GetEthereumGasLimit(config.AnchorCommit)
 	h, err := conn.GetEthClient().HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return nil, err

@@ -194,7 +194,7 @@ type ServiceDID interface {
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte) (txID IDTX, done chan bool, err error)
+	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan bool, err error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan bool, err error)
@@ -296,11 +296,7 @@ type IDKeys struct {
 
 // Config defines methods required for the package identity.
 type Config interface {
-	GetEthereumDefaultAccountName() string
-	GetIdentityID() ([]byte, error)
-	GetP2PKeyPair() (pub, priv string)
-	GetSigningKeyPair() (pub, priv string)
-	GetEthereumContextWaitTimeout() time.Duration
+	GetEthereumGasLimit(op config.ContractOp) uint64
 }
 
 // ValidateDIDBytes validates a centrifuge ID given as bytes

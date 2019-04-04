@@ -54,7 +54,7 @@ type NodeConfig struct {
 	EthereumIntervalRetry          time.Duration
 	EthereumMaxRetries             int
 	EthereumMaxGasPrice            *big.Int
-	EthereumGasLimit               uint64
+	EthereumGasLimits              map[config.ContractOp]uint64
 	TxPoolAccessEnabled            bool
 	NetworkString                  string
 	BootstrapPeers                 []string
@@ -195,8 +195,8 @@ func (nc *NodeConfig) GetEthereumMaxGasPrice() *big.Int {
 }
 
 // GetEthereumGasLimit refer the interface
-func (nc *NodeConfig) GetEthereumGasLimit() uint64 {
-	return nc.EthereumGasLimit
+func (nc *NodeConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
+	return nc.EthereumGasLimits[op]
 }
 
 // GetTxPoolAccessEnabled refer the interface
@@ -323,7 +323,7 @@ func (nc *NodeConfig) CreateProtobuf() *configpb.ConfigData {
 		EthContextWaitTimeout:     &duration.Duration{Seconds: int64(nc.EthereumContextWaitTimeout.Seconds())},
 		EthIntervalRetry:          &duration.Duration{Seconds: int64(nc.EthereumIntervalRetry.Seconds())},
 		EthGasPrice:               nc.EthereumMaxGasPrice.Uint64(),
-		EthGasLimit:               nc.EthereumGasLimit,
+		EthGasLimit:               0,
 		TxPoolEnabled:             nc.TxPoolAccessEnabled,
 		Network:                   nc.NetworkString,
 		NetworkId:                 nc.NetworkID,
@@ -380,7 +380,7 @@ func (nc *NodeConfig) loadFromProtobuf(data *configpb.ConfigData) error {
 	nc.EthereumIntervalRetry = time.Duration(data.EthIntervalRetry.Seconds)
 	nc.EthereumMaxRetries = int(data.EthMaxRetries)
 	nc.EthereumMaxGasPrice = big.NewInt(int64(data.EthGasPrice))
-	nc.EthereumGasLimit = data.EthGasLimit
+	nc.EthereumGasLimits = nil
 	nc.TxPoolAccessEnabled = data.TxPoolEnabled
 	nc.NetworkString = data.Network
 	nc.BootstrapPeers = data.BootstrapPeers
@@ -459,7 +459,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		EthereumIntervalRetry:          c.GetEthereumIntervalRetry(),
 		EthereumMaxRetries:             c.GetEthereumMaxRetries(),
 		EthereumMaxGasPrice:            c.GetEthereumMaxGasPrice(),
-		EthereumGasLimit:               c.GetEthereumGasLimit(),
+		EthereumGasLimits:              extractGasLimits(c),
 		TxPoolAccessEnabled:            c.GetTxPoolAccessEnabled(),
 		NetworkString:                  c.GetNetworkString(),
 		BootstrapPeers:                 c.GetBootstrapPeers(),
@@ -474,6 +474,15 @@ func extractSmartContractAddresses(c config.Configuration) map[config.ContractNa
 	names := config.ContractNames()
 	for _, n := range names {
 		sms[n] = c.GetContractAddress(n)
+	}
+	return sms
+}
+
+func extractGasLimits(c config.Configuration) map[config.ContractOp]uint64 {
+	sms := make(map[config.ContractOp]uint64)
+	names := config.ContractOps()
+	for _, n := range names {
+		sms[n] = c.GetEthereumGasLimit(n)
 	}
 	return sms
 }
