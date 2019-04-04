@@ -50,7 +50,9 @@ type contract interface {
 
 func methodToOp(method string) config.ContractOp {
 	m := map[string]config.ContractOp{
-		"mint": config.NftMint,
+		"mint":      config.NftMint,
+		"commit":    config.AnchorCommit,
+		"preCommit": config.AnchorPreCommit,
 	}
 	return m[method]
 }

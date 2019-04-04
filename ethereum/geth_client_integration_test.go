@@ -110,3 +110,16 @@ func TestGethClient_GetTxOpts(t *testing.T) {
 	opts, err = gc.GetTxOpts(context.Background(), "main")
 	assert.True(t, opts.GasPrice.Cmp(big.NewInt(10000000000)) == 0)
 }
+
+func BenchmarkGethClient_GetTxOpts(b *testing.B) {
+	gc, err := ethereum.NewGethClient(cfg)
+	assert.NoError(b, err)
+	assert.NotNil(b, gc)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			opts, err := gc.GetTxOpts(context.Background(), "main")
+			assert.NoError(b, err)
+			assert.True(b, opts.GasPrice.Cmp(big.NewInt(20000000000)) == 0)
+		}
+	})
+}
