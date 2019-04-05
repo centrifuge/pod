@@ -3,6 +3,7 @@ package entityrelationship
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -77,7 +78,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
 func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error) {
 	if payload == nil {
-		return nil, documents.ErrDocumentNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	er := new(EntityRelationship)
@@ -97,19 +98,79 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 	return er, nil
 }
 
-// validateAndPersist is not implemented for the entity relationship
+// validateAndPersist validates the document, calculates the data root, and persists to DB
 func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	return nil, documents.ErrNotImplemented
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	er, ok := new.(*EntityRelationship)
+	if !ok {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
+	}
+
+	// validate the entity
+	err = validator.Validate(old, er)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	fmt.Println("in repo!!!", s.repo, selfDID[:], er.CurrentVersion(), er)
+	err = s.repo.Create(selfDID[:], er.CurrentVersion(), er)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	return er, nil
 }
 
-// Create is not implemented for the EntityRelationship
-func (s service) Create(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	return nil, transactions.TxID{}, nil, documents.ErrNotImplemented
+// Create takes and entity model and does required validation checks, tries to persist to DB
+// For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
+func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	relationship, err = s.validateAndPersist(ctx, nil, relationship, CreateValidator(s.factory))
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, err
+	}
+
+	txID := contextutil.TX(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, relationship.CurrentVersion())
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, err
+	}
+	return relationship, txID, done, nil
 }
 
-// Update is not implemented for the EntityRelationship
+// Update finds the old document, validates the new version and persists the updated document
+// For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	return nil, transactions.TxID{}, nil, documents.ErrNotImplemented
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	old, err := s.GetCurrentVersion(ctx, new.ID())
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+	}
+
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, err
+	}
+
+	txID := contextutil.TX(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, err
+	}
+	return new, txID, done, nil
 }
 
 // DeriveEntityRelationshipResponse returns create response from entity relationship model
@@ -144,7 +205,7 @@ func (s service) DeriveEntityRelationshipData(doc documents.Model) (*entitypb.Re
 // DeriveFromUpdatePayload returns a new version of the indicated Entity Relationship with a deleted access token
 func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error) {
 	if payload == nil {
-		return nil, documents.ErrDocumentNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	eID, err := hexutil.Decode(payload.Identifier)
@@ -156,7 +217,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(did, eID)
 	r, err := s.repo.FindEntityRelationship(eID, *did[0])
 	if err != nil {
 		return nil, err

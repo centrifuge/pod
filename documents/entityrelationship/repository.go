@@ -2,6 +2,7 @@ package entityrelationship
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -36,9 +37,14 @@ func newDBRepository(db storage.Repository, docRepo documents.Repository) reposi
 
 // Find returns a EntityRelationship based on a entity id and a targetDID
 func (r *repo) FindEntityRelationship(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error) {
+	fmt.Println("inside findentityrelationship", prefix)
 	relationships, err := r.db.GetAllByPrefix(prefix)
 	if err != nil {
 		return nil, err
+	}
+
+	if relationships == nil {
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	for _, r := range relationships {
@@ -60,6 +66,10 @@ func (r *repo) EntityRelationshipExists(entityIdentifier []byte, targetDID ident
 		return false, err
 	}
 
+	if relationships == nil {
+		return false, documents.ErrDocumentNotFound
+	}
+
 	for _, r := range relationships {
 		if r.(*EntityRelationship).TargetIdentity == &targetDID {
 			if r.(*EntityRelationship).Document.AccessTokens != nil {
@@ -78,6 +88,11 @@ func (r *repo) ListAllRelationships(entityIdentifier []byte) ([]EntityRelationsh
 	if err != nil {
 		return nil, err
 	}
+
+	if relationships == nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
 	var er []EntityRelationship
 	for _, r := range relationships {
 		if r.(*EntityRelationship).Document.AccessTokens != nil {

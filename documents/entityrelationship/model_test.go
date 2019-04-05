@@ -86,17 +86,6 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 	}
 }
 
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
-}
-
 func TestEntityRelationship_PackCoreDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	er := new(EntityRelationship)
@@ -290,7 +279,7 @@ func TestEntityRelationship_GetDocumentID(t *testing.T) {
 
 func TestEntityRelationship_GetDocumentType(t *testing.T) {
 	e := createEntityRelationship(t)
-	assert.Equal(t, documenttypes.EntityRelationshipDocumentTypeUrl, e.DocumentType())
+	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, e.DocumentType())
 }
 
 func TestEntityRelationship_getDocumentDataTree(t *testing.T) {

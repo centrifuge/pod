@@ -91,7 +91,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
 func (s service) DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	did, err := contextutil.AccountDID(ctx)
@@ -215,7 +215,7 @@ func (s service) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityDa
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
 func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	// get latest old version of the document
@@ -304,7 +304,7 @@ func (s service) DeriveFromSharePayload(ctx context.Context, payload *cliententi
 
 // Share takes an entity relationship, validates it, and tries to persist it to the DB
 func (s service) Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	return s.Create(ctx, entityRelationship)
+	return s.erService.Create(ctx, entityRelationship)
 }
 
 // DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
@@ -314,7 +314,7 @@ func (s service) DeriveFromRevokePayload(ctx context.Context, payload *clientent
 
 // Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
 func (s service) Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	return s.Update(ctx, entityRelationship)
+	return s.erService.Update(ctx, entityRelationship)
 }
 
 // DeriveEntityRelationshipResponse returns create response from entity relationship model

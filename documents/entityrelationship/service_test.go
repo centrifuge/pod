@@ -5,6 +5,8 @@ package entityrelationship
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -32,7 +34,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(testingcommons.MockIdentityFactory)
 	entityRepo := testEntityRepo()
-	mockAnchor := &mockAnchorRepo{}
+	mockAnchor := &testinganchors.MockAnchorRepo{}
 	docSrv := documents.DefaultService(entityRepo, mockAnchor, documents.NewServiceRegistry(), &idService)
 	return idService, idFactory, DefaultService(
 		docSrv,
@@ -53,6 +55,69 @@ func TestService_Update(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestService_DeriveFromUpdatePayload(t *testing.T) {
+	//ctxh := testingconfig.CreateAccountContext(t, cfg)
+	//_, idFactory, srv := getServiceWithMockedLayers()
+	//eSrv := srv.(service)
+	//
+	//// nil payload
+	//m, err := eSrv.DeriveFromUpdatePayload(ctxh, nil)
+	//assert.Nil(t, m)
+	//assert.Error(t, err)
+	//assert.True(t, errors.IsOfType(documents.ErrPayloadNil, err))
+	//
+	//// invalid identity
+	//docID := hexutil.Encode(utils.RandomSlice(32))
+	//payload := &entitypb.RelationshipPayload{
+	//	TargetIdentity: "some random string",
+	//	Identifier:     docID,
+	//}
+	//
+	//m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
+	//assert.Nil(t, m)
+	//assert.Error(t, err)
+	//
+	//// success
+	//selfDID, err := contextutil.AccountDID(ctxh)
+	//assert.NoError(t, err)
+	//
+	//payload.TargetIdentity = selfDID.String()
+	//idFactory.On("IdentityExists", &selfDID).Return(true, nil)
+	//m, err = eSrv.DeriveFromCreatePayload(ctxh, payload)
+	//assert.NoError(t, err)
+	//
+	//_, _, _, err = eSrv.Create(ctxh, m)
+	//assert.NoError(t, err)
+	//
+	//m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
+	//assert.NoError(t, err)
+	//assert.NotNil(t, m)
+	//er := m.(*EntityRelationship)
+	//assert.Equal(t, er.TargetIdentity.String(), payload.TargetIdentity)
+}
+
+func TestService_Create(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, idFactory, srv := getServiceWithMockedLayers()
+	eSrv := srv.(service)
+
+	// calculate data root fails
+	m, _, _, err := eSrv.Create(ctxh, &mockModel{})
+	assert.Nil(t, m)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown document type")
+
+	// success
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
+	relationship, err := eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateRelationshipPayload())
+	assert.NoError(t, err)
+	m, _, _, err = eSrv.Create(ctxh, relationship)
+	assert.NoError(t, err)
+	assert.True(t, testEntityRepo().Exists(did[:], m.ID()))
+	assert.True(t, testEntityRepo().Exists(did[:], m.CurrentVersion()))
+	idFactory.AssertExpectations(t)
+}
+
 func TestService_DeriveFromCreatePayload(t *testing.T) {
 	eSrv := service{}
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
@@ -61,7 +126,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err := eSrv.DeriveFromCreatePayload(ctxh, nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrPayloadNil, err))
 
 	// invalid identity
 	docID := hexutil.Encode(utils.RandomSlice(32))
@@ -101,18 +166,6 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.True(t, ok, "must be true")
 	assert.Equal(t, relationship.TargetIdentity.String(), "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
 	assert.Equal(t, relationship.OwnerIdentity.String(), selfDID.String())
-}
-
-func TestService_Create(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, _, srv := getServiceWithMockedLayers()
-	eSrv := srv.(service)
-
-	// success
-	relationship, err := eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateRelationshipPayload())
-	assert.NoError(t, err)
-	_, _, _, err = eSrv.Create(ctxh, relationship)
-	assert.Error(t, err)
 }
 
 func TestService_DeriveEntityData(t *testing.T) {
