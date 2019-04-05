@@ -452,6 +452,36 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 	return ncd, nil
 }
 
+// DeleteAccessToken deletes an access token on the Document
+func (cd *CoreDocument) DeleteAccessToken(ctx context.Context, granteeID string) (*CoreDocument, error) {
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = identity.StringsToDIDs(granteeID)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokens := ncd.Document.AccessTokens
+	for i, t := range accessTokens {
+		if hexutil.Encode(t.Grantee) == granteeID {
+			ncd.Document.AccessTokens = removeTokenAtIndex(i, accessTokens)
+			ncd.Modified = true
+			return ncd, nil
+		}
+	}
+	return nil, ErrAccessTokenNotFound
+}
+
+// RemoveTokenAtIndex removes the access token at index i from slice a
+// Note: changes the order of the slice elements
+func removeTokenAtIndex(idx int, tokens []*coredocumentpb.AccessToken) []*coredocumentpb.AccessToken {
+	tokens[len(tokens)-1], tokens[idx] = tokens[idx], tokens[len(tokens)-1]
+	return tokens[:len(tokens)-1]
+}
+
 // assembleAccessToken assembles a Read Access Token from the payload received
 func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
 	account, err := contextutil.Account(ctx)
