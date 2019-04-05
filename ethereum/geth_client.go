@@ -185,7 +185,7 @@ func (gc *gethClient) GetBlockByNumber(ctx context.Context, number *big.Int) (*t
 
 	for {
 		current++
-		if current < maxTries {
+		if current == maxTries {
 			return nil, errors.New("Error retrying getting block number %d: %v", number, err)
 		}
 		blk, err = gc.client.BlockByNumber(ctx, number)
