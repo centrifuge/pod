@@ -382,6 +382,5 @@ func createMockConfig() *mockConfig {
 	c.On("GetNetworkID").Return(uint32(1)).Once()
 	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
-	c.On("MaskErrors", mock.Anything).Return(true)
 	return c
 }
