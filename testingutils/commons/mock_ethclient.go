@@ -3,6 +3,7 @@
 package testingcommons
 
 import (
+	"math/big"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -34,6 +35,11 @@ func (m *MockEthClient) GetEthClient() *ethclient.Client {
 func (m *MockEthClient) GetNodeURL() *url.URL {
 	args := m.Called()
 	return args.Get(0).(*url.URL)
+}
+
+func (m *MockEthClient) GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	args := m.Called(ctx, number)
+	return args.Get(0).(*types.Block), args.Error(1)
 }
 
 func (m *MockEthClient) GetTxOpts(ctx context.Context, accountName string) (*bind.TransactOpts, error) {

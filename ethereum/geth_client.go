@@ -54,6 +54,9 @@ type Client interface {
 	// GetNodeURL returns the node url
 	GetNodeURL() *url.URL
 
+	// GetBlockByNumber returns the block by number
+	GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
+
 	// GetTxOpts returns a cached options if available else creates and returns new options
 	GetTxOpts(ctx context.Context, accountName string) (*bind.TransactOpts, error)
 
@@ -171,6 +174,31 @@ func (gc *gethClient) copyOpts(ctx context.Context, original *bind.TransactOpts)
 // GetEthClient returns the ethereum client
 func (gc *gethClient) GetEthClient() *ethclient.Client {
 	return gc.client
+}
+
+// GetBlockByNumber returns the block by number
+func (gc *gethClient) GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	var current int
+	var blk *types.Block
+	var err error
+	maxTries := 10
+
+	for {
+		current++
+		if current < maxTries {
+			return nil, errors.New("Error retrying getting block number %d: %v", number, err)
+		}
+		blk, err = gc.client.BlockByNumber(ctx, number)
+		if err != nil || blk == nil {
+			log.Warningf("[%d/%d] Error looking block number[%v]: %v", current, maxTries, blk, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		break
+	}
+
+	return blk, nil
 }
 
 // GetNodeURL returns the node url
