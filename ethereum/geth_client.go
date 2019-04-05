@@ -190,7 +190,7 @@ func (gc *gethClient) GetBlockByNumber(ctx context.Context, number *big.Int) (*t
 		}
 		blk, err = gc.client.BlockByNumber(ctx, number)
 		if err != nil || blk == nil {
-			log.Warningf("[%d/%d] Error looking block number[%v]: %v", current, maxTries, blk, err)
+			log.Warningf("[%d/%d] Error looking block number[%d][%v]: %v", current, maxTries, number, blk, err)
 			time.Sleep(2 * time.Second)
 			continue
 		}

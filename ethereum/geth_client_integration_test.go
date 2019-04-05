@@ -111,6 +111,15 @@ func TestGethClient_GetTxOpts(t *testing.T) {
 	assert.True(t, opts.GasPrice.Cmp(big.NewInt(10000000000)) == 0)
 }
 
+func TestGethClient_GetBlockByNumber_MaxRetries(t *testing.T) {
+	gc, err := ethereum.NewGethClient(cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, gc)
+	_, err = gc.GetBlockByNumber(context.Background(), big.NewInt(1000000000000000000))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Error retrying getting block number")
+}
+
 func BenchmarkGethClient_GetTxOpts(b *testing.B) {
 	gc, err := ethereum.NewGethClient(cfg)
 	assert.NoError(b, err)
