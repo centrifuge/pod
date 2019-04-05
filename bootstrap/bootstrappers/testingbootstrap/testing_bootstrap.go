@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -25,7 +26,7 @@ import (
 
 var log = logging.Logger("context")
 
-var bootstappers = []bootstrap.TestBootstrapper{
+var bootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
@@ -37,6 +38,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	&invoice.Bootstrapper{},
+	&entityrelationship.Bootstrapper{},
 	&entity.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
 	&nft.Bootstrapper{},
@@ -47,7 +49,7 @@ var bootstappers = []bootstrap.TestBootstrapper{
 
 func TestFunctionalEthereumBootstrap() map[string]interface{} {
 	cm := testingutils.BuildIntegrationTestingContext()
-	for _, b := range bootstappers {
+	for _, b := range bootstrappers {
 		err := b.TestBootstrap(cm)
 		if err != nil {
 			log.Error("Error encountered while bootstrapping", err)
@@ -58,7 +60,7 @@ func TestFunctionalEthereumBootstrap() map[string]interface{} {
 	return cm
 }
 func TestFunctionalEthereumTearDown() {
-	for _, b := range bootstappers {
+	for _, b := range bootstrappers {
 		err := b.TestTearDown()
 		if err != nil {
 			log.Error("Error encountered while bootstrapping", err)

@@ -41,7 +41,8 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory)
+		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory,
+		nil) // todo pass mocked ER service
 }
 
 func TestService_Update(t *testing.T) {
