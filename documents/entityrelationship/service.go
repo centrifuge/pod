@@ -1,6 +1,7 @@
 package entityrelationship
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -32,7 +33,7 @@ type Service interface {
 	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
 
 	// GetEntityRelation returns a entity relation based on an entity id
-	GetEntityRelation(entityIdentifier, version []byte) (*EntityRelationship, error)
+	GetEntityRelationship(entityID, version []byte) (*EntityRelationship, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -156,7 +157,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	r, err := s.repo.Find(eID, *did[0])
+	r, err := s.repo.FindEntityRelationship(eID, *did[0])
 	if err != nil {
 		return nil, err
 	}
@@ -168,13 +169,22 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 }
 
 // Get returns the entity relationship requested
-// TODO
-func (s service) Get(ctx context.Context, payload *entitypb.RelationshipData) (documents.Model, error) {
-	return nil, nil
-}
+func (s service) GetEntityRelationship(entityID, version []byte) (*EntityRelationship, error) {
+	if entityID == nil {
+		return &EntityRelationship{}, documents.ErrPayloadNil
+	}
 
-// GetEntityRelation returns a entity relation based on an entity id
-func (s service) GetEntityRelation(entityIdentifier, version []byte) (*EntityRelationship, error) {
-	// todo not implemented yet
-	return nil, nil
+	relationships, err := s.repo.ListAllRelationships(entityID)
+	if err != nil {
+		return &EntityRelationship{}, err
+	}
+
+	if version != nil {
+		for _, r := range relationships {
+			if bytes.Equal(r.Document.CurrentVersion, version) {
+				return &r, nil
+			}
+		}
+	}
+	return &EntityRelationship{}, documents.ErrDocumentNotFound
 }
