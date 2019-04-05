@@ -115,7 +115,7 @@ p2p:
 # Queue configurations for asynchronous processing
 queue:
   # Defines the number of workers/consumers that will be allocated at startup
-  numWorkers: 2
+  numWorkers: 100
   # Frees up CPU cycles when worker is waiting for events
   workerWaitTimeMS: 1
   # Number of retries allowed for a task

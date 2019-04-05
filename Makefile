@@ -95,6 +95,15 @@ install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
 	@command -v xgo >/dev/null 2>&1 || go get github.com/karalabe/xgo
 
+build-darwin-amd64: ## Build darwin/amd64
+build-darwin-amd64: install-xgo
+	@echo "Building darwin-10.10-amd64 with flags [${LD_FLAGS}]"
+	@mkdir -p build/darwin-amd64
+	@xgo -go 1.11.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
+	@mv build/darwin-amd64/centrifuge-darwin-10.10-amd64 build/darwin-amd64/centrifuge
+	$(eval TAGINSTANCE := $(shell echo ${TAG}))
+	@tar -zcvf cent-api-darwin-10.10-amd64-${TAGINSTANCE}.tar.gz -C build/darwin-amd64/ .
+
 build-linux-amd64: ## Build linux/amd64
 build-linux-amd64: install-xgo
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
