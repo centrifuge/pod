@@ -65,9 +65,9 @@ networks:
     ethereumNetworkId: 3
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0xF86177b275E4Fcb2Ab5A3FcF5E46aab51f73D7a6"
-      anchorRepository: "0xf630d8bE5664C7FB1234CEf48b6A729cEe3B71D8"
-      invoiceUnpaid: "0x9eee8FbE3E29c96cC944F0eeC1594fe1b633dABe"
+      identityFactory: "0x0d391E72325CedC41E48053E77288a89F2E31115"
+      anchorRepository: "0x2C80F1DafDa7aADeb2C175d4B43A858473E11713"
+      invoiceUnpaid: "0x6bC0169D45f3fe7Adf4B51B445D023E12e3be0d6"
 
   # Main net test network
   embarcaderotest:
@@ -80,9 +80,9 @@ networks:
     ethereumNetworkId: 1
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x2257a0B7E513582c36B127c4E0d142F8B98273a3"
-      anchorRepository: "0x62e58B399adc033e6e404978D16D54123f4C10Bc"
-      invoiceUnpaid: "0xB6b76DCD6A456D5d9FfF7D18F562D3854f11a5C9"
+      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
+      anchorRepository: "0x637B8C3D2AA3Cc206D94519b54892089c9E67990"
+      invoiceUnpaid: "0x3268465A4C01C0a76Cdb03Dcb47480aCa4e20D0e"
 
 # Data Storage
 storage:

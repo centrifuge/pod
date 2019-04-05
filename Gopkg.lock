@@ -45,11 +45,11 @@
   revision = "aa6e0f35703c1438cc45860ddc0c3f6e6c633c93"
 
 [[projects]]
-  digest = "1:f811216b45f6f5cc1c88ffa8afbe5aa5feba336880059fe06750f89531ad29a3"
+  digest = "1:7b089505420b21e7fe54636b0406fcde76dd55e8f6e8d4115b8884e7f37cf091"
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   packages = ["."]
   pruneopts = "T"
-  revision = "7d060cf4d8b0fa21d57ac68f12a785c0750b0f60"
+  revision = "250dc1ef0e135d753693a86b2d560d285f99a3ee"
 
 [[projects]]
   digest = "1:6499d875e690e4fcf1733c29b782a98ab0d60b9fdb55cb6f4f48a4e20412fb01"
@@ -1535,7 +1535,6 @@
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/any",
-    "github.com/golang/protobuf/ptypes/duration",
     "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
@@ -1560,7 +1559,6 @@
     "github.com/mitchellh/go-homedir",
     "github.com/multiformats/go-multiaddr",
     "github.com/multiformats/go-multihash",
-    "github.com/pkg/errors",
     "github.com/roboll/go-vendorinstall",
     "github.com/satori/go.uuid",
     "github.com/savaki/jq",
