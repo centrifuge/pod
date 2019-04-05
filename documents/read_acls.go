@@ -467,7 +467,7 @@ func (cd *CoreDocument) DeleteAccessToken(ctx context.Context, granteeID string)
 	accessTokens := ncd.Document.AccessTokens
 	for i, t := range accessTokens {
 		if hexutil.Encode(t.Grantee) == granteeID {
-			ncd.Document.AccessTokens := removeTokenAtIndex(i, accessTokens)
+			ncd.Document.AccessTokens = removeTokenAtIndex(i, accessTokens)
 			ncd.Modified = true
 			return ncd, nil
 		}
