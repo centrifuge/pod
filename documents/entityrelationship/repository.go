@@ -19,7 +19,7 @@ type repository interface {
 	EntityRelationshipExists(entityIdentifier []byte, targetDID identity.DID) (bool, error)
 
 	// ListAllRelationships returns a list of all relationships in which a given entity is involved
-	ListAllRelationships(entityIdentifier []byte) (*[]EntityRelationship, error)
+	ListAllRelationships(entityIdentifier []byte) ([]EntityRelationship, error)
 }
 
 type repo struct {
@@ -73,7 +73,7 @@ func (r *repo) EntityRelationshipExists(entityIdentifier []byte, targetDID ident
 }
 
 // ListAllRelationships returns a list of all relationships in which a given entity is involved
-func (r *repo) ListAllRelationships(entityIdentifier []byte) (*[]EntityRelationship, error) {
+func (r *repo) ListAllRelationships(entityIdentifier []byte) ([]EntityRelationship, error) {
 	relationships, err := r.db.GetAllByPrefix(prefix)
 	if err != nil {
 		return nil, err
@@ -86,5 +86,5 @@ func (r *repo) ListAllRelationships(entityIdentifier []byte) (*[]EntityRelations
 			}
 		}
 	}
-	return &er, nil
+	return er, nil
 }
