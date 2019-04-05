@@ -238,11 +238,6 @@ func (*Entity) DocumentType() string {
 	return documenttypes.EntityDataTypeUrl
 }
 
-// Identity returns the entity identity.
-func (e *Entity) getIdentity() identity.DID {
-	return *e.Identity
-}
-
 // PrepareNewVersion prepares new version from the old entity.
 func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators documents.CollaboratorsAccess) error {
 	err := e.initEntityFromData(data)
