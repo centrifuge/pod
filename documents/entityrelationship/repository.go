@@ -10,7 +10,7 @@ import (
 type repository interface {
 	documents.Repository
 
-	// Find returns a EntityRelationship based on a entity id and a targetDID
+	// Find returns the latest EntityRelationship based on a entity id and a targetDID
 	Find(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error)
 
 	// EntityExists returns true if a entity relationship exists for a given entity identifier and target did

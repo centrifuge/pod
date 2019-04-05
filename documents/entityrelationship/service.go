@@ -121,7 +121,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes and entity model and does required validation checks, tries to persist to DB
-// For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
+// For Entity Relationships, Create encompasses the Share functionality from the Entity Client API endpoint
 func (s service) Create(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -196,7 +196,7 @@ func (s service) DeriveEntityRelationshipData(doc documents.Model) (*entitypb.Re
 	return er.getClientData(), nil
 }
 
-// DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
+// DeriveFromUpdatePayload returns a new version of the indicated Entity Relationship with a deleted access token
 func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error) {
 	if payload == nil {
 		return nil, documents.ErrDocumentNil
@@ -216,9 +216,11 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	if err != nil {
 		return nil, err
 	}
-
-	return nil, nil
-	// get latest old version of the document
+	r.CoreDocument, err = r.DeleteAccessToken(ctx, payload.TargetIdentity)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // Get returns the entity relationship requested
