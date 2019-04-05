@@ -96,81 +96,22 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 	return er, nil
 }
 
-// validateAndPersist validates the document, calculates the data root, and persists to DB
+// validateAndPersist is not implemented for the entity relationship
 func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
-	selfDID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
-	}
-
-	er, ok := new.(*EntityRelationship)
-	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
-	}
-
-	// validate the entity
-	err = validator.Validate(old, er)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
-	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(selfDID[:], er.CurrentVersion(), er)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
-	}
-
-	return er, nil
+	return nil, documents.ErrNotImplemented
 }
 
-// Create takes and entity model and does required validation checks, tries to persist to DB
-// For Entity Relationships, Create encompasses the Share functionality from the Entity Client API endpoint
+// Create is not implemented for the EntityRelationship
 func (s service) Create(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	selfDID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
-	}
-
-	entityRelationship, err = s.validateAndPersist(ctx, nil, entityRelationship, CreateValidator(s.factory))
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
-	}
-
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, entityRelationship.CurrentVersion())
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
-	}
-	return entityRelationship, txID, done, nil
+	return nil, transactions.TxID{}, nil, documents.ErrNotImplemented
 }
 
-// Update finds the old document, validates the new version and persists the updated document
-// For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
+// Update is not implemented for the EntityRelationship
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	selfDID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
-	}
-
-	old, err := s.GetCurrentVersion(ctx, new.ID())
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
-	}
-
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
-	}
-
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
-	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
-	}
-	return new, txID, done, nil
+	return nil, transactions.TxID{}, nil, documents.ErrNotImplemented
 }
 
-// DeriveEntityResponse returns create response from entity model
+// DeriveEntityRelationshipResponse returns create response from entity relationship model
 func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entitypb.RelationshipResponse, error) {
 	data, err := s.DeriveEntityRelationshipData(model)
 	if err != nil {
@@ -189,7 +130,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 
 }
 
-// DeriveEntityData returns create response from entity model
+// DeriveEntityRelationshipData returns create response from entity model
 func (s service) DeriveEntityRelationshipData(doc documents.Model) (*entitypb.RelationshipData, error) {
 	er, ok := doc.(*EntityRelationship)
 	if !ok {

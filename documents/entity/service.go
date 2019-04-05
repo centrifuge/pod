@@ -30,6 +30,21 @@ type Service interface {
 
 	// DeriveEntityResponse returns the entity model in our standard client format
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
+
+	// DeriveFromSharePayload derives the entity relationship from the relationship payload
+	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
+
+	// Share takes an entity relationship, validates it, and tries to persist it to the DB
+	Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+
+	// DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
+	DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
+
+	// Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
+	Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+
+	// DeriveEntityRelationshipResponse returns create response from entity relationship model
+	DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -120,7 +135,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	return entity, nil
 }
 
-// Create takes and entity model and does required validation checks, tries to persist to DB
+// Create takes an entity model and does required validation checks, tries to persist to DB
 func (s service) Create(ctx context.Context, entity documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -280,4 +295,29 @@ func (s service) requestEntityFromCollaborator(documentID, version []byte) (docu
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	return s.get(ctx, documentID, nil)
 
+}
+
+// DeriveFromSharePayload derives the entity relationship from the relationship payload
+func (s service) DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
+	return s.erService.DeriveFromCreatePayload(ctx, payload)
+}
+
+// Share takes an entity relationship, validates it, and tries to persist it to the DB
+func (s service) Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	return s.Create(ctx, entityRelationship)
+}
+
+// DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
+func (s service) DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
+	return s.erService.DeriveFromUpdatePayload(ctx, payload)
+}
+
+// Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
+func (s service) Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	return s.Update(ctx, entityRelationship)
+}
+
+// DeriveEntityRelationshipResponse returns create response from entity relationship model
+func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error) {
+	return s.erService.DeriveEntityRelationshipResponse(model)
 }

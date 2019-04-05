@@ -107,7 +107,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
+              "$ref": "#/definitions/entityRelationshipResponse"
             }
           }
         },
@@ -142,7 +142,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
+              "$ref": "#/definitions/entityRelationshipResponse"
             }
           }
         },
@@ -492,6 +492,19 @@
         }
       }
     },
+    "entityRelationshipData": {
+      "type": "object",
+      "properties": {
+        "owner_identity": {
+          "type": "string",
+          "title": "DID of relationship owner"
+        },
+        "target_identity": {
+          "type": "string",
+          "title": "DID of target identity"
+        }
+      }
+    },
     "entityRelationshipPayload": {
       "type": "object",
       "properties": {
@@ -501,6 +514,17 @@
         },
         "target_identity": {
           "type": "string"
+        }
+      }
+    },
+    "entityRelationshipResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "relationship": {
+          "$ref": "#/definitions/entityRelationshipData"
         }
       }
     }

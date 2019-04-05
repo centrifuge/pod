@@ -42,54 +42,15 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 }
 
 func TestService_Update(t *testing.T) {
-	//_, idFactory, srv := getServiceWithMockedLayers()
-	//eSrv := srv.(service)
-	//ctxh := testingconfig.CreateAccountContext(t, cfg)
-	//
-	//// missing last version
-	//model, _ := createCDWithEmbeddedEntityRelationship(t)
-	//_, _, _, err := eSrv.Update(ctxh, model)
-	//assert.Error(t, err)
-	//assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
-	//testEntityRepo()
-	//assert.NoError(t, testRepoGlobal.Create(accountID, model.CurrentVersion(), model))
-	//
-	//// calculate data root fails
-	//nm := new(mockModel)
-	//nm.On("ID").Return(model.ID(), nil).Once()
-	//_, _, _, err = eSrv.Update(ctxh, nm)
-	//nm.AssertExpectations(t)
-	//assert.Error(t, err)
-	//assert.Contains(t, err.Error(), "unknown document type")
-	//
-	//// success
-	//idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
-	//data, err := eSrv.DeriveEntityRelationshipData(model)
-	//assert.NoError(t, err)
-	//data.LegalName = "test company"
-	//data.Contacts = []*entitypb.Contact{{Name: "Mr. Test"}}
-	//collab := testingidentity.GenerateRandomDID().String()
-	//newInv, err := eSrv.DeriveFromUpdatePayload(ctxh, &cliententitypb.EntityUpdatePayload{
-	//	Identifier:  hexutil.Encode(model.ID()),
-	//	WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
-	//	Data:        data,
-	//})
-	//assert.NoError(t, err)
-	//newData, err := eSrv.DeriveEntityRelationshipData(newInv)
-	//assert.NoError(t, err)
-	//assert.Equal(t, data, newData)
-	//
-	//model, _, _, err = eSrv.Update(ctxh, newInv)
-	//assert.NoError(t, err)
-	//assert.NotNil(t, model)
-	//assert.True(t, testRepo().Exists(accountID, model.ID()))
-	//assert.True(t, testRepo().Exists(accountID, model.CurrentVersion()))
-	//assert.True(t, testRepo().Exists(accountID, model.PreviousVersion()))
-	//
-	//newData, err = eSrv.DeriveEntityData(model)
-	//assert.NoError(t, err)
-	//assert.Equal(t, data, newData)
-	//idFactory.AssertExpectations(t)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, srv := getServiceWithMockedLayers()
+	eSrv := srv.(service)
+
+	// success
+	relationship, err := eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateRelationshipPayload())
+	assert.NoError(t, err)
+	_, _, _, err = eSrv.Update(ctxh, relationship)
+	assert.Error(t, err)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
@@ -144,24 +105,14 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 
 func TestService_Create(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, idFactory, srv := getServiceWithMockedLayers()
+	_, _, srv := getServiceWithMockedLayers()
 	eSrv := srv.(service)
 
-	// calculate data root fails
-	m, _, _, err := eSrv.Create(ctxh, &mockModel{})
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown document type")
-
 	// success
-	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
 	relationship, err := eSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreateRelationshipPayload())
 	assert.NoError(t, err)
-	m, _, _, err = eSrv.Create(ctxh, relationship)
-	assert.NoError(t, err)
-	assert.True(t, testEntityRepo().Exists(did[:], m.ID()))
-	assert.True(t, testEntityRepo().Exists(did[:], m.CurrentVersion()))
-	idFactory.AssertExpectations(t)
+	_, _, _, err = eSrv.Create(ctxh, relationship)
+	assert.Error(t, err)
 }
 
 func TestService_DeriveEntityData(t *testing.T) {

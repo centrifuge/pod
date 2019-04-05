@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -33,6 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"

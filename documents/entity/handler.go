@@ -156,12 +156,63 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 	return resp, nil
 }
 
-func (h *grpcHandler) Share(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
-	//TODO not implmented yet
-	return nil, nil
+func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
+	apiLog.Debugf("Create request %v", req)
+	cctx, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	doc, err := h.service.DeriveFromSharePayload(cctx, req)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive share payload")
+	}
+
+	// validate and persist
+	doc, txID, _, err := h.service.Share(cctx, doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not create document")
+	}
+
+	resp, err := h.service.DeriveEntityRelationshipResponse(doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	resp.Header.TransactionId = txID.String()
+	return resp, nil
 }
 
-func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
-	//TODO not implmented yet
-	return nil, nil
+func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
+	apiLog.Debugf("Update request %v", payload)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	doc, err := h.service.DeriveFromRevokePayload(ctxHeader, payload)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive revoke payload")
+	}
+
+	doc, txID, _, err := h.service.Revoke(ctxHeader, doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not update document")
+	}
+
+	resp, err := h.service.DeriveEntityRelationshipResponse(doc)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	resp.Header.TransactionId = txID.String()
+	return resp, nil
 }
