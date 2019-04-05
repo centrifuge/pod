@@ -1,20 +1,19 @@
-package entity
+package entityrelationship
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 const (
-	// BootstrappedEntityHandler maps to grpc handler for entities
-	BootstrappedEntityHandler string = "BootstrappedEntityHandler"
+	// BootstrappedEntityRelationshipService maps to the service for entity relationships
+	BootstrappedEntityRelationshipService string = "BootstrappedEntityRelationshipService"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -32,11 +31,18 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document service not initialised")
 	}
 
+	db, ok := ctx[storage.BootstrappedDB].(storage.Repository)
+	if !ok {
+		return errors.New("storage repository not initialised")
+	}
+
 	repo, ok := ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
 	if !ok {
 		return errors.New("document db repository not initialised")
 	}
-	repo.Register(&Entity{})
+
+	entityRepo := newDBRepository(db, repo)
+	repo.Register(&EntityRelationship{})
 
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	if !ok {
@@ -48,32 +54,23 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
-	if !ok {
-		return errors.New("config service not initialised")
-	}
-
 	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	if !ok {
 		return errors.New("identity factory not initialised")
 	}
 
-	erService, ok := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
-	if !ok {
-		return errors.New("entity relation service not initialised")
-	}
-
 	// register service
 	srv := DefaultService(
 		docSrv,
-		repo,
-		queueSrv, txManager, factory, erService)
+		entityRepo,
+		queueSrv, txManager, factory)
 
-	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
+	err := registry.Register(documenttypes.EntityRelationshipDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register entity service: %v", err)
 	}
 
-	ctx[BootstrappedEntityHandler] = GRPCHandler(cfgSrv, srv)
+	ctx[BootstrappedEntityRelationshipService] = srv
+
 	return nil
 }

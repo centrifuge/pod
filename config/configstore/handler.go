@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
@@ -20,11 +19,6 @@ var apiLog = logging.Logger("account-api")
 
 type grpcHandler struct {
 	service config.Service
-}
-
-// GRPCHandler returns an implementation of configpb.ConfigServiceServer
-func GRPCHandler(svc config.Service) configpb.ConfigServiceServer {
-	return &grpcHandler{service: svc}
 }
 
 // GRPCAccountHandler returns an implementation of accountpb.AccountServiceServer
@@ -48,14 +42,6 @@ func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb
 		response.Data = append(response.Data, tpb)
 	}
 	return response, nil
-}
-
-func (h grpcHandler) GetConfig(ctx context.Context, _ *empty.Empty) (*configpb.ConfigData, error) {
-	nodeConfig, err := h.service.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	return nodeConfig.CreateProtobuf(), nil
 }
 
 func (h grpcHandler) GetAccount(ctx context.Context, req *accountpb.GetAccountRequest) (*accountpb.AccountData, error) {

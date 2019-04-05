@@ -5,6 +5,8 @@ package entity
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -39,7 +41,8 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory)
+		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory,
+		nil) // todo pass mocked ER service
 }
 
 func TestService_Update(t *testing.T) {
@@ -307,6 +310,36 @@ func TestService_GetVersion(t *testing.T) {
 
 	mod, err = eSrv.GetVersion(ctxh, mod.ID(), []byte{})
 	assert.Error(t, err)
+}
+
+func TestService_Get_Collaborators(t *testing.T) {
+	_, _, eSrv := getServiceWithMockedLayers()
+	entity, _ := createCDWithEmbeddedEntity(t)
+
+	err := testRepo().Create(accountID, entity.CurrentVersion(), entity)
+	assert.NoError(t, err)
+
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+
+	_, err = eSrv.GetVersion(ctxh, entity.ID(), entity.CurrentVersion())
+	assert.NoError(t, err)
+
+	// set other DID for selfDID
+	oldDIDBytes, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
+	oldDID, err := identity.NewDIDFromBytes(oldDIDBytes)
+	assert.NoError(t, err)
+
+	cfg.Set("identityId", testingidentity.GenerateRandomDID().ToAddress().String())
+	ctxh = testingconfig.CreateAccountContext(t, cfg)
+
+	_, err = eSrv.GetVersion(ctxh, entity.ID(), entity.CurrentVersion())
+
+	//todo should currently fail because not implemented
+	assert.Error(t, err)
+
+	// reset to old DID for other test cases
+	cfg.Set("identityId", oldDID.ToAddress().String())
 }
 
 func TestService_Exists(t *testing.T) {

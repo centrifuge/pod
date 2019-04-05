@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -39,6 +40,7 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
+	erService entityrelationship.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -48,6 +50,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,
+	erService entityrelationship.Service,
 ) Service {
 	return service{
 		repo:      repo,
@@ -55,6 +58,7 @@ func DefaultService(
 		txManager: txManager,
 		Service:   srv,
 		factory:   factory,
+		erService: erService,
 	}
 }
 
@@ -222,4 +226,58 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 	}
 
 	return entity, nil
+}
+
+func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
+	return s.get(ctx, documentID, version)
+}
+
+func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	isCollaborator := false
+	var entity documents.Model
+
+	if s.Service.Exists(ctx, documentID) {
+		if version == nil {
+			entity, err = s.Service.GetCurrentVersion(ctx, documentID)
+		} else {
+			entity, err = s.Service.GetVersion(ctx, documentID, version)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		isCollaborator, err = entity.IsDIDCollaborator(selfDID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if isCollaborator {
+		// todo add relationship array
+		return entity, nil
+	}
+
+	return s.requestEntityFromCollaborator(documentID, version)
+}
+
+func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
+	/*
+		todo not implemented yet
+		er, err := s.erService.GetEntityRelation(documentID,version)
+		if err != nil {
+			return nil, err
+		}
+
+	*/
+	return nil, documents.ErrDocumentNotFound
+}
+
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+	return s.get(ctx, documentID, nil)
+
 }

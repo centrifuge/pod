@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -51,6 +52,7 @@ func TestMain(m *testing.M) {
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		&invoice.Bootstrapper{},
+		&entityrelationship.Bootstrapper{},
 		&entity.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},

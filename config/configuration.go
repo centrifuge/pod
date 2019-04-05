@@ -20,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,6 +37,9 @@ var AccountHeaderKey struct{}
 // ContractName is a type to indicate a contract name parameter
 type ContractName string
 
+// ContractOp is a type to indicate a contract operation name parameter
+type ContractOp string
+
 const (
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
@@ -53,11 +55,34 @@ const (
 
 	// InvoiceUnpaidNFT is the contract name for InvoiceUnpaidNFT
 	InvoiceUnpaidNFT ContractName = "invoiceUnpaid"
+
+	// IDCreate identity creation operation
+	IDCreate ContractOp = "idCreate"
+
+	// IDAddKey identity add key operation
+	IDAddKey ContractOp = "idAddKey"
+
+	// IDRevokeKey identity key revocation operation
+	IDRevokeKey ContractOp = "idRevokeKey"
+
+	// AnchorCommit anchor commit operation
+	AnchorCommit ContractOp = "anchorCommit"
+
+	// AnchorPreCommit anchor pre-commit operation
+	AnchorPreCommit ContractOp = "anchorPreCommit"
+
+	// NftMint nft minting operation
+	NftMint ContractOp = "nftMint"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
 func ContractNames() [5]ContractName {
 	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, InvoiceUnpaidNFT}
+}
+
+// ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
+func ContractOps() [6]ContractOp {
+	return [6]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -91,8 +116,8 @@ type Configuration interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
-	GetEthereumGasPrice() *big.Int
-	GetEthereumGasLimit() uint64
+	GetEthereumMaxGasPrice() *big.Int
+	GetEthereumGasLimit(op ContractOp) uint64
 	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
 	GetNetworkKey(k string) string
@@ -112,9 +137,6 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
-
-	// CreateProtobuf creates protobuf
-	CreateProtobuf() *configpb.ConfigData
 }
 
 // Account exposes account options
@@ -170,10 +192,6 @@ func (c *configuration) JSON() ([]byte, error) {
 
 func (c *configuration) FromJSON(json []byte) error {
 	panic("irrelevant, configuration#FromJSON must not be used")
-}
-
-func (c *configuration) CreateProtobuf() *configpb.ConfigData {
-	panic("irrelevant, configuration#CreateProtobuf must not be used")
 }
 
 // AccountConfig holds the account details.
@@ -320,14 +338,20 @@ func (c *configuration) GetEthereumMaxRetries() int {
 	return c.GetInt("ethereum.maxRetries")
 }
 
-// GetEthereumGasPrice returns the gas price to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasPrice() *big.Int {
-	return big.NewInt(cast.ToInt64(c.get("ethereum.gasPrice")))
+// GetEthereumMaxGasPrice returns the gas price to use for a ethereum transaction.
+func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
+	n := new(big.Int)
+	n, ok := n.SetString(c.GetString("ethereum.maxGasPrice"), 10)
+	if !ok {
+		// node must not continue to run
+		log.Panic("could not read ethereum.maxGasPrice")
+	}
+	return n
 }
 
 // GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasLimit() uint64 {
-	return cast.ToUint64(c.get("ethereum.gasLimit"))
+func (c *configuration) GetEthereumGasLimit(op ContractOp) uint64 {
+	return cast.ToUint64(c.get(fmt.Sprintf("ethereum.gasLimits.%s", string(op))))
 }
 
 // GetEthereumDefaultAccountName returns the default account to use for the transaction.

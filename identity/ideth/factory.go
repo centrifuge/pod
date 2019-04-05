@@ -3,6 +3,7 @@ package ideth
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -25,11 +26,12 @@ type factory struct {
 	client          ethereum.Client
 	txManager       transactions.Manager
 	queue           *queue.Server
+	config          id.Config
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server, factoryAddress common.Address) id.Factory {
-	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue}
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager transactions.Manager, queue *queue.Server, factoryAddress common.Address, conf id.Config) id.Factory {
+	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue, config: conf}
 }
 
 func (s *factory) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
@@ -113,12 +115,13 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		return nil, err
 	}
 
-	opts, err := s.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
+	opts, err := s.client.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, err
 	}
 
+	opts.GasLimit = s.config.GetEthereumGasLimit(config.IDCreate)
 	calcIdentityAddress, err := s.CalculateIdentityAddress(ctx)
 	if err != nil {
 		return nil, err

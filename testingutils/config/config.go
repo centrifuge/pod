@@ -94,13 +94,13 @@ func (m *MockConfig) GetEthereumMaxRetries() int {
 	return args.Get(0).(int)
 }
 
-func (m *MockConfig) GetEthereumGasPrice() *big.Int {
+func (m *MockConfig) GetEthereumMaxGasPrice() *big.Int {
 	args := m.Called()
 	return args.Get(0).(*big.Int)
 }
 
-func (m *MockConfig) GetEthereumGasLimit() uint64 {
-	args := m.Called()
+func (m *MockConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
+	args := m.Called(op)
 	return args.Get(0).(uint64)
 }
 

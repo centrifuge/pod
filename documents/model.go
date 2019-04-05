@@ -110,6 +110,9 @@ type Model interface {
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
 	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
 
+	// IsDIDCollaborator returns true if the did is a collaborator of the document
+	IsDIDCollaborator(did identity.DID) (bool, error)
+
 	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 	AddAttribute(name string, attributeType AllowedAttributeType, value string) error
 
