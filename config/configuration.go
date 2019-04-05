@@ -137,7 +137,6 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
-	MaskErrors() bool
 }
 
 // Account exposes account options
@@ -436,11 +435,6 @@ func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
-}
-
-// MaskErrors returns true if masking errors is enabled
-func (c *configuration) MaskErrors() bool {
-	return c.GetBool("debug.maskErrors")
 }
 
 // GetPrecommitEnabled returns true if precommit for anchors is enabled

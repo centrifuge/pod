@@ -154,8 +154,5 @@ debug:
   # pprof for debugging
   pprof: false
 
-  # whether to mask errors returned in p2p responses for security
-  maskErrors: false
-
 anchoring:
   precommit: true

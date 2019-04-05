@@ -60,7 +60,6 @@ type NodeConfig struct {
 	SmartContractAddresses         map[config.ContractName]common.Address
 	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
-	MaskingErrors                  bool
 }
 
 // IsSet refer the interface
@@ -273,11 +272,6 @@ func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
 }
 
-// MaskErrors refer the interface
-func (nc *NodeConfig) MaskErrors() bool {
-	return nc.MaskingErrors
-}
-
 // ID Gets the ID of the document represented by this model
 func (nc *NodeConfig) ID() ([]byte, error) {
 	return []byte{}, nil
@@ -382,7 +376,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		NetworkID:                      c.GetNetworkID(),
 		SmartContractAddresses:         extractSmartContractAddresses(c),
 		PprofEnabled:                   c.IsPProfEnabled(),
-		MaskingErrors:                  c.MaskErrors(),
 	}
 }
 

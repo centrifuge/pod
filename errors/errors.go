@@ -13,6 +13,10 @@ import (
 // ErrUnknown is an unknown error type
 const ErrUnknown = Error("unknown error")
 
+// MaskErrs this is a compile time flag to indicate whether to mask errors that can leak private or sensitive information.
+// IMPORTANT!!! DO NOT CHANGE AT RUNTIME in production code.
+var MaskErrs = true
+
 // Error is a string that implements error
 // this will have interesting side effects of having constant errors
 type Error string
@@ -158,6 +162,10 @@ func IsOfType(terr, err error) bool {
 
 // Mask returns the mask for the error
 func Mask(err error) error {
+	if !MaskErrs {
+		return err
+	}
+
 	if errt, ok := err.(TypedError); ok {
 		return errt.Mask()
 	}

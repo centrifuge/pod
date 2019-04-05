@@ -22,11 +22,6 @@ type mockConfig struct {
 	mock.Mock
 }
 
-func (m *mockConfig) MaskErrors() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *mockConfig) GetPrecommitEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)

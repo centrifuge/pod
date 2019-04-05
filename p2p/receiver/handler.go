@@ -276,15 +276,7 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 }
 
 func (srv *Handler) convertToErrorEnvelop(ierr error) (*pb.P2PEnvelope, error) {
-	c, err := srv.config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	if c.MaskErrors() {
-		ierr = errors.Mask(ierr)
-	}
-
+	ierr = errors.Mask(ierr)
 	errPb, ok := ierr.(proto.Message)
 	if !ok {
 		return nil, ierr
