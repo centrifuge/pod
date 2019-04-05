@@ -64,6 +64,6 @@ func init() {
 	createConfigCmd.Flags().Int64VarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")
 	createConfigCmd.Flags().StringVarP(&network, "network", "n", "russianhill", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
-	createConfigCmd.Flags().BoolVarP(&txPoolAccess, "txpoolaccess", "x", true, "Transaction Pool access")
+	createConfigCmd.Flags().BoolVarP(&txPoolAccess, "txpoolaccess", "x", true, "Transaction Pool access (-x=false)")
 	rootCmd.AddCommand(createConfigCmd)
 }

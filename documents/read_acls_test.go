@@ -438,3 +438,49 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, ncd.Document.AccessTokens, 1)
 }
+
+func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
+	m, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	account, err := contextutil.Account(ctx)
+	assert.NoError(t, err)
+
+	id, err := account.GetIdentityID()
+	assert.NoError(t, err)
+
+	cd := m.Document
+	assert.Len(t, cd.AccessTokens, 0)
+
+	payload := documentpb.AccessTokenParams{
+		Grantee:            hexutil.Encode(id),
+		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
+	}
+
+	// no access token found
+	_, err = m.DeleteAccessToken(ctx, hexutil.Encode(id))
+	assert.Error(t, err)
+
+	// add access token
+	ncd, err := m.AddAccessToken(ctx, payload)
+	assert.NoError(t, err)
+	assert.Len(t, ncd.Document.AccessTokens, 1)
+
+	// invalid granteeID
+	_, err = ncd.DeleteAccessToken(ctx, hexutil.Encode(utils.RandomSlice(32)))
+	assert.Error(t, err)
+	assert.Len(t, ncd.Document.AccessTokens, 1)
+
+	// add second access token, valid deletion
+	did := testingidentity.GenerateRandomDID()
+	payload.Grantee = hexutil.Encode(did[:])
+	updated, err := ncd.AddAccessToken(ctx, payload)
+	assert.NoError(t, err)
+	assert.Len(t, updated.Document.AccessTokens, 2)
+
+	final, err := updated.DeleteAccessToken(ctx, hexutil.Encode(id))
+	assert.NoError(t, err)
+	assert.Len(t, final.Document.AccessTokens, 1)
+	assert.Equal(t, final.Document.AccessTokens[0].Grantee, did[:])
+}

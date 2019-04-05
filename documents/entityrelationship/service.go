@@ -30,13 +30,16 @@ type Service interface {
 
 	// DeriveEntityRelationshipResponse returns the entity relationship model in our standard client format
 	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
+
+	// GetEntityRelation returns a entity relation based on an entity id
+	GetEntityRelation(entityIdentifier, version []byte) (*EntityRelationship, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      documents.Repository
+	repo      repository
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
@@ -45,7 +48,7 @@ type service struct {
 // DefaultService returns the default implementation of the service.
 func DefaultService(
 	srv documents.Service,
-	repo documents.Repository,
+	repo repository,
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,
@@ -143,9 +146,28 @@ func (s service) Create(ctx context.Context, entityRelationship documents.Model)
 
 // Update finds the old document, validates the new version and persists the updated document
 // For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
-// TODO
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
-	return nil, contextutil.TX(ctx), nil, nil
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	old, err := s.GetCurrentVersion(ctx, new.ID())
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+	}
+
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, err
+	}
+
+	txID := contextutil.TX(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	if err != nil {
+		return nil, transactions.NilTxID(), nil, err
+	}
+	return new, txID, done, nil
 }
 
 // DeriveEntityResponse returns create response from entity model
@@ -178,13 +200,22 @@ func (s service) DeriveEntityRelationshipData(doc documents.Model) (*entitypb.Re
 }
 
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
-// TODO
 func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error) {
+	if payload == nil {
+		return nil, documents.ErrDocumentNil
+	}
 	return nil, nil
+	// get latest old version of the document
 }
 
 // Get returns the entity relationship requested
 // TODO
 func (s service) Get(ctx context.Context, payload *entitypb.RelationshipData) (documents.Model, error) {
+	return nil, nil
+}
+
+// GetEntityRelation returns a entity relation based on an entity id
+func (s service) GetEntityRelation(entityIdentifier, version []byte) (*EntityRelationship, error) {
+	// todo not implemented yet
 	return nil, nil
 }
