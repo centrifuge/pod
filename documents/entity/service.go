@@ -262,7 +262,18 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		return entity, nil
 	}
 
-	// todo call entityRelationship service and request Entity document from other collaborators
+	return s.requestEntityFromCollaborator(documentID, version)
+}
+
+func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
+	/*
+		todo not implemented yet
+		er, err := s.erService.GetEntityRelation(documentID,version)
+		if err != nil {
+			return nil, err
+		}
+
+	*/
 	return nil, documents.ErrDocumentNotFound
 }
 

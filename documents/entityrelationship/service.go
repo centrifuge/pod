@@ -30,6 +30,9 @@ type Service interface {
 
 	// DeriveEntityRelationshipResponse returns the entity relationship model in our standard client format
 	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
+
+	// GetEntityRelation returns a entity relation based on an entity id
+	GetEntityRelation(entityIdentifier, version []byte) (*EntityRelationship, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -226,5 +229,11 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 // Get returns the entity relationship requested
 // TODO
 func (s service) Get(ctx context.Context, payload *entitypb.RelationshipData) (documents.Model, error) {
+	return nil, nil
+}
+
+// GetEntityRelation returns a entity relation based on an entity id
+func (s service) GetEntityRelation(entityIdentifier, version []byte) (*EntityRelationship, error) {
+	// todo not implemented yet
 	return nil, nil
 }
