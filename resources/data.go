@@ -84,7 +84,7 @@ func goCentrifugeBuildConfigsDefault_configYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "go-centrifuge/build/configs/default_config.yaml", size: 6312, mode: os.FileMode(420), modTime: time.Unix(1554467549, 0)}
+	info := bindataFileInfo{name: "go-centrifuge/build/configs/default_config.yaml", size: 6312, mode: os.FileMode(420), modTime: time.Unix(1554721234, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +104,7 @@ func goCentrifugeBuildConfigsTesting_configYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "go-centrifuge/build/configs/testing_config.yaml", size: 1076, mode: os.FileMode(420), modTime: time.Unix(1554467633, 0)}
+	info := bindataFileInfo{name: "go-centrifuge/build/configs/testing_config.yaml", size: 1076, mode: os.FileMode(420), modTime: time.Unix(1552945185, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -204,7 +204,6 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
-
 var _bintree = &bintree{nil, map[string]*bintree{
 	"go-centrifuge": &bintree{nil, map[string]*bintree{
 		"build": &bintree{nil, map[string]*bintree{
@@ -262,3 +261,4 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
+
