@@ -43,6 +43,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory)
 }
 
+// TODO
 func TestService_Update(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, _, srv := getServiceWithMockedLayers()
@@ -55,6 +56,7 @@ func TestService_Update(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TODO
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	//ctxh := testingconfig.CreateAccountContext(t, cfg)
 	//_, idFactory, srv := getServiceWithMockedLayers()

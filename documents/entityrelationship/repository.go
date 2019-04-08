@@ -2,8 +2,6 @@ package entityrelationship
 
 import (
 	"bytes"
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -37,8 +35,7 @@ func newDBRepository(db storage.Repository, docRepo documents.Repository) reposi
 
 // Find returns a EntityRelationship based on a entity id and a targetDID
 func (r *repo) FindEntityRelationship(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error) {
-	fmt.Println("inside findentityrelationship", prefix)
-	relationships, err := r.db.GetAllByPrefix(prefix)
+	relationships, err := r.db.GetAllByPrefix("")
 	if err != nil {
 		return nil, err
 	}
