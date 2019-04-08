@@ -172,7 +172,8 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 		return nil, err
 	}
 
-	h, err := documents.DeriveResponseHeader(model)
+	// note that token registry is(must be) irrelevant here
+	h, err := documents.DeriveResponseHeader(nil, model)
 	if err != nil {
 		return nil, err
 	}

@@ -201,6 +201,10 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	return ncd, nil
 }
 
+func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
+	return cd.Document.Nfts
+}
+
 // IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
 func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
 	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())

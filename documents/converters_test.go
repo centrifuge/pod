@@ -126,7 +126,7 @@ func TestCollaboratorAccess(t *testing.T) {
 func TestDeriveResponseHeader(t *testing.T) {
 	model := new(mockModel)
 	model.On("GetCollaborators", mock.Anything).Return(CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
-	_, err := DeriveResponseHeader(model)
+	_, err := DeriveResponseHeader(nil, model)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error fetching collaborators")
 	model.AssertExpectations(t)
@@ -142,7 +142,7 @@ func TestDeriveResponseHeader(t *testing.T) {
 	model.On("GetCollaborators", mock.Anything).Return(ca, nil).Once()
 	model.On("ID").Return(id).Once()
 	model.On("CurrentVersion").Return(id).Once()
-	resp, err := DeriveResponseHeader(model)
+	resp, err := DeriveResponseHeader(nil, model)
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentId)
 	assert.Equal(t, hexutil.Encode(id), resp.Version)

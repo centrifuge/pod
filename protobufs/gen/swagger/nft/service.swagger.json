@@ -133,9 +133,6 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/nftResponseHeader"
-        },
-        "token_id": {
-          "type": "string"
         }
       }
     },
