@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,6 +19,7 @@ type AnchorProcessor interface {
 	PreAnchorDocument(ctx context.Context, model Model) error
 	AnchorDocument(ctx context.Context, model Model) error
 	SendDocument(ctx context.Context, model Model) error
+	RequestDocumentWithToken(ctx context.Context,requesterID identity.DID,tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
 }
 
 // updaterFunc is a wrapper that will be called to save the state of the model between processor steps

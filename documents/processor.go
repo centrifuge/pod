@@ -28,6 +28,9 @@ type Client interface {
 
 	// after all signatures are collected the sender sends the document including the signatures
 	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+
+	// GetDocumentRequest requests a document from a collaborator
+	GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest)  (*p2ppb.GetDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
@@ -55,6 +58,7 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 	defer cancel()
 
 	resp, err := dp.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: &cd})
+
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
@@ -212,6 +216,25 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
 	return nil
 }
+
+
+// RequestDocumentWithToken requests a document with an access token
+func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context,requesterID identity.DID,tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier:entityRelationIdentifier,AccessTokenId:tokenIdentifier}
+
+	request := &p2ppb.GetDocumentRequest{DocumentIdentifier:entityIdentifier,
+	AccessType:p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+	AccessTokenRequest:accessTokenRequest,
+	}
+
+	response, err := dp.p2pClient.GetDocumentRequest(ctx,requesterID,request)
+	if err != nil {
+		return nil,err
+	}
+
+	return response, nil
+}
+
 
 // SendDocument does post anchor validations and sends the document to collaborators
 func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {

@@ -39,6 +39,7 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
+	processor documents.AnchorProcessor
 }
 
 // DefaultService returns the default implementation of the service.
@@ -48,6 +49,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,
+	processor documents.AnchorProcessor,
 ) Service {
 	return service{
 		repo:      repo,
@@ -55,6 +57,8 @@ func DefaultService(
 		txManager: txManager,
 		Service:   srv,
 		factory:   factory,
+		processor: processor,
+
 	}
 }
 

@@ -120,7 +120,7 @@ message EntityDataResponse {
   repeated Relationship relationships = 2;
 }
 
-message RelationshipPayload {
+message   RelationshipPayload {
   // entity identifier
   string identifier = 1;
   string target_identity = 2;

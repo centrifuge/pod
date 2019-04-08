@@ -57,11 +57,14 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity factory not initialised")
 	}
 
+
+	processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
+
 	// register service
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, factory)
+		queueSrv, txManager, factory, processor)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {
