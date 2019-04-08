@@ -218,10 +218,10 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 }
 
 // RequestDocumentWithToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context, requesterID identity.DID, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
-	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: entityRelationIdentifier, AccessTokenId: tokenIdentifier}
+func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context, requesterID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
 
-	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: entityIdentifier,
+	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: accessTokenRequest,
 	}

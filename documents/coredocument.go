@@ -127,11 +127,11 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 	if err != nil {
 		return nil, err
 	}
-	collaborators := &CollaboratorsAccess{
+	collaborators := CollaboratorsAccess{
 		ReadCollaborators:      []identity.DID{*did[0]},
 		ReadWriteCollaborators: nil,
 	}
-	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, *collaborators)
+	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, collaborators)
 	if err != nil {
 		return nil, err
 	}

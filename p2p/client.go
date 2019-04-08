@@ -77,7 +77,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	}
 
 	if !p2pcommon.MessageTypeSendAnchoredDocRep.Equals(recvEnvelope.Header.Type) {
-		return nil, errors.New("the received send anchored document response is incorrect")
+		return nil, errors.New("the received getDocument response is incorrect")
 	}
 
 	r := new(p2ppb.AnchorDocumentResponse)
@@ -144,7 +144,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		return nil, convertClientError(recvEnvelope)
 	}
 
-	if !p2pcommon.MessageTypeSendAnchoredDocRep.Equals(recvEnvelope.Header.Type) {
+	if !p2pcommon.MessageTypeGetDoc.Equals(recvEnvelope.Header.Type) {
 		return nil, errors.New("the received get document response is incorrect")
 	}
 
