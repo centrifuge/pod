@@ -3,7 +3,6 @@ package entityrelationship
 import (
 	"bytes"
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -117,7 +116,6 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	fmt.Println("in repo!!!", s.repo, selfDID[:], er.CurrentVersion(), er)
 	err = s.repo.Create(selfDID[:], er.CurrentVersion(), er)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
@@ -217,7 +215,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(did, eID)
+
 	r, err := s.repo.FindEntityRelationship(eID, *did[0])
 	if err != nil {
 		return nil, err
