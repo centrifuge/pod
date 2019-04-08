@@ -271,13 +271,14 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 
 func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
 	/*
-		todo not implemented yet
-		er, err := s.erService.GetEntityRelation(documentID,version)
-		if err != nil {
-			return nil, err
-		}
 
+	todo steps
+	1. Find ER related to Entity document.Identifier
+	2. Request document with token s.processor.RequestDocumentWithToken(...) from the first Collaborator
+	3. call a new method in documents.Service to validate received document
+	4. return entity document if validation
 	*/
+
 	return nil, documents.ErrDocumentNotFound
 }
 
