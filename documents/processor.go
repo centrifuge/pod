@@ -30,7 +30,7 @@ type Client interface {
 	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 
 	// GetDocumentRequest requests a document from a collaborator
-	GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest)  (*p2ppb.GetDocumentResponse, error)
+	GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
@@ -217,24 +217,22 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	return nil
 }
 
-
 // RequestDocumentWithToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context,requesterID identity.DID,tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
-	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier:entityRelationIdentifier,AccessTokenId:tokenIdentifier}
+func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context, requesterID identity.DID, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: entityRelationIdentifier, AccessTokenId: tokenIdentifier}
 
-	request := &p2ppb.GetDocumentRequest{DocumentIdentifier:entityIdentifier,
-	AccessType:p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
-	AccessTokenRequest:accessTokenRequest,
+	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: entityIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: accessTokenRequest,
 	}
 
-	response, err := dp.p2pClient.GetDocumentRequest(ctx,requesterID,request)
+	response, err := dp.p2pClient.GetDocumentRequest(ctx, requesterID, request)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	return response, nil
 }
-
 
 // SendDocument does post anchor validations and sends the document to collaborators
 func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {

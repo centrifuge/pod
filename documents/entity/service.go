@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -62,7 +63,6 @@ func DefaultService(
 		factory:   factory,
 		erService: erService,
 		processor: processor,
-
 	}
 }
 

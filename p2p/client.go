@@ -157,8 +157,6 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	return r, nil
 }
 
-
-
 // OpenClient returns P2PServiceClient to contact the remote peer
 func (s *peer) getPeerID(id identity.DID) (libp2pPeer.ID, error) {
 	lastB58Key, err := s.idService.CurrentP2PKey(id)
