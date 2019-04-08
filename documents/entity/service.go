@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -40,6 +41,7 @@ type service struct {
 	txManager transactions.Manager
 	factory   identity.Factory
 	processor documents.AnchorProcessor
+	erService entityrelationship.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -49,6 +51,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
 	factory identity.Factory,
+	erService entityrelationship.Service,
 	processor documents.AnchorProcessor,
 ) Service {
 	return service{
@@ -57,6 +60,7 @@ func DefaultService(
 		txManager: txManager,
 		Service:   srv,
 		factory:   factory,
+		erService: erService,
 		processor: processor,
 
 	}
@@ -262,7 +266,18 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		return entity, nil
 	}
 
-	// todo call entityRelationship service and request Entity document from other collaborators
+	return s.requestEntityFromCollaborator(documentID, version)
+}
+
+func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
+	/*
+		todo not implemented yet
+		er, err := s.erService.GetEntityRelation(documentID,version)
+		if err != nil {
+			return nil, err
+		}
+
+	*/
 	return nil, documents.ErrDocumentNotFound
 }
 

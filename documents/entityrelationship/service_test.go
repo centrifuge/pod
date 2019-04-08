@@ -31,12 +31,12 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(testingcommons.MockIdentityFactory)
-	repo := testRepo()
+	entityRepo := testEntityRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService)
+	docSrv := documents.DefaultService(entityRepo, mockAnchor, documents.NewServiceRegistry(), &idService)
 	return idService, idFactory, DefaultService(
 		docSrv,
-		repo,
+		entityRepo,
 		queueSrv,
 		ctx[transactions.BootstrappedService].(transactions.Manager), idFactory)
 }
@@ -76,7 +76,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	selfDID, err := contextutil.AccountDID(ctxh)
 	assert.NoError(t, err)
-	eSrv := service{repo: testRepo()}
+	eSrv := service{repo: testEntityRepo()}
 	empty := coredocumentpb.CoreDocument{}
 	m, err := eSrv.DeriveFromCoreDocument(empty)
 	assert.Error(t, err)
@@ -108,8 +108,8 @@ func TestService_Create(t *testing.T) {
 	assert.NoError(t, err)
 	m, _, _, err = eSrv.Create(ctxh, relationship)
 	assert.NoError(t, err)
-	assert.True(t, testRepo().Exists(did[:], m.ID()))
-	assert.True(t, testRepo().Exists(did[:], m.CurrentVersion()))
+	assert.True(t, testEntityRepo().Exists(did[:], m.ID()))
+	assert.True(t, testEntityRepo().Exists(did[:], m.CurrentVersion()))
 	idFactory.AssertExpectations(t)
 }
 
@@ -131,7 +131,7 @@ func TestService_DeriveEntityData(t *testing.T) {
 
 func TestService_DeriveEntityResponse(t *testing.T) {
 	// success
-	eSrv := service{repo: testRepo()}
+	eSrv := service{repo: testEntityRepo()}
 
 	// derive data failed
 	m := new(mockModel)
