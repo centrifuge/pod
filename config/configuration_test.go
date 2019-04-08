@@ -44,5 +44,11 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Nil(t, err, "must be nil, config file should be created")
 	c := LoadConfiguration(v.ConfigFileUsed())
 	assert.False(t, c.IsPProfEnabled(), "pprof is disabled by default")
+	assert.Equal(t, "{}", c.Get("ethereum.accounts.main.key").(string))
+	assert.Equal(t, "pwrd", c.Get("ethereum.accounts.main.password").(string))
+	bfile, err := ioutil.ReadFile(v.ConfigFileUsed())
+	assert.NoError(t, err)
+	assert.NotContains(t, string(bfile), "key: \"{}\"")
+	assert.NotContains(t, string(bfile), "password: \"pwrd\"")
 	assert.NoError(t, os.RemoveAll(targetDir))
 }

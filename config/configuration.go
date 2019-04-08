@@ -534,8 +534,18 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, err
 	}
 
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY", string(bfile))
+	if err != nil {
+		return nil, err
+	}
+
 	if accountPassword == "" {
 		log.Warningf("Account Password not provided")
+	}
+
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)
+	if err != nil {
+		return nil, err
 	}
 
 	v := viper.New()
@@ -554,8 +564,8 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 	v.Set("ethereum.nodeURL", ethNodeURL)
 	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
-	v.Set("ethereum.accounts.main.key", string(bfile))
-	v.Set("ethereum.accounts.main.password", accountPassword)
+	v.Set("ethereum.accounts.main.key", "")
+	v.Set("ethereum.accounts.main.password", "")
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
