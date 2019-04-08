@@ -201,6 +201,7 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	return ncd, nil
 }
 
+// NFTs returns the list of NFTs created for this model
 func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 	return cd.Document.Nfts
 }

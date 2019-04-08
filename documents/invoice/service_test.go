@@ -60,7 +60,9 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) 
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Manager))
+		ctx[transactions.BootstrappedService].(transactions.Manager),
+		func() documents.TokenRegistry { return nil },
+	)
 }
 
 func TestService_Update(t *testing.T) {
