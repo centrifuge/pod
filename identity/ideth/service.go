@@ -364,7 +364,7 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 	if ethKey.RevokedAt > 0 {
 		// if a specific time for validation is provided then we validate if a revoked key was revoked before the provided time
 		if validateAt != nil {
-			revokedAtBlock, err := i.client.GetEthClient().BlockByNumber(ctx, big.NewInt(int64(ethKey.RevokedAt)))
+			revokedAtBlock, err := i.client.GetBlockByNumber(ctx, big.NewInt(int64(ethKey.RevokedAt)))
 			if err != nil {
 				return err
 			}
