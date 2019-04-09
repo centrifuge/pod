@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -81,6 +82,9 @@ type Model interface {
 	// Note: The document should be anchored after successfully adding the NFT.
 	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error
 
+	// NFTs returns the list of NFTs created for this model
+	NFTs() []*coredocumentpb.NFT
+
 	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	// Note: returns all the collaborators with Read and Read_Sign permission
@@ -127,4 +131,7 @@ type Model interface {
 type TokenRegistry interface {
 	// OwnerOf to retrieve owner of the tokenID
 	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
+
+	// CurrentIndexOfToken get the current index of the token
+	CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error)
 }

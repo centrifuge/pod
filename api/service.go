@@ -45,9 +45,9 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	InvoiceUnpaidService, ok := nodeObjReg[nft.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
+	InvoiceUnpaidService, ok := nodeObjReg[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	if !ok {
-		return errors.New("failed to get %s", nft.BootstrappedInvoiceUnpaid)
+		return errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
 	}
 
 	// register documents (common)

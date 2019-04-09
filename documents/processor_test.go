@@ -28,6 +28,12 @@ type mockModel struct {
 	sigs []*coredocumentpb.Signature
 }
 
+func (m *mockModel) NFTs() []*coredocumentpb.NFT {
+	args := m.Called()
+	dr, _ := args.Get(0).([]*coredocumentpb.NFT)
+	return dr
+}
+
 func (m *mockModel) CalculateDataRoot() ([]byte, error) {
 	args := m.Called()
 	dr, _ := args.Get(0).([]byte)

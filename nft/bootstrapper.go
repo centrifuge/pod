@@ -13,11 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
-const (
-	// BootstrappedInvoiceUnpaid is the key to InvoiceUnpaid NFT in bootstrap context.
-	BootstrappedInvoiceUnpaid = "BootstrappedInvoiceUnpaid"
-)
-
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
@@ -68,6 +63,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
-	ctx[BootstrappedInvoiceUnpaid] = InvoiceUnpaid
+	ctx[bootstrap.BootstrappedInvoiceUnpaid] = InvoiceUnpaid
 	return nil
 }

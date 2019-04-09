@@ -75,12 +75,12 @@ abigen-install: vendorinstall
 
 gen-abi-bindings: ## Generates GO ABI Bindings
 gen-abi-bindings: install-deps abigen-install
-	$(eval CONTRACTS_VERSION := $(shell cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/package.json | jq -r '.version'))
-	npm install --prefix tmp/contracts @centrifuge/ethereum-contracts@${CONTRACTS_VERSION}
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/InvoiceUnpaid.json | jq '.abi' > tmp/contracts/po.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
+	npm install --prefix vendor/github.com/centrifuge/centrifuge-ethereum-contracts
+	npm run compile --prefix vendor/github.com/centrifuge/centrifuge-ethereum-contracts
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/InvoiceUnpaidNFT.json | jq '.abi' > tmp/contracts/po.abi
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
 	@abigen --abi tmp/contracts/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
 	@abigen --abi tmp/contracts/ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract.go
 	@abigen --abi tmp/contracts/po.abi --pkg nft --type InvoiceUnpaidContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/invoice_unpaid_contract.go

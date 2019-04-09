@@ -201,6 +201,11 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	return ncd, nil
 }
 
+// NFTs returns the list of NFTs created for this model
+func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
+	return cd.Document.Nfts
+}
+
 // IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
 func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
 	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())
@@ -277,7 +282,7 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 
 func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.NFT {
 	for _, nft := range nfts {
-		if bytes.Equal(nft.RegistryId[:20], registry) {
+		if bytes.Equal(nft.RegistryId[:common.AddressLength], registry) {
 			return nft
 		}
 	}
