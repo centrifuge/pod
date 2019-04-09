@@ -119,6 +119,16 @@ func TestIsOfType(t *testing.T) {
 	assert.True(t, IsOfType(errBadErr, serr))
 }
 
+func TestMask(t *testing.T) {
+	errBadErr := Error("bad error")
+	terr := NewTypedError(ErrUnknown, errBadErr)
+	s := Mask(terr)
+	assert.Equal(t, "error has been masked", s.Error())
+
+	s = Mask(errBadErr)
+	assert.Equal(t, "error has been masked", s.Error())
+}
+
 func TestGetHTTPCode(t *testing.T) {
 	err := New("some error")
 	code, msg := GetHTTPDetails(err)
