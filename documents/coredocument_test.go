@@ -5,6 +5,7 @@ package documents
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"os"
 	"testing"
 
@@ -179,6 +180,8 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 	assert.NoError(t, err)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	selfDID, err := contextutil.AccountDID(ctxh)
+	assert.NoError(t, err)
 	id := hexutil.Encode(cd.Document.DocumentIdentifier)
 	did1 := testingidentity.GenerateRandomDID()
 
@@ -187,7 +190,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            "random string",
 		DocumentIdentifier: id,
 	}
-	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at,selfDID)
 	assert.Error(t, err)
 
 	// wrong docID
@@ -195,7 +198,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            did1.String(),
 		DocumentIdentifier: "random string",
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at,selfDID)
 	assert.Error(t, err)
 
 	// correct access token params
@@ -203,7 +206,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            did1.String(),
 		DocumentIdentifier: id,
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at,selfDID)
 	assert.NoError(t, err)
 
 	token := ncd.Document.AccessTokens[0]

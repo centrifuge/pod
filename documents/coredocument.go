@@ -122,14 +122,14 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
 // It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
-func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params documentpb.AccessTokenParams) (*CoreDocument, error) {
+func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params documentpb.AccessTokenParams, selfDID identity.DID) (*CoreDocument, error) {
 	did, err := identity.StringsToDIDs(params.Grantee)
 	if err != nil {
 		return nil, err
 	}
 	collaborators := CollaboratorsAccess{
 		ReadCollaborators:      []identity.DID{*did[0]},
-		ReadWriteCollaborators: nil,
+		ReadWriteCollaborators: []identity.DID{selfDID},
 	}
 	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, collaborators)
 	if err != nil {

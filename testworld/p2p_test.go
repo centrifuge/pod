@@ -22,7 +22,7 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// alice anchors entity
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), nil))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), []string{}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -39,7 +39,7 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	}
 
 	er := entityrelationship.EntityRelationship{}
-	er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData)
+	er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData,alice.id)
 
 	erModel, _, isDone, err := alice.host.erService.Create(ctxAlice, &er)
 	assert.NoError(t, err)

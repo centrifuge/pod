@@ -144,7 +144,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		return nil, convertClientError(recvEnvelope)
 	}
 
-	if !p2pcommon.MessageTypeGetDoc.Equals(recvEnvelope.Header.Type) {
+	if !p2pcommon.MessageTypeGetDocRep.Equals(recvEnvelope.Header.Type) {
 		return nil, errors.New("the received get document response is incorrect")
 	}
 
