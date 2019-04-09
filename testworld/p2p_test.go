@@ -35,13 +35,13 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	ctxAlice := testingconfig.CreateAccountContext(t, alice.host.config)
 	erData := &entitypb2.RelationshipData{
 		EntityIdentifier: entityIdentifier,
-		OwnerIdentity:  alice.id.String(),
-		TargetIdentity: bob.id.String(),
+		OwnerIdentity:    alice.id.String(),
+		TargetIdentity:   bob.id.String(),
 	}
 
 	er := entityrelationship.EntityRelationship{}
 	err := er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData, alice.id)
-	assert.NoError(t,err)
+	assert.NoError(t, err)
 
 	erModel, _, isDone, err := alice.host.erService.Create(ctxAlice, &er)
 	assert.NoError(t, err)
