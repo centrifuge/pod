@@ -34,8 +34,14 @@ type Service interface {
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
 	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
 
+	// Share takes an entity relationship, validates it, and tries to persist it to the DB
+	Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+
 	// DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
 	DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
+
+	// Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
+	Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
 
 	// DeriveEntityRelationshipResponse returns create response from entity relationship model
 	DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error)

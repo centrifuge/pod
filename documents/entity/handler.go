@@ -171,7 +171,7 @@ func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.Relationshi
 	}
 
 	// validate and persist
-	doc, txID, _, err := h.service.Create(cctx, doc)
+	doc, txID, _, err := h.service.Share(cctx, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -201,7 +201,7 @@ func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.Relati
 		return nil, centerrors.Wrap(err, "could not derive revoke payload")
 	}
 
-	doc, txID, _, err := h.service.Update(ctxHeader, doc)
+	doc, txID, _, err := h.service.Revoke(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")
