@@ -86,8 +86,9 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 	}
 	owner := selfDID.String()
 	rd := &entitypb.RelationshipData{
-		OwnerIdentity:  owner,
-		TargetIdentity: payload.TargetIdentity,
+		OwnerIdentity:    owner,
+		TargetIdentity:   payload.TargetIdentity,
+		EntityIdentifier: payload.Identifier,
 	}
 	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
