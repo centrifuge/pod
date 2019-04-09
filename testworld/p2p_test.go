@@ -3,6 +3,7 @@
 package testworld
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"net/http"
 	"testing"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +59,7 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 
 	// Bob access Entity directly on p2p
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: erIdentifier, AccessTokenId: cd.AccessTokens[0].Identifier}
-	entityIdentifierByte := common.Hex2Bytes(entityIdentifier[2:]) // remove 0x
+	entityIdentifierByte, err := hexutil.Decode(entityIdentifier) // remove 0x
 	assert.NoError(t, err)
 	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: entityIdentifierByte,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
@@ -68,6 +68,8 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 
 	response, err := bob.host.p2pClient.GetDocumentRequest(ctxBob, alice.id, request)
 	assert.NoError(t, err)
-	assert.Equal(t, response.Document.DocumentIdentifier, entityIdentifier)
+	assert.Equal(t, response.Document.DocumentIdentifier, entityIdentifierByte)
+
+
 
 }
