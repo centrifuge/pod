@@ -106,13 +106,19 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	if status != "success" {
 		t.Error(message)
 	}
-	assert.True(t, len(response.Value("token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 
-	tokenID, err := nft.TokenIDFromString(response.Value("token_id").String().Raw())
+	docVal := getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
+	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
+	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
+
+	tokenID, err := nft.TokenIDFromString(docVal.Path("$.header.nfts[0].token_id").String().Raw())
+	assert.NoError(t, err, "token ID should be correct")
+	respOwner := docVal.Path("$.header.nfts[0].owner").String().Raw()
 	assert.NoError(t, err, "token ID should be correct")
 	owner, err := alice.host.tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower("0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb"), strings.ToLower(owner.Hex()))
+	assert.Equal(t, strings.ToLower(respOwner), strings.ToLower(owner.Hex()))
 }
 
 func TestInvoiceUnpaidMint_errors(t *testing.T) {
