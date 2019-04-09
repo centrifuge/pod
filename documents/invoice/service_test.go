@@ -269,7 +269,9 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
-	invSrv := service{repo: testRepo()}
+	invSrv := service{repo: testRepo(), tokenRegFinder: func() documents.TokenRegistry {
+		return nil
+	}}
 
 	// derive data failed
 	m := new(mockModel)

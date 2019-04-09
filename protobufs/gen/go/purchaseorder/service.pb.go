@@ -6,13 +6,14 @@ package purchaseorderpb
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	document "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	proto "github.com/golang/protobuf/proto"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
