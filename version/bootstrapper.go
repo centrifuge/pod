@@ -5,7 +5,6 @@ type Bootstrapper struct{}
 
 // Bootstrap logs the cent node version.
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	log.Info("Centrifuge is Beta software !!!")
 	log.Infof("Running cent node on version: %s", GetVersion())
 	return nil
 }

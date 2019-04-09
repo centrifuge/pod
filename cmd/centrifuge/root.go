@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/common-nighthawk/go-figure"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -41,7 +42,9 @@ func Execute() {
 }
 
 func printStartMessage() {
-
+	c := figure.NewFigure("Centrifuge OS", "", true)
+	c.Print()
+	fmt.Println("Centrifuge is beta software !!!")
 }
 
 func init() {
