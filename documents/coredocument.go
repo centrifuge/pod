@@ -468,7 +468,7 @@ func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]ide
 		return nil, err
 	}
 
-	return cs.ReadWriteCollaborators, nil
+	return cs.ReadCollaborators, nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs

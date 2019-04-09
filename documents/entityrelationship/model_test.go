@@ -298,7 +298,7 @@ func TestEntityRelationship_GetDocumentID(t *testing.T) {
 
 func TestEntityRelationship_GetDocumentType(t *testing.T) {
 	e := createEntityRelationship(t)
-	assert.Equal(t, documenttypes.EntityRelationshipDocumentTypeUrl, e.DocumentType())
+	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, e.DocumentType())
 }
 
 func TestEntityRelationship_getDocumentDataTree(t *testing.T) {

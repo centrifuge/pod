@@ -32,6 +32,9 @@ const (
 	// ErrDocumentNotFound must be used to indicate that the document for provided id is not found in the system
 	ErrDocumentNotFound = errors.Error("document not found in the system database")
 
+	// ErrNoCollaborator must be used to indicate that the document for provided id the user is not a collaborator
+	ErrNoCollaborator = errors.Error("no collaborator on the document")
+
 	// ErrDocumentVersionNotFound must be used to indicate that the specified version of the document for provided id is not found in the system
 	ErrDocumentVersionNotFound = errors.Error("specified version of the document not found in the system database")
 

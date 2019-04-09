@@ -218,7 +218,7 @@ func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.P
 
 // DocumentType returns the entity relationship document type.
 func (*EntityRelationship) DocumentType() string {
-	return documenttypes.EntityRelationshipDocumentTypeUrl
+	return documenttypes.EntityRelationshipDataTypeUrl
 }
 
 // AddNFT is not implemented for EntityRelationship

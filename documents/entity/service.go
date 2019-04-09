@@ -264,9 +264,11 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 	if isCollaborator {
 		// todo add relationship array
 		return entity, nil
+	} else {
+		return nil, documents.ErrNoCollaborator
 	}
 
-	return s.requestEntityFromCollaborator(documentID, version)
+	return nil, documents.ErrDocumentNotFound
 }
 
 func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
