@@ -62,6 +62,7 @@ func TestMain(m *testing.M) {
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
+	errors.MaskErrs = false
 	mockIDService = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDService] = mockIDService
 	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}

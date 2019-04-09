@@ -21,10 +21,6 @@ import (
 const (
 	// ErrNoAuthHeader used for requests when header is not passed.
 	ErrNoAuthHeader = errors.Error("'authorization' header missing")
-
-	// grpcsAddress where grpc server listens to.
-	// We dont want to add this to config since we do not want to expose the grpcs server
-	grpcAddress = "127.0.0.1"
 )
 
 var (

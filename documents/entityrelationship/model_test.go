@@ -8,8 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -34,6 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -82,8 +81,9 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 	selfDID, err := contextutil.AccountDID(ctxh)
 	assert.NoError(t, err)
 	return &entitypb.RelationshipData{
-		OwnerIdentity:  selfDID.String(),
-		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
+		OwnerIdentity:    selfDID.String(),
+		TargetIdentity:   "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
+		EntityIdentifier: hexutil.Encode(utils.RandomSlice(32)),
 	}
 }
 
@@ -197,8 +197,9 @@ func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	assert.NoError(t, err)
 	// successful init
 	data := &entitypb.RelationshipData{
-		OwnerIdentity:  selfDID.String(),
-		TargetIdentity: testingidentity.GenerateRandomDID().String(),
+		OwnerIdentity:    selfDID.String(),
+		TargetIdentity:   testingidentity.GenerateRandomDID().String(),
+		EntityIdentifier: hexutil.Encode(utils.RandomSlice(32)),
 	}
 	e := new(EntityRelationship)
 	err = e.InitEntityRelationshipInput(ctxh, entityID, data, selfDID)
@@ -368,19 +369,6 @@ func testEntityRepo() repository {
 	}
 	return testRepoGlobal
 }
-
-//func testRepoDoc() documents.Repository {
-//	var testRepoDoc documents.Repository
-//	if testRepoGlobal == nil {
-//		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-//		if err != nil {
-//			panic(err)
-//		}
-//		testRepoDoc := documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-//		testRepoDoc.Register(&EntityRelationship{})
-//	}
-//	return testRepoDoc
-//}
 
 func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)

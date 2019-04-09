@@ -17,4 +17,7 @@ const (
 
 	// ErrEthURL is used when failed to parse ethereum node URL
 	ErrEthURL = errors.Error("failed to parse ethereum node URL")
+
+	// ErrEthKeyNotProvided holds specific error when ethereum key is not provided
+	ErrEthKeyNotProvided = errors.Error("Ethereum Key not provided")
 )

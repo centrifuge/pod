@@ -13,6 +13,10 @@ import (
 // ErrUnknown is an unknown error type
 const ErrUnknown = Error("unknown error")
 
+// MaskErrs this is a compile time flag to indicate whether to mask errors that can leak private or sensitive information.
+// IMPORTANT!!! DO NOT CHANGE AT RUNTIME in production code.
+var MaskErrs = true
+
 // Error is a string that implements error
 // this will have interesting side effects of having constant errors
 type Error string
@@ -102,6 +106,7 @@ func Len(err error) int {
 type typedError struct {
 	terr   error
 	ctxErr error
+	mask   string
 }
 
 // Error returns the error in string
@@ -115,12 +120,13 @@ func NewTypedError(terr, err error) error {
 		terr = ErrUnknown
 	}
 
-	return &typedError{terr: terr, ctxErr: err}
+	return &typedError{terr: terr, ctxErr: err, mask: "error has been masked"}
 }
 
 // TypedError can be implemented by any type error
 type TypedError interface {
 	IsOfType(terr error) bool
+	Mask() error
 }
 
 // IsOfType returns if the err t is of type terr
@@ -136,6 +142,11 @@ func (t *typedError) IsOfType(terr error) bool {
 	return t.ctxErr.Error() == terr.Error()
 }
 
+// Mask returns a mask to hide the actual error to prevent guessing attacks using error messages on p2p
+func (t *typedError) Mask() error {
+	return New(t.mask)
+}
+
 // IsOfType returns if the err is of type terr
 func IsOfType(terr, err error) bool {
 	if errt, ok := err.(TypedError); ok {
@@ -147,6 +158,19 @@ func IsOfType(terr, err error) bool {
 	}
 
 	return err.Error() == terr.Error()
+}
+
+// Mask returns the mask for the error
+func Mask(err error) error {
+	if !MaskErrs {
+		return err
+	}
+
+	if errt, ok := err.(TypedError); ok {
+		return errt.Mask()
+	}
+
+	return New("error has been masked")
 }
 
 // NewHTTPError returns an HTTPError.
