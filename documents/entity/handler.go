@@ -157,7 +157,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 }
 
 func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
-	apiLog.Debugf("Create request %v", req)
+	apiLog.Debugf("Share request %v", req)
 	cctx, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
@@ -188,7 +188,7 @@ func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.Relationshi
 }
 
 func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
-	apiLog.Debugf("Update request %v", payload)
+	apiLog.Debugf("Revoke request %v", payload)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
