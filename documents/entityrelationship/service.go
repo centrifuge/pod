@@ -1,7 +1,6 @@
 package entityrelationship
 
 import (
-	"bytes"
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -33,7 +32,7 @@ type Service interface {
 	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
 
 	// GetEntityRelation returns a entity relation based on an entity id
-	GetEntityRelationship(ctx context.Context, entityID, version []byte) (*EntityRelationship, error)
+	GetEntityRelationships(ctx context.Context, entityID, version []byte) ([]EntityRelationship, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -148,28 +147,28 @@ func (s service) Create(ctx context.Context, relationship documents.Model) (docu
 
 // Update finds the old document, validates the new version and persists the updated document
 // For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, updated documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	old, err := s.GetCurrentVersion(ctx, new.ID())
+	old, err := s.GetCurrentVersion(ctx, updated.ID())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
+	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory))
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, updated.CurrentVersion())
 	if err != nil {
 		return nil, transactions.NilTxID(), nil, err
 	}
-	return new, txID, done, nil
+	return updated, txID, done, nil
 }
 
 // DeriveEntityRelationshipResponse returns create response from entity relationship model
@@ -192,8 +191,8 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 }
 
 // DeriveEntityRelationshipData returns create response from entity model
-func (s service) DeriveEntityRelationshipData(doc documents.Model) (*entitypb.RelationshipData, error) {
-	er, ok := doc.(*EntityRelationship)
+func (s service) DeriveEntityRelationshipData(model documents.Model) (*entitypb.RelationshipData, error) {
+	er, ok := model.(*EntityRelationship)
 	if !ok {
 		return nil, documents.ErrDocumentInvalidType
 	}
@@ -222,22 +221,31 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, errors.New("failed to get self ID")
 	}
 
-	r, err := s.repo.FindEntityRelationship(eID, selfDID, *did[0])
+	id, err := s.repo.FindEntityRelationshipIdentifier(eID, selfDID, *did[0])
 	if err != nil {
 		return nil, err
 	}
 
-	r.CoreDocument, err = r.DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
+	r, err := s.GetCurrentVersion(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &r, nil
+
+	model, err := r.(*EntityRelationship).DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
+	if err != nil {
+		return nil, err
+	}
+
+	r.(*EntityRelationship).Document = model.Document
+	return r, nil
 }
 
-// Get returns the entity relationship requested
-func (s service) GetEntityRelationship(ctx context.Context, entityID, version []byte) (*EntityRelationship, error) {
+// Get returns the requested version of the entity relationships that involve the entityID passed in
+// If version is nil, returns the latest version of the relationship
+func (s service) GetEntityRelationships(ctx context.Context, entityID, version []byte) ([]EntityRelationship, error) {
+	var relationships []EntityRelationship
 	if entityID == nil {
-		return &EntityRelationship{}, documents.ErrPayloadNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	selfDID, err := contextutil.AccountDID(ctx)
@@ -245,17 +253,30 @@ func (s service) GetEntityRelationship(ctx context.Context, entityID, version []
 		return nil, errors.New("failed to get self ID")
 	}
 
-	relationships, err := s.repo.ListAllRelationships(entityID, selfDID)
+	relevant, err := s.repo.ListAllRelationships(entityID, selfDID)
 	if err != nil {
-		return &EntityRelationship{}, err
+		return nil, err
 	}
 
 	if version != nil {
-		for _, r := range relationships {
-			if bytes.Equal(r.Document.CurrentVersion, version) {
-				return &r, nil
+		for _, v := range relevant {
+			r, err := s.GetVersion(ctx, v, version)
+			if err != nil {
+				return nil, err
 			}
+			relationships = append(relationships, *r.(*EntityRelationship))
 		}
+
+		return relationships, nil
 	}
-	return &EntityRelationship{}, documents.ErrDocumentNotFound
+
+	for _, v := range relevant {
+		r, err := s.GetCurrentVersion(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		relationships = append(relationships, *r.(*EntityRelationship))
+	}
+
+	return relationships, nil
 }
