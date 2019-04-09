@@ -28,7 +28,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "3330d21d3ee8c7acf4c53a48148d849a86c4ac15"
+  revision = "fb40eb56d420258c9b653b92f2b5364f71d4cd8d"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"

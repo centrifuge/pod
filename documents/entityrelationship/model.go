@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 )
@@ -32,8 +31,8 @@ type EntityRelationship struct {
 
 	// owner of the relationship
 	OwnerIdentity *identity.DID
-	// Entity identifier
-	EntityIdentifier []byte
+	// document identifier
+	Label []byte
 	// identity which will be granted access
 	TargetIdentity *identity.DID
 }
@@ -41,21 +40,18 @@ type EntityRelationship struct {
 // getClientData returns the entity relationship data from the entity relationship model
 func (e *EntityRelationship) getClientData() *entitypb2.RelationshipData {
 	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
-	eID := hexutil.Encode(e.EntityIdentifier)
 	return &entitypb2.RelationshipData{
-		OwnerIdentity:    dids[0],
-		TargetIdentity:   dids[1],
-		EntityIdentifier: eID,
+		OwnerIdentity:  dids[0],
+		TargetIdentity: dids[1],
 	}
 }
 
-// createP2PProtobuf returns Centrifuge protobuf-specific RelationshipData.
+// createP2PProtobuf returns Centrifuge protobuf-specific RelationShipdata.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
 	return &entitypb.EntityRelationship{
-		OwnerIdentity:    dids[0],
-		TargetIdentity:   dids[1],
-		EntityIdentifier: e.EntityIdentifier,
+		OwnerIdentity:  dids[0],
+		TargetIdentity: dids[1],
 	}
 }
 
@@ -101,13 +97,8 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.Rela
 	if err != nil {
 		return err
 	}
-	eID, err := hexutil.Decode(data.EntityIdentifier)
-	if err != nil {
-		return err
-	}
 	e.OwnerIdentity = dids[0]
 	e.TargetIdentity = dids[1]
-	e.EntityIdentifier = eID
 	return nil
 }
 
@@ -119,7 +110,6 @@ func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.En
 	}
 	e.OwnerIdentity = dids[0]
 	e.TargetIdentity = dids[1]
-	e.EntityIdentifier = entityRelationship.EntityIdentifier
 	return nil
 }
 
@@ -227,7 +217,7 @@ func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.P
 
 // DocumentType returns the entity relationship document type.
 func (*EntityRelationship) DocumentType() string {
-	return documenttypes.EntityRelationshipDataTypeUrl
+	return documenttypes.EntityRelationshipDocumentTypeUrl
 }
 
 // AddNFT is not implemented for EntityRelationship
