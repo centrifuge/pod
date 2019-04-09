@@ -94,6 +94,18 @@ type gethClient struct {
 
 // NewGethClient returns an gethClient which implements Client
 func NewGethClient(config Config) (Client, error) {
+	// This might be removed as soon as we support multiple ethereum keys per account, the error might not be thrown at startup
+	acc, err := config.GetEthereumAccount("main")
+	if err != nil {
+		return nil, err
+	}
+	if acc.Key == "" {
+		return nil, ErrEthKeyNotProvided
+	}
+	if acc.Password == "" {
+		log.Warningf("Main Ethereum Password not provided")
+	}
+
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
 	u, err := url.Parse(config.GetEthereumNodeURL())
 	if err != nil {
