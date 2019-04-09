@@ -463,12 +463,12 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read_Sign permissions.
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	cs, err := cd.GetCollaborators(filterIDs...)
+	sign, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {
 		return nil, err
 	}
 
-	return cs.ReadCollaborators, nil
+	return filterCollaborators(sign, filterIDs...), nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs

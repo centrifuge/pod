@@ -64,6 +64,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
+	if !ok {
+		return errors.New("processor not  initialised")
+	}
 
 	// register service
 	srv := DefaultService(

@@ -3,21 +3,19 @@
 package testworld
 
 import (
+	"net/http"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
-	"time"
 )
 
 func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	t.Parallel()
-
-	time.Sleep(	5000)
 
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
@@ -41,7 +39,7 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	}
 
 	er := entityrelationship.EntityRelationship{}
-	er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData,alice.id)
+	er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData, alice.id)
 
 	erModel, _, isDone, err := alice.host.erService.Create(ctxAlice, &er)
 	assert.NoError(t, err)
@@ -54,10 +52,10 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 
 	// Bob should have the entityRelationship
 	ctxBob := testingconfig.CreateAccountContext(t, bob.host.config)
-	bobModel, err := bob.host.erService.GetCurrentVersion(ctxBob,erIdentifier)
+	bobModel, err := bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
 	assert.NoError(t, err)
 
-	assert.Equal(t,erModel.CurrentVersion(),bobModel.CurrentVersion())
+	assert.Equal(t, erModel.CurrentVersion(), bobModel.CurrentVersion())
 
 	// Bob access Entity directly on p2p
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: erIdentifier, AccessTokenId: cd.AccessTokens[0].Identifier}
@@ -71,7 +69,5 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	response, err := bob.host.p2pClient.GetDocumentRequest(ctxBob, alice.id, request)
 	assert.NoError(t, err)
 	assert.Equal(t, response.Document.DocumentIdentifier, entityIdentifierByte)
-
-
 
 }

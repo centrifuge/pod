@@ -260,12 +260,11 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		if err != nil {
 			return nil, err
 		}
-	}
-	if isCollaborator {
+		if !isCollaborator {
+			return nil, documents.ErrNoCollaborator
+		}
 		// todo add relationship array
 		return entity, nil
-	} else {
-		return nil, documents.ErrNoCollaborator
 	}
 
 	return nil, documents.ErrDocumentNotFound

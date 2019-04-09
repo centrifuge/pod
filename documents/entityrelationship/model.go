@@ -66,7 +66,6 @@ func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, en
 		DocumentIdentifier: entityID,
 	}
 
-
 	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params, selfDID)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)

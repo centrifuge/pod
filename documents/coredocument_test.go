@@ -5,9 +5,10 @@ package documents
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -190,7 +191,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            "random string",
 		DocumentIdentifier: id,
 	}
-	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at,selfDID)
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at, selfDID)
 	assert.Error(t, err)
 
 	// wrong docID
@@ -198,7 +199,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            did1.String(),
 		DocumentIdentifier: "random string",
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at,selfDID)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at, selfDID)
 	assert.Error(t, err)
 
 	// correct access token params
@@ -206,7 +207,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            did1.String(),
 		DocumentIdentifier: id,
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at,selfDID)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at, selfDID)
 	assert.NoError(t, err)
 
 	token := ncd.Document.AccessTokens[0]
