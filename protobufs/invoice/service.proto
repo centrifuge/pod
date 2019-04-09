@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package invoice;
+package inv;
 
-option go_package = "invoicepb";
+option go_package = "invpb";
 option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
-option java_package = "com.invoice";
+option java_package = "com.inv";
 
 import "document/service.proto";
 import "google/api/annotations.proto";

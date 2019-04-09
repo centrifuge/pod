@@ -23,7 +23,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -33,7 +33,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderCreatePayload"
+              "$ref": "#/definitions/poPurchaseOrderCreatePayload"
             }
           }
         ],
@@ -50,7 +50,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -73,7 +73,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -89,7 +89,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderUpdatePayload"
+              "$ref": "#/definitions/poPurchaseOrderUpdatePayload"
             }
           }
         ],
@@ -106,7 +106,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -296,7 +296,7 @@
         }
       }
     },
-    "purchaseorderLineItem": {
+    "poLineItem": {
       "type": "object",
       "properties": {
         "status": {
@@ -350,18 +350,18 @@
         "activities": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/purchaseorderLineItemActivity"
+            "$ref": "#/definitions/poLineItemActivity"
           }
         },
         "tax_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/purchaseorderTaxItem"
+            "$ref": "#/definitions/poTaxItem"
           }
         }
       }
     },
-    "purchaseorderLineItemActivity": {
+    "poLineItemActivity": {
       "type": "object",
       "properties": {
         "item_number": {
@@ -391,7 +391,7 @@
         }
       }
     },
-    "purchaseorderPurchaseOrderCreatePayload": {
+    "poPurchaseOrderCreatePayload": {
       "type": "object",
       "properties": {
         "read_access": {
@@ -401,11 +401,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+          "$ref": "#/definitions/poPurchaseOrderData"
         }
       }
     },
-    "purchaseorderPurchaseOrderData": {
+    "poPurchaseOrderData": {
       "type": "object",
       "properties": {
         "status": {
@@ -499,7 +499,7 @@
         "line_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/purchaseorderLineItem"
+            "$ref": "#/definitions/poLineItem"
           }
         },
         "payment_details": {
@@ -510,18 +510,18 @@
         }
       }
     },
-    "purchaseorderPurchaseOrderResponse": {
+    "poPurchaseOrderResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+          "$ref": "#/definitions/poPurchaseOrderData"
         }
       }
     },
-    "purchaseorderPurchaseOrderUpdatePayload": {
+    "poPurchaseOrderUpdatePayload": {
       "type": "object",
       "properties": {
         "identifier": {
@@ -534,11 +534,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+          "$ref": "#/definitions/poPurchaseOrderData"
         }
       }
     },
-    "purchaseorderTaxItem": {
+    "poTaxItem": {
       "type": "object",
       "properties": {
         "item_number": {

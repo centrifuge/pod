@@ -29,6 +29,7 @@ var log = logging.Logger("centrifuge-cmd")
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	printStartMessage()
 	logging.SetAllLoggers(gologging.INFO)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
@@ -37,6 +38,10 @@ func Execute() {
 		log.Error(err)
 		os.Exit(1)
 	}
+}
+
+func printStartMessage() {
+
 }
 
 func init() {
@@ -70,7 +75,6 @@ func ensureConfigFile() string {
 
 //setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
-
 	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
 	gologging.SetFormatter(formatter)
 	if verbose {
