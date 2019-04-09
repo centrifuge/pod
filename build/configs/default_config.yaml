@@ -20,8 +20,8 @@ networks:
     id: 51
     # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
     bootstrapPeers:
-    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
     # Ethereum network ID - Rinkeby
     ethereumNetworkId: 4
     # Latest deployed Smart Contracts for the given testnet
@@ -43,8 +43,8 @@ networks:
     id: 52
     # Bootstrap list of nodes that Centrifuge provides to the bernalheights testnet
     bootstrapPeers:
-    - "/ip4/104.154.18.51/tcp/38202/ipfs/12D3KooWPs6iaeUuFZNu1GxvsyBTSrTs9vtB6btMAnHFoLjbkzCa"
-    - "/ip4/104.155.185.237/tcp/38202/ipfs/12D3KooWPCGcwiTjoKWHfBa482UPtaeUxNLwd8zbnB1S7weAZUxZ"
+    - "/ip4/104.154.18.51/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
+    - "/ip4/104.155.185.237/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
     # Ethereum network ID - Kovan
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
@@ -59,8 +59,8 @@ networks:
     id: 53
     # Bootstrap list of nodes that Centrifuge provides to the dogpatch (TODO create ropsten bootnodes)
     bootstrapPeers:
-      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
     # Ethereum network ID - Ropsten
     ethereumNetworkId: 3
     # Latest deployed Smart Contracts for the given testnet
@@ -74,8 +74,8 @@ networks:
     # Numeric ID of the Centrifuge network
     id: 10
     bootstrapPeers:
-      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
     # Ethereum network ID - mainnet
     ethereumNetworkId: 1
     # Latest deployed Smart Contracts for the given testnet

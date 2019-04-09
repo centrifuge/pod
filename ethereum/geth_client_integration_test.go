@@ -93,6 +93,16 @@ func TestGetConnection_returnsSameConnection(t *testing.T) {
 	}
 }
 
+func TestGethClient_NoEthKeyProvided(t *testing.T) {
+	ethAcc, err := cfg.GetEthereumAccount("main")
+	assert.NoError(t, err)
+	cfg.Set("ethereum.accounts.main.key", "")
+	_, err = ethereum.NewGethClient(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, ethereum.ErrEthKeyNotProvided, err)
+	cfg.Set("ethereum.accounts.main.key", ethAcc.Key)
+}
+
 func TestGethClient_GetTxOpts(t *testing.T) {
 	cfg.Set("ethereum.maxGasPrice", 30000000000)
 	gc, err := ethereum.NewGethClient(cfg)
