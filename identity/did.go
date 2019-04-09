@@ -108,6 +108,26 @@ type DID common.Address
 // DIDLength contains the length of a DID
 const DIDLength = common.AddressLength
 
+// MarshalJSON marshals DID to json bytes.
+func (d DID) MarshalJSON() ([]byte, error) {
+	str := "\"" + d.String() + "\""
+	return []byte(str), nil
+}
+
+// UnmarshalJSON loads json bytes to DID
+func (d *DID) UnmarshalJSON(data []byte) error {
+	cleanedData := data
+	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
+		cleanedData = data[1 : len(data)-1]
+	}
+	dx, err := NewDIDFromString(string(cleanedData))
+	if err != nil {
+		return err
+	}
+	*d = dx
+	return nil
+}
+
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
 	return common.Address(d)

@@ -73,3 +73,23 @@ func TestKeyPurposeSigning(t *testing.T) {
 	assert.Equal(t, "774a43710604e3ce8db630136980a6ba5a65b5e6686ee51009ed5f3fded6ea7e", purpose.HexValue)
 	assert.Equal(t, "53956441128315394338673222674654929973131976200905067808864911710716608047742", purpose.Value.String())
 }
+
+func TestDID_Marshaling(t *testing.T) {
+	did0, err := NewDIDFromString("0x366b41162a53fd75d95d31dD6d1C4d83bD436BBe")
+	did1, err := NewDIDFromString("0x8780e1143036b4c979fE253128a48074093f1987")
+	assert.NoError(t, err)
+	mdid0, err := did0.MarshalJSON()
+	assert.NoError(t, err)
+
+	// Unmarshal with no wrapped quotes
+	err = did1.UnmarshalJSON([]byte("0x8780e1143036b4c979fE253128a48074093f1987"))
+	assert.NoError(t, err)
+
+	// Wrong DID length
+	err = did1.UnmarshalJSON(append(mdid0, mdid0...))
+	assert.Error(t, err)
+
+	err = did1.UnmarshalJSON(mdid0)
+	assert.NoError(t, err)
+	assert.Equal(t, "0x366b41162a53fd75d95d31dD6d1C4d83bD436BBe", did1.String())
+}
