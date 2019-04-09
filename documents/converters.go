@@ -337,14 +337,11 @@ func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb
 		return nil, errors.NewTypedError(ErrCollaborators, err)
 	}
 
-	author := ""
-	a, err := model.Author()
-	// we ignore error here because it can happen when a model us first created but its not anchored yet
-	if err == nil {
-		author = a.String()
-	}
+	// we ignore error here because it can happen when a model is first created but its not anchored yet
+	a, _ := model.Author()
+	author := a.String()
 
-	// we ignore error here because it can happen when a model us first created but its not anchored yet
+	// we ignore error here because it can happen when a model is first created but its not anchored yet
 	time := ""
 	t, err := model.Timestamp()
 	if err == nil {
@@ -372,7 +369,7 @@ func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb
 
 func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []*documentpb.NFT, err error) {
 	for _, n := range nfts {
-		regAddress := common.BytesToAddress(n.RegistryId[:20])
+		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
 		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
 		if errn != nil || i == nil {
 			err = errors.AppendError(err, errors.New("token index received is nil or other error: %v", errn))

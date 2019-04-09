@@ -282,7 +282,7 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 
 func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.NFT {
 	for _, nft := range nfts {
-		if bytes.Equal(nft.RegistryId[:20], registry) {
+		if bytes.Equal(nft.RegistryId[:common.AddressLength], registry) {
 			return nft
 		}
 	}
