@@ -60,7 +60,9 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) 
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[transactions.BootstrappedService].(transactions.Manager))
+		ctx[transactions.BootstrappedService].(transactions.Manager),
+		func() documents.TokenRegistry { return nil },
+	)
 }
 
 func TestService_Update(t *testing.T) {
@@ -267,7 +269,9 @@ func TestService_DeriveInvoiceData(t *testing.T) {
 
 func TestService_DeriveInvoiceResponse(t *testing.T) {
 	// success
-	invSrv := service{repo: testRepo()}
+	invSrv := service{repo: testRepo(), tokenRegFinder: func() documents.TokenRegistry {
+		return nil
+	}}
 
 	// derive data failed
 	m := new(mockModel)

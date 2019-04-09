@@ -34,9 +34,10 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      documents.Repository
-	queueSrv  queue.TaskQueuer
-	txManager transactions.Manager
+	repo           documents.Repository
+	queueSrv       queue.TaskQueuer
+	txManager      transactions.Manager
+	tokenRegFinder func() documents.TokenRegistry
 }
 
 // DefaultService returns the default implementation of the service.
@@ -45,12 +46,14 @@ func DefaultService(
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
 	txManager transactions.Manager,
+	tokenRegFinder func() documents.TokenRegistry,
 ) Service {
 	return service{
-		repo:      repo,
-		queueSrv:  queueSrv,
-		txManager: txManager,
-		Service:   srv,
+		repo:           repo,
+		queueSrv:       queueSrv,
+		txManager:      txManager,
+		Service:        srv,
+		tokenRegFinder: tokenRegFinder,
 	}
 }
 
@@ -164,7 +167,7 @@ func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.
 		return nil, err
 	}
 
-	h, err := documents.DeriveResponseHeader(model)
+	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
 	if err != nil {
 		return nil, errors.New("failed to derive response: %v", err)
 	}

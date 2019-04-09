@@ -4,9 +4,11 @@ import (
 	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/common"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
@@ -329,30 +331,63 @@ func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess,
 }
 
 // DeriveResponseHeader derives common response header for model
-func DeriveResponseHeader(model Model) (*documentpb.ResponseHeader, error) {
+func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb.ResponseHeader, error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCollaborators, err)
 	}
 
-	rcs, wcs := ToClientCollaboratorAccess(cs)
-	// TODO(ved): we need to update log for NewCoreDocumentWithCollaborators and PrepareNewVersion. Please don't do this without further discussion since this affects consensus validations.
-	//author, err := model.Author()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//time, err := model.Timestamp()
-	//if err != nil {
-	//	return nil, err
-	//}
+	// we ignore error here because it can happen when a model is first created but its not anchored yet
+	a, _ := model.Author()
+	author := a.String()
 
+	// we ignore error here because it can happen when a model is first created but its not anchored yet
+	time := ""
+	t, err := model.Timestamp()
+	if err == nil {
+		time = t.UTC().String()
+	}
+
+	nfts := model.NFTs()
+	cnfts, err := convertNFTs(tokenRegistry, nfts)
+	if err != nil {
+		// this could be a temporary failure, so we ignore but warn about the error
+		log.Warningf("errors encountered when trying to set nfts to the response: %v", errors.NewTypedError(ErrNftNotFound, err))
+	}
+
+	rcs, wcs := ToClientCollaboratorAccess(cs)
 	return &documentpb.ResponseHeader{
-		DocumentId: hexutil.Encode(model.ID()),
-		Version:    hexutil.Encode(model.CurrentVersion()),
-		//Author:      author.String(),
-		//CreatedAt:   time.UTC().String(),
+		DocumentId:  hexutil.Encode(model.ID()),
+		Version:     hexutil.Encode(model.CurrentVersion()),
+		Author:      author,
+		CreatedAt:   time,
 		ReadAccess:  rcs,
 		WriteAccess: wcs,
+		Nfts:        cnfts,
 	}, nil
+}
+
+func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []*documentpb.NFT, err error) {
+	for _, n := range nfts {
+		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
+		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
+		if errn != nil || i == nil {
+			err = errors.AppendError(err, errors.New("token index received is nil or other error: %v", errn))
+			continue
+		}
+
+		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
+		if errn != nil {
+			err = errors.AppendError(err, errn)
+			continue
+		}
+
+		nnfts = append(nnfts, &documentpb.NFT{
+			Registry:   regAddress.Hex(),
+			Owner:      o.Hex(),
+			TokenId:    hexutil.Encode(n.TokenId),
+			TokenIndex: hexutil.Encode(i.Bytes()),
+		})
+	}
+	return nnfts, err
 }
