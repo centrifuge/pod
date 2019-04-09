@@ -5,14 +5,13 @@ package entityrelationship
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -122,6 +121,43 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// valid payload
 	m, err = eSrv.DeriveFromUpdatePayload(ctxh, rp)
 	assert.NoError(t, err)
+}
+
+func TestService_GetEntityRelationship(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, idFactory, srv := getServiceWithMockedLayers()
+	eSrv := srv.(service)
+
+	// create
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
+	rp := testingdocuments.CreateRelationshipPayload()
+	relationship, err := eSrv.DeriveFromCreatePayload(ctxh, rp)
+	assert.NoError(t, err)
+
+	old, _, _, err := eSrv.Create(ctxh, relationship)
+	assert.NoError(t, err)
+	assert.True(t, testEntityRepo().Exists(did[:], old.ID()))
+	assert.True(t, testEntityRepo().Exists(did[:], old.CurrentVersion()))
+
+	// derive update payload
+	m, err := eSrv.DeriveFromUpdatePayload(ctxh, rp)
+	assert.NoError(t, err)
+
+	updated, _, _, err := eSrv.Update(ctxh, m)
+	assert.NoError(t, err)
+	assert.True(t, testEntityRepo().Exists(did[:], updated.CurrentVersion()))
+
+	// get all relationships
+	entityID, err := hexutil.Decode(rp.Identifier)
+	assert.NoError(t, err)
+	_, err = eSrv.GetEntityRelationship(ctxh, entityID, updated.CurrentVersion())
+	assert.NoError(t, err)
+	_, err = eSrv.GetEntityRelationship(ctxh, entityID, updated.PreviousVersion())
+	assert.NoError(t, err)
+	_, err = eSrv.GetEntityRelationship(ctxh, utils.RandomSlice(32), utils.RandomSlice(32))
+	assert.Error(t, err)
+	_, err = eSrv.GetEntityRelationship(ctxh, entityID, utils.RandomSlice(32))
+	assert.Error(t, err)
 }
 
 func TestService_Create(t *testing.T) {
