@@ -22,7 +22,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestCreateConfigCmd(t *testing.T) {
-	dataDir := path.Join(os.Getenv("HOME"), "datadir")
+	dataDir := path.Join(os.Getenv("HOME"), "datadir_test")
 	scAddrs := testingutils.GetSmartContractAddresses()
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
 	cmd := exec.Command(testingutils.GetBinaryPath(), "createconfig", "-n", "testing", "-t", dataDir, "-z", keyPath)
