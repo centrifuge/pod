@@ -131,6 +131,8 @@ message RelationshipData {
   string owner_identity = 1;
   // DID of target identity
   string target_identity = 2;
+  // identifier of Entity whose data can be accessed via this relationship
+  string entity_identifier = 3;
 }
 
 message RelationshipResponse {

@@ -81,8 +81,9 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 	selfDID, err := contextutil.AccountDID(ctxh)
 	assert.NoError(t, err)
 	return &entitypb.RelationshipData{
-		OwnerIdentity:  selfDID.String(),
-		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
+		OwnerIdentity:    selfDID.String(),
+		TargetIdentity:   "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
+		EntityIdentifier: hexutil.Encode(utils.RandomSlice(32)),
 	}
 }
 
@@ -158,19 +159,19 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 	entityRelationship, cd := createCDWithEmbeddedEntityRelationship(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), model.getClientData(), entityRelationship.(*EntityRelationship).getClientData())
+	assert.Equal(t, model.getRelationshipData(), model.getRelationshipData(), entityRelationship.(*EntityRelationship).getRelationshipData())
 	assert.Equal(t, model.ID(), entityRelationship.ID())
 	assert.Equal(t, model.CurrentVersion(), entityRelationship.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entityRelationship.PreviousVersion())
 }
 
-func TestEntityRelationship_getClientData(t *testing.T) {
+func TestEntityRelationship_getRelationshipData(t *testing.T) {
 	entityRelationship := testingdocuments.CreateRelationship()
 	er := new(EntityRelationship)
 	err := er.loadFromP2PProtobuf(entityRelationship)
 	assert.NoError(t, err)
 
-	data := er.getClientData()
+	data := er.getRelationshipData()
 	assert.NotNil(t, data, "entity relationship data should not be nil")
 	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
 	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())
@@ -182,8 +183,9 @@ func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	assert.NoError(t, err)
 	// successful init
 	data := &entitypb.RelationshipData{
-		OwnerIdentity:  selfDID.String(),
-		TargetIdentity: testingidentity.GenerateRandomDID().String(),
+		OwnerIdentity:    selfDID.String(),
+		TargetIdentity:   testingidentity.GenerateRandomDID().String(),
+		EntityIdentifier: hexutil.Encode(utils.RandomSlice(32)),
 	}
 	e := new(EntityRelationship)
 	err = e.InitEntityRelationshipInput(ctxh, entityID, data)

@@ -33,7 +33,7 @@ type Service interface {
 	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
 
 	// GetEntityRelation returns a entity relation based on an entity id
-	GetEntityRelationship(entityID, version []byte) (*EntityRelationship, error)
+	GetEntityRelationship(ctx context.Context, entityID, version []byte) (*EntityRelationship, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -87,8 +87,9 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 	}
 	owner := selfDID.String()
 	rd := &entitypb.RelationshipData{
-		OwnerIdentity:  owner,
-		TargetIdentity: payload.TargetIdentity,
+		OwnerIdentity:    owner,
+		TargetIdentity:   payload.TargetIdentity,
+		EntityIdentifier: payload.Identifier,
 	}
 	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
@@ -197,7 +198,7 @@ func (s service) DeriveEntityRelationshipData(doc documents.Model) (*entitypb.Re
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return er.getClientData(), nil
+	return er.getRelationshipData(), nil
 }
 
 // DeriveFromUpdatePayload returns a new version of the indicated Entity Relationship with a deleted access token
@@ -216,24 +217,35 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	r, err := s.repo.FindEntityRelationship(eID, *did[0])
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.New("failed to get self ID")
+	}
+
+	r, err := s.repo.FindEntityRelationship(eID, selfDID, *did[0])
 	if err != nil {
 		return nil, err
 	}
-	r.CoreDocument, err = r.DeleteAccessToken(ctx, payload.TargetIdentity)
+
+	r.CoreDocument, err = r.DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
 	if err != nil {
 		return nil, err
 	}
-	return r, nil
+	return &r, nil
 }
 
 // Get returns the entity relationship requested
-func (s service) GetEntityRelationship(entityID, version []byte) (*EntityRelationship, error) {
+func (s service) GetEntityRelationship(ctx context.Context, entityID, version []byte) (*EntityRelationship, error) {
 	if entityID == nil {
 		return &EntityRelationship{}, documents.ErrPayloadNil
 	}
 
-	relationships, err := s.repo.ListAllRelationships(entityID)
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.New("failed to get self ID")
+	}
+
+	relationships, err := s.repo.ListAllRelationships(entityID, selfDID)
 	if err != nil {
 		return &EntityRelationship{}, err
 	}

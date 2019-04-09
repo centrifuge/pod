@@ -502,6 +502,10 @@
         "target_identity": {
           "type": "string",
           "title": "DID of target identity"
+        },
+        "entity_identifier": {
+          "type": "string",
+          "title": "identifier of Entity whose data can be accessed via this relationship"
         }
       }
     },
