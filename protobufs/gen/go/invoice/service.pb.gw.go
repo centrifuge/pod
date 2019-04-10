@@ -2,11 +2,11 @@
 // source: invoice/service.proto
 
 /*
-Package invoicepb is a reverse proxy.
+Package invpb is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package invoicepb
+package invpb
 
 import (
 	"io"
