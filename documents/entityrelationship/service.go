@@ -32,7 +32,7 @@ type Service interface {
 	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
 
 	// GetEntityRelation returns a entity relation based on an entity id
-	GetEntityRelationships(ctx context.Context, entityID, version []byte) ([]EntityRelationship, error)
+	GetEntityRelationships(ctx context.Context, entityID []byte) ([]EntityRelationship, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -240,9 +240,8 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	return r, nil
 }
 
-// Get returns the requested version of the entity relationships that involve the entityID passed in
-// If version is nil, returns the latest version of the relationship
-func (s service) GetEntityRelationships(ctx context.Context, entityID, version []byte) ([]EntityRelationship, error) {
+// Get returns the latest versions of the entity relationships that involve the entityID passed in
+func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]EntityRelationship, error) {
 	var relationships []EntityRelationship
 	if entityID == nil {
 		return nil, documents.ErrPayloadNil
@@ -256,18 +255,6 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID, version [
 	relevant, err := s.repo.ListAllRelationships(entityID, selfDID)
 	if err != nil {
 		return nil, err
-	}
-
-	if version != nil {
-		for _, v := range relevant {
-			r, err := s.GetVersion(ctx, v, version)
-			if err != nil {
-				return nil, err
-			}
-			relationships = append(relationships, *r.(*EntityRelationship))
-		}
-
-		return relationships, nil
 	}
 
 	for _, v := range relevant {

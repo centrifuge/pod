@@ -150,13 +150,10 @@ func TestService_GetEntityRelationship(t *testing.T) {
 	// get all relationships
 	entityID, err := hexutil.Decode(rp.Identifier)
 	assert.NoError(t, err)
-	_, err = eSrv.GetEntityRelationships(ctxh, entityID, updated.CurrentVersion())
+	r, err := eSrv.GetEntityRelationships(ctxh, entityID)
 	assert.NoError(t, err)
-	_, err = eSrv.GetEntityRelationships(ctxh, entityID, updated.PreviousVersion())
-	assert.NoError(t, err)
-	_, err = eSrv.GetEntityRelationships(ctxh, utils.RandomSlice(32), utils.RandomSlice(32))
-	assert.Error(t, err)
-	_, err = eSrv.GetEntityRelationships(ctxh, entityID, utils.RandomSlice(32))
+	assert.Len(t, r, 1)
+	_, err = eSrv.GetEntityRelationships(ctxh, utils.RandomSlice(32))
 	assert.Error(t, err)
 }
 
