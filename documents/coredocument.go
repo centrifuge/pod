@@ -4,9 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"strings"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"

@@ -72,7 +72,7 @@ func (m *mockAnchorProcessor) SendDocument(ctx context.Context, model documents.
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) RequestDocumentWithToken(ctx context.Context,tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+func (m *mockAnchorProcessor) RequestDocumentWithToken(ctx context.Context, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
 	args := m.Called(ctx, tokenIdentifier, entityIdentifier, entityRelationIdentifier)
 	return args.Get(0).(*p2ppb.GetDocumentResponse), args.Error(0)
 }
