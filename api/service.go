@@ -15,9 +15,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	purchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
 	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/transactions/txv1"
@@ -45,9 +45,9 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	InvoiceUnpaidService, ok := nodeObjReg[nft.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
+	InvoiceUnpaidService, ok := nodeObjReg[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	if !ok {
-		return errors.New("failed to get %s", nft.BootstrappedInvoiceUnpaid)
+		return errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
 	}
 
 	// register documents (common)

@@ -285,6 +285,19 @@ func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (own
 	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
 }
 
+// CurrentIndexOfToken returns the current index of the token in the given registry
+func (s *ethInvoiceUnpaid) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
+	contract, err := s.bindContract(registry, s.ethClient)
+	if err != nil {
+		return nil, errors.New("failed to bind the registry contract: %v", err)
+	}
+
+	opts, cancF := s.ethClient.GetGethCallOpts(false)
+	defer cancF()
+
+	return contract.CurrentIndexOfToken(opts, utils.ByteSliceToBigInt(tokenID))
+}
+
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
 type MintRequest struct {
 

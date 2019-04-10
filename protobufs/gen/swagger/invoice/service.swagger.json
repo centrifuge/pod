@@ -23,7 +23,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/invoiceInvoiceResponse"
+              "$ref": "#/definitions/invInvoiceResponse"
             }
           }
         },
@@ -33,7 +33,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/invoiceInvoiceCreatePayload"
+              "$ref": "#/definitions/invInvoiceCreatePayload"
             }
           }
         ],
@@ -50,7 +50,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/invoiceInvoiceResponse"
+              "$ref": "#/definitions/invInvoiceResponse"
             }
           }
         },
@@ -73,7 +73,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/invoiceInvoiceResponse"
+              "$ref": "#/definitions/invInvoiceResponse"
             }
           }
         },
@@ -89,7 +89,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/invoiceInvoiceUpdatePayload"
+              "$ref": "#/definitions/invInvoiceUpdatePayload"
             }
           }
         ],
@@ -106,7 +106,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/invoiceInvoiceResponse"
+              "$ref": "#/definitions/invInvoiceResponse"
             }
           }
         },
@@ -152,6 +152,25 @@
         "checksum": {
           "type": "string",
           "title": "the md5 checksum of the original file for easier verification - optional"
+        }
+      }
+    },
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "read owner from Ethereum and empty when used in POST/PUT"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_index": {
+          "type": "string",
+          "title": "index of the token in the registry"
         }
       }
     },
@@ -257,6 +276,12 @@
         },
         "transaction_id": {
           "type": "string"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
         }
       }
     },
@@ -271,7 +296,7 @@
         }
       }
     },
-    "invoiceInvoiceCreatePayload": {
+    "invInvoiceCreatePayload": {
       "type": "object",
       "properties": {
         "read_access": {
@@ -281,11 +306,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/invoiceInvoiceData"
+          "$ref": "#/definitions/invInvoiceData"
         }
       }
     },
-    "invoiceInvoiceData": {
+    "invInvoiceData": {
       "type": "object",
       "properties": {
         "number": {
@@ -501,7 +526,7 @@
         "line_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/invoiceLineItem"
+            "$ref": "#/definitions/invLineItem"
           }
         },
         "payment_details": {
@@ -513,24 +538,24 @@
         "tax_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/invoiceTaxItem"
+            "$ref": "#/definitions/invTaxItem"
           }
         }
       },
       "title": "InvoiceData is the default invoice schema"
     },
-    "invoiceInvoiceResponse": {
+    "invInvoiceResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/invoiceInvoiceData"
+          "$ref": "#/definitions/invInvoiceData"
         }
       }
     },
-    "invoiceInvoiceUpdatePayload": {
+    "invInvoiceUpdatePayload": {
       "type": "object",
       "properties": {
         "identifier": {
@@ -543,11 +568,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/invoiceInvoiceData"
+          "$ref": "#/definitions/invInvoiceData"
         }
       }
     },
-    "invoiceLineItem": {
+    "invLineItem": {
       "type": "object",
       "properties": {
         "item_number": {
@@ -595,7 +620,7 @@
         }
       }
     },
-    "invoiceTaxItem": {
+    "invTaxItem": {
       "type": "object",
       "properties": {
         "item_number": {

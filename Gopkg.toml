@@ -28,11 +28,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "3330d21d3ee8c7acf4c53a48148d849a86c4ac15"
+  revision = "ca463c9d7b09f63722524ce3e53f7dee9808f704"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  revision = "7d060cf4d8b0fa21d57ac68f12a785c0750b0f60"
+  revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
@@ -300,3 +300,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   branch = "master"
   name = "github.com/gavv/httpexpect"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/common-nighthawk/go-figure"

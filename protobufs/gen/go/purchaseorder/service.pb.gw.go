@@ -2,11 +2,11 @@
 // source: purchaseorder/service.proto
 
 /*
-Package purchaseorderpb is a reverse proxy.
+Package popb is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package purchaseorderpb
+package popb
 
 import (
 	"io"

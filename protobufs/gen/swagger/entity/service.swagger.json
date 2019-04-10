@@ -233,6 +233,25 @@
     }
   },
   "definitions": {
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "read owner from Ethereum and empty when used in POST/PUT"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_index": {
+          "type": "string",
+          "title": "index of the token in the registry"
+        }
+      }
+    },
     "documentReadAccess": {
       "type": "object",
       "properties": {
@@ -267,6 +286,12 @@
         },
         "transaction_id": {
           "type": "string"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
         }
       }
     },

@@ -53,7 +53,9 @@ func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
-	return idService, DefaultService(docSrv, repo, queueSrv, txManager)
+	return idService, DefaultService(docSrv, repo, queueSrv, txManager, func() documents.TokenRegistry {
+		return nil
+	})
 }
 
 func TestService_Update(t *testing.T) {
@@ -254,7 +256,9 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
-	poSrv := service{}
+	poSrv := service{tokenRegFinder: func() documents.TokenRegistry {
+		return nil
+	}}
 
 	// derive data failed
 	m := &testingdocuments.MockModel{}

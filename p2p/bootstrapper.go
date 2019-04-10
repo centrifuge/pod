@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 )
 
@@ -36,7 +35,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	tokenRegistry, ok := ctx[nft.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	if !ok {
 		return errors.New("token registry is not initialised")
 	}

@@ -50,10 +50,9 @@ func TestNFTMint_success(t *testing.T) {
 	}
 	mockService.On("MintNFT", mock.Anything, req).Return(nftResponse, nil)
 	handler := grpcHandler{mockConfigStore, mockService}
-	nftMintResponse, err := handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
+	_, err := handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
 	mockService.AssertExpectations(t)
 	assert.Nil(t, err, "mint nft should be successful")
-	assert.Equal(t, tokID.String(), nftMintResponse.TokenId, "TokenID should have a dummy value")
 }
 
 func TestPaymentObligationNFTMint_success(t *testing.T) {
@@ -98,7 +97,6 @@ func TestPaymentObligationNFTMint_success(t *testing.T) {
 	nftMintResponse, err = handler.MintInvoiceUnpaidNFT(testingconfig.HandlerContext(mockConfigStore), nftReq)
 	mockService.AssertExpectations(t)
 	assert.Nil(t, err, "mint nft should be successful")
-	assert.Equal(t, tokID.String(), nftMintResponse.TokenId, "TokenID should have a dummy value")
 }
 
 func mockmockConfigStore() *configstore.MockService {
