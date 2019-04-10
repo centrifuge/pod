@@ -48,6 +48,15 @@ service DocumentService {
       description: "Get the current entity"
     };
   }
+  // Entity Relation Get
+  rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
+    option (google.api.http) = {
+      get: "/entity/{identifier}/relationship"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get entity from business partner"
+    };
+  }
   // Entity Relation Share
   rpc Share(RelationshipPayload) returns (EntityResponse) {
     option (google.api.http) = {
@@ -72,6 +81,11 @@ service DocumentService {
 
 message GetRequest {
   string identifier = 1;
+}
+
+message GetRequestRelationship {
+  string identifier = 1;
+  string relationship_identifier = 2;
 }
 
 message GetVersionRequest {

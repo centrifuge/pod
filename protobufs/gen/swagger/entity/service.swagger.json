@@ -98,6 +98,38 @@
         ]
       }
     },
+    "/entity/{identifier}/relationship": {
+      "get": {
+        "summary": "Entity Relation Get",
+        "description": "Get entity from business partner",
+        "operationId": "GetEntityByRelationship",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "relationship_identifier",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DocumentService"
+        ]
+      }
+    },
     "/entity/{identifier}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
