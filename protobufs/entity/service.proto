@@ -58,7 +58,7 @@ service DocumentService {
     };
   }
   // Entity Relation Share
-  rpc Share(RelationshipPayload) returns (EntityResponse) {
+  rpc Share(RelationshipPayload) returns (RelationshipResponse) {
     option (google.api.http) = {
       post: "/entity/{identifier}/share"
       body: "*"
@@ -68,7 +68,7 @@ service DocumentService {
     };
   }
   // Entity Relation Revoke
-  rpc Revoke(RelationshipPayload) returns (EntityResponse) {
+  rpc Revoke(RelationshipPayload) returns (RelationshipResponse) {
     option (google.api.http) = {
       post: "/entity/{identifier}/revoke"
       body: "*"

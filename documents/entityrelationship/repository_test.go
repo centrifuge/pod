@@ -2,4 +2,7 @@
 
 package entityrelationship
 
-// todo tests for repository
+//func TestnewDBRepository(t *testing.T) {
+//	repo, _, _ := newDBRepository()
+//	assert.NotNil(t, repo)
+//}

@@ -38,8 +38,8 @@ type EntityRelationship struct {
 	TargetIdentity *identity.DID
 }
 
-// getClientData returns the entity relationship data from the entity relationship model
-func (e *EntityRelationship) getClientData() *entitypb2.RelationshipData {
+// getRelationshipData returns the entity relationship data from the entity relationship model
+func (e *EntityRelationship) getRelationshipData() *entitypb2.RelationshipData {
 	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
 	eID := hexutil.Encode(e.EntityIdentifier)
 	return &entitypb2.RelationshipData{

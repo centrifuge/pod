@@ -23,6 +23,9 @@ const (
 	// ErrDocumentNil must be used when the provided document through a function is nil
 	ErrDocumentNil = errors.Error("no(nil) document provided")
 
+	// ErrPayloadNil must be used when a required payload is nil
+	ErrPayloadNil = errors.Error("no(nil) payload provided")
+
 	// ErrDocumentNotification must be used when a notification about a document could not be delivered
 	ErrDocumentNotification = errors.Error("could not notify of the document")
 
