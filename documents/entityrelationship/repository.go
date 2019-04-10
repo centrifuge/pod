@@ -31,8 +31,7 @@ func newDBRepository(db storage.Repository, docRepo documents.Repository) reposi
 	return r
 }
 
-// Find returns the latest (second if revoked) version of an EntityRelationship based on a entity id and a targetDID
-// Note that we assume a case of maximum two versions of an EntityRelationship document
+// FindEntityRelationshipIdentifier returns the identifier of an EntityRelationship based on a entity id and a targetDID
 func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDID, targetDID identity.DID) ([]byte, error) {
 	relationships, err := r.db.GetAllByPrefix(string(ownerDID[:]))
 	if err != nil {
