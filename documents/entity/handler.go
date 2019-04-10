@@ -36,20 +36,20 @@ func (h *grpcHandler) Create(ctx context.Context, req *cliententitypb.EntityCrea
 		return nil, err
 	}
 
-	doc, err := h.service.DeriveFromCreatePayload(cctx, req)
+	m, err := h.service.DeriveFromCreatePayload(cctx, req)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive create payload")
 	}
 
 	// validate and persist
-	doc, txID, _, err := h.service.Create(cctx, doc)
+	m, txID, _, err := h.service.Create(cctx, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(doc)
+	resp, err := h.service.DeriveEntityResponse(m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -156,12 +156,63 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 	return resp, nil
 }
 
-func (h *grpcHandler) Share(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
-	//TODO not implmented yet
-	return nil, nil
+func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
+	apiLog.Debugf("Share request %v", req)
+	cctx, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	m, err := h.service.DeriveFromSharePayload(cctx, req)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive share payload")
+	}
+
+	// validate and persist
+	m, txID, _, err := h.service.Share(cctx, m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not create document")
+	}
+
+	resp, err := h.service.DeriveEntityRelationshipResponse(m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	resp.Header.TransactionId = txID.String()
+	return resp, nil
 }
 
-func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
-	//TODO not implmented yet
-	return nil, nil
+func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
+	apiLog.Debugf("Revoke request %v", payload)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	m, err := h.service.DeriveFromRevokePayload(ctxHeader, payload)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive revoke payload")
+	}
+
+	m, txID, _, err := h.service.Revoke(ctxHeader, m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not update document")
+	}
+
+	resp, err := h.service.DeriveEntityRelationshipResponse(m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	resp.Header.TransactionId = txID.String()
+	return resp, nil
 }

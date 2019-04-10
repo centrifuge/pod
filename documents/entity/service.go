@@ -3,10 +3,11 @@ package entity
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -30,6 +31,21 @@ type Service interface {
 
 	// DeriveEntityResponse returns the entity model in our standard client format
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
+
+	// DeriveFromSharePayload derives the entity relationship from the relationship payload
+	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
+
+	// Share takes an entity relationship, validates it, and tries to persist it to the DB
+	Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+
+	// DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
+	DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
+
+	// Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
+	Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+
+	// DeriveEntityRelationshipResponse returns create response from entity relationship model
+	DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -40,6 +56,7 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
+	processor documents.DocumentRequestProcessor
 	erService entityrelationship.Service
 }
 
@@ -51,6 +68,7 @@ func DefaultService(
 	txManager transactions.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
+	processor documents.DocumentRequestProcessor,
 ) Service {
 	return service{
 		repo:      repo,
@@ -59,6 +77,7 @@ func DefaultService(
 		Service:   srv,
 		factory:   factory,
 		erService: erService,
+		processor: processor,
 	}
 }
 
@@ -76,7 +95,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 // UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
 func (s service) DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityCreatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	did, err := contextutil.AccountDID(ctx)
@@ -120,7 +139,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	return entity, nil
 }
 
-// Create takes and entity model and does required validation checks, tries to persist to DB
+// Create takes an entity model and does required validation checks, tries to persist to DB
 func (s service) Create(ctx context.Context, entity documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -172,7 +191,8 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 		return nil, err
 	}
 
-	h, err := documents.DeriveResponseHeader(model)
+	// note that token registry is(must be) irrelevant here
+	h, err := documents.DeriveResponseHeader(nil, model)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +220,7 @@ func (s service) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityDa
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
 func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (documents.Model, error) {
 	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentNil
+		return nil, documents.ErrPayloadNil
 	}
 
 	// get latest old version of the document
@@ -256,28 +276,55 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		if err != nil {
 			return nil, err
 		}
-	}
-	if isCollaborator {
+		if !isCollaborator {
+			return nil, documents.ErrNoCollaborator
+		}
 		// todo add relationship array
 		return entity, nil
 	}
 
-	return s.requestEntityFromCollaborator(documentID, version)
+	return nil, documents.ErrDocumentNotFound
 }
 
 func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
 	/*
-		todo not implemented yet
-		er, err := s.erService.GetEntityRelation(documentID,version)
-		if err != nil {
-			return nil, err
-		}
 
+		todo steps
+		1. Find ER related to Entity document.Identifier
+		2. Request document with token s.processor.RequestDocumentWithAccessToken(...) from the first Collaborator
+		3. call a new method in documents.Service to validate received document
+		4. return entity document if validation
 	*/
+
 	return nil, documents.ErrDocumentNotFound
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	return s.get(ctx, documentID, nil)
 
+}
+
+// DeriveFromSharePayload derives the entity relationship from the relationship payload
+func (s service) DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
+	return s.erService.DeriveFromCreatePayload(ctx, payload)
+}
+
+// Share takes an entity relationship, validates it, and tries to persist it to the DB
+func (s service) Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	return s.erService.Create(ctx, entityRelationship)
+}
+
+// DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
+func (s service) DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
+	return s.erService.DeriveFromUpdatePayload(ctx, payload)
+}
+
+// Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
+func (s service) Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	return s.erService.Update(ctx, entityRelationship)
+}
+
+// DeriveEntityRelationshipResponse returns create response from entity relationship model
+func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error) {
+	return s.erService.DeriveEntityRelationshipResponse(model)
 }

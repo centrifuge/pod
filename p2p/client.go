@@ -77,10 +77,78 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	}
 
 	if !p2pcommon.MessageTypeSendAnchoredDocRep.Equals(recvEnvelope.Header.Type) {
-		return nil, errors.New("the received send anchored document response is incorrect")
+		return nil, errors.New("the received getDocument response is incorrect")
 	}
 
 	r := new(p2ppb.AnchorDocumentResponse)
+	err = proto.Unmarshal(recvEnvelope.Body, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+	defer cancel()
+
+	tc, err := s.config.GetAccount(requesterID[:])
+	if err == nil {
+		// this is a local account
+		h := s.handlerCreator()
+		// the following context has to be different from the parent context since its initiating a local peer call
+		localCtx, err := contextutil.New(peerCtx, tc)
+		if err != nil {
+			return nil, err
+		}
+		return h.GetDocument(localCtx, in, requesterID)
+	}
+
+	err = s.idService.Exists(ctx, requesterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// this is a remote account
+	pid, err := s.getPeerID(requesterID)
+	if err != nil {
+		return nil, err
+	}
+
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeGetDoc, in)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := s.mes.SendMessage(
+		ctx, pid,
+		envelope,
+		p2pcommon.ProtocolForDID(&requesterID))
+	if err != nil {
+		return nil, err
+	}
+
+	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
+	if err != nil {
+		return nil, err
+	}
+
+	// handle client error
+	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+		return nil, convertClientError(recvEnvelope)
+	}
+
+	if !p2pcommon.MessageTypeGetDocRep.Equals(recvEnvelope.Header.Type) {
+		return nil, errors.New("the received get document response is incorrect")
+	}
+
+	r := new(p2ppb.GetDocumentResponse)
 	err = proto.Unmarshal(recvEnvelope.Body, r)
 	if err != nil {
 		return nil, err

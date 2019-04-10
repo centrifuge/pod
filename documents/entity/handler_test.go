@@ -29,7 +29,19 @@ func (m *mockService) DeriveFromCreatePayload(ctx context.Context, payload *clie
 	return model, args.Error(1)
 }
 
+func (m *mockService) DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
 func (m *mockService) Create(ctx context.Context, model documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	args := m.Called(ctx, model)
+	model, _ = args.Get(0).(documents.Model)
+	return model, contextutil.TX(ctx), nil, args.Error(2)
+}
+
+func (m *mockService) Share(ctx context.Context, model documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
 	return model, contextutil.TX(ctx), nil, args.Error(2)
@@ -59,13 +71,31 @@ func (m *mockService) DeriveEntityResponse(doc documents.Model) (*cliententitypb
 	return data, args.Error(1)
 }
 
+func (m *mockService) DeriveEntityRelationshipResponse(doc documents.Model) (*cliententitypb.RelationshipResponse, error) {
+	args := m.Called(doc)
+	data, _ := args.Get(0).(*cliententitypb.RelationshipResponse)
+	return data, args.Error(1)
+}
+
 func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	args := m.Called(ctx, model)
 	doc1, _ := args.Get(0).(documents.Model)
 	return doc1, contextutil.TX(ctx), nil, args.Error(2)
 }
 
+func (m *mockService) Revoke(ctx context.Context, model documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+	args := m.Called(ctx, model)
+	doc1, _ := args.Get(0).(documents.Model)
+	return doc1, contextutil.TX(ctx), nil, args.Error(2)
+}
+
 func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
+
+func (m *mockService) DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
 	args := m.Called(ctx, payload)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
@@ -126,6 +156,26 @@ func TestGrpcHandler_Create(t *testing.T) {
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()
 	srv.On("DeriveEntityResponse", model).Return(response, nil)
 	res, err := h.Create(testingconfig.HandlerContext(configService), payload)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err, "must be nil")
+	assert.NotNil(t, res, "must be non nil")
+	assert.Equal(t, res, response)
+}
+
+func TestGrpcHandler_Share(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := &mockModel{}
+	txID := transactions.NewTxID()
+	payload := &cliententitypb.RelationshipPayload{
+		Identifier:     "0x010203",
+		TargetIdentity: "some DID",
+	}
+	response := &cliententitypb.RelationshipResponse{Header: &documentpb.ResponseHeader{}}
+	srv.On("DeriveFromSharePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
+	srv.On("Share", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()
+	srv.On("DeriveEntityRelationshipResponse", model).Return(response, nil)
+	res, err := h.Share(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")
@@ -263,6 +313,23 @@ func TestGrpcHandler_Update(t *testing.T) {
 	srv.On("Update", mock.Anything, model).Return(model, txID.String(), nil).Once()
 	srv.On("DeriveEntityResponse", model).Return(resp, nil).Once()
 	res, err := h.Update(ctx, payload)
+	srv.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.Equal(t, resp, res)
+}
+
+func TestGrpcHandler_Revoke(t *testing.T) {
+	h := getHandler()
+	srv := h.service.(*mockService)
+	model := &mockModel{}
+	ctx := testingconfig.HandlerContext(configService)
+	txID := transactions.NewTxID()
+	payload := &cliententitypb.RelationshipPayload{Identifier: "0x010201", TargetIdentity: "some DID"}
+	resp := &cliententitypb.RelationshipResponse{Header: new(documentpb.ResponseHeader)}
+	srv.On("DeriveFromRevokePayload", mock.Anything, payload).Return(model, nil).Once()
+	srv.On("Revoke", mock.Anything, model).Return(model, txID.String(), nil).Once()
+	srv.On("DeriveEntityRelationshipResponse", model).Return(resp, nil).Once()
+	res, err := h.Revoke(ctx, payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)
 	assert.Equal(t, resp, res)

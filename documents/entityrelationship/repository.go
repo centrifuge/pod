@@ -1,6 +1,8 @@
 package entityrelationship
 
 import (
+	"bytes"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -10,11 +12,11 @@ import (
 type repository interface {
 	documents.Repository
 
-	// Find returns a EntityRelationship based on a entity id and a targetDID
-	Find(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error)
+	// Find returns the latest EntityRelationship based on the document identifier of an Entity and a targetDID
+	FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDID, targetDID identity.DID) ([]byte, error)
 
-	// EntityExists returns true if a entity relationship exists for a given entity identifier and target did
-	EntityExists(entityIdentifier []byte, targetDID identity.DID) (bool, error)
+	// ListAllRelationships returns a list of all relationships in which a given entity is involved
+	ListAllRelationships(entityIdentifier []byte, ownerDID identity.DID) (map[string][]byte, error)
 }
 
 type repo struct {
@@ -29,14 +31,55 @@ func newDBRepository(db storage.Repository, docRepo documents.Repository) reposi
 	return r
 }
 
-// Find returns a EntityRelationship based on a entity id and a targetDID
-func (r *repo) Find(entityIdentifier []byte, targetDID identity.DID) (*EntityRelationship, error) {
-	// todo not implemented
-	return nil, nil
+// FindEntityRelationshipIdentifier returns the identifier of an EntityRelationship based on a entity id and a targetDID
+func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDID, targetDID identity.DID) ([]byte, error) {
+	relationships, err := r.db.GetAllByPrefix(string(ownerDID[:]))
+	if err != nil {
+		return nil, err
+	}
+
+	if relationships == nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	for _, r := range relationships {
+		e, ok := r.(*EntityRelationship)
+		if !ok {
+			continue
+		}
+		if bytes.Equal(e.EntityIdentifier, entityIdentifier) && targetDID.Equal(*e.TargetIdentity) {
+			return e.Document.DocumentIdentifier, nil
+		}
+	}
+	return nil, documents.ErrDocumentNotFound
 }
 
-// EntityExists returns true if a entity relationship exists for a given entity identifier and target did
-func (r *repo) EntityExists(entityIdentifier []byte, targetDID identity.DID) (bool, error) {
-	// todo not implemented
-	return false, nil
+// ListAllRelationships returns a list of all entity relationship identifiers in which a given entity is involved
+func (r *repo) ListAllRelationships(entityIdentifier []byte, ownerDID identity.DID) (map[string][]byte, error) {
+	allDocuments, err := r.db.GetAllByPrefix(string(ownerDID[:]))
+	if err != nil {
+		return nil, err
+	}
+
+	if allDocuments == nil {
+		return map[string][]byte{}, nil
+	}
+
+	relationships := make(map[string][]byte)
+	for _, r := range allDocuments {
+		e, ok := r.(*EntityRelationship)
+		if !ok {
+			continue
+		}
+		_, found := relationships[string(e.Document.DocumentIdentifier)]
+		if bytes.Equal(e.EntityIdentifier, entityIdentifier) && !found {
+			relationships[string(e.Document.DocumentIdentifier)] = e.Document.DocumentIdentifier
+		}
+	}
+
+	if len(relationships) == 0 {
+		return map[string][]byte{}, nil
+	}
+
+	return relationships, nil
 }

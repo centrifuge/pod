@@ -107,7 +107,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
+              "$ref": "#/definitions/entityRelationshipResponse"
             }
           }
         },
@@ -142,7 +142,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
+              "$ref": "#/definitions/entityRelationshipResponse"
             }
           }
         },
@@ -201,6 +201,25 @@
     }
   },
   "definitions": {
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "read owner from Ethereum and empty when used in POST/PUT"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_index": {
+          "type": "string",
+          "title": "index of the token in the registry"
+        }
+      }
+    },
     "documentReadAccess": {
       "type": "object",
       "properties": {
@@ -235,6 +254,12 @@
         },
         "transaction_id": {
           "type": "string"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
         }
       }
     },
@@ -492,6 +517,23 @@
         }
       }
     },
+    "entityRelationshipData": {
+      "type": "object",
+      "properties": {
+        "owner_identity": {
+          "type": "string",
+          "title": "DID of relationship owner"
+        },
+        "target_identity": {
+          "type": "string",
+          "title": "DID of target identity"
+        },
+        "entity_identifier": {
+          "type": "string",
+          "title": "identifier of Entity whose data can be accessed via this relationship"
+        }
+      }
+    },
     "entityRelationshipPayload": {
       "type": "object",
       "properties": {
@@ -501,6 +543,17 @@
         },
         "target_identity": {
           "type": "string"
+        }
+      }
+    },
+    "entityRelationshipResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "relationship": {
+          "$ref": "#/definitions/entityRelationshipData"
         }
       }
     }

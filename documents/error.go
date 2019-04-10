@@ -23,6 +23,9 @@ const (
 	// ErrDocumentNil must be used when the provided document through a function is nil
 	ErrDocumentNil = errors.Error("no(nil) document provided")
 
+	// ErrPayloadNil must be used when a required payload is nil
+	ErrPayloadNil = errors.Error("no(nil) payload provided")
+
 	// ErrDocumentNotification must be used when a notification about a document could not be delivered
 	ErrDocumentNotification = errors.Error("could not notify of the document")
 
@@ -31,6 +34,9 @@ const (
 
 	// ErrDocumentNotFound must be used to indicate that the document for provided id is not found in the system
 	ErrDocumentNotFound = errors.Error("document not found in the system database")
+
+	// ErrNoCollaborator must be used to indicate that the document for provided id the user is not a collaborator
+	ErrNoCollaborator = errors.Error("no collaborator on the document")
 
 	// ErrDocumentVersionNotFound must be used to indicate that the specified version of the document for provided id is not found in the system
 	ErrDocumentVersionNotFound = errors.Error("specified version of the document not found in the system database")

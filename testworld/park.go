@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
@@ -19,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
@@ -245,6 +246,7 @@ type host struct {
 	configService      config.Service
 	tokenRegistry      documents.TokenRegistry
 	anchorRepo         anchors.AnchorRepository
+	erService          entityrelationship.Service
 }
 
 func newHost(
@@ -303,8 +305,9 @@ func (h *host) init() error {
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
-	h.tokenRegistry = h.bootstrappedCtx[nft.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	h.erService = h.bootstrappedCtx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
 	return nil
 }
 

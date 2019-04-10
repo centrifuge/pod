@@ -55,7 +55,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager)
+		queueSrv, txManager, func() documents.TokenRegistry {
+			tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+			if !ok {
+				panic("token registry initialisation error")
+			}
+			return tokenRegistry
+		})
 
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
 	if err != nil {

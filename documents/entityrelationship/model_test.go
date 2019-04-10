@@ -20,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -54,7 +53,7 @@ func TestMain(m *testing.M) {
 	ctx[transactions.BootstrappedService] = txMan
 	done := make(chan bool)
 	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
-	ctx[nft.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -85,17 +84,6 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 		TargetIdentity:   "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
 		EntityIdentifier: hexutil.Encode(utils.RandomSlice(32)),
 	}
-}
-
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
 }
 
 func TestEntityRelationship_PackCoreDocument(t *testing.T) {
@@ -170,19 +158,19 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 	entityRelationship, cd := createCDWithEmbeddedEntityRelationship(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), model.getClientData(), entityRelationship.(*EntityRelationship).getClientData())
+	assert.Equal(t, model.getRelationshipData(), model.getRelationshipData(), entityRelationship.(*EntityRelationship).getRelationshipData())
 	assert.Equal(t, model.ID(), entityRelationship.ID())
 	assert.Equal(t, model.CurrentVersion(), entityRelationship.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entityRelationship.PreviousVersion())
 }
 
-func TestEntityRelationship_getClientData(t *testing.T) {
+func TestEntityRelationship_getRelationshipData(t *testing.T) {
 	entityRelationship := testingdocuments.CreateRelationship()
 	er := new(EntityRelationship)
 	err := er.loadFromP2PProtobuf(entityRelationship)
 	assert.NoError(t, err)
 
-	data := er.getClientData()
+	data := er.getRelationshipData()
 	assert.NotNil(t, data, "entity relationship data should not be nil")
 	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
 	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())

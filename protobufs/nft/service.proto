@@ -60,5 +60,4 @@ message NFTMintRequest {
 
 message NFTMintResponse {
   ResponseHeader header = 1;
-  string token_id = 2;
 }
