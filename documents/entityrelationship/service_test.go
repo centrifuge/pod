@@ -136,7 +136,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestService_GetEntityRelationship(t *testing.T) {
+func TestService_GetEntityRelationships(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, idFactory, srv := getServiceWithMockedLayers()
 	eSrv := srv.(service)
