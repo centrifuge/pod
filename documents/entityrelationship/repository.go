@@ -3,11 +3,10 @@ package entityrelationship
 import (
 	"bytes"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // repository defines the required methods for the config repository.
