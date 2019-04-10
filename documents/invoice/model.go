@@ -75,9 +75,9 @@ type Invoice struct {
 	TaxAmount                *documents.Decimal
 	TaxRate                  *documents.Decimal
 	TaxOnLineLevel           bool
-	Recipient                *identity.DID // centrifuge ID of the recipient
-	Sender                   *identity.DID // centrifuge ID of the sender
-	Payee                    *identity.DID // centrifuge ID of the payee
+	Recipient                *identity.DID `json:"recipient,string"` // centrifuge ID of the recipient
+	Sender                   *identity.DID `json:"sender,string"`    // centrifuge ID of the sender
+	Payee                    *identity.DID `json:"payee,string"`     // centrifuge ID of the payee
 	Comment                  string
 	ShippingTerms            string
 	RequesterEmail           string
