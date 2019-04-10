@@ -265,5 +265,9 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 		relationships = append(relationships, *r.(*EntityRelationship))
 	}
 
+	if relationships == nil {
+		return []EntityRelationship{}, nil
+	}
+
 	return relationships, nil
 }

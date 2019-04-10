@@ -48,10 +48,8 @@ func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDI
 		if !ok {
 			continue
 		}
-		if bytes.Equal(e.EntityIdentifier, entityIdentifier) {
-			if targetDID.Equal(*e.TargetIdentity) {
-				return e.Document.DocumentIdentifier, nil
-			}
+		if bytes.Equal(e.EntityIdentifier, entityIdentifier) && targetDID.Equal(*e.TargetIdentity) {
+			return e.Document.DocumentIdentifier, nil
 		}
 	}
 	return nil, documents.ErrDocumentNotFound
@@ -59,30 +57,30 @@ func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDI
 
 // ListAllRelationships returns a list of all entity relationship identifiers in which a given entity is involved
 func (r *repo) ListAllRelationships(entityIdentifier []byte, ownerDID identity.DID) (map[string][]byte, error) {
-	relationships, err := r.db.GetAllByPrefix(string(ownerDID[:]))
+	allDocuments, err := r.db.GetAllByPrefix(string(ownerDID[:]))
 	if err != nil {
 		return nil, err
 	}
 
-	if relationships == nil {
-		return nil, documents.ErrDocumentNotFound
+	if allDocuments == nil {
+		return map[string][]byte{}, nil
 	}
 
-	all := make(map[string][]byte)
-	for _, r := range relationships {
+	relationships := make(map[string][]byte)
+	for _, r := range allDocuments {
 		e, ok := r.(*EntityRelationship)
 		if !ok {
 			continue
 		}
-		_, found := all[string(e.Document.DocumentIdentifier)]
+		_, found := relationships[string(e.Document.DocumentIdentifier)]
 		if bytes.Equal(e.EntityIdentifier, entityIdentifier) && !found {
-			all[string(e.Document.DocumentIdentifier)] = e.Document.DocumentIdentifier
+			relationships[string(e.Document.DocumentIdentifier)] = e.Document.DocumentIdentifier
 		}
 	}
 
-	if len(all) == 0 {
-		return nil, documents.ErrDocumentNotFound
+	if len(relationships) == 0 {
+		return map[string][]byte{}, nil
 	}
 
-	return all, nil
+	return relationships, nil
 }
