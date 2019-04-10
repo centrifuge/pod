@@ -32,7 +32,7 @@ func NewTokenID() TokenID {
 // NewLowEntropyTokenID returns a new random TokenID
 func NewLowEntropyTokenID() TokenID {
 	var tid [TokenIDLength]byte
-	// suffix with zeroes to match the bigendian big integer bytes for smart contract
+	// prefix with zeroes to match the bigendian big integer bytes for smart contract
 	copy(tid[:], append(make([]byte, TokenIDLength-LowEntropyTokenIDLength), utils.RandomSlice(LowEntropyTokenIDLength)...))
 	return tid
 }

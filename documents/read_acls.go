@@ -253,7 +253,7 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	// first 20 bytes of registry
 	nft = append(nft, registry.Bytes()...)
 
-	// next bytes of the tokenID
+	// next 32 bytes of the tokenID
 	nft = append(nft, tokenID...)
 
 	if len(nft) != nftByteCount {
