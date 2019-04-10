@@ -90,7 +90,7 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 		TargetIdentity:   payload.TargetIdentity,
 		EntityIdentifier: payload.Identifier,
 	}
-	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd, selfDID); err != nil {
+	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 

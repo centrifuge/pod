@@ -40,7 +40,7 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	}
 
 	er := entityrelationship.EntityRelationship{}
-	err := er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData, alice.id)
+	err := er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData)
 	assert.NoError(t, err)
 
 	erModel, _, isDone, err := alice.host.erService.Create(ctxAlice, &er)

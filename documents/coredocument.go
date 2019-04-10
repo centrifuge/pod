@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"strings"
 	"time"
 
@@ -122,11 +123,17 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
 // It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
-func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params documentpb.AccessTokenParams, selfDID identity.DID) (*CoreDocument, error) {
+func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params documentpb.AccessTokenParams) (*CoreDocument, error) {
 	did, err := identity.StringsToDIDs(params.Grantee)
 	if err != nil {
 		return nil, err
 	}
+
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, ErrDocumentConfigAccountID
+	}
+
 	collaborators := CollaboratorsAccess{
 		ReadCollaborators:      []identity.DID{*did[0]},
 		ReadWriteCollaborators: []identity.DID{selfDID},

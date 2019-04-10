@@ -8,8 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -181,8 +179,6 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 	assert.NoError(t, err)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	selfDID, err := contextutil.AccountDID(ctxh)
-	assert.NoError(t, err)
 	id := hexutil.Encode(cd.Document.DocumentIdentifier)
 	did1 := testingidentity.GenerateRandomDID()
 
@@ -191,7 +187,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            "random string",
 		DocumentIdentifier: id,
 	}
-	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at, selfDID)
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
 	assert.Error(t, err)
 
 	// wrong docID
@@ -199,7 +195,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            did1.String(),
 		DocumentIdentifier: "random string",
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at, selfDID)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
 	assert.Error(t, err)
 
 	// correct access token params
@@ -207,7 +203,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 		Grantee:            did1.String(),
 		DocumentIdentifier: id,
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at, selfDID)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
 	assert.NoError(t, err)
 
 	token := ncd.Document.AccessTokens[0]

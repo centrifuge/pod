@@ -60,7 +60,7 @@ func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 }
 
 // InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, entityID string, data *entitypb2.RelationshipData, selfDID identity.DID) error {
+func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, entityID string, data *entitypb2.RelationshipData) error {
 	if err := e.initEntityRelationshipFromData(data); err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, en
 		DocumentIdentifier: entityID,
 	}
 
-	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params, selfDID)
+	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
