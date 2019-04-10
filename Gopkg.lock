@@ -86,6 +86,14 @@
   revision = "f443fbe849de3fae72475c0838ec8eabf6930edd"
 
 [[projects]]
+  branch = "master"
+  digest = "1:7bbfeef88a6cc7d65a6a009ba696e980dcf84ed31a7dd6da7e0c6c2ff544df92"
+  name = "github.com/common-nighthawk/go-figure"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "18b2b544842cab16f3ff418fb5290d8f2896a069"
+
+[[projects]]
   digest = "1:0ef770954bca104ee99b3b6b7f9b240605ac03517d9f98cbc1893daa03f3c038"
   name = "github.com/coreos/go-semver"
   packages = ["semver"]
@@ -1516,6 +1524,7 @@
     "github.com/centrifuge/gocelery",
     "github.com/centrifuge/precise-proofs/proofs",
     "github.com/centrifuge/precise-proofs/proofs/proto",
+    "github.com/common-nighthawk/go-figure",
     "github.com/ethereum/go-ethereum",
     "github.com/ethereum/go-ethereum/accounts/abi",
     "github.com/ethereum/go-ethereum/accounts/abi/bind",
