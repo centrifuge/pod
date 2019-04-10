@@ -134,6 +134,7 @@ type Configuration interface {
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetPrecommitEnabled() bool
+	GetLowEntropyNFTTokenEnabled() bool
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -440,6 +441,11 @@ func (c *configuration) IsPProfEnabled() bool {
 // GetPrecommitEnabled returns true if precommit for anchors is enabled
 func (c *configuration) GetPrecommitEnabled() bool {
 	return c.GetBool("anchoring.precommit")
+}
+
+// GetLowEntropyNFTTokenEnabled returns true if low entropy nft token IDs are not enabled
+func (c *configuration) GetLowEntropyNFTTokenEnabled() bool {
+	return c.GetBool("nft.lowentropy")
 }
 
 // LoadConfiguration loads the configuration from the given file.

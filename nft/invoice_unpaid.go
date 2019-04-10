@@ -10,18 +10,26 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// TokenIDLength is the length of an NFT token ID
-const TokenIDLength = 32
+const (
+	// TokenIDLength is the length of an NFT token ID
+	TokenIDLength = 32
+
+	// LowEntropyTokenIDLength is the length of a low entropy NFT token ID. Used only for special cases.
+	LowEntropyTokenIDLength = 7
+)
 
 // TokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
 // tokenID should be random 32 bytes (32 byte = 256 bits)
-type TokenID [TokenIDLength]byte
+type TokenID []byte
 
 // NewTokenID returns a new random TokenID
 func NewTokenID() TokenID {
-	var tid [TokenIDLength]byte
-	copy(tid[:], utils.RandomSlice(TokenIDLength))
-	return tid
+	return utils.RandomSlice(TokenIDLength)
+}
+
+// NewLowEntropyTokenID returns a new random TokenID
+func NewLowEntropyTokenID() TokenID {
+	return utils.RandomSlice(LowEntropyTokenIDLength)
 }
 
 // TokenIDFromString converts given hex string to a TokenID
@@ -30,12 +38,10 @@ func TokenIDFromString(hexStr string) (TokenID, error) {
 	if err != nil {
 		return NewTokenID(), err
 	}
-	if len(tokenIDBytes) != TokenIDLength {
+	if len(tokenIDBytes) != TokenIDLength || len(tokenIDBytes) != LowEntropyTokenIDLength {
 		return NewTokenID(), errors.New("the provided hex string doesn't match the TokenID representation length")
 	}
-	var tid [TokenIDLength]byte
-	copy(tid[:], tokenIDBytes)
-	return tid, nil
+	return tokenIDBytes, nil
 }
 
 // BigInt converts tokenID to big int
