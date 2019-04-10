@@ -51,7 +51,7 @@ service DocumentService {
   // Entity Relation Get
   rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
     option (google.api.http) = {
-      get: "/entity/{identifier}/relationship"
+      get: "/entity/{identifier}/relationship/{relationship_identifier}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get entity from business partner"

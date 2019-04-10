@@ -137,10 +137,6 @@ func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marsha
 
 }
 
-var (
-	filter_DocumentService_GetEntityByRelationship_0 = &utilities.DoubleArray{Encoding: map[string]int{"identifier": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_DocumentService_GetEntityByRelationship_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRequestRelationship
 	var metadata runtime.ServerMetadata
@@ -163,8 +159,15 @@ func request_DocumentService_GetEntityByRelationship_0(ctx context.Context, mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_DocumentService_GetEntityByRelationship_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok = pathParams["relationship_identifier"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "relationship_identifier")
+	}
+
+	protoReq.RelationshipIdentifier, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "relationship_identifier", err)
 	}
 
 	msg, err := client.GetEntityByRelationship(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -487,7 +490,7 @@ var (
 
 	pattern_DocumentService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
 
-	pattern_DocumentService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "relationship"}, ""))
+	pattern_DocumentService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"entity", "identifier", "relationship", "relationship_identifier"}, ""))
 
 	pattern_DocumentService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
 

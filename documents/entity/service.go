@@ -262,9 +262,7 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	isCollaborator := false
 	var entity documents.Model
-
 	if s.Service.Exists(ctx, documentID) {
 		if version == nil {
 			entity, err = s.Service.GetCurrentVersion(ctx, documentID)
@@ -276,7 +274,7 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 			return nil, err
 		}
 
-		isCollaborator, err = entity.IsDIDCollaborator(selfDID)
+		isCollaborator, err := entity.IsDIDCollaborator(selfDID)
 		if err != nil {
 			return nil, err
 		}
@@ -311,7 +309,11 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 		return nil,entityrelationship.ErrERInvalidIdentifier
 	}
 
-	response, err := s.processor.RequestDocumentWithAccessToken(ctx,at.Identifier, at.DocumentIdentifier,erIdentifier)
+	granterDID, err := identity.NewDIDFromBytes(at.Granter)
+	if err != nil {
+		return nil, err
+	}
+	response, err := s.processor.RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier,erIdentifier)
 	if err != nil {
 		return nil, err
 	}

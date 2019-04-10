@@ -98,7 +98,7 @@
         ]
       }
     },
-    "/entity/{identifier}/relationship": {
+    "/entity/{identifier}/relationship/{relationship_identifier}": {
       "get": {
         "summary": "Entity Relation Get",
         "description": "Get entity from business partner",
@@ -120,8 +120,8 @@
           },
           {
             "name": "relationship_identifier",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
