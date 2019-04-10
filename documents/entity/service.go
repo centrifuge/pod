@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -60,8 +61,10 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
-	processor documents.DocumentRequestProcessor
+	processorFinder func() documents.DocumentRequestProcessor
 	erService entityrelationship.Service
+	anchorRepo anchors.AnchorRepository
+	idService identity.ServiceDID
 }
 
 // DefaultService returns the default implementation of the service.
@@ -72,7 +75,9 @@ func DefaultService(
 	txManager transactions.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
-	processor documents.DocumentRequestProcessor,
+	idService identity.ServiceDID,
+	anchorRepo anchors.AnchorRepository,
+	processorFinder func() documents.DocumentRequestProcessor,
 ) Service {
 	return service{
 		repo:      repo,
@@ -81,7 +86,9 @@ func DefaultService(
 		Service:   srv,
 		factory:   factory,
 		erService: erService,
-		processor: processor,
+		idService: idService,
+		anchorRepo: anchorRepo,
+		processorFinder: processorFinder,
 	}
 }
 
@@ -313,7 +320,7 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 	if err != nil {
 		return nil, err
 	}
-	response, err := s.processor.RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier,erIdentifier)
+	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier,erIdentifier)
 	if err != nil {
 		return nil, err
 	}
@@ -327,10 +334,9 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 		return nil, err
 	}
 
-	//todo validation of the model
-	/*if err := documents.PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
-		return errors.NewTypedError(ErrDocumentInvalid, err)
-	}*/
+	if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, model); err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
 
 	return model, nil
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func TestHost_BasicEntity(t *testing.T) {
@@ -45,7 +44,6 @@ func TestHost_BasicEntity(t *testing.T) {
 func TestHost_EntityShareGet(t *testing.T) {
 	t.Parallel()
 
-	time.Sleep(3000)
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -90,7 +88,6 @@ func TestHost_EntityShareGet(t *testing.T) {
 	}
 
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
-	fmt.Println(response)
-
+	response.Path("$.data.entity.legal_name").String().Equal("test company")
 
 }
