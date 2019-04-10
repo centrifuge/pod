@@ -63,11 +63,16 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("entity relation service not initialised")
 	}
 
+	processor, _ := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
+	/*if !ok {
+		return errors.New("processor not initialised")
+	}*/
+
 	// register service
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, factory, erService)
+		queueSrv, txManager, factory, erService, processor)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {

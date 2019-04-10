@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -127,11 +128,17 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 	if err != nil {
 		return nil, err
 	}
-	collaborators := &CollaboratorsAccess{
-		ReadCollaborators:      []identity.DID{*did[0]},
-		ReadWriteCollaborators: nil,
+
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, ErrDocumentConfigAccountID
 	}
-	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, *collaborators)
+
+	collaborators := CollaboratorsAccess{
+		ReadCollaborators:      []identity.DID{*did[0]},
+		ReadWriteCollaborators: []identity.DID{selfDID},
+	}
+	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, collaborators)
 	if err != nil {
 		return nil, err
 	}
@@ -463,12 +470,12 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Read_Sign permissions.
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	cs, err := cd.GetCollaborators(filterIDs...)
+	sign, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {
 		return nil, err
 	}
 
-	return cs.ReadWriteCollaborators, nil
+	return filterCollaborators(sign, filterIDs...), nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs

@@ -3,10 +3,11 @@ package entity
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -40,6 +41,7 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
+	processor documents.DocumentRequestProcessor
 	erService entityrelationship.Service
 }
 
@@ -51,6 +53,7 @@ func DefaultService(
 	txManager transactions.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
+	processor documents.DocumentRequestProcessor,
 ) Service {
 	return service{
 		repo:      repo,
@@ -59,6 +62,7 @@ func DefaultService(
 		Service:   srv,
 		factory:   factory,
 		erService: erService,
+		processor: processor,
 	}
 }
 
@@ -257,24 +261,26 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		if err != nil {
 			return nil, err
 		}
-	}
-	if isCollaborator {
+		if !isCollaborator {
+			return nil, documents.ErrNoCollaborator
+		}
 		// todo add relationship array
 		return entity, nil
 	}
 
-	return s.requestEntityFromCollaborator(documentID, version)
+	return nil, documents.ErrDocumentNotFound
 }
 
 func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
 	/*
-		todo not implemented yet
-		er, err := s.erService.GetEntityRelation(documentID,version)
-		if err != nil {
-			return nil, err
-		}
 
+		todo steps
+		1. Find ER related to Entity document.Identifier
+		2. Request document with token s.processor.RequestDocumentWithAccessToken(...) from the first Collaborator
+		3. call a new method in documents.Service to validate received document
+		4. return entity document if validation
 	*/
+
 	return nil, documents.ErrDocumentNotFound
 }
 
