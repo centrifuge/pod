@@ -5,11 +5,10 @@ package entity
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -100,13 +99,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// nil payload
 	doc, err := eSrv.DeriveFromUpdatePayload(nil, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrPayloadNil, err))
 	assert.Nil(t, doc)
 
 	// nil payload data
 	doc, err = eSrv.DeriveFromUpdatePayload(nil, &cliententitypb.EntityUpdatePayload{})
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrPayloadNil, err))
 	assert.Nil(t, doc)
 
 	// messed up identifier
@@ -174,13 +173,13 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	m, err := eSrv.DeriveFromCreatePayload(ctxh, nil)
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrPayloadNil, err))
 
 	// nil data payload
 	m, err = eSrv.DeriveFromCreatePayload(ctxh, &cliententitypb.EntityCreatePayload{})
 	assert.Nil(t, m)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+	assert.True(t, errors.IsOfType(documents.ErrPayloadNil, err))
 
 	// Init fails
 	payload := &cliententitypb.EntityCreatePayload{
