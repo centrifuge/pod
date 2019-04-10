@@ -121,6 +121,9 @@ type Model interface {
 
 	// DeleteAttribute deletes a custom attribute from the model
 	DeleteAttribute(name string) error
+
+	// GetAccessTokens returns the access tokens of a core document
+	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
 }
 
 // TokenRegistry defines NFT related functions.

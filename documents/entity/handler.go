@@ -156,6 +156,37 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 	return resp, nil
 }
 
+func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *cliententitypb.GetRequestRelationship) (*cliententitypb.EntityResponse, error) {
+	apiLog.Debugf("Get request %v", getRequest)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	entityIdentifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+
+	erIdentifier, err := hexutil.Decode(getRequest.RelationshipIdentifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+
+	model, err := h.service.RequestEntityWithRelationship(ctxHeader,entityIdentifier,erIdentifier)
+
+	resp, err := h.service.DeriveEntityResponse(model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
+}
+
 func (h *grpcHandler) Share(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.EntityResponse, error) {
 	//TODO not implmented yet
 	return nil, nil

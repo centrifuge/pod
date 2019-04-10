@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 
@@ -31,6 +32,9 @@ type Service interface {
 
 	// DeriveEntityResponse returns the entity model in our standard client format
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
+
+	// RequestEntityFromCollaborator requests an entity with an entity relationship
+	RequestEntityWithRelationship(ctx context.Context,entityIdentifier, erIdentifier []byte) (documents.Model, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -270,17 +274,44 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 	return nil, documents.ErrDocumentNotFound
 }
 
-func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
-	/*
+func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error) {
+	er, err := s.erService.GetCurrentVersion(ctx,erIdentifier)
+	if err != nil {
+		return nil, entityrelationship.ErrERNotFound
+	}
 
-		todo steps
-		1. Find ER related to Entity document.Identifier
-		2. Request document with token s.processor.RequestDocumentWithAccessToken(...) from the first Collaborator
-		3. call a new method in documents.Service to validate received document
-		4. return entity document if validation
-	*/
+	accessTokens, err := er.GetAccessTokens()
+	if err != nil {
+		return nil, documents.ErrCDAttribute
+	}
 
-	return nil, documents.ErrDocumentNotFound
+	// only one access token per entity relationship
+	if len(accessTokens) != 1 {
+		return nil, entityrelationship.ErrERNoToken
+	}
+
+	at := accessTokens[0]
+	if !utils.IsSameByteSlice(at.DocumentIdentifier, entityIdentifier){
+		return nil,entityrelationship.ErrERInvalidIdentifier
+	}
+
+	response, err := s.processor.RequestDocumentWithAccessToken(ctx,at.Identifier, at.DocumentIdentifier,erIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	if response == nil || response.Document == nil {
+		return nil, documents.ErrDocumentInvalid
+	}
+
+	model, err := s.Service.DeriveFromCoreDocument(*response.Document)
+	if err != nil {
+		return nil, err
+	}
+
+	//todo validation of the model
+
+	return model, nil
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
