@@ -256,7 +256,7 @@ func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
 	// next bytes of the tokenID
 	nft = append(nft, tokenID...)
 
-	if len(nft) != nftByteCount && len(nft) != lowEntropyNftByteCount {
+	if len(nft) != nftByteCount {
 		return nil, errors.NewTypedError(ErrNftByteLength, errors.New("provided length %d", len(nft)))
 	}
 

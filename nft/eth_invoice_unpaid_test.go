@@ -183,6 +183,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				configMock.On("GetP2PKeyPair").Return("", "")
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetPrecommitEnabled").Return(false)
+				configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
 				queueSrv := new(testingutils.MockQueue)
 				txMan := &testingtx.MockTxManager{}
 				txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything,

@@ -20,16 +20,21 @@ const (
 
 // TokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
 // tokenID should be random 32 bytes (32 byte = 256 bits)
-type TokenID []byte
+type TokenID [TokenIDLength]byte
 
 // NewTokenID returns a new random TokenID
 func NewTokenID() TokenID {
-	return utils.RandomSlice(TokenIDLength)
+	var tid [TokenIDLength]byte
+	copy(tid[:], utils.RandomSlice(TokenIDLength))
+	return tid
 }
 
 // NewLowEntropyTokenID returns a new random TokenID
 func NewLowEntropyTokenID() TokenID {
-	return utils.RandomSlice(LowEntropyTokenIDLength)
+	var tid [TokenIDLength]byte
+	// suffix with zeroes to match the bigendian big integer bytes for smart contract
+	copy(tid[:], append(make([]byte, TokenIDLength-LowEntropyTokenIDLength), utils.RandomSlice(LowEntropyTokenIDLength)...))
+	return tid
 }
 
 // TokenIDFromString converts given hex string to a TokenID
@@ -38,10 +43,12 @@ func TokenIDFromString(hexStr string) (TokenID, error) {
 	if err != nil {
 		return NewTokenID(), err
 	}
-	if len(tokenIDBytes) != TokenIDLength && len(tokenIDBytes) != LowEntropyTokenIDLength {
+	if len(tokenIDBytes) != TokenIDLength {
 		return NewTokenID(), errors.New("the provided hex string doesn't match the TokenID representation length")
 	}
-	return tokenIDBytes, nil
+	var tid [TokenIDLength]byte
+	copy(tid[:], tokenIDBytes)
+	return tid, nil
 }
 
 // BigInt converts tokenID to big int
