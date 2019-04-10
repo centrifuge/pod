@@ -260,12 +260,12 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return ErrAccessDenied
 		}
 
-		m, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
+		modelWithToken, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
 		if err != nil {
 			return err
 		}
 
-		err = m.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		err = modelWithToken.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
 		if err != nil {
 			return err
 		}

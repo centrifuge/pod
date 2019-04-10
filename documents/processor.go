@@ -20,6 +20,11 @@ type Config interface {
 	GetP2PConnectionTimeout() time.Duration
 }
 
+// DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
+type DocumentRequestProcessor interface {
+	RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
+}
+
 // Client defines methods that can be implemented by any type handling p2p communications.
 type Client interface {
 
@@ -28,6 +33,9 @@ type Client interface {
 
 	// after all signatures are collected the sender sends the document including the signatures
 	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+
+	// GetDocumentRequest requests a document from a collaborator
+	GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
@@ -211,6 +219,28 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 
 	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
 	return nil
+}
+
+// RequestDocumentWithAccessToken requests a document with an access token
+func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
+
+	requesterID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, ErrDocumentConfigAccountID
+	}
+
+	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: accessTokenRequest,
+	}
+
+	response, err := dp.p2pClient.GetDocumentRequest(ctx, requesterID, request)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
