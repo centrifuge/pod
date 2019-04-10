@@ -118,6 +118,19 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
+	// invalid identifier
+	payload.Identifier = "random string"
+	m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
+	assert.Nil(t, m)
+	assert.Error(t, err)
+
+	// other DID in payload
+	payload.Identifier = rp.Identifier
+	payload.TargetIdentity = testingidentity.GenerateRandomDID().String()
+	m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
+	assert.Nil(t, m)
+	assert.Error(t, err)
+
 	// valid payload
 	m, err = eSrv.DeriveFromUpdatePayload(ctxh, rp)
 	assert.NoError(t, err)
