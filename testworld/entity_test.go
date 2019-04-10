@@ -34,5 +34,4 @@ func TestHost_BasicEntity(t *testing.T) {
 	getEntityAndCheck(bob.httpExpect, bob.id.String(), typeEntity, params)
 	getEntityAndCheck(charlie.httpExpect, charlie.id.String(), typeEntity, params)
 	fmt.Println("Host test success")
-
 }

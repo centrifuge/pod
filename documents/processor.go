@@ -58,7 +58,6 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 	defer cancel()
 
 	resp, err := dp.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: &cd})
-
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
@@ -218,8 +217,13 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 }
 
 // RequestDocumentWithToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context, requesterID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
+
+	requesterID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, ErrDocumentConfigAccountID
+	}
 
 	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
