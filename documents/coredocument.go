@@ -41,7 +41,7 @@ const (
 	// nftByteCount is the length of combined bytes of registry and tokenID
 	nftByteCount = 52
 
-	// lowEntropyNftByteCount is the length of combined bytes of registry and tokenID
+	// lowEntropyNftByteCount is the length of combined bytes of registry and low entropy tokenID
 	lowEntropyNftByteCount = 27
 
 	// DRTreePrefix is the human readable prefix for document root tree props
