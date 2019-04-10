@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -107,6 +108,22 @@ type DID common.Address
 
 // DIDLength contains the length of a DID
 const DIDLength = common.AddressLength
+
+// MarshalJSON marshals DID to json bytes.
+func (d DID) MarshalJSON() ([]byte, error) {
+	str := "\"" + d.String() + "\""
+	return []byte(str), nil
+}
+
+// UnmarshalJSON loads json bytes to DID
+func (d *DID) UnmarshalJSON(data []byte) error {
+	dx, err := NewDIDFromString(strings.Trim(string(data), "\""))
+	if err != nil {
+		return err
+	}
+	*d = dx
+	return nil
+}
 
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {

@@ -2,6 +2,7 @@ package documents
 
 import (
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Repository defines the required methods for a document repository.
@@ -36,7 +37,8 @@ type repo struct {
 
 // getKey returns accountID+id
 func (r *repo) getKey(accountID, id []byte) []byte {
-	return append(accountID, id...)
+	hexKey := hexutil.Encode(append(accountID, id...))
+	return []byte(hexKey)
 }
 
 // Register registers the model so that the DB can return the document without knowing the type

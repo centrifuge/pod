@@ -86,17 +86,6 @@ func CreateRelationshipData(t *testing.T) *entitypb.RelationshipData {
 	}
 }
 
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
-}
-
 func TestEntityRelationship_PackCoreDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	er := new(EntityRelationship)
@@ -169,19 +158,19 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 	entityRelationship, cd := createCDWithEmbeddedEntityRelationship(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), model.getClientData(), entityRelationship.(*EntityRelationship).getClientData())
+	assert.Equal(t, model.getRelationshipData(), model.getRelationshipData(), entityRelationship.(*EntityRelationship).getRelationshipData())
 	assert.Equal(t, model.ID(), entityRelationship.ID())
 	assert.Equal(t, model.CurrentVersion(), entityRelationship.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entityRelationship.PreviousVersion())
 }
 
-func TestEntityRelationship_getClientData(t *testing.T) {
+func TestEntityRelationship_getRelationshipData(t *testing.T) {
 	entityRelationship := testingdocuments.CreateRelationship()
 	er := new(EntityRelationship)
 	err := er.loadFromP2PProtobuf(entityRelationship)
 	assert.NoError(t, err)
 
-	data := er.getClientData()
+	data := er.getRelationshipData()
 	assert.NotNil(t, data, "entity relationship data should not be nil")
 	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
 	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())

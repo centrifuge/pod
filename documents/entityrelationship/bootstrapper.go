@@ -67,7 +67,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	err := registry.Register(documenttypes.EntityRelationshipDataTypeUrl, srv)
 	if err != nil {
-		return errors.New("failed to register entity service: %v", err)
+		return errors.New("failed to register entity relationship service: %v", err)
 	}
 
 	ctx[BootstrappedEntityRelationshipService] = srv
