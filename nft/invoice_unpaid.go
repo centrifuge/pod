@@ -38,7 +38,7 @@ func TokenIDFromString(hexStr string) (TokenID, error) {
 	if err != nil {
 		return NewTokenID(), err
 	}
-	if len(tokenIDBytes) != TokenIDLength || len(tokenIDBytes) != LowEntropyTokenIDLength {
+	if len(tokenIDBytes) != TokenIDLength && len(tokenIDBytes) != LowEntropyTokenIDLength {
 		return NewTokenID(), errors.New("the provided hex string doesn't match the TokenID representation length")
 	}
 	return tokenIDBytes, nil
