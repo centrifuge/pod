@@ -90,5 +90,4 @@ func TestHost_EntityShareGet(t *testing.T) {
 
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
 	response.Path("$.data.entity.legal_name").String().Equal("test company")
-
 }
