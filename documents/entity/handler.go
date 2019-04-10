@@ -178,6 +178,10 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 
 	model, err := h.service.RequestEntityWithRelationship(ctxHeader, entityIdentifier, erIdentifier)
 
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := h.service.DeriveEntityResponse(model)
 	if err != nil {
 		apiLog.Error(err)
