@@ -227,10 +227,3 @@ Generating go bindings and swagger with the following command
 ```bash
 make proto-all
 ```
-
-## Kovan FAQ
-
-- With infura you get an error - "This request is not supported because your node is running with state pruning. Run with --pruning=archive.",
-  what to do? Run a local parity node with kovan eg: with `parity --chain=kovan --port=30304 --warp --warp-barrier 5680000 --no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning=archive --db-compaction ssd --cache-size 4096 --jsonrpc-hosts all --jsonrpc-interface all`
-- With local parity node you get an error - "Blocked connection to WebSockets server from untrusted origin: .."
-  what to do? Run the parity node with `--unsafe-expose` flag
