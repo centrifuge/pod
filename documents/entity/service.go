@@ -41,7 +41,7 @@ type service struct {
 	queueSrv  queue.TaskQueuer
 	txManager transactions.Manager
 	factory   identity.Factory
-	processor documents.AnchorProcessor
+	processor documents.DocumentRequestProcessor
 	erService entityrelationship.Service
 }
 
@@ -53,7 +53,7 @@ func DefaultService(
 	txManager transactions.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
-	processor documents.AnchorProcessor,
+	processor documents.DocumentRequestProcessor,
 ) Service {
 	return service{
 		repo:      repo,
@@ -275,7 +275,7 @@ func (s service) requestEntityFromCollaborator(documentID, version []byte) (docu
 
 		todo steps
 		1. Find ER related to Entity document.Identifier
-		2. Request document with token s.processor.RequestDocumentWithToken(...) from the first Collaborator
+		2. Request document with token s.processor.RequestDocumentWithAccessToken(...) from the first Collaborator
 		3. call a new method in documents.Service to validate received document
 		4. return entity document if validation
 	*/

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -72,7 +71,7 @@ func (m *mockAnchorProcessor) SendDocument(ctx context.Context, model documents.
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) RequestDocumentWithToken(ctx context.Context, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+func (m *mockAnchorProcessor) RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
 	args := m.Called(ctx, tokenIdentifier, entityIdentifier, entityRelationIdentifier)
 	return args.Get(0).(*p2ppb.GetDocumentResponse), args.Error(0)
 }

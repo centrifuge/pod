@@ -63,7 +63,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("entity relation service not initialised")
 	}
 
-	processor, _ := ctx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
+	processor, _ := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
 	/*if !ok {
 		return errors.New("processor not initialised")
 	}*/

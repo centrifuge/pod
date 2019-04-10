@@ -20,6 +20,11 @@ type Config interface {
 	GetP2PConnectionTimeout() time.Duration
 }
 
+// DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
+type DocumentRequestProcessor interface {
+	RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
+}
+
 // Client defines methods that can be implemented by any type handling p2p communications.
 type Client interface {
 
@@ -216,8 +221,8 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	return nil
 }
 
-// RequestDocumentWithToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithToken(ctx context.Context, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+// RequestDocumentWithAccessToken requests a document with an access token
+func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
 
 	requesterID, err := contextutil.AccountDID(ctx)
