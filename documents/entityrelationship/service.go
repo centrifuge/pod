@@ -19,19 +19,19 @@ import (
 type Service interface {
 	documents.Service
 
-	// DeriverFromPayload derives Entity from clientPayload
+	// DeriveFromCreatePayload derives Entity Relationship from RelationshipPayload
 	DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error)
 
-	// DeriveFromUpdatePayload derives entity model from update payload
+	// DeriveFromUpdatePayload derives a revoked entity relationship model from RelationshipPayload
 	DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error)
 
 	// DeriveEntityRelationshipData returns the entity relationship data as client data
-	DeriveEntityRelationshipData(entity documents.Model) (*entitypb.RelationshipData, error)
+	DeriveEntityRelationshipData(relationship documents.Model) (*entitypb.RelationshipData, error)
 
 	// DeriveEntityRelationshipResponse returns the entity relationship model in our standard client format
-	DeriveEntityRelationshipResponse(entity documents.Model) (*entitypb.RelationshipResponse, error)
+	DeriveEntityRelationshipResponse(relationship documents.Model) (*entitypb.RelationshipResponse, error)
 
-	// GetEntityRelation returns a entity relation based on an entity id
+	// GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
 	GetEntityRelationships(ctx context.Context, entityID []byte) ([]EntityRelationship, error)
 }
 
@@ -73,7 +73,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 	return er, nil
 }
 
-// UnpackFromCreatePayload initializes the model with parameters provided from the rest-api call
+// DeriveFromCreatePayload initializes the model with parameters provided from the rest-api call
 func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.RelationshipPayload) (documents.Model, error) {
 	if payload == nil {
 		return nil, documents.ErrPayloadNil
@@ -124,7 +124,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 	return er, nil
 }
 
-// Create takes and entity model and does required validation checks, tries to persist to DB
+// Create takes an entity relationship model and does required validation checks, tries to persist to DB
 // For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
 func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
@@ -190,7 +190,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 
 }
 
-// DeriveEntityRelationshipData returns create response from entity model
+// DeriveEntityRelationshipData returns the relationship data from an entity relationship model
 func (s service) DeriveEntityRelationshipData(model documents.Model) (*entitypb.RelationshipData, error) {
 	er, ok := model.(*EntityRelationship)
 	if !ok {
@@ -240,7 +240,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 	return r, nil
 }
 
-// Get returns the latest versions of the entity relationships that involve the entityID passed in
+// GetEntityRelationships returns the latest versions of the entity relationships that involve the entityID passed in
 func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]EntityRelationship, error) {
 	var relationships []EntityRelationship
 	if entityID == nil {
