@@ -4,13 +4,14 @@ package testworld
 
 import (
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"testing"
 )
 
 func TestHost_BasicEntity(t *testing.T) {
@@ -84,7 +85,7 @@ func TestHost_EntityShareGet(t *testing.T) {
 
 	params := map[string]interface{}{
 		"entity_identifier": entityIdentifier,
-		"er_identifier":  	hexutil.Encode(erIdentifier),
+		"er_identifier":     hexutil.Encode(erIdentifier),
 	}
 
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)

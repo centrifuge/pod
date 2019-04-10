@@ -86,7 +86,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, factory, erService,didService,anchorRepo, processorFinder)
+		queueSrv, txManager, factory, erService, didService, anchorRepo, processorFinder)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {

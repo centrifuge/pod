@@ -10,8 +10,6 @@ const (
 	// ErrERInvalidIdentifier must be used to indicate different identifier
 	ErrERInvalidIdentifier = errors.Error("entity relationship contains different entity identifier")
 
-	// ErrERInvalidIdentifier must be used to indicate missing tokens
+	// ErrERNoToken must be used to indicate missing tokens
 	ErrERNoToken = errors.Error("entity relationship contains no access token")
-
-
 )

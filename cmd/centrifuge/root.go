@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/common-nighthawk/go-figure"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"

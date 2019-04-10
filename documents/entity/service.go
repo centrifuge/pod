@@ -2,6 +2,7 @@ package entity
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
 
@@ -35,7 +36,7 @@ type Service interface {
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 
 	// RequestEntityFromCollaborator requests an entity with an entity relationship
-	RequestEntityWithRelationship(ctx context.Context,entityIdentifier, erIdentifier []byte) (documents.Model, error)
+	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error)
 
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
 	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
@@ -57,14 +58,14 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      documents.Repository
-	queueSrv  queue.TaskQueuer
-	txManager transactions.Manager
-	factory   identity.Factory
+	repo            documents.Repository
+	queueSrv        queue.TaskQueuer
+	txManager       transactions.Manager
+	factory         identity.Factory
 	processorFinder func() documents.DocumentRequestProcessor
-	erService entityrelationship.Service
-	anchorRepo anchors.AnchorRepository
-	idService identity.ServiceDID
+	erService       entityrelationship.Service
+	anchorRepo      anchors.AnchorRepository
+	idService       identity.ServiceDID
 }
 
 // DefaultService returns the default implementation of the service.
@@ -80,14 +81,14 @@ func DefaultService(
 	processorFinder func() documents.DocumentRequestProcessor,
 ) Service {
 	return service{
-		repo:      repo,
-		queueSrv:  queueSrv,
-		txManager: txManager,
-		Service:   srv,
-		factory:   factory,
-		erService: erService,
-		idService: idService,
-		anchorRepo: anchorRepo,
+		repo:            repo,
+		queueSrv:        queueSrv,
+		txManager:       txManager,
+		Service:         srv,
+		factory:         factory,
+		erService:       erService,
+		idService:       idService,
+		anchorRepo:      anchorRepo,
 		processorFinder: processorFinder,
 	}
 }
@@ -296,7 +297,7 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 }
 
 func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error) {
-	er, err := s.erService.GetCurrentVersion(ctx,erIdentifier)
+	er, err := s.erService.GetCurrentVersion(ctx, erIdentifier)
 	if err != nil {
 		return nil, entityrelationship.ErrERNotFound
 	}
@@ -312,15 +313,15 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 	}
 
 	at := accessTokens[0]
-	if !utils.IsSameByteSlice(at.DocumentIdentifier, entityIdentifier){
-		return nil,entityrelationship.ErrERInvalidIdentifier
+	if !utils.IsSameByteSlice(at.DocumentIdentifier, entityIdentifier) {
+		return nil, entityrelationship.ErrERInvalidIdentifier
 	}
 
 	granterDID, err := identity.NewDIDFromBytes(at.Granter)
 	if err != nil {
 		return nil, err
 	}
-	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier,erIdentifier)
+	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, erIdentifier)
 	if err != nil {
 		return nil, err
 	}
