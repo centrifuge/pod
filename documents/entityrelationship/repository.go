@@ -2,6 +2,7 @@ package entityrelationship
 
 import (
 	"bytes"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/documents"
