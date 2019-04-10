@@ -89,6 +89,10 @@ func TestDID_Marshaling(t *testing.T) {
 	err = did1.UnmarshalJSON(append(mdid0, mdid0...))
 	assert.Error(t, err)
 
+	// nil payload
+	err = did1.UnmarshalJSON(nil)
+	assert.Error(t, err)
+
 	err = did1.UnmarshalJSON(mdid0)
 	assert.NoError(t, err)
 	assert.Equal(t, "0x366b41162a53fd75d95d31dD6d1C4d83bD436BBe", did1.String())

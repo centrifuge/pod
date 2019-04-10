@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -116,11 +117,7 @@ func (d DID) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON loads json bytes to DID
 func (d *DID) UnmarshalJSON(data []byte) error {
-	cleanedData := data
-	if len(data) > 2 && data[0] == '"' && data[len(data)-1] == '"' {
-		cleanedData = data[1 : len(data)-1]
-	}
-	dx, err := NewDIDFromString(string(cleanedData))
+	dx, err := NewDIDFromString(strings.Trim(string(data), "\""))
 	if err != nil {
 		return err
 	}
