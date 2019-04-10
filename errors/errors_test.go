@@ -145,3 +145,25 @@ func TestGetHTTPCode(t *testing.T) {
 	assert.Equal(t, http.StatusConflict, code)
 	assert.Equal(t, "some error", msg)
 }
+
+func checkStackTrace(t *testing.T, err error, trace string) {
+	sterr, ok := err.(*withStack)
+	assert.True(t, ok)
+	werr := detachStackTrace(err)
+	assert.Equal(t, sterr.err.Error(), werr.Error())
+	st := StackTrace(err)
+	assert.NotEmpty(t, st)
+	assert.Contains(t, st, trace)
+	st = StackTrace(werr)
+	assert.Empty(t, st)
+}
+
+func TestNewWithStackTrace(t *testing.T) {
+	err := New("some error")
+	checkStackTrace(t, err, "github.com/centrifuge/go-centrifuge/errors.TestNewWithStackTrace")
+}
+
+func TestWithStackTrace(t *testing.T) {
+	err := WithStackTrace(New("some error"))
+	checkStackTrace(t, err, "github.com/centrifuge/go-centrifuge/errors.TestWithStackTrace")
+}
