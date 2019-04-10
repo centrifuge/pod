@@ -310,7 +310,10 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 	}
 
 	//todo validation of the model
-
+	/*if err := documents.PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+		return errors.NewTypedError(ErrDocumentInvalid, err)
+	}*/
+	
 	return model, nil
 }
 
