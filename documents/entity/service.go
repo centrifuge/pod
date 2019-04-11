@@ -36,10 +36,10 @@ type Service interface {
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 
 	// GetEntityByRelationship returns the entity model from database or requests from granter
-	GetEntityByRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error)
+	GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
 
 	// RequestEntityFromCollaborator requests an entity with an entity relationship from granter
-	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error)
+	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
 
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
 	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
@@ -267,22 +267,22 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 	return s.get(ctx, documentID, version)
 }
 
-func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error) {
+func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
 	if s.Service.Exists(ctx, entityIdentifier) {
 		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
 		if err != nil {
 			// in case of an error try to get document from collaborator
-			return s.RequestEntityWithRelationship(ctx, entityIdentifier, erIdentifier)
+			return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
 		}
 
 		// check if stored document is the latest version
 		if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, entity); err != nil {
-			return s.RequestEntityWithRelationship(ctx, entityIdentifier, erIdentifier)
+			return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
 		}
 
 		return entity, nil
 	}
-	return s.RequestEntityWithRelationship(ctx, entityIdentifier, erIdentifier)
+	return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
 }
 
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
@@ -317,8 +317,8 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 	return nil, documents.ErrDocumentNotFound
 }
 
-func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error) {
-	er, err := s.erService.GetCurrentVersion(ctx, erIdentifier)
+func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
+	er, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
 	if err != nil {
 		return nil, entityrelationship.ErrERNotFound
 	}
@@ -342,7 +342,7 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 	if err != nil {
 		return nil, err
 	}
-	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, erIdentifier)
+	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationshipIdentifier)
 	if err != nil {
 		return nil, err
 	}

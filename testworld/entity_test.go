@@ -81,11 +81,11 @@ func TestHost_EntityShareGet(t *testing.T) {
 	assert.Nil(t, err)
 	// todo end
 
-	erIdentifier := cd.DocumentIdentifier
+	relationshipIdentifier := cd.DocumentIdentifier
 
 	params := map[string]interface{}{
 		"entity_identifier": entityIdentifier,
-		"er_identifier":     hexutil.Encode(erIdentifier),
+		"er_identifier":     hexutil.Encode(relationshipIdentifier),
 	}
 
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
