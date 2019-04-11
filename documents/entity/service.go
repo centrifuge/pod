@@ -56,14 +56,14 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo            documents.Repository
-	queueSrv        queue.TaskQueuer
-	txManager       transactions.Manager
-	factory         identity.Factory
-	processorFinder func() documents.DocumentRequestProcessor
-	erService       entityrelationship.Service
-	anchorRepo      anchors.AnchorRepository
-	idService       identity.ServiceDID
+	repo       documents.Repository
+	queueSrv   queue.TaskQueuer
+	txManager  transactions.Manager
+	factory    identity.Factory
+	processor  documents.DocumentRequestProcessor
+	erService  entityrelationship.Service
+	anchorRepo anchors.AnchorRepository
+	idService  identity.ServiceDID
 }
 
 // DefaultService returns the default implementation of the service.
@@ -76,18 +76,18 @@ func DefaultService(
 	erService entityrelationship.Service,
 	idService identity.ServiceDID,
 	anchorRepo anchors.AnchorRepository,
-	processorFinder func() documents.DocumentRequestProcessor,
+	processor documents.DocumentRequestProcessor,
 ) Service {
 	return service{
-		repo:            repo,
-		queueSrv:        queueSrv,
-		txManager:       txManager,
-		Service:         srv,
-		factory:         factory,
-		erService:       erService,
-		idService:       idService,
-		anchorRepo:      anchorRepo,
-		processorFinder: processorFinder,
+		repo:       repo,
+		queueSrv:   queueSrv,
+		txManager:  txManager,
+		Service:    srv,
+		factory:    factory,
+		erService:  erService,
+		idService:  idService,
+		anchorRepo: anchorRepo,
+		processor:  processor,
 	}
 }
 
@@ -340,7 +340,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 	if err != nil {
 		return nil, err
 	}
-	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationship.Document.DocumentIdentifier)
+	response, err := s.processor.RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationship.Document.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	err = s.store(ctx,model)
+	err = s.store(ctx, model)
 
 	if err != nil {
 		return nil, err
@@ -367,7 +367,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 	return model, nil
 }
 
-func (s service) store(ctx context.Context,model documents.Model) error {
+func (s service) store(ctx context.Context, model documents.Model) error {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)

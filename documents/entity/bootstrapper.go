@@ -64,12 +64,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("entity relation service not initialised")
 	}
 
-	processorFinder := func() documents.DocumentRequestProcessor {
-		processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
-		if !ok {
-			panic("processor initialisation error")
-		}
-		return processor
+	processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
+	if !ok {
+		return errors.New("processor not initialised")
 	}
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
@@ -86,7 +83,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, factory, erService, didService, anchorRepo, processorFinder)
+		queueSrv, txManager, factory, erService, didService, anchorRepo, processor)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {

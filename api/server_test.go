@@ -9,13 +9,14 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/entity"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -53,13 +54,13 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
-		&entity.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
+		&entity.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
