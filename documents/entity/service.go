@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -12,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -30,6 +32,12 @@ type Service interface {
 
 	// DeriveEntityResponse returns the entity model in our standard client format
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
+
+	// GetEntityByRelationship returns the entity model from database or requests from granter
+	GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
+
+	// RequestEntityFromCollaborator requests an entity with an entity relationship from granter
+	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
 
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
 	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
@@ -51,12 +59,14 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      documents.Repository
-	queueSrv  queue.TaskQueuer
-	txManager jobs.Manager
-	factory   identity.Factory
-	processor documents.DocumentRequestProcessor
-	erService entityrelationship.Service
+	repo            documents.Repository
+	queueSrv        queue.TaskQueuer
+	jobManager      jobs.Manager
+	factory         identity.Factory
+	processorFinder func() documents.DocumentRequestProcessor
+	erService       entityrelationship.Service
+	anchorRepo      anchors.AnchorRepository
+	idService       identity.ServiceDID
 }
 
 // DefaultService returns the default implementation of the service.
@@ -67,16 +77,20 @@ func DefaultService(
 	txManager jobs.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
-	processor documents.DocumentRequestProcessor,
+	idService identity.ServiceDID,
+	anchorRepo anchors.AnchorRepository,
+	processorFinder func() documents.DocumentRequestProcessor,
 ) Service {
 	return service{
-		repo:      repo,
-		queueSrv:  queueSrv,
-		txManager: txManager,
-		Service:   srv,
-		factory:   factory,
-		erService: erService,
-		processor: processor,
+		repo:            repo,
+		queueSrv:        queueSrv,
+		jobManager:      txManager,
+		Service:         srv,
+		factory:         factory,
+		erService:       erService,
+		idService:       idService,
+		anchorRepo:      anchorRepo,
+		processorFinder: processorFinder,
 	}
 }
 
@@ -151,7 +165,7 @@ func (s service) Create(ctx context.Context, entity documents.Model) (documents.
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -176,7 +190,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 	}
 
 	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -251,15 +265,31 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 	return s.get(ctx, documentID, version)
 }
 
+func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
+	if s.Service.Exists(ctx, entityIdentifier) {
+		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
+		if err != nil {
+			// in case of an error try to get document from collaborator
+			return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+		}
+
+		// check if stored document is the latest version
+		if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, entity); err != nil {
+			return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+		}
+
+		return entity, nil
+	}
+	return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+}
+
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	isCollaborator := false
 	var entity documents.Model
-
 	if s.Service.Exists(ctx, documentID) {
 		if version == nil {
 			entity, err = s.Service.GetCurrentVersion(ctx, documentID)
@@ -271,7 +301,7 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 			return nil, err
 		}
 
-		isCollaborator, err = entity.IsDIDCollaborator(selfDID)
+		isCollaborator, err := entity.IsDIDCollaborator(selfDID)
 		if err != nil {
 			return nil, err
 		}
@@ -285,17 +315,50 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 	return nil, documents.ErrDocumentNotFound
 }
 
-func (s service) requestEntityFromCollaborator(documentID, version []byte) (documents.Model, error) {
-	/*
+func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
+	er, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
+	if err != nil {
+		return nil, entityrelationship.ErrERNotFound
+	}
 
-		todo steps
-		1. Find ER related to Entity document.Identifier
-		2. Request document with token s.processor.RequestDocumentWithAccessToken(...) from the first Collaborator
-		3. call a new method in documents.Service to validate received document
-		4. return entity document if validation
-	*/
+	accessTokens, err := er.GetAccessTokens()
+	if err != nil {
+		return nil, documents.ErrCDAttribute
+	}
 
-	return nil, documents.ErrDocumentNotFound
+	// only one access token per entity relationship
+	if len(accessTokens) != 1 {
+		return nil, entityrelationship.ErrERNoToken
+	}
+
+	at := accessTokens[0]
+	if !utils.IsSameByteSlice(at.DocumentIdentifier, entityIdentifier) {
+		return nil, entityrelationship.ErrERInvalidIdentifier
+	}
+
+	granterDID, err := identity.NewDIDFromBytes(at.Granter)
+	if err != nil {
+		return nil, err
+	}
+	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationshipIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	if response == nil || response.Document == nil {
+		return nil, documents.ErrDocumentInvalid
+	}
+
+	model, err := s.Service.DeriveFromCoreDocument(*response.Document)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, model); err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	return model, nil
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {

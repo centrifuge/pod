@@ -28,7 +28,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
-func request_DocumentService_Create_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_PurchaseOrderService_Create_0(ctx context.Context, marshaler runtime.Marshaler, client PurchaseOrderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq PurchaseOrderCreatePayload
 	var metadata runtime.ServerMetadata
 
@@ -41,7 +41,7 @@ func request_DocumentService_Create_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-func request_DocumentService_Update_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_PurchaseOrderService_Update_0(ctx context.Context, marshaler runtime.Marshaler, client PurchaseOrderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq PurchaseOrderUpdatePayload
 	var metadata runtime.ServerMetadata
 
@@ -72,7 +72,7 @@ func request_DocumentService_Update_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-func request_DocumentService_GetVersion_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_PurchaseOrderService_GetVersion_0(ctx context.Context, marshaler runtime.Marshaler, client PurchaseOrderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetVersionRequest
 	var metadata runtime.ServerMetadata
 
@@ -110,7 +110,7 @@ func request_DocumentService_GetVersion_0(ctx context.Context, marshaler runtime
 
 }
 
-func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_PurchaseOrderService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client PurchaseOrderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
@@ -137,9 +137,9 @@ func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marsha
 
 }
 
-// RegisterDocumentServiceHandlerFromEndpoint is same as RegisterDocumentServiceHandler but
+// RegisterPurchaseOrderServiceHandlerFromEndpoint is same as RegisterPurchaseOrderServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterDocumentServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterPurchaseOrderServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -159,23 +159,23 @@ func RegisterDocumentServiceHandlerFromEndpoint(ctx context.Context, mux *runtim
 		}()
 	}()
 
-	return RegisterDocumentServiceHandler(ctx, mux, conn)
+	return RegisterPurchaseOrderServiceHandler(ctx, mux, conn)
 }
 
-// RegisterDocumentServiceHandler registers the http handlers for service DocumentService to "mux".
+// RegisterPurchaseOrderServiceHandler registers the http handlers for service PurchaseOrderService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterDocumentServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterDocumentServiceHandlerClient(ctx, mux, NewDocumentServiceClient(conn))
+func RegisterPurchaseOrderServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterPurchaseOrderServiceHandlerClient(ctx, mux, NewPurchaseOrderServiceClient(conn))
 }
 
-// RegisterDocumentServiceHandlerClient registers the http handlers for service DocumentService
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "DocumentServiceClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "DocumentServiceClient"
+// RegisterPurchaseOrderServiceHandlerClient registers the http handlers for service PurchaseOrderService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "PurchaseOrderServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "PurchaseOrderServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "DocumentServiceClient" to call the correct interceptors.
-func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client DocumentServiceClient) error {
+// "PurchaseOrderServiceClient" to call the correct interceptors.
+func RegisterPurchaseOrderServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client PurchaseOrderServiceClient) error {
 
-	mux.Handle("POST", pattern_DocumentService_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_PurchaseOrderService_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -193,18 +193,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Create_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PurchaseOrderService_Create_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Create_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PurchaseOrderService_Create_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_DocumentService_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_PurchaseOrderService_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -222,18 +222,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Update_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PurchaseOrderService_Update_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Update_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PurchaseOrderService_Update_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_DocumentService_GetVersion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PurchaseOrderService_GetVersion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -251,18 +251,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_GetVersion_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PurchaseOrderService_GetVersion_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_GetVersion_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PurchaseOrderService_GetVersion_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_DocumentService_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PurchaseOrderService_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -280,14 +280,14 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Get_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PurchaseOrderService_Get_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_PurchaseOrderService_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -295,21 +295,21 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 }
 
 var (
-	pattern_DocumentService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"purchaseorder"}, ""))
+	pattern_PurchaseOrderService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"purchaseorder"}, ""))
 
-	pattern_DocumentService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "identifier"}, ""))
+	pattern_PurchaseOrderService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "identifier"}, ""))
 
-	pattern_DocumentService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"purchaseorder", "identifier", "version"}, ""))
+	pattern_PurchaseOrderService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"purchaseorder", "identifier", "version"}, ""))
 
-	pattern_DocumentService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "identifier"}, ""))
+	pattern_PurchaseOrderService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "identifier"}, ""))
 )
 
 var (
-	forward_DocumentService_Create_0 = runtime.ForwardResponseMessage
+	forward_PurchaseOrderService_Create_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_Update_0 = runtime.ForwardResponseMessage
+	forward_PurchaseOrderService_Update_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_GetVersion_0 = runtime.ForwardResponseMessage
+	forward_PurchaseOrderService_GetVersion_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_Get_0 = runtime.ForwardResponseMessage
+	forward_PurchaseOrderService_Get_0 = runtime.ForwardResponseMessage
 )

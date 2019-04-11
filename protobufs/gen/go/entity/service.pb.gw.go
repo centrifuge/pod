@@ -28,7 +28,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
-func request_DocumentService_Create_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_EntityService_Create_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq EntityCreatePayload
 	var metadata runtime.ServerMetadata
 
@@ -41,7 +41,7 @@ func request_DocumentService_Create_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-func request_DocumentService_Update_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_EntityService_Update_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq EntityUpdatePayload
 	var metadata runtime.ServerMetadata
 
@@ -72,7 +72,7 @@ func request_DocumentService_Update_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-func request_DocumentService_GetVersion_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_EntityService_GetVersion_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetVersionRequest
 	var metadata runtime.ServerMetadata
 
@@ -110,7 +110,7 @@ func request_DocumentService_GetVersion_0(ctx context.Context, marshaler runtime
 
 }
 
-func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_EntityService_Get_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRequest
 	var metadata runtime.ServerMetadata
 
@@ -137,7 +137,45 @@ func request_DocumentService_Get_0(ctx context.Context, marshaler runtime.Marsha
 
 }
 
-func request_DocumentService_Share_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_EntityService_GetEntityByRelationship_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetRequestRelationship
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["identifier"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+	}
+
+	protoReq.Identifier, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+	}
+
+	val, ok = pathParams["relationship_identifier"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "relationship_identifier")
+	}
+
+	protoReq.RelationshipIdentifier, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "relationship_identifier", err)
+	}
+
+	msg, err := client.GetEntityByRelationship(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func request_EntityService_Share_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RelationshipPayload
 	var metadata runtime.ServerMetadata
 
@@ -168,7 +206,7 @@ func request_DocumentService_Share_0(ctx context.Context, marshaler runtime.Mars
 
 }
 
-func request_DocumentService_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, client DocumentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_EntityService_Revoke_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RelationshipPayload
 	var metadata runtime.ServerMetadata
 
@@ -199,9 +237,9 @@ func request_DocumentService_Revoke_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
-// RegisterDocumentServiceHandlerFromEndpoint is same as RegisterDocumentServiceHandler but
+// RegisterEntityServiceHandlerFromEndpoint is same as RegisterEntityServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterDocumentServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterEntityServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -221,23 +259,23 @@ func RegisterDocumentServiceHandlerFromEndpoint(ctx context.Context, mux *runtim
 		}()
 	}()
 
-	return RegisterDocumentServiceHandler(ctx, mux, conn)
+	return RegisterEntityServiceHandler(ctx, mux, conn)
 }
 
-// RegisterDocumentServiceHandler registers the http handlers for service DocumentService to "mux".
+// RegisterEntityServiceHandler registers the http handlers for service EntityService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterDocumentServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterDocumentServiceHandlerClient(ctx, mux, NewDocumentServiceClient(conn))
+func RegisterEntityServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterEntityServiceHandlerClient(ctx, mux, NewEntityServiceClient(conn))
 }
 
-// RegisterDocumentServiceHandlerClient registers the http handlers for service DocumentService
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "DocumentServiceClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "DocumentServiceClient"
+// RegisterEntityServiceHandlerClient registers the http handlers for service EntityService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "EntityServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "EntityServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "DocumentServiceClient" to call the correct interceptors.
-func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client DocumentServiceClient) error {
+// "EntityServiceClient" to call the correct interceptors.
+func RegisterEntityServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client EntityServiceClient) error {
 
-	mux.Handle("POST", pattern_DocumentService_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_EntityService_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -255,18 +293,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Create_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_EntityService_Create_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Create_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_EntityService_Create_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_DocumentService_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_EntityService_Update_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -284,18 +322,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Update_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_EntityService_Update_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Update_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_EntityService_Update_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_DocumentService_GetVersion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_EntityService_GetVersion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -313,18 +351,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_GetVersion_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_EntityService_GetVersion_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_GetVersion_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_EntityService_GetVersion_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_DocumentService_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_EntityService_Get_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -342,18 +380,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Get_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_EntityService_Get_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_EntityService_Get_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_DocumentService_Share_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_EntityService_GetEntityByRelationship_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -371,18 +409,18 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Share_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_EntityService_GetEntityByRelationship_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Share_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_EntityService_GetEntityByRelationship_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_DocumentService_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_EntityService_Share_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -400,14 +438,43 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_DocumentService_Revoke_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_EntityService_Share_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_DocumentService_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_EntityService_Share_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_EntityService_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_EntityService_Revoke_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_EntityService_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -415,29 +482,33 @@ func RegisterDocumentServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 }
 
 var (
-	pattern_DocumentService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"entity"}, ""))
+	pattern_EntityService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"entity"}, ""))
 
-	pattern_DocumentService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+	pattern_EntityService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
 
-	pattern_DocumentService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"entity", "identifier", "version"}, ""))
+	pattern_EntityService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"entity", "identifier", "version"}, ""))
 
-	pattern_DocumentService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+	pattern_EntityService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
 
-	pattern_DocumentService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
+	pattern_EntityService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"entity", "identifier", "relationship", "relationship_identifier"}, ""))
 
-	pattern_DocumentService_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "revoke"}, ""))
+	pattern_EntityService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
+
+	pattern_EntityService_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "revoke"}, ""))
 )
 
 var (
-	forward_DocumentService_Create_0 = runtime.ForwardResponseMessage
+	forward_EntityService_Create_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_Update_0 = runtime.ForwardResponseMessage
+	forward_EntityService_Update_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_GetVersion_0 = runtime.ForwardResponseMessage
+	forward_EntityService_GetVersion_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_Get_0 = runtime.ForwardResponseMessage
+	forward_EntityService_Get_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_Share_0 = runtime.ForwardResponseMessage
+	forward_EntityService_GetEntityByRelationship_0 = runtime.ForwardResponseMessage
 
-	forward_DocumentService_Revoke_0 = runtime.ForwardResponseMessage
+	forward_EntityService_Share_0 = runtime.ForwardResponseMessage
+
+	forward_EntityService_Revoke_0 = runtime.ForwardResponseMessage
 )

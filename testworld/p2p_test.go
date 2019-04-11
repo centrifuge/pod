@@ -50,17 +50,17 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	cd, err := erModel.PackCoreDocument()
 	assert.Nil(t, err)
 
-	erIdentifier := cd.DocumentIdentifier
+	relationshipIdentifier := cd.DocumentIdentifier
 
 	// Bob should have the entityRelationship
 	ctxBob := testingconfig.CreateAccountContext(t, bob.host.config)
-	bobModel, err := bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
+	bobModel, err := bob.host.erService.GetCurrentVersion(ctxBob, relationshipIdentifier)
 	assert.NoError(t, err)
 
 	assert.Equal(t, erModel.CurrentVersion(), bobModel.CurrentVersion())
 
 	// Bob access Entity directly on p2p
-	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: erIdentifier, AccessTokenId: cd.AccessTokens[0].Identifier}
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: relationshipIdentifier, AccessTokenId: cd.AccessTokens[0].Identifier}
 	entityIdentifierByte, err := hexutil.Decode(entityIdentifier) // remove 0x
 	assert.NoError(t, err)
 	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: entityIdentifierByte,

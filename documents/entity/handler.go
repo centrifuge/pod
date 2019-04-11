@@ -20,7 +20,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of entity.DocumentServiceServer
-func GRPCHandler(config config.Service, srv Service) cliententitypb.DocumentServiceServer {
+func GRPCHandler(config config.Service, srv Service) cliententitypb.EntityServiceServer {
 	return &grpcHandler{
 		service: srv,
 		config:  config,
@@ -145,6 +145,40 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
+	}
+
+	resp, err := h.service.DeriveEntityResponse(model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
+}
+
+func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *cliententitypb.GetRequestRelationship) (*cliententitypb.EntityResponse, error) {
+	apiLog.Debugf("Get request %v", getRequest)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	entityIdentifier, err := hexutil.Decode(getRequest.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+
+	relationshipIdentifier, err := hexutil.Decode(getRequest.RelationshipIdentifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+
+	model, err := h.service.GetEntityByRelationship(ctxHeader, entityIdentifier, relationshipIdentifier)
+	if err != nil {
+		return nil, err
 	}
 
 	resp, err := h.service.DeriveEntityResponse(model)
