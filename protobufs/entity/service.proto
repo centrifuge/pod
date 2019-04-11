@@ -12,8 +12,8 @@ import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for entity document
-service DocumentService {
+// EntityService contains all common interactions for entity document
+service EntityService {
   rpc Create(EntityCreatePayload) returns (EntityResponse) {
     option (google.api.http) = {
       post: "/entity"

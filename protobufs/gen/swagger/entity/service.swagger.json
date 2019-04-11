@@ -38,7 +38,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -63,7 +63,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       },
       "put": {
@@ -94,7 +94,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -126,7 +126,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -161,7 +161,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -196,7 +196,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -227,7 +227,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     }
