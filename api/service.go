@@ -129,11 +129,11 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 	}
 
 	// register entity
-	entityHandler, ok := nodeObjReg[entity.BootstrappedEntityHandler].(entitypb.DocumentServiceServer)
+	entityHandler, ok := nodeObjReg[entity.BootstrappedEntityHandler].(entitypb.EntityServiceServer)
 	if !ok {
 		return errors.New("entity grpc handler not registered")
 	}
 
-	entitypb.RegisterDocumentServiceServer(grpcServer, entityHandler)
-	return entitypb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	entitypb.RegisterEntityServiceServer(grpcServer, entityHandler)
+	return entitypb.RegisterEntityServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }

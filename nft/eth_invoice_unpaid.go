@@ -35,6 +35,7 @@ const (
 // Config is the config interface for nft package
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
+	GetLowEntropyNFTTokenEnabled() bool
 }
 
 // ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
@@ -168,6 +169,12 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	}
 
 	tokenID := NewTokenID()
+	if s.cfg.GetLowEntropyNFTTokenEnabled() {
+		log.Warningf("Security consideration: Using only %d bit for NFT token ID generation. "+
+			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDLength*8)
+		tokenID = NewLowEntropyTokenID()
+	}
+
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
 		return nil, nil, err

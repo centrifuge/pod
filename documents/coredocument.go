@@ -690,3 +690,8 @@ func (cd *CoreDocument) IsDIDCollaborator(did identity.DID) (bool, error) {
 	}
 	return false, nil
 }
+
+// GetAccessTokens returns the access tokens of a core document
+func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
+	return cd.Document.AccessTokens, nil
+}

@@ -22,6 +22,11 @@ type mockConfig struct {
 	mock.Mock
 }
 
+func (m *mockConfig) GetLowEntropyNFTTokenEnabled() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
 func (m *mockConfig) GetPrecommitEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
@@ -382,5 +387,6 @@ func createMockConfig() *mockConfig {
 	c.On("GetNetworkID").Return(uint32(1)).Once()
 	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
+	c.On("GetLowEntropyNFTTokenEnabled", mock.Anything).Return(true)
 	return c
 }
