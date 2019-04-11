@@ -20,7 +20,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of the purchaseorder DocumentServiceServer
-func GRPCHandler(config config.Service, srv Service) clientpurchaseorderpb.DocumentServiceServer {
+func GRPCHandler(config config.Service, srv Service) clientpurchaseorderpb.PurchaseOrderServiceServer {
 	return grpcHandler{
 		service: srv,
 		config:  config,

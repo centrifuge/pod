@@ -20,7 +20,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of entity.DocumentServiceServer
-func GRPCHandler(config config.Service, srv Service) cliententitypb.DocumentServiceServer {
+func GRPCHandler(config config.Service, srv Service) cliententitypb.EntityServiceServer {
 	return &grpcHandler{
 		service: srv,
 		config:  config,
