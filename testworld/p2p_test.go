@@ -53,14 +53,12 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	done := <-isDone
 	assert.True(t, done)
 	cd, err := erModel.PackCoreDocument()
-	assert.Nil(t, err)
-
-	erIdentifier := cd.DocumentIdentifier
-
-	// Now, Bob should have the entityRelationship
-	bobModel, err = bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
 	assert.NoError(t, err)
 
+	// Now, Bob should have the entityRelationship
+	erIdentifier := cd.DocumentIdentifier
+	bobModel, err = bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
+	assert.NoError(t, err)
 	assert.Equal(t, erModel.CurrentVersion(), bobModel.CurrentVersion())
 
 	// Bob accesses Entity directly on p2p
@@ -76,4 +74,15 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, response.Document.DocumentIdentifier, entityIdentifierByte)
 
+	// Alice revokes the EntityRelationship with Bob
+	erModel, _, isDone, err = alice.host.erService.Update(ctxAlice, &er)
+	assert.NoError(t, err)
+	done = <-isDone
+	assert.True(t, done)
+	cd, err = erModel.PackCoreDocument()
+	assert.NoError(t, err)
+
+	// Bob should no longer have access to the EntityRelationship
+	bobModel, err = bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
+	assert.Error(t, err)
 }
