@@ -16,6 +16,9 @@ import (
 const (
 	// BootstrappedEntityHandler maps to grpc handler for entities
 	BootstrappedEntityHandler string = "BootstrappedEntityHandler"
+
+	// BootstrappedEntityService maps to the service for entities
+	BootstrappedEntityService string = "BootstrappedEntityService"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -93,6 +96,8 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to register entity service: %v", err)
 	}
 
+	ctx[BootstrappedEntityService] = srv
 	ctx[BootstrappedEntityHandler] = GRPCHandler(cfgSrv, srv)
+
 	return nil
 }

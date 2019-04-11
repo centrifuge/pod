@@ -306,7 +306,7 @@ func (h *host) init() error {
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityHandler].(entity.Service)
+	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
 	return nil
 }
 
