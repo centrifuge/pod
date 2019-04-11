@@ -134,6 +134,13 @@ type Configuration interface {
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetPrecommitEnabled() bool
+
+	// GetLowEntropyNFTTokenEnabled enables low entropy token IDs.
+	// The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
+	// the ERC721 standard bytes32. This option reduces the length of the tokenId to 7 bytes.
+	// There are security implications of doing this. Specifically the risk of two users picking the
+	// same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
+	// NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
 	GetLowEntropyNFTTokenEnabled() bool
 
 	// debug specific methods
