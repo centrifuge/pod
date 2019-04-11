@@ -154,6 +154,24 @@ func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 
 }
 
+func updatedEntityPayload(identity string, collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"identity":   identity,
+			"legal_name": "test company",
+			"contacts": []map[string]interface{}{
+				{
+					"name":        "test name",
+					"second name": "second test name",
+				},
+			},
+		},
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
+	}
+}
+
 func defaultProofPayload(documentType string) map[string]interface{} {
 	if documentType == typeInvoice {
 
