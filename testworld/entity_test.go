@@ -18,13 +18,13 @@ func TestHost_BasicEntity(t *testing.T) {
 
 	// Alice shares a document with Bob and Charlie
 	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	docIdentifier := getDocumentIdentifier(t, res)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
 
-	docIdentifier := getDocumentIdentifier(t, res)
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"legal_name":  "test company",
