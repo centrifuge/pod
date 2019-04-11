@@ -11,7 +11,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// AccountService allows for account management on the Node.
+// AccountService allows for account management on the Node
 service AccountService {
   rpc GetAccount(GetAccountRequest) returns (AccountData) {
     option (google.api.http) = {

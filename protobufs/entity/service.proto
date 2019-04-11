@@ -12,7 +12,11 @@ import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
+<<<<<<< HEAD
 // EntityService contains all common interactions for entity documents
+=======
+// EntityService contains all common interactions for entity document
+>>>>>>> upstream/develop
 service EntityService {
   rpc Create(EntityCreatePayload) returns (EntityResponse) {
     option (google.api.http) = {
@@ -48,6 +52,15 @@ service EntityService {
       description: "Get the current entity"
     };
   }
+  // Entity Relation Get
+  rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
+    option (google.api.http) = {
+      get: "/entity/{identifier}/relationship/{relationship_identifier}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get entity from business partner"
+    };
+  }
   // Entity Relation Share
   rpc Share(RelationshipPayload) returns (RelationshipResponse) {
     option (google.api.http) = {
@@ -72,6 +85,11 @@ service EntityService {
 
 message GetRequest {
   string identifier = 1;
+}
+
+message GetRequestRelationship {
+  string identifier = 1;
+  string relationship_identifier = 2;
 }
 
 message GetVersionRequest {

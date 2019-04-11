@@ -137,6 +137,47 @@ func request_EntityService_Get_0(ctx context.Context, marshaler runtime.Marshale
 
 }
 
+<<<<<<< HEAD
+=======
+func request_EntityService_GetEntityByRelationship_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetRequestRelationship
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["identifier"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+	}
+
+	protoReq.Identifier, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+	}
+
+	val, ok = pathParams["relationship_identifier"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "relationship_identifier")
+	}
+
+	protoReq.RelationshipIdentifier, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "relationship_identifier", err)
+	}
+
+	msg, err := client.GetEntityByRelationship(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+>>>>>>> upstream/develop
 func request_EntityService_Share_0(ctx context.Context, marshaler runtime.Marshaler, client EntityServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq RelationshipPayload
 	var metadata runtime.ServerMetadata
@@ -353,7 +394,11 @@ func RegisterEntityServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
+<<<<<<< HEAD
 	mux.Handle("POST", pattern_EntityService_Share_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+=======
+	mux.Handle("GET", pattern_EntityService_GetEntityByRelationship_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+>>>>>>> upstream/develop
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		if cn, ok := w.(http.CloseNotifier); ok {
@@ -371,13 +416,60 @@ func RegisterEntityServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
+<<<<<<< HEAD
 		resp, md, err := request_EntityService_Share_0(rctx, inboundMarshaler, client, req, pathParams)
+=======
+		resp, md, err := request_EntityService_GetEntityByRelationship_0(rctx, inboundMarshaler, client, req, pathParams)
+>>>>>>> upstream/develop
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
+<<<<<<< HEAD
+		forward_EntityService_Share_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_EntityService_Revoke_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+=======
+		forward_EntityService_GetEntityByRelationship_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_EntityService_Share_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+>>>>>>> upstream/develop
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+<<<<<<< HEAD
+		resp, md, err := request_EntityService_Revoke_0(rctx, inboundMarshaler, client, req, pathParams)
+=======
+		resp, md, err := request_EntityService_Share_0(rctx, inboundMarshaler, client, req, pathParams)
+>>>>>>> upstream/develop
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+<<<<<<< HEAD
+=======
 		forward_EntityService_Share_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
@@ -407,6 +499,7 @@ func RegisterEntityServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
+>>>>>>> upstream/develop
 		forward_EntityService_Revoke_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
@@ -416,12 +509,23 @@ func RegisterEntityServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 
 var (
 	pattern_EntityService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"entity"}, ""))
+<<<<<<< HEAD
 
 	pattern_EntityService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
 
 	pattern_EntityService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"entity", "identifier", "version"}, ""))
 
 	pattern_EntityService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+=======
+
+	pattern_EntityService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+
+	pattern_EntityService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"entity", "identifier", "version"}, ""))
+
+	pattern_EntityService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+
+	pattern_EntityService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"entity", "identifier", "relationship", "relationship_identifier"}, ""))
+>>>>>>> upstream/develop
 
 	pattern_EntityService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
 
@@ -430,12 +534,23 @@ var (
 
 var (
 	forward_EntityService_Create_0 = runtime.ForwardResponseMessage
+<<<<<<< HEAD
 
 	forward_EntityService_Update_0 = runtime.ForwardResponseMessage
 
 	forward_EntityService_GetVersion_0 = runtime.ForwardResponseMessage
 
 	forward_EntityService_Get_0 = runtime.ForwardResponseMessage
+=======
+
+	forward_EntityService_Update_0 = runtime.ForwardResponseMessage
+
+	forward_EntityService_GetVersion_0 = runtime.ForwardResponseMessage
+
+	forward_EntityService_Get_0 = runtime.ForwardResponseMessage
+
+	forward_EntityService_GetEntityByRelationship_0 = runtime.ForwardResponseMessage
+>>>>>>> upstream/develop
 
 	forward_EntityService_Share_0 = runtime.ForwardResponseMessage
 

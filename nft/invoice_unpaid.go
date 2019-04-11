@@ -10,8 +10,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// TokenIDLength is the length of an NFT token ID
-const TokenIDLength = 32
+const (
+	// TokenIDLength is the length of an NFT token ID
+	TokenIDLength = 32
+
+	// LowEntropyTokenIDLength is the length of a low entropy NFT token ID. Used only for special cases.
+	LowEntropyTokenIDLength = 7
+)
 
 // TokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
 // tokenID should be random 32 bytes (32 byte = 256 bits)
@@ -21,6 +26,19 @@ type TokenID [TokenIDLength]byte
 func NewTokenID() TokenID {
 	var tid [TokenIDLength]byte
 	copy(tid[:], utils.RandomSlice(TokenIDLength))
+	return tid
+}
+
+// NewLowEntropyTokenID returns a new low entropy(LowEntropyTokenIDLength) TokenID.
+// The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
+// the ERC721 standard bytes32. This option reduces the length of the tokenId to 7 bytes.
+// There are security implications of doing this. Specifically the risk of two users picking the
+// same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
+// NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
+func NewLowEntropyTokenID() TokenID {
+	var tid [TokenIDLength]byte
+	// prefix with zeroes to match the bigendian big integer bytes for smart contract
+	copy(tid[:], append(make([]byte, TokenIDLength-LowEntropyTokenIDLength), utils.RandomSlice(LowEntropyTokenIDLength)...))
 	return tid
 }
 

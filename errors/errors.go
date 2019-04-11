@@ -32,7 +32,8 @@ func (e Error) Error() string {
 // New("some error") returns error with exact string passed
 // New("some error: %v", "some context") returns error with message "some error: some context"
 func New(format string, args ...interface{}) error {
-	return Error(fmt.Sprintf(format, args...))
+	err := Error(fmt.Sprintf(format, args...))
+	return &withStack{err: err, trace: callers()}
 }
 
 // listError holds a list of errors
@@ -149,6 +150,7 @@ func (t *typedError) Mask() error {
 
 // IsOfType returns if the err is of type terr
 func IsOfType(terr, err error) bool {
+	err = detachStackTrace(err)
 	if errt, ok := err.(TypedError); ok {
 		return errt.IsOfType(terr)
 	}
@@ -166,6 +168,7 @@ func Mask(err error) error {
 		return err
 	}
 
+	err = detachStackTrace(err)
 	if errt, ok := err.(TypedError); ok {
 		return errt.Mask()
 	}
@@ -196,5 +199,57 @@ func GetHTTPDetails(err error) (code int, msg string) {
 	}
 
 	return code, serr.Message()
+}
 
+// withStack holds the error and caller stack trace
+type withStack struct {
+	err   error
+	trace *stack
+}
+
+// Error returns the error string.
+func (ws *withStack) Error() string {
+	return ws.err.Error()
+}
+
+// WithStackTrace attaches stack trace to error.
+// Note: if the err already holds a stack trace, that trace will be replace with latest
+func WithStackTrace(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	err = detachStackTrace(err)
+	return &withStack{
+		err:   err,
+		trace: callers(),
+	}
+}
+
+// detachStackTrace is a helper function to detach the stack trace attached to error if any.
+func detachStackTrace(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if wst, ok := err.(*withStack); ok {
+		return wst.err
+	}
+
+	return err
+}
+
+// StackTrace returns the stack trace attached to the error if any
+func StackTrace(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	wst, ok := err.(*withStack)
+	if !ok {
+		return ""
+	}
+
+	st := wst.trace.StackTrace()
+	return fmt.Sprintf("%+v", st)
 }

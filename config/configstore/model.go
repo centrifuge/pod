@@ -60,6 +60,7 @@ type NodeConfig struct {
 	SmartContractAddresses         map[config.ContractName]common.Address
 	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
+	LowEntropyNFTTokenEnabled      bool
 }
 
 // IsSet refer the interface
@@ -267,6 +268,11 @@ func (nc *NodeConfig) GetPrecommitEnabled() bool {
 	return nc.MainIdentity.PrecommitEnabled
 }
 
+// GetLowEntropyNFTTokenEnabled refer the interface
+func (nc *NodeConfig) GetLowEntropyNFTTokenEnabled() bool {
+	return nc.LowEntropyNFTTokenEnabled
+}
+
 // IsPProfEnabled refer the interface
 func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
@@ -376,6 +382,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		NetworkID:                      c.GetNetworkID(),
 		SmartContractAddresses:         extractSmartContractAddresses(c),
 		PprofEnabled:                   c.IsPProfEnabled(),
+		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
 	}
 }
 
