@@ -21,17 +21,22 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// alice anchors entity
+	// Alice anchors entity
 	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), []string{}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
+
 	entityIdentifier := getDocumentIdentifier(t, res)
 
-	// alice creates a entity-relationship with Bob
-	// by directly using alice service
+	// Bob should not have access to the entity data yet
+	ctxBob := testingconfig.CreateAccountContext(t, bob.host.config)
+	bobModel, err := bob.host.erService.GetCurrentVersion(ctxBob, alice.id[:])
+	assert.Error(t, err)
+
+	// Alice creates a entity-relationship with Bob by directly using Alice's service
 	ctxAlice := testingconfig.CreateAccountContext(t, alice.host.config)
 	erData := &entitypb2.RelationshipData{
 		EntityIdentifier: entityIdentifier,
@@ -40,7 +45,7 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	}
 
 	er := entityrelationship.EntityRelationship{}
-	err := er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData)
+	err = er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData)
 	assert.NoError(t, err)
 
 	erModel, _, isDone, err := alice.host.erService.Create(ctxAlice, &er)
@@ -52,14 +57,13 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 
 	erIdentifier := cd.DocumentIdentifier
 
-	// Bob should have the entityRelationship
-	ctxBob := testingconfig.CreateAccountContext(t, bob.host.config)
-	bobModel, err := bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
+	// Now, Bob should have the entityRelationship
+	bobModel, err = bob.host.erService.GetCurrentVersion(ctxBob, erIdentifier)
 	assert.NoError(t, err)
 
 	assert.Equal(t, erModel.CurrentVersion(), bobModel.CurrentVersion())
 
-	// Bob access Entity directly on p2p
+	// Bob accesses Entity directly on p2p
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: erIdentifier, AccessTokenId: cd.AccessTokens[0].Identifier}
 	entityIdentifierByte, err := hexutil.Decode(entityIdentifier) // remove 0x
 	assert.NoError(t, err)
