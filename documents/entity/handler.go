@@ -156,6 +156,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 	return resp, nil
 }
 
+// GetEntityByRelationship returns the entity model from database or requests from granter
 func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *cliententitypb.GetRequestRelationship) (*cliententitypb.EntityResponse, error) {
 	apiLog.Debugf("Get request %v", getRequest)
 	ctxHeader, err := contextutil.Context(ctx, h.config)

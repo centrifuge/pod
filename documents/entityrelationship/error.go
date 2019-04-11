@@ -12,4 +12,7 @@ const (
 
 	// ErrERNoToken must be used to indicate missing tokens
 	ErrERNoToken = errors.Error("entity relationship contains no access token")
+
+	// ErrNotEntityRelationship must be used if an expected entityRelationship model is not a entityRelationship
+	ErrNotEntityRelationship = errors.Error("model not entity relationship")
 )

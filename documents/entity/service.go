@@ -268,7 +268,11 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 		return nil, entityrelationship.ErrERNotFound
 	}
 
-	relationship := model.(*entityrelationship.EntityRelationship)
+	relationship, ok := model.(*entityrelationship.EntityRelationship)
+	if !ok {
+		return nil, entityrelationship.ErrNotEntityRelationship
+	}
+
 	entityIdentifier := relationship.EntityIdentifier
 
 	if s.Service.Exists(ctx, entityIdentifier) {
@@ -358,9 +362,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	err = s.store(ctx, model)
-
-	if err != nil {
+	if err = s.store(ctx, model); err != nil {
 		return nil, err
 	}
 
