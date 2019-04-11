@@ -518,115 +518,114 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	repo.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "post anchor validations failed")
-	/*
-		// get collaborators failed
-		dr, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
-		assert.NoError(t, err)
-		model = new(mockModel)
-		model.On("ID").Return(id)
-		model.On("CurrentVersion").Return(id)
-		model.On("NextVersion").Return(next)
-		model.On("CalculateSigningRoot").Return(sr, nil)
-		model.On("Signatures").Return()
-		model.On("CalculateDocumentRoot").Return(dr[:], nil)
-		model.On("GetSignerCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
-		model.On("Author").Return(did1, nil)
-		model.On("Timestamp").Return(tm, nil)
-		model.sigs = append(model.sigs, sig)
-		srv = &testingcommons.MockIdentityService{}
-		dp.identityService = srv
-		repo = mockRepo{}
-		repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
-		dp.anchorRepository = repo
-		err = dp.SendDocument(ctxh, model)
-		model.AssertExpectations(t)
-		srv.AssertExpectations(t)
-		repo.AssertExpectations(t)
-		assert.Error(t, err)
 
-		// pack core document failed
-		model = new(mockModel)
-		model.On("ID").Return(id)
-		model.On("CurrentVersion").Return(id)
-		model.On("NextVersion").Return(next)
-		model.On("CalculateSigningRoot").Return(sr, nil)
-		model.On("Signatures").Return()
-		model.On("CalculateDocumentRoot").Return(dr[:], nil)
-		model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil)
-		model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-		model.On("Author").Return(did1, nil)
-		model.On("Timestamp").Return(tm, nil)
-		model.sigs = append(model.sigs, sig)
-		srv = &testingcommons.MockIdentityService{}
-		srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
-		dp.identityService = srv
-		repo = mockRepo{}
-		repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
-		dp.anchorRepository = repo
-		err = dp.SendDocument(ctxh, model)
-		model.AssertExpectations(t)
-		srv.AssertExpectations(t)
-		repo.AssertExpectations(t)
-		assert.Error(t, err)
+	// get collaborators failed
+	dr, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
+	model.On("Author").Return(did1, nil)
+	model.On("Timestamp").Return(tm, nil)
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
+	dp.anchorRepository = repo
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Error(t, err)
 
-		// send failed
-		cd := coredocumentpb.CoreDocument{}
-		did := testingidentity.GenerateRandomDID()
-		model = new(mockModel)
-		model.On("ID").Return(id)
-		model.On("CurrentVersion").Return(id)
-		model.On("NextVersion").Return(next)
-		model.On("CalculateSigningRoot").Return(sr, nil)
-		model.On("Signatures").Return()
-		model.On("CalculateDocumentRoot").Return(dr[:], nil)
-		model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
-		model.On("PackCoreDocument").Return(cd, nil).Once()
-		model.On("Author").Return(did1, nil)
-		model.On("Timestamp").Return(tm, nil)
-		model.sigs = append(model.sigs, sig)
-		srv = &testingcommons.MockIdentityService{}
-		srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
-		dp.identityService = srv
-		repo = mockRepo{}
-		repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
-		client := new(p2pClient)
-		client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
-		dp.anchorRepository = repo
-		dp.p2pClient = client
-		err = dp.SendDocument(ctxh, model)
-		model.AssertExpectations(t)
-		srv.AssertExpectations(t)
-		repo.AssertExpectations(t)
-		client.AssertExpectations(t)
-		assert.Error(t, err)
+	// pack core document failed
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil)
+	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
+	model.On("Author").Return(did1, nil)
+	model.On("Timestamp").Return(tm, nil)
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
+	dp.anchorRepository = repo
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	assert.Error(t, err)
 
-		// successful
-		model = new(mockModel)
-		model.On("ID").Return(id)
-		model.On("CurrentVersion").Return(id)
-		model.On("NextVersion").Return(next)
-		model.On("CalculateSigningRoot").Return(sr, nil)
-		model.On("Signatures").Return()
-		model.On("CalculateDocumentRoot").Return(dr[:], nil)
-		model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
-		model.On("PackCoreDocument").Return(cd, nil).Once()
-		model.On("Author").Return(did1, nil)
-		model.On("Timestamp").Return(tm, nil)
-		model.sigs = append(model.sigs, sig)
-		srv = &testingcommons.MockIdentityService{}
-		srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
-		dp.identityService = srv
-		repo = mockRepo{}
-		repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
-		client = new(p2pClient)
-		client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
-		dp.anchorRepository = repo
-		dp.p2pClient = client
-		err = dp.SendDocument(ctxh, model)
-		model.AssertExpectations(t)
-		srv.AssertExpectations(t)
-		repo.AssertExpectations(t)
-		client.AssertExpectations(t)
-		assert.NoError(t, err)
-	*/
+	// send failed
+	cd := coredocumentpb.CoreDocument{}
+	did := testingidentity.GenerateRandomDID()
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("Author").Return(did1, nil)
+	model.On("Timestamp").Return(tm, nil)
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
+	client := new(p2pClient)
+	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
+	dp.anchorRepository = repo
+	dp.p2pClient = client
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	client.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// successful
+	model = new(mockModel)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("NextVersion").Return(next)
+	model.On("CalculateSigningRoot").Return(sr, nil)
+	model.On("Signatures").Return()
+	model.On("CalculateDocumentRoot").Return(dr[:], nil)
+	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
+	model.On("PackCoreDocument").Return(cd, nil).Once()
+	model.On("Author").Return(did1, nil)
+	model.On("Timestamp").Return(tm, nil)
+	model.sigs = append(model.sigs, sig)
+	srv = &testingcommons.MockIdentityService{}
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	dp.identityService = srv
+	repo = mockRepo{}
+	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil).Once()
+	client = new(p2pClient)
+	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
+	dp.anchorRepository = repo
+	dp.p2pClient = client
+	err = dp.SendDocument(ctxh, model)
+	model.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	client.AssertExpectations(t)
+	assert.NoError(t, err)
 }
