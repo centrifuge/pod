@@ -8,10 +8,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -41,7 +41,7 @@ type service struct {
 	documents.Service
 	repo      repository
 	queueSrv  queue.TaskQueuer
-	txManager transactions.Manager
+	txManager jobs.Manager
 	factory   identity.Factory
 }
 
@@ -50,7 +50,7 @@ func DefaultService(
 	srv documents.Service,
 	repo repository,
 	queueSrv queue.TaskQueuer,
-	txManager transactions.Manager,
+	txManager jobs.Manager,
 	factory identity.Factory,
 ) Service {
 	return service{
@@ -126,47 +126,47 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 
 // Create takes an entity relationship model and does required validation checks, tries to persist to DB
 // For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
-func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	relationship, err = s.validateAndPersist(ctx, nil, relationship, CreateValidator(s.factory))
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
 	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, relationship.CurrentVersion())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 	return relationship, txID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
 // For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
-func (s service) Update(ctx context.Context, updated documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, updated documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	old, err := s.GetCurrentVersion(ctx, updated.ID())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory))
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 
 	txID := contextutil.TX(ctx)
 	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, updated.CurrentVersion())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 	return updated, txID, done, nil
 }

@@ -10,11 +10,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,13 +25,13 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m mockService) Create(ctx context.Context, model documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (m mockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
 	return model, contextutil.TX(ctx), nil, args.Error(2)
 }
 
-func (m mockService) Update(ctx context.Context, model documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (m mockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
 	return model, contextutil.TX(ctx), nil, args.Error(2)
@@ -91,7 +91,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// create fails
 	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, model).Return(nil, transactions.NilTxID().String(), errors.New("create failed")).Once()
+	srv.On("Create", mock.Anything, model).Return(nil, jobs.NilJobID().String(), errors.New("create failed")).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
 	srv.AssertExpectations(t)
@@ -101,7 +101,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 
 	// derive response fails
 	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, model).Return(model, transactions.NilTxID().String(), nil).Once()
+	srv.On("Create", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
@@ -113,7 +113,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	// success
 	eresp := &clientpopb.PurchaseOrderResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, model).Return(model, transactions.NilTxID().String(), nil).Once()
+	srv.On("Create", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
 	h.service = srv
 	resp, err = h.Create(ctx, req)
@@ -146,7 +146,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 
 	// create fails
 	srv.On("DeriveFromUpdatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(nil, transactions.NilTxID().String(), errors.New("update failed")).Once()
+	srv.On("Update", mock.Anything, model).Return(nil, jobs.NilJobID().String(), errors.New("update failed")).Once()
 	h.service = srv
 	resp, err = h.Update(ctx, req)
 	srv.AssertExpectations(t)
@@ -156,7 +156,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 
 	// derive response fails
 	srv.On("DeriveFromUpdatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(model, transactions.NilTxID().String(), nil).Once()
+	srv.On("Update", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
 	h.service = srv
 	resp, err = h.Update(ctx, req)
@@ -168,7 +168,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	// success
 	eresp := &clientpopb.PurchaseOrderResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(model, transactions.NilTxID().String(), nil).Once()
+	srv.On("Update", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
 	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
 	h.service = srv
 	resp, err = h.Update(ctx, req)

@@ -1,6 +1,6 @@
 // +build unit
 
-package txv1
+package jobsv1
 
 import (
 	"context"
@@ -8,11 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,31 +24,31 @@ func (mockConfig) GetEthereumContextWaitTimeout() time.Duration {
 
 func TestService_ExecuteWithinTX_happy(t *testing.T) {
 	cid := testingidentity.GenerateRandomDID()
-	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
-	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
+	tid, done, err := srv.ExecuteWithinJob(context.Background(), cid, jobs.NilJobID(), "", func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- nil
 	})
 	<-done
 	assert.NoError(t, err)
 	assert.NotNil(t, tid)
-	trn, err := srv.GetTransaction(cid, tid)
+	trn, err := srv.GetJob(cid, tid)
 	assert.NoError(t, err)
-	assert.Equal(t, transactions.Success, trn.Status)
+	assert.Equal(t, jobs.Success, trn.Status)
 }
 
 func TestService_ExecuteWithinTX_err(t *testing.T) {
 	errStr := "dummy"
 	cid := testingidentity.GenerateRandomDID()
-	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
-	tid, done, err := srv.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "SomeTask", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
+	tid, done, err := srv.ExecuteWithinJob(context.Background(), cid, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- errors.New(errStr)
 	})
 	<-done
 	assert.NoError(t, err)
 	assert.NotNil(t, tid)
-	trn, err := srv.GetTransaction(cid, tid)
+	trn, err := srv.GetJob(cid, tid)
 	assert.NoError(t, err)
-	assert.Equal(t, transactions.Failed, trn.Status)
+	assert.Equal(t, jobs.Failed, trn.Status)
 	assert.Len(t, trn.Logs, 1)
 	assert.Equal(t, fmt.Sprintf("%s[SomeTask]", managerLogPrefix), trn.Logs[0].Action)
 	assert.Equal(t, errStr, trn.Logs[0].Message)
@@ -57,61 +56,61 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 
 func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
 	cid := testingidentity.GenerateRandomDID()
-	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
+	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
 	ctx, canc := context.WithCancel(context.Background())
-	tid, done, err := srv.ExecuteWithinTX(ctx, cid, transactions.NilTxID(), "", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, err chan<- error) {
+	tid, done, err := srv.ExecuteWithinJob(ctx, cid, jobs.NilJobID(), "", func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		// doing nothing
 	})
 	canc()
 	<-done
 	assert.NoError(t, err)
 	assert.NotNil(t, tid)
-	trn, err := srv.GetTransaction(cid, tid)
+	trn, err := srv.GetJob(cid, tid)
 	assert.NoError(t, err)
-	assert.Equal(t, transactions.Pending, trn.Status)
+	assert.Equal(t, jobs.Pending, trn.Status)
 	assert.Contains(t, trn.Logs[0].Message, "stopped because of context close")
 }
 
 func TestService_GetTransaction(t *testing.T) {
-	repo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
-	srv := ctx[transactions.BootstrappedService].(transactions.Manager)
+	repo := ctx[jobs.BootstrappedRepo].(jobs.Repository)
+	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
 
 	cid := testingidentity.GenerateRandomDID()
 	bytes := utils.RandomSlice(identity.DIDLength)
 	assert.Equal(t, identity.DIDLength, copy(cid[:], bytes))
-	txn := transactions.NewTransaction(cid, "Some transaction")
+	txn := jobs.NewJob(cid, "Some transaction")
 
 	// no transaction
-	txs, err := srv.GetTransactionStatus(cid, txn.ID)
+	txs, err := srv.GetJobStatus(cid, txn.ID)
 	assert.Nil(t, txs)
 	assert.NotNil(t, err)
-	assert.True(t, errors.IsOfType(transactions.ErrTransactionMissing, err))
+	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
-	txn.Status = transactions.Pending
+	txn.Status = jobs.Pending
 	assert.Nil(t, repo.Save(txn))
 
 	// pending with no log
-	txs, err = srv.GetTransactionStatus(cid, txn.ID)
+	txs, err = srv.GetJobStatus(cid, txn.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, txs)
-	assert.Equal(t, txs.TransactionId, txn.ID.String())
-	assert.Equal(t, string(transactions.Pending), txs.Status)
+	assert.Equal(t, txs.JobId, txn.ID.String())
+	assert.Equal(t, string(jobs.Pending), txs.Status)
 	assert.Empty(t, txs.Message)
 	tm, err := utils.ToTimestamp(txn.CreatedAt)
 	assert.NoError(t, err)
 	assert.Equal(t, tm, txs.LastUpdated)
 
-	log := transactions.NewLog("action", "some message")
+	log := jobs.NewLog("action", "some message")
 	txn.Logs = append(txn.Logs, log)
-	txn.Status = transactions.Success
+	txn.Status = jobs.Success
 	assert.Nil(t, repo.Save(txn))
 
 	// log with message
-	txs, err = srv.GetTransactionStatus(cid, txn.ID)
+	txs, err = srv.GetJobStatus(cid, txn.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, txs)
-	assert.Equal(t, txs.TransactionId, txn.ID.String())
-	assert.Equal(t, string(transactions.Success), txs.Status)
+	assert.Equal(t, txs.JobId, txn.ID.String())
+	assert.Equal(t, string(jobs.Success), txs.Status)
 	assert.Equal(t, log.Message, txs.Message)
 	tm, err = utils.ToTimestamp(log.CreatedAt)
 	assert.NoError(t, err)
@@ -119,30 +118,30 @@ func TestService_GetTransaction(t *testing.T) {
 }
 
 func TestService_CreateTransaction(t *testing.T) {
-	srv := ctx[transactions.BootstrappedService].(extendedManager)
+	srv := ctx[jobs.BootstrappedService].(extendedManager)
 	cid := testingidentity.GenerateRandomDID()
-	tx, err := srv.createTransaction(cid, "test")
+	tx, err := srv.createJob(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
 	assert.Equal(t, cid.String(), tx.DID.String())
 }
 
 func TestService_WaitForTransaction(t *testing.T) {
-	srv := ctx[transactions.BootstrappedService].(extendedManager)
-	repo := ctx[transactions.BootstrappedRepo].(transactions.Repository)
+	srv := ctx[jobs.BootstrappedService].(extendedManager)
+	repo := ctx[jobs.BootstrappedRepo].(jobs.Repository)
 	cid := testingidentity.GenerateRandomDID()
 
 	// failed
-	tx, err := srv.createTransaction(cid, "test")
+	tx, err := srv.createJob(cid, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, tx)
 	assert.Equal(t, cid.String(), tx.DID.String())
-	tx.Status = transactions.Failed
+	tx.Status = jobs.Failed
 	assert.NoError(t, repo.Save(tx))
-	assert.Error(t, srv.WaitForTransaction(cid, tx.ID))
+	assert.Error(t, srv.WaitForJob(cid, tx.ID))
 
 	// success
-	tx.Status = transactions.Success
+	tx.Status = jobs.Success
 	assert.NoError(t, repo.Save(tx))
-	assert.NoError(t, srv.WaitForTransaction(cid, tx.ID))
+	assert.NoError(t, srv.WaitForJob(cid, tx.ID))
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+	"github.com/centrifuge/go-centrifuge/transactions/jobv1"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -30,7 +30,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	txv1.Bootstrapper{},
+	jobv1.Bootstrapper{},
 	&queue.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ideth.Bootstrapper{},

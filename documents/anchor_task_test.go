@@ -5,8 +5,8 @@ package documents
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +25,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 
 		{
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: "some string",
+				jobs.JobIDParam: "some string",
 			},
 			err: "invalid transaction ID",
 		},
@@ -33,7 +33,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		// missing model ID
 		{
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: transactions.NewTxID().String(),
+				jobs.JobIDParam: jobs.NewJobID().String(),
 			},
 			err: "missing model ID",
 		},
@@ -41,8 +41,8 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		// missing accountID
 		{
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: transactions.NewTxID().String(),
-				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
+				jobs.JobIDParam: jobs.NewJobID().String(),
+				DocumentIDParam: hexutil.Encode(utils.RandomSlice(32)),
 			},
 
 			err: "missing account ID",
@@ -52,9 +52,9 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 		{
 			name: "success",
 			kwargs: map[string]interface{}{
-				transactions.TxIDParam: transactions.NewTxID().String(),
-				DocumentIDParam:        hexutil.Encode(utils.RandomSlice(32)),
-				AccountIDParam:         testingidentity.GenerateRandomDID().String(),
+				jobs.JobIDParam: jobs.NewJobID().String(),
+				DocumentIDParam: hexutil.Encode(utils.RandomSlice(32)),
+				AccountIDParam:  testingidentity.GenerateRandomDID().String(),
 			},
 		},
 	}
@@ -74,7 +74,7 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 			task := new(documentAnchorTask)
 			err = task.ParseKwargs(d)
 			if c.err == "" {
-				assert.Equal(t, task.TxID.String(), c.kwargs[transactions.TxIDParam])
+				assert.Equal(t, task.JobID.String(), c.kwargs[jobs.JobIDParam])
 				assert.Equal(t, hexutil.Encode(task.id), c.kwargs[DocumentIDParam])
 				assert.Equal(t, task.accountID.String(), c.kwargs[AccountIDParam])
 				return

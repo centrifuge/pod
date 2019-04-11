@@ -86,6 +86,6 @@ type InvoiceUnpaid interface {
 
 // MintNFTResponse holds tokenID and transaction ID.
 type MintNFTResponse struct {
-	TokenID       string
-	TransactionID string
+	TokenID string
+	JobID   string
 }

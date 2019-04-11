@@ -9,20 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
 	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/transactions"
-
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +28,7 @@ func getTestKey() id.KeyDID {
 
 func initIdentity() id.ServiceDID {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	return NewService(client, txManager, queue, cfg)
 }

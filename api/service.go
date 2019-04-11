@@ -10,17 +10,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/healthcheck"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	purchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/transactions"
-	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -97,10 +97,10 @@ func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.Invo
 	}
 
 	// transactions
-	txSrv := nodeObjReg[transactions.BootstrappedService].(transactions.Manager)
-	h := txv1.GRPCHandler(txSrv, configService)
-	transactionspb.RegisterTransactionServiceServer(grpcServer, h)
-	return transactionspb.RegisterTransactionServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	txSrv := nodeObjReg[jobs.BootstrappedService].(jobs.Manager)
+	h := jobsv1.GRPCHandler(txSrv, configService)
+	jobspb.RegisterJobServiceServer(grpcServer, h)
+	return jobspb.RegisterJobServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }
 
 func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {

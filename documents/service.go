@@ -11,8 +11,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -55,10 +55,10 @@ type Service interface {
 	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
 
 	// Create validates and persists Model and returns a Updated model
-	Create(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error)
+	Create(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
 
 	// Update validates and updates the model and return the updated model
-	Update(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error)
+	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
 }
 
 // service implements Service
@@ -315,19 +315,19 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, 
 	return srv.DeriveFromCoreDocument(cd)
 }
 
-func (s service) Create(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error) {
+func (s service) Create(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error) {
 	srv, err := s.getService(model)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.New("failed to get service: %v", err)
+		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
 	}
 
 	return srv.Create(ctx, model)
 }
 
-func (s service) Update(ctx context.Context, model Model) (Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error) {
 	srv, err := s.getService(model)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.New("failed to get service: %v", err)
+		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
 	}
 
 	return srv.Update(ctx, model)

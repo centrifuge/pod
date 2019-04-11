@@ -10,9 +10,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -31,7 +31,7 @@ const (
 var log = logging.Logger("anchor_task")
 
 type documentAnchorTask struct {
-	txv1.BaseTask
+	jobsv1.BaseTask
 
 	id        []byte
 	accountID identity.DID
@@ -50,7 +50,7 @@ func (d *documentAnchorTask) TaskTypeName() string {
 
 // ParseKwargs parses the kwargs.
 func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
-	err := d.ParseTransactionID(d.TaskTypeName(), kwargs)
+	err := d.ParseJobID(d.TaskTypeName(), kwargs)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (d *documentAnchorTask) ParseKwargs(kwargs map[string]interface{}) error {
 // Copy returns a new task with state.
 func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 	return &documentAnchorTask{
-		BaseTask:      txv1.BaseTask{TxManager: d.TxManager},
+		BaseTask:      jobsv1.BaseTask{JobManager: d.JobManager},
 		config:        d.config,
 		processor:     d.processor,
 		modelGetFunc:  d.modelGetFunc,
@@ -90,7 +90,7 @@ func (d *documentAnchorTask) Copy() (gocelery.CeleryTask, error) {
 
 // RunTask anchors the document.
 func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
-	log.Infof("starting anchor task for transaction: %s\n", d.TxID)
+	log.Infof("starting anchor task for transaction: %s\n", d.JobID)
 	defer func() {
 		err = d.UpdateTransaction(d.accountID, d.TaskTypeName(), err)
 	}()
@@ -100,7 +100,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		apiLog.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
-	txctx := contextutil.WithTX(context.Background(), d.TxID)
+	txctx := contextutil.WithTX(context.Background(), d.JobID)
 	ctxh, err := contextutil.New(txctx, tc)
 	if err != nil {
 		return false, errors.New("failed to get context header: %v", err)
@@ -121,14 +121,14 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
-func InitDocumentAnchorTask(txMan transactions.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, txID transactions.TxID) (queue.TaskResult, error) {
+func InitDocumentAnchorTask(txMan jobs.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, txID jobs.JobID) (queue.TaskResult, error) {
 	params := map[string]interface{}{
-		transactions.TxIDParam: txID.String(),
-		DocumentIDParam:        hexutil.Encode(modelID),
-		AccountIDParam:         accountID.String(),
+		jobs.JobIDParam: txID.String(),
+		DocumentIDParam: hexutil.Encode(modelID),
+		AccountIDParam:  accountID.String(),
 	}
 
-	err := txMan.UpdateTaskStatus(accountID, txID, transactions.Pending, documentAnchorTaskName, "init")
+	err := txMan.UpdateTaskStatus(accountID, txID, jobs.Pending, documentAnchorTaskName, "init")
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +142,8 @@ func InitDocumentAnchorTask(txMan transactions.Manager, tq queue.TaskQueuer, acc
 }
 
 // CreateAnchorTransaction creates a transaction for anchoring a document using transaction manager
-func CreateAnchorTransaction(txMan transactions.Manager, tq queue.TaskQueuer, self identity.DID, txID transactions.TxID, documentID []byte) (transactions.TxID, chan bool, error) {
-	txID, done, err := txMan.ExecuteWithinTX(context.Background(), self, txID, "anchor document", func(accountID identity.DID, TID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
+func CreateAnchorTransaction(txMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, txID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
+	txID, done, err := txMan.ExecuteWithinJob(context.Background(), self, txID, "anchor document", func(accountID identity.DID, TID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
 		tr, err := InitDocumentAnchorTask(txMan, tq, accountID, documentID, TID)
 		if err != nil {
 			errChan <- err

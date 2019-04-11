@@ -43,7 +43,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *cliententitypb.EntityCrea
 	}
 
 	// validate and persist
-	m, txID, _, err := h.service.Create(cctx, m)
+	m, jobID, _, err := h.service.Create(cctx, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -55,7 +55,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *cliententitypb.EntityCrea
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
@@ -74,7 +74,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *cliententitypb.Entity
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, _, err := h.service.Update(ctxHeader, doc)
+	doc, jobID, _, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")
@@ -86,7 +86,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *cliententitypb.Entity
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
@@ -171,7 +171,7 @@ func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.Relationshi
 	}
 
 	// validate and persist
-	m, txID, _, err := h.service.Share(cctx, m)
+	m, jobID, _, err := h.service.Share(cctx, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -183,7 +183,7 @@ func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.Relationshi
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
@@ -201,7 +201,7 @@ func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.Relati
 		return nil, centerrors.Wrap(err, "could not derive revoke payload")
 	}
 
-	m, txID, _, err := h.service.Revoke(ctxHeader, m)
+	m, jobID, _, err := h.service.Revoke(ctxHeader, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")
@@ -213,6 +213,6 @@ func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.Relati
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }

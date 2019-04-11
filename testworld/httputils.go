@@ -93,7 +93,7 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 }
 
 func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
-	txID := resp.Value("header").Path("$.transaction_id").String().Raw()
+	txID := resp.Value("header").Path("$.job_id").String().Raw()
 	if txID == "" {
 		t.Error("transaction ID empty")
 	}
@@ -172,7 +172,7 @@ func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID stri
 	emptyResponseTolerance := 5
 	emptyResponsesEncountered := 0
 	for {
-		resp := addCommonHeaders(e.GET("/transactions/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
+		resp := addCommonHeaders(e.GET("/jobs/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
 		status, ok := resp["status"].(string)
 		if !ok {
 			emptyResponsesEncountered++

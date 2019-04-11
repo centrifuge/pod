@@ -6,9 +6,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -46,7 +46,7 @@ type WatchTransaction struct {
 
 // TransactionStatusTask is struct for the task to check an Ethereum transaction
 type TransactionStatusTask struct {
-	txv1.BaseTask
+	jobsv1.BaseTask
 	timeout time.Duration
 
 	//state
@@ -66,7 +66,7 @@ type TransactionStatusTask struct {
 // NewTransactionStatusTask returns a the struct for the task
 func NewTransactionStatusTask(
 	timeout time.Duration,
-	txService transactions.Manager,
+	txService jobs.Manager,
 	transactionByHash func(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error),
 	transactionReceipt func(ctx context.Context, txHash common.Hash) (*types.Receipt, error),
 	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
@@ -74,7 +74,7 @@ func NewTransactionStatusTask(
 ) *TransactionStatusTask {
 	return &TransactionStatusTask{
 		timeout:               timeout,
-		BaseTask:              txv1.BaseTask{TxManager: txService},
+		BaseTask:              jobsv1.BaseTask{JobManager: txService},
 		ethContextInitializer: ethContextInitializer,
 		transactionByHash:     transactionByHash,
 		transactionReceipt:    transactionReceipt,
@@ -95,13 +95,13 @@ func (tst *TransactionStatusTask) Copy() (gocelery.CeleryTask, error) {
 		transactionByHash:     tst.transactionByHash,
 		transactionReceipt:    tst.transactionReceipt,
 		ethContextInitializer: tst.ethContextInitializer,
-		BaseTask:              txv1.BaseTask{TxManager: tst.TxManager},
+		BaseTask:              jobsv1.BaseTask{JobManager: tst.JobManager},
 	}, nil
 }
 
 // ParseKwargs - define a method to parse CentID
 func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (err error) {
-	err = tst.ParseTransactionID(tst.TaskTypeName(), kwargs)
+	err = tst.ParseJobID(tst.TaskTypeName(), kwargs)
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (tst *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, t
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
-	var txValue *transactions.TXValue
+	var txValue *jobs.JobValue
 	ctx, cancelF := tst.ethContextInitializer(tst.timeout)
 	defer cancelF()
 	defer func() {
@@ -232,7 +232,7 @@ func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 			return nil, err
 		}
 		log.Infof("Value [%x] found for Event [%s]\n", v, tst.eventName)
-		txValue = &transactions.TXValue{Key: tst.eventName, Value: v}
+		txValue = &jobs.JobValue{Key: tst.eventName, Value: v}
 	}
 
 	return nil, nil

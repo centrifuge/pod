@@ -9,8 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -32,10 +32,10 @@ type service struct {
 	anchorRepositoryContract anchorRepositoryContract
 	client                   ethereum.Client
 	queue                    *queue.Server
-	txManager                transactions.Manager
+	txManager                jobs.Manager
 }
 
-func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client, txManager transactions.Manager) AnchorRepository {
+func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client, txManager jobs.Manager) AnchorRepository {
 	return &service{config: config, anchorRepositoryContract: anchorContract, client: client, queue: queue, txManager: txManager}
 }
 
@@ -94,7 +94,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	}
 
 	log.Infof("Add Anchor to Pre-commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.txManager.ExecuteWithinTX(ctx, did, txID, "Check TX for anchor commit",
+	_, done, err := s.txManager.ExecuteWithinJob(ctx, did, txID, "Check TX for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.PreCommit, pc.AnchorID.BigInt(), pc.SigningRoot))
 	if err != nil {
 		return nil, err
@@ -104,8 +104,8 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 }
 
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
@@ -171,7 +171,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, proof)
 
 	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.txManager.ExecuteWithinTX(ctx, did, txID, "Check TX for anchor commit",
+	_, done, err := s.txManager.ExecuteWithinJob(ctx, did, txID, "Check TX for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProof))
 	if err != nil {
 		return nil, err

@@ -59,7 +59,7 @@ func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest)
 	}
 
 	return &nftpb.NFTMintResponse{
-		Header: &nftpb.ResponseHeader{TransactionId: resp.TransactionID},
+		Header: &nftpb.ResponseHeader{JobId: resp.JobID},
 	}, nil
 }
 

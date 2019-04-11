@@ -6,24 +6,23 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/stretchr/testify/assert"
 )
 
-func enqueueJob(t *testing.T, txHash string) (transactions.Manager, identity.DID, transactions.TxID, chan bool) {
+func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.JobID, chan bool) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 
 	cid := testingidentity.GenerateRandomDID()
-	tx, done, err := txManager.ExecuteWithinTX(context.Background(), cid, transactions.NilTxID(), "Check TX status", func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errChan chan<- error) {
+	tx, done, err := txManager.ExecuteWithinJob(context.Background(), cid, jobs.NilJobID(), "Check TX status", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
 		result, err := queueSrv.EnqueueJob(ethereum.EthTXStatusTaskName, map[string]interface{}{
-			transactions.TxIDParam:           txID.String(),
+			jobs.JobIDParam:                  jobID.String(),
 			ethereum.TransactionAccountParam: cid.String(),
 			ethereum.TransactionTxHashParam:  txHash,
 		})
@@ -47,9 +46,9 @@ func TestTransactionStatusTask_successful(t *testing.T) {
 
 	r := <-result
 	assert.True(t, r)
-	trans, err := txManager.GetTransaction(cid, tx)
+	trans, err := txManager.GetJob(cid, tx)
 	assert.Nil(t, err, "a transaction should be returned")
-	assert.Equal(t, string(transactions.Success), string(trans.Status), "transaction should be successful")
+	assert.Equal(t, string(jobs.Success), string(trans.Status), "transaction should be successful")
 }
 
 func TestTransactionStatusTask_failed(t *testing.T) {
@@ -58,7 +57,7 @@ func TestTransactionStatusTask_failed(t *testing.T) {
 
 	r := <-result
 	assert.True(t, r)
-	trans, err := txManager.GetTransaction(cid, tx)
+	trans, err := txManager.GetJob(cid, tx)
 	assert.Nil(t, err, "a  centrifuge transaction should be  returned")
-	assert.Equal(t, string(transactions.Failed), string(trans.Status), "transaction should fail")
+	assert.Equal(t, string(jobs.Failed), string(trans.Status), "transaction should fail")
 }

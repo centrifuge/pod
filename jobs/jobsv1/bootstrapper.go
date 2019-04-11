@@ -1,9 +1,9 @@
-package txv1
+package jobsv1
 
 import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -18,13 +18,13 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	repo, ok := ctx[storage.BootstrappedDB].(storage.Repository)
 	if !ok {
-		return transactions.ErrTransactionBootstrap
+		return jobs.ErrJobsBootstrap
 	}
 
 	txRepo := NewRepository(repo)
-	ctx[transactions.BootstrappedRepo] = txRepo
+	ctx[jobs.BootstrappedRepo] = txRepo
 
 	txSrv := NewManager(cfg, txRepo)
-	ctx[transactions.BootstrappedService] = txSrv
+	ctx[jobs.BootstrappedService] = txSrv
 	return nil
 }

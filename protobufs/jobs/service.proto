@@ -1,34 +1,34 @@
 syntax = "proto3";
 
-package transactions;
+package jobs;
 
-option go_package = "transactionspb";
+option go_package = "jobspb";
 option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
-option java_package = "com.transactions";
+option java_package = "com.jobs";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-message TransactionStatusRequest {
-  string transaction_id = 1;
+message JobStatusRequest {
+  string job_id = 1;
 }
 
-message TransactionStatusResponse {
-  string transaction_id = 1;
+message JobStatusResponse {
+  string job_id = 1;
   string status = 2;
   string message = 3;
   google.protobuf.Timestamp last_updated = 4;
 }
 
-service TransactionService {
-  rpc GetTransactionStatus(TransactionStatusRequest) returns (TransactionStatusResponse) {
+service JobService {
+  rpc GetJobStatus(JobStatusRequest) returns (JobStatusResponse) {
     option (google.api.http) = {
-      get: "/transactions/{transaction_id}"
+      get: "/jobs/{job_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get Transaction Status"
+      description: "Get Job Status"
     };
   }
 }
