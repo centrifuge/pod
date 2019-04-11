@@ -176,8 +176,7 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
 
-	model, err := h.service.RequestEntityWithRelationship(ctxHeader, entityIdentifier, erIdentifier)
-
+	model, err := h.service.GetEntityByRelationship(ctxHeader, entityIdentifier, erIdentifier)
 	if err != nil {
 		return nil, err
 	}

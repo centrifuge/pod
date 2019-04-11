@@ -35,7 +35,10 @@ type Service interface {
 	// DeriveEntityResponse returns the entity model in our standard client format
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 
-	// RequestEntityFromCollaborator requests an entity with an entity relationship
+	// GetEntityByRelationship returns the entity model from database or requests from granter
+	GetEntityByRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error)
+
+	// RequestEntityFromCollaborator requests an entity with an entity relationship from granter
 	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error)
 
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
@@ -262,6 +265,24 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 
 func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
 	return s.get(ctx, documentID, version)
+}
+
+func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, erIdentifier []byte) (documents.Model, error) {
+	if s.Service.Exists(ctx, entityIdentifier) {
+		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
+		if err != nil {
+			// in case of an error try to get document from collaborator
+			return s.RequestEntityWithRelationship(ctx, entityIdentifier, erIdentifier)
+		}
+
+		// check if stored document is the latest version
+		if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, entity); err != nil {
+			return s.RequestEntityWithRelationship(ctx, entityIdentifier, erIdentifier)
+		}
+
+		return entity, nil
+	}
+	return s.RequestEntityWithRelationship(ctx, entityIdentifier, erIdentifier)
 }
 
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
