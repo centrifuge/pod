@@ -62,13 +62,28 @@ networks:
       anchorRepository: "0x2C80F1DafDa7aADeb2C175d4B43A858473E11713"
       invoiceUnpaid: "0xE73841140Fce93912Ec769dAd8F482Bf5c768DA5"
 
-  # Main net test network
+  # Mainnet test network DO NOT USE!
   embarcaderotest:
     # Numeric ID of the Centrifuge network
     id: 10
     bootstrapPeers:
-    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
-    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
+      - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
+      - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
+    # Ethereum network ID - mainnet
+    ethereumNetworkId: 1
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
+      anchorRepository: "0x637B8C3D2AA3Cc206D94519b54892089c9E67990"
+      invoiceUnpaid: "0xB5e423dCc740bBC80f906133e15601f980998356"
+
+  # Mainnet network
+  embarcadero:
+    # Numeric ID of the Centrifuge network
+    id: 10
+    bootstrapPeers:
+    - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
+    - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
     # Ethereum network ID - mainnet
     ethereumNetworkId: 1
     # Latest deployed Smart Contracts for the given testnet
