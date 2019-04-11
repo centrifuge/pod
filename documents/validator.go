@@ -300,6 +300,30 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
+// latestVersionValidator checks if the document is the latest version
+func latestVersionValidator(repo anchors.AnchorRepository) Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		nextID, err := anchors.ToAnchorID(model.NextVersion())
+		if err != nil {
+			return errors.New("failed to get anchorID: %v", err)
+		}
+
+		var empty [anchors.DocumentRootLength]byte
+		var rootByte [anchors.DocumentRootLength]byte
+
+		root, _, err := repo.GetAnchorData(nextID)
+		if err != nil {
+			return errors.New("failed to get document anchor %s from chain: %v", nextID.String(), err)
+		}
+		rootByte = root
+		if rootByte != empty {
+			return errors.New("mismatched document roots")
+		}
+		return nil
+	})
+}
+
+
 // transitionValidator checks that the document changes are within the transition_rule capability of the
 // collaborator making the changes
 func transitionValidator(collaborator identity.DID) Validator {
