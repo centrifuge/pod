@@ -358,7 +358,34 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
+	err = s.store(ctx,model)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return model, nil
+}
+
+func (s service) store(ctx context.Context,model documents.Model) error {
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	if s.Service.Exists(ctx, model.CurrentVersion()) {
+		err = s.repo.Update(selfDID[:], model.CurrentVersion(), model)
+		if err != nil {
+			return errors.NewTypedError(documents.ErrDocumentPersistence, err)
+		}
+
+	} else {
+		err = s.repo.Create(selfDID[:], model.CurrentVersion(), model)
+		if err != nil {
+			return errors.NewTypedError(documents.ErrCDCreate, err)
+		}
+	}
+	return nil
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
