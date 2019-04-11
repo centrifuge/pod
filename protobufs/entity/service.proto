@@ -12,7 +12,7 @@ import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// EntityService contains all common interactions for entity document
+// EntityService contains all common interactions for entity documents
 service EntityService {
   rpc Create(EntityCreatePayload) returns (EntityResponse) {
     option (google.api.http) = {
