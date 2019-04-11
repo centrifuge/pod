@@ -95,8 +95,6 @@
         ],
         "tags": [
           "EntityService"
-<<<<<<< HEAD
-=======
         ]
       }
     },
@@ -129,7 +127,6 @@
         ],
         "tags": [
           "EntityService"
->>>>>>> upstream/develop
         ]
       }
     },
