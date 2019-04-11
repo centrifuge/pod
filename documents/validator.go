@@ -101,6 +101,10 @@ func UpdateVersionValidator() Validator {
 // baseValidator validates the core document basic fields like identifier, versions, and salts
 func baseValidator() Validator {
 	return ValidatorFunc(func(_, model Model) (err error) {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		if utils.IsEmptyByteSlice(model.ID()) {
 			err = errors.AppendError(err, errors.New("document identifier not set"))
 		}
@@ -128,6 +132,10 @@ func baseValidator() Validator {
 // signingRootValidator checks the existence of signing root
 func signingRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		sr, err := model.CalculateSigningRoot()
 		if err != nil {
 			return errors.New("failed to get signing root: %v", err)
@@ -145,6 +153,10 @@ func signingRootValidator() Validator {
 // recalculates the document root and compares with existing one
 func documentRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		dr, err := model.CalculateDocumentRoot()
 		if err != nil {
 			return errors.New("failed to get document root: %v", err)
@@ -161,6 +173,10 @@ func documentRootValidator() Validator {
 // documentAuthorValidator checks if a given sender DID is the document author
 func documentAuthorValidator(sender identity.DID) Validator {
 	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		author, err := model.Author()
 		if err != nil {
 			return err
@@ -176,6 +192,10 @@ func documentAuthorValidator(sender identity.DID) Validator {
 // documentTimestampForSigningValidator checks if a given document has a timestamp recent enough to be signed
 func documentTimestampForSigningValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		tm, err := model.Timestamp()
 		if err != nil {
 			return errors.New("failed to get document timestamp: %v", err)
@@ -194,6 +214,10 @@ func documentTimestampForSigningValidator() Validator {
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
 func signaturesValidator(idService identity.ServiceDID) Validator {
 	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		sr, err := model.CalculateSigningRoot()
 		if err != nil {
 			return errors.New("failed to get signing root: %v", err)
@@ -263,6 +287,10 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 // assumes document root is generated and verified
 func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 		if err != nil {
 			return errors.New("failed to get anchorID: %v", err)
@@ -303,21 +331,22 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 // latestVersionValidator checks if the document is the latest version
 func latestVersionValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		nextID, err := anchors.ToAnchorID(model.NextVersion())
-		if err != nil {
-			return errors.New("failed to get anchorID: %v", err)
+		if model == nil {
+			return ErrModelNil
 		}
 
-		var empty [anchors.DocumentRootLength]byte
-		var rootByte [anchors.DocumentRootLength]byte
+		nextID, err := anchors.ToAnchorID(model.NextVersion())
+		if err != nil {
+			return errors.NewTypedError(ErrDocumentIdentifier, err)
+		}
 
 		root, _, err := repo.GetAnchorData(nextID)
 		if err != nil {
-			return errors.New("failed to get document anchor %s from chain: %v", nextID.String(), err)
+			return errors.NewTypedError(ErrDocumentAnchor, err)
 		}
-		rootByte = root
-		if rootByte != empty {
-			return errors.New("mismatched document roots")
+
+		if !utils.IsEmptyByteSlice(root[:])	{
+			return ErrDocumentNotLatest
 		}
 		return nil
 	})
