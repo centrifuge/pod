@@ -34,10 +34,7 @@ type Service interface {
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 
 	// GetEntityByRelationship returns the entity model from database or requests from granter
-	GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
-
-	// RequestEntityFromCollaborator requests an entity with an entity relationship from granter
-	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
+	GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error)
 
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
 	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
@@ -265,22 +262,30 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 	return s.get(ctx, documentID, version)
 }
 
-func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
+func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error) {
+	model, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
+	if err != nil {
+		return nil, entityrelationship.ErrERNotFound
+	}
+
+	relationship := model.(*entityrelationship.EntityRelationship)
+	entityIdentifier := relationship.EntityIdentifier
+
 	if s.Service.Exists(ctx, entityIdentifier) {
 		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
 		if err != nil {
 			// in case of an error try to get document from collaborator
-			return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+			return s.requestEntityWithRelationship(ctx, relationship)
 		}
 
 		// check if stored document is the latest version
 		if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, entity); err != nil {
-			return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+			return s.requestEntityWithRelationship(ctx, relationship)
 		}
 
 		return entity, nil
 	}
-	return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+	return s.requestEntityWithRelationship(ctx, relationship)
 }
 
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
@@ -315,13 +320,8 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 	return nil, documents.ErrDocumentNotFound
 }
 
-func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
-	er, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
-	if err != nil {
-		return nil, entityrelationship.ErrERNotFound
-	}
-
-	accessTokens, err := er.GetAccessTokens()
+func (s service) requestEntityWithRelationship(ctx context.Context, relationship *entityrelationship.EntityRelationship) (documents.Model, error) {
+	accessTokens, err := relationship.GetAccessTokens()
 	if err != nil {
 		return nil, documents.ErrCDAttribute
 	}
@@ -332,7 +332,7 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 	}
 
 	at := accessTokens[0]
-	if !utils.IsSameByteSlice(at.DocumentIdentifier, entityIdentifier) {
+	if !utils.IsSameByteSlice(at.DocumentIdentifier, relationship.EntityIdentifier) {
 		return nil, entityrelationship.ErrERInvalidIdentifier
 	}
 
@@ -340,7 +340,7 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 	if err != nil {
 		return nil, err
 	}
-	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationshipIdentifier)
+	response, err := s.processorFinder().RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationship.Document.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}

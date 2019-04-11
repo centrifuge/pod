@@ -98,38 +98,6 @@
         ]
       }
     },
-    "/entity/{identifier}/relationship/{relationship_identifier}": {
-      "get": {
-        "summary": "Entity Relation Get",
-        "description": "Get entity from business partner",
-        "operationId": "GetEntityByRelationship",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "relationship_identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/entity/{identifier}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
@@ -221,6 +189,32 @@
           },
           {
             "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "EntityService"
+        ]
+      }
+    },
+    "/relationship/{relationship_identifier}/entity": {
+      "get": {
+        "summary": "Entity Relation Get",
+        "description": "Get entity from business partner",
+        "operationId": "GetEntityByRelationship",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "relationship_identifier",
             "in": "path",
             "required": true,
             "type": "string"
