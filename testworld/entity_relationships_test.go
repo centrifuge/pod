@@ -75,7 +75,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	assert.Equal(t, response.Document.DocumentIdentifier, entityIdentifierByte)
 
 	// Alice updates her entity
-	res = updateDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, entityIdentifier, updatedDocumentPayload(typeEntity, []string{}))
+	res = updateDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, entityIdentifier, updatedEntityPayload(typeEntity, []string{}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
