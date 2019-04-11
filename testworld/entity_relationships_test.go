@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHost_P2PGetDocumentWithToken(t *testing.T) {
+func TestHost_Entity_EntityRelationships(t *testing.T) {
 	t.Parallel()
 
 	// Hosts
@@ -94,6 +94,9 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	assert.Error(t, err)
 
 	// Alice wants to list all relationships associated with her entity, this should return her one (with Bob)
+	relationships, err := alice.host.entityService.ListEntityRelationships(ctxBob, entityIdentifierByte)
+	assert.Len(t, relationships, 1)
+	assert.Equal(t, relationships[0].TargetIdentity, bob.id)
 
 	// Alice creates an EntityRelationship with Charlie
 	relationshipData = &entitypb2.RelationshipData{
@@ -119,6 +122,10 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	assert.Equal(t, relationshipModel.CurrentVersion(), charlieModel.CurrentVersion())
 
 	// Alice lists all relationship associated with her entity, this should return her two (with Bob and Charlie)
+	relationships, err = alice.host.entityService.ListEntityRelationships(ctxBob, entityIdentifierByte)
+	assert.Len(t, relationships, 2)
+	assert.Equal(t, relationships[0].TargetIdentity, bob.id)
+	assert.Equal(t, relationships[1].TargetIdentity, charlie.id)
 
 	// Alice revokes the EntityRelationship with Bob
 	relationshipModel, _, isDone, err = alice.host.entityService.Revoke(ctxAlice, &er)
@@ -133,6 +140,10 @@ func TestHost_P2PGetDocumentWithToken(t *testing.T) {
 	assert.Error(t, err)
 
 	// Alice lists all relationships associated with her entity
-	// This should return her two (with Bob, which is revoked, and with Charlie, which is still valid)
-
+	// This should return her two relationships: one valid with Charlie, one revoked with Bob
+	relationships, err = alice.host.entityService.ListEntityRelationships(ctxBob, entityIdentifierByte)
+	assert.Len(t, relationships, 2)
+	assert.Equal(t, relationships[0].TargetIdentity, charlie.id)
+	assert.Equal(t, relationships[1].TargetIdentity, bob.id)
+	assert.Len(t, relationships[1].Document.AccessTokens, 0)
 }

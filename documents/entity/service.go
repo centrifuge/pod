@@ -21,7 +21,7 @@ import (
 type Service interface {
 	documents.Service
 
-	// DeriverFromPayload derives Entity from clientPayload
+	// DeriveFromPayload derives Entity from clientPayload
 	DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives entity model from update payload
@@ -33,10 +33,13 @@ type Service interface {
 	// DeriveEntityResponse returns the entity model in our standard client format
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 
-	// GetEntityByRelationship returns the entity model from database or requests from granter
+	// GetEntityByRelationship returns the entity model from database or requests from a granter peer
 	GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
 
-	// RequestEntityFromCollaborator requests an entity with an entity relationship from granter
+	// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
+	ListEntityRelationships(ctx context.Context, entityIdentifier []byte) ([]entityrelationship.EntityRelationship, error)
+
+	// RequestEntityWithRelationship requests an entity with a corresponding relationship identifier
 	RequestEntityWithRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error)
 
 	// DeriveFromSharePayload derives the entity relationship from the relationship payload
@@ -265,6 +268,7 @@ func (s service) GetVersion(ctx context.Context, documentID []byte, version []by
 	return s.get(ctx, documentID, version)
 }
 
+// GetEntityByRelationship returns the entity model from database or requests from a granter peer
 func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, relationshipIdentifier []byte) (documents.Model, error) {
 	if s.Service.Exists(ctx, entityIdentifier) {
 		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
@@ -281,6 +285,11 @@ func (s service) GetEntityByRelationship(ctx context.Context, entityIdentifier, 
 		return entity, nil
 	}
 	return s.RequestEntityWithRelationship(ctx, entityIdentifier, relationshipIdentifier)
+}
+
+// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
+func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier []byte) ([]entityrelationship.EntityRelationship, error) {
+	return s.erService.GetEntityRelationships(ctx, entityIdentifier)
 }
 
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
@@ -363,7 +372,6 @@ func (s service) RequestEntityWithRelationship(ctx context.Context, entityIdenti
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	return s.get(ctx, documentID, nil)
-
 }
 
 // DeriveFromSharePayload derives the entity relationship from the relationship payload
