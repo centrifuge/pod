@@ -105,25 +105,25 @@ func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.Invo
 
 func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// register invoice
-	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.DocumentServiceServer)
+	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.InvoiceServiceServer)
 	if !ok {
 		return errors.New("invoice grpc handler not registered")
 	}
 
-	invoicepb.RegisterDocumentServiceServer(grpcServer, invHandler)
-	err := invoicepb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	invoicepb.RegisterInvoiceServiceServer(grpcServer, invHandler)
+	err := invoicepb.RegisterInvoiceServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
 
 	// register purchase order
-	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.DocumentServiceServer)
+	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.PurchaseOrderServiceServer)
 	if !ok {
 		return errors.New("purchase order grpc handler not registered")
 	}
 
-	purchaseorderpb.RegisterDocumentServiceServer(grpcServer, poHandler)
-	err = purchaseorderpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	purchaseorderpb.RegisterPurchaseOrderServiceServer(grpcServer, poHandler)
+	err = purchaseorderpb.RegisterPurchaseOrderServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ import "google/protobuf/timestamp.proto";
 import "precise-proofs/proofs/proto/proof.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for documents
+// DocumentService contains common interactions for all documents
 service DocumentService {
   rpc CreateDocumentProof(CreateDocumentProofRequest) returns (DocumentProof) {
     option (google.api.http) = {

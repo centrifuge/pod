@@ -38,7 +38,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "InvoiceService"
         ]
       }
     },
@@ -63,7 +63,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "InvoiceService"
         ]
       },
       "put": {
@@ -94,7 +94,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "InvoiceService"
         ]
       }
     },
@@ -125,7 +125,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "InvoiceService"
         ]
       }
     }

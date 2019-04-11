@@ -21,7 +21,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config config.Service, srv Service) clientinvoicepb.DocumentServiceServer {
+func GRPCHandler(config config.Service, srv Service) clientinvoicepb.InvoiceServiceServer {
 	return &grpcHandler{
 		service: srv,
 		config:  config,
