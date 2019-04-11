@@ -323,7 +323,6 @@ func latestVersionValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
-
 // transitionValidator checks that the document changes are within the transition_rule capability of the
 // collaborator making the changes
 func transitionValidator(collaborator identity.DID) Validator {
@@ -374,6 +373,7 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	return ValidatorGroup{
 		PreAnchorValidator(idService),
 		anchoredValidator(repo),
+		latestVersionValidator(repo),
 	}
 }
 
