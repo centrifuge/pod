@@ -99,7 +99,16 @@ const (
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
 
+	// ErrDocumentAnchor must be used if it is not possible to access an anchor from chain
+	ErrDocumentAnchor = errors.Error("failed to get document anchor from chain")
+
+	// ErrDocumentNotLatest must be used if document is not the latest version
+	ErrDocumentNotLatest = errors.Error("document is not the latest version")
+
 	// others
+
+	// ErrModelNil must be used if the model is nil
+	ErrModelNil = errors.Error("model is empty")
 
 	// ErrInvalidDecimal must be used when given decimal is invalid
 	ErrInvalidDecimal = errors.Error("invalid decimal")
