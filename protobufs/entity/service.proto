@@ -80,8 +80,7 @@ service EntityService {
   // ListEntityRelationships
   rpc ListEntityRelationships(GetRequest) returns (RelationshipResponse) {
     option (google.api.http) = {
-      post: "/entity/{identifier}/relationships"
-      body: "*"
+      get: "/entity/{identifier}/relationships"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "list relationships belonging to an entity"

@@ -99,7 +99,7 @@
       }
     },
     "/entity/{identifier}/relationships": {
-      "post": {
+      "get": {
         "summary": "ListEntityRelationships",
         "description": "list relationships belonging to an entity",
         "operationId": "ListEntityRelationships",
@@ -117,14 +117,6 @@
             "in": "path",
             "required": true,
             "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityGetRequest"
-            }
           }
         ],
         "tags": [
@@ -525,14 +517,6 @@
         },
         "data": {
           "$ref": "#/definitions/entityEntityData"
-        }
-      }
-    },
-    "entityGetRequest": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string"
         }
       }
     },
