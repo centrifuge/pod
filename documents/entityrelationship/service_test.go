@@ -168,7 +168,7 @@ func TestService_GetEntityRelationships(t *testing.T) {
 	assert.Len(t, r, 1)
 	r, err = eSrv.GetEntityRelationships(ctxh, utils.RandomSlice(32))
 	assert.NoError(t, err)
-	assert.Equal(t, r, []EntityRelationship{})
+	assert.Equal(t, []documents.Model(nil), r)
 }
 
 func TestService_Create(t *testing.T) {
