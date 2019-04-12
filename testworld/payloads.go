@@ -166,11 +166,10 @@ func updatedEntityPayload(identity string, collaborators []string) map[string]in
 	return map[string]interface{}{
 		"data": map[string]interface{}{
 			"identity":   identity,
-			"legal_name": "test company",
+			"legal_name": "edited test company",
 			"contacts": []map[string]interface{}{
 				{
 					"name":        "test name",
-					"second name": "second test name",
 				},
 			},
 		},

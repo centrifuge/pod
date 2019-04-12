@@ -16,7 +16,6 @@ const typeInvoice string = "invoice"
 const typeEntity string = "entity"
 const typePO string = "purchaseorder"
 const poPrefix string = "po"
-const typeRelationship string = "entityrelationship"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
@@ -64,6 +63,15 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 }
 
 func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	relationshipIdentifier := params["er_identifier"].(string)
+
+	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+
+	return objGet
+}
+
+func listRelationships(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	relationshipIdentifier := params["er_identifier"].(string)
 
 	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
