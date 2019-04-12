@@ -17,12 +17,9 @@ import (
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
-	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 )
-
-var log = logging.Logger("receiver")
 
 // Handler implements protocol message handlers
 type Handler struct {
