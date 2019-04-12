@@ -106,6 +106,7 @@ const (
 	ErrDocumentNotLatest = errors.Error("document is not the latest version")
 
 	// others
+
 	// ErrModelNil must be used if the model is nil
 	ErrModelNil = errors.Error("model is empty")
 

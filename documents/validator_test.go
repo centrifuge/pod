@@ -472,7 +472,7 @@ func TestPreAnchorValidator(t *testing.T) {
 	assert.Len(t, pav, 2)
 }
 
-func TestValidator_latestVersionValidator(t *testing.T) {
+func TestValidator_LatestVersionValidator(t *testing.T) {
 	repo := mockRepo{}
 	//zeros := [32]byte{}
 	next := utils.RandomSlice(32)
@@ -488,7 +488,7 @@ func TestValidator_latestVersionValidator(t *testing.T) {
 	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
 	model := new(mockModel)
 	model.On("NextVersion").Return(next).Once()
-	lv := latestVersionValidator(repo)
+	lv := LatestVersionValidator(repo)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.NoError(t, err)
@@ -498,7 +498,7 @@ func TestValidator_latestVersionValidator(t *testing.T) {
 	repo = mockRepo{}
 	repo.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
 	model.On("NextVersion").Return(next).Once()
-	lv = latestVersionValidator(repo)
+	lv = LatestVersionValidator(repo)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -509,7 +509,7 @@ func TestValidator_latestVersionValidator(t *testing.T) {
 	repo = mockRepo{}
 	repo.On("GetAnchorData", nextAid).Return(nil, time.Now(), ErrDocumentAnchor)
 	model.On("NextVersion").Return(next).Once()
-	lv = latestVersionValidator(repo)
+	lv = LatestVersionValidator(repo)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)

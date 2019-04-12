@@ -328,8 +328,8 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
-// latestVersionValidator checks if the document is the latest version
-func latestVersionValidator(repo anchors.AnchorRepository) Validator {
+// LatestVersionValidator checks if the document is the latest version
+func LatestVersionValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		if model == nil {
 			return ErrModelNil
@@ -402,7 +402,7 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 	return ValidatorGroup{
 		PreAnchorValidator(idService),
 		anchoredValidator(repo),
-		latestVersionValidator(repo),
+		LatestVersionValidator(repo),
 	}
 }
 

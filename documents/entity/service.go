@@ -283,7 +283,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 		}
 
 		// check if stored document is the latest version
-		if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, entity); err != nil {
+		if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
 			return s.requestEntityWithRelationship(ctx, relationship)
 		}
 
