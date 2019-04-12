@@ -246,7 +246,7 @@ func (s service) DeriveRelationshipsListResponse(entity documents.Model, models 
 	}
 
 	return &cliententitypb.RelationshipResponse{
-		Header: h,
+		Header:       h,
 		Relationship: relationships,
 	}, nil
 

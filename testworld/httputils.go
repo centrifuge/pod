@@ -63,7 +63,7 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 }
 
 func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	relationshipIdentifier := params["er_identifier"].(string)
+	relationshipIdentifier := params["r_identifier"].(string)
 
 	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
@@ -71,13 +71,19 @@ func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType strin
 	return objGet
 }
 
-func listRelationships(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	relationshipIdentifier := params["er_identifier"].(string)
-
-	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+func listRelationships(e *httpexpect.Expect, auth string, params map[string]interface{}) *httpexpect.Value {
+	entityIdentifier := params["er_identifier"].(string)
+	objGet := addCommonHeaders(e.GET("/entity/"+entityIdentifier+"/relationships"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	return objGet
+}
+
+func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/revoke"), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
 }
 
 func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
@@ -96,7 +102,7 @@ func createDocument(e *httpexpect.Expect, auth string, documentType string, stat
 }
 
 func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/"+"share"), auth).
+	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/share"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj

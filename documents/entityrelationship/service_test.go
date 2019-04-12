@@ -283,6 +283,6 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 		OwnerIdentity:  selfDID.String(),
 		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
 	}
-	assert.Equal(t, payload.TargetIdentity, r.Relationship.TargetIdentity)
-	assert.Equal(t, payload.OwnerIdentity, r.Relationship.OwnerIdentity)
+	assert.Equal(t, payload.TargetIdentity, r.Relationship[0].TargetIdentity)
+	assert.Equal(t, payload.OwnerIdentity, r.Relationship[0].OwnerIdentity)
 }

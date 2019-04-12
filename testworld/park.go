@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
@@ -277,6 +279,19 @@ func newHost(
 func (h *host) init() error {
 	if h.createConfig {
 		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
+		if err != nil {
+			return err
+		}
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.SetConfigFile(h.dir + "/config.yaml")
+		err = v.ReadInConfig()
+		if err != nil {
+			return err
+		}
+		v.Set("ethereum.accounts.main.key", os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY"))
+		v.Set("ethereum.accounts.main.password", os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD"))
+		err = v.WriteConfig()
 		if err != nil {
 			return err
 		}
