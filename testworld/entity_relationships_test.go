@@ -25,17 +25,17 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	}
 
 	// Alice creates an EntityRelationship with Bob
-	res = shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(alice.id.String(), bob.id.String()))
-	relationshipIdentifier := getDocumentIdentifier(t, res)
-	txID = getTransactionID(t, res)
+	resB := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
+	relationshipIdentifierB := getDocumentIdentifier(t, resB)
+	txID = getTransactionID(t, resB)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
 
-	// Charlie should not access to the entity data
+	// Charlie should not have access to the entity data
 	relationshipParams := map[string]interface{}{
-		"r_identifier": relationshipIdentifier,
+		"r_identifier": relationshipIdentifierB,
 	}
 	response := getEntityWithRelation(charlie.httpExpect, charlie.id.String(), typeEntity, relationshipParams)
 	response.Path("$.data.entity.legal_name").String().Equal("test company")
@@ -63,8 +63,8 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response = listRelationships(alice.httpExpect, alice.id.String(), entityParams)
 
 	// Alice creates an EntityRelationship with Charlie
-	res = shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(alice.id.String(), charlie.id.String()))
-	relationshipIdentifierC := getDocumentIdentifier(t, res)
+	resC := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, charlie.id.String()))
+	relationshipIdentifierC := getDocumentIdentifier(t, resC)
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -82,8 +82,8 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response = listRelationships(alice.httpExpect, alice.id.String(), entityParams)
 
 	// Alice revokes the EntityRelationship with Bob
-	res = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(alice.id.String(), bob.id.String()))
-	txID = getTransactionID(t, res)
+	resB = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
+	txID = getTransactionID(t, resB)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
