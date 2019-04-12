@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -63,16 +64,26 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("entity relation service not initialised")
 	}
 
-	processor, _ := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
-	/*if !ok {
+	processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
+	if !ok {
 		return errors.New("processor not initialised")
-	}*/
+	}
+
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return errors.New("anchor repository not initialised")
+	}
+
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	if !ok {
+		return errors.New("identity service not initialized")
+	}
 
 	// register service
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, factory, erService, processor)
+		queueSrv, txManager, factory, erService, didService, anchorRepo, processor)
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {

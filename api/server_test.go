@@ -53,13 +53,13 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
-		&entity.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
+		&entity.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 

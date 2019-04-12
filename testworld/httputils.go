@@ -62,6 +62,15 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 	return objGet
 }
 
+func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	relationshipIdentifier := params["er_identifier"].(string)
+
+	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+
+	return objGet
+}
+
 func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 

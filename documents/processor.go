@@ -22,7 +22,7 @@ type Config interface {
 
 // DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
 type DocumentRequestProcessor interface {
-	RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
+	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
 }
 
 // Client defines methods that can be implemented by any type handling p2p communications.
@@ -222,20 +222,15 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 }
 
 // RequestDocumentWithAccessToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
-
-	requesterID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, ErrDocumentConfigAccountID
-	}
 
 	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: accessTokenRequest,
 	}
 
-	response, err := dp.p2pClient.GetDocumentRequest(ctx, requesterID, request)
+	response, err := dp.p2pClient.GetDocumentRequest(ctx, granterDID, request)
 	if err != nil {
 		return nil, err
 	}

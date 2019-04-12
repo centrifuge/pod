@@ -38,7 +38,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -63,7 +63,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       },
       "put": {
@@ -94,7 +94,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -129,7 +129,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -164,7 +164,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -195,7 +195,33 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
+        ]
+      }
+    },
+    "/relationship/{relationship_identifier}/entity": {
+      "get": {
+        "summary": "Entity Relation Get",
+        "description": "Get entity from business partner",
+        "operationId": "GetEntityByRelationship",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityEntityResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "relationship_identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "EntityService"
         ]
       }
     }

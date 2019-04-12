@@ -12,8 +12,8 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// PurchaseOrderDocumentService contains all common interactions for purchaseorder documents
-service DocumentService {
+// PurchaseOrderService contains all common interactions for purchase order documents
+service PurchaseOrderService {
   rpc Create(PurchaseOrderCreatePayload) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
       post: "/purchaseorder"

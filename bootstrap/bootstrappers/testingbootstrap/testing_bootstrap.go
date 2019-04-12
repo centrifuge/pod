@@ -39,11 +39,11 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	documents.Bootstrapper{},
 	&invoice.Bootstrapper{},
 	&entityrelationship.Bootstrapper{},
-	&entity.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
 	&nft.Bootstrapper{},
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
+	&entity.Bootstrapper{},
 	&queue.Starter{},
 }
 
