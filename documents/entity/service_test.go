@@ -4,10 +4,13 @@ package entity
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -30,6 +33,81 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type MockEntityRelationService struct {
+	documents.Service
+	mock.Mock
+}
+
+func (m *MockEntityRelationService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+	args := m.Called(documentID)
+	return args.Get(0).(documents.Model), args.Error(1)
+}
+
+func (m *MockEntityRelationService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
+	args := m.Called(documentID, version)
+	return args.Get(0).(documents.Model), args.Error(1)
+}
+
+func (m *MockEntityRelationService) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
+	args := m.Called(documentID, fields)
+	return args.Get(0).(*documents.DocumentProof), args.Error(1)
+}
+
+func (m *MockEntityRelationService) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
+	args := m.Called(documentID, version, fields)
+	return args.Get(0).(*documents.DocumentProof), args.Error(1)
+}
+
+func (m *MockEntityRelationService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+	args := m.Called(cd)
+	return args.Get(0).(documents.Model), args.Error(1)
+}
+
+func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+	args := m.Called()
+	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
+}
+
+func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockEntityRelationService) Exists(ctx context.Context, documentID []byte) bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
+// DeriveFromCreatePayload derives Entity Relationship from RelationshipPayload
+func (m *MockEntityRelationService) DeriveFromCreatePayload(ctx context.Context, payload *entitypb2.RelationshipPayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
+	return args.Get(0).(documents.Model), args.Error(1)
+}
+
+// DeriveFromUpdatePayload derives a revoked entity relationship model from RelationshipPayload
+func (m *MockEntityRelationService) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb2.RelationshipPayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
+	return args.Get(0).(documents.Model), args.Error(1)
+}
+
+// DeriveEntityRelationshipData returns the entity relationship data as client data
+func (m *MockEntityRelationService) DeriveEntityRelationshipData(relationship documents.Model) (*entitypb2.RelationshipData, error) {
+	args := m.Called(relationship)
+	return args.Get(0).(*entitypb2.RelationshipData), args.Error(1)
+}
+
+// DeriveEntityRelationshipResponse returns the entity relationship model in our standard client format
+func (m *MockEntityRelationService) DeriveEntityRelationshipResponse(relationship documents.Model) (*entitypb2.RelationshipResponse, error) {
+	args := m.Called(relationship)
+	return args.Get(0).(*entitypb2.RelationshipResponse), args.Error(1)
+}
+
+// GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
+func (m *MockEntityRelationService) GetEntityRelationships(ctx context.Context, entityID []byte) ([]entityrelationship.EntityRelationship, error) {
+	args := m.Called(ctx, entityID)
+	return args.Get(0).([]entityrelationship.EntityRelationship), args.Error(1)
+}
+
 func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingcommons.MockIdentityFactory, Service) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(dIDBytes, nil)
@@ -46,7 +124,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 		repo,
 		queueSrv,
 		ctx[jobs.BootstrappedService].(jobs.Manager), idFactory,
-		nil, nil, nil, nil)
+		nil, nil, nil, nil, nil)
 }
 
 func TestService_Update(t *testing.T) {
@@ -405,9 +483,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	idFactory.AssertExpectations(t)
 }
 
-
-
-func setupRelationshipTesting(t *testing.T) (context.Context,documents.Model,*entityrelationship.EntityRelationship,identity.Factory,identity.ServiceDID, documents.Repository) {
+func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *entityrelationship.EntityRelationship, identity.Factory, identity.ServiceDID, documents.Repository) {
 	idService := &testingcommons.MockIdentityService{}
 	idFactory := new(testingcommons.MockIdentityFactory)
 	repo := testRepo()
@@ -428,13 +504,13 @@ func setupRelationshipTesting(t *testing.T) (context.Context,documents.Model,*en
 	err := er.InitEntityRelationshipInput(ctxh, hexutil.Encode(entity.ID()), erData)
 	assert.NoError(t, err)
 
-	return ctxh, entity, er, idFactory,idService,repo
-	
+	return ctxh, entity, er, idFactory, idService, repo
+
 }
 
 func TestService_GetEntityByRelationship_latestInDB(t *testing.T) {
 	// prepare a service with mocked layers
-	ctxh,entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
+	ctxh, entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
 
 	eID := entity.ID()
 	erID := er.ID()
@@ -442,17 +518,17 @@ func TestService_GetEntityByRelationship_latestInDB(t *testing.T) {
 	// testcase: latest version in db
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := testingdocuments.MockService{}
-	mockedERSrv := &testingdocuments.MockEntityRelationService{}
+	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &testingcommons.MockRequestProcessor{}
 
-	docSrv.On("GetCurrentVersion",eID).Return(entity,nil)
+	docSrv.On("GetCurrentVersion", eID).Return(entity, nil)
 	docSrv.On("Exists").Return(true)
-	mockedERSrv.On("GetCurrentVersion",er.ID()).Return(er,nil)
+	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, nil)
 
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 	nextId, err := anchors.ToAnchorID(entity.NextVersion())
-	mockAnchor.On("GetAnchorData",nextId ).Return(zeroRoot, time.Now(), nil).Once()
+	mockAnchor.On("GetAnchorData", nextId).Return(zeroRoot, time.Now(), nil).Once()
 
 	//initialize service
 	entitySrv := DefaultService(
@@ -460,11 +536,59 @@ func TestService_GetEntityByRelationship_latestInDB(t *testing.T) {
 		repo,
 		nil,
 		nil, idFactory,
-		mockedERSrv, idService, mockAnchor, mockProcessor)
+		mockedERSrv, idService, mockAnchor, mockProcessor, nil)
 
 	//successful latest version in db
-	model, err := entitySrv.GetEntityByRelationship(ctxh,erID)
+	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)
 	assert.NoError(t, err)
-	assert.Equal(t, model.CurrentVersion(),entity.CurrentVersion())
+	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
+
+}
+
+func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
+	// prepare a service with mocked layers
+	ctxh, entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
+
+	eID := entity.ID()
+	erID := er.ID()
+
+	// testcase: request from peer
+	mockAnchor := &mockAnchorRepo{}
+	docSrv := testingdocuments.MockService{}
+	mockedERSrv := &MockEntityRelationService{}
+	mockProcessor := &testingcommons.MockRequestProcessor{}
+
+	docSrv.On("GetCurrentVersion", eID).Return(entity, nil)
+	docSrv.On("Exists").Return(true).Once()
+	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, nil)
+
+	fakeRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	nextId, err := anchors.ToAnchorID(entity.NextVersion())
+	mockAnchor.On("GetAnchorData", nextId).Return(fakeRoot, time.Now(), nil).Once()
+
+	token, err := er.GetAccessTokens()
+	assert.NoError(t, err)
+
+	cd, err := entity.PackCoreDocument()
+	assert.NoError(t, err)
+
+	mockProcessor.On("RequestDocumentWithAccessToken", did, token[0].Identifier, eID, erID).Return(&p2ppb.GetDocumentResponse{Document: &cd}, nil)
+	docSrv.On("DeriveFromCoreDocument", mock.Anything).Return(entity, nil)
+	docSrv.On("Exists").Return(false).Once()
+
+	//initialize service
+	entitySrv := DefaultService(
+		&docSrv,
+		repo,
+		nil,
+		nil, idFactory,
+		mockedERSrv, idService, mockAnchor, mockProcessor, func() documents.ValidatorGroup {
+			return documents.ValidatorGroup{}
+		})
+
+	//successful request from peer
+	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)
+	assert.NoError(t, err)
+	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 
 }
