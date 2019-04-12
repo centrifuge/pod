@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"context"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"testing"
@@ -405,31 +406,19 @@ func TestService_calculateDataRoot(t *testing.T) {
 }
 
 
-func TestService_GetEntityByRelationship(t *testing.T) {
-	// prepare a service with mocked layers
-	c := &testingconfig.MockConfig{}
-	c.On("GetIdentityID").Return(dIDBytes, nil)
-	idService := testingcommons.MockIdentityService{}
-	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
-	queueSrv := new(testingutils.MockQueue)
-	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
+
+func setupRelationshipTesting(t *testing.T) (context.Context,documents.Model,*entityrelationship.EntityRelationship,identity.Factory,identity.ServiceDID, documents.Repository) {
+	idService := &testingcommons.MockIdentityService{}
 	idFactory := new(testingcommons.MockIdentityFactory)
 	repo := testRepo()
-	mockAnchor := &mockAnchorRepo{}
-	docSrv := testingdocuments.MockService{}
-	mockedERSrv := &testingdocuments.MockEntityRelationService{}
-	mockProcessor := &testingcommons.MockRequestProcessor{}
 
 	// successful request
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
-
 	// create entity
 	entity, _ := createCDWithEmbeddedEntity(t)
 
-
 	// create relationship
-
 	erData := &entitypb2.RelationshipData{
 		EntityIdentifier: hexutil.Encode(entity.ID()),
 		OwnerIdentity:    hexutil.Encode(dIDBytes),
@@ -439,34 +428,43 @@ func TestService_GetEntityByRelationship(t *testing.T) {
 	err := er.InitEntityRelationshipInput(ctxh, hexutil.Encode(entity.ID()), erData)
 	assert.NoError(t, err)
 
+	return ctxh, entity, er, idFactory,idService,repo
+	
+}
+
+func TestService_GetEntityByRelationship_latestInDB(t *testing.T) {
+	// prepare a service with mocked layers
+	ctxh,entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
+
 	eID := entity.ID()
 	erID := er.ID()
+
+	// testcase: latest version in db
+	mockAnchor := &mockAnchorRepo{}
+	docSrv := testingdocuments.MockService{}
+	mockedERSrv := &testingdocuments.MockEntityRelationService{}
+	mockProcessor := &testingcommons.MockRequestProcessor{}
 
 	docSrv.On("GetCurrentVersion",eID).Return(entity,nil)
 	docSrv.On("Exists").Return(true)
 	mockedERSrv.On("GetCurrentVersion",er.ID()).Return(er,nil)
 
-	anchorId, err := anchors.ToAnchorID(eID)
-	assert.NoError(t, err)
-	root, err := entity.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	mockAnchor.On("GetAnchorData",anchorId ).Return(root, time.Now(), nil).Once()
+	zeros := [32]byte{}
+	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+	nextId, err := anchors.ToAnchorID(entity.NextVersion())
+	mockAnchor.On("GetAnchorData",nextId ).Return(zeroRoot, time.Now(), nil).Once()
 
 	//initialize service
 	entitySrv := DefaultService(
 		&docSrv,
 		repo,
-		queueSrv,
-		ctx[jobs.BootstrappedService].(jobs.Manager), idFactory,
-		mockedERSrv, &idService, mockAnchor, mockProcessor)
+		nil,
+		nil, idFactory,
+		mockedERSrv, idService, mockAnchor, mockProcessor)
 
-	entitySrv.GetEntityByRelationship(ctxh,erID)
-
-
-
-
-}
-
-func TestService_requestEntityWithRelationship(t *testing.T) {
+	//successful latest version in db
+	model, err := entitySrv.GetEntityByRelationship(ctxh,erID)
+	assert.NoError(t, err)
+	assert.Equal(t, model.CurrentVersion(),entity.CurrentVersion())
 
 }
