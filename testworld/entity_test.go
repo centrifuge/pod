@@ -82,5 +82,5 @@ func TestHost_EntityShareGet(t *testing.T) {
 		"er_identifier":     hexutil.Encode(relationshipIdentifier),
 	}
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
-	assert.Equal(t, response.Path("$.data.entity.legal_name").String(), "test company")
+	response.Path("$.data.entity.legal_name").String().Equal("test company")
 }
