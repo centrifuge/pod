@@ -3,6 +3,8 @@ package receiver
 import (
 	"context"
 
+	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -15,9 +17,12 @@ import (
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
+	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 )
+
+var log = logging.Logger("receiver")
 
 // Handler implements protocol message handlers
 type Handler struct {
@@ -277,13 +282,10 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 
 func (srv *Handler) convertToErrorEnvelop(ierr error) (*pb.P2PEnvelope, error) {
 	ierr = errors.Mask(ierr)
-	errPb, ok := ierr.(proto.Message)
-	if !ok {
-		return nil, ierr
-	}
-	errBytes, ierr := proto.Marshal(errPb)
-	if ierr != nil {
-		return nil, ierr
+	errPb := &errorspb.Error{Message: ierr.Error()}
+	errBytes, errx := proto.Marshal(errPb)
+	if errx != nil {
+		return nil, errx
 	}
 
 	envelope := &p2ppb.Envelope{
@@ -293,9 +295,9 @@ func (srv *Handler) convertToErrorEnvelop(ierr error) (*pb.P2PEnvelope, error) {
 		Body: errBytes,
 	}
 
-	marshalledOut, ierr := proto.Marshal(envelope)
-	if ierr != nil {
-		return nil, ierr
+	marshalledOut, errx := proto.Marshal(envelope)
+	if errx != nil {
+		return nil, errx
 	}
 
 	// an error for the client
