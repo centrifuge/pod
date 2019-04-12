@@ -6,8 +6,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 )
 
 // BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
@@ -36,7 +36,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}

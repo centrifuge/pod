@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "transactions/service.proto",
+    "title": "jobs/service.proto",
     "version": "version not set"
   },
   "schemes": [
@@ -15,37 +15,37 @@
     "application/json"
   ],
   "paths": {
-    "/transactions/{transaction_id}": {
+    "/jobs/{job_id}": {
       "get": {
-        "description": "Get Transaction Status",
-        "operationId": "GetTransactionStatus",
+        "description": "Get Job Status",
+        "operationId": "GetJobStatus",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/transactionsTransactionStatusResponse"
+              "$ref": "#/definitions/jobsJobStatusResponse"
             }
           }
         },
         "parameters": [
           {
-            "name": "transaction_id",
+            "name": "job_id",
             "in": "path",
             "required": true,
             "type": "string"
           }
         ],
         "tags": [
-          "TransactionService"
+          "JobService"
         ]
       }
     }
   },
   "definitions": {
-    "transactionsTransactionStatusResponse": {
+    "jobsJobStatusResponse": {
       "type": "object",
       "properties": {
-        "transaction_id": {
+        "job_id": {
           "type": "string"
         },
         "status": {

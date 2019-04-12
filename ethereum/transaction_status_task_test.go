@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,11 +23,11 @@ import (
 func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
-	txID := transactions.NewTxID().String()
+	txID := jobs.NewJobID().String()
 	cid := testingidentity.GenerateRandomDID()
 
 	kwargs := map[string]interface{}{
-		transactions.TxIDParam:  txID,
+		jobs.JobIDParam:         txID,
 		TransactionAccountParam: cid.String(),
 		TransactionTxHashParam:  txHash,
 	}
@@ -38,7 +38,7 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	assert.Nil(t, err, "parsing should be successful")
 
 	assert.Equal(t, cid, task.accountID, "accountID should be parsed correctly")
-	assert.Equal(t, txID, task.TxID.String(), "txID should be parsed correctly")
+	assert.Equal(t, txID, task.JobID.String(), "txID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
 
 }
@@ -46,13 +46,13 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 func TestMintingConfirmationTask_ParseKwargsWithEvents_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
-	txID := transactions.NewTxID().String()
+	txID := jobs.NewJobID().String()
 	cid := testingidentity.GenerateRandomDID()
 	eventName := "IdentityCreated(address)"
 	eventIdx := 0
 
 	kwargs := map[string]interface{}{
-		transactions.TxIDParam:   txID,
+		jobs.JobIDParam:          txID,
 		TransactionAccountParam:  cid.String(),
 		TransactionTxHashParam:   txHash,
 		TransactionEventName:     eventName,
@@ -65,7 +65,7 @@ func TestMintingConfirmationTask_ParseKwargsWithEvents_success(t *testing.T) {
 	assert.Nil(t, err, "parsing should be successful")
 
 	assert.Equal(t, cid, task.accountID, "accountID should be parsed correctly")
-	assert.Equal(t, txID, task.TxID.String(), "txID should be parsed correctly")
+	assert.Equal(t, txID, task.JobID.String(), "txID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
 	assert.Equal(t, eventName, task.eventName, "eventName should be parsed correctly")
 	assert.Equal(t, eventIdx, task.eventValueIdx, "eventValueIdx should be parsed correctly")
@@ -76,7 +76,7 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 	eventName := "IdentityCreated(address)"
 	tests := []map[string]interface{}{
 		{
-			transactions.TxIDParam:  transactions.NewTxID().String(),
+			jobs.JobIDParam:         jobs.NewJobID().String(),
 			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
 		},
 		{
@@ -84,23 +84,23 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 		},
 		{
-			transactions.TxIDParam: transactions.NewTxID().String(),
+			jobs.JobIDParam:        jobs.NewJobID().String(),
 			TransactionTxHashParam: "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 		},
 		{
-			transactions.TxIDParam:  transactions.NewTxID().String(),
+			jobs.JobIDParam:         jobs.NewJobID().String(),
 			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 			TransactionEventName:    0,
 		},
 		{
-			transactions.TxIDParam:  transactions.NewTxID().String(),
+			jobs.JobIDParam:         jobs.NewJobID().String(),
 			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 			TransactionEventName:    eventName,
 		},
 		{
-			transactions.TxIDParam:   transactions.NewTxID().String(),
+			jobs.JobIDParam:          jobs.NewJobID().String(),
 			TransactionAccountParam:  testingidentity.GenerateRandomDID().String(),
 			TransactionTxHashParam:   "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 			TransactionEventName:     eventName,

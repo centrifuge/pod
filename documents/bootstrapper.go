@@ -6,10 +6,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/transactions"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 )
 
 const (
@@ -99,10 +99,10 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	dp := DefaultProcessor(didService, p2pClient, anchorRepo, cfg)
 	ctx[BootstrappedAnchorProcessor] = dp
 
-	txMan := ctx[transactions.BootstrappedService].(transactions.Manager)
+	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	anchorTask := &documentAnchorTask{
-		BaseTask: txv1.BaseTask{
-			TxManager: txMan,
+		BaseTask: jobsv1.BaseTask{
+			JobManager: jobManager,
 		},
 		config:        cfgService,
 		processor:     dp,

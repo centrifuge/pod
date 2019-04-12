@@ -10,9 +10,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -43,13 +43,13 @@ type Service interface {
 	DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
 
 	// Share takes an entity relationship, validates it, and tries to persist it to the DB
-	Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+	Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, jobs.JobID, chan bool, error)
 
 	// DeriveFromRevokePayload derives the revoked entity relationship from the relationship payload
 	DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error)
 
 	// Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
-	Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error)
+	Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, jobs.JobID, chan bool, error)
 
 	// DeriveEntityRelationshipResponse returns create response from entity relationship model
 	DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error)
@@ -61,7 +61,7 @@ type service struct {
 	documents.Service
 	repo       documents.Repository
 	queueSrv   queue.TaskQueuer
-	txManager  transactions.Manager
+	jobManager jobs.Manager
 	factory    identity.Factory
 	processor  documents.DocumentRequestProcessor
 	erService  entityrelationship.Service
@@ -74,7 +74,7 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txManager transactions.Manager,
+	jobManager jobs.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
 	idService identity.ServiceDID,
@@ -84,7 +84,7 @@ func DefaultService(
 	return service{
 		repo:       repo,
 		queueSrv:   queueSrv,
-		txManager:  txManager,
+		jobManager: jobManager,
 		Service:    srv,
 		factory:    factory,
 		erService:  erService,
@@ -153,46 +153,46 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes an entity model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, entity documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Create(ctx context.Context, entity documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	entity, err = s.validateAndPersist(ctx, nil, entity, CreateValidator(s.factory))
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 	return entity, txID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	old, err := s.GetCurrentVersion(ctx, new.ID())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 	return new, txID, done, nil
 }
@@ -287,7 +287,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 		}
 
 		// check if stored document is the latest version
-		if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, entity); err != nil {
+		if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
 			return s.requestEntityWithRelationship(ctx, relationship)
 		}
 
@@ -409,7 +409,7 @@ func (s service) DeriveFromSharePayload(ctx context.Context, payload *cliententi
 }
 
 // Share takes an entity relationship, validates it, and tries to persist it to the DB
-func (s service) Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Share(ctx context.Context, entityRelationship documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	return s.erService.Create(ctx, entityRelationship)
 }
 
@@ -419,7 +419,7 @@ func (s service) DeriveFromRevokePayload(ctx context.Context, payload *clientent
 }
 
 // Revoke takes a revoked entity relationship, validates it, and tries to persist it to the DB
-func (s service) Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Revoke(ctx context.Context, entityRelationship documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	return s.erService.Update(ctx, entityRelationship)
 }
 

@@ -157,6 +157,6 @@ message ResponseHeader {
   string created_at = 4;
   ReadAccess read_access = 5;
   WriteAccess write_access = 6;
-  string transaction_id = 7;
+  string job_id = 7;
   repeated NFT nfts = 8;
 }

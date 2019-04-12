@@ -278,7 +278,7 @@
         "write_access": {
           "$ref": "#/definitions/documentWriteAccess"
         },
-        "transaction_id": {
+        "job_id": {
           "type": "string"
         },
         "nfts": {

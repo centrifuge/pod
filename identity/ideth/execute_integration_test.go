@@ -25,9 +25,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -156,10 +156,10 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 	opts, err := client.GetTxOpts(context.Background(), cfg.GetEthereumDefaultAccountName())
 	assert.NoError(t, err)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
+	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 
-	_, done, err := txManager.ExecuteWithinTX(context.Background(), testingidentity.GenerateRandomDID(), transactions.NilTxID(), "Check TX add execute",
-		func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+	_, done, err := txManager.ExecuteWithinJob(context.Background(), testingidentity.GenerateRandomDID(), jobs.NilJobID(), "Check TX add execute",
+		func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 			if err != nil {
 				errOut <- err
