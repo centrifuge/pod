@@ -38,13 +38,13 @@ func (m *mockService) DeriveFromSharePayload(ctx context.Context, payload *clien
 func (m *mockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
-	return model, contextutil.TX(ctx), nil, args.Error(2)
+	return model, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m *mockService) Share(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
-	return model, contextutil.TX(ctx), nil, args.Error(2)
+	return model, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m *mockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
@@ -80,13 +80,13 @@ func (m *mockService) DeriveEntityRelationshipResponse(doc documents.Model) (*cl
 func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	doc1, _ := args.Get(0).(documents.Model)
-	return doc1, contextutil.TX(ctx), nil, args.Error(2)
+	return doc1, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m *mockService) Revoke(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	doc1, _ := args.Get(0).(documents.Model)
-	return doc1, contextutil.TX(ctx), nil, args.Error(2)
+	return doc1, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (documents.Model, error) {

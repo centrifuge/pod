@@ -36,7 +36,7 @@ var cfgService config.Service
 var idService identity.ServiceDID
 var idFactory identity.Factory
 var InvoiceUnpaid nft.InvoiceUnpaid
-var txManager jobs.Manager
+var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
 
 func TestMain(m *testing.M) {
@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	InvoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
-	txManager = ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
@@ -95,7 +95,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 	d := <-done
 	assert.True(t, d)
-	assert.NoError(t, txManager.WaitForJob(cid, txID))
+	assert.NoError(t, jobManager.WaitForJob(cid, txID))
 
 	// get ID
 	id := modelUpdated.ID()
@@ -116,7 +116,7 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	<-done
 	txID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
-	assert.NoError(t, txManager.WaitForJob(cid, txID))
+	assert.NoError(t, jobManager.WaitForJob(cid, txID))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, req.DepositAddress, owner)

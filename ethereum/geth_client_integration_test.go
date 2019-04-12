@@ -31,7 +31,7 @@ var ctx = map[string]interface{}{}
 
 func registerMockedTransactionTask() {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 
 	mockClient := &testingcommons.MockEthClient{}
 
@@ -46,7 +46,7 @@ func registerMockedTransactionTask() {
 	// txHash: 0x3 -> pending
 	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x3")).Return(&types.Transaction{}, true, nil).Maybe()
 
-	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, txManager, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
+	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, jobManager, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethereum.EthTXStatusTaskName, ethTransTask)
 
 }

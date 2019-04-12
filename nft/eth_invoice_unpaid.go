@@ -216,7 +216,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 			return
 		}
 
-		txctx := contextutil.WithTX(ctx, txID)
+		txctx := contextutil.WithJob(ctx, txID)
 		_, _, done, err := s.docSrv.Update(txctx, model)
 		if err != nil {
 			errOut <- err

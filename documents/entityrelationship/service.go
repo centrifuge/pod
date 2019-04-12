@@ -39,10 +39,10 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      repository
-	queueSrv  queue.TaskQueuer
-	txManager jobs.Manager
-	factory   identity.Factory
+	repo       repository
+	queueSrv   queue.TaskQueuer
+	jobManager jobs.Manager
+	factory    identity.Factory
 }
 
 // DefaultService returns the default implementation of the service.
@@ -50,15 +50,15 @@ func DefaultService(
 	srv documents.Service,
 	repo repository,
 	queueSrv queue.TaskQueuer,
-	txManager jobs.Manager,
+	jobManager jobs.Manager,
 	factory identity.Factory,
 ) Service {
 	return service{
-		repo:      repo,
-		queueSrv:  queueSrv,
-		txManager: txManager,
-		Service:   srv,
-		factory:   factory,
+		repo:       repo,
+		queueSrv:   queueSrv,
+		jobManager: jobManager,
+		Service:    srv,
+		factory:    factory,
 	}
 }
 
@@ -137,8 +137,8 @@ func (s service) Create(ctx context.Context, relationship documents.Model) (docu
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, relationship.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, relationship.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -163,8 +163,8 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, updated.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, updated.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

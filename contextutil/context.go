@@ -29,13 +29,13 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }
 
-// WithTX returns a context with TX ID
-func WithTX(ctx context.Context, txID jobs.JobID) context.Context {
-	return context.WithValue(ctx, tx, txID)
+// WithJob returns a context with Job ID
+func WithJob(ctx context.Context, jobID jobs.JobID) context.Context {
+	return context.WithValue(ctx, tx, jobID)
 }
 
-// TX returns current txID
-func TX(ctx context.Context) jobs.JobID {
+// Job returns current jobID
+func Job(ctx context.Context) jobs.JobID {
 	tid, ok := ctx.Value(tx).(jobs.JobID)
 	if !ok {
 		return jobs.NilJobID()

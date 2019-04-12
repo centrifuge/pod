@@ -28,13 +28,13 @@ type mockService struct {
 func (m mockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
-	return model, contextutil.TX(ctx), nil, args.Error(2)
+	return model, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m mockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
-	return model, contextutil.TX(ctx), nil, args.Error(2)
+	return model, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m mockService) DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {

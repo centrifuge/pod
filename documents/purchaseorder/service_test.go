@@ -49,11 +49,11 @@ func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service)
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
-	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
-	return idService, DefaultService(docSrv, repo, queueSrv, txManager, func() documents.TokenRegistry {
+	return idService, DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
 		return nil
 	})
 }

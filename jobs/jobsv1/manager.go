@@ -35,7 +35,7 @@ func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
 }
 
 // manager implements JobManager.
-// TODO [TXManager] convert this into an implementation of node.Server and start it at node start so that we can bring down transaction go routines cleanly
+// TODO [JobManager] convert this into an implementation of node.Server and start it at node start so that we can bring down transaction go routines cleanly
 type manager struct {
 	config jobs.Config
 	repo   jobs.Repository
@@ -130,12 +130,12 @@ func (s *manager) saveJob(tx *jobs.Job) error {
 	return nil
 }
 
-// GetJob returns the transaction associated with identity and id.
+// GetJob returns the job associated with identity and id.
 func (s *manager) GetJob(accountID identity.DID, id jobs.JobID) (*jobs.Job, error) {
 	return s.repo.Get(accountID, id)
 }
 
-// createJob creates a new transaction and saves it to the DB.
+// createJob creates a new job and saves it to the DB.
 func (s *manager) createJob(accountID identity.DID, desc string) (*jobs.Job, error) {
 	tx := jobs.NewJob(accountID, desc)
 	return tx, s.saveJob(tx)
@@ -163,7 +163,7 @@ func (s *manager) WaitForJob(accountID identity.DID, txID jobs.JobID) error {
 	}
 }
 
-// GetJobStatus returns the transaction status associated with identity and id.
+// GetJobStatus returns the job status associated with identity and id.
 func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (*jobspb.JobStatusResponse, error) {
 	job, err := s.GetJob(accountID, id)
 	if err != nil {

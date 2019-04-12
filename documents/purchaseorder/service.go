@@ -36,7 +36,7 @@ type service struct {
 	documents.Service
 	repo           documents.Repository
 	queueSrv       queue.TaskQueuer
-	txManager      jobs.Manager
+	jobManager     jobs.Manager
 	tokenRegFinder func() documents.TokenRegistry
 }
 
@@ -45,13 +45,13 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txManager jobs.Manager,
+	jobManager jobs.Manager,
 	tokenRegFinder func() documents.TokenRegistry,
 ) Service {
 	return service{
 		repo:           repo,
 		queueSrv:       queueSrv,
-		txManager:      txManager,
+		jobManager:     jobManager,
 		Service:        srv,
 		tokenRegFinder: tokenRegFinder,
 	}
@@ -107,8 +107,8 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, nil
 	}
@@ -132,8 +132,8 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

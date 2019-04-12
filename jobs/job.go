@@ -158,10 +158,10 @@ type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 }
 
-// JobManager is a manager for centrifuge Jobs.
+// Manager is a manager for centrifuge Jobs.
 type Manager interface {
 	// ExecuteWithinJob executes the given unit of work within a Job
-	ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID JobID, desc string, work func(accountID identity.DID, jobID JobID, txMan Manager, err chan<- error)) (jobID JobID, done chan bool, err error)
+	ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID JobID, desc string, work func(accountID identity.DID, jobID JobID, jobManager Manager, err chan<- error)) (jobID JobID, done chan bool, err error)
 	GetJob(accountID identity.DID, id JobID) (*Job, error)
 	UpdateJobWithValue(accountID identity.DID, id JobID, key string, value []byte) error
 	UpdateTaskStatus(accountID identity.DID, id JobID, status Status, taskName, message string) error

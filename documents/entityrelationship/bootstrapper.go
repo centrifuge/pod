@@ -49,7 +49,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue server not initialised")
 	}
 
-	txManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("transaction service not initialised")
 	}
@@ -63,7 +63,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		entityRepo,
-		queueSrv, txManager, factory)
+		queueSrv, jobManager, factory)
 
 	err := registry.Register(documenttypes.EntityRelationshipDataTypeUrl, srv)
 	if err != nil {

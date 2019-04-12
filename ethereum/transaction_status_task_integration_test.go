@@ -17,10 +17,10 @@ import (
 
 func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.JobID, chan bool) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 
 	cid := testingidentity.GenerateRandomDID()
-	tx, done, err := txManager.ExecuteWithinJob(context.Background(), cid, jobs.NilJobID(), "Check TX status", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
+	tx, done, err := jobManager.ExecuteWithinJob(context.Background(), cid, jobs.NilJobID(), "Check TX status", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
 		result, err := queueSrv.EnqueueJob(ethereum.EthTXStatusTaskName, map[string]interface{}{
 			jobs.JobIDParam:                  jobID.String(),
 			ethereum.TransactionAccountParam: cid.String(),
@@ -29,7 +29,7 @@ func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.J
 		if err != nil {
 			errChan <- err
 		}
-		_, err = result.Get(txManager.GetDefaultTaskTimeout())
+		_, err = result.Get(jobManager.GetDefaultTaskTimeout())
 		if err != nil {
 			errChan <- err
 		}
@@ -37,7 +37,7 @@ func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.J
 	})
 	assert.NoError(t, err)
 
-	return txManager, cid, tx, done
+	return jobManager, cid, tx, done
 }
 
 func TestTransactionStatusTask_successful(t *testing.T) {

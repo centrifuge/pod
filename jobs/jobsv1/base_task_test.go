@@ -21,12 +21,12 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	task.JobManager = NewManager(&mockConfig{}, NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))
 
 	// missing transaction with nil error
-	err := task.UpdateTransaction(accountID, name, nil)
+	err := task.UpdateJob(accountID, name, nil)
 	err = errors.GetErrs(err)[0]
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
 	// missing transaction with error
-	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"))
+	err = task.UpdateJob(accountID, name, errors.New("anchor error"))
 	err = errors.GetErrs(err)[1]
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
@@ -34,7 +34,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	tx := jobs.NewJob(accountID, "")
 	assert.NoError(t, task.JobManager.(extendedManager).saveJob(tx))
 	task.JobID = tx.ID
-	assert.NoError(t, task.UpdateTransaction(accountID, name, nil))
+	assert.NoError(t, task.UpdateJob(accountID, name, nil))
 	tx, err = task.JobManager.GetJob(accountID, task.JobID)
 	assert.NoError(t, err)
 	assert.Equal(t, tx.Status, jobs.Pending)
@@ -45,7 +45,7 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	tx = jobs.NewJob(accountID, "")
 	assert.NoError(t, task.JobManager.(extendedManager).saveJob(tx))
 	task.JobID = tx.ID
-	err = task.UpdateTransaction(accountID, name, errors.New("anchor error"))
+	err = task.UpdateJob(accountID, name, errors.New("anchor error"))
 	assert.EqualError(t, errors.GetErrs(err)[0], "anchor error")
 	tx, err = task.JobManager.GetJob(accountID, task.JobID)
 	assert.NoError(t, err)

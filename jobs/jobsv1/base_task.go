@@ -19,30 +19,30 @@ type BaseTask struct {
 	JobManager jobs.Manager
 }
 
-// ParseJobID parses txID.
+// ParseJobID parses JobID.
 func (b *BaseTask) ParseJobID(taskTypeName string, kwargs map[string]interface{}) error {
-	txID, ok := kwargs[jobs.JobIDParam].(string)
+	jobID, ok := kwargs[jobs.JobIDParam].(string)
 	if !ok {
-		return errors.New("missing transaction ID")
+		return errors.New("missing job ID")
 	}
 
 	var err error
-	b.JobID, err = jobs.FromString(txID)
+	b.JobID, err = jobs.FromString(jobID)
 	if err != nil {
-		return errors.New("invalid transaction ID")
+		return errors.New("invalid job ID")
 	}
 
 	log.Infof("Task %s parsed for tx: %s\n", taskTypeName, b.JobID)
 	return nil
 }
 
-// UpdateTransaction add a new log and updates the status of the job based on the error.
-func (b *BaseTask) UpdateTransaction(accountID identity.DID, taskTypeName string, err error) error {
-	return b.UpdateTransactionWithValue(accountID, taskTypeName, err, nil)
+// UpdateJob add a new log and updates the status of the job based on the error.
+func (b *BaseTask) UpdateJob(accountID identity.DID, taskTypeName string, err error) error {
+	return b.UpdateJobWithValue(accountID, taskTypeName, err, nil)
 }
 
 // UpdateJobWithValue add a new log and updates the status of the transaction based on the error and adds a value to the tx
-func (b *BaseTask) UpdateTransactionWithValue(accountID identity.DID, taskTypeName string, err error, txValue *jobs.JobValue) error {
+func (b *BaseTask) UpdateJobWithValue(accountID identity.DID, taskTypeName string, err error, txValue *jobs.JobValue) error {
 	if err == gocelery.ErrTaskRetryable {
 		return err
 	}

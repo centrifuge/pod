@@ -35,7 +35,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := context[jobs.BootstrappedService].(jobs.Manager)
+	jobManager, ok := context[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}
@@ -45,10 +45,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	factory := NewFactory(factoryContract, client, txManager, queueSrv, factoryAddress, cfg)
+	factory := NewFactory(factoryContract, client, jobManager, queueSrv, factoryAddress, cfg)
 	context[identity.BootstrappedDIDFactory] = factory
 
-	service := NewService(client, txManager, queueSrv, cfg)
+	service := NewService(client, jobManager, queueSrv, cfg)
 	context[identity.BootstrappedDIDService] = service
 
 	return nil

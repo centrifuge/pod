@@ -201,7 +201,7 @@ func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 	ctx, cancelF := tst.ethContextInitializer(tst.timeout)
 	defer cancelF()
 	defer func() {
-		err = tst.UpdateTransactionWithValue(tst.accountID, tst.TaskTypeName(), err, txValue)
+		err = tst.UpdateJobWithValue(tst.accountID, tst.TaskTypeName(), err, txValue)
 	}()
 
 	_, isPending, err := tst.transactionByHash(ctx, common.HexToHash(tst.txHash))

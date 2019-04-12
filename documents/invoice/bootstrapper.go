@@ -41,7 +41,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue server not initialised")
 	}
 
-	txManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("transaction service not initialised")
 	}
@@ -55,7 +55,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, txManager, func() documents.TokenRegistry {
+		queueSrv, jobManager, func() documents.TokenRegistry {
 			tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 			if !ok {
 				panic("token registry initialisation error")

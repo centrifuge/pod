@@ -74,7 +74,7 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txManager jobs.Manager,
+	jobManager jobs.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
 	idService identity.ServiceDID,
@@ -84,7 +84,7 @@ func DefaultService(
 	return service{
 		repo:            repo,
 		queueSrv:        queueSrv,
-		jobManager:      txManager,
+		jobManager:      jobManager,
 		Service:         srv,
 		factory:         factory,
 		erService:       erService,
@@ -164,7 +164,7 @@ func (s service) Create(ctx context.Context, entity documents.Model) (documents.
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
+	txID := contextutil.Job(ctx)
 	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
@@ -189,7 +189,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
+	txID := contextutil.Job(ctx)
 	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err

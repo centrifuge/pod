@@ -66,10 +66,10 @@ func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	txMan := &testingjobs.MockJobManager{}
-	ctx[jobs.BootstrappedService] = txMan
+	jobMan := &testingjobs.MockJobManager{}
+	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan bool)
-	txMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
+	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
 	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},

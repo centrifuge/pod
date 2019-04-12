@@ -28,9 +28,9 @@ func getTestKey() id.KeyDID {
 
 func initIdentity() id.ServiceDID {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	txManager := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	return NewService(client, txManager, queue, cfg)
+	return NewService(client, jobManager, queue, cfg)
 }
 
 func getTestDIDContext(t *testing.T, did id.DID) context.Context {

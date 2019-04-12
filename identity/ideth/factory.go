@@ -24,14 +24,14 @@ type factory struct {
 	factoryAddress  common.Address
 	factoryContract *FactoryContract
 	client          ethereum.Client
-	txManager       jobs.Manager
+	jobManager      jobs.Manager
 	queue           *queue.Server
 	config          id.Config
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(factoryContract *FactoryContract, client ethereum.Client, txManager jobs.Manager, queue *queue.Server, factoryAddress common.Address, conf id.Config) id.Factory {
-	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, txManager: txManager, queue: queue, config: conf}
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, factoryAddress common.Address, conf id.Config) id.Factory {
+	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, jobManager: jobManager, queue: queue, config: conf}
 }
 
 func (s *factory) getNonceAt(ctx context.Context, address common.Address) (uint64, error) {
@@ -129,7 +129,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 
 	createdDID := id.NewDID(*calcIdentityAddress)
 
-	txID, done, err := s.txManager.ExecuteWithinJob(context.Background(), createdDID, jobs.NilJobID(), "Check TX for create identity status", s.createIdentityTX(opts))
+	txID, done, err := s.jobManager.ExecuteWithinJob(context.Background(), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +137,10 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return nil, errors.New("Create Identity TX failed: txID:%s", txID.String())
+		return nil, errors.New("Create Identity Job failed: txID:%s", txID.String())
 	}
 
-	tx, err := s.txManager.GetJob(createdDID, txID)
+	tx, err := s.jobManager.GetJob(createdDID, txID)
 	if err != nil {
 		return nil, err
 	}
