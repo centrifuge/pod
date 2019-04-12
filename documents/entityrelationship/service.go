@@ -125,7 +125,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes an entity relationship model and does required validation checks, tries to persist to DB
-// For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
+// For Entity Relationships, Create encompasses the Share functionality from the Entity Client API endpoint
 func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {

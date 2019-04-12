@@ -194,37 +194,6 @@
         ]
       }
     },
-    "/entity/{identifier}/{version}": {
-      "get": {
-        "description": "Get a specific version of an entity",
-        "operationId": "GetVersion",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "version",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/relationship/{relationship_identifier}/entity": {
       "get": {
         "summary": "Entity Relation Get",

@@ -293,10 +293,6 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 	return entity, nil
 }
 
-func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
-	return s.get(ctx, documentID, version)
-}
-
 // GetEntityByRelationship returns the entity model from database or requests from a granter peer
 func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error) {
 	model, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
@@ -330,7 +326,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 
 // ListEntityRelationships lists all the relationships associated with the passed in entity identifier
 func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error) {
-	entity, err := s.get(ctx, entityIdentifier, nil)
+	entity, err := s.GetCurrentVersion(ctx, entityIdentifier)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -341,7 +337,7 @@ func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier [
 	return entity, relationships, nil
 }
 
-func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -349,11 +345,7 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 
 	var entity documents.Model
 	if s.Service.Exists(ctx, documentID) {
-		if version == nil {
-			entity, err = s.Service.GetCurrentVersion(ctx, documentID)
-		} else {
-			entity, err = s.Service.GetVersion(ctx, documentID, version)
-		}
+		entity, err = s.Service.GetCurrentVersion(ctx, documentID)
 
 		if err != nil {
 			return nil, err
@@ -437,10 +429,6 @@ func (s service) store(ctx context.Context, model documents.Model) error {
 		}
 	}
 	return nil
-}
-
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
-	return s.get(ctx, documentID, nil)
 }
 
 // DeriveFromSharePayload derives the entity relationship from the relationship payload

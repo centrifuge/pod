@@ -32,14 +32,6 @@ service EntityService {
       description: "Updates an entity"
     };
   }
-  rpc GetVersion(GetVersionRequest) returns (EntityResponse) {
-    option (google.api.http) = {
-      get: "/entity/{identifier}/{version}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get a specific version of an entity"
-    };
-  }
   rpc Get(GetRequest) returns (EntityResponse) {
     option (google.api.http) = {
       get: "/entity/{identifier}"
