@@ -11,14 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
