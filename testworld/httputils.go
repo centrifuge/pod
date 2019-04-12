@@ -16,6 +16,7 @@ const typeInvoice string = "invoice"
 const typeEntity string = "entity"
 const typePO string = "purchaseorder"
 const poPrefix string = "po"
+const typeRelationship string = "entityrelationship"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
@@ -81,6 +82,13 @@ func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType st
 
 func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/"+documentType), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/"+"share"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj

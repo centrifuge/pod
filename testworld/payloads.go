@@ -44,6 +44,14 @@ func defaultEntityPayload(identity string, collaborators []string) map[string]in
 	}
 }
 
+func defaultRelationshipPayload(identity, targetID string) map[string]interface{} {
+	return map[string]interface{}{
+			"identity":   identity,
+			"target_identity": targetID,
+	}
+}
+
+
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
