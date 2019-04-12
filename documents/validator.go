@@ -345,7 +345,7 @@ func latestVersionValidator(repo anchors.AnchorRepository) Validator {
 			return errors.NewTypedError(ErrDocumentAnchor, err)
 		}
 
-		if !utils.IsEmptyByteSlice(root[:])	{
+		if !utils.IsEmptyByteSlice(root[:]) {
 			return ErrDocumentNotLatest
 		}
 		return nil

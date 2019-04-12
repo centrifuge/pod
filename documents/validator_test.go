@@ -472,6 +472,51 @@ func TestPreAnchorValidator(t *testing.T) {
 	assert.Len(t, pav, 2)
 }
 
+func TestValidator_latestVersionValidator(t *testing.T) {
+	repo := mockRepo{}
+	//zeros := [32]byte{}
+	next := utils.RandomSlice(32)
+	nextAid, err := anchors.ToAnchorID(next)
+
+	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+	zeros := [32]byte{}
+	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+	assert.NoError(t, err)
+
+	// successful
+	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	model := new(mockModel)
+	model.On("NextVersion").Return(next).Once()
+	lv := latestVersionValidator(repo)
+	err = lv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.NoError(t, err)
+
+	// fail anchor exists
+	model = new(mockModel)
+	repo = mockRepo{}
+	repo.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	model.On("NextVersion").Return(next).Once()
+	lv = latestVersionValidator(repo)
+	err = lv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), ErrDocumentNotLatest)
+
+	//fails GetAnchorData err
+	model = new(mockModel)
+	repo = mockRepo{}
+	repo.On("GetAnchorData", nextAid).Return(nil, time.Now(), ErrDocumentAnchor)
+	model.On("NextVersion").Return(next).Once()
+	lv = latestVersionValidator(repo)
+	err = lv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), ErrDocumentAnchor)
+
+}
+
 func TestValidator_anchoredValidator(t *testing.T) {
 	av := anchoredValidator(mockRepo{})
 
@@ -561,7 +606,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 
 func TestPostAnchoredValidator(t *testing.T) {
 	pav := PostAnchoredValidator(nil, nil)
-	assert.Len(t, pav, 2)
+	assert.Len(t, pav, 3)
 }
 
 func TestSignatureRequestValidator(t *testing.T) {
