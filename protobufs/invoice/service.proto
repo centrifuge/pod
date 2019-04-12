@@ -12,8 +12,8 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for invoice document
-service DocumentService {
+// InvoiceService contains all common interactions for invoice documents
+service InvoiceService {
   rpc Create(InvoiceCreatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
       post: "/invoice"

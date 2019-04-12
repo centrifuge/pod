@@ -78,8 +78,7 @@ func TestHost_EntityShareGet(t *testing.T) {
 
 	relationshipIdentifier := cd.DocumentIdentifier
 	params := map[string]interface{}{
-		"entity_identifier": entityIdentifier,
-		"er_identifier":     hexutil.Encode(relationshipIdentifier),
+		"er_identifier": hexutil.Encode(relationshipIdentifier),
 	}
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
 	response.Path("$.data.entity.legal_name").String().Equal("test company")
