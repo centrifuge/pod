@@ -148,17 +148,6 @@ func request_EntityService_GetEntityByRelationship_0(ctx context.Context, marsha
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
-	}
-
-	protoReq.Identifier, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
-	}
-
 	val, ok = pathParams["relationship_identifier"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "relationship_identifier")
@@ -490,7 +479,7 @@ var (
 
 	pattern_EntityService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
 
-	pattern_EntityService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"entity", "identifier", "relationship", "relationship_identifier"}, ""))
+	pattern_EntityService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"relationship", "relationship_identifier", "entity"}, ""))
 
 	pattern_EntityService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
 
