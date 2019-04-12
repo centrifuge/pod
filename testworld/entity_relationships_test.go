@@ -56,34 +56,27 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response = getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
 	response.Path("$.data.entity.legal_name").String().Equal("edited test company")
 
-	//// Alice wants to list all relationships associated with her entity, this should return her one (with Bob)
+	// Alice wants to list all relationships associated with her entity, this should return her one (with Bob)
 	//relationships, err := alice.host.entityService.ListEntityRelationships(ctxBob, entityIdentifierByte)
 	//assert.Len(t, relationships, 1)
 	//assert.Equal(t, relationships[0].TargetIdentity, bob.id)
 	//
-	//// Alice creates an EntityRelationship with Charlie
-	//relationshipData = &entitypb2.RelationshipData{
-	//	EntityIdentifier: entityIdentifier,
-	//	OwnerIdentity:    alice.id.String(),
-	//	TargetIdentity:   charlie.id.String(),
-	//}
-	//
-	//relationship := entityrelationship.EntityRelationship{}
-	//err = er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, relationshipData)
-	//assert.NoError(t, err)
-	//
-	//relationshipModel, _, isDone, err = alice.host.entityService.Share(ctxAlice, &relationship)
-	//assert.NoError(t, err)
-	//done = <-isDone
-	//assert.True(t, done)
-	//cd, err = relationshipModel.PackCoreDocument()
-	//assert.NoError(t, err)
-	//
-	//relationshipIdentifier = cd.DocumentIdentifier
-	//charlieModel, err := charlie.host.entityService.GetCurrentVersion(ctxCharlie, relationshipIdentifier)
-	//assert.NoError(t, err)
-	//assert.Equal(t, relationshipModel.CurrentVersion(), charlieModel.CurrentVersion())
-	//
+
+	// Alice creates an EntityRelationship with Charlie
+	res = shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(alice.id.String(), charlie.id.String()))
+	relationshipIdentifierC := getDocumentIdentifier(t, res)
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+	// Charlie should now have access to the Entity Data
+	params = map[string]interface{}{
+		"er_identifier": relationshipIdentifierC,
+	}
+	response = getEntityWithRelation(charlie.httpExpect, charlie.id.String(), typeEntity, params)
+	response.Path("$.data.entity.legal_name").String().Equal("test company")
+
 	//// Alice lists all relationship associated with her entity, this should return her two (with Bob and Charlie)
 	//relationships, err = alice.host.entityService.ListEntityRelationships(ctxBob, entityIdentifierByte)
 	//assert.Len(t, relationships, 2)

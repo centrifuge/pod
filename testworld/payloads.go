@@ -46,11 +46,10 @@ func defaultEntityPayload(identity string, collaborators []string) map[string]in
 
 func defaultRelationshipPayload(identity, targetID string) map[string]interface{} {
 	return map[string]interface{}{
-			"identity":   identity,
-			"target_identity": targetID,
+		"identity":        identity,
+		"target_identity": targetID,
 	}
 }
-
 
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
@@ -169,7 +168,7 @@ func updatedEntityPayload(identity string, collaborators []string) map[string]in
 			"legal_name": "edited test company",
 			"contacts": []map[string]interface{}{
 				{
-					"name":        "test name",
+					"name": "test name",
 				},
 			},
 		},

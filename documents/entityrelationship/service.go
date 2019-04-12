@@ -185,7 +185,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 
 	return &entitypb.RelationshipResponse{
 		Header:       h,
-		Relationship: data,
+		Relationship: []*entitypb.RelationshipData{data},
 	}, nil
 
 }
