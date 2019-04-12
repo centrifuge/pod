@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -29,16 +29,16 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }
 
-// WithTX returns a context with TX ID
-func WithTX(ctx context.Context, txID transactions.TxID) context.Context {
-	return context.WithValue(ctx, tx, txID)
+// WithJob returns a context with Job ID
+func WithJob(ctx context.Context, jobID jobs.JobID) context.Context {
+	return context.WithValue(ctx, tx, jobID)
 }
 
-// TX returns current txID
-func TX(ctx context.Context) transactions.TxID {
-	tid, ok := ctx.Value(tx).(transactions.TxID)
+// Job returns current jobID
+func Job(ctx context.Context) jobs.JobID {
+	tid, ok := ctx.Value(tx).(jobs.JobID)
 	if !ok {
-		return transactions.NilTxID()
+		return jobs.NilJobID()
 	}
 	return tid
 }

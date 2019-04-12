@@ -1,17 +1,14 @@
 package ideth
 
 import (
-	"github.com/centrifuge/go-centrifuge/identity"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -38,7 +35,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := context[transactions.BootstrappedService].(transactions.Manager)
+	jobManager, ok := context[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("transactions repository not initialised")
 	}
@@ -48,10 +45,10 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	factory := NewFactory(factoryContract, client, txManager, queueSrv, factoryAddress, cfg)
+	factory := NewFactory(factoryContract, client, jobManager, queueSrv, factoryAddress, cfg)
 	context[identity.BootstrappedDIDFactory] = factory
 
-	service := NewService(client, txManager, queueSrv, cfg)
+	service := NewService(client, jobManager, queueSrv, cfg)
 	context[identity.BootstrappedDIDService] = service
 
 	return nil

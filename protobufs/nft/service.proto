@@ -33,7 +33,7 @@ service NFTService {
 }
 
 message ResponseHeader {
-  string transaction_id = 5;
+  string job_id = 5;
 }
 
 message NFTMintInvoiceUnpaidRequest {

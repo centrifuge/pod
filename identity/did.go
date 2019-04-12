@@ -186,7 +186,7 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	return DID(common.BytesToAddress(bAddr)), nil
 }
 
-// IDTX abstracts transactions.TxID for identity package
+// IDTX abstracts transactions.JobID for identity package
 type IDTX interface {
 	String() string
 	Bytes() []byte
