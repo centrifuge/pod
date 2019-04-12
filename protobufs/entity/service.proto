@@ -77,6 +77,16 @@ service EntityService {
       description: "revoke an entity document share"
     };
   }
+  // ListEntityRelationships
+  rpc ListEntityRelationships(GetRequest) returns (RelationshipResponse) {
+    option (google.api.http) = {
+      post: "/entity/{identifier}/relationships"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "list relationships belonging to an entity"
+    };
+  }
 }
 
 message GetRequest {
@@ -150,5 +160,5 @@ message RelationshipData {
 
 message RelationshipResponse {
   document.ResponseHeader header = 1;
-  RelationshipData relationship = 2;
+  repeated RelationshipData relationship = 2;
 }

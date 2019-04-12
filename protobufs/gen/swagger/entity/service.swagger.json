@@ -98,6 +98,40 @@
         ]
       }
     },
+    "/entity/{identifier}/relationships": {
+      "post": {
+        "summary": "ListEntityRelationships",
+        "description": "list relationships belonging to an entity",
+        "operationId": "ListEntityRelationships",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityRelationshipResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityGetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "EntityService"
+        ]
+      }
+    },
     "/entity/{identifier}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
@@ -494,6 +528,14 @@
         }
       }
     },
+    "entityGetRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        }
+      }
+    },
     "entityOtherPayment": {
       "type": "object",
       "properties": {
@@ -579,7 +621,10 @@
           "$ref": "#/definitions/documentResponseHeader"
         },
         "relationship": {
-          "$ref": "#/definitions/entityRelationshipData"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityRelationshipData"
+          }
         }
       }
     }

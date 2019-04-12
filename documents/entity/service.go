@@ -34,7 +34,7 @@ type Service interface {
 	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
 
 	// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
-	ListEntityRelationships(ctx context.Context, entityIdentifier []byte) ([]entityrelationship.EntityRelationship, error)
+	ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error)
 
 	// GetEntityByRelationship returns the entity model from database or requests from granter
 	GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error)
@@ -53,6 +53,9 @@ type Service interface {
 
 	// DeriveEntityRelationshipResponse returns create response from entity relationship model
 	DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error)
+
+	// DeriveRelationshipsListResponse returns a relationships list response from the array of relationship models
+	DeriveRelationshipsListResponse(entity documents.Model, relationships []documents.Model) (*cliententitypb.RelationshipResponse, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -220,6 +223,35 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 
 }
 
+// DeriveEntityRelationshipData returns the relationship data from an entity relationship model
+func (s service) DeriveEntityRelationshipData(model documents.Model) (*cliententitypb.RelationshipData, error) {
+	return s.erService.DeriveEntityRelationshipData(model)
+}
+
+// DeriveRelationshipsListResponse returns a relationships list response from the array of relationship models
+func (s service) DeriveRelationshipsListResponse(entity documents.Model, models []documents.Model) (*cliententitypb.RelationshipResponse, error) {
+	// note that token registry is(must be) irrelevant here
+	h, err := documents.DeriveResponseHeader(nil, entity)
+	if err != nil {
+		return nil, err
+	}
+
+	var relationships []*cliententitypb.RelationshipData
+	for _, m := range models {
+		r, err := s.DeriveEntityRelationshipData(m)
+		if err != nil {
+			return nil, err
+		}
+		relationships = append(relationships, r)
+	}
+
+	return &cliententitypb.RelationshipResponse{
+		Header: h,
+		Relationship: relationships,
+	}, nil
+
+}
+
 // DeriveEntityData returns create response from entity model
 func (s service) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityData, error) {
 	entity, ok := doc.(*Entity)
@@ -297,8 +329,16 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 }
 
 // ListEntityRelationships lists all the relationships associated with the passed in entity identifier
-func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier []byte) ([]entityrelationship.EntityRelationship, error) {
-	return s.erService.GetEntityRelationships(ctx, entityIdentifier)
+func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error) {
+	entity, err := s.get(ctx, entityIdentifier, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	relationships, err := s.erService.GetEntityRelationships(ctx, entityIdentifier)
+	if err != nil {
+		return nil, nil, err
+	}
+	return entity, relationships, nil
 }
 
 func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
