@@ -20,14 +20,14 @@ func TestDocumentAnchorTask_ParseKwargs(t *testing.T) {
 	}{
 		{
 			name: "nil kwargs",
-			err:  "missing transaction ID",
+			err:  "missing job ID",
 		},
 
 		{
 			kwargs: map[string]interface{}{
 				jobs.JobIDParam: "some string",
 			},
-			err: "invalid transaction ID",
+			err: "invalid job ID",
 		},
 
 		// missing model ID
