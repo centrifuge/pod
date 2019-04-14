@@ -215,6 +215,9 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 
 	entityID := model.ID()
 	_, models, err := s.ListEntityRelationships(ctx, entityID)
+	if err != nil {
+		return nil, err
+	}
 
 	var relationships []*cliententitypb.Relationship
 	for _, m := range models {

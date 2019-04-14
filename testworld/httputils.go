@@ -71,6 +71,15 @@ func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType strin
 	return objGet
 }
 
+func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	relationshipIdentifier := params["r_identifier"].(string)
+
+	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+		Expect().Status(500).JSON().NotNull()
+
+	return objGet
+}
+
 func listRelationships(e *httpexpect.Expect, auth string, params map[string]interface{}) *httpexpect.Value {
 	entityIdentifier := params["er_identifier"].(string)
 	objGet := addCommonHeaders(e.GET("/entity/"+entityIdentifier+"/relationships"), auth).
