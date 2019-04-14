@@ -176,7 +176,7 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveEntityResponse(model)
+	resp, err := h.service.DeriveEntityResponse(ctx, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
