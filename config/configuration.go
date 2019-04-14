@@ -452,7 +452,7 @@ func (c *configuration) GetPrecommitEnabled() bool {
 
 // GetLowEntropyNFTTokenEnabled returns true if low entropy nft token IDs are not enabled
 func (c *configuration) GetLowEntropyNFTTokenEnabled() bool {
-	return c.GetBool("nft.lowentropy")
+	return c.GetBool("nft.lowEntropyTokenIDEnabled")
 }
 
 // LoadConfiguration loads the configuration from the given file.

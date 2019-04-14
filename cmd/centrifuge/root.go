@@ -42,9 +42,11 @@ func Execute() {
 }
 
 func printStartMessage() {
-	c := figure.NewFigure("Centrifuge OS", "", true)
+	c := figure.NewFigure("Centrifuge  OS", "banner", true)
+	fmt.Println()
 	c.Print()
-	fmt.Println("Centrifuge OS is beta software. For more info refer our disclaimer on https://developer.centrifuge.io !")
+	fmt.Println()
+	fmt.Println("Centrifuge OS and this client implementation are beta software. For more info refer our disclaimer on https://developer.centrifuge.io !")
 }
 
 func init() {
