@@ -3,10 +3,11 @@
 package testworld
 
 import (
-	"github.com/gavv/httpexpect"
 	"net/http"
 	"strconv"
 	"testing"
+
+	"github.com/gavv/httpexpect"
 )
 
 func TestHost_Entity_EntityRelationships(t *testing.T) {
@@ -80,10 +81,9 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 
 	// Alice lists all relationship associated with her entity, this should return her two (with Bob and Charlie)
 	response = getEntity(alice.httpExpect, alice.id.String(), entityIdentifier)
-	cIdx, bIdx := checkRelationships(response,charlie.id.String(),bob.id.String())
-	response.Path("$.data.relationships["+cIdx+"].active").Boolean().Equal(true)
-	response.Path("$.data.relationships["+bIdx+"].active").Boolean().Equal(true)
-
+	cIdx, bIdx := checkRelationships(response, charlie.id.String(), bob.id.String())
+	response.Path("$.data.relationships[" + cIdx + "].active").Boolean().Equal(true)
+	response.Path("$.data.relationships[" + bIdx + "].active").Boolean().Equal(true)
 
 	// Alice revokes the EntityRelationship with Bob
 	resB = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
@@ -99,12 +99,13 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	// Alice lists all relationships associated with her entity
 	// This should return her two relationships: one valid with Charlie, one revoked with Bob
 	response = getEntity(alice.httpExpect, alice.id.String(), entityIdentifier)
-	cIdx, bIdx = checkRelationships(response,charlie.id.String(),bob.id.String())
-	response.Path("$.data.relationships["+cIdx+"].active").Boolean().Equal(true)
+	cIdx, bIdx = checkRelationships(response, charlie.id.String(), bob.id.String())
+	response.Path("$.data.relationships[" + cIdx + "].active").Boolean().Equal(true)
+	//todo add check active for bob not existing
 
 }
 
-func checkRelationships(response *httpexpect.Value,charlieDID, bobDID string) (string, string) {
+func checkRelationships(response *httpexpect.Value, charlieDID, bobDID string) (string, string) {
 	response.Path("$.data.relationships").Array().Length().Equal(2)
 	firstR := response.Path("$.data.relationships[0].identity").String().Raw()
 	charlieIdx := 0
@@ -114,9 +115,8 @@ func checkRelationships(response *httpexpect.Value,charlieDID, bobDID string) (s
 	}
 	bIdx := strconv.Itoa(1 - charlieIdx)
 	cIdx := strconv.Itoa(charlieIdx)
-	response.Path("$.data.relationships["+cIdx+"].identity").String().Equal(charlieDID)
-	response.Path("$.data.relationships["+bIdx+"].identity").String().Equal(bobDID)
+	response.Path("$.data.relationships[" + cIdx + "].identity").String().Equal(charlieDID)
+	response.Path("$.data.relationships[" + bIdx + "].identity").String().Equal(bobDID)
 
 	return cIdx, bIdx
 }
-
