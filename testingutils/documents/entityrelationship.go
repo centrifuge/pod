@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-
 func CreateRelationship() *entitypb.EntityRelationship {
 	did, _ := identity.StringsToDIDs("0xed03Fa80291fF5DDC284DE6b51E716B130b05e20", "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
 	return &entitypb.EntityRelationship{

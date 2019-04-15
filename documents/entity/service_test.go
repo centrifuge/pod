@@ -545,6 +545,50 @@ func TestService_GetEntityByRelationship_latestInDB(t *testing.T) {
 
 }
 
+func TestService_GetEntityByRelationship_fail(t *testing.T) {
+	// prepare a service with mocked layers
+	ctxh, entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
+
+	mockAnchor := &mockAnchorRepo{}
+	docSrv := testingdocuments.MockService{}
+	mockedERSrv := &MockEntityRelationService{}
+	mockProcessor := &testingcommons.MockRequestProcessor{}
+
+	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, entityrelationship.ErrERNotFound)
+
+	//initialize service
+	entitySrv := DefaultService(
+		&docSrv,
+		repo,
+		nil,
+		nil, idFactory,
+		mockedERSrv, idService, mockAnchor, mockProcessor, nil)
+
+	//entity relationship identifier not exists in db
+	model, err := entitySrv.GetEntityByRelationship(ctxh, er.ID())
+	assert.Error(t, err)
+	assert.Nil(t, model)
+	assert.Contains(t, err, entityrelationship.ErrERNotFound)
+
+	//pass entity id instead of er identifier
+	mockedERSrv.On("GetCurrentVersion", entity.ID()).Return(entity, nil)
+
+	//initialize service
+	entitySrv = DefaultService(
+		&docSrv,
+		repo,
+		nil,
+		nil, idFactory,
+		mockedERSrv, idService, mockAnchor, mockProcessor, nil)
+
+	// pass entity id instead of er identifier
+	model, err = entitySrv.GetEntityByRelationship(ctxh, entity.ID())
+	assert.Error(t, err)
+	assert.Nil(t, model)
+	assert.Contains(t, err, entityrelationship.ErrNotEntityRelationship)
+
+}
+
 func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 	// prepare a service with mocked layers
 	ctxh, entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
@@ -563,7 +607,9 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, nil)
 
 	fakeRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
 	nextId, err := anchors.ToAnchorID(entity.NextVersion())
+	assert.NoError(t, err)
 	mockAnchor.On("GetAnchorData", nextId).Return(fakeRoot, time.Now(), nil).Once()
 
 	token, err := er.GetAccessTokens()
@@ -586,7 +632,7 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 			return documents.ValidatorGroup{}
 		})
 
-	//successful request from peer
+	//entity relationship is not the latest request therefore request from peer
 	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)
 	assert.NoError(t, err)
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
