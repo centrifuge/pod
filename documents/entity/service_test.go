@@ -269,6 +269,8 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	// success
 	entity, _ := createCDWithEmbeddedEntity(t)
 	r, err = eSrv.DeriveEntityResponse(ctxh, entity)
+	assert.Error(t, err)
+	err = testRepo().Create(accountID, entity.CurrentVersion(), entity)
 	assert.NoError(t, err)
 	payload := testingdocuments.CreateEntityPayload()
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)

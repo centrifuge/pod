@@ -219,35 +219,27 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 		return nil, err
 	}
 
-	// if there are no relationships associated with the entity, return a response with nil relationships
-	if models == nil {
-		return &cliententitypb.EntityResponse{
-			Header: h,
-			Data: &cliententitypb.EntityDataResponse{
-				Entity:        data,
-				Relationships: nil,
-			},
-		}, nil
-	}
-	// else, list the relationships associated with the entity
+	//list the relationships associated with the entity
 	var relationships []*cliententitypb.Relationship
-	for _, m := range models {
-		var active bool
-		tokens, err := m.GetAccessTokens()
-		if err != nil {
-			return nil, err
+	if models != nil {
+		for _, m := range models {
+			var active bool
+			tokens, err := m.GetAccessTokens()
+			if err != nil {
+				return nil, err
+			}
+			if len(tokens) > 1 {
+				active = false
+			} else {
+				active = true
+			}
+			relationshipID := hexutil.Encode(m.ID())
+			r := &cliententitypb.Relationship{
+				Identity: relationshipID,
+				Active:   active,
+			}
+			relationships = append(relationships, r)
 		}
-		if len(tokens) > 1 {
-			active = false
-		} else {
-			active = true
-		}
-		relationshipID := hexutil.Encode(m.ID())
-		r := &cliententitypb.Relationship{
-			Identity: relationshipID,
-			Active:   active,
-		}
-		relationships = append(relationships, r)
 	}
 
 	return &cliententitypb.EntityResponse{
@@ -257,7 +249,6 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 			Relationships: relationships,
 		},
 	}, nil
-
 }
 
 // DeriveEntityRelationshipData returns the relationship data from an entity relationship model
