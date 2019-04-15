@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 // configFile is the main configuration file, used mainly on CI
@@ -108,4 +110,20 @@ func extractConfigName(path string) string {
 	filename := filepath.Base(path)
 	parts := strings.Split(filename, ".")
 	return parts[0]
+}
+
+func updateConfig(dir string, values map[string]interface{}) (err error) {
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.SetConfigFile(dir + "/config.yaml")
+	err = v.ReadInConfig()
+	if err != nil {
+		return err
+	}
+
+	for k, val := range values {
+		v.Set(k, val)
+	}
+
+	return v.WriteConfig()
 }
