@@ -62,14 +62,15 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo       documents.Repository
-	queueSrv   queue.TaskQueuer
-	jobManager jobs.Manager
-	factory    identity.Factory
-	processor  documents.DocumentRequestProcessor
-	erService  entityrelationship.Service
-	anchorRepo anchors.AnchorRepository
-	idService  identity.ServiceDID
+	repo                    documents.Repository
+	queueSrv                queue.TaskQueuer
+	jobManager              jobs.Manager
+	factory                 identity.Factory
+	processor               documents.DocumentRequestProcessor
+	erService               entityrelationship.Service
+	anchorRepo              anchors.AnchorRepository
+	idService               identity.ServiceDID
+	receivedEntityValidator func() documents.ValidatorGroup
 }
 
 // DefaultService returns the default implementation of the service.
@@ -83,17 +84,19 @@ func DefaultService(
 	idService identity.ServiceDID,
 	anchorRepo anchors.AnchorRepository,
 	processor documents.DocumentRequestProcessor,
+	receivedEntityValidator func() documents.ValidatorGroup,
 ) Service {
 	return service{
-		repo:       repo,
-		queueSrv:   queueSrv,
-		jobManager: jobManager,
-		Service:    srv,
-		factory:    factory,
-		erService:  erService,
-		idService:  idService,
-		anchorRepo: anchorRepo,
-		processor:  processor,
+		repo:                    repo,
+		queueSrv:                queueSrv,
+		jobManager:              jobManager,
+		Service:                 srv,
+		factory:                 factory,
+		erService:               erService,
+		idService:               idService,
+		anchorRepo:              anchorRepo,
+		processor:               processor,
+		receivedEntityValidator: receivedEntityValidator,
 	}
 }
 
@@ -426,7 +429,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, err
 	}
 
-	if err := documents.PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, model); err != nil {
+	if err := s.receivedEntityValidator().Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
