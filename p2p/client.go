@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -73,7 +72,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 
 	// handle client error
 	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-		return nil, convertClientError(recvEnvelope)
+		return nil, p2pcommon.ConvertClientError(recvEnvelope)
 	}
 
 	if !p2pcommon.MessageTypeSendAnchoredDocRep.Equals(recvEnvelope.Header.Type) {
@@ -141,7 +140,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 
 	// handle client error
 	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-		return nil, convertClientError(recvEnvelope)
+		return nil, p2pcommon.ConvertClientError(recvEnvelope)
 	}
 
 	if !p2pcommon.MessageTypeGetDocRep.Equals(recvEnvelope.Header.Type) {
@@ -245,7 +244,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		}
 		// handle client error
 		if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-			return nil, convertClientError(recvEnvelope)
+			return nil, p2pcommon.ConvertClientError(recvEnvelope)
 		}
 		if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
 			return nil, errors.New("the received request signature response is incorrect")
@@ -329,15 +328,6 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 	}
 
 	return signatures, signatureCollectionErrors, nil
-}
-
-func convertClientError(recv *p2ppb.Envelope) error {
-	resp := new(errorspb.Error)
-	err := proto.Unmarshal(recv.Body, resp)
-	if err != nil {
-		return err
-	}
-	return errors.New(resp.Message)
 }
 
 func validateSignatureResp(

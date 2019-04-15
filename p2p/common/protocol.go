@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
+	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-protocol"
@@ -147,4 +147,23 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 	}
 
 	return &protocolpb.P2PEnvelope{Body: marshalledRequest}, nil
+}
+
+// ConvertClientError converts Envelope to error
+func ConvertClientError(recv *p2ppb.Envelope) error {
+	resp := new(errorspb.Error)
+	err := proto.Unmarshal(recv.Body, resp)
+	if err != nil {
+		return err
+	}
+	return errors.New(resp.Message)
+}
+
+// ConvertP2PEnvelopeToError converts p2pEnvelope containing an error to Error
+func ConvertP2PEnvelopeToError(p2pEnvelope *protocolpb.P2PEnvelope) error {
+	envelope, err := ResolveDataEnvelope(p2pEnvelope)
+	if err != nil {
+		return err
+	}
+	return ConvertClientError(envelope)
 }

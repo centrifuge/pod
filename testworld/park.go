@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
-	"github.com/spf13/viper"
 )
 
 var log = logging.Logger("host")
@@ -283,19 +282,16 @@ func (h *host) init() error {
 		if err != nil {
 			return err
 		}
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.SetConfigFile(h.dir + "/config.yaml")
-		err = v.ReadInConfig()
+
+		values := map[string]interface{}{
+			"ethereum.accounts.main.key":      os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY"),
+			"ethereum.accounts.main.password": os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD"),
+		}
+		err = updateConfig(h.dir, values)
 		if err != nil {
 			return err
 		}
-		v.Set("ethereum.accounts.main.key", os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY"))
-		v.Set("ethereum.accounts.main.password", os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD"))
-		err = v.WriteConfig()
-		if err != nil {
-			return err
-		}
+
 	}
 
 	m := bootstrappers.MainBootstrapper{}
