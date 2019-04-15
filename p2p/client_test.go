@@ -45,6 +45,7 @@ func (mm *MockMessenger) SendMessage(ctx context.Context, p libp2pPeer.ID, pmes 
 	return resp, args.Error(1)
 }
 
+
 func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	c, err := cfg.GetConfig()
 	assert.NoError(t, err)

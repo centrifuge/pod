@@ -231,12 +231,15 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	model, err := r.(*EntityRelationship).DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
+	cd, err := r.(*EntityRelationship).DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
 	if err != nil {
 		return nil, err
 	}
 
-	r.(*EntityRelationship).Document = model.Document
+	r.(*EntityRelationship).Document = cd.Document
+	r.(*EntityRelationship).Modified = cd.Modified
+
+
 	return r, nil
 }
 
