@@ -83,7 +83,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, jobManager, factory, erService, didService, anchorRepo, processor)
+		queueSrv, jobManager, factory, erService, didService, anchorRepo, processor, func() documents.ValidatorGroup {
+			return documents.PostAnchoredValidator(didService, anchorRepo)
+		})
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
 	if err != nil {
