@@ -37,8 +37,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	relationshipParams := map[string]interface{}{
 		"r_identifier": relationshipIdentifierB,
 	}
-	response := getEntityWithRelation(charlie.httpExpect, charlie.id.String(), typeEntity, relationshipParams)
-	response.Path("$.data.entity.legal_name").String().Equal("test company")
+	response := nonexistentEntityWithRelation(charlie.httpExpect, charlie.id.String(), typeEntity, relationshipParams)
 
 	// Bob should have access to the Entity through the EntityRelationship
 	response = getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, relationshipParams)
