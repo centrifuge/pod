@@ -65,8 +65,8 @@ func (m *mockService) DeriveEntityData(doc documents.Model) (*cliententitypb.Ent
 	return data, args.Error(1)
 }
 
-func (m *mockService) DeriveEntityResponse(doc documents.Model) (*cliententitypb.EntityResponse, error) {
-	args := m.Called(doc)
+func (m *mockService) DeriveEntityResponse(ctx context.Context, doc documents.Model) (*cliententitypb.EntityResponse, error) {
+	args := m.Called(ctx, doc)
 	data, _ := args.Get(0).(*cliententitypb.EntityResponse)
 	return data, args.Error(1)
 }
@@ -134,7 +134,7 @@ func TestGRPCHandler_Create_DeriveEntityResponse_fail(t *testing.T) {
 	model := new(Entity)
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, jobs.NilJobID().String(), nil).Once()
-	srv.On("DeriveEntityResponse", mock.Anything).Return(nil, errors.New("derive response failed"))
+	srv.On("DeriveEntityResponse", mock.Anything, mock.Anything).Return(nil, errors.New("derive response failed"))
 	payload := &cliententitypb.EntityCreatePayload{Data: &cliententitypb.EntityData{LegalName: "test company"}}
 	_, err := h.Create(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
@@ -154,7 +154,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	response := &cliententitypb.EntityResponse{Header: &documentpb.ResponseHeader{}}
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()
-	srv.On("DeriveEntityResponse", model).Return(response, nil)
+	srv.On("DeriveEntityResponse", mock.Anything, model).Return(response, nil)
 	res, err := h.Create(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
@@ -210,7 +210,7 @@ func TestGrpcHandler_Get(t *testing.T) {
 	payload := &cliententitypb.GetRequest{Identifier: identifier}
 	response := &cliententitypb.EntityResponse{}
 	srv.On("GetCurrentVersion", mock.Anything, identifierBytes).Return(model, nil)
-	srv.On("DeriveEntityResponse", model).Return(response, nil)
+	srv.On("DeriveEntityResponse", mock.Anything, model).Return(response, nil)
 	res, err := h.Get(testingconfig.HandlerContext(configService), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -249,7 +249,7 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 
 	response := &cliententitypb.EntityResponse{}
 	srv.On("GetVersion", mock.Anything, []byte{0x01}, []byte{0x00}).Return(model, nil)
-	srv.On("DeriveEntityResponse", model).Return(response, nil)
+	srv.On("DeriveEntityResponse", mock.Anything, model).Return(response, nil)
 	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
@@ -293,7 +293,7 @@ func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
 	payload := &cliententitypb.EntityUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
 	srv.On("Update", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
-	srv.On("DeriveEntityResponse", model).Return(nil, errors.New("derive response error")).Once()
+	srv.On("DeriveEntityResponse", mock.Anything, model).Return(nil, errors.New("derive response error")).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
@@ -311,7 +311,7 @@ func TestGrpcHandler_Update(t *testing.T) {
 	resp := &cliententitypb.EntityResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
 	srv.On("Update", mock.Anything, model).Return(model, txID.String(), nil).Once()
-	srv.On("DeriveEntityResponse", model).Return(resp, nil).Once()
+	srv.On("DeriveEntityResponse", mock.Anything, model).Return(resp, nil).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err)

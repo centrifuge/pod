@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -253,12 +254,13 @@ func TestService_DeriveEntityData(t *testing.T) {
 }
 
 func TestService_DeriveEntityResponse(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	// success
 	eSrv := service{repo: testRepo()}
 
 	// derive data failed
 	m := new(mockModel)
-	r, err := eSrv.DeriveEntityResponse(m)
+	r, err := eSrv.DeriveEntityResponse(ctxh, m)
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
 	assert.Error(t, err)
@@ -266,7 +268,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 
 	// success
 	entity, _ := createCDWithEmbeddedEntity(t)
-	r, err = eSrv.DeriveEntityResponse(entity)
+	r, err = eSrv.DeriveEntityResponse(ctxh, entity)
 	assert.NoError(t, err)
 	payload := testingdocuments.CreateEntityPayload()
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)

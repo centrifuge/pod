@@ -218,7 +218,17 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 	if err != nil {
 		return nil, err
 	}
-
+	// if there are no relationships associated with the entity, return a response with nil relationships
+	if models == nil {
+		return &cliententitypb.EntityResponse{
+			Header: h,
+			Data: &cliententitypb.EntityDataResponse{
+				Entity:        data,
+				Relationships: nil,
+			},
+		}, nil
+	}
+	// else, list the relationships associated with the entity
 	var relationships []*cliententitypb.Relationship
 	for _, m := range models {
 		var active bool

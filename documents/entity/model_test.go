@@ -5,6 +5,7 @@ package entity
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"os"
 	"testing"
 
