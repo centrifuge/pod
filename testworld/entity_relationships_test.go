@@ -76,7 +76,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 		"r_identifier": relationshipIdentifierC,
 	}
 	response = getEntityWithRelation(charlie.httpExpect, charlie.id.String(), typeEntity, relationshipParamsC)
-	response.Path("$.data.entity.legal_name").String().Equal("test company")
+	response.Path("$.data.entity.legal_name").String().Equal("edited test company")
 
 	// Alice lists all relationship associated with her entity, this should return her two (with Bob and Charlie)
 	response = listRelationships(alice.httpExpect, alice.id.String(), entityParams)
@@ -90,7 +90,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	}
 
 	// Bob should no longer have access to the EntityRelationship
-	response = getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, relationshipParams)
+	response = nonexistentEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, relationshipParams)
 
 	// Alice lists all relationships associated with her entity
 	// This should return her two relationships: one valid with Charlie, one revoked with Bob

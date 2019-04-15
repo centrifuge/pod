@@ -31,7 +31,7 @@ type Service interface {
 	DeriveEntityData(entity documents.Model) (*cliententitypb.EntityData, error)
 
 	// DeriveEntityResponse returns the entity model in our standard client format
-	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
+	DeriveEntityResponse(ctx context.Context, entity documents.Model) (*cliententitypb.EntityResponse, error)
 
 	// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
 	ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error)
@@ -201,7 +201,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 }
 
 // DeriveEntityResponse returns create response from entity model
-func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.EntityResponse, error) {
+func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model) (*cliententitypb.EntityResponse, error) {
 	data, err := s.DeriveEntityData(model)
 	if err != nil {
 		return nil, err
@@ -213,11 +213,37 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 		return nil, err
 	}
 
+	entityID := model.ID()
+	_, models, err := s.ListEntityRelationships(ctx, entityID)
+	if err != nil {
+		return nil, err
+	}
+
+	var relationships []*cliententitypb.Relationship
+	for _, m := range models {
+		var active bool
+		tokens, err := m.GetAccessTokens()
+		if err != nil {
+			return nil, err
+		}
+		if len(tokens) > 1 {
+			active = false
+		} else {
+			active = true
+		}
+		relationshipID := hexutil.Encode(m.ID())
+		r := &cliententitypb.Relationship{
+			Identity: relationshipID,
+			Active:   active,
+		}
+		relationships = append(relationships, r)
+	}
+
 	return &cliententitypb.EntityResponse{
 		Header: h,
 		Data: &cliententitypb.EntityDataResponse{
 			Entity:        data,
-			Relationships: nil,
+			Relationships: relationships,
 		},
 	}, nil
 
@@ -324,7 +350,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 	return s.requestEntityWithRelationship(ctx, relationship)
 }
 
-// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
+// ListEntityRelationships lists all the latest versions of the relationships associated with the passed in entity identifier
 func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error) {
 	entity, err := s.GetCurrentVersion(ctx, entityIdentifier)
 	if err != nil {
@@ -358,7 +384,6 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (docu
 		if !isCollaborator {
 			return nil, documents.ErrNoCollaborator
 		}
-		// todo add relationship array
 		return entity, nil
 	}
 

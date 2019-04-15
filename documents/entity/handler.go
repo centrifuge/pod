@@ -49,7 +49,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *cliententitypb.EntityCrea
 		return nil, centerrors.Wrap(err, "could not create document")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(m)
+	resp, err := h.service.DeriveEntityResponse(ctx, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -80,7 +80,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *cliententitypb.Entity
 		return nil, centerrors.Wrap(err, "could not update document")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(doc)
+	resp, err := h.service.DeriveEntityResponse(ctx, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -117,7 +117,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *cliente
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(model)
+	resp, err := h.service.DeriveEntityResponse(ctx, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -147,7 +147,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(model)
+	resp, err := h.service.DeriveEntityResponse(ctx, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -176,7 +176,7 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveEntityResponse(model)
+	resp, err := h.service.DeriveEntityResponse(ctx, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
