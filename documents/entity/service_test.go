@@ -4,7 +4,6 @@ package entity
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -339,25 +338,60 @@ func TestService_DeriveEntityData(t *testing.T) {
 
 func TestService_DeriveEntityResponse(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	// success
-	_, _, eSrv := getServiceWithMockedLayers()
+
+	// prepare a service with mocked layers
+	ctxh, entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
+	eID := entity.ID()
+	erID := er.ID()
+
+	// testcase: request from peer
+	mockAnchor := &mockAnchorRepo{}
+	docSrv := testingdocuments.MockService{}
+	mockedERSrv := &MockEntityRelationService{}
+	mockProcessor := &testingcommons.MockRequestProcessor{}
+
+	docSrv.On("GetCurrentVersion", eID).Return(entity, nil)
+	docSrv.On("Exists").Return(true).Once()
+	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, nil)
+
+	fakeRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+	nextId, err := anchors.ToAnchorID(entity.NextVersion())
+	assert.NoError(t, err)
+	mockAnchor.On("GetAnchorData", nextId).Return(fakeRoot, time.Now(), nil).Once()
+
+	token, err := er.GetAccessTokens()
+	assert.NoError(t, err)
+
+	cd, err := entity.PackCoreDocument()
+	assert.NoError(t, err)
+
+	mockProcessor.On("RequestDocumentWithAccessToken", did, token[0].Identifier, eID, erID).Return(&p2ppb.GetDocumentResponse{Document: &cd}, nil)
+	docSrv.On("DeriveFromCoreDocument", mock.Anything).Return(entity, nil)
+	docSrv.On("Exists").Return(false).Once()
+	mockedERSrv.On("GetEntityRelationships", mock.Anything, entity.ID()).Return([]documents.Model{entity}, nil)
+	//initialize service
+	entitySrv := DefaultService(
+		&docSrv,
+		repo,
+		nil,
+		nil, idFactory,
+		mockedERSrv, idService, mockAnchor, mockProcessor, func() documents.ValidatorGroup {
+			return documents.ValidatorGroup{}
+		})
+
 	// derive data failed
 	m := new(mockModel)
-	r, err := eSrv.DeriveEntityResponse(ctxh, m)
+	r, err := entitySrv.DeriveEntityResponse(ctxh, m)
 	m.AssertExpectations(t)
 	assert.Nil(t, r)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
 
 	// success
-	entity, _ := createCDWithEmbeddedEntity(t)
-	err = testRepo().Create(accountID, entity.CurrentVersion(), entity)
+	r, err = entitySrv.DeriveEntityResponse(ctxh, entity)
 	assert.NoError(t, err)
-	r, err = eSrv.DeriveEntityResponse(ctxh, entity)
-	fmt.Println(err)
-	assert.Error(t, err)
 	payload := testingdocuments.CreateEntityPayload()
-	fmt.Println(payload.Data, r)
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.Entity.LegalName)
 	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
