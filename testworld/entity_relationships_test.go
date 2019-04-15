@@ -3,7 +3,6 @@
 package testworld
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 )
@@ -27,7 +26,6 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 
 	// Alice creates an EntityRelationship with Bob
 	resB := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
-	fmt.Println(resB)
 	relationshipIdentifierB := getDocumentIdentifier(t, resB)
 	txID = getTransactionID(t, resB)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -67,7 +65,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	// Alice creates an EntityRelationship with Charlie
 	resC := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, charlie.id.String()))
 	relationshipIdentifierC := getDocumentIdentifier(t, resC)
-	txID = getTransactionID(t, res)
+	txID = getTransactionID(t, resC)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
