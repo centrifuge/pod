@@ -217,28 +217,45 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 	}
 
 	entityID := model.ID()
+	var relationships []*cliententitypb.Relationship
+	// if this identity is not the owner of the entity, return an empty relationships array
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.New("failed to get self ID")
+	}
+
+	isCollab, err := model.IsDIDCollaborator(selfDID)
+	if err != nil {
+		return nil, err
+	}
+	if !isCollab {
+		return &cliententitypb.EntityResponse{
+			Header: h,
+			Data: &cliententitypb.EntityDataResponse{
+				Entity:        data,
+				Relationships: relationships,
+			},
+		}, nil
+	}
 	_, models, err := s.ListEntityRelationships(ctx, entityID)
 	if err != nil {
 		return nil, err
 	}
 
 	//list the relationships associated with the entity
-	var relationships []*cliententitypb.Relationship
 	if models != nil {
 		for _, m := range models {
-			var active bool
+			active := false
 			tokens, err := m.GetAccessTokens()
 			if err != nil {
 				return nil, err
 			}
-			if len(tokens) == 0 {
-				active = false
-			} else {
+			if len(tokens) != 0 {
 				active = true
 			}
-			relationshipID := hexutil.Encode(m.ID())
+			targetDID := m.(*entityrelationship.EntityRelationship).TargetIdentity.String()
 			r := &cliententitypb.Relationship{
-				Identity: relationshipID,
+				Identity: targetDID,
 				Active:   active,
 			}
 			relationships = append(relationships, r)
@@ -335,23 +352,23 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 	if !ok {
 		return nil, entityrelationship.ErrNotEntityRelationship
 	}
+	// TODO: to be enabled with document syncing
+	//entityIdentifier := relationship.EntityIdentifier
 
-	entityIdentifier := relationship.EntityIdentifier
-
-	if s.Service.Exists(ctx, entityIdentifier) {
-		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
-		if err != nil {
-			// in case of an error try to get document from collaborator
-			return s.requestEntityWithRelationship(ctx, relationship)
-		}
-
-		// check if stored document is the latest version
-		if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
-			return s.requestEntityWithRelationship(ctx, relationship)
-		}
-
-		return entity, nil
-	}
+	//if s.Service.Exists(ctx, entityIdentifier) {
+	//	entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
+	//	if err != nil {
+	//		// in case of an error try to get document from collaborator
+	//		return s.requestEntityWithRelationship(ctx, relationship)
+	//	}
+	//
+	//	// check if stored document is the latest version
+	//	if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
+	//		return s.requestEntityWithRelationship(ctx, relationship)
+	//	}
+	//
+	//	return entity, nil
+	//}
 	return s.requestEntityWithRelationship(ctx, relationship)
 }
 
@@ -433,9 +450,10 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	if err = s.store(ctx, model); err != nil {
-		return nil, err
-	}
+	// TODO: to be enabled with document syncing
+	//if err = s.store(ctx, model); err != nil {
+	//	return nil, err
+	//}
 
 	return model, nil
 }

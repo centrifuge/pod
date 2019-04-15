@@ -69,15 +69,6 @@ service EntityService {
       description: "revoke an entity document share"
     };
   }
-  // ListEntityRelationships
-  rpc ListEntityRelationships(GetRequest) returns (RelationshipResponse) {
-    option (google.api.http) = {
-      get: "/entity/{identifier}/relationships"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "list relationships belonging to an entity"
-    };
-  }
 }
 
 message GetRequest {

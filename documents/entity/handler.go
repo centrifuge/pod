@@ -185,35 +185,6 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 	return resp, nil
 }
 
-// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
-func (h *grpcHandler) ListEntityRelationships(ctx context.Context, getRequest *cliententitypb.GetRequest) (*cliententitypb.RelationshipResponse, error) {
-	apiLog.Debugf("Get request %v", getRequest)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	entityIdentifier, err := hexutil.Decode(getRequest.Identifier)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
-	}
-
-	entity, relationships, err := h.service.ListEntityRelationships(ctxHeader, entityIdentifier)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := h.service.DeriveRelationshipsListResponse(entity, relationships)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	return resp, nil
-}
-
 func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
 	apiLog.Debugf("Share request %v", req)
 	cctx, err := contextutil.Context(ctx, h.config)

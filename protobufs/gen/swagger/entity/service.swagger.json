@@ -98,32 +98,6 @@
         ]
       }
     },
-    "/entity/{identifier}/relationships": {
-      "get": {
-        "summary": "ListEntityRelationships",
-        "description": "list relationships belonging to an entity",
-        "operationId": "ListEntityRelationships",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityRelationshipResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/entity/{identifier}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
