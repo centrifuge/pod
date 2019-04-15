@@ -368,7 +368,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	mockProcessor.On("RequestDocumentWithAccessToken", did, token[0].Identifier, eID, erID).Return(&p2ppb.GetDocumentResponse{Document: &cd}, nil)
 	docSrv.On("DeriveFromCoreDocument", mock.Anything).Return(entity, nil)
 	docSrv.On("Exists").Return(false).Once()
-	mockedERSrv.On("GetEntityRelationships", mock.Anything, entity.ID()).Return([]documents.Model{entity}, nil)
+	mockedERSrv.On("GetEntityRelationships", mock.Anything, entity.ID()).Return([]documents.Model{er}, nil)
 	//initialize service
 	entitySrv := DefaultService(
 		&docSrv,
