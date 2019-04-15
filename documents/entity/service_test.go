@@ -3,9 +3,9 @@
 package entity
 
 import (
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"testing"
 
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
