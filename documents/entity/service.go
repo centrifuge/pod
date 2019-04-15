@@ -228,7 +228,7 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 			if err != nil {
 				return nil, err
 			}
-			if len(tokens) > 1 {
+			if len(tokens) == 0 {
 				active = false
 			} else {
 				active = true
