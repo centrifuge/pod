@@ -60,7 +60,7 @@ networks:
     contractAddresses:
       identityFactory: "0x0d391E72325CedC41E48053E77288a89F2E31115"
       anchorRepository: "0x2C80F1DafDa7aADeb2C175d4B43A858473E11713"
-      invoiceUnpaid: "0xE73841140Fce93912Ec769dAd8F482Bf5c768DA5"
+      invoiceUnpaid: "0x49be9300C36Cf5238bF69E4C49560FF8f7F672E4"
 
   # Mainnet test network DO NOT USE!
   embarcaderotest:
