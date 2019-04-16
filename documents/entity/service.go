@@ -53,9 +53,6 @@ type Service interface {
 
 	// DeriveEntityRelationshipResponse returns create response from entity relationship model
 	DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error)
-
-	// DeriveRelationshipsListResponse returns a relationships list response from the array of relationship models
-	DeriveRelationshipsListResponse(entity documents.Model, relationships []documents.Model) (*cliententitypb.RelationshipResponse, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -224,11 +221,11 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 		return nil, errors.New("failed to get self ID")
 	}
 
-	isCollab, err := model.IsDIDCollaborator(selfDID)
+	isCollaborator, err := model.IsDIDCollaborator(selfDID)
 	if err != nil {
 		return nil, err
 	}
-	if !isCollab {
+	if !isCollaborator {
 		return &cliententitypb.EntityResponse{
 			Header: h,
 			Data: &cliententitypb.EntityDataResponse{
@@ -274,30 +271,6 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 // DeriveEntityRelationshipData returns the relationship data from an entity relationship model
 func (s service) DeriveEntityRelationshipData(model documents.Model) (*cliententitypb.RelationshipData, error) {
 	return s.erService.DeriveEntityRelationshipData(model)
-}
-
-// DeriveRelationshipsListResponse returns a relationships list response from the array of relationship models
-func (s service) DeriveRelationshipsListResponse(entity documents.Model, models []documents.Model) (*cliententitypb.RelationshipResponse, error) {
-	// note that token registry is(must be) irrelevant here
-	h, err := documents.DeriveResponseHeader(nil, entity)
-	if err != nil {
-		return nil, err
-	}
-
-	var relationships []*cliententitypb.RelationshipData
-	for _, m := range models {
-		r, err := s.DeriveEntityRelationshipData(m)
-		if err != nil {
-			return nil, err
-		}
-		relationships = append(relationships, r)
-	}
-
-	return &cliententitypb.RelationshipResponse{
-		Header:       h,
-		Relationship: relationships,
-	}, nil
-
 }
 
 // DeriveEntityData returns create response from entity model

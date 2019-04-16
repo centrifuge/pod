@@ -394,6 +394,22 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.Entity.LegalName)
 	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+
+	// entity is not collaborator on document
+	e := new(Entity)
+	err = e.InitEntityInput(testingdocuments.CreateEntityPayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
+	_, err = e.CalculateDataRoot()
+	assert.NoError(t, err)
+	_, err = e.CalculateSigningRoot()
+	assert.NoError(t, err)
+	_, err = e.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	cd, err = e.PackCoreDocument()
+	assert.NoError(t, err)
+	empty, err := entitySrv.DeriveEntityResponse(ctxh, e)
+	assert.NoError(t, err)
+	assert.Equal(t, empty.Data.Relationships, []*entitypb2.Relationship(nil))
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
