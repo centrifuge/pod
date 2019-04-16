@@ -7,9 +7,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -34,9 +34,10 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      documents.Repository
-	queueSrv  queue.TaskQueuer
-	txManager transactions.Manager
+	repo           documents.Repository
+	queueSrv       queue.TaskQueuer
+	jobManager     jobs.Manager
+	tokenRegFinder func() documents.TokenRegistry
 }
 
 // DefaultService returns the default implementation of the service
@@ -44,13 +45,15 @@ func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
-	txManager transactions.Manager,
+	jobManager jobs.Manager,
+	tokenRegFinder func() documents.TokenRegistry,
 ) Service {
 	return service{
-		repo:      repo,
-		queueSrv:  queueSrv,
-		txManager: txManager,
-		Service:   srv,
+		repo:           repo,
+		queueSrv:       queueSrv,
+		jobManager:     jobManager,
+		Service:        srv,
+		tokenRegFinder: tokenRegFinder,
 	}
 }
 
@@ -93,46 +96,46 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	po, err = s.validateAndPersist(ctx, nil, po, CreateValidator())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, nil
+		return nil, jobs.NilJobID(), nil, nil
 	}
 	return po, txID, done, nil
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, transactions.TxID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	old, err := s.GetCurrentVersion(ctx, new.ID())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
 	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.TX(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.txManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	txID := contextutil.Job(ctx)
+	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
 	if err != nil {
-		return nil, transactions.NilTxID(), nil, err
+		return nil, jobs.NilJobID(), nil, err
 	}
 	return new, txID, done, nil
 }
@@ -206,7 +209,7 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		return nil, err
 	}
 
-	h, err := documents.DeriveResponseHeader(doc)
+	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), doc)
 	if err != nil {
 		return nil, err
 	}

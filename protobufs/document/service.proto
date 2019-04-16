@@ -12,7 +12,7 @@ import "google/protobuf/timestamp.proto";
 import "precise-proofs/proofs/proto/proof.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for documents
+// DocumentService contains common interactions for all documents
 service DocumentService {
   rpc CreateDocumentProof(CreateDocumentProofRequest) returns (DocumentProof) {
     option (google.api.http) = {
@@ -136,8 +136,11 @@ message Signature {
 
 message NFT {
   string registry = 1;
+  // read owner from Ethereum and empty when used in POST/PUT
+  string owner = 3;
   string token_id = 2;
-  string owner = 3; // read owner from Ethereum and empty when used in POST/PUT
+  // index of the token in the registry
+  string token_index = 4;
 }
 
 message AccessToken {
@@ -154,5 +157,6 @@ message ResponseHeader {
   string created_at = 4;
   ReadAccess read_access = 5;
   WriteAccess write_access = 6;
-  string transaction_id = 7;
+  string job_id = 7;
+  repeated NFT nfts = 8;
 }

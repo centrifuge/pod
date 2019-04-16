@@ -9,13 +9,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -23,10 +16,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +35,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		txv1.Bootstrapper{},
+		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
@@ -58,7 +55,7 @@ func TestCreateConfig(t *testing.T) {
 	dataDir := "testconfig"
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
 	scAddrs := testingutils.GetSmartContractAddresses()
-	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", 8028, 38202, nil, true, false, "", scAddrs)
+	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", "127.0.0.1", 8028, 38202, nil, true, false, "", scAddrs)
 	assert.Nil(t, err, "Create Config should be successful")
 
 	// config exists

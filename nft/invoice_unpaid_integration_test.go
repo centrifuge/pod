@@ -9,10 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -23,11 +19,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +36,7 @@ var cfgService config.Service
 var idService identity.ServiceDID
 var idFactory identity.Factory
 var InvoiceUnpaid nft.InvoiceUnpaid
-var txManager transactions.Manager
+var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
 
 func TestMain(m *testing.M) {
@@ -49,9 +47,9 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	InvoiceUnpaid = ctx[nft.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
-	txManager = ctx[transactions.BootstrappedService].(transactions.Manager)
-	tokenRegistry = ctx[nft.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	InvoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
+	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
+	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -97,7 +95,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 	d := <-done
 	assert.True(t, d)
-	assert.NoError(t, txManager.WaitForTransaction(cid, txID))
+	assert.NoError(t, jobManager.WaitForJob(cid, txID))
 
 	// get ID
 	id := modelUpdated.ID()
@@ -116,9 +114,9 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
 	assert.NoError(t, err, "should not error out when getting tokenID hex")
 	<-done
-	txID, err := transactions.FromString(resp.TransactionID)
+	txID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
-	assert.NoError(t, txManager.WaitForTransaction(cid, txID))
+	assert.NoError(t, jobManager.WaitForJob(cid, txID))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, req.DepositAddress, owner)

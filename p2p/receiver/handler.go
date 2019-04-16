@@ -3,6 +3,8 @@ package receiver
 import (
 	"context"
 
+	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -47,34 +49,34 @@ func New(
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
 func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
 	if msg == nil {
-		return convertToErrorEnvelop(errors.New("nil payload provided"))
+		return srv.convertToErrorEnvelop(errors.New("nil payload provided"))
 	}
 	envelope, err := p2pcommon.ResolveDataEnvelope(msg)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	DID, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	tc, err := srv.config.GetAccount(DID[:])
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	ctx, err = contextutil.New(ctx, tc)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 	collaborator, err := identity.NewDIDFromBytes(envelope.Header.SenderId)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 	err = srv.handshakeValidator.Validate(envelope.Header, &collaborator, &peer)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	switch p2pcommon.MessageTypeFromString(envelope.Header.Type) {
@@ -85,7 +87,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	case p2pcommon.MessageTypeGetDoc:
 		return srv.HandleGetDocument(ctx, peer, protoc, envelope)
 	default:
-		return convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
+		return srv.convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
 
 }
@@ -95,26 +97,26 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 	req := new(p2ppb.SignatureRequest)
 	err := proto.Unmarshal(msg.Body, req)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	collaborator, err := identity.NewDIDFromBytes(msg.Header.SenderId)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 	res, err := srv.RequestDocumentSignature(ctx, req, collaborator)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	nc, err := srv.config.GetConfig()
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignatureRep, res)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	return p2pEnv, nil
@@ -147,26 +149,26 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 	m := new(p2ppb.AnchorDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	collaborator, err := identity.NewDIDFromBytes(msg.Header.SenderId)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 	res, err := srv.SendAnchoredDocument(ctx, m, collaborator)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	nc, err := srv.config.GetConfig()
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDocRep, res)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	return p2pEnv, nil
@@ -196,27 +198,27 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 	m := new(p2ppb.GetDocumentRequest)
 	err := proto.Unmarshal(msg.Body, m)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	requesterCentID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	res, err := srv.GetDocument(ctx, m, requesterCentID)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	nc, err := srv.config.GetConfig()
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeGetDocRep, res)
 	if err != nil {
-		return convertToErrorEnvelop(err)
+		return srv.convertToErrorEnvelop(err)
 	}
 
 	return p2pEnv, nil
@@ -229,7 +231,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 		return nil, err
 	}
 
-	if srv.validateDocumentAccess(ctx, docReq, model, requester) != nil {
+	if err = srv.validateDocumentAccess(ctx, docReq, model, requester); err != nil {
 		return nil, err
 	}
 
@@ -260,12 +262,12 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return ErrAccessDenied
 		}
 
-		m, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
+		modelWithToken, err := srv.docSrv.GetCurrentVersion(ctx, docReq.AccessTokenRequest.DelegatingDocumentIdentifier)
 		if err != nil {
 			return err
 		}
 
-		err = m.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		err = modelWithToken.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
 		if err != nil {
 			return err
 		}
@@ -275,14 +277,12 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 	return nil
 }
 
-func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
-	errPb, ok := err.(proto.Message)
-	if !ok {
-		return nil, err
-	}
-	errBytes, err := proto.Marshal(errPb)
-	if err != nil {
-		return nil, err
+func (srv *Handler) convertToErrorEnvelop(ierr error) (*pb.P2PEnvelope, error) {
+	ierr = errors.Mask(ierr)
+	errPb := &errorspb.Error{Message: ierr.Error()}
+	errBytes, errx := proto.Marshal(errPb)
+	if errx != nil {
+		return nil, errx
 	}
 
 	envelope := &p2ppb.Envelope{
@@ -292,9 +292,9 @@ func convertToErrorEnvelop(err error) (*pb.P2PEnvelope, error) {
 		Body: errBytes,
 	}
 
-	marshalledOut, err := proto.Marshal(envelope)
-	if err != nil {
-		return nil, err
+	marshalledOut, errx := proto.Marshal(envelope)
+	if errx != nil {
+		return nil, errx
 	}
 
 	// an error for the client

@@ -14,8 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -48,10 +48,20 @@ type contract interface {
 	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
 
+func methodToOp(method string) config.ContractOp {
+	m := map[string]config.ContractOp{
+		"mint":      config.NftMint,
+		"commit":    config.AnchorCommit,
+		"preCommit": config.AnchorPreCommit,
+	}
+	return m[method]
+}
+
 type service struct {
-	client    ethereum.Client
-	txManager transactions.Manager
-	queue     *queue.Server
+	client     ethereum.Client
+	jobManager jobs.Manager
+	queue      *queue.Server
+	config     id.Config
 }
 
 func (i service) prepareTransaction(ctx context.Context, did id.DID) (contract, *bind.TransactOpts, error) {
@@ -60,7 +70,7 @@ func (i service) prepareTransaction(ctx context.Context, did id.DID) (contract, 
 		return nil, nil, err
 	}
 
-	opts, err := i.client.GetTxOpts(tc.GetEthereumDefaultAccountName())
+	opts, err := i.client.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
 	if err != nil {
 		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
 		return nil, nil, err
@@ -98,8 +108,8 @@ func (i service) bindContract(did id.DID) (contract, error) {
 }
 
 // NewService creates a instance of the identity service
-func NewService(client ethereum.Client, txManager transactions.Manager, queue *queue.Server) id.ServiceDID {
-	return service{client: client, txManager: txManager, queue: queue}
+func NewService(client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, conf id.Config) id.ServiceDID {
+	return service{client: client, jobManager: jobManager, queue: queue, config: conf}
 }
 
 func logTxHash(tx *types.Transaction) {
@@ -119,8 +129,9 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 		return err
 	}
 
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
 	log.Info("Add key to identity contract %s", DID.ToAddress().String())
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for add key",
+	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -129,7 +140,7 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key  TX failed: txID:%s", txID.String())
+		return errors.New("add key  Job failed: txID:%s", txID.String())
 
 	}
 	return nil
@@ -148,7 +159,8 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 		return err
 	}
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for add multi purpose key",
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
+	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -157,7 +169,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key multi purpose  TX failed: txID:%s", txID.String())
+		return errors.New("add key multi purpose  Job failed: txID:%s", txID.String())
 
 	}
 	return nil
@@ -175,7 +187,8 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
-	txID, done, err := i.txManager.ExecuteWithinTX(context.Background(), DID, transactions.NilTxID(), "Check TX for revoke key",
+	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevokeKey)
+	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -184,15 +197,15 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("revoke key TX failed: txID:%s", txID.String())
+		return errors.New("revoke key Job failed: txID:%s", txID.String())
 
 	}
 	return nil
 }
 
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID id.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
@@ -234,20 +247,21 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (i service) RawExecute(ctx context.Context, to common.Address, data []byte) (txID id.IDTX, done chan bool, err error) {
-	utxID := contextutil.TX(ctx)
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan bool, err error) {
+	utxID := contextutil.Job(ctx)
 	DID, err := NewDIDFromContext(ctx)
 	if err != nil {
-		return transactions.NilTxID(), nil, err
+		return jobs.NilJobID(), nil, err
 	}
 	contract, opts, err := i.prepareTransaction(ctx, DID)
 	if err != nil {
-		return transactions.NilTxID(), nil, err
+		return jobs.NilJobID(), nil, err
 	}
+	opts.GasLimit = gasLimit
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	return i.txManager.ExecuteWithinTX(context.Background(), DID, utxID, "Check TX for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	return i.jobManager.ExecuteWithinJob(context.Background(), DID, utxID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
@@ -255,15 +269,15 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte)
 func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID id.IDTX, done chan bool, err error) {
 	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
-		return transactions.NilTxID(), nil, err
+		return jobs.NilJobID(), nil, err
 	}
 
 	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
 	data, err := abiObj.Pack(methodName, args...)
 	if err != nil {
-		return transactions.NilTxID(), nil, err
+		return jobs.NilJobID(), nil, err
 	}
-	return i.RawExecute(ctx, to, data)
+	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
 func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, error) {
@@ -350,7 +364,7 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 	if ethKey.RevokedAt > 0 {
 		// if a specific time for validation is provided then we validate if a revoked key was revoked before the provided time
 		if validateAt != nil {
-			revokedAtBlock, err := i.client.GetEthClient().BlockByNumber(ctx, big.NewInt(int64(ethKey.RevokedAt)))
+			revokedAtBlock, err := i.client.GetBlockByNumber(ctx, big.NewInt(int64(ethKey.RevokedAt)))
 			if err != nil {
 				return err
 			}

@@ -10,26 +10,27 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("context")
 
-var bootstappers = []bootstrap.TestBootstrapper{
+var bootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	txv1.Bootstrapper{},
+	jobsv1.Bootstrapper{},
 	&queue.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ideth.Bootstrapper{},
@@ -37,17 +38,18 @@ var bootstappers = []bootstrap.TestBootstrapper{
 	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	&invoice.Bootstrapper{},
-	&entity.Bootstrapper{},
+	&entityrelationship.Bootstrapper{},
 	&purchaseorder.Bootstrapper{},
 	&nft.Bootstrapper{},
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
+	&entity.Bootstrapper{},
 	&queue.Starter{},
 }
 
 func TestFunctionalEthereumBootstrap() map[string]interface{} {
 	cm := testingutils.BuildIntegrationTestingContext()
-	for _, b := range bootstappers {
+	for _, b := range bootstrappers {
 		err := b.TestBootstrap(cm)
 		if err != nil {
 			log.Error("Error encountered while bootstrapping", err)
@@ -58,7 +60,7 @@ func TestFunctionalEthereumBootstrap() map[string]interface{} {
 	return cm
 }
 func TestFunctionalEthereumTearDown() {
-	for _, b := range bootstappers {
+	for _, b := range bootstrappers {
 		err := b.TestTearDown()
 		if err != nil {
 			log.Error("Error encountered while bootstrapping", err)

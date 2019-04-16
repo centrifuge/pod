@@ -11,10 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
-
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -24,6 +20,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -40,6 +38,7 @@ import (
 	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
@@ -82,7 +81,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		txv1.Bootstrapper{},
+		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
@@ -178,7 +177,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "dial attempt failed: failed to dial <peer.ID")
+		assert.Contains(t, err.Error(), "dial attempt failed: no good addresses")
 	}
 
 	// 6. handler nil response
@@ -221,7 +220,10 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstore.NewPeerstore()
+	ps := pstore.NewPeerstore(
+		pstoremem.NewKeyBook(),
+		pstoremem.NewAddrBook(),
+		pstoremem.NewPeerMetadata())
 
 	// Add the keys to the peerstore
 	// for this peer ID.

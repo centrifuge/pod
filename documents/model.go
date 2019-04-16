@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -81,6 +82,9 @@ type Model interface {
 	// Note: The document should be anchored after successfully adding the NFT.
 	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error
 
+	// NFTs returns the list of NFTs created for this model
+	NFTs() []*coredocumentpb.NFT
+
 	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	// Note: returns all the collaborators with Read and Read_Sign permission
@@ -109,10 +113,28 @@ type Model interface {
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
 	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
+
+	// IsDIDCollaborator returns true if the did is a collaborator of the document
+	IsDIDCollaborator(did identity.DID) (bool, error)
+
+	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
+	AddAttribute(name string, attributeType AllowedAttributeType, value string) error
+
+	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
+	GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error)
+
+	// DeleteAttribute deletes a custom attribute from the model
+	DeleteAttribute(name string) error
+
+	// GetAccessTokens returns the access tokens of a core document
+	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
 }
 
 // TokenRegistry defines NFT related functions.
 type TokenRegistry interface {
 	// OwnerOf to retrieve owner of the tokenID
 	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
+
+	// CurrentIndexOfToken get the current index of the token
+	CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error)
 }

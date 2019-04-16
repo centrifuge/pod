@@ -12,8 +12,8 @@ import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for entity document
-service DocumentService {
+// EntityService contains all common interactions for entity documents
+service EntityService {
   rpc Create(EntityCreatePayload) returns (EntityResponse) {
     option (google.api.http) = {
       post: "/entity"
@@ -32,14 +32,6 @@ service DocumentService {
       description: "Updates an entity"
     };
   }
-  rpc GetVersion(GetVersionRequest) returns (EntityResponse) {
-    option (google.api.http) = {
-      get: "/entity/{identifier}/{version}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get a specific version of an entity"
-    };
-  }
   rpc Get(GetRequest) returns (EntityResponse) {
     option (google.api.http) = {
       get: "/entity/{identifier}"
@@ -48,10 +40,43 @@ service DocumentService {
       description: "Get the current entity"
     };
   }
+  // Entity Relation Get
+  rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
+    option (google.api.http) = {
+      get: "/relationship/{relationship_identifier}/entity"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get entity from business partner"
+    };
+  }
+  // Entity Relation Share
+  rpc Share(RelationshipPayload) returns (RelationshipResponse) {
+    option (google.api.http) = {
+      post: "/entity/{identifier}/share"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Share the entity document with others"
+    };
+  }
+  // Entity Relation Revoke
+  rpc Revoke(RelationshipPayload) returns (RelationshipResponse) {
+    option (google.api.http) = {
+      post: "/entity/{identifier}/revoke"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "revoke an entity document share"
+    };
+  }
 }
 
 message GetRequest {
   string identifier = 1;
+}
+
+message GetRequestRelationship {
+  string relationship_identifier = 1;
 }
 
 message GetVersionRequest {
@@ -74,7 +99,12 @@ message EntityUpdatePayload {
 
 message EntityResponse {
   document.ResponseHeader header = 1;
-  EntityData data = 2;
+  EntityDataResponse data = 2;
+}
+
+message Relationship {
+  string identity = 1;
+  bool active = 2;
 }
 
 // EntityData is the default entity schema
@@ -89,20 +119,28 @@ message EntityData {
   repeated Contact contacts = 5;
 }
 
-message EntityRelationshipData {
+// Entity Relationships
+message EntityDataResponse {
+  EntityData entity = 1;
+  repeated Relationship relationships = 2;
+}
+
+message RelationshipPayload {
+  // entity identifier
+  string identifier = 1;
+  string target_identity = 2;
+}
+
+message RelationshipData {
+  // DID of relationship owner
   string owner_identity = 1;
-  string target_identity = 3;
+  // DID of target identity
+  string target_identity = 2;
+  // identifier of Entity whose data can be accessed via this relationship
+  string entity_identifier = 3;
 }
 
-message EntityRelationshipCreatePayload {
-  EntityRelationshipData data = 1;
-}
-
-message EntityRelationshipUpdatePayload {
-  EntityRelationshipData data = 1;
-}
-
-message EntityRelationshipResponse {
+message RelationshipResponse {
   document.ResponseHeader header = 1;
-  EntityRelationshipData data = 2;
+  repeated RelationshipData relationship = 2;
 }

@@ -1,30 +1,27 @@
 package api
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // we need this side effect that loads the pprof endpoints to defaultServerMux
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 )
 
-// ErrNoAuthHeader used for requests when header is not passed.
-const ErrNoAuthHeader = errors.Error("'authorization' header missing")
+const (
+	// ErrNoAuthHeader used for requests when header is not passed.
+	ErrNoAuthHeader = errors.Error("'authorization' header missing")
+)
 
 var (
 	log = logging.Logger("api-server")
@@ -53,43 +50,24 @@ func (apiServer) Name() string {
 // Serve exposes the client APIs for interacting with a centrifuge node
 func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
-	certPool, err := loadCertPool()
-	if err != nil {
-		startupErr <- err
-	}
-	keyPair, err := loadKeyPair()
-	if err != nil {
-		startupErr <- err
-	}
 
-	addr := c.config.GetServerAddress()
-	creds := credentials.NewTLS(&tls.Config{
-		RootCAs:            certPool,
-		ServerName:         addr,
-		Certificates:       []tls.Certificate{keyPair},
-		InsecureSkipVerify: true,
-	})
+	apiAddr := c.config.GetServerAddress()
+	grpcAddr, _, err := utils.GetFreeAddrPort()
+	if err != nil {
+		startupErr <- errors.New("failed to get random port for grpc: %v", err)
+		return
+	}
 
 	// set http error interceptor
 	runtime.HTTPError = httpResponseInterceptor
-
-	opts := []grpc.ServerOption{
-		grpc.Creds(creds),
-		grpcInterceptor(),
-	}
+	opts := []grpc.ServerOption{grpcInterceptor()}
 
 	grpcServer := grpc.NewServer(opts...)
-	dcreds := credentials.NewTLS(&tls.Config{
-		ServerName:         addr,
-		RootCAs:            certPool,
-		InsecureSkipVerify: true,
-	})
-	dopts := []grpc.DialOption{grpc.WithTransportCredentials(dcreds)}
 
 	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, c.config, grpcServer, gwmux, addr, dopts)
+	err = registerServices(ctx, c.config, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
 	if err != nil {
 		startupErr <- err
 		return
@@ -102,25 +80,29 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 
 	mux.Handle("/", gwmux)
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: grpcHandlerFunc(grpcServer, mux),
-		TLSConfig: &tls.Config{
-			Certificates: []tls.Certificate{keyPair},
-			NextProtos:   []string{"h2"},
-		},
+		Addr:    apiAddr,
+		Handler: mux,
 	}
 
 	startUpErrOut := make(chan error)
 	go func(startUpErrInner chan<- error) {
-		conn, err := net.Listen("tcp", c.config.GetServerAddress())
+		conn, err := net.Listen("tcp", grpcAddr)
 		if err != nil {
 			startUpErrInner <- err
 			return
 		}
 
-		log.Infof("HTTP/gRpc listening on Port: %d\n", c.config.GetServerPort())
+		log.Infof("GRPC Server running at: %s\n", grpcAddr)
+		err = grpcServer.Serve(conn)
+		if err != nil {
+			startUpErrInner <- err
+		}
+	}(startUpErrOut)
+
+	go func(startUpErrInner chan<- error) {
+		log.Infof("HTTP API running at: %s\n", c.config.GetServerAddress())
 		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
-		err = srv.Serve(tls.NewListener(conn, srv.TLSConfig))
+		err = srv.ListenAndServe()
 		if err != nil {
 			startUpErrInner <- err
 		}
@@ -147,39 +129,10 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 		if err != nil {
 			panic(err)
 		}
+		grpcServer.GracefulStop()
 		log.Info("API server stopped")
 		return
 	}
-}
-
-// grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
-// connections or otherHandler otherwise. Copied from cockroachdb.
-func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// This is a partial recreation of gRPC's internal checks https://github.com/grpc/grpc-go/pull/514/files#diff-95e9a25b738459a2d3030e1e6fa2a718R61
-		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(w, r)
-		} else {
-			otherHandler.ServeHTTP(w, r)
-		}
-	})
-}
-
-func loadCertPool() (certPool *x509.CertPool, err error) {
-	certPool = x509.NewCertPool()
-	ok := certPool.AppendCertsFromPEM([]byte(insecureCert))
-	if !ok {
-		return nil, errors.New("could not load certpool")
-	}
-	return certPool, nil
-}
-
-func loadKeyPair() (keyPair tls.Certificate, err error) {
-	pair, err := tls.X509KeyPair([]byte(insecureCert), []byte(insecureKey))
-	if err != nil {
-		return pair, err
-	}
-	return pair, nil
 }
 
 // grpcInterceptor returns a GRPC UnaryInterceptor for all grpc/http requests.

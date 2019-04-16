@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -73,14 +72,82 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 
 	// handle client error
 	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-		return nil, convertClientError(recvEnvelope)
+		return nil, p2pcommon.ConvertClientError(recvEnvelope)
 	}
 
 	if !p2pcommon.MessageTypeSendAnchoredDocRep.Equals(recvEnvelope.Header.Type) {
-		return nil, errors.New("the received send anchored document response is incorrect")
+		return nil, errors.New("the received getDocument response is incorrect")
 	}
 
 	r := new(p2ppb.AnchorDocumentResponse)
+	err = proto.Unmarshal(recvEnvelope.Body, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+	defer cancel()
+
+	tc, err := s.config.GetAccount(requesterID[:])
+	if err == nil {
+		// this is a local account
+		h := s.handlerCreator()
+		// the following context has to be different from the parent context since its initiating a local peer call
+		localCtx, err := contextutil.New(peerCtx, tc)
+		if err != nil {
+			return nil, err
+		}
+		return h.GetDocument(localCtx, in, requesterID)
+	}
+
+	err = s.idService.Exists(ctx, requesterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// this is a remote account
+	pid, err := s.getPeerID(requesterID)
+	if err != nil {
+		return nil, err
+	}
+
+	envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeGetDoc, in)
+	if err != nil {
+		return nil, err
+	}
+
+	recv, err := s.mes.SendMessage(
+		ctx, pid,
+		envelope,
+		p2pcommon.ProtocolForDID(&requesterID))
+	if err != nil {
+		return nil, err
+	}
+
+	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
+	if err != nil {
+		return nil, err
+	}
+
+	// handle client error
+	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+		return nil, p2pcommon.ConvertClientError(recvEnvelope)
+	}
+
+	if !p2pcommon.MessageTypeGetDocRep.Equals(recvEnvelope.Header.Type) {
+		return nil, errors.New("the received get document response is incorrect")
+	}
+
+	r := new(p2ppb.GetDocumentResponse)
 	err = proto.Unmarshal(recvEnvelope.Body, r)
 	if err != nil {
 		return nil, err
@@ -177,7 +244,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		}
 		// handle client error
 		if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-			return nil, convertClientError(recvEnvelope)
+			return nil, p2pcommon.ConvertClientError(recvEnvelope)
 		}
 		if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
 			return nil, errors.New("the received request signature response is incorrect")
@@ -238,7 +305,8 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 	}
 
 	var count int
-	peerCtx, _ := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+	defer cancel()
 	for _, c := range cs {
 		count++
 		go s.getSignatureAsync(peerCtx, cd, c, in)
@@ -260,15 +328,6 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 	}
 
 	return signatures, signatureCollectionErrors, nil
-}
-
-func convertClientError(recv *p2ppb.Envelope) error {
-	resp := new(errorspb.Error)
-	err := proto.Unmarshal(recv.Body, resp)
-	if err != nil {
-		return err
-	}
-	return errors.New(resp.Message)
 }
 
 func validateSignatureResp(

@@ -38,7 +38,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
@@ -63,7 +63,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       },
       "put": {
@@ -94,14 +94,85 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     },
-    "/entity/{identifier}/{version}": {
+    "/entity/{identifier}/revoke": {
+      "post": {
+        "summary": "Entity Relation Revoke",
+        "description": "revoke an entity document share",
+        "operationId": "Revoke",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityRelationshipResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "entity identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityRelationshipPayload"
+            }
+          }
+        ],
+        "tags": [
+          "EntityService"
+        ]
+      }
+    },
+    "/entity/{identifier}/share": {
+      "post": {
+        "summary": "Entity Relation Share",
+        "description": "Share the entity document with others",
+        "operationId": "Share",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/entityRelationshipResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "description": "entity identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/entityRelationshipPayload"
+            }
+          }
+        ],
+        "tags": [
+          "EntityService"
+        ]
+      }
+    },
+    "/relationship/{relationship_identifier}/entity": {
       "get": {
-        "description": "Get a specific version of an entity",
-        "operationId": "GetVersion",
+        "summary": "Entity Relation Get",
+        "description": "Get entity from business partner",
+        "operationId": "GetEntityByRelationship",
         "responses": {
           "200": {
             "description": "",
@@ -112,25 +183,38 @@
         },
         "parameters": [
           {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "version",
+            "name": "relationship_identifier",
             "in": "path",
             "required": true,
             "type": "string"
           }
         ],
         "tags": [
-          "DocumentService"
+          "EntityService"
         ]
       }
     }
   },
   "definitions": {
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "read owner from Ethereum and empty when used in POST/PUT"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_index": {
+          "type": "string",
+          "title": "index of the token in the registry"
+        }
+      }
+    },
     "documentReadAccess": {
       "type": "object",
       "properties": {
@@ -163,8 +247,14 @@
         "write_access": {
           "$ref": "#/definitions/documentWriteAccess"
         },
-        "transaction_id": {
+        "job_id": {
           "type": "string"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
         }
       }
     },
@@ -330,6 +420,21 @@
       },
       "title": "EntityData is the default entity schema"
     },
+    "entityEntityDataResponse": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "$ref": "#/definitions/entityEntityData"
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityRelationship"
+          }
+        }
+      },
+      "title": "Entity Relationships"
+    },
     "entityEntityResponse": {
       "type": "object",
       "properties": {
@@ -337,7 +442,7 @@
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/entityEntityData"
+          "$ref": "#/definitions/entityEntityDataResponse"
         }
       }
     },
@@ -392,6 +497,61 @@
         },
         "other_method": {
           "$ref": "#/definitions/entityOtherPayment"
+        }
+      }
+    },
+    "entityRelationship": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "entityRelationshipData": {
+      "type": "object",
+      "properties": {
+        "owner_identity": {
+          "type": "string",
+          "title": "DID of relationship owner"
+        },
+        "target_identity": {
+          "type": "string",
+          "title": "DID of target identity"
+        },
+        "entity_identifier": {
+          "type": "string",
+          "title": "identifier of Entity whose data can be accessed via this relationship"
+        }
+      }
+    },
+    "entityRelationshipPayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "entity identifier"
+        },
+        "target_identity": {
+          "type": "string"
+        }
+      }
+    },
+    "entityRelationshipResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "relationship": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/entityRelationshipData"
+          }
         }
       }
     }

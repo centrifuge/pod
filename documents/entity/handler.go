@@ -20,7 +20,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of entity.DocumentServiceServer
-func GRPCHandler(config config.Service, srv Service) cliententitypb.DocumentServiceServer {
+func GRPCHandler(config config.Service, srv Service) cliententitypb.EntityServiceServer {
 	return &grpcHandler{
 		service: srv,
 		config:  config,
@@ -36,26 +36,26 @@ func (h *grpcHandler) Create(ctx context.Context, req *cliententitypb.EntityCrea
 		return nil, err
 	}
 
-	doc, err := h.service.DeriveFromCreatePayload(cctx, req)
+	m, err := h.service.DeriveFromCreatePayload(cctx, req)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive create payload")
 	}
 
 	// validate and persist
-	doc, txID, _, err := h.service.Create(cctx, doc)
+	m, jobID, _, err := h.service.Create(cctx, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(doc)
+	resp, err := h.service.DeriveEntityResponse(cctx, m)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
@@ -74,19 +74,19 @@ func (h *grpcHandler) Update(ctx context.Context, payload *cliententitypb.Entity
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, _, err := h.service.Update(ctxHeader, doc)
+	doc, jobID, _, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(doc)
+	resp, err := h.service.DeriveEntityResponse(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
@@ -117,7 +117,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *cliente
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(model)
+	resp, err := h.service.DeriveEntityResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -147,11 +147,101 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	resp, err := h.service.DeriveEntityResponse(model)
+	resp, err := h.service.DeriveEntityResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
+	return resp, nil
+}
+
+// GetEntityByRelationship returns the entity model from database or requests from granter
+func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *cliententitypb.GetRequestRelationship) (*cliententitypb.EntityResponse, error) {
+	apiLog.Debugf("Get request %v", getRequest)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	relationshipIdentifier, err := hexutil.Decode(getRequest.RelationshipIdentifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+
+	model, err := h.service.GetEntityByRelationship(ctxHeader, relationshipIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.service.DeriveEntityResponse(ctxHeader, model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
+}
+
+func (h *grpcHandler) Share(ctx context.Context, req *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
+	apiLog.Debugf("Share request %v", req)
+	cctx, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	m, err := h.service.DeriveFromSharePayload(cctx, req)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive share payload")
+	}
+
+	// validate and persist
+	m, jobID, _, err := h.service.Share(cctx, m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not create document")
+	}
+
+	resp, err := h.service.DeriveEntityRelationshipResponse(m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	resp.Header.JobId = jobID.String()
+	return resp, nil
+}
+
+func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
+	apiLog.Debugf("Revoke request %v", payload)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	m, err := h.service.DeriveFromRevokePayload(ctxHeader, payload)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive revoke payload")
+	}
+
+	m, jobID, _, err := h.service.Revoke(ctxHeader, m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not update document")
+	}
+
+	resp, err := h.service.DeriveEntityRelationshipResponse(m)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }

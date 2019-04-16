@@ -23,7 +23,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -33,12 +33,12 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderCreatePayload"
+              "$ref": "#/definitions/poPurchaseOrderCreatePayload"
             }
           }
         ],
         "tags": [
-          "DocumentService"
+          "PurchaseOrderService"
         ]
       }
     },
@@ -50,7 +50,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -63,7 +63,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "PurchaseOrderService"
         ]
       },
       "put": {
@@ -73,7 +73,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -89,12 +89,12 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderUpdatePayload"
+              "$ref": "#/definitions/poPurchaseOrderUpdatePayload"
             }
           }
         ],
         "tags": [
-          "DocumentService"
+          "PurchaseOrderService"
         ]
       }
     },
@@ -106,7 +106,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/purchaseorderPurchaseOrderResponse"
+              "$ref": "#/definitions/poPurchaseOrderResponse"
             }
           }
         },
@@ -125,7 +125,7 @@
           }
         ],
         "tags": [
-          "DocumentService"
+          "PurchaseOrderService"
         ]
       }
     }
@@ -152,6 +152,25 @@
         "checksum": {
           "type": "string",
           "title": "the md5 checksum of the original file for easier verification - optional"
+        }
+      }
+    },
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "read owner from Ethereum and empty when used in POST/PUT"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_index": {
+          "type": "string",
+          "title": "index of the token in the registry"
         }
       }
     },
@@ -255,8 +274,14 @@
         "write_access": {
           "$ref": "#/definitions/documentWriteAccess"
         },
-        "transaction_id": {
+        "job_id": {
           "type": "string"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
         }
       }
     },
@@ -271,7 +296,7 @@
         }
       }
     },
-    "purchaseorderLineItem": {
+    "poLineItem": {
       "type": "object",
       "properties": {
         "status": {
@@ -325,18 +350,18 @@
         "activities": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/purchaseorderLineItemActivity"
+            "$ref": "#/definitions/poLineItemActivity"
           }
         },
         "tax_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/purchaseorderTaxItem"
+            "$ref": "#/definitions/poTaxItem"
           }
         }
       }
     },
-    "purchaseorderLineItemActivity": {
+    "poLineItemActivity": {
       "type": "object",
       "properties": {
         "item_number": {
@@ -366,7 +391,7 @@
         }
       }
     },
-    "purchaseorderPurchaseOrderCreatePayload": {
+    "poPurchaseOrderCreatePayload": {
       "type": "object",
       "properties": {
         "read_access": {
@@ -376,11 +401,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+          "$ref": "#/definitions/poPurchaseOrderData"
         }
       }
     },
-    "purchaseorderPurchaseOrderData": {
+    "poPurchaseOrderData": {
       "type": "object",
       "properties": {
         "status": {
@@ -474,7 +499,7 @@
         "line_items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/purchaseorderLineItem"
+            "$ref": "#/definitions/poLineItem"
           }
         },
         "payment_details": {
@@ -485,18 +510,18 @@
         }
       }
     },
-    "purchaseorderPurchaseOrderResponse": {
+    "poPurchaseOrderResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+          "$ref": "#/definitions/poPurchaseOrderData"
         }
       }
     },
-    "purchaseorderPurchaseOrderUpdatePayload": {
+    "poPurchaseOrderUpdatePayload": {
       "type": "object",
       "properties": {
         "identifier": {
@@ -509,11 +534,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/purchaseorderPurchaseOrderData"
+          "$ref": "#/definitions/poPurchaseOrderData"
         }
       }
     },
-    "purchaseorderTaxItem": {
+    "poTaxItem": {
       "type": "object",
       "properties": {
         "item_number": {

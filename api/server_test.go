@@ -16,17 +16,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -44,20 +45,21 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		txv1.Bootstrapper{},
+		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		&invoice.Bootstrapper{},
-		&entity.Bootstrapper{},
+		&entityrelationship.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
+		&entity.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
@@ -88,7 +90,8 @@ func TestCentAPIServer_StartListenError(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
-	ctx, _ := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
+	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
+	defer cancel()
 	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup
@@ -105,7 +108,8 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	cfg.Set("nodeHostname", "0.0.0.0")
 	cfg.Set("nodePort", 100000000)
 	cfg.Set("centrifugeNetwork", "")
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	capi := apiServer{config: cfg}
 	startErr := make(chan error)
 	var wg sync.WaitGroup

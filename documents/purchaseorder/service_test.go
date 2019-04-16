@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -19,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -49,11 +49,13 @@ func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service)
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
-	txManager := ctx[transactions.BootstrappedService].(transactions.Manager)
+	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
 	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
-	return idService, DefaultService(docSrv, repo, queueSrv, txManager)
+	return idService, DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
+		return nil
+	})
 }
 
 func TestService_Update(t *testing.T) {
@@ -254,7 +256,9 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 }
 
 func TestService_DerivePurchaseOrderResponse(t *testing.T) {
-	poSrv := service{}
+	poSrv := service{tokenRegFinder: func() documents.TokenRegistry {
+		return nil
+	}}
 
 	// derive data failed
 	m := &testingdocuments.MockModel{}

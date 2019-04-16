@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -22,7 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -32,8 +33,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingtx"
-	"github.com/centrifuge/go-centrifuge/transactions"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -57,21 +57,28 @@ type mockAnchorRepo struct {
 	anchors.AnchorRepository
 }
 
-func (r *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := r.Called(anchorID)
+func (m *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+	args := m.Called(anchorID)
 	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
+}
+
+func (m *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
+	args := m.Called(anchorID)
+	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
+	anchoredTime, _ = args.Get(1).(time.Time)
+	return docRoot, anchoredTime, args.Error(2)
 }
 
 func TestMain(m *testing.M) {
 	ethClient := &testingcommons.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	txMan := &testingtx.MockTxManager{}
-	ctx[transactions.BootstrappedService] = txMan
+	jobMan := &testingjobs.MockJobManager{}
+	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan bool)
-	txMan.On("ExecuteWithinTX", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(transactions.NilTxID(), done, nil)
-	ctx[nft.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
+	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},

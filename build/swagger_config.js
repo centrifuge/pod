@@ -1,6 +1,6 @@
 module.exports = {
     info: {
-        version: "0.0.3",
+        version: "0.0.4",
         title: "Centrifuge OS Node API",
         description: "\n",
         contact: {
@@ -9,9 +9,9 @@ module.exports = {
             email: "hello@centrifuge.io",
         }
     },
-    host: "localhost",
+    host: "localhost:8082",
     pathPrefix: "",
-    schemes: ['https'],
+    schemes: ['http'],
     defaultSwagger: {
         consumes: ["application/json",],
         produces: ["application/json",],

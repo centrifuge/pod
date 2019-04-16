@@ -14,8 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transactions"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/stringutils"
@@ -35,6 +35,7 @@ const (
 // Config is the config interface for nft package
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
+	GetLowEntropyNFTTokenEnabled() bool
 }
 
 // ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
@@ -45,7 +46,7 @@ type ethInvoiceUnpaid struct {
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error)
-	txManager       transactions.Manager
+	txManager       jobs.Manager
 	blockHeightFunc func() (height uint64, err error)
 }
 
@@ -57,7 +58,7 @@ func newEthInvoiceUnpaid(
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
-	txManager transactions.Manager,
+	txManager jobs.Manager,
 	blockHeightFunc func() (uint64, error)) *ethInvoiceUnpaid {
 	return &ethInvoiceUnpaid{
 		cfg:             cfg,
@@ -168,6 +169,12 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	}
 
 	tokenID := NewTokenID()
+	if s.cfg.GetLowEntropyNFTTokenEnabled() {
+		log.Warningf("Security consideration: Using only %d bit for NFT token ID generation. "+
+			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDLength*8)
+		tokenID = NewLowEntropyTokenID()
+	}
+
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
 		return nil, nil, err
@@ -189,27 +196,27 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	if err != nil {
 		return nil, nil, err
 	}
-	txID, done, err := s.txManager.ExecuteWithinTX(context.Background(), did, transactions.NilTxID(), "Minting NFT",
+	txID, done, err := s.txManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return &MintNFTResponse{
-		TransactionID: txID.String(),
-		TokenID:       tokenID.String(),
+		JobID:   txID.String(),
+		TokenID: tokenID.String(),
 	}, done, nil
 }
 
-func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, txID transactions.TxID, txMan transactions.Manager, errOut chan<- error) {
+func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		txctx := contextutil.WithTX(ctx, txID)
+		txctx := contextutil.WithJob(ctx, txID)
 		_, _, done, err := s.docSrv.Update(txctx, model)
 		if err != nil {
 			errOut <- err
@@ -283,6 +290,19 @@ func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (own
 	defer cancF()
 
 	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
+}
+
+// CurrentIndexOfToken returns the current index of the token in the given registry
+func (s *ethInvoiceUnpaid) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
+	contract, err := s.bindContract(registry, s.ethClient)
+	if err != nil {
+		return nil, errors.New("failed to bind the registry contract: %v", err)
+	}
+
+	opts, cancF := s.ethClient.GetGethCallOpts(false)
+	defer cancF()
+
+	return contract.CurrentIndexOfToken(opts, utils.ByteSliceToBigInt(tokenID))
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document

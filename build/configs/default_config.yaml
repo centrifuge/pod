@@ -20,38 +20,31 @@ networks:
     id: 51
     # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
     bootstrapPeers:
-    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
     # Ethereum network ID - Rinkeby
     ethereumNetworkId: 4
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses: 
-      identityFactory: "0x9ebDD8B7b2e701c9f7d90F81a9716562cAC554b3"
-      anchorRepository: "0x36e3b8b9fff60A1e031fd07671298d05745cfBa2"
-      invoiceUnpaid: "0xE1624AE4766ef3aA4300122D5EAa5a4eA7fC5978"
+      identityFactory: "0xf880b860103bd45a523574AeeC07C492031f4781"
+      anchorRepository: "0x92AD44BB8F23D5d129eB82a50d3868bB4b1ceF1F"
+      invoiceUnpaid: "0xc4A8eB27fB3Ea2C0955F8a5B1615B26d85FCBe8e"
 
   # Kovan test network
   bernalheights:
-    ###
-    # Kovan FAQ
-    # - With infura you get an error - "This request is not supported because your node is running with state pruning. Run with --pruning=archive.",
-    #   what to do? Run a local parity node with kovan eg: with `parity --chain=kovan --port=30304 --warp --warp-barrier 5680000 --no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning=archive --db-compaction ssd --cache-size 4096 --jsonrpc-hosts all --jsonrpc-interface all`
-    # - With local parity node you get an error - "Blocked connection to WebSockets server from untrusted origin: .."
-    #   what to do? Run the parity node with `--unsafe-expose` flag
-    ###
     # Numeric ID of the Centrifuge network
     id: 52
     # Bootstrap list of nodes that Centrifuge provides to the bernalheights testnet
     bootstrapPeers:
-    - "/ip4/104.154.18.51/tcp/38202/ipfs/12D3KooWPs6iaeUuFZNu1GxvsyBTSrTs9vtB6btMAnHFoLjbkzCa"
-    - "/ip4/104.155.185.237/tcp/38202/ipfs/12D3KooWPCGcwiTjoKWHfBa482UPtaeUxNLwd8zbnB1S7weAZUxZ"
+    - "/ip4/104.154.18.51/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
+    - "/ip4/104.155.185.237/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
     # Ethereum network ID - Kovan
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x366b41162a53fd75d95d31dD6d1C4d83bD436BBe"
-      anchorRepository: "0x75BacB92A30e7Ef1D38c2a31B4F2935d39F678c2"
-      invoiceUnpaid: "0x8780e1143036b4c979fE253128a48074093f1987"
+      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
+      anchorRepository: "0x7180D77310dec8AB28Aa802Ec09FfA2DF64e907c"
+      invoiceUnpaid: "0x183170481648feffe4940F3DAAd3a7bcbb0c5AAF"
 
   # Ropsten test network
   dogpatch:
@@ -59,30 +52,45 @@ networks:
     id: 53
     # Bootstrap list of nodes that Centrifuge provides to the dogpatch (TODO create ropsten bootnodes)
     bootstrapPeers:
-      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
+    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
+    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
     # Ethereum network ID - Ropsten
     ethereumNetworkId: 3
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0xF86177b275E4Fcb2Ab5A3FcF5E46aab51f73D7a6"
-      anchorRepository: "0xf630d8bE5664C7FB1234CEf48b6A729cEe3B71D8"
-      invoiceUnpaid: "0x9eee8FbE3E29c96cC944F0eeC1594fe1b633dABe"
+      identityFactory: "0x0d391E72325CedC41E48053E77288a89F2E31115"
+      anchorRepository: "0x2C80F1DafDa7aADeb2C175d4B43A858473E11713"
+      invoiceUnpaid: "0x49be9300C36Cf5238bF69E4C49560FF8f7F672E4"
 
-  # Main net test network
+  # Mainnet test network DO NOT USE!
   embarcaderotest:
     # Numeric ID of the Centrifuge network
     id: 10
     bootstrapPeers:
-      - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-      - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
-    # Ethereum network ID - Ropsten
+      - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
+      - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
+    # Ethereum network ID - mainnet
     ethereumNetworkId: 1
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x2257a0B7E513582c36B127c4E0d142F8B98273a3"
-      anchorRepository: "0x62e58B399adc033e6e404978D16D54123f4C10Bc"
-      invoiceUnpaid: "0xB6b76DCD6A456D5d9FfF7D18F562D3854f11a5C9"
+      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
+      anchorRepository: "0x637B8C3D2AA3Cc206D94519b54892089c9E67990"
+      invoiceUnpaid: "0xB5e423dCc740bBC80f906133e15601f980998356"
+
+  # Mainnet network
+  embarcadero:
+    # Numeric ID of the Centrifuge network
+    id: 10
+    bootstrapPeers:
+    - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
+    - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
+    # Ethereum network ID - mainnet
+    ethereumNetworkId: 1
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
+      anchorRepository: "0x637B8C3D2AA3Cc206D94519b54892089c9E67990"
+      invoiceUnpaid: "0xB5e423dCc740bBC80f906133e15601f980998356"
 
 # Data Storage
 storage:
@@ -99,7 +107,7 @@ accounts:
   keystore: /tmp/accounts
 
 # Interface where the API and P2P Server listens to
-nodeHostname: 0.0.0.0
+nodeHostname: 127.0.0.1
 # Port where API Server listens to
 nodePort: 8082
 
@@ -120,7 +128,7 @@ p2p:
 # Queue configurations for asynchronous processing
 queue:
   # Defines the number of workers/consumers that will be allocated at startup
-  numWorkers: 2
+  numWorkers: 100
   # Frees up CPU cycles when worker is waiting for events
   workerWaitTimeMS: 1
   # Number of retries allowed for a task
@@ -132,10 +140,17 @@ ethereum:
   defaultAccountName: "main"
   # Location of the ethereum client node (we require ws or ipc to be able to catch events)
   nodeURL: http://localhost:9545
-  # TODO remove (not used)
-  gasPrice: 1000000000
-  # Default gas limit
-  gasLimit: 1000000
+  # maximum allowed gas price to pay for a transaction in wei
+  # 20 Gwei now
+  maxGasPrice: 20000000000
+  # Gas limits for different Ethereum operations
+  gasLimits:
+    idCreate: 1000000
+    idAddKey: 300000
+    idRevokeKey: 55000
+    anchorCommit: 85000
+    anchorPreCommit: 100000
+    nftMint: 900000
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum

@@ -10,7 +10,6 @@ import (
 	"path"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	logging "github.com/ipfs/go-log"
 	"github.com/savaki/jq"

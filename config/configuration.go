@@ -20,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/config"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,6 +37,9 @@ var AccountHeaderKey struct{}
 // ContractName is a type to indicate a contract name parameter
 type ContractName string
 
+// ContractOp is a type to indicate a contract operation name parameter
+type ContractOp string
+
 const (
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
@@ -53,11 +55,34 @@ const (
 
 	// InvoiceUnpaidNFT is the contract name for InvoiceUnpaidNFT
 	InvoiceUnpaidNFT ContractName = "invoiceUnpaid"
+
+	// IDCreate identity creation operation
+	IDCreate ContractOp = "idCreate"
+
+	// IDAddKey identity add key operation
+	IDAddKey ContractOp = "idAddKey"
+
+	// IDRevokeKey identity key revocation operation
+	IDRevokeKey ContractOp = "idRevokeKey"
+
+	// AnchorCommit anchor commit operation
+	AnchorCommit ContractOp = "anchorCommit"
+
+	// AnchorPreCommit anchor pre-commit operation
+	AnchorPreCommit ContractOp = "anchorPreCommit"
+
+	// NftMint nft minting operation
+	NftMint ContractOp = "nftMint"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
 func ContractNames() [5]ContractName {
 	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, InvoiceUnpaidNFT}
+}
+
+// ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
+func ContractOps() [6]ContractOp {
+	return [6]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -91,8 +116,8 @@ type Configuration interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
-	GetEthereumGasPrice() *big.Int
-	GetEthereumGasLimit() uint64
+	GetEthereumMaxGasPrice() *big.Int
+	GetEthereumGasLimit(op ContractOp) uint64
 	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
 	GetNetworkKey(k string) string
@@ -110,11 +135,16 @@ type Configuration interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetPrecommitEnabled() bool
 
+	// GetLowEntropyNFTTokenEnabled enables low entropy token IDs.
+	// The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
+	// the ERC721 standard bytes32. This option reduces the length of the tokenId to 7 bytes.
+	// There are security implications of doing this. Specifically the risk of two users picking the
+	// same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
+	// NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
+	GetLowEntropyNFTTokenEnabled() bool
+
 	// debug specific methods
 	IsPProfEnabled() bool
-
-	// CreateProtobuf creates protobuf
-	CreateProtobuf() *configpb.ConfigData
 }
 
 // Account exposes account options
@@ -170,10 +200,6 @@ func (c *configuration) JSON() ([]byte, error) {
 
 func (c *configuration) FromJSON(json []byte) error {
 	panic("irrelevant, configuration#FromJSON must not be used")
-}
-
-func (c *configuration) CreateProtobuf() *configpb.ConfigData {
-	panic("irrelevant, configuration#CreateProtobuf must not be used")
 }
 
 // AccountConfig holds the account details.
@@ -320,14 +346,20 @@ func (c *configuration) GetEthereumMaxRetries() int {
 	return c.GetInt("ethereum.maxRetries")
 }
 
-// GetEthereumGasPrice returns the gas price to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasPrice() *big.Int {
-	return big.NewInt(cast.ToInt64(c.get("ethereum.gasPrice")))
+// GetEthereumMaxGasPrice returns the gas price to use for a ethereum transaction.
+func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
+	n := new(big.Int)
+	n, ok := n.SetString(c.GetString("ethereum.maxGasPrice"), 10)
+	if !ok {
+		// node must not continue to run
+		log.Panic("could not read ethereum.maxGasPrice")
+	}
+	return n
 }
 
 // GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasLimit() uint64 {
-	return cast.ToUint64(c.get("ethereum.gasLimit"))
+func (c *configuration) GetEthereumGasLimit(op ContractOp) uint64 {
+	return cast.ToUint64(c.get(fmt.Sprintf("ethereum.gasLimits.%s", string(op))))
 }
 
 // GetEthereumDefaultAccountName returns the default account to use for the transaction.
@@ -418,6 +450,11 @@ func (c *configuration) GetPrecommitEnabled() bool {
 	return c.GetBool("anchoring.precommit")
 }
 
+// GetLowEntropyNFTTokenEnabled returns true if low entropy nft token IDs are not enabled
+func (c *configuration) GetLowEntropyNFTTokenEnabled() bool {
+	return c.GetBool("nft.lowEntropyTokenIDEnabled")
+}
+
 // LoadConfiguration loads the configuration from the given file.
 func LoadConfiguration(configFile string) Configuration {
 	cfg := &configuration{configFile: configFile, mu: sync.RWMutex{}}
@@ -489,6 +526,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
+	apiHost := args["apiHost"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -509,8 +547,18 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, err
 	}
 
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY", string(bfile))
+	if err != nil {
+		return nil, err
+	}
+
 	if accountPassword == "" {
 		log.Warningf("Account Password not provided")
+	}
+
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)
+	if err != nil {
+		return nil, err
 	}
 
 	v := viper.New()
@@ -521,7 +569,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("anchoring.precommit", preCommitEnabled)
 	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
-	v.Set("nodeHostname", "0.0.0.0")
+	v.Set("nodeHostname", apiHost)
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
 	if p2pConnectTimeout != "" {
@@ -529,8 +577,8 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 	v.Set("ethereum.nodeURL", ethNodeURL)
 	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
-	v.Set("ethereum.accounts.main.key", string(bfile))
-	v.Set("ethereum.accounts.main.password", accountPassword)
+	v.Set("ethereum.accounts.main.key", "")
+	v.Set("ethereum.accounts.main.password", "")
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")

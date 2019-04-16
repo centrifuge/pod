@@ -28,8 +28,10 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"network":           "russianhill",
 		"ethNodeURL":        "http://127.0.0.1:9545",
 		"bootstraps":        []string{"/ip4/127.0.0.1/bootstrap1", "/ip4/127.0.0.1/bootstrap2"},
+		"apiHost":           "127.0.0.1",
 		"apiPort":           int64(8082),
 		"p2pPort":           int64(38202),
+		"grpcPort":          int64(28202),
 		"txpoolaccess":      false,
 		"p2pConnectTimeout": "",
 		"preCommitEnabled":  false,
@@ -42,5 +44,11 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Nil(t, err, "must be nil, config file should be created")
 	c := LoadConfiguration(v.ConfigFileUsed())
 	assert.False(t, c.IsPProfEnabled(), "pprof is disabled by default")
-	os.Remove(targetDir)
+	assert.Equal(t, "{}", c.Get("ethereum.accounts.main.key").(string))
+	assert.Equal(t, "pwrd", c.Get("ethereum.accounts.main.password").(string))
+	bfile, err := ioutil.ReadFile(v.ConfigFileUsed())
+	assert.NoError(t, err)
+	assert.NotContains(t, string(bfile), "key: \"{}\"")
+	assert.NotContains(t, string(bfile), "password: \"pwrd\"")
+	assert.NoError(t, os.RemoveAll(targetDir))
 }

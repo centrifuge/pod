@@ -1,19 +1,19 @@
 syntax = "proto3";
 
-package invoice;
+package inv;
 
-option go_package = "invoicepb";
+option go_package = "invpb";
 option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
-option java_package = "com.invoice";
+option java_package = "com.inv";
 
 import "document/service.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// DocumentService contains all common interactions for invoice document
-service DocumentService {
+// InvoiceService contains all common interactions for invoice documents
+service InvoiceService {
   rpc Create(InvoiceCreatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
       post: "/invoice"

@@ -109,6 +109,7 @@ func TestService_Updateaccount(t *testing.T) {
 	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	accountCfg, err := NewAccount("main", cfg)
+	assert.NoError(t, err)
 
 	// account doesn't exist
 	newCfg, err := svc.UpdateAccount(accountCfg)

@@ -75,12 +75,12 @@ abigen-install: vendorinstall
 
 gen-abi-bindings: ## Generates GO ABI Bindings
 gen-abi-bindings: install-deps abigen-install
-	$(eval CONTRACTS_VERSION := $(shell cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/package.json | jq -r '.version'))
-	npm install --prefix tmp/contracts @centrifuge/ethereum-contracts@${CONTRACTS_VERSION}
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/InvoiceUnpaid.json | jq '.abi' > tmp/contracts/po.abi
-	@cat tmp/contracts/node_modules/\@centrifuge/ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
+	npm install --prefix vendor/github.com/centrifuge/centrifuge-ethereum-contracts
+	npm run compile --prefix vendor/github.com/centrifuge/centrifuge-ethereum-contracts
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/InvoiceUnpaidNFT.json | jq '.abi' > tmp/contracts/po.abi
+	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
 	@abigen --abi tmp/contracts/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
 	@abigen --abi tmp/contracts/ar.abi --pkg anchors --type AnchorContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/anchors/anchor_contract.go
 	@abigen --abi tmp/contracts/po.abi --pkg nft --type InvoiceUnpaidContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/nft/invoice_unpaid_contract.go
@@ -94,6 +94,15 @@ install: install-deps vendorinstall
 install-xgo: ## Install XGO
 	@echo "Ensuring XGO is installed"
 	@command -v xgo >/dev/null 2>&1 || go get github.com/karalabe/xgo
+
+build-darwin-amd64: ## Build darwin/amd64
+build-darwin-amd64: install-xgo
+	@echo "Building darwin-10.10-amd64 with flags [${LD_FLAGS}]"
+	@mkdir -p build/darwin-amd64
+	@xgo -go 1.11.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
+	@mv build/darwin-amd64/centrifuge-darwin-10.10-amd64 build/darwin-amd64/centrifuge
+	$(eval TAGINSTANCE := $(shell echo ${TAG}))
+	@tar -zcvf cent-api-darwin-10.10-amd64-${TAGINSTANCE}.tar.gz -C build/darwin-amd64/ .
 
 build-linux-amd64: ## Build linux/amd64
 build-linux-amd64: install-xgo

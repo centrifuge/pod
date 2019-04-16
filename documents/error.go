@@ -23,6 +23,9 @@ const (
 	// ErrDocumentNil must be used when the provided document through a function is nil
 	ErrDocumentNil = errors.Error("no(nil) document provided")
 
+	// ErrPayloadNil must be used when a required payload is nil
+	ErrPayloadNil = errors.Error("no(nil) payload provided")
+
 	// ErrDocumentNotification must be used when a notification about a document could not be delivered
 	ErrDocumentNotification = errors.Error("could not notify of the document")
 
@@ -31,6 +34,9 @@ const (
 
 	// ErrDocumentNotFound must be used to indicate that the document for provided id is not found in the system
 	ErrDocumentNotFound = errors.Error("document not found in the system database")
+
+	// ErrNoCollaborator must be used to indicate that the document for provided id the user is not a collaborator
+	ErrNoCollaborator = errors.Error("no collaborator on the document")
 
 	// ErrDocumentVersionNotFound must be used to indicate that the specified version of the document for provided id is not found in the system
 	ErrDocumentVersionNotFound = errors.Error("specified version of the document not found in the system database")
@@ -49,6 +55,20 @@ const (
 
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
+
+	// Coredoc errors
+
+	// ErrCDCreate must be used for coredoc creation/generation errors
+	ErrCDCreate = errors.Error("error creating core document")
+
+	// ErrCollaborators must be used when collaborators are not valid
+	ErrCollaborators = errors.Error("invalid collaborators")
+
+	// ErrCDTree must be used when there are errors during precise-proof tree and root generation
+	ErrCDTree = errors.Error("error when generating trees/roots")
+
+	// ErrCDAttribute must be used when there are errors caused by custom model attributes
+	ErrCDAttribute = errors.Error("model attribute error")
 
 	// Read ACL errors
 
@@ -70,9 +90,6 @@ const (
 	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
 	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
 
-	// ErrFailedCollaborators must be used when collaborators are not valid
-	ErrFailedCollaborators = errors.Error("invalid collaborators")
-
 	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
 	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
 
@@ -81,6 +98,17 @@ const (
 
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
+
+	// ErrDocumentAnchor must be used if it is not possible to access an anchor from chain
+	ErrDocumentAnchor = errors.Error("failed to get document anchor from chain")
+
+	// ErrDocumentNotLatest must be used if document is not the latest version
+	ErrDocumentNotLatest = errors.Error("document is not the latest version")
+
+	// others
+
+	// ErrModelNil must be used if the model is nil
+	ErrModelNil = errors.Error("model is empty")
 
 	// ErrInvalidDecimal must be used when given decimal is invalid
 	ErrInvalidDecimal = errors.Error("invalid decimal")

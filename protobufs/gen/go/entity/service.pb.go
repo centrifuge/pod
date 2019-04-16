@@ -66,6 +66,45 @@ func (m *GetRequest) GetIdentifier() string {
 	return ""
 }
 
+type GetRequestRelationship struct {
+	RelationshipIdentifier string   `protobuf:"bytes,1,opt,name=relationship_identifier,json=relationshipIdentifier,proto3" json:"relationship_identifier,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{} `json:"-"`
+	XXX_unrecognized       []byte   `json:"-"`
+	XXX_sizecache          int32    `json:"-"`
+}
+
+func (m *GetRequestRelationship) Reset()         { *m = GetRequestRelationship{} }
+func (m *GetRequestRelationship) String() string { return proto.CompactTextString(m) }
+func (*GetRequestRelationship) ProtoMessage()    {}
+func (*GetRequestRelationship) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c1b437217b9e14a2, []int{1}
+}
+
+func (m *GetRequestRelationship) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetRequestRelationship.Unmarshal(m, b)
+}
+func (m *GetRequestRelationship) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetRequestRelationship.Marshal(b, m, deterministic)
+}
+func (m *GetRequestRelationship) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetRequestRelationship.Merge(m, src)
+}
+func (m *GetRequestRelationship) XXX_Size() int {
+	return xxx_messageInfo_GetRequestRelationship.Size(m)
+}
+func (m *GetRequestRelationship) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetRequestRelationship.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetRequestRelationship proto.InternalMessageInfo
+
+func (m *GetRequestRelationship) GetRelationshipIdentifier() string {
+	if m != nil {
+		return m.RelationshipIdentifier
+	}
+	return ""
+}
+
 type GetVersionRequest struct {
 	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
 	Version              string   `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
@@ -78,7 +117,7 @@ func (m *GetVersionRequest) Reset()         { *m = GetVersionRequest{} }
 func (m *GetVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*GetVersionRequest) ProtoMessage()    {}
 func (*GetVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{1}
+	return fileDescriptor_c1b437217b9e14a2, []int{2}
 }
 
 func (m *GetVersionRequest) XXX_Unmarshal(b []byte) error {
@@ -126,7 +165,7 @@ func (m *EntityCreatePayload) Reset()         { *m = EntityCreatePayload{} }
 func (m *EntityCreatePayload) String() string { return proto.CompactTextString(m) }
 func (*EntityCreatePayload) ProtoMessage()    {}
 func (*EntityCreatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{2}
+	return fileDescriptor_c1b437217b9e14a2, []int{3}
 }
 
 func (m *EntityCreatePayload) XXX_Unmarshal(b []byte) error {
@@ -182,7 +221,7 @@ func (m *EntityUpdatePayload) Reset()         { *m = EntityUpdatePayload{} }
 func (m *EntityUpdatePayload) String() string { return proto.CompactTextString(m) }
 func (*EntityUpdatePayload) ProtoMessage()    {}
 func (*EntityUpdatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{3}
+	return fileDescriptor_c1b437217b9e14a2, []int{4}
 }
 
 func (m *EntityUpdatePayload) XXX_Unmarshal(b []byte) error {
@@ -233,7 +272,7 @@ func (m *EntityUpdatePayload) GetData() *EntityData {
 
 type EntityResponse struct {
 	Header               *document.ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	Data                 *EntityData              `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Data                 *EntityDataResponse      `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
@@ -243,7 +282,7 @@ func (m *EntityResponse) Reset()         { *m = EntityResponse{} }
 func (m *EntityResponse) String() string { return proto.CompactTextString(m) }
 func (*EntityResponse) ProtoMessage()    {}
 func (*EntityResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{4}
+	return fileDescriptor_c1b437217b9e14a2, []int{5}
 }
 
 func (m *EntityResponse) XXX_Unmarshal(b []byte) error {
@@ -271,11 +310,58 @@ func (m *EntityResponse) GetHeader() *document.ResponseHeader {
 	return nil
 }
 
-func (m *EntityResponse) GetData() *EntityData {
+func (m *EntityResponse) GetData() *EntityDataResponse {
 	if m != nil {
 		return m.Data
 	}
 	return nil
+}
+
+type Relationship struct {
+	Identity             string   `protobuf:"bytes,1,opt,name=identity,proto3" json:"identity,omitempty"`
+	Active               bool     `protobuf:"varint,2,opt,name=active,proto3" json:"active,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Relationship) Reset()         { *m = Relationship{} }
+func (m *Relationship) String() string { return proto.CompactTextString(m) }
+func (*Relationship) ProtoMessage()    {}
+func (*Relationship) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c1b437217b9e14a2, []int{6}
+}
+
+func (m *Relationship) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Relationship.Unmarshal(m, b)
+}
+func (m *Relationship) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Relationship.Marshal(b, m, deterministic)
+}
+func (m *Relationship) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Relationship.Merge(m, src)
+}
+func (m *Relationship) XXX_Size() int {
+	return xxx_messageInfo_Relationship.Size(m)
+}
+func (m *Relationship) XXX_DiscardUnknown() {
+	xxx_messageInfo_Relationship.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Relationship proto.InternalMessageInfo
+
+func (m *Relationship) GetIdentity() string {
+	if m != nil {
+		return m.Identity
+	}
+	return ""
+}
+
+func (m *Relationship) GetActive() bool {
+	if m != nil {
+		return m.Active
+	}
+	return false
 }
 
 // EntityData is the default entity schema
@@ -297,7 +383,7 @@ func (m *EntityData) Reset()         { *m = EntityData{} }
 func (m *EntityData) String() string { return proto.CompactTextString(m) }
 func (*EntityData) ProtoMessage()    {}
 func (*EntityData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{5}
+	return fileDescriptor_c1b437217b9e14a2, []int{7}
 }
 
 func (m *EntityData) XXX_Unmarshal(b []byte) error {
@@ -353,242 +439,285 @@ func (m *EntityData) GetContacts() []*entity.Contact {
 	return nil
 }
 
-type EntityRelationshipData struct {
-	OwnerIdentity        string   `protobuf:"bytes,1,opt,name=owner_identity,json=ownerIdentity,proto3" json:"owner_identity,omitempty"`
-	TargetIdentity       string   `protobuf:"bytes,3,opt,name=target_identity,json=targetIdentity,proto3" json:"target_identity,omitempty"`
+// Entity Relationships
+type EntityDataResponse struct {
+	Entity               *EntityData     `protobuf:"bytes,1,opt,name=entity,proto3" json:"entity,omitempty"`
+	Relationships        []*Relationship `protobuf:"bytes,2,rep,name=relationships,proto3" json:"relationships,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *EntityDataResponse) Reset()         { *m = EntityDataResponse{} }
+func (m *EntityDataResponse) String() string { return proto.CompactTextString(m) }
+func (*EntityDataResponse) ProtoMessage()    {}
+func (*EntityDataResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c1b437217b9e14a2, []int{8}
+}
+
+func (m *EntityDataResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EntityDataResponse.Unmarshal(m, b)
+}
+func (m *EntityDataResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EntityDataResponse.Marshal(b, m, deterministic)
+}
+func (m *EntityDataResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EntityDataResponse.Merge(m, src)
+}
+func (m *EntityDataResponse) XXX_Size() int {
+	return xxx_messageInfo_EntityDataResponse.Size(m)
+}
+func (m *EntityDataResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_EntityDataResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EntityDataResponse proto.InternalMessageInfo
+
+func (m *EntityDataResponse) GetEntity() *EntityData {
+	if m != nil {
+		return m.Entity
+	}
+	return nil
+}
+
+func (m *EntityDataResponse) GetRelationships() []*Relationship {
+	if m != nil {
+		return m.Relationships
+	}
+	return nil
+}
+
+type RelationshipPayload struct {
+	// entity identifier
+	Identifier           string   `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	TargetIdentity       string   `protobuf:"bytes,2,opt,name=target_identity,json=targetIdentity,proto3" json:"target_identity,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *EntityRelationshipData) Reset()         { *m = EntityRelationshipData{} }
-func (m *EntityRelationshipData) String() string { return proto.CompactTextString(m) }
-func (*EntityRelationshipData) ProtoMessage()    {}
-func (*EntityRelationshipData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{6}
+func (m *RelationshipPayload) Reset()         { *m = RelationshipPayload{} }
+func (m *RelationshipPayload) String() string { return proto.CompactTextString(m) }
+func (*RelationshipPayload) ProtoMessage()    {}
+func (*RelationshipPayload) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c1b437217b9e14a2, []int{9}
 }
 
-func (m *EntityRelationshipData) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EntityRelationshipData.Unmarshal(m, b)
+func (m *RelationshipPayload) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RelationshipPayload.Unmarshal(m, b)
 }
-func (m *EntityRelationshipData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EntityRelationshipData.Marshal(b, m, deterministic)
+func (m *RelationshipPayload) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RelationshipPayload.Marshal(b, m, deterministic)
 }
-func (m *EntityRelationshipData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntityRelationshipData.Merge(m, src)
+func (m *RelationshipPayload) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RelationshipPayload.Merge(m, src)
 }
-func (m *EntityRelationshipData) XXX_Size() int {
-	return xxx_messageInfo_EntityRelationshipData.Size(m)
+func (m *RelationshipPayload) XXX_Size() int {
+	return xxx_messageInfo_RelationshipPayload.Size(m)
 }
-func (m *EntityRelationshipData) XXX_DiscardUnknown() {
-	xxx_messageInfo_EntityRelationshipData.DiscardUnknown(m)
+func (m *RelationshipPayload) XXX_DiscardUnknown() {
+	xxx_messageInfo_RelationshipPayload.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EntityRelationshipData proto.InternalMessageInfo
+var xxx_messageInfo_RelationshipPayload proto.InternalMessageInfo
 
-func (m *EntityRelationshipData) GetOwnerIdentity() string {
+func (m *RelationshipPayload) GetIdentifier() string {
 	if m != nil {
-		return m.OwnerIdentity
+		return m.Identifier
 	}
 	return ""
 }
 
-func (m *EntityRelationshipData) GetTargetIdentity() string {
+func (m *RelationshipPayload) GetTargetIdentity() string {
 	if m != nil {
 		return m.TargetIdentity
 	}
 	return ""
 }
 
-type EntityRelationshipCreatePayload struct {
-	Data                 *EntityRelationshipData `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
-	XXX_unrecognized     []byte                  `json:"-"`
-	XXX_sizecache        int32                   `json:"-"`
+type RelationshipData struct {
+	// DID of relationship owner
+	OwnerIdentity string `protobuf:"bytes,1,opt,name=owner_identity,json=ownerIdentity,proto3" json:"owner_identity,omitempty"`
+	// DID of target identity
+	TargetIdentity string `protobuf:"bytes,2,opt,name=target_identity,json=targetIdentity,proto3" json:"target_identity,omitempty"`
+	// identifier of Entity whose data can be accessed via this relationship
+	EntityIdentifier     string   `protobuf:"bytes,3,opt,name=entity_identifier,json=entityIdentifier,proto3" json:"entity_identifier,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *EntityRelationshipCreatePayload) Reset()         { *m = EntityRelationshipCreatePayload{} }
-func (m *EntityRelationshipCreatePayload) String() string { return proto.CompactTextString(m) }
-func (*EntityRelationshipCreatePayload) ProtoMessage()    {}
-func (*EntityRelationshipCreatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{7}
+func (m *RelationshipData) Reset()         { *m = RelationshipData{} }
+func (m *RelationshipData) String() string { return proto.CompactTextString(m) }
+func (*RelationshipData) ProtoMessage()    {}
+func (*RelationshipData) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c1b437217b9e14a2, []int{10}
 }
 
-func (m *EntityRelationshipCreatePayload) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EntityRelationshipCreatePayload.Unmarshal(m, b)
+func (m *RelationshipData) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RelationshipData.Unmarshal(m, b)
 }
-func (m *EntityRelationshipCreatePayload) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EntityRelationshipCreatePayload.Marshal(b, m, deterministic)
+func (m *RelationshipData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RelationshipData.Marshal(b, m, deterministic)
 }
-func (m *EntityRelationshipCreatePayload) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntityRelationshipCreatePayload.Merge(m, src)
+func (m *RelationshipData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RelationshipData.Merge(m, src)
 }
-func (m *EntityRelationshipCreatePayload) XXX_Size() int {
-	return xxx_messageInfo_EntityRelationshipCreatePayload.Size(m)
+func (m *RelationshipData) XXX_Size() int {
+	return xxx_messageInfo_RelationshipData.Size(m)
 }
-func (m *EntityRelationshipCreatePayload) XXX_DiscardUnknown() {
-	xxx_messageInfo_EntityRelationshipCreatePayload.DiscardUnknown(m)
+func (m *RelationshipData) XXX_DiscardUnknown() {
+	xxx_messageInfo_RelationshipData.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EntityRelationshipCreatePayload proto.InternalMessageInfo
+var xxx_messageInfo_RelationshipData proto.InternalMessageInfo
 
-func (m *EntityRelationshipCreatePayload) GetData() *EntityRelationshipData {
+func (m *RelationshipData) GetOwnerIdentity() string {
 	if m != nil {
-		return m.Data
+		return m.OwnerIdentity
 	}
-	return nil
+	return ""
 }
 
-type EntityRelationshipUpdatePayload struct {
-	Data                 *EntityRelationshipData `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
-	XXX_unrecognized     []byte                  `json:"-"`
-	XXX_sizecache        int32                   `json:"-"`
-}
-
-func (m *EntityRelationshipUpdatePayload) Reset()         { *m = EntityRelationshipUpdatePayload{} }
-func (m *EntityRelationshipUpdatePayload) String() string { return proto.CompactTextString(m) }
-func (*EntityRelationshipUpdatePayload) ProtoMessage()    {}
-func (*EntityRelationshipUpdatePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{8}
-}
-
-func (m *EntityRelationshipUpdatePayload) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EntityRelationshipUpdatePayload.Unmarshal(m, b)
-}
-func (m *EntityRelationshipUpdatePayload) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EntityRelationshipUpdatePayload.Marshal(b, m, deterministic)
-}
-func (m *EntityRelationshipUpdatePayload) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntityRelationshipUpdatePayload.Merge(m, src)
-}
-func (m *EntityRelationshipUpdatePayload) XXX_Size() int {
-	return xxx_messageInfo_EntityRelationshipUpdatePayload.Size(m)
-}
-func (m *EntityRelationshipUpdatePayload) XXX_DiscardUnknown() {
-	xxx_messageInfo_EntityRelationshipUpdatePayload.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_EntityRelationshipUpdatePayload proto.InternalMessageInfo
-
-func (m *EntityRelationshipUpdatePayload) GetData() *EntityRelationshipData {
+func (m *RelationshipData) GetTargetIdentity() string {
 	if m != nil {
-		return m.Data
+		return m.TargetIdentity
 	}
-	return nil
+	return ""
 }
 
-type EntityRelationshipResponse struct {
+func (m *RelationshipData) GetEntityIdentifier() string {
+	if m != nil {
+		return m.EntityIdentifier
+	}
+	return ""
+}
+
+type RelationshipResponse struct {
 	Header               *document.ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	Data                 *EntityRelationshipData  `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Relationship         []*RelationshipData      `protobuf:"bytes,2,rep,name=relationship,proto3" json:"relationship,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
 }
 
-func (m *EntityRelationshipResponse) Reset()         { *m = EntityRelationshipResponse{} }
-func (m *EntityRelationshipResponse) String() string { return proto.CompactTextString(m) }
-func (*EntityRelationshipResponse) ProtoMessage()    {}
-func (*EntityRelationshipResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c1b437217b9e14a2, []int{9}
+func (m *RelationshipResponse) Reset()         { *m = RelationshipResponse{} }
+func (m *RelationshipResponse) String() string { return proto.CompactTextString(m) }
+func (*RelationshipResponse) ProtoMessage()    {}
+func (*RelationshipResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c1b437217b9e14a2, []int{11}
 }
 
-func (m *EntityRelationshipResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EntityRelationshipResponse.Unmarshal(m, b)
+func (m *RelationshipResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RelationshipResponse.Unmarshal(m, b)
 }
-func (m *EntityRelationshipResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EntityRelationshipResponse.Marshal(b, m, deterministic)
+func (m *RelationshipResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RelationshipResponse.Marshal(b, m, deterministic)
 }
-func (m *EntityRelationshipResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EntityRelationshipResponse.Merge(m, src)
+func (m *RelationshipResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RelationshipResponse.Merge(m, src)
 }
-func (m *EntityRelationshipResponse) XXX_Size() int {
-	return xxx_messageInfo_EntityRelationshipResponse.Size(m)
+func (m *RelationshipResponse) XXX_Size() int {
+	return xxx_messageInfo_RelationshipResponse.Size(m)
 }
-func (m *EntityRelationshipResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_EntityRelationshipResponse.DiscardUnknown(m)
+func (m *RelationshipResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RelationshipResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EntityRelationshipResponse proto.InternalMessageInfo
+var xxx_messageInfo_RelationshipResponse proto.InternalMessageInfo
 
-func (m *EntityRelationshipResponse) GetHeader() *document.ResponseHeader {
+func (m *RelationshipResponse) GetHeader() *document.ResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *EntityRelationshipResponse) GetData() *EntityRelationshipData {
+func (m *RelationshipResponse) GetRelationship() []*RelationshipData {
 	if m != nil {
-		return m.Data
+		return m.Relationship
 	}
 	return nil
 }
 
 func init() {
 	proto.RegisterType((*GetRequest)(nil), "entity.GetRequest")
+	proto.RegisterType((*GetRequestRelationship)(nil), "entity.GetRequestRelationship")
 	proto.RegisterType((*GetVersionRequest)(nil), "entity.GetVersionRequest")
 	proto.RegisterType((*EntityCreatePayload)(nil), "entity.EntityCreatePayload")
 	proto.RegisterType((*EntityUpdatePayload)(nil), "entity.EntityUpdatePayload")
 	proto.RegisterType((*EntityResponse)(nil), "entity.EntityResponse")
+	proto.RegisterType((*Relationship)(nil), "entity.Relationship")
 	proto.RegisterType((*EntityData)(nil), "entity.EntityData")
-	proto.RegisterType((*EntityRelationshipData)(nil), "entity.EntityRelationshipData")
-	proto.RegisterType((*EntityRelationshipCreatePayload)(nil), "entity.EntityRelationshipCreatePayload")
-	proto.RegisterType((*EntityRelationshipUpdatePayload)(nil), "entity.EntityRelationshipUpdatePayload")
-	proto.RegisterType((*EntityRelationshipResponse)(nil), "entity.EntityRelationshipResponse")
+	proto.RegisterType((*EntityDataResponse)(nil), "entity.EntityDataResponse")
+	proto.RegisterType((*RelationshipPayload)(nil), "entity.RelationshipPayload")
+	proto.RegisterType((*RelationshipData)(nil), "entity.RelationshipData")
+	proto.RegisterType((*RelationshipResponse)(nil), "entity.RelationshipResponse")
 }
 
 func init() { proto.RegisterFile("entity/service.proto", fileDescriptor_c1b437217b9e14a2) }
 
 var fileDescriptor_c1b437217b9e14a2 = []byte{
-	// 743 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0xd1, 0x4e, 0x13, 0x4d,
-	0x14, 0xce, 0xb6, 0xfc, 0x05, 0x4e, 0xf9, 0xdb, 0x30, 0x40, 0xb3, 0xec, 0xff, 0x8b, 0x9b, 0x35,
-	0x20, 0x51, 0x68, 0x4d, 0x0d, 0xd1, 0x78, 0x61, 0x52, 0xc0, 0x54, 0x2f, 0x24, 0xcd, 0x1a, 0x34,
-	0xf1, 0xa6, 0x19, 0x76, 0x0f, 0xdb, 0x25, 0xed, 0xee, 0xba, 0x33, 0xd0, 0x34, 0x84, 0x1b, 0x5e,
-	0xc0, 0x04, 0xdf, 0xc3, 0x47, 0xf1, 0xc6, 0x47, 0xd0, 0x6b, 0x9f, 0xc1, 0x74, 0x66, 0xb6, 0xed,
-	0xb6, 0x90, 0x22, 0x5e, 0xb5, 0x73, 0xce, 0x77, 0xce, 0xf7, 0x9d, 0x6f, 0xa6, 0xa7, 0xb0, 0x8c,
-	0x01, 0xf7, 0x79, 0xaf, 0xc2, 0x30, 0x3e, 0xf3, 0x1d, 0x2c, 0x47, 0x71, 0xc8, 0x43, 0x92, 0x93,
-	0x51, 0xa3, 0xe4, 0x86, 0xce, 0x69, 0x07, 0x03, 0x9e, 0xce, 0x1b, 0x4b, 0xaa, 0x4a, 0x7e, 0xa8,
-	0xe0, 0xff, 0x5e, 0x18, 0x7a, 0x6d, 0xac, 0xd0, 0xc8, 0xaf, 0xd0, 0x20, 0x08, 0x39, 0xe5, 0x7e,
-	0x18, 0x30, 0x95, 0xdd, 0x12, 0x1f, 0xce, 0xb6, 0x87, 0xc1, 0x36, 0xeb, 0x52, 0xcf, 0xc3, 0xb8,
-	0x12, 0x46, 0x02, 0x31, 0x89, 0xb6, 0xb6, 0x00, 0xea, 0xc8, 0x6d, 0xfc, 0x74, 0x8a, 0x8c, 0x93,
-	0x35, 0x00, 0xdf, 0xed, 0x73, 0x1d, 0xfb, 0x18, 0xeb, 0x9a, 0xa9, 0x6d, 0xce, 0xdb, 0x23, 0x11,
-	0xeb, 0x2d, 0x2c, 0xd6, 0x91, 0xbf, 0xc7, 0x98, 0xf9, 0x61, 0x70, 0xcb, 0x22, 0xa2, 0xc3, 0xec,
-	0x99, 0xac, 0xd0, 0x33, 0x22, 0x99, 0x1c, 0xad, 0xaf, 0x1a, 0x2c, 0xbd, 0x12, 0x93, 0xed, 0xc5,
-	0x48, 0x39, 0x36, 0x68, 0xaf, 0x1d, 0x52, 0x97, 0xec, 0x40, 0x3e, 0x46, 0xea, 0x36, 0xa9, 0xe3,
-	0x20, 0x63, 0xa2, 0x65, 0xbe, 0xba, 0x5c, 0x4e, 0x3c, 0x2a, 0xdb, 0x48, 0xdd, 0x9a, 0xc8, 0xd9,
-	0x10, 0x0f, 0xbe, 0x93, 0xe7, 0xb0, 0xd0, 0x8d, 0x7d, 0x8e, 0x49, 0x5d, 0x46, 0xd4, 0xad, 0x0c,
-	0xeb, 0x3e, 0xf4, 0xb3, 0xaa, 0x30, 0xdf, 0x1d, 0x1e, 0xc8, 0x06, 0xcc, 0xb8, 0x94, 0x53, 0x3d,
-	0x2b, 0x2a, 0x48, 0x59, 0xd9, 0x2d, 0xb5, 0xed, 0x53, 0x4e, 0x6d, 0x91, 0xb7, 0xbe, 0x0d, 0x04,
-	0x1f, 0x46, 0xee, 0x88, 0xe0, 0x69, 0x16, 0x8c, 0x0d, 0x94, 0xb9, 0xe3, 0x40, 0xd9, 0x3f, 0x1e,
-	0x68, 0x66, 0xca, 0x40, 0x27, 0x50, 0x90, 0x31, 0x1b, 0x59, 0x14, 0x06, 0x0c, 0xc9, 0x13, 0xc8,
-	0xb5, 0x90, 0xba, 0x6a, 0x8c, 0x7c, 0x55, 0x1f, 0x55, 0x29, 0x31, 0xaf, 0x45, 0xde, 0x56, 0xb8,
-	0x01, 0x57, 0x66, 0x0a, 0xd7, 0x0f, 0x0d, 0x60, 0x18, 0x24, 0x06, 0xcc, 0x49, 0x87, 0x78, 0x4f,
-	0x39, 0x36, 0x38, 0x93, 0x7b, 0x00, 0x6d, 0xf4, 0x68, 0xbb, 0x19, 0xd0, 0x0e, 0xaa, 0x57, 0x33,
-	0x2f, 0x22, 0x07, 0xb4, 0x83, 0x64, 0x1b, 0xe6, 0xa9, 0xeb, 0xc6, 0xc8, 0x18, 0xf6, 0x4d, 0xc9,
-	0x6e, 0xe6, 0xab, 0xc5, 0x84, 0xb6, 0x26, 0x13, 0xf6, 0x10, 0x41, 0x5e, 0x42, 0x31, 0xa2, 0xbd,
-	0xfe, 0x08, 0x4d, 0x17, 0x39, 0xf5, 0xdb, 0x4c, 0x9f, 0x11, 0x45, 0x2b, 0x49, 0x51, 0x43, 0xa6,
-	0xf7, 0x45, 0xd6, 0x2e, 0x44, 0xa3, 0x47, 0x46, 0x1e, 0xc3, 0x9c, 0x13, 0x06, 0x9c, 0x3a, 0x9c,
-	0xe9, 0xff, 0xa4, 0xd9, 0xf6, 0x64, 0xdc, 0x1e, 0x00, 0xac, 0x16, 0x94, 0x12, 0x47, 0xdb, 0xf2,
-	0x97, 0xd6, 0xf2, 0x23, 0x31, 0xf0, 0x3a, 0x14, 0xc2, 0x6e, 0x80, 0x71, 0x73, 0x6c, 0xec, 0x7f,
-	0x45, 0xf4, 0x4d, 0x32, 0xfb, 0x43, 0x28, 0x72, 0x1a, 0x7b, 0xc8, 0x87, 0xb8, 0xac, 0xc0, 0x15,
-	0x64, 0x38, 0x01, 0x5a, 0x87, 0x70, 0x7f, 0x92, 0x29, 0xfd, 0x43, 0xaa, 0xaa, 0xab, 0x91, 0x57,
-	0xb9, 0x96, 0xbe, 0x9a, 0x71, 0x81, 0xea, 0x9a, 0xae, 0x6d, 0x9b, 0x7e, 0xee, 0x77, 0x69, 0x7b,
-	0xa9, 0x81, 0x31, 0x09, 0xf8, 0x8b, 0x67, 0x57, 0x4d, 0x3d, 0xbb, 0x5b, 0x89, 0xa8, 0xfe, 0xca,
-	0x42, 0x71, 0x5f, 0xf5, 0x7d, 0x27, 0x17, 0x2d, 0xf1, 0x20, 0x27, 0x4d, 0x23, 0xff, 0xa5, 0x7b,
-	0xa4, 0xac, 0x34, 0x4a, 0xe3, 0x04, 0x52, 0x94, 0xb5, 0x79, 0x55, 0x5b, 0x32, 0x16, 0x25, 0x96,
-	0x99, 0x34, 0x30, 0x25, 0xec, 0xf2, 0xfb, 0xcf, 0x2f, 0x99, 0x05, 0x6b, 0x56, 0x6d, 0xee, 0x17,
-	0xda, 0x23, 0xc2, 0x21, 0x27, 0x6d, 0x1c, 0x27, 0x4a, 0x99, 0x7b, 0x23, 0xd1, 0x8e, 0x20, 0x92,
-	0xd8, 0x71, 0xa2, 0x55, 0x63, 0x59, 0x11, 0x55, 0xce, 0x87, 0x6b, 0xe7, 0xa2, 0xcf, 0xfa, 0x59,
-	0x13, 0x1b, 0x5e, 0xed, 0x6c, 0xb2, 0x9a, 0x74, 0x9f, 0xd8, 0xe3, 0x37, 0x12, 0x1f, 0x5c, 0xd5,
-	0xd6, 0x8d, 0x07, 0x75, 0xe4, 0x26, 0x35, 0x59, 0x84, 0x8e, 0x7f, 0xec, 0x3b, 0xa6, 0x5a, 0xe1,
-	0x66, 0x78, 0x3c, 0x26, 0xc5, 0x24, 0x6b, 0xd7, 0x49, 0xa9, 0x9c, 0xab, 0x8a, 0x0b, 0x72, 0x02,
-	0xd9, 0x3a, 0x72, 0x42, 0x46, 0x94, 0x4c, 0x93, 0xf0, 0xec, 0xaa, 0xa6, 0x1b, 0xa5, 0xbe, 0x04,
-	0xde, 0x42, 0xd3, 0x39, 0x8d, 0x63, 0x0c, 0xf8, 0x28, 0x6b, 0x89, 0x5c, 0x6b, 0xc0, 0xee, 0x06,
-	0x80, 0x13, 0x76, 0x54, 0xd7, 0xdd, 0x05, 0x75, 0xe7, 0x8d, 0xfe, 0x5f, 0x5f, 0x43, 0xfb, 0x38,
-	0x27, 0xe3, 0xd1, 0xd1, 0x51, 0x4e, 0xfc, 0x1b, 0x3e, 0xfd, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x91,
-	0xbe, 0x79, 0xee, 0xa6, 0x07, 0x00, 0x00,
+	// 941 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x51, 0x6f, 0x1b, 0x45,
+	0x10, 0xd6, 0xc5, 0xe9, 0x35, 0x19, 0x3b, 0x49, 0xb3, 0x49, 0xdd, 0xe3, 0x5a, 0xda, 0xe3, 0xa4,
+	0xb6, 0x51, 0xda, 0xd8, 0x55, 0x50, 0x55, 0x14, 0x21, 0x24, 0xa7, 0x45, 0xa1, 0x48, 0x40, 0xb8,
+	0x0a, 0x90, 0x40, 0xc2, 0xda, 0xdc, 0x4d, 0xed, 0x03, 0xfb, 0xee, 0xd8, 0xdd, 0xc4, 0xb2, 0x4a,
+	0x5f, 0x78, 0xe0, 0xb5, 0x92, 0xfb, 0x3f, 0xfa, 0xc2, 0xff, 0xe0, 0x85, 0x9f, 0x00, 0x3f, 0x04,
+	0xdd, 0xee, 0x9e, 0x6f, 0x2f, 0xb1, 0x69, 0x48, 0x9f, 0xec, 0x9d, 0x6f, 0x66, 0xbe, 0x6f, 0x67,
+	0x66, 0x77, 0x0f, 0x36, 0x31, 0x11, 0xb1, 0x18, 0xb7, 0x39, 0xb2, 0x93, 0x38, 0xc4, 0x56, 0xc6,
+	0x52, 0x91, 0x12, 0x5b, 0x59, 0xdd, 0x66, 0x94, 0x86, 0xc7, 0x43, 0x4c, 0x44, 0x15, 0x77, 0x37,
+	0x74, 0x94, 0xfa, 0xd1, 0xc6, 0x1b, 0xbd, 0x34, 0xed, 0x0d, 0xb0, 0x4d, 0xb3, 0xb8, 0x4d, 0x93,
+	0x24, 0x15, 0x54, 0xc4, 0x69, 0xc2, 0x35, 0x7a, 0x5f, 0xfe, 0x84, 0x3b, 0x3d, 0x4c, 0x76, 0xf8,
+	0x88, 0xf6, 0x7a, 0xc8, 0xda, 0x69, 0x26, 0x3d, 0xce, 0x7a, 0xfb, 0xf7, 0x01, 0x0e, 0x50, 0x04,
+	0xf8, 0xcb, 0x31, 0x72, 0x41, 0x6e, 0x02, 0xc4, 0x51, 0xce, 0xf5, 0x3c, 0x46, 0xe6, 0x58, 0x9e,
+	0xb5, 0xb5, 0x1c, 0x18, 0x16, 0xff, 0x6b, 0x68, 0x96, 0xde, 0x01, 0x0e, 0x54, 0xaa, 0x7e, 0x9c,
+	0x91, 0x47, 0x70, 0x8d, 0x19, 0xeb, 0xee, 0x99, 0x34, 0x4d, 0x13, 0x7e, 0x5a, 0xa6, 0xfc, 0x02,
+	0xd6, 0x0f, 0x50, 0x7c, 0x8b, 0x8c, 0xc7, 0x69, 0x72, 0x4e, 0x1d, 0xc4, 0x81, 0xcb, 0x27, 0x2a,
+	0xc2, 0x59, 0x90, 0x60, 0xb1, 0xf4, 0xdf, 0x58, 0xb0, 0xf1, 0xa9, 0x2c, 0xd6, 0x63, 0x86, 0x54,
+	0xe0, 0x21, 0x1d, 0x0f, 0x52, 0x1a, 0x91, 0x87, 0x50, 0x67, 0x48, 0xa3, 0x2e, 0x0d, 0x43, 0xe4,
+	0x5c, 0xa6, 0xac, 0xef, 0x6e, 0xb6, 0x8a, 0xb2, 0xb7, 0x02, 0xa4, 0x51, 0x47, 0x62, 0x01, 0xb0,
+	0xe9, 0x7f, 0xf2, 0x11, 0x34, 0x46, 0x2c, 0x16, 0x58, 0xc4, 0x2d, 0xc8, 0xb8, 0xab, 0x65, 0xdc,
+	0x77, 0x39, 0xaa, 0x03, 0xeb, 0xa3, 0x72, 0x41, 0xee, 0xc0, 0x62, 0x44, 0x05, 0x75, 0x6a, 0x32,
+	0x82, 0xb4, 0x74, 0x07, 0x95, 0xb6, 0x27, 0x54, 0xd0, 0x40, 0xe2, 0xfe, 0x9f, 0x53, 0xc1, 0xdf,
+	0x64, 0x91, 0x21, 0xf8, 0x6d, 0x25, 0x38, 0xb5, 0xa1, 0x85, 0x0b, 0x6e, 0xa8, 0xf6, 0xbf, 0x37,
+	0xb4, 0xf8, 0x96, 0x0d, 0x31, 0x58, 0x55, 0xb6, 0x00, 0x79, 0x96, 0x26, 0x1c, 0xc9, 0x03, 0xb0,
+	0xfb, 0x48, 0x23, 0xbd, 0x8d, 0xfa, 0xae, 0x63, 0xaa, 0x54, 0x3e, 0x9f, 0x49, 0x3c, 0xd0, 0x7e,
+	0xa4, 0xa5, 0xb9, 0xd4, 0xae, 0xdc, 0x19, 0x5c, 0x3a, 0x4e, 0x73, 0xee, 0x43, 0xa3, 0x32, 0x8d,
+	0x2e, 0x2c, 0xa9, 0x52, 0x89, 0xb1, 0x2e, 0xdd, 0x74, 0x4d, 0x9a, 0x60, 0xd3, 0x50, 0xc4, 0x27,
+	0x28, 0xb3, 0x2f, 0x05, 0x7a, 0xe5, 0xff, 0x6d, 0x01, 0x94, 0x04, 0xff, 0x99, 0xe2, 0x7d, 0x80,
+	0x01, 0xf6, 0xe8, 0xa0, 0x9b, 0xd0, 0x21, 0xea, 0x09, 0x5c, 0x96, 0x96, 0x2f, 0xe9, 0x10, 0xc9,
+	0x0e, 0x2c, 0xd3, 0x28, 0x62, 0xc8, 0x39, 0xe6, 0x05, 0xae, 0x6d, 0xd5, 0x77, 0xd7, 0x8a, 0x2d,
+	0x74, 0x14, 0x10, 0x94, 0x1e, 0xe4, 0x13, 0x58, 0xcb, 0xe8, 0x38, 0x2f, 0x47, 0x37, 0x42, 0x41,
+	0xe3, 0x01, 0x77, 0x16, 0x65, 0xd0, 0xd5, 0x22, 0xe8, 0x50, 0xc1, 0x4f, 0x24, 0x1a, 0xac, 0x66,
+	0xe6, 0x92, 0x93, 0x7b, 0xb0, 0x14, 0xa6, 0x89, 0xa0, 0xa1, 0xe0, 0xce, 0xa5, 0x2a, 0xdb, 0x63,
+	0x65, 0x0f, 0xa6, 0x0e, 0xfe, 0xaf, 0x40, 0xce, 0x56, 0x91, 0x6c, 0x83, 0x6d, 0x6c, 0x75, 0x76,
+	0x77, 0xb5, 0x07, 0xd9, 0x83, 0x15, 0xf3, 0x28, 0xe7, 0xa3, 0x57, 0x93, 0xa3, 0xa7, 0x43, 0xcc,
+	0x46, 0x04, 0x55, 0x57, 0xff, 0x47, 0xd8, 0x30, 0xe1, 0xf3, 0xce, 0xfa, 0x5d, 0x58, 0x13, 0x94,
+	0xf5, 0x50, 0x74, 0xa7, 0x2d, 0x51, 0x45, 0x5f, 0x55, 0xe6, 0xa7, 0xda, 0xea, 0xbf, 0xb2, 0xe0,
+	0x8a, 0x49, 0x20, 0x3b, 0x79, 0x1b, 0x56, 0xd3, 0x51, 0x82, 0xac, 0x7b, 0xaa, 0x9f, 0x2b, 0xd2,
+	0x5a, 0xc4, 0x9e, 0x9b, 0x84, 0xdc, 0x83, 0x75, 0xf5, 0xcf, 0xbc, 0xe4, 0x6a, 0xd2, 0xf5, 0x8a,
+	0x02, 0x8c, 0xeb, 0xed, 0x77, 0x0b, 0x36, 0x2b, 0x15, 0xb9, 0xf8, 0xa1, 0xf8, 0x18, 0x1a, 0x66,
+	0x35, 0x75, 0xdd, 0x9d, 0x59, 0x75, 0x97, 0x0d, 0xab, 0x78, 0xef, 0xfe, 0x61, 0xc3, 0x8a, 0xea,
+	0xe6, 0x33, 0xf5, 0xc2, 0x90, 0x1e, 0xd8, 0xea, 0x8e, 0x24, 0xd7, 0xab, 0xed, 0xae, 0xdc, 0x9c,
+	0x6e, 0xb3, 0x0a, 0x16, 0xe2, 0xfc, 0xad, 0x49, 0x67, 0xc3, 0x5d, 0x57, 0xbe, 0xdc, 0xa3, 0x89,
+	0xa7, 0xdc, 0x7e, 0xfb, 0xeb, 0x9f, 0xd7, 0x0b, 0x0d, 0xff, 0xb2, 0x7e, 0xb2, 0xf6, 0xac, 0x6d,
+	0x22, 0xc0, 0x56, 0x77, 0xdb, 0x69, 0xa2, 0xca, 0x8d, 0x37, 0x97, 0xe8, 0xa1, 0x24, 0x52, 0xbe,
+	0xa7, 0x89, 0xde, 0x73, 0x37, 0x35, 0x51, 0xfb, 0x45, 0xd9, 0x8d, 0x97, 0x39, 0xeb, 0x4f, 0x50,
+	0x3b, 0x40, 0x41, 0xa6, 0xa3, 0x5c, 0x3e, 0x5c, 0x73, 0x99, 0x1e, 0x4d, 0x3a, 0x8e, 0x9b, 0xbf,
+	0x70, 0x9e, 0xe8, 0xa3, 0x17, 0x1e, 0x33, 0x86, 0x89, 0x30, 0xe9, 0x9a, 0x64, 0x26, 0x1d, 0x79,
+	0x63, 0xc1, 0xb5, 0x03, 0x14, 0x2a, 0xdd, 0xfe, 0xb8, 0x72, 0x17, 0xdd, 0x3c, 0x2b, 0xc0, 0xc4,
+	0xe7, 0x8a, 0xf9, 0x61, 0xd2, 0xf1, 0x5d, 0x2f, 0x17, 0xa3, 0x70, 0xef, 0x39, 0x4b, 0x87, 0xde,
+	0xd1, 0x31, 0x8f, 0x13, 0xe4, 0xdc, 0xcb, 0x28, 0x13, 0x09, 0x32, 0x29, 0xeb, 0x01, 0x69, 0xb5,
+	0xcd, 0x66, 0xb7, 0x5f, 0xcc, 0x79, 0x8b, 0x5f, 0x6a, 0xf5, 0xe4, 0xb5, 0x05, 0x97, 0x9e, 0xf5,
+	0x29, 0x33, 0x5a, 0x32, 0xe3, 0x60, 0xba, 0x37, 0x66, 0x1e, 0xea, 0x42, 0xe1, 0x57, 0x93, 0xce,
+	0x5d, 0xf7, 0xb6, 0x4c, 0x23, 0x0b, 0xa6, 0x75, 0x16, 0x73, 0xec, 0x8d, 0x62, 0xd1, 0xf7, 0x52,
+	0xd1, 0x47, 0xc6, 0xa5, 0xcc, 0x5b, 0xbe, 0x3b, 0xab, 0x7a, 0x6d, 0x9e, 0x67, 0xc8, 0x5b, 0xf6,
+	0xca, 0x02, 0x3b, 0xc0, 0x93, 0xf4, 0xe7, 0x77, 0x92, 0xf5, 0xf9, 0xa4, 0xf3, 0x81, 0x7b, 0x8b,
+	0xc9, 0x3c, 0xe5, 0xb8, 0x94, 0xb2, 0x24, 0x9d, 0x14, 0xe4, 0xf9, 0xd7, 0x67, 0x0a, 0x52, 0xb1,
+	0x7b, 0xd6, 0xf6, 0xfe, 0x1d, 0x80, 0x30, 0x1d, 0x6a, 0xba, 0xfd, 0x86, 0x3e, 0x3a, 0x87, 0xf9,
+	0xa7, 0xd3, 0xa1, 0xf5, 0xfd, 0x92, 0xb2, 0x67, 0x47, 0x47, 0xb6, 0xfc, 0x9a, 0xfa, 0xf0, 0xdf,
+	0x00, 0x00, 0x00, 0xff, 0xff, 0x17, 0xee, 0xdc, 0x05, 0xe6, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -599,163 +728,235 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// DocumentServiceClient is the client API for DocumentService service.
+// EntityServiceClient is the client API for EntityService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type DocumentServiceClient interface {
+type EntityServiceClient interface {
 	Create(ctx context.Context, in *EntityCreatePayload, opts ...grpc.CallOption) (*EntityResponse, error)
 	Update(ctx context.Context, in *EntityUpdatePayload, opts ...grpc.CallOption) (*EntityResponse, error)
-	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*EntityResponse, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*EntityResponse, error)
+	// Entity Relation Get
+	GetEntityByRelationship(ctx context.Context, in *GetRequestRelationship, opts ...grpc.CallOption) (*EntityResponse, error)
+	// Entity Relation Share
+	Share(ctx context.Context, in *RelationshipPayload, opts ...grpc.CallOption) (*RelationshipResponse, error)
+	// Entity Relation Revoke
+	Revoke(ctx context.Context, in *RelationshipPayload, opts ...grpc.CallOption) (*RelationshipResponse, error)
 }
 
-type documentServiceClient struct {
+type entityServiceClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewDocumentServiceClient(cc *grpc.ClientConn) DocumentServiceClient {
-	return &documentServiceClient{cc}
+func NewEntityServiceClient(cc *grpc.ClientConn) EntityServiceClient {
+	return &entityServiceClient{cc}
 }
 
-func (c *documentServiceClient) Create(ctx context.Context, in *EntityCreatePayload, opts ...grpc.CallOption) (*EntityResponse, error) {
+func (c *entityServiceClient) Create(ctx context.Context, in *EntityCreatePayload, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := c.cc.Invoke(ctx, "/entity.DocumentService/Create", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/entity.EntityService/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *documentServiceClient) Update(ctx context.Context, in *EntityUpdatePayload, opts ...grpc.CallOption) (*EntityResponse, error) {
+func (c *entityServiceClient) Update(ctx context.Context, in *EntityUpdatePayload, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := c.cc.Invoke(ctx, "/entity.DocumentService/Update", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/entity.EntityService/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *documentServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*EntityResponse, error) {
+func (c *entityServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := c.cc.Invoke(ctx, "/entity.DocumentService/GetVersion", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/entity.EntityService/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *documentServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*EntityResponse, error) {
+func (c *entityServiceClient) GetEntityByRelationship(ctx context.Context, in *GetRequestRelationship, opts ...grpc.CallOption) (*EntityResponse, error) {
 	out := new(EntityResponse)
-	err := c.cc.Invoke(ctx, "/entity.DocumentService/Get", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/entity.EntityService/GetEntityByRelationship", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// DocumentServiceServer is the server API for DocumentService service.
-type DocumentServiceServer interface {
+func (c *entityServiceClient) Share(ctx context.Context, in *RelationshipPayload, opts ...grpc.CallOption) (*RelationshipResponse, error) {
+	out := new(RelationshipResponse)
+	err := c.cc.Invoke(ctx, "/entity.EntityService/Share", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *entityServiceClient) Revoke(ctx context.Context, in *RelationshipPayload, opts ...grpc.CallOption) (*RelationshipResponse, error) {
+	out := new(RelationshipResponse)
+	err := c.cc.Invoke(ctx, "/entity.EntityService/Revoke", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// EntityServiceServer is the server API for EntityService service.
+type EntityServiceServer interface {
 	Create(context.Context, *EntityCreatePayload) (*EntityResponse, error)
 	Update(context.Context, *EntityUpdatePayload) (*EntityResponse, error)
-	GetVersion(context.Context, *GetVersionRequest) (*EntityResponse, error)
 	Get(context.Context, *GetRequest) (*EntityResponse, error)
+	// Entity Relation Get
+	GetEntityByRelationship(context.Context, *GetRequestRelationship) (*EntityResponse, error)
+	// Entity Relation Share
+	Share(context.Context, *RelationshipPayload) (*RelationshipResponse, error)
+	// Entity Relation Revoke
+	Revoke(context.Context, *RelationshipPayload) (*RelationshipResponse, error)
 }
 
-func RegisterDocumentServiceServer(s *grpc.Server, srv DocumentServiceServer) {
-	s.RegisterService(&_DocumentService_serviceDesc, srv)
+func RegisterEntityServiceServer(s *grpc.Server, srv EntityServiceServer) {
+	s.RegisterService(&_EntityService_serviceDesc, srv)
 }
 
-func _DocumentService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _EntityService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityCreatePayload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DocumentServiceServer).Create(ctx, in)
+		return srv.(EntityServiceServer).Create(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/entity.DocumentService/Create",
+		FullMethod: "/entity.EntityService/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DocumentServiceServer).Create(ctx, req.(*EntityCreatePayload))
+		return srv.(EntityServiceServer).Create(ctx, req.(*EntityCreatePayload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DocumentService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _EntityService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EntityUpdatePayload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DocumentServiceServer).Update(ctx, in)
+		return srv.(EntityServiceServer).Update(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/entity.DocumentService/Update",
+		FullMethod: "/entity.EntityService/Update",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DocumentServiceServer).Update(ctx, req.(*EntityUpdatePayload))
+		return srv.(EntityServiceServer).Update(ctx, req.(*EntityUpdatePayload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DocumentService_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetVersionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DocumentServiceServer).GetVersion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/entity.DocumentService/GetVersion",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DocumentServiceServer).GetVersion(ctx, req.(*GetVersionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DocumentService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _EntityService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DocumentServiceServer).Get(ctx, in)
+		return srv.(EntityServiceServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/entity.DocumentService/Get",
+		FullMethod: "/entity.EntityService/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DocumentServiceServer).Get(ctx, req.(*GetRequest))
+		return srv.(EntityServiceServer).Get(ctx, req.(*GetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _DocumentService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "entity.DocumentService",
-	HandlerType: (*DocumentServiceServer)(nil),
+func _EntityService_GetEntityByRelationship_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRequestRelationship)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EntityServiceServer).GetEntityByRelationship(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/entity.EntityService/GetEntityByRelationship",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EntityServiceServer).GetEntityByRelationship(ctx, req.(*GetRequestRelationship))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EntityService_Share_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RelationshipPayload)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EntityServiceServer).Share(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/entity.EntityService/Share",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EntityServiceServer).Share(ctx, req.(*RelationshipPayload))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EntityService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RelationshipPayload)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EntityServiceServer).Revoke(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/entity.EntityService/Revoke",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EntityServiceServer).Revoke(ctx, req.(*RelationshipPayload))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _EntityService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "entity.EntityService",
+	HandlerType: (*EntityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Create",
-			Handler:    _DocumentService_Create_Handler,
+			Handler:    _EntityService_Create_Handler,
 		},
 		{
 			MethodName: "Update",
-			Handler:    _DocumentService_Update_Handler,
-		},
-		{
-			MethodName: "GetVersion",
-			Handler:    _DocumentService_GetVersion_Handler,
+			Handler:    _EntityService_Update_Handler,
 		},
 		{
 			MethodName: "Get",
-			Handler:    _DocumentService_Get_Handler,
+			Handler:    _EntityService_Get_Handler,
+		},
+		{
+			MethodName: "GetEntityByRelationship",
+			Handler:    _EntityService_GetEntityByRelationship_Handler,
+		},
+		{
+			MethodName: "Share",
+			Handler:    _EntityService_Share_Handler,
+		},
+		{
+			MethodName: "Revoke",
+			Handler:    _EntityService_Revoke_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

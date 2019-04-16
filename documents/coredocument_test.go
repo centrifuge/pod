@@ -17,11 +17,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/transactions/txv1"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -43,7 +45,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
-		txv1.Bootstrapper{},
+		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
@@ -107,6 +109,109 @@ func Test_fetchUniqueCollaborators(t *testing.T) {
 	}
 }
 
+func TestCoreDocument_CurrentVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.CurrentVersion(), cd.Document.CurrentVersion)
+}
+
+func TestCoreDocument_PreviousVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.PreviousVersion(), cd.Document.PreviousVersion)
+}
+
+func TestCoreDocument_NextVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.NextVersion(), cd.Document.NextVersion)
+}
+
+func TestCoreDocument_CurrentVersionPreimage(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.CurrentVersionPreimage(), cd.Document.CurrentPreimage)
+}
+
+func TestCoreDocument_Author(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	did := testingidentity.GenerateRandomDID()
+	cd.Document.Author = did[:]
+	a, err := cd.Author()
+	assert.NoError(t, err)
+
+	aID, err := identity.NewDIDFromBytes(cd.Document.Author)
+	assert.NoError(t, err)
+	assert.Equal(t, a, aID)
+}
+
+func TestCoreDocument_ID(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	assert.Equal(t, cd.Document.DocumentIdentifier, cd.ID())
+}
+
+func TestNewCoreDocumentWithCollaborators(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+	c := &CollaboratorsAccess{
+		ReadCollaborators:      []identity.DID{did1},
+		ReadWriteCollaborators: []identity.DID{did2},
+	}
+	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), *c)
+	assert.NoError(t, err)
+
+	collabs, err := cd.GetCollaborators(identity.DID{})
+	assert.NoError(t, err)
+	assert.Equal(t, did1, collabs.ReadCollaborators[0])
+	assert.Equal(t, did2, collabs.ReadWriteCollaborators[0])
+}
+
+func TestNewCoreDocumentWithAccessToken(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	id := hexutil.Encode(cd.Document.DocumentIdentifier)
+	did1 := testingidentity.GenerateRandomDID()
+
+	// wrong granteeID format
+	at := &documentpb.AccessTokenParams{
+		Grantee:            "random string",
+		DocumentIdentifier: id,
+	}
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.Error(t, err)
+
+	// wrong docID
+	at = &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: "random string",
+	}
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.Error(t, err)
+
+	// correct access token params
+	at = &documentpb.AccessTokenParams{
+		Grantee:            did1.String(),
+		DocumentIdentifier: id,
+	}
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	assert.NoError(t, err)
+
+	token := ncd.Document.AccessTokens[0]
+	assert.Equal(t, token.DocumentIdentifier, cd.Document.DocumentIdentifier)
+	assert.Equal(t, token.Grantee, did1[:])
+	assert.NotEqual(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
+}
+
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
@@ -168,6 +273,27 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators, 2)
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[0], c3[:])
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c4[:])
+}
+
+func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+
+	role := newRoleWithCollaborators(did1, did2)
+	assert.Len(t, role.Collaborators, 2)
+	assert.Equal(t, role.Collaborators[0], did1[:])
+	assert.Equal(t, role.Collaborators[1], did2[:])
+}
+
+func TestCoreDocument_AddUpdateLog(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	err = cd.AddUpdateLog(did1)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.Document.Author, did1[:])
+	assert.True(t, cd.Modified)
 }
 
 func TestGetSigningProofHash(t *testing.T) {
@@ -487,4 +613,22 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, cs, 1)
 	assert.Contains(t, cs, id1)
+}
+
+func TestCoreDocument_AddAttribute(t *testing.T) {
+	id1 := testingidentity.GenerateRandomDID()
+	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
+	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	assert.NoError(t, err)
+	err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
+	assert.NoError(t, err)
+	assert.True(t, len(cd.Attributes) == 1)
+
+	hashedKey, attrType, val, _, err := cd.GetAttribute("com.basf.deliverynote.chemicalnumber")
+	assert.NoError(t, err)
+	assert.True(t, len(hashedKey) > 0)
+	assert.Equal(t, attrType, StrType.String())
+	assert.Equal(t, val, "100")
+
+	// TODO add tests for each type + failures, once converters are ready
 }

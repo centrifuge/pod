@@ -21,7 +21,7 @@ type grpcHandler struct {
 }
 
 // GRPCHandler returns an implementation of invoice.DocumentServiceServer
-func GRPCHandler(config config.Service, srv Service) clientinvoicepb.DocumentServiceServer {
+func GRPCHandler(config config.Service, srv Service) clientinvoicepb.InvoiceServiceServer {
 	return &grpcHandler{
 		service: srv,
 		config:  config,
@@ -44,7 +44,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 	}
 
 	// validate and persist
-	doc, txID, _, err := h.service.Create(cctx, doc)
+	doc, jobID, _, err := h.service.Create(cctx, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not create document")
@@ -56,7 +56,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientinvoicepb.InvoiceCr
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
@@ -75,7 +75,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, centerrors.Wrap(err, "could not derive update payload")
 	}
 
-	doc, txID, _, err := h.service.Update(ctxHeader, doc)
+	doc, jobID, _, err := h.service.Update(ctxHeader, doc)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not update document")
@@ -87,7 +87,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 		return nil, centerrors.Wrap(err, "could not derive response")
 	}
 
-	resp.Header.TransactionId = txID.String()
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 

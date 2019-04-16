@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -108,6 +109,22 @@ type DID common.Address
 // DIDLength contains the length of a DID
 const DIDLength = common.AddressLength
 
+// MarshalJSON marshals DID to json bytes.
+func (d DID) MarshalJSON() ([]byte, error) {
+	str := "\"" + d.String() + "\""
+	return []byte(str), nil
+}
+
+// UnmarshalJSON loads json bytes to DID
+func (d *DID) UnmarshalJSON(data []byte) error {
+	dx, err := NewDIDFromString(strings.Trim(string(data), "\""))
+	if err != nil {
+		return err
+	}
+	*d = dx
+	return nil
+}
+
 // ToAddress returns the DID as common.Address
 func (d DID) ToAddress() common.Address {
 	return common.Address(d)
@@ -169,7 +186,7 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	return DID(common.BytesToAddress(bAddr)), nil
 }
 
-// IDTX abstracts transactions.TxID for identity package
+// IDTX abstracts transactions.JobID for identity package
 type IDTX interface {
 	String() string
 	Bytes() []byte
@@ -194,7 +211,7 @@ type ServiceDID interface {
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte) (txID IDTX, done chan bool, err error)
+	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan bool, err error)
 
 	// Execute creates the abi encoding an calls the execute method on the identity contract
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan bool, err error)
@@ -296,11 +313,7 @@ type IDKeys struct {
 
 // Config defines methods required for the package identity.
 type Config interface {
-	GetEthereumDefaultAccountName() string
-	GetIdentityID() ([]byte, error)
-	GetP2PKeyPair() (pub, priv string)
-	GetSigningKeyPair() (pub, priv string)
-	GetEthereumContextWaitTimeout() time.Duration
+	GetEthereumGasLimit(op config.ContractOp) uint64
 }
 
 // ValidateDIDBytes validates a centrifuge ID given as bytes

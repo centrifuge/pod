@@ -133,16 +133,13 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/nftResponseHeader"
-        },
-        "token_id": {
-          "type": "string"
         }
       }
     },
     "nftResponseHeader": {
       "type": "object",
       "properties": {
-        "transaction_id": {
+        "job_id": {
           "type": "string"
         }
       }
