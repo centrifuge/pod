@@ -136,7 +136,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestService_GetEntityRelationship(t *testing.T) {
+func TestService_GetEntityRelationships(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, idFactory, srv := getServiceWithMockedLayers()
 	eSrv := srv.(service)
@@ -168,7 +168,7 @@ func TestService_GetEntityRelationship(t *testing.T) {
 	assert.Len(t, r, 1)
 	r, err = eSrv.GetEntityRelationships(ctxh, utils.RandomSlice(32))
 	assert.NoError(t, err)
-	assert.Equal(t, r, []EntityRelationship{})
+	assert.Equal(t, []documents.Model(nil), r)
 }
 
 func TestService_Create(t *testing.T) {
@@ -283,6 +283,6 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 		OwnerIdentity:  selfDID.String(),
 		TargetIdentity: "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb",
 	}
-	assert.Equal(t, payload.TargetIdentity, r.Relationship.TargetIdentity)
-	assert.Equal(t, payload.OwnerIdentity, r.Relationship.OwnerIdentity)
+	assert.Equal(t, payload.TargetIdentity, r.Relationship[0].TargetIdentity)
+	assert.Equal(t, payload.OwnerIdentity, r.Relationship[0].OwnerIdentity)
 }

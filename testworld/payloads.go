@@ -44,6 +44,13 @@ func defaultEntityPayload(identity string, collaborators []string) map[string]in
 	}
 }
 
+func defaultRelationshipPayload(identity, targetID string) map[string]interface{} {
+	return map[string]interface{}{
+		"identity":        identity,
+		"target_identity": targetID,
+	}
+}
+
 func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
@@ -152,6 +159,23 @@ func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 		},
 	}
 
+}
+
+func updatedEntityPayload(identity string, collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"identity":   identity,
+			"legal_name": "edited test company",
+			"contacts": []map[string]interface{}{
+				{
+					"name": "test name",
+				},
+			},
+		},
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
+	}
 }
 
 func defaultProofPayload(documentType string) map[string]interface{} {

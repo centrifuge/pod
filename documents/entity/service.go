@@ -21,7 +21,7 @@ import (
 type Service interface {
 	documents.Service
 
-	// DeriverFromPayload derives Entity from clientPayload
+	// DeriveFromPayload derives Entity from clientPayload
 	DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityCreatePayload) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives entity model from update payload
@@ -31,7 +31,10 @@ type Service interface {
 	DeriveEntityData(entity documents.Model) (*cliententitypb.EntityData, error)
 
 	// DeriveEntityResponse returns the entity model in our standard client format
-	DeriveEntityResponse(entity documents.Model) (*cliententitypb.EntityResponse, error)
+	DeriveEntityResponse(ctx context.Context, entity documents.Model) (*cliententitypb.EntityResponse, error)
+
+	// ListEntityRelationships lists all the relationships associated with the passed in entity identifier
+	ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error)
 
 	// GetEntityByRelationship returns the entity model from database or requests from granter
 	GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error)
@@ -198,7 +201,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 }
 
 // DeriveEntityResponse returns create response from entity model
-func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.EntityResponse, error) {
+func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model) (*cliententitypb.EntityResponse, error) {
 	data, err := s.DeriveEntityData(model)
 	if err != nil {
 		return nil, err
@@ -210,14 +213,61 @@ func (s service) DeriveEntityResponse(model documents.Model) (*cliententitypb.En
 		return nil, err
 	}
 
+	entityID := model.ID()
+	var relationships []*cliententitypb.Relationship
+	// if this identity is not the owner of the entity, return an empty relationships array
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.New("failed to get self ID")
+	}
+
+	isCollaborator, err := model.IsDIDCollaborator(selfDID)
+	if err != nil {
+		return nil, err
+	}
+	if !isCollaborator {
+		return &cliententitypb.EntityResponse{
+			Header: h,
+			Data: &cliententitypb.EntityDataResponse{
+				Entity:        data,
+				Relationships: relationships,
+			},
+		}, nil
+	}
+	_, models, err := s.ListEntityRelationships(ctx, entityID)
+	if err != nil {
+		return nil, err
+	}
+
+	//list the relationships associated with the entity
+	if models != nil {
+		for _, m := range models {
+			tokens, err := m.GetAccessTokens()
+			if err != nil {
+				return nil, err
+			}
+
+			targetDID := m.(*entityrelationship.EntityRelationship).TargetIdentity.String()
+			r := &cliententitypb.Relationship{
+				Identity: targetDID,
+				Active:   len(tokens) != 0,
+			}
+			relationships = append(relationships, r)
+		}
+	}
+
 	return &cliententitypb.EntityResponse{
 		Header: h,
 		Data: &cliententitypb.EntityDataResponse{
 			Entity:        data,
-			Relationships: nil,
+			Relationships: relationships,
 		},
 	}, nil
+}
 
+// DeriveEntityRelationshipData returns the relationship data from an entity relationship model
+func (s service) DeriveEntityRelationshipData(model documents.Model) (*cliententitypb.RelationshipData, error) {
+	return s.erService.DeriveEntityRelationshipData(model)
 }
 
 // DeriveEntityData returns create response from entity model
@@ -261,10 +311,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 	return entity, nil
 }
 
-func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
-	return s.get(ctx, documentID, version)
-}
-
+// GetEntityByRelationship returns the entity model from database or requests from a granter peer
 func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error) {
 	model, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
 	if err != nil {
@@ -275,27 +322,40 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 	if !ok {
 		return nil, entityrelationship.ErrNotEntityRelationship
 	}
+	// TODO: to be enabled with document syncing
+	//entityIdentifier := relationship.EntityIdentifier
 
-	entityIdentifier := relationship.EntityIdentifier
-
-	if s.Service.Exists(ctx, entityIdentifier) {
-		entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
-		if err != nil {
-			// in case of an error try to get document from collaborator
-			return s.requestEntityWithRelationship(ctx, relationship)
-		}
-
-		// check if stored document is the latest version
-		if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
-			return s.requestEntityWithRelationship(ctx, relationship)
-		}
-
-		return entity, nil
-	}
+	//if s.Service.Exists(ctx, entityIdentifier) {
+	//	entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
+	//	if err != nil {
+	//		// in case of an error try to get document from collaborator
+	//		return s.requestEntityWithRelationship(ctx, relationship)
+	//	}
+	//
+	//	// check if stored document is the latest version
+	//	if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
+	//		return s.requestEntityWithRelationship(ctx, relationship)
+	//	}
+	//
+	//	return entity, nil
+	//}
 	return s.requestEntityWithRelationship(ctx, relationship)
 }
 
-func (s service) get(ctx context.Context, documentID, version []byte) (documents.Model, error) {
+// ListEntityRelationships lists all the latest versions of the relationships associated with the passed in entity identifier
+func (s service) ListEntityRelationships(ctx context.Context, entityIdentifier []byte) (documents.Model, []documents.Model, error) {
+	entity, err := s.GetCurrentVersion(ctx, entityIdentifier)
+	if err != nil {
+		return nil, nil, err
+	}
+	relationships, err := s.erService.GetEntityRelationships(ctx, entityIdentifier)
+	if err != nil {
+		return nil, nil, err
+	}
+	return entity, relationships, nil
+}
+
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -303,11 +363,7 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 
 	var entity documents.Model
 	if s.Service.Exists(ctx, documentID) {
-		if version == nil {
-			entity, err = s.Service.GetCurrentVersion(ctx, documentID)
-		} else {
-			entity, err = s.Service.GetVersion(ctx, documentID, version)
-		}
+		entity, err = s.Service.GetCurrentVersion(ctx, documentID)
 
 		if err != nil {
 			return nil, err
@@ -320,7 +376,6 @@ func (s service) get(ctx context.Context, documentID, version []byte) (documents
 		if !isCollaborator {
 			return nil, documents.ErrNoCollaborator
 		}
-		// todo add relationship array
 		return entity, nil
 	}
 
@@ -365,9 +420,10 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	if err = s.store(ctx, model); err != nil {
-		return nil, err
-	}
+	// TODO: to be enabled with document syncing
+	//if err = s.store(ctx, model); err != nil {
+	//	return nil, err
+	//}
 
 	return model, nil
 }
@@ -391,11 +447,6 @@ func (s service) store(ctx context.Context, model documents.Model) error {
 		}
 	}
 	return nil
-}
-
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
-	return s.get(ctx, documentID, nil)
-
 }
 
 // DeriveFromSharePayload derives the entity relationship from the relationship payload

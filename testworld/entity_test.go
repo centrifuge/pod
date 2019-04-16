@@ -22,15 +22,14 @@ func TestHost_BasicEntity(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	// alice shares a document with bob and charlie
+	// Alice shares a document with Bob and Charlie
 	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	docIdentifier := getDocumentIdentifier(t, res)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
 
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
@@ -49,7 +48,7 @@ func TestHost_EntityShareGet(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// alice anchors entity
+	// Alice anchors Entity
 	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), []string{}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -58,35 +57,29 @@ func TestHost_EntityShareGet(t *testing.T) {
 	}
 	entityIdentifier := getDocumentIdentifier(t, res)
 
-	// alice creates a entity-relationship with Bob
-	// by directly using alice service
-
-	// todo replace with Share endpoint
+	// Alice creates an EntityRelationship with Bob
 	ctxAlice := testingconfig.CreateAccountContext(t, alice.host.config)
-	erData := &entitypb2.RelationshipData{
+	relationshipData := &entitypb2.RelationshipData{
 		EntityIdentifier: entityIdentifier,
 		OwnerIdentity:    alice.id.String(),
 		TargetIdentity:   bob.id.String(),
 	}
 
-	er := entityrelationship.EntityRelationship{}
-	err := er.InitEntityRelationshipInput(ctxAlice, entityIdentifier, erData)
+	relationship := entityrelationship.EntityRelationship{}
+	err := relationship.InitEntityRelationshipInput(ctxAlice, entityIdentifier, relationshipData)
 	assert.NoError(t, err)
 
-	erModel, _, isDone, err := alice.host.erService.Create(ctxAlice, &er)
+	relationshipModel, _, isDone, err := alice.host.entityService.Share(ctxAlice, &relationship)
 	assert.NoError(t, err)
 	done := <-isDone
 	assert.True(t, done)
-	cd, err := erModel.PackCoreDocument()
-	assert.Nil(t, err)
-	// todo end
+	cd, err := relationshipModel.PackCoreDocument()
+	assert.NoError(t, err)
 
 	relationshipIdentifier := cd.DocumentIdentifier
-
 	params := map[string]interface{}{
-		"er_identifier": hexutil.Encode(relationshipIdentifier),
+		"r_identifier": hexutil.Encode(relationshipIdentifier),
 	}
-
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
 	response.Path("$.data.entity.legal_name").String().Equal("test company")
 }

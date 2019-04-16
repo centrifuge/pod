@@ -32,7 +32,7 @@ type Service interface {
 	DeriveEntityRelationshipResponse(relationship documents.Model) (*entitypb.RelationshipResponse, error)
 
 	// GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
-	GetEntityRelationships(ctx context.Context, entityID []byte) ([]EntityRelationship, error)
+	GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -125,7 +125,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes an entity relationship model and does required validation checks, tries to persist to DB
-// For Entity Relationships, Create encompasses the Revoke functionality from the Entity Client API endpoint
+// For Entity Relationships, Create encompasses the Share functionality from the Entity Client API endpoint
 func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -185,7 +185,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 
 	return &entitypb.RelationshipResponse{
 		Header:       h,
-		Relationship: data,
+		Relationship: []*entitypb.RelationshipData{data},
 	}, nil
 
 }
@@ -231,18 +231,20 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	model, err := r.(*EntityRelationship).DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
+	cd, err := r.(*EntityRelationship).DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
 	if err != nil {
 		return nil, err
 	}
 
-	r.(*EntityRelationship).Document = model.Document
+	r.(*EntityRelationship).Document = cd.Document
+	r.(*EntityRelationship).Modified = cd.Modified
+
 	return r, nil
 }
 
 // GetEntityRelationships returns the latest versions of the entity relationships that involve the entityID passed in
-func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]EntityRelationship, error) {
-	var relationships []EntityRelationship
+func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error) {
+	var relationships []documents.Model
 	if entityID == nil {
 		return nil, documents.ErrPayloadNil
 	}
@@ -262,11 +264,11 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 		if err != nil {
 			return nil, err
 		}
-		relationships = append(relationships, *r.(*EntityRelationship))
+		relationships = append(relationships, r)
 	}
 
 	if relationships == nil {
-		return []EntityRelationship{}, nil
+		return nil, nil
 	}
 
 	return relationships, nil

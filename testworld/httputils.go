@@ -62,13 +62,37 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 	return objGet
 }
 
+func getEntity(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
+
+	objGet := addCommonHeaders(e.GET("/entity/"+docIdentifier), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+
+	return objGet
+}
+
 func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	relationshipIdentifier := params["er_identifier"].(string)
+	relationshipIdentifier := params["r_identifier"].(string)
 
 	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	return objGet
+}
+
+func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	relationshipIdentifier := params["r_identifier"].(string)
+
+	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+		Expect().Status(500).JSON().NotNull()
+
+	return objGet
+}
+
+func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/revoke"), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
 }
 
 func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
@@ -81,6 +105,13 @@ func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType st
 
 func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/"+documentType), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/share"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj

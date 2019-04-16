@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
@@ -247,7 +247,7 @@ type host struct {
 	configService      config.Service
 	tokenRegistry      documents.TokenRegistry
 	anchorRepo         anchors.AnchorRepository
-	erService          entityrelationship.Service
+	entityService      entity.Service
 }
 
 func newHost(
@@ -318,7 +318,7 @@ func (h *host) init() error {
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	h.erService = h.bootstrappedCtx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
+	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
 	return nil
 }
 
