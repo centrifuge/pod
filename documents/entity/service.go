@@ -242,18 +242,15 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 	//list the relationships associated with the entity
 	if models != nil {
 		for _, m := range models {
-			active := false
 			tokens, err := m.GetAccessTokens()
 			if err != nil {
 				return nil, err
 			}
-			if len(tokens) != 0 {
-				active = true
-			}
+
 			targetDID := m.(*entityrelationship.EntityRelationship).TargetIdentity.String()
 			r := &cliententitypb.Relationship{
 				Identity: targetDID,
-				Active:   active,
+				Active:   len(tokens) != 0,
 			}
 			relationships = append(relationships, r)
 		}
