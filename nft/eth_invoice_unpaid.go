@@ -170,8 +170,8 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 
 	tokenID := NewTokenID()
 	if s.cfg.GetLowEntropyNFTTokenEnabled() {
-		log.Warningf("Security consideration: Using only %d bit for NFT token ID generation. "+
-			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDLength*8)
+		log.Warningf("Security consideration: Using a reduced maximum of %s integer for NFT token ID generation. "+
+			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDMax)
 		tokenID = NewLowEntropyTokenID()
 	}
 

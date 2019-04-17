@@ -213,3 +213,20 @@ func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
 
 	return property, nil
 }
+
+// RandomBigInt returns a random big int that's less than the provided max.
+func RandomBigInt(max string) (*big.Int, error) {
+	m := new(big.Int)
+	_, ok := m.SetString(max, 10)
+	if !ok {
+		return nil, errors.New("probably not a number %s", max)
+	}
+
+	//Generate cryptographically strong pseudo-random between 0 - m
+	n, err := rand.Int(rand.Reader, m)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
