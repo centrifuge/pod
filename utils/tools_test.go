@@ -4,6 +4,7 @@ package utils
 
 import (
 	"encoding/binary"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -250,4 +251,47 @@ func TestAddressTo32Bytes(t *testing.T) {
 func verifyHex(t *testing.T, val string) {
 	_, err := hexutil.Decode(val)
 	assert.Nil(t, err)
+}
+
+func TestRandomBigInt(t *testing.T) {
+	tests := []struct {
+		max   string
+		isErr bool
+	}{
+		{
+			"999",
+			false,
+		},
+		{
+			"150",
+			false,
+		},
+		{
+			"999999999999999",
+			false,
+		},
+		{
+			"10000",
+			false,
+		},
+		{
+			"323hu",
+			true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.max, func(t *testing.T) {
+			for i := 0; i < 100; i++ {
+				n, err := RandomBigInt(test.max)
+				if test.isErr {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+					tt := new(big.Int)
+					tt.SetString(test.max, 10)
+					assert.True(t, n.Cmp(tt) <= 0)
+				}
+			}
+		})
+	}
 }
