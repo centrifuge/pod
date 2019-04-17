@@ -120,11 +120,6 @@ p2p:
   # Timeout when opening connections to peers
   connectTimeout: "30s"
 
-# Peer-to-peer configurations
-p2p:
-  # Timeout when opening connections to peers
-  connectTimeout: "30s"
-
 # Queue configurations for asynchronous processing
 queue:
   # Defines the number of workers/consumers that will be allocated at startup
