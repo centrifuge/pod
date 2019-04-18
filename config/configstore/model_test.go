@@ -392,6 +392,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetNetworkID").Return(uint32(1)).Once()
 	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
+	c.On("IsDebugLogEnabled", mock.Anything).Return(true)
 	c.On("GetLowEntropyNFTTokenEnabled", mock.Anything).Return(true)
 	return c
 }
