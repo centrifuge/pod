@@ -67,11 +67,11 @@ func (s *manager) UpdateTaskStatus(accountID identity.DID, id jobs.JobID, status
 }
 
 // ExecuteWithinJob executes a task within a Job.
-func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingTxID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
-	t, err := s.repo.Get(accountID, existingTxID)
+func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
+	job, err := s.repo.Get(accountID, existingJobID)
 	if err != nil {
-		t = jobs.NewJob(accountID, desc)
-		err := s.saveJob(t)
+		job = jobs.NewJob(accountID, desc)
+		err := s.saveJob(job)
 		if err != nil {
 			return jobs.NilJobID(), nil, err
 		}
@@ -79,46 +79,46 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 	done = make(chan bool)
 	go func(ctx context.Context) {
 		err := make(chan error)
-		go work(accountID, t.ID, s, err)
+		go work(accountID, job.ID, s, err)
 
 		select {
 		case e := <-err:
-			tempTx, err := s.repo.Get(accountID, t.ID)
+			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(e, err)
 				break
 			}
-			// update tx success status only if this wasn't an existing TX.
+			// update job success status only if this wasn't an existing job.
 			// Otherwise it might update an existing tx pending status to success without actually being a success,
 			// It is assumed that status update is already handled per task in that case.
 			// Checking individual task success is upto the transaction manager users.
-			if e == nil && jobs.JobIDEqual(existingTxID, jobs.NilJobID()) {
-				tempTx.Status = jobs.Success
+			if e == nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
+				tempJob.Status = jobs.Success
 			} else if e != nil {
-				tempTx.Logs = append(tempTx.Logs, jobs.NewLog(fmt.Sprintf("%s[%s]", managerLogPrefix, desc), e.Error()))
-				tempTx.Status = jobs.Failed
+				tempJob.Logs = append(tempJob.Logs, jobs.NewLog(fmt.Sprintf("%s[%s]", managerLogPrefix, desc), e.Error()))
+				tempJob.Status = jobs.Failed
 			}
-			e = s.saveJob(tempTx)
+			e = s.saveJob(tempJob)
 			if e != nil {
 				log.Error(e)
 			}
 		case <-ctx.Done():
-			msg := fmt.Sprintf("Job %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.DID, t.Description)
+			msg := fmt.Sprintf("Job %s for account %s with description \"%s\" is stopped because of context close", job.ID.String(), job.DID, job.Description)
 			log.Warningf(msg)
-			tempTx, err := s.repo.Get(accountID, t.ID)
+			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(err)
 				break
 			}
-			tempTx.Logs = append(tempTx.Logs, jobs.NewLog("context closed", msg))
-			e := s.saveJob(tempTx)
+			tempJob.Logs = append(tempJob.Logs, jobs.NewLog("context closed", msg))
+			e := s.saveJob(tempJob)
 			if e != nil {
 				log.Error(e)
 			}
 		}
 		done <- true
 	}(ctx)
-	return t.ID, done, nil
+	return job.ID, done, nil
 }
 
 // saveJob saves the transaction.
@@ -137,8 +137,8 @@ func (s *manager) GetJob(accountID identity.DID, id jobs.JobID) (*jobs.Job, erro
 
 // createJob creates a new job and saves it to the DB.
 func (s *manager) createJob(accountID identity.DID, desc string) (*jobs.Job, error) {
-	tx := jobs.NewJob(accountID, desc)
-	return tx, s.saveJob(tx)
+	job := jobs.NewJob(accountID, desc)
+	return job, s.saveJob(job)
 }
 
 // WaitForJob blocks until job status is moved from pending state.

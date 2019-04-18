@@ -121,14 +121,14 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 }
 
 // InitDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
-func InitDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, txID jobs.JobID) (queue.TaskResult, error) {
+func InitDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, jobID jobs.JobID) (queue.TaskResult, error) {
 	params := map[string]interface{}{
-		jobs.JobIDParam: txID.String(),
+		jobs.JobIDParam: jobID.String(),
 		DocumentIDParam: hexutil.Encode(modelID),
 		AccountIDParam:  accountID.String(),
 	}
 
-	err := jobMan.UpdateTaskStatus(accountID, txID, jobs.Pending, documentAnchorTaskName, "init")
+	err := jobMan.UpdateTaskStatus(accountID, jobID, jobs.Pending, documentAnchorTaskName, "init")
 	if err != nil {
 		return nil, err
 	}
@@ -141,15 +141,15 @@ func InitDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID 
 	return tr, nil
 }
 
-// CreateAnchorTransaction creates a transaction for anchoring a document using transaction manager
-func CreateAnchorTransaction(jobMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
-	jobID, done, err := jobMan.ExecuteWithinJob(context.Background(), self, jobID, "anchor document", func(accountID identity.DID, TID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
-		tr, err := InitDocumentAnchorTask(txMan, tq, accountID, documentID, TID)
+// CreateAnchorJob creates a job for anchoring a document using jobs manager
+func CreateAnchorJob(jobsMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
+	jobID, done, err := jobsMan.ExecuteWithinJob(context.Background(), self, jobID, "anchor document", func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errChan chan<- error) {
+		tr, err := InitDocumentAnchorTask(jobsMan, tq, accountID, documentID, jobID)
 		if err != nil {
 			errChan <- err
 			return
 		}
-		_, err = tr.Get(txMan.GetDefaultTaskTimeout())
+		_, err = tr.Get(jobsMan.GetDefaultTaskTimeout())
 		if err != nil {
 			errChan <- err
 			return

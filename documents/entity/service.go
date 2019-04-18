@@ -167,12 +167,12 @@ func (s service) Create(ctx context.Context, entity documents.Model) (documents.
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, entity.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, entity.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return entity, txID, done, nil
+	return entity, jobID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -192,12 +192,12 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return new, txID, done, nil
+	return new, jobID, done, nil
 }
 
 // DeriveEntityResponse returns create response from entity model
@@ -431,7 +431,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 func (s service) store(ctx context.Context, model documents.Model) error {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	if s.Service.Exists(ctx, model.CurrentVersion()) {
@@ -439,7 +439,6 @@ func (s service) store(ctx context.Context, model documents.Model) error {
 		if err != nil {
 			return errors.NewTypedError(documents.ErrDocumentPersistence, err)
 		}
-
 	} else {
 		err = s.repo.Create(selfDID[:], model.CurrentVersion(), model)
 		if err != nil {

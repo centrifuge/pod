@@ -31,25 +31,25 @@ func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
 	// no error and success
-	tx := jobs.NewJob(accountID, "")
-	assert.NoError(t, task.JobManager.(extendedManager).saveJob(tx))
-	task.JobID = tx.ID
+	job := jobs.NewJob(accountID, "")
+	assert.NoError(t, task.JobManager.(extendedManager).saveJob(job))
+	task.JobID = job.ID
 	assert.NoError(t, task.UpdateJob(accountID, name, nil))
-	tx, err = task.JobManager.GetJob(accountID, task.JobID)
+	job, err = task.JobManager.GetJob(accountID, task.JobID)
 	assert.NoError(t, err)
-	assert.Equal(t, tx.Status, jobs.Pending)
-	assert.Equal(t, tx.TaskStatus[name], jobs.Success)
-	assert.Len(t, tx.Logs, 1)
+	assert.Equal(t, job.Status, jobs.Pending)
+	assert.Equal(t, job.TaskStatus[name], jobs.Success)
+	assert.Len(t, job.Logs, 1)
 
 	// failed task
-	tx = jobs.NewJob(accountID, "")
-	assert.NoError(t, task.JobManager.(extendedManager).saveJob(tx))
-	task.JobID = tx.ID
+	job = jobs.NewJob(accountID, "")
+	assert.NoError(t, task.JobManager.(extendedManager).saveJob(job))
+	task.JobID = job.ID
 	err = task.UpdateJob(accountID, name, errors.New("anchor error"))
 	assert.EqualError(t, errors.GetErrs(err)[0], "anchor error")
-	tx, err = task.JobManager.GetJob(accountID, task.JobID)
+	job, err = task.JobManager.GetJob(accountID, task.JobID)
 	assert.NoError(t, err)
-	assert.Equal(t, tx.Status, jobs.Pending)
-	assert.Equal(t, tx.TaskStatus[name], jobs.Failed)
-	assert.Len(t, tx.Logs, 1)
+	assert.Equal(t, job.Status, jobs.Pending)
+	assert.Equal(t, job.TaskStatus[name], jobs.Failed)
+	assert.Len(t, job.Logs, 1)
 }

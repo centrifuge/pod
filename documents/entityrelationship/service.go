@@ -137,12 +137,12 @@ func (s service) Create(ctx context.Context, relationship documents.Model) (docu
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, relationship.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, relationship.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return relationship, txID, done, nil
+	return relationship, jobID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -163,12 +163,12 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, updated.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, updated.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return updated, txID, done, nil
+	return updated, jobID, done, nil
 }
 
 // DeriveEntityRelationshipResponse returns create response from entity relationship model

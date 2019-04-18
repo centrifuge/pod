@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var cfg config.Configuration
 var ctx = map[string]interface{}{}
 
 func TestMain(m *testing.M) {
@@ -44,7 +43,6 @@ func TestMain(m *testing.M) {
 	}
 
 	bootstrap.RunTestBootstrappers(bootstrappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	result := m.Run()
 	bootstrap.RunTestTeardown(bootstrappers)
 	os.Exit(result)

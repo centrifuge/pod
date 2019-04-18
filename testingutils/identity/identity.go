@@ -38,7 +38,10 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 		return identity.DID{}, err
 	}
 	ctx, cancel1 := defaultWaitForTransactionMiningContext(contextTimeout)
-	ctxh, _ = contextutil.New(ctx, acc)
+	ctxh, err = contextutil.New(ctx, acc)
+	if err != nil {
+		return identity.DID{}, err
+	}
 	defer cancel1()
 	if err != nil || len(keys) == 0 {
 		pk, _ := utils.SliceToByte32(idKeys[identity.KeyPurposeAction.Name].PublicKey)

@@ -38,7 +38,8 @@ func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &mockInvoiceUnpaid{}
 	mockConfigStore := mockmockConfigStore()
-	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
+	docID, err := hexutil.Decode(nftMintRequest.Identifier)
+	assert.NoError(t, err)
 
 	tokID := big.NewInt(1)
 	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
@@ -50,7 +51,7 @@ func TestNFTMint_success(t *testing.T) {
 	}
 	mockService.On("MintNFT", mock.Anything, req).Return(nftResponse, nil)
 	handler := grpcHandler{mockConfigStore, mockService}
-	_, err := handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
+	_, err = handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
 	mockService.AssertExpectations(t)
 	assert.Nil(t, err, "mint nft should be successful")
 }
@@ -119,7 +120,8 @@ func TestNFTMint_InvalidIdentifier(t *testing.T) {
 func TestNFTMint_ServiceError(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &mockInvoiceUnpaid{}
-	docID, _ := hexutil.Decode(nftMintRequest.Identifier)
+	docID, err := hexutil.Decode(nftMintRequest.Identifier)
+	assert.NoError(t, err)
 	req := MintNFTRequest{
 		DocumentID:      docID,
 		RegistryAddress: common.HexToAddress(nftMintRequest.RegistryAddress),
@@ -130,7 +132,7 @@ func TestNFTMint_ServiceError(t *testing.T) {
 	mockService.On("MintNFT", mock.Anything, req).Return(nil, errors.New("service error"))
 	mockConfigStore := mockmockConfigStore()
 	handler := grpcHandler{mockConfigStore, mockService}
-	_, err := handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
+	_, err = handler.MintNFT(testingconfig.HandlerContext(mockConfigStore), nftMintRequest)
 	mockService.AssertExpectations(t)
 	assert.NotNil(t, err)
 }

@@ -146,14 +146,14 @@ func TestGrpcHandler_Create(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(Entity)
-	txID := jobs.NewJobID()
+	jobID := jobs.NewJobID()
 	payload := &cliententitypb.EntityCreatePayload{
 		Data:        &cliententitypb.EntityData{LegalName: "test company"},
 		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{"0x010203040506"}},
 	}
 	response := &cliententitypb.EntityResponse{Header: &documentpb.ResponseHeader{}}
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()
+	srv.On("Create", mock.Anything, mock.Anything).Return(model, jobID.String(), nil).Once()
 	srv.On("DeriveEntityResponse", mock.Anything, model).Return(response, nil)
 	res, err := h.Create(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
@@ -166,14 +166,14 @@ func TestGrpcHandler_Share(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := &mockModel{}
-	txID := jobs.NewJobID()
+	jobID := jobs.NewJobID()
 	payload := &cliententitypb.RelationshipPayload{
 		Identifier:     "0x010203",
 		TargetIdentity: "some DID",
 	}
 	response := &cliententitypb.RelationshipResponse{Header: &documentpb.ResponseHeader{}}
 	srv.On("DeriveFromSharePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("Share", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()
+	srv.On("Share", mock.Anything, mock.Anything).Return(model, jobID.String(), nil).Once()
 	srv.On("DeriveEntityRelationshipResponse", model).Return(response, nil)
 	res, err := h.Share(testingconfig.HandlerContext(configService), payload)
 	srv.AssertExpectations(t)
@@ -184,7 +184,8 @@ func TestGrpcHandler_Share(t *testing.T) {
 
 func TestGrpcHandler_Get_invalid_input(t *testing.T) {
 	identifier := "0x01010101"
-	identifierBytes, _ := hexutil.Decode(identifier)
+	identifierBytes, err := hexutil.Decode(identifier)
+	assert.NoError(t, err)
 	h := getHandler()
 	srv := h.service.(*mockService)
 	payload := &cliententitypb.GetRequest{Identifier: "invalid"}
@@ -203,7 +204,8 @@ func TestGrpcHandler_Get_invalid_input(t *testing.T) {
 
 func TestGrpcHandler_Get(t *testing.T) {
 	identifier := "0x01010101"
-	identifierBytes, _ := hexutil.Decode(identifier)
+	identifierBytes, err := hexutil.Decode(identifier)
+	assert.NoError(t, err)
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(mockModel)
@@ -273,7 +275,7 @@ func TestGrpcHandler_Update_derive_fail(t *testing.T) {
 func TestGrpcHandler_Update_update_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := &mockModel{}
+	model := new(mockModel)
 	ctx := testingconfig.HandlerContext(configService)
 	payload := &cliententitypb.EntityUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
@@ -288,7 +290,7 @@ func TestGrpcHandler_Update_update_fail(t *testing.T) {
 func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := &mockModel{}
+	model := new(mockModel)
 	ctx := testingconfig.HandlerContext(configService)
 	payload := &cliententitypb.EntityUpdatePayload{Identifier: "0x010201"}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
@@ -304,13 +306,13 @@ func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
 func TestGrpcHandler_Update(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := &mockModel{}
+	model := new(mockModel)
 	ctx := testingconfig.HandlerContext(configService)
-	txID := jobs.NewJobID()
+	jobID := jobs.NewJobID()
 	payload := &cliententitypb.EntityUpdatePayload{Identifier: "0x010201"}
 	resp := &cliententitypb.EntityResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(model, txID.String(), nil).Once()
+	srv.On("Update", mock.Anything, model).Return(model, jobID.String(), nil).Once()
 	srv.On("DeriveEntityResponse", mock.Anything, model).Return(resp, nil).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)
@@ -321,13 +323,13 @@ func TestGrpcHandler_Update(t *testing.T) {
 func TestGrpcHandler_Revoke(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	model := &mockModel{}
+	model := new(mockModel)
 	ctx := testingconfig.HandlerContext(configService)
-	txID := jobs.NewJobID()
+	jobID := jobs.NewJobID()
 	payload := &cliententitypb.RelationshipPayload{Identifier: "0x010201", TargetIdentity: "some DID"}
 	resp := &cliententitypb.RelationshipResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromRevokePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Revoke", mock.Anything, model).Return(model, txID.String(), nil).Once()
+	srv.On("Revoke", mock.Anything, model).Return(model, jobID.String(), nil).Once()
 	srv.On("DeriveEntityRelationshipResponse", model).Return(resp, nil).Once()
 	res, err := h.Revoke(ctx, payload)
 	srv.AssertExpectations(t)

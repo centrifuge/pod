@@ -107,12 +107,12 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, po.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, nil
 	}
-	return po, txID, done, nil
+	return po, jobID, done, nil
 }
 
 // Update validates, persists, and anchors a new version of purchase order
@@ -132,12 +132,12 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return new, txID, done, nil
+	return new, jobID, done, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
