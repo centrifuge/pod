@@ -141,9 +141,9 @@ func InitDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID 
 	return tr, nil
 }
 
-// CreateAnchorTransaction creates a transaction for anchoring a document using transaction manager
-func CreateAnchorTransaction(jobMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
-	jobID, done, err := jobMan.ExecuteWithinJob(context.Background(), self, jobID, "anchor document", func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errChan chan<- error) {
+// CreateAnchorJob creates a job for anchoring a document using jobs manager
+func CreateAnchorJob(jobsMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
+	jobID, done, err := jobsMan.ExecuteWithinJob(context.Background(), self, jobID, "anchor document", func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errChan chan<- error) {
 		tr, err := InitDocumentAnchorTask(jobsMan, tq, accountID, documentID, jobID)
 		if err != nil {
 			errChan <- err

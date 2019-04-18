@@ -128,7 +128,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 	}
 
 	jobID := contextutil.Job(ctx)
-	jobID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, jobID, inv.CurrentVersion())
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, inv.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -153,7 +153,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 	}
 
 	jobID := contextutil.Job(ctx)
-	jobID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
+	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

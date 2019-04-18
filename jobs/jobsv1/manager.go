@@ -67,8 +67,8 @@ func (s *manager) UpdateTaskStatus(accountID identity.DID, id jobs.JobID, status
 }
 
 // ExecuteWithinJob executes a task within a Job.
-func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingTxID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
-	job, err := s.repo.Get(accountID, existingTxID)
+func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
+	job, err := s.repo.Get(accountID, existingJobID)
 	if err != nil {
 		job = jobs.NewJob(accountID, desc)
 		err := s.saveJob(job)
@@ -92,7 +92,7 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			// Otherwise it might update an existing tx pending status to success without actually being a success,
 			// It is assumed that status update is already handled per task in that case.
 			// Checking individual task success is upto the transaction manager users.
-			if e == nil && jobs.JobIDEqual(existingTxID, jobs.NilJobID()) {
+			if e == nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
 				tempJob.Status = jobs.Success
 			} else if e != nil {
 				tempJob.Logs = append(tempJob.Logs, jobs.NewLog(fmt.Sprintf("%s[%s]", managerLogPrefix, desc), e.Error()))

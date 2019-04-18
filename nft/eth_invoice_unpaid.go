@@ -46,7 +46,7 @@ type ethInvoiceUnpaid struct {
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error)
-	txManager       jobs.Manager
+	jobsManager     jobs.Manager
 	blockHeightFunc func() (height uint64, err error)
 }
 
@@ -67,7 +67,7 @@ func newEthInvoiceUnpaid(
 		bindContract:    bindContract,
 		queue:           queue,
 		docSrv:          docSrv,
-		txManager:       jobsMan,
+		jobsManager:     jobsMan,
 		blockHeightFunc: blockHeightFunc,
 	}
 }
@@ -199,7 +199,7 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	if err != nil {
 		return nil, nil, err
 	}
-	jobID, done, err := s.txManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
+	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err
