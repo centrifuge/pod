@@ -246,7 +246,7 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
 func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan bool, err error) {
-	jobId := contextutil.Job(ctx)
+	jobID := contextutil.Job(ctx)
 	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return jobs.NilJobID(), nil, err
@@ -259,7 +259,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte,
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	return i.jobManager.ExecuteWithinJob(context.Background(), did, jobId, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	return i.jobManager.ExecuteWithinJob(context.Background(), did, jobID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
