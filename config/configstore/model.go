@@ -61,6 +61,7 @@ type NodeConfig struct {
 	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
 	LowEntropyNFTTokenEnabled      bool
+	DebugLogEnabled                bool
 }
 
 // IsSet refer the interface
@@ -278,6 +279,11 @@ func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
 }
 
+// IsDebugLogEnabled refer the interface
+func (nc *NodeConfig) IsDebugLogEnabled() bool {
+	return nc.DebugLogEnabled
+}
+
 // ID Gets the ID of the document represented by this model
 func (nc *NodeConfig) ID() ([]byte, error) {
 	return []byte{}, nil
@@ -296,42 +302,6 @@ func (nc *NodeConfig) JSON() ([]byte, error) {
 // FromJSON initialize the model with a json
 func (nc *NodeConfig) FromJSON(data []byte) error {
 	return json.Unmarshal(data, nc)
-}
-
-func convertAddressesToStringMap(addresses map[config.ContractName]common.Address) map[string]string {
-	m := make(map[string]string)
-	for k, v := range addresses {
-		m[string(k)] = v.String()
-	}
-	return m
-}
-
-func convertBytecodeToStringMap(bcode map[config.ContractName]string) map[string]string {
-	m := make(map[string]string)
-	for k, v := range bcode {
-		m[string(k)] = v
-	}
-	return m
-}
-
-func convertStringMapToSmartContractAddresses(addrs map[string]string) (map[config.ContractName]common.Address, error) {
-	m := make(map[config.ContractName]common.Address)
-	for k, v := range addrs {
-		if common.IsHexAddress(v) {
-			m[config.ContractName(k)] = common.HexToAddress(v)
-		} else {
-			return nil, errors.New("provided smart contract address %s is invalid", v)
-		}
-	}
-	return m, nil
-}
-
-func convertStringMapToSmartContractBytecode(bcode map[string]string) (map[config.ContractName]string, error) {
-	m := make(map[config.ContractName]string)
-	for k, v := range bcode {
-		m[config.ContractName(k)] = v
-	}
-	return m, nil
 }
 
 // NewNodeConfig creates a new NodeConfig instance with configs
@@ -382,6 +352,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		NetworkID:                      c.GetNetworkID(),
 		SmartContractAddresses:         extractSmartContractAddresses(c),
 		PprofEnabled:                   c.IsPProfEnabled(),
+		DebugLogEnabled:                c.IsDebugLogEnabled(),
 		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
 	}
 }

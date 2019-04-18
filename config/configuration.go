@@ -145,6 +145,7 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
+	IsDebugLogEnabled() bool
 }
 
 // Account exposes account options
@@ -443,6 +444,11 @@ func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
+}
+
+// IsDebugLogEnabled returns true if the debug logging is enabled
+func (c *configuration) IsDebugLogEnabled() bool {
+	return c.GetBool("debug.log")
 }
 
 // GetPrecommitEnabled returns true if precommit for anchors is enabled
