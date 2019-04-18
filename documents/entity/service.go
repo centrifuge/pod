@@ -431,7 +431,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 func (s service) store(ctx context.Context, model documents.Model) error {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	if s.Service.Exists(ctx, model.CurrentVersion()) {
