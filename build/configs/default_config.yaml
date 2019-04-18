@@ -159,6 +159,8 @@ ethereum:
 
 # any debugging config will go here
 debug:
+  # enable debug logging
+  log: false
   # pprof for debugging
   pprof: false
 
