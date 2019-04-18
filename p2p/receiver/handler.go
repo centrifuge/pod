@@ -56,12 +56,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	DID, err := p2pcommon.ExtractDID(protoc)
+	did, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetAccount(DID[:])
+	tc, err := srv.config.GetAccount(did[:])
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -201,12 +201,12 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	requesterCentID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	requesterDID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.GetDocument(ctx, m, requesterCentID)
+	res, err := srv.GetDocument(ctx, m, requesterDID)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}

@@ -43,7 +43,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
-		return errors.New("transaction service not initialised")
+		return errors.New("job manager service not initialised")
 	}
 
 	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)

@@ -316,7 +316,6 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	var currentVersion []byte
 
 	nonExistingVersion := utils.RandomSlice(32)
-
 	for i := 0; i < amountVersions; i++ {
 
 		var next []byte
@@ -343,7 +342,6 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
-
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
@@ -406,7 +404,6 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 
 	_, err = service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.Nil(t, err)
-
 }
 
 func TestService_GetVersion_error(t *testing.T) {
@@ -443,14 +440,16 @@ func TestService_GetVersion_error(t *testing.T) {
 }
 
 func testRepo() documents.Repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-		testRepoGlobal.Register(&invoice.Invoice{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+	testRepoGlobal.Register(&invoice.Invoice{})
 	return testRepoGlobal
 }
 

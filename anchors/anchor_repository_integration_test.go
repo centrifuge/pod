@@ -38,7 +38,6 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 	t.Parallel()
 	anchorID := utils.RandomSlice(32)
 	signingRoot := utils.RandomSlice(32)
-
 	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
 	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
@@ -110,11 +109,8 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProof [32
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProof)
-
 	isDone := <-done
-
 	assert.True(t, isDone, "isDone should be true")
-
 	assert.Nil(t, err)
 }
 
@@ -125,9 +121,7 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	done, err := anchorRepo.PreCommitAnchor(ctx, anchorIDTyped, docRootTyped)
-
 	isDone := <-done
-
 	assert.True(t, isDone, "isDone should be true")
 	assert.Nil(t, err)
 }

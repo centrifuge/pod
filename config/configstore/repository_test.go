@@ -48,19 +48,21 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewLevelDBRepository(t *testing.T) {
-	repo, _, _ := getRandomStorage()
+	repo, _, err := getRandomStorage()
+	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 }
 
 func TestUnregisteredModel(t *testing.T) {
-	repo, _, _ := getRandomStorage()
+	repo, _, err := getRandomStorage()
+	assert.NoError(t, err)
 	assert.NotNil(t, repo)
 	id := utils.RandomSlice(32)
 	newaccount := &Account{
 		IdentityID:                 id,
 		EthereumDefaultAccountName: "main",
 	}
-	err := repo.CreateAccount(id, newaccount)
+	err = repo.CreateAccount(id, newaccount)
 	assert.Nil(t, err)
 
 	// Error on non registered model

@@ -46,8 +46,8 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
 			errOut <- err
@@ -58,7 +58,7 @@ func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DI
 		log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
 		log.Infof("Transfer pending: 0x%x\n", ethTX.Hash())
 
-		res, err := ethereum.QueueEthTXStatusTaskWithValue(accountID, txID, ethTX.Hash(), s.queue, &jobs.JobValue{Key: identityCreatedEventName, KeyIdx: 0})
+		res, err := ethereum.QueueEthTXStatusTaskWithValue(accountID, jobID, ethTX.Hash(), s.queue, &jobs.JobValue{Key: identityCreatedEventName, KeyIdx: 0})
 		if err != nil {
 			errOut <- err
 			return
@@ -129,7 +129,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 
 	createdDID := id.NewDID(*calcIdentityAddress)
 
-	txID, done, err := s.jobManager.ExecuteWithinJob(context.Background(), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
+	jobID, done, err := s.jobManager.ExecuteWithinJob(context.Background(), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +137,10 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return nil, errors.New("Create Identity Job failed: txID:%s", txID.String())
+		return nil, errors.New("Create Identity Job failed: jobID:%s", jobID.String())
 	}
 
-	tx, err := s.jobManager.GetJob(createdDID, txID)
+	tx, err := s.jobManager.GetJob(createdDID, jobID)
 	if err != nil {
 		return nil, err
 	}

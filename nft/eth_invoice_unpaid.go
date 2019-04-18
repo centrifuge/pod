@@ -58,7 +58,7 @@ func newEthInvoiceUnpaid(
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
-	txManager jobs.Manager,
+	jobsMan jobs.Manager,
 	blockHeightFunc func() (uint64, error)) *ethInvoiceUnpaid {
 	return &ethInvoiceUnpaid{
 		cfg:             cfg,
@@ -67,7 +67,7 @@ func newEthInvoiceUnpaid(
 		bindContract:    bindContract,
 		queue:           queue,
 		docSrv:          docSrv,
-		txManager:       txManager,
+		txManager:       jobsMan,
 		blockHeightFunc: blockHeightFunc,
 	}
 }
@@ -120,7 +120,11 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, err
 	}
 
-	proof, _ := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	if err != nil {
+		return mreq, err
+	}
+
 	log.Debug(json.MarshalIndent(proof, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
@@ -153,7 +157,6 @@ func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Conte
 	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
 	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
-
 	return proofFields, nil
 }
 
@@ -196,28 +199,28 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	if err != nil {
 		return nil, nil, err
 	}
-	txID, done, err := s.txManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
+	jobID, done, err := s.txManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return &MintNFTResponse{
-		JobID:   txID.String(),
+		JobID:   jobID.String(),
 		TokenID: tokenID.String(),
 	}, done, nil
 }
 
 func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		txctx := contextutil.WithJob(ctx, txID)
-		_, _, done, err := s.docSrv.Update(txctx, model)
+		jobCtx := contextutil.WithJob(ctx, jobID)
+		_, _, done, err := s.docSrv.Update(jobCtx, model)
 		if err != nil {
 			errOut <- err
 			return
@@ -226,18 +229,18 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 		isDone := <-done
 		if !isDone {
 			// some problem occurred in a child task
-			errOut <- errors.New("update document failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
+			errOut <- errors.New("update document failed for document %s and job %s", hexutil.Encode(req.DocumentID), jobID)
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(txctx, tokenID, accountID, req)
+		requestData, err := s.prepareMintRequest(jobCtx, tokenID, accountID, req)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
 		}
 
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-		utxID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, InvoiceUnpaidContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, InvoiceUnpaidContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
@@ -257,7 +260,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 		isDone = <-done
 		if !isDone {
 			// some problem occurred in a child task
-			errOut <- errors.New("mint nft failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), utxID)
+			errOut <- errors.New("mint nft failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
 			return
 		}
 
@@ -272,7 +275,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 			return
 		}
 
-		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), utxID)
+		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), txID)
 
 		errOut <- nil
 		return

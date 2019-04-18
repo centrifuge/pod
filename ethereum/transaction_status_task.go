@@ -197,11 +197,11 @@ func (tst *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, t
 
 // RunTask calls listens to events from geth related to MintingConfirmationTask#TokenID and records result.
 func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
-	var txValue *jobs.JobValue
+	var jobValue *jobs.JobValue
 	ctx, cancelF := tst.ethContextInitializer(tst.timeout)
 	defer cancelF()
 	defer func() {
-		err = tst.UpdateJobWithValue(tst.accountID, tst.TaskTypeName(), err, txValue)
+		err = tst.UpdateJobWithValue(tst.accountID, tst.TaskTypeName(), err, jobValue)
 	}()
 
 	_, isPending, err := tst.transactionByHash(ctx, common.HexToHash(tst.txHash))
@@ -232,7 +232,7 @@ func (tst *TransactionStatusTask) RunTask() (resp interface{}, err error) {
 			return nil, err
 		}
 		log.Infof("Value [%x] found for Event [%s]\n", v, tst.eventName)
-		txValue = &jobs.JobValue{Key: tst.eventName, Value: v}
+		jobValue = &jobs.JobValue{Key: tst.eventName, Value: v}
 	}
 
 	return nil, nil

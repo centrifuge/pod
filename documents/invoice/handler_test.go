@@ -270,11 +270,11 @@ func TestGrpcHandler_Update(t *testing.T) {
 	srv := h.service.(*mockService)
 	model := &mockModel{}
 	ctx := testingconfig.HandlerContext(configService)
-	txID := jobs.NewJobID()
+	jobID := jobs.NewJobID()
 	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "0x010201"}
 	resp := &clientinvoicepb.InvoiceResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(model, txID.String(), nil).Once()
+	srv.On("Update", mock.Anything, model).Return(model, jobID.String(), nil).Once()
 	srv.On("DeriveInvoiceResponse", model).Return(resp, nil).Once()
 	res, err := h.Update(ctx, payload)
 	srv.AssertExpectations(t)

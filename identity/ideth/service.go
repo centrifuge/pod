@@ -119,19 +119,19 @@ func logTxHash(tx *types.Transaction) {
 
 // AddKey adds a key to identity contract
 func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
-	DID, err := NewDIDFromContext(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return err
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
-	log.Info("Add key to identity contract %s", DID.ToAddress().String())
-	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for add key",
+	log.Info("Add key to identity contract %s", did.ToAddress().String())
+	jobID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Check Job for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key  Job failed: txID:%s", txID.String())
+		return errors.New("add key  Job failed: jobID:%s", jobID.String())
 
 	}
 	return nil
@@ -149,18 +149,18 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 
 // AddMultiPurposeKey adds a key with multiple purposes
 func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
-	DID, err := NewDIDFromContext(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return err
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
-	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for add multi purpose key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Check Job for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key multi purpose  Job failed: txID:%s", txID.String())
+		return errors.New("add key multi purpose  Job failed: jobID:%s", jobID.String())
 
 	}
 	return nil
@@ -177,18 +177,18 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 
 // RevokeKey revokes an existing key in the smart contract
 func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
-	DID, err := NewDIDFromContext(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return err
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevokeKey)
-	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for revoke key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Check Job for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -197,9 +197,9 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("revoke key Job failed: txID:%s", txID.String())
-
+		return errors.New("revoke key Job failed: jobID:%s", jobID.String())
 	}
+
 	return nil
 }
 
@@ -236,24 +236,22 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 	}
 
 	result, err := contract.GetKey(opts, key)
-
 	if err != nil {
 		return nil, errors.New("Could not call identity contract: %v", err)
 	}
 
-	return &id.KeyResponse{result.Key, result.Purposes, result.RevokedAt}, nil
-
+	return &id.KeyResponse{Key: result.Key, Purposes: result.Purposes, RevokedAt: result.RevokedAt}, nil
 }
 
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
 func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan bool, err error) {
-	utxID := contextutil.Job(ctx)
-	DID, err := NewDIDFromContext(ctx)
+	jobId := contextutil.Job(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
@@ -261,7 +259,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte,
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	return i.jobManager.ExecuteWithinJob(context.Background(), DID, utxID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	return i.jobManager.ExecuteWithinJob(context.Background(), did, jobId, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract

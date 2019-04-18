@@ -45,7 +45,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	InvoiceUnpaidService, ok := nodeObjReg[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
+	invoiceUnpaidService, ok := nodeObjReg[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	if !ok {
 		return errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
 	}
@@ -64,7 +64,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// register other api endpoints
-	err = registerAPIs(ctx, cfg, InvoiceUnpaidService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
+	err = registerAPIs(ctx, cfg, invoiceUnpaidService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
@@ -97,8 +97,8 @@ func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.Invo
 	}
 
 	// transactions
-	txSrv := nodeObjReg[jobs.BootstrappedService].(jobs.Manager)
-	h := jobsv1.GRPCHandler(txSrv, configService)
+	jobsMan := nodeObjReg[jobs.BootstrappedService].(jobs.Manager)
+	h := jobsv1.GRPCHandler(jobsMan, configService)
 	jobspb.RegisterJobServiceServer(grpcServer, h)
 	return jobspb.RegisterJobServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }

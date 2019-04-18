@@ -39,33 +39,33 @@ func TestMain(m *testing.M) {
 }
 
 func Test_getKey(t *testing.T) {
-	cid := testingidentity.GenerateRandomDID()
+	did := testingidentity.GenerateRandomDID()
 	id := jobs.NilJobID()
 
 	// empty id
-	key, err := getKey(cid, id)
+	key, err := getKey(did, id)
 	assert.Nil(t, key)
 	assert.Equal(t, "job ID is not valid", err.Error())
 
 	id = jobs.NewJobID()
-	key, err = getKey(cid, id)
+	key, err = getKey(did, id)
 	assert.Nil(t, err)
-	assert.Equal(t, append(cid[:], id.Bytes()...), key)
+	assert.Equal(t, append(did[:], id.Bytes()...), key)
 }
 
 func TestRepository(t *testing.T) {
-	cid := testingidentity.GenerateRandomDID()
+	did := testingidentity.GenerateRandomDID()
 	bytes := utils.RandomSlice(identity.DIDLength)
-	assert.Equal(t, identity.DIDLength, copy(cid[:], bytes))
+	assert.Equal(t, identity.DIDLength, copy(did[:], bytes))
 
 	repo := ctx[jobs.BootstrappedRepo].(jobs.Repository)
-	tx := jobs.NewJob(cid, "Some transaction")
+	tx := jobs.NewJob(did, "Some transaction")
 	assert.NotNil(t, tx.ID)
 	assert.NotNil(t, tx.DID)
 	assert.Equal(t, jobs.Pending, tx.Status)
 
 	// get tx from repo
-	_, err := repo.Get(cid, tx.ID)
+	_, err := repo.Get(did, tx.ID)
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
 	// save tx into repo
@@ -74,9 +74,9 @@ func TestRepository(t *testing.T) {
 	assert.Nil(t, err)
 
 	// get tx back
-	tx, err = repo.Get(cid, tx.ID)
+	tx, err = repo.Get(did, tx.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tx)
-	assert.Equal(t, cid, tx.DID)
+	assert.Equal(t, did, tx.DID)
 	assert.Equal(t, jobs.Success, tx.Status)
 }

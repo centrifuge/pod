@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	cid         = testingidentity.GenerateRandomDID()
-	centIDBytes = cid[:]
-	accountID   = cid[:]
+	did       = testingidentity.GenerateRandomDID()
+	didBytes  = did[:]
+	accountID = did[:]
 )
 
 type mockAnchorRepo struct {
@@ -47,7 +47,7 @@ func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot ancho
 
 func getServiceWithMockedLayers() (testingcommons.MockIdentityService, Service) {
 	c := &testingconfig.MockConfig{}
-	c.On("GetIdentityID").Return(centIDBytes, nil)
+	c.On("GetIdentityID").Return(didBytes, nil)
 	idService := testingcommons.MockIdentityService{}
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
@@ -287,7 +287,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	payload := testingdocuments.CreateInvoicePayload()
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, cid.String())
+	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -379,20 +379,22 @@ func TestService_calculateDataRoot(t *testing.T) {
 var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-		testRepoGlobal.Register(&Invoice{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+	testRepoGlobal.Register(&Invoice{})
 	return testRepoGlobal
 }
 
 func createCDWithEmbeddedInvoice(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(Invoice)
-	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), cid)
+	err := i.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), did)
 	assert.NoError(t, err)
 	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()

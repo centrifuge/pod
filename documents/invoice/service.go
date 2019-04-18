@@ -127,12 +127,12 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, inv.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, jobID, inv.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return inv, txID, done, nil
+	return inv, jobID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -152,12 +152,12 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return new, txID, done, nil
+	return new, jobID, done, nil
 }
 
 // DeriveInvoiceResponse returns create response from invoice model

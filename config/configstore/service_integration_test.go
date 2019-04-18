@@ -41,7 +41,8 @@ func TestMain(m *testing.M) {
 func TestService_GenerateAccountHappy(t *testing.T) {
 	tct, err := cfgSvc.GenerateAccount()
 	assert.NoError(t, err)
-	i, _ := tct.GetIdentityID()
+	i, err := tct.GetIdentityID()
+	assert.NoError(t, err)
 	tc, err := cfgSvc.GetAccount(i)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc)

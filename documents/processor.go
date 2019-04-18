@@ -109,7 +109,6 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	}
 
 	model.AppendSignatures(sig)
-
 	return nil
 }
 
@@ -164,7 +163,6 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
 
 	isDone := <-done
-
 	if !isDone {
 		return errors.New("failed to pre-commit anchor: %v", err)
 	}

@@ -336,18 +336,20 @@ var testRepoGlobal repository
 var testDocRepoGlobal documents.Repository
 
 func testEntityRepo() repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		db := leveldb.NewLevelDBRepository(ldb)
-		if testDocRepoGlobal == nil {
-			testDocRepoGlobal = documents.NewDBRepository(db)
-		}
-		testRepoGlobal = newDBRepository(db, testDocRepoGlobal)
-		testRepoGlobal.Register(&EntityRelationship{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	db := leveldb.NewLevelDBRepository(ldb)
+	if testDocRepoGlobal == nil {
+		testDocRepoGlobal = documents.NewDBRepository(db)
+	}
+	testRepoGlobal = newDBRepository(db, testDocRepoGlobal)
+	testRepoGlobal.Register(&EntityRelationship{})
 	return testRepoGlobal
 }
 

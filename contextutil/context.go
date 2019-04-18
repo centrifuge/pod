@@ -21,7 +21,7 @@ const (
 
 	self = contextKey("self")
 
-	tx = contextKey("tx")
+	job = contextKey("job")
 )
 
 // New creates new instance of the request headers.
@@ -31,16 +31,16 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 
 // WithJob returns a context with Job ID
 func WithJob(ctx context.Context, jobID jobs.JobID) context.Context {
-	return context.WithValue(ctx, tx, jobID)
+	return context.WithValue(ctx, job, jobID)
 }
 
 // Job returns current jobID
 func Job(ctx context.Context) jobs.JobID {
-	tid, ok := ctx.Value(tx).(jobs.JobID)
+	jobID, ok := ctx.Value(job).(jobs.JobID)
 	if !ok {
 		return jobs.NilJobID()
 	}
-	return tid
+	return jobID
 }
 
 // AccountDID extracts the AccountConfig DID from the given context value

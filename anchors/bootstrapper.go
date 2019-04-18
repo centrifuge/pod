@@ -36,9 +36,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobsMan, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
-		return errors.New("transactions repository not initialised")
+		return errors.New("jobs repository not initialised")
 	}
 
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
@@ -46,7 +46,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	repo := newService(cfg, repositoryContract, queueSrv, client, txManager)
+	repo := newService(cfg, repositoryContract, queueSrv, client, jobsMan)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	return nil

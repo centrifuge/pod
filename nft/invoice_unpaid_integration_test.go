@@ -35,7 +35,7 @@ var cfg config.Configuration
 var cfgService config.Service
 var idService identity.ServiceDID
 var idFactory identity.Factory
-var InvoiceUnpaid nft.InvoiceUnpaid
+var invoiceUnpaid nft.InvoiceUnpaid
 var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
 
@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	InvoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
+	invoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	result := m.Run()
@@ -108,15 +108,15 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 }
 
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
-	resp, done, err := InvoiceUnpaid.MintNFT(ctx, req)
+	resp, done, err := invoiceUnpaid.MintNFT(ctx, req)
 	assert.NoError(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
 	assert.NoError(t, err, "should not error out when getting tokenID hex")
 	<-done
-	txID, err := jobs.FromString(resp.JobID)
+	jobID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
-	assert.NoError(t, jobManager.WaitForJob(cid, txID))
+	assert.NoError(t, jobManager.WaitForJob(cid, jobID))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, req.DepositAddress, owner)
@@ -158,7 +158,7 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 	assert.Equal(t, enft, newNFT)
 
 	// try to mint the NFT again
-	_, _, err = InvoiceUnpaid.MintNFT(ctx, req)
+	_, _, err = invoiceUnpaid.MintNFT(ctx, req)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
@@ -174,7 +174,7 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 		SubmitNFTReadAccessProof: nftReadAccess,
 	}
 
-	_, _, err := InvoiceUnpaid.MintNFT(ctx, req)
+	_, _, err := invoiceUnpaid.MintNFT(ctx, req)
 	assert.Error(t, err)
 	if !nftReadAccess {
 		assert.True(t, errors.IsOfType(documents.ErrNFTRoleMissing, err))

@@ -36,8 +36,7 @@ func Execute() {
 	gologging.SetBackend(backend)
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Error(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 

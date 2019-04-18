@@ -48,7 +48,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	InvoiceUnpaid := newEthInvoiceUnpaid(
+	invoiceUnpaid := newEthInvoiceUnpaid(
 		cfg,
 		idService,
 		client,
@@ -63,6 +63,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = InvoiceUnpaid
+	ctx[bootstrap.BootstrappedInvoiceUnpaid] = invoiceUnpaid
 	return nil
 }
