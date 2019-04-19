@@ -620,7 +620,7 @@ func TestCoreDocument_AddAttribute(t *testing.T) {
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
 	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
 	assert.NoError(t, err)
-	err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
+	cd, err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
 	assert.NoError(t, err)
 	assert.True(t, len(cd.Attributes) == 1)
 
@@ -628,7 +628,7 @@ func TestCoreDocument_AddAttribute(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(hashedKey) > 0)
 	assert.Equal(t, attrType, StrType.String())
-	assert.Equal(t, val, "100")
+	assert.Equal(t, "100", val)
 
 	// TODO add tests for each type + failures, once converters are ready
 }

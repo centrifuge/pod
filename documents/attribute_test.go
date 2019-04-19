@@ -18,7 +18,7 @@ func TestNewAttribute(t *testing.T) {
 	tests := []struct {
 		name        string
 		readableKey string
-		attrType    AllowedAttributeType
+		attrType    attributeType
 		value       interface{}
 		at          *attribute
 		errs        bool
