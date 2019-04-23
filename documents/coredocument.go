@@ -189,7 +189,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
@@ -208,7 +208,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 
 	err = populateVersions(&cdp, &cd.Document)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	ncd := &CoreDocument{Document: cdp}
