@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -148,6 +150,10 @@ func (m *mockModel) CollaboratorCanUpdate(new Model, collaborator identity.DID) 
 	return args.Error(0)
 }
 
+func (m *mockModel) SetUsedAnchorRepoAddress(addr common.Address) {
+	m.Called(addr)
+}
+
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
@@ -171,6 +177,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model = new(mockModel)
 	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
 	model.On("AddUpdateLog").Return(nil).Once()
+	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return().Once()
 	model.On("CalculateSigningRoot").Return(nil, errors.New("failed signing root")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
@@ -183,6 +190,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("AddUpdateLog").Return(nil).Once()
+	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return().Once()
 	model.On("AppendSignatures", mock.Anything).Return().Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)

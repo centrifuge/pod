@@ -35,7 +35,7 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 
 	cf := GetChangedFields(oldTree, newTree)
 	// cf length should be len(ocd) and len(ncd) = 70 changed field
-	assert.Len(t, cf, 70)
+	assert.Len(t, cf, 71)
 
 }
 

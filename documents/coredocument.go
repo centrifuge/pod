@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/ptypes/any"
 )
 
@@ -694,4 +695,9 @@ func (cd *CoreDocument) IsDIDCollaborator(did identity.DID) (bool, error) {
 // GetAccessTokens returns the access tokens of a core document
 func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
 	return cd.Document.AccessTokens, nil
+}
+
+// SetUsedAnchorRepoAddress sets used anchor repo address.
+func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
+	cd.Document.AnchorRepositoryUsed = addr.Bytes()
 }

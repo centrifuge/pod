@@ -128,6 +128,9 @@ type Model interface {
 
 	// GetAccessTokens returns the access tokens of a core document
 	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
+
+	// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
+	SetUsedAnchorRepoAddress(addr common.Address)
 }
 
 // TokenRegistry defines NFT related functions.
