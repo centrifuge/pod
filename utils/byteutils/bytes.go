@@ -58,3 +58,22 @@ func ContainsBytesInSlice(slice [][]byte, b []byte) bool {
 
 	return false
 }
+
+// SetBit sets the bit at pos in the given byte.
+func SetBit(n byte, pos uint) byte {
+	n |= 1 << pos
+	return n
+}
+
+// ClearBit clears the bit at pos in n.
+func ClearBit(n byte, pos uint) byte {
+	mask := ^(1 << pos)
+	n &= byte(mask)
+	return n
+}
+
+// IsBitSet checks if the bit at position is set
+func IsBitSet(n byte, pos uint) bool {
+	val := n & (1 << pos)
+	return val > 0
+}

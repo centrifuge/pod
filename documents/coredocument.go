@@ -224,7 +224,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 func copyAttrMap(attributes map[string]*attribute) map[string]*attribute {
 	m := make(map[string]*attribute)
 	for k, v := range attributes {
-		m[k] = v
+		m[k] = v.copy()
 	}
 	return m
 }

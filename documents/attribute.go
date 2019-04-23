@@ -90,3 +90,7 @@ func newAttribute(readableKey string, attributeType attributeType, value interfa
 		value:       value,
 	}, nil
 }
+
+func (a *attribute) copy() *attribute {
+	return &attribute{a.attrType, a.readableKey, a.hashedKey, a.value}
+}
