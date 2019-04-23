@@ -632,3 +632,10 @@ func TestCoreDocument_AddAttribute(t *testing.T) {
 
 	// TODO add tests for each type + failures, once converters are ready
 }
+
+func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
+	addr := testingidentity.GenerateRandomDID()
+	cd := new(CoreDocument)
+	cd.SetUsedAnchorRepoAddress(addr.ToAddress())
+	assert.Equal(t, addr.ToAddress().Bytes(), cd.Document.AnchorRepositoryUsed)
+}
