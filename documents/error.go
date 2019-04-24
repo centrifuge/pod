@@ -61,6 +61,9 @@ const (
 	// ErrCDCreate must be used for coredoc creation/generation errors
 	ErrCDCreate = errors.Error("error creating core document")
 
+	// ErrCDNewVersion must be used for coredoc creation/generation errors
+	ErrCDNewVersion = errors.Error("error creating new version of core document")
+
 	// ErrCollaborators must be used when collaborators are not valid
 	ErrCollaborators = errors.Error("invalid collaborators")
 
@@ -112,6 +115,9 @@ const (
 
 	// ErrInvalidDecimal must be used when given decimal is invalid
 	ErrInvalidDecimal = errors.Error("invalid decimal")
+
+	// ErrInvalidInt256 must be used when given 256 bit signed integer is invalid
+	ErrInvalidInt256 = errors.Error("invalid 256 bit signed integer")
 
 	// ErrIdentityNotOwner must be used when an identity which does not own the entity relationship attempts to update the document
 	ErrIdentityNotOwner = errors.Error("identity attempting to update the document does not own this entity relationship")

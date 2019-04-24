@@ -190,7 +190,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
@@ -209,15 +209,25 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 
 	err = populateVersions(&cdp, &cd.Document)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
+	ncd.Attributes = copyAttrMap(cd.Attributes)
 	ncd.Modified = true
 	return ncd, nil
 
+}
+
+// copyAttrMap copies the attributes map
+func copyAttrMap(attributes map[string]*attribute) map[string]*attribute {
+	m := make(map[string]*attribute)
+	for k, v := range attributes {
+		m[k] = v.copy()
+	}
+	return m
 }
 
 // newRole returns a new role with random role key
@@ -624,18 +634,23 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttribute(name string, attributeType AllowedAttributeType, value string) error {
+func (cd *CoreDocument) AddAttribute(name string, attributeType attributeType, value string) (*CoreDocument, error) {
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+	}
 	// TODO convert value from string to correct type
 	// For now its only string that is supported
 	nAttr, err := newAttribute(name, attributeType, value)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if cd.Attributes == nil {
-		cd.Attributes = make(map[string]*attribute)
+	if ncd.Attributes == nil {
+		ncd.Attributes = make(map[string]*attribute)
 	}
-	cd.Attributes[name] = nAttr
-	return nil
+	ncd.Attributes[name] = nAttr
+	ncd.Modified = true
+	return ncd, nil
 }
 
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
@@ -648,9 +663,14 @@ func (cd *CoreDocument) GetAttribute(name string) (hashedKey []byte, attrType st
 }
 
 // DeleteAttribute deletes a custom attribute from the model
-func (cd *CoreDocument) DeleteAttribute(name string) error {
-	delete(cd.Attributes, name)
-	return nil
+func (cd *CoreDocument) DeleteAttribute(name string) (*CoreDocument, error) {
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+	}
+	delete(ncd.Attributes, name)
+	ncd.Modified = true
+	return ncd, nil
 }
 
 func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {

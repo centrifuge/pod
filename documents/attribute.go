@@ -8,32 +8,32 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
-// AllowedAttributeType represents the custom attribute types allowed in models
-type AllowedAttributeType string
+// attributeType represents the custom attribute types allowed in models
+type attributeType string
 
 // String string repr
-func (a AllowedAttributeType) String() string {
+func (a attributeType) String() string {
 	return string(a)
 }
 
 const (
 	// Int256Type is the standard integer custom attribute type
-	Int256Type AllowedAttributeType = "int256"
+	Int256Type attributeType = "int256"
 
 	// BigDecType is the standard big decimal custom attribute type
-	BigDecType AllowedAttributeType = "bigdecimal"
+	BigDecType attributeType = "bigdecimal"
 
 	// StrType is the standard string custom attribute type
-	StrType AllowedAttributeType = "string"
+	StrType attributeType = "string"
 
 	// BytsType is the standard bytes custom attribute type
-	BytsType AllowedAttributeType = "bytes"
+	BytsType attributeType = "bytes"
 
 	// TimestmpType is the standard time stamp custom attribute type
-	TimestmpType AllowedAttributeType = "timestamp"
+	TimestmpType attributeType = "timestamp"
 )
 
-func allowedAttributeTypes(typ AllowedAttributeType) (reflect.Type, error) {
+func allowedAttributeTypes(typ attributeType) (reflect.Type, error) {
 	switch typ {
 	case Int256Type:
 		// TODO IMPORTANT!!! use our own type for int256 with size checks
@@ -53,14 +53,14 @@ func allowedAttributeTypes(typ AllowedAttributeType) (reflect.Type, error) {
 
 // attribute represents a custom attribute of a document
 type attribute struct {
-	attrType    AllowedAttributeType
+	attrType    attributeType
 	readableKey string
 	hashedKey   []byte
 	value       interface{}
 }
 
 // newAttribute creates a new custom attribute
-func newAttribute(readableKey string, attributeType AllowedAttributeType, value interface{}) (*attribute, error) {
+func newAttribute(readableKey string, attributeType attributeType, value interface{}) (*attribute, error) {
 	if readableKey == "" {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
 	}
@@ -89,4 +89,8 @@ func newAttribute(readableKey string, attributeType AllowedAttributeType, value 
 		attrType:    attributeType,
 		value:       value,
 	}, nil
+}
+
+func (a *attribute) copy() *attribute {
+	return &attribute{a.attrType, a.readableKey, a.hashedKey, a.value}
 }
