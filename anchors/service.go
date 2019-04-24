@@ -7,10 +7,12 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -42,7 +44,8 @@ func newService(config Config, anchorContract anchorRepositoryContract, queue *q
 // HasValidPreCommit checks if the given anchorID has a valid pre-commit
 func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := s.client.GetGethCallOpts(false)
+	opts, cancelF := s.client.GetGethCallOpts(false)
+	defer cancelF()
 	r, err := s.anchorRepositoryContract.HasValidPreCommit(opts, anchorID.BigInt())
 	if err != nil {
 		return false
@@ -51,12 +54,18 @@ func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
 }
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
+// Returns an nil error when the anchor data is found else returns a non nil error
 func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
 	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := s.client.GetGethCallOpts(false)
+	opts, cancelF := s.client.GetGethCallOpts(false)
+	defer cancelF()
 	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())
 	if err != nil {
 		return docRoot, anchoredTime, err
+	}
+
+	if utils.IsEmptyByte32(r.DocumentRoot) {
+		return docRoot, anchoredTime, errors.New("anchor data missing for id: %v", anchorID.String())
 	}
 
 	blk, err := s.client.GetBlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
@@ -64,7 +73,7 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 		return docRoot, anchoredTime, err
 	}
 
-	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), err
+	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), nil
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract

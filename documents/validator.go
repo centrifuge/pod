@@ -340,14 +340,11 @@ func LatestVersionValidator(repo anchors.AnchorRepository) Validator {
 			return errors.NewTypedError(ErrDocumentIdentifier, err)
 		}
 
-		root, _, err := repo.GetAnchorData(nextID)
-		if err != nil {
-			return errors.NewTypedError(ErrDocumentAnchor, err)
+		_, _, err = repo.GetAnchorData(nextID)
+		if err == nil {
+			return errors.NewTypedError(ErrDocumentNotLatest, err)
 		}
 
-		if !utils.IsEmptyByteSlice(root[:]) {
-			return ErrDocumentNotLatest
-		}
 		return nil
 	})
 }
