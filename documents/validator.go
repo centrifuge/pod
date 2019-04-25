@@ -462,7 +462,8 @@ func ReceivedAnchoredDocumentValidator(
 // it should be called when a document is received over the p2p layer before signing
 func RequestDocumentSignatureValidator(repo anchors.AnchorRepository, idService identity.ServiceDID, collaborator identity.DID) ValidatorGroup {
 	return ValidatorGroup{
-		UpdateVersionValidator(repo),
+		currentVersionValidator(repo),
+		LatestVersionValidator(repo),
 		transitionValidator(collaborator),
 		SignatureValidator(idService),
 	}
