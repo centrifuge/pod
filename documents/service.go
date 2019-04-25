@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -63,6 +64,7 @@ type Service interface {
 
 // service implements Service
 type service struct {
+	config     Config
 	repo       Repository
 	notifier   notification.Sender
 	anchorRepo anchors.AnchorRepository
@@ -74,11 +76,13 @@ var srvLog = logging.Logger("document-service")
 
 // DefaultService returns the default implementation of the service
 func DefaultService(
+	config Config,
 	repo Repository,
 	anchorRepo anchors.AnchorRepository,
 	registry *ServiceRegistry,
 	idService identity.ServiceDID) Service {
 	return service{
+		config:     config,
 		repo:       repo,
 		anchorRepo: anchorRepo,
 		notifier:   notification.NewWebhookSender(),
@@ -175,7 +179,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		}
 	}
 
-	if err := RequestDocumentSignatureValidator(s.anchorRepo, s.idService, collaborator).Validate(old, model); err != nil {
+	if err := RequestDocumentSignatureValidator(s.anchorRepo, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

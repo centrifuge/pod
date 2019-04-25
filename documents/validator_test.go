@@ -653,12 +653,6 @@ func TestPostAnchoredValidator(t *testing.T) {
 	assert.Len(t, pav, 3)
 }
 
-func TestSignatureRequestValidator(t *testing.T) {
-	srv := SignatureRequestValidator(testingidentity.GenerateRandomDID(), nil)
-	assert.Len(t, srv, 3)
-
-}
-
 func TestDocumentAuthorValidator(t *testing.T) {
 	did := testingidentity.GenerateRandomDID()
 	av := documentAuthorValidator(did)
@@ -696,4 +690,22 @@ func TestDocumentTimestampForSigningValidator(t *testing.T) {
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
+}
+
+func TestValidator_anchorRepoAddressValidator(t *testing.T) {
+	addr := testingidentity.GenerateRandomDID().ToAddress()
+	arv := anchorRepoAddressValidator(addr)
+
+	model := new(mockModel)
+	model.On("UsedAnchorRepoAddress").Return(testingidentity.GenerateRandomDID().ToAddress()).Once()
+	model.On("UsedAnchorRepoAddress").Return(addr).Once()
+
+	// failure
+	err := arv.Validate(nil, model)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "used anchor address is not the node configured address")
+
+	// success
+	assert.NoError(t, arv.Validate(nil, model))
+	model.AssertExpectations(t)
 }

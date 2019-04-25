@@ -721,3 +721,8 @@ func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
 func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
 	cd.Document.AnchorRepositoryUsed = addr.Bytes()
 }
+
+// UsedAnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
+func (cd *CoreDocument) UsedAnchorRepoAddress() common.Address {
+	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
+}

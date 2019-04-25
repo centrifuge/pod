@@ -1,12 +1,14 @@
 package documents
 
 import (
+	"bytes"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -386,6 +388,18 @@ func currentVersionValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
+// anchorRepoAddressValidator validates if the model is using the configured anchor repository address.
+func anchorRepoAddressValidator(anchoredRepoAddr common.Address) Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		addr := model.UsedAnchorRepoAddress()
+		if !bytes.Equal(addr.Bytes(), anchoredRepoAddr.Bytes()) {
+			return errors.New("used anchor address is not the node configured address")
+		}
+
+		return nil
+	})
+}
+
 // transitionValidator checks that the document changes are within the transition_rule capability of the
 // collaborator making the changes
 func transitionValidator(collaborator identity.DID) Validator {
@@ -401,21 +415,6 @@ func transitionValidator(collaborator identity.DID) Validator {
 
 		return nil
 	})
-}
-
-// SignatureRequestValidator returns a validator group with following validators
-// document timestamp for signing validator
-// document author validator
-// base validator
-// signing root validator
-// signatures validator
-// should be used when node receives a document requesting for signature
-// TODO(ved): remove this
-func SignatureRequestValidator(sender identity.DID, idService identity.ServiceDID) ValidatorGroup {
-	return ValidatorGroup{
-		documentTimestampForSigningValidator(),
-		documentAuthorValidator(sender),
-		SignatureValidator(idService)}
 }
 
 // PreAnchorValidator is a validator group with following validators
@@ -460,10 +459,17 @@ func ReceivedAnchoredDocumentValidator(
 // SignatureValidator
 // transitionsValidator
 // it should be called when a document is received over the p2p layer before signing
-func RequestDocumentSignatureValidator(repo anchors.AnchorRepository, idService identity.ServiceDID, collaborator identity.DID) ValidatorGroup {
+func RequestDocumentSignatureValidator(
+	repo anchors.AnchorRepository,
+	idService identity.ServiceDID,
+	collaborator identity.DID,
+	anchorRepoAddress common.Address) ValidatorGroup {
 	return ValidatorGroup{
+		documentTimestampForSigningValidator(),
+		documentAuthorValidator(collaborator),
 		currentVersionValidator(repo),
 		LatestVersionValidator(repo),
+		anchorRepoAddressValidator(anchorRepoAddress),
 		transitionValidator(collaborator),
 		SignatureValidator(idService),
 	}
