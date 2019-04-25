@@ -48,8 +48,8 @@ func (vf ValidatorFunc) Validate(old, new Model) error {
 	return vf(old, new)
 }
 
-// UpdateVersionValidator validates if the new core document is properly derived from old one
-func UpdateVersionValidator() Validator {
+// versionIDsValidator checks if the versions are properly set for new document update
+func versionIDsValidator() Validator {
 	return ValidatorFunc(func(old, new Model) error {
 		if old == nil || new == nil {
 			return errors.New("need both the old and new model")
@@ -96,6 +96,15 @@ func UpdateVersionValidator() Validator {
 
 		return err
 	})
+}
+
+// UpdateVersionValidator validates if the new core document is properly derived from old one
+func UpdateVersionValidator(repo anchors.AnchorRepository) Validator {
+	return ValidatorGroup{
+		versionIDsValidator(),
+		currentVersionValidator(repo),
+		LatestVersionValidator(repo),
+	}
 }
 
 // baseValidator validates the core document basic fields like identifier, versions, and salts
@@ -328,6 +337,22 @@ func anchoredValidator(repo anchors.AnchorRepository) Validator {
 	})
 }
 
+// versionNotAnchoredValidator checks if the given version is not anchored on the chain.
+// returns error if the version id is already anchored.
+func versionNotAnchoredValidator(repo anchors.AnchorRepository, id []byte) error {
+	anchorID, err := anchors.ToAnchorID(id)
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentIdentifier, err)
+	}
+
+	_, _, err = repo.GetAnchorData(anchorID)
+	if err == nil {
+		return errors.New("id is already anchored: %v", anchorID.String())
+	}
+
+	return nil
+}
+
 // LatestVersionValidator checks if the document is the latest version
 func LatestVersionValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorFunc(func(_, model Model) error {
@@ -335,13 +360,25 @@ func LatestVersionValidator(repo anchors.AnchorRepository) Validator {
 			return ErrModelNil
 		}
 
-		nextID, err := anchors.ToAnchorID(model.NextVersion())
+		err := versionNotAnchoredValidator(repo, model.NextVersion())
 		if err != nil {
-			return errors.NewTypedError(ErrDocumentIdentifier, err)
+			return errors.NewTypedError(ErrDocumentNotLatest, err)
 		}
 
-		_, _, err = repo.GetAnchorData(nextID)
-		if err == nil {
+		return nil
+	})
+}
+
+// currentVersionValidator checks if the current version of the document has been anchored.
+// returns an error if the current version has been anchored already.
+func currentVersionValidator(repo anchors.AnchorRepository) Validator {
+	return ValidatorFunc(func(_, model Model) error {
+		if model == nil {
+			return ErrModelNil
+		}
+
+		err := versionNotAnchoredValidator(repo, model.CurrentVersion())
+		if err != nil {
 			return errors.NewTypedError(ErrDocumentNotLatest, err)
 		}
 

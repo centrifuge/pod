@@ -122,8 +122,8 @@ func TestIsCurrencyValid(t *testing.T) {
 	}
 }
 
-func TestUpdateVersionValidator(t *testing.T) {
-	uvv := UpdateVersionValidator()
+func TestVersionIDsValidator(t *testing.T) {
+	uvv := versionIDsValidator()
 
 	// nil models
 	err := uvv.Validate(nil, nil)
@@ -162,6 +162,11 @@ func TestUpdateVersionValidator(t *testing.T) {
 	old.AssertExpectations(t)
 	nm.AssertExpectations(t)
 
+}
+
+func TestUpdateVersionValidator(t *testing.T) {
+	uvv := UpdateVersionValidator(nil)
+	assert.Len(t, uvv, 3)
 }
 
 func TestValidator_baseValidator(t *testing.T) {
@@ -511,7 +516,49 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), ErrDocumentNotLatest)
+	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
+}
+
+func TestValidator_CurrentVersionValidator(t *testing.T) {
+	repo := mockRepo{}
+	//zeros := [32]byte{}
+	next := utils.RandomSlice(32)
+	nextAid, err := anchors.ToAnchorID(next)
+
+	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+	zeros := [32]byte{}
+	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+	assert.NoError(t, err)
+
+	// failed to convert to anchor ID
+	model := new(mockModel)
+	model.On("CurrentVersion").Return(utils.RandomSlice(10)).Once()
+	cv := currentVersionValidator(repo)
+	err = cv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
+
+	// successful
+	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(next).Once()
+	cv = currentVersionValidator(repo)
+	err = cv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.NoError(t, err)
+
+	// fail anchor exists
+	model = new(mockModel)
+	repo = mockRepo{}
+	repo.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	model.On("CurrentVersion").Return(next).Once()
+	cv = currentVersionValidator(repo)
+	err = cv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
 }
 
 func TestValidator_anchoredValidator(t *testing.T) {

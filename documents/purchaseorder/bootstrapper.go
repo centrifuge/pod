@@ -2,6 +2,7 @@ package purchaseorder
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -51,6 +52,11 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return errors.New("anchor repository not initialised")
+	}
+
 	// register service
 	srv := DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
 		tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
@@ -58,7 +64,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 			panic("token registry initialisation error")
 		}
 		return tokenRegistry
-	})
+	}, anchorRepo)
 
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {

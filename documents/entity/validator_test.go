@@ -51,6 +51,6 @@ func TestCreateValidator(t *testing.T) {
 }
 
 func TestUpdateValidator(t *testing.T) {
-	uv := UpdateValidator(nil)
+	uv := UpdateValidator(nil, nil)
 	assert.Len(t, uv, 2)
 }

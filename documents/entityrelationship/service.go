@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -43,6 +44,7 @@ type service struct {
 	queueSrv   queue.TaskQueuer
 	jobManager jobs.Manager
 	factory    identity.Factory
+	anchorRepo anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service.
@@ -52,6 +54,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
 	factory identity.Factory,
+	anchorRepo anchors.AnchorRepository,
 ) Service {
 	return service{
 		repo:       repo,
@@ -59,6 +62,7 @@ func DefaultService(
 		jobManager: jobManager,
 		Service:    srv,
 		factory:    factory,
+		anchorRepo: anchorRepo,
 	}
 }
 
@@ -158,7 +162,7 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory))
+	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory, s.anchorRepo))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

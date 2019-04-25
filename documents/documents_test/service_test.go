@@ -87,7 +87,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 	assert.NoError(t, err)
 	nextAid, err := anchors.ToAnchorID(doc.NextVersion())
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
@@ -107,7 +107,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	nextAid, err = anchors.ToAnchorID(doc.NextVersion())
 	assert.NoError(t, err)
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
@@ -147,7 +147,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	nextAid, err = anchors.ToAnchorID(doc.NextVersion())
 	assert.NoError(t, err)
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 
 	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
@@ -191,7 +191,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 	assert.NoError(t, err)
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
-	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	return idService
 }
 
