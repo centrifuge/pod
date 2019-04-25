@@ -62,6 +62,7 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
+	assert.NoError(t, err)
 	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
@@ -76,6 +77,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, true)
+	assert.NoError(t, err)
 	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
@@ -90,6 +92,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t, false)
+	assert.NoError(t, err)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	cd, err := dm.PackCoreDocument()
@@ -138,6 +141,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	po := new(purchaseorder.PurchaseOrder)
 	err = po.InitPurchaseOrderInput(payalod, defaultDID)
 	assert.NoError(t, err)
+	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
