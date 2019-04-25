@@ -393,10 +393,12 @@ func transitionValidator(collaborator identity.DID) Validator {
 		if old == nil {
 			return nil
 		}
+
 		err := old.CollaboratorCanUpdate(new, collaborator)
 		if err != nil {
 			return errors.New("invalid document state transition: %v", err)
 		}
+
 		return nil
 	})
 }
@@ -408,6 +410,7 @@ func transitionValidator(collaborator identity.DID) Validator {
 // signing root validator
 // signatures validator
 // should be used when node receives a document requesting for signature
+// TODO(ved): remove this
 func SignatureRequestValidator(sender identity.DID, idService identity.ServiceDID) ValidatorGroup {
 	return ValidatorGroup{
 		documentTimestampForSigningValidator(),
@@ -457,8 +460,9 @@ func ReceivedAnchoredDocumentValidator(
 // SignatureValidator
 // transitionsValidator
 // it should be called when a document is received over the p2p layer before signing
-func RequestDocumentSignatureValidator(idService identity.ServiceDID, collaborator identity.DID) ValidatorGroup {
+func RequestDocumentSignatureValidator(repo anchors.AnchorRepository, idService identity.ServiceDID, collaborator identity.DID) ValidatorGroup {
 	return ValidatorGroup{
+		UpdateVersionValidator(repo),
 		transitionValidator(collaborator),
 		SignatureValidator(idService),
 	}

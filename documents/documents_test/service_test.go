@@ -242,6 +242,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_RequestDocumentSignature(t *testing.T) {
 	srv, _ := getServiceWithMockedLayers()
 
+	mockAnchor.On("GetAnchorData", mock.Anything).Return(nil, nil, errors.New("missing"))
 	// self failed
 	_, err := srv.RequestDocumentSignature(context.Background(), nil, did)
 	assert.Error(t, err)
@@ -263,13 +264,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	ar := new(mockAnchorRepo)
-	docRoot, err := doc.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	dr, err := anchors.ToDocumentRoot(docRoot)
-	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
