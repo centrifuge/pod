@@ -10,8 +10,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
-// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
-const BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+const (
+	// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
+	BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+
+	// ErrAnchorRepoNotInitialised is a sentinal error when repository is not initialised
+	ErrAnchorRepoNotInitialised = errors.Error("anchor repository not initialised")
+)
 
 // Bootstrapper implements bootstrapper.Bootstrapper for package requirement initialisations.
 type Bootstrapper struct{}

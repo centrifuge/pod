@@ -122,8 +122,8 @@ func TestIsCurrencyValid(t *testing.T) {
 	}
 }
 
-func TestUpdateVersionValidator(t *testing.T) {
-	uvv := UpdateVersionValidator()
+func TestVersionIDsValidator(t *testing.T) {
+	uvv := versionIDsValidator()
 
 	// nil models
 	err := uvv.Validate(nil, nil)
@@ -162,6 +162,11 @@ func TestUpdateVersionValidator(t *testing.T) {
 	old.AssertExpectations(t)
 	nm.AssertExpectations(t)
 
+}
+
+func TestUpdateVersionValidator(t *testing.T) {
+	uvv := UpdateVersionValidator(nil)
+	assert.Len(t, uvv, 3)
 }
 
 func TestValidator_baseValidator(t *testing.T) {
@@ -484,11 +489,20 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 	assert.NoError(t, err)
 
-	// successful
-	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	// failed to convert to anchor ID
 	model := new(mockModel)
-	model.On("NextVersion").Return(next).Once()
+	model.On("NextVersion").Return(utils.RandomSlice(10)).Once()
 	lv := LatestVersionValidator(repo)
+	err = lv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
+
+	// successful
+	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	model = new(mockModel)
+	model.On("NextVersion").Return(next).Once()
+	lv = LatestVersionValidator(repo)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.NoError(t, err)
@@ -502,19 +516,49 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), ErrDocumentNotLatest)
+	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
+}
 
-	//fails GetAnchorData err
-	model = new(mockModel)
-	repo = mockRepo{}
-	repo.On("GetAnchorData", nextAid).Return(nil, time.Now(), ErrDocumentAnchor)
-	model.On("NextVersion").Return(next).Once()
-	lv = LatestVersionValidator(repo)
-	err = lv.Validate(nil, model)
+func TestValidator_CurrentVersionValidator(t *testing.T) {
+	repo := mockRepo{}
+	//zeros := [32]byte{}
+	next := utils.RandomSlice(32)
+	nextAid, err := anchors.ToAnchorID(next)
+
+	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+	zeros := [32]byte{}
+	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+	assert.NoError(t, err)
+
+	// failed to convert to anchor ID
+	model := new(mockModel)
+	model.On("CurrentVersion").Return(utils.RandomSlice(10)).Once()
+	cv := currentVersionValidator(repo)
+	err = cv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), ErrDocumentAnchor)
+	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
 
+	// successful
+	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	model = new(mockModel)
+	model.On("CurrentVersion").Return(next).Once()
+	cv = currentVersionValidator(repo)
+	err = cv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.NoError(t, err)
+
+	// fail anchor exists
+	model = new(mockModel)
+	repo = mockRepo{}
+	repo.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	model.On("CurrentVersion").Return(next).Once()
+	cv = currentVersionValidator(repo)
+	err = cv.Validate(nil, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
 }
 
 func TestValidator_anchoredValidator(t *testing.T) {
@@ -609,12 +653,6 @@ func TestPostAnchoredValidator(t *testing.T) {
 	assert.Len(t, pav, 3)
 }
 
-func TestSignatureRequestValidator(t *testing.T) {
-	srv := SignatureRequestValidator(testingidentity.GenerateRandomDID(), nil)
-	assert.Len(t, srv, 3)
-
-}
-
 func TestDocumentAuthorValidator(t *testing.T) {
 	did := testingidentity.GenerateRandomDID()
 	av := documentAuthorValidator(did)
@@ -652,4 +690,22 @@ func TestDocumentTimestampForSigningValidator(t *testing.T) {
 	err = av.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Nil(t, err)
+}
+
+func TestValidator_anchorRepoAddressValidator(t *testing.T) {
+	addr := testingidentity.GenerateRandomDID().ToAddress()
+	arv := anchorRepoAddressValidator(addr)
+
+	model := new(mockModel)
+	model.On("AnchorRepoAddress").Return(testingidentity.GenerateRandomDID().ToAddress()).Once()
+	model.On("AnchorRepoAddress").Return(addr).Once()
+
+	// failure
+	err := arv.Validate(nil, model)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "anchor address is not the node configured address")
+
+	// success
+	assert.NoError(t, arv.Validate(nil, model))
+	model.AssertExpectations(t)
 }

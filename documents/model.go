@@ -131,6 +131,9 @@ type Model interface {
 
 	// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
 	SetUsedAnchorRepoAddress(addr common.Address)
+
+	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
+	AnchorRepoAddress() common.Address
 }
 
 // TokenRegistry defines NFT related functions.
