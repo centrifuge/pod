@@ -109,6 +109,8 @@ message PurchaseOrderData {
   repeated document.BinaryAttachment attachments = 26;
   repeated LineItem line_items = 27;
   repeated document.PaymentDetails payment_details = 28;
+  // custom attributes
+  map<string, document.Attribute> attributes = 29;
 }
 
 message LineItem {

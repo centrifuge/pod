@@ -160,3 +160,11 @@ message ResponseHeader {
   string job_id = 7;
   repeated NFT nfts = 8;
 }
+
+// Attribute represents a custom attribute
+message Attribute {
+  // this is the sha256 hash of the label of the attribute, is not allowed to be updated by the client
+  string key = 1;
+  string type = 2;
+  string value = 3;
+}

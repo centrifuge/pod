@@ -11,6 +11,20 @@ import (
 // attributeType represents the custom attribute types allowed in models
 type attributeType string
 
+// AttrKey represents a sha256 hash of a attribute label given by a user.
+type AttrKey [32]byte
+
+// NewAttrKey
+func NewAttrKey(label string) (AttrKey, error) {
+	hashedKey, err := crypto.Sha256Hash([]byte(label))
+	if err != nil {
+		return AttrKey{}, errors.NewTypedError(ErrCDAttribute, err)
+	}
+	var a [32]byte
+	copy(a[:], hashedKey)
+	return AttrKey(a), nil
+}
+
 // String string repr
 func (a attributeType) String() string {
 	return string(a)
@@ -53,15 +67,15 @@ func allowedAttributeTypes(typ attributeType) (reflect.Type, error) {
 
 // attribute represents a custom attribute of a document
 type attribute struct {
-	attrType    attributeType
-	readableKey string
-	hashedKey   []byte
-	value       interface{}
+	attrType attributeType
+	keyLabel string
+	key      AttrKey
+	value    interface{}
 }
 
 // newAttribute creates a new custom attribute
-func newAttribute(readableKey string, attributeType attributeType, value interface{}) (*attribute, error) {
-	if readableKey == "" {
+func newAttribute(keyLabel string, attributeType attributeType, value interface{}) (*attribute, error) {
+	if keyLabel == "" {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
 	}
 
@@ -78,19 +92,19 @@ func newAttribute(readableKey string, attributeType attributeType, value interfa
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
 	}
 
-	hashedKey, err := crypto.Sha256Hash([]byte(readableKey))
+	hashedKey, err := NewAttrKey(keyLabel)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, err)
 	}
 
 	return &attribute{
-		readableKey: readableKey,
-		hashedKey:   hashedKey,
-		attrType:    attributeType,
-		value:       value,
+		keyLabel: keyLabel,
+		key:      hashedKey,
+		attrType: attributeType,
+		value:    value,
 	}, nil
 }
 
 func (a *attribute) copy() *attribute {
-	return &attribute{a.attrType, a.readableKey, a.hashedKey, a.value}
+	return &attribute{a.attrType, a.keyLabel, a.key, a.value}
 }

@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -66,9 +65,9 @@ func TestNewAttribute(t *testing.T) {
 			StrType,
 			"someval",
 			&attribute{
-				attrType:    StrType,
-				readableKey: "string",
-				value:       "someval",
+				attrType: StrType,
+				keyLabel: "string",
+				value:    "someval",
 			},
 			false,
 			"",
@@ -79,9 +78,9 @@ func TestNewAttribute(t *testing.T) {
 			Int256Type,
 			big.NewInt(123),
 			&attribute{
-				attrType:    Int256Type,
-				readableKey: "int256",
-				value:       big.NewInt(123),
+				attrType: Int256Type,
+				keyLabel: "int256",
+				value:    big.NewInt(123),
 			},
 			false,
 			"",
@@ -92,9 +91,9 @@ func TestNewAttribute(t *testing.T) {
 			BigDecType,
 			testdecimal,
 			&attribute{
-				attrType:    BigDecType,
-				readableKey: "bigdecimal",
-				value:       testdecimal,
+				attrType: BigDecType,
+				keyLabel: "bigdecimal",
+				value:    testdecimal,
 			},
 			false,
 			"",
@@ -105,9 +104,9 @@ func TestNewAttribute(t *testing.T) {
 			BytsType,
 			[]byte{1},
 			&attribute{
-				attrType:    BytsType,
-				readableKey: "bytes",
-				value:       []byte{1},
+				attrType: BytsType,
+				keyLabel: "bytes",
+				value:    []byte{1},
 			},
 			false,
 			"",
@@ -118,9 +117,9 @@ func TestNewAttribute(t *testing.T) {
 			TimestmpType,
 			ttime.Unix(),
 			&attribute{
-				attrType:    TimestmpType,
-				readableKey: "timestamp",
-				value:       ttime.Unix(),
+				attrType: TimestmpType,
+				keyLabel: "timestamp",
+				value:    ttime.Unix(),
 			},
 			false,
 			"",
@@ -138,13 +137,13 @@ func TestNewAttribute(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				hashedKey, err := crypto.Sha256Hash([]byte(test.at.readableKey))
+				hashedKey, err := NewAttrKey(test.at.keyLabel)
 				assert.NoError(t, err)
 				if assert.NotNil(t, attr) {
-					assert.Equal(t, attr.hashedKey, hashedKey)
+					assert.Equal(t, attr.key, hashedKey)
 					assert.Equal(t, attr.attrType, test.at.attrType)
 					assert.Equal(t, attr.value, test.at.value)
-					assert.Equal(t, attr.readableKey, test.at.readableKey)
+					assert.Equal(t, attr.keyLabel, test.at.keyLabel)
 				}
 			}
 		})

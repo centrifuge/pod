@@ -121,10 +121,10 @@ type Model interface {
 	AddAttribute(name string, attributeType attributeType, value string) (*CoreDocument, error)
 
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-	GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error)
+	GetAttribute(name AttrKey) (hashedKey AttrKey, attrType string, value interface{}, valueStr string, err error)
 
 	// DeleteAttribute deletes a custom attribute from the model
-	DeleteAttribute(name string) (*CoreDocument, error)
+	DeleteAttribute(key AttrKey) (*CoreDocument, error)
 
 	// GetAccessTokens returns the access tokens of a core document
 	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
