@@ -43,7 +43,6 @@ func newService(config Config, anchorContract anchorRepositoryContract, queue *q
 
 // HasValidPreCommit checks if the given anchorID has a valid pre-commit
 func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
-	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, cancelF := s.client.GetGethCallOpts(false)
 	defer cancelF()
 	r, err := s.anchorRepositoryContract.HasValidPreCommit(opts, anchorID.BigInt())
@@ -97,10 +96,6 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 
 	opts.GasLimit = s.config.GetEthereumGasLimit(config.AnchorPreCommit)
 	pc := newPreCommitData(anchorID, signingRoot)
-	if err != nil {
-		return confirmations, err
-	}
-
 	log.Infof("Add Anchor to Pre-commit %s from did:%s", anchorID.String(), did.ToAddress().String())
 	_, done, err := s.jobsMan.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.PreCommit, pc.AnchorID.BigInt(), pc.SigningRoot))
