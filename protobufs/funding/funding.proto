@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package funding;
+
+option go_package = "fundingpb";
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "com.funding";
+
+import "document/service.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// FundingService contains all common interactions for funding extension documents
+service FundingService {
+    rpc Create(FundingCreatePayload) returns (FundingResponse) {
+        option (google.api.http) = {
+      post: "/document/{document_version}/extension/funding/agreement"
+      body: "*"
+    };
+    }
+}
+
+message FundingCreatePayload {
+    string document_version = 1;
+    FundingData data = 2;
+}
+
+
+message FundingResponse {
+    document.ResponseHeader header = 1;
+    FundingData data = 2;
+}
+
+// FundingData is the default funding extension schema
+message FundingData {
+    bytes agreement_id = 1;
+    bytes amount = 2;
+    bytes APR = 3;
+    bytes days = 4;
+    bytes fee = 5;
+    string repayment_due_date = 7; //(e.g. invoice date + grace days)
+    string repayment_occurred_date = 8;
+    bytes repayment_amount = 9;
+    string currency = 10;  // optional if not set currency of payment details will be used
+    string nft_address = 11;
+    bytes payment_details_id = 12;
+}
