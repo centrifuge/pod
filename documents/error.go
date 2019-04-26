@@ -121,6 +121,15 @@ const (
 
 	// ErrNotImplemented must be used when an method has not been implemented
 	ErrNotImplemented = errors.Error("Method not implemented")
+
+	// ErrDocumentConfigNotInitialised is a sentinal error when document config is missing
+	ErrDocumentConfigNotInitialised = errors.Error("document config not initialised")
+
+	// ErrDifferentAnchoredAddress is a sentinal error when anchor address is different from the configured one.
+	ErrDifferentAnchoredAddress = errors.Error("anchor address is not the node configured address")
+
+	// ErrDocumentIDReused is a sentinal error when identifier is re-used
+	ErrDocumentIDReused = errors.Error("document identifier is already used")
 )
 
 // Error wraps an error with specific key

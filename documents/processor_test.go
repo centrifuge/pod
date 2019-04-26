@@ -154,7 +154,7 @@ func (m *mockModel) SetUsedAnchorRepoAddress(addr common.Address) {
 	m.Called(addr)
 }
 
-func (m *mockModel) UsedAnchorRepoAddress() common.Address {
+func (m *mockModel) AnchorRepoAddress() common.Address {
 	args := m.Called()
 	return args.Get(0).(common.Address)
 }

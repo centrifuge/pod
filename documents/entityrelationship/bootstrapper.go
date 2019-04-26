@@ -62,7 +62,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
-		return errors.New("anchor repository not initialised")
+		return anchors.ErrAnchorRepoNotInitialised
 	}
 
 	// register service

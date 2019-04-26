@@ -52,7 +52,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
 	if !ok {
-		return errors.New("documents config not initialised")
+		return ErrDocumentConfigNotInitialised
 	}
 
 	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorRepo, registry, didService)

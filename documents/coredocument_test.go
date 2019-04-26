@@ -637,5 +637,5 @@ func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
 	addr := testingidentity.GenerateRandomDID()
 	cd := new(CoreDocument)
 	cd.SetUsedAnchorRepoAddress(addr.ToAddress())
-	assert.Equal(t, addr.ToAddress().Bytes(), cd.UsedAnchorRepoAddress().Bytes())
+	assert.Equal(t, addr.ToAddress().Bytes(), cd.AnchorRepoAddress().Bytes())
 }

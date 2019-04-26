@@ -697,13 +697,13 @@ func TestValidator_anchorRepoAddressValidator(t *testing.T) {
 	arv := anchorRepoAddressValidator(addr)
 
 	model := new(mockModel)
-	model.On("UsedAnchorRepoAddress").Return(testingidentity.GenerateRandomDID().ToAddress()).Once()
-	model.On("UsedAnchorRepoAddress").Return(addr).Once()
+	model.On("AnchorRepoAddress").Return(testingidentity.GenerateRandomDID().ToAddress()).Once()
+	model.On("AnchorRepoAddress").Return(addr).Once()
 
 	// failure
 	err := arv.Validate(nil, model)
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "used anchor address is not the node configured address")
+	assert.Equal(t, err.Error(), "anchor address is not the node configured address")
 
 	// success
 	assert.NoError(t, arv.Validate(nil, model))

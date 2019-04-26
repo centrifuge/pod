@@ -722,7 +722,7 @@ func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
 	cd.Document.AnchorRepositoryUsed = addr.Bytes()
 }
 
-// UsedAnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
-func (cd *CoreDocument) UsedAnchorRepoAddress() common.Address {
+// AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
+func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
 }

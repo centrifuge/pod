@@ -54,9 +54,8 @@ func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
 }
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
-// Returns an nil error when the anchor data is found else returns a non nil error
+// Returns a nil error when the anchor data is found else returns a non nil error
 func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
-	// Ignoring cancelFunc as code will block until response or timeout is triggered
 	opts, cancelF := s.client.GetGethCallOpts(false)
 	defer cancelF()
 	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())

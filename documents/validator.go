@@ -349,7 +349,7 @@ func versionNotAnchoredValidator(repo anchors.AnchorRepository, id []byte) error
 
 	_, _, err = repo.GetAnchorData(anchorID)
 	if err == nil {
-		return errors.New("id is already anchored: %v", anchorID.String())
+		return ErrDocumentIDReused
 	}
 
 	return nil
@@ -391,9 +391,9 @@ func currentVersionValidator(repo anchors.AnchorRepository) Validator {
 // anchorRepoAddressValidator validates if the model is using the configured anchor repository address.
 func anchorRepoAddressValidator(anchoredRepoAddr common.Address) Validator {
 	return ValidatorFunc(func(_, model Model) error {
-		addr := model.UsedAnchorRepoAddress()
+		addr := model.AnchorRepoAddress()
 		if !bytes.Equal(addr.Bytes(), anchoredRepoAddr.Bytes()) {
-			return errors.New("used anchor address is not the node configured address")
+			return ErrDifferentAnchoredAddress
 		}
 
 		return nil
