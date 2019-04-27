@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // attributeType represents the custom attribute types allowed in models
@@ -39,12 +40,16 @@ func AttrKeyFromBytes(b []byte) AttrKey {
 
 // MarshalText converts the AttrKey to its text form
 func (a AttrKey) MarshalText() (text []byte, err error) {
-	return a[:], nil
+	return []byte(hexutil.Encode(a[:])), nil
 }
 
 // UnmarshalText converts text to AttrKey
-func (a AttrKey) UnmarshalText(text []byte) error {
-	a = AttrKeyFromBytes(text)
+func (a *AttrKey) UnmarshalText(text []byte) error {
+	b, err := hexutil.Decode(string(text))
+	if err != nil {
+		return err
+	}
+	*a = AttrKeyFromBytes(b)
 	return nil
 }
 

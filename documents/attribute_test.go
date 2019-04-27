@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
@@ -148,4 +149,16 @@ func TestNewAttribute(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAttrKey_MarshalText(t *testing.T) {
+	a, err := NewAttrKey("somekey")
+	assert.NoError(t, err)
+	m := map[AttrKey]string{a: "dwefw"}
+	mstr, err := json.Marshal(m)
+	assert.NoError(t, err)
+	m1 := make(map[AttrKey]string)
+	err = json.Unmarshal(mstr, &m1)
+	assert.NoError(t, err)
+	assert.Equal(t, m[a], m1[a])
 }
