@@ -11,10 +11,15 @@ import (
 // attributeType represents the custom attribute types allowed in models
 type attributeType string
 
+// String string repr
+func (a attributeType) String() string {
+	return string(a)
+}
+
 // AttrKey represents a sha256 hash of a attribute label given by a user.
 type AttrKey [32]byte
 
-// NewAttrKey
+// NewAttrKey creates a new AttrKey from label
 func NewAttrKey(label string) (AttrKey, error) {
 	hashedKey, err := crypto.Sha256Hash([]byte(label))
 	if err != nil {
@@ -25,9 +30,22 @@ func NewAttrKey(label string) (AttrKey, error) {
 	return AttrKey(a), nil
 }
 
-// String string repr
-func (a attributeType) String() string {
-	return string(a)
+// AttrKeyFromBytes converts bytes to AttrKey
+func AttrKeyFromBytes(b []byte) AttrKey {
+	var a [32]byte
+	copy(a[:], b)
+	return a
+}
+
+// MarshalText converts the AttrKey to its text form
+func (a AttrKey) MarshalText() (text []byte, err error) {
+	return a[:], nil
+}
+
+// UnmarshalText converts text to AttrKey
+func (a AttrKey) UnmarshalText(text []byte) error {
+	a = AttrKeyFromBytes(text)
+	return nil
 }
 
 const (
@@ -65,46 +83,46 @@ func allowedAttributeTypes(typ attributeType) (reflect.Type, error) {
 	}
 }
 
-// attribute represents a custom attribute of a document
-type attribute struct {
-	attrType attributeType
-	keyLabel string
-	key      AttrKey
-	value    interface{}
+// Attribute represents a custom attribute of a document
+type Attribute struct {
+	AttrType attributeType `json:"attr_type"`
+	KeyLabel string        `json:"key_label"`
+	Key      AttrKey       `json:"key"`
+	Value    interface{}   `json:"value"`
 }
 
 // newAttribute creates a new custom attribute
-func newAttribute(keyLabel string, attributeType attributeType, value interface{}) (*attribute, error) {
+func newAttribute(keyLabel string, attributeType attributeType, value interface{}) (Attribute, error) {
 	if keyLabel == "" {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
 	}
 
 	if value == nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
 	}
 
 	tp, err := allowedAttributeTypes(attributeType)
 	if err != nil {
-		return nil, err
+		return Attribute{}, err
 	}
 
 	if !reflect.TypeOf(value).AssignableTo(tp) {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
 	}
 
 	hashedKey, err := NewAttrKey(keyLabel)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, err)
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, err)
 	}
 
-	return &attribute{
-		keyLabel: keyLabel,
-		key:      hashedKey,
-		attrType: attributeType,
-		value:    value,
+	return Attribute{
+		KeyLabel: keyLabel,
+		Key:      hashedKey,
+		AttrType: attributeType,
+		Value:    value,
 	}, nil
 }
 
-func (a *attribute) copy() *attribute {
-	return &attribute{a.attrType, a.keyLabel, a.key, a.value}
+func (a *Attribute) copy() Attribute {
+	return Attribute{a.AttrType, a.KeyLabel, a.Key, a.Value}
 }

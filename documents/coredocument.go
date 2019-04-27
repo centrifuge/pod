@@ -79,7 +79,7 @@ type CoreDocument struct {
 	Modified bool
 
 	// Attributes are the custom attributes added to the document
-	Attributes map[AttrKey]*attribute
+	Attributes map[AttrKey]Attribute
 
 	Document coredocumentpb.CoreDocument
 }
@@ -100,7 +100,7 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{Document: cd, Modified: true}, nil
+	return &CoreDocument{Document: cd, Modified: true, Attributes: make(map[AttrKey]Attribute)}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -222,8 +222,8 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 }
 
 // copyAttrMap copies the attributes map
-func copyAttrMap(attributes map[AttrKey]*attribute) map[AttrKey]*attribute {
-	m := make(map[AttrKey]*attribute)
+func copyAttrMap(attributes map[AttrKey]Attribute) map[AttrKey]Attribute {
+	m := make(map[AttrKey]Attribute)
 	for k, v := range attributes {
 		m[k] = v.copy()
 	}
@@ -646,9 +646,9 @@ func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeTyp
 		return nil, err
 	}
 	if ncd.Attributes == nil {
-		ncd.Attributes = make(map[AttrKey]*attribute)
+		ncd.Attributes = make(map[AttrKey]Attribute)
 	}
-	ncd.Attributes[nAttr.key] = nAttr
+	ncd.Attributes[nAttr.Key] = nAttr
 	ncd.Modified = true
 	return ncd, nil
 }
@@ -657,7 +657,7 @@ func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeTyp
 func (cd *CoreDocument) GetAttribute(key AttrKey) (hashedKey AttrKey, attrType string, value interface{}, valueStr string, err error) {
 	if attr, ok := cd.Attributes[key]; ok {
 		// TODO convert value to its string repr
-		return attr.key, string(attr.attrType), attr.value, "", nil
+		return attr.Key, string(attr.AttrType), attr.Value, "", nil
 	}
 	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 }

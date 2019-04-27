@@ -19,7 +19,7 @@ func TestNewAttribute(t *testing.T) {
 		readableKey string
 		attrType    attributeType
 		value       interface{}
-		at          *attribute
+		at          *Attribute
 		errs        bool
 		errStr      string
 	}{
@@ -64,10 +64,10 @@ func TestNewAttribute(t *testing.T) {
 			"string",
 			StrType,
 			"someval",
-			&attribute{
-				attrType: StrType,
-				keyLabel: "string",
-				value:    "someval",
+			&Attribute{
+				AttrType: StrType,
+				KeyLabel: "string",
+				Value:    "someval",
 			},
 			false,
 			"",
@@ -77,10 +77,10 @@ func TestNewAttribute(t *testing.T) {
 			"int256",
 			Int256Type,
 			big.NewInt(123),
-			&attribute{
-				attrType: Int256Type,
-				keyLabel: "int256",
-				value:    big.NewInt(123),
+			&Attribute{
+				AttrType: Int256Type,
+				KeyLabel: "int256",
+				Value:    big.NewInt(123),
 			},
 			false,
 			"",
@@ -90,10 +90,10 @@ func TestNewAttribute(t *testing.T) {
 			"bigdecimal",
 			BigDecType,
 			testdecimal,
-			&attribute{
-				attrType: BigDecType,
-				keyLabel: "bigdecimal",
-				value:    testdecimal,
+			&Attribute{
+				AttrType: BigDecType,
+				KeyLabel: "bigdecimal",
+				Value:    testdecimal,
 			},
 			false,
 			"",
@@ -103,10 +103,10 @@ func TestNewAttribute(t *testing.T) {
 			"bytes",
 			BytsType,
 			[]byte{1},
-			&attribute{
-				attrType: BytsType,
-				keyLabel: "bytes",
-				value:    []byte{1},
+			&Attribute{
+				AttrType: BytsType,
+				KeyLabel: "bytes",
+				Value:    []byte{1},
 			},
 			false,
 			"",
@@ -116,10 +116,10 @@ func TestNewAttribute(t *testing.T) {
 			"timestamp",
 			TimestmpType,
 			ttime.Unix(),
-			&attribute{
-				attrType: TimestmpType,
-				keyLabel: "timestamp",
-				value:    ttime.Unix(),
+			&Attribute{
+				AttrType: TimestmpType,
+				KeyLabel: "timestamp",
+				Value:    ttime.Unix(),
 			},
 			false,
 			"",
@@ -137,13 +137,13 @@ func TestNewAttribute(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				hashedKey, err := NewAttrKey(test.at.keyLabel)
+				hashedKey, err := NewAttrKey(test.at.KeyLabel)
 				assert.NoError(t, err)
 				if assert.NotNil(t, attr) {
-					assert.Equal(t, attr.key, hashedKey)
-					assert.Equal(t, attr.attrType, test.at.attrType)
-					assert.Equal(t, attr.value, test.at.value)
-					assert.Equal(t, attr.keyLabel, test.at.keyLabel)
+					assert.Equal(t, attr.Key, hashedKey)
+					assert.Equal(t, attr.AttrType, test.at.AttrType)
+					assert.Equal(t, attr.Value, test.at.Value)
+					assert.Equal(t, attr.KeyLabel, test.at.KeyLabel)
 				}
 			}
 		})
