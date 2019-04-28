@@ -21,8 +21,8 @@ const (
 	// Int256Type is the standard integer custom attribute type
 	Int256Type attributeType = "int256"
 
-	// BigDecType is the standard big decimal custom attribute type
-	BigDecType attributeType = "bigdecimal"
+	// DecimalType is the standard big decimal custom attribute type
+	DecimalType attributeType = "bigdecimal"
 
 	// StrType is the standard string custom attribute type
 	StrType attributeType = "string"
@@ -38,7 +38,7 @@ func allowedAttributeTypes(typ attributeType) (reflect.Type, error) {
 	switch typ {
 	case Int256Type:
 		return reflect.TypeOf(&Int256{}), nil
-	case BigDecType:
+	case DecimalType:
 		return reflect.TypeOf(&Decimal{}), nil
 	case StrType:
 		return reflect.TypeOf(""), nil
@@ -102,6 +102,7 @@ type AttrVal struct {
 	TSVal    int64
 }
 
+// NewAttrVal creates a new attribute value
 func NewAttrVal(attributeType attributeType, value interface{}) (AttrVal, error) {
 	tp, err := allowedAttributeTypes(attributeType)
 	if err != nil {
@@ -116,7 +117,7 @@ func NewAttrVal(attributeType attributeType, value interface{}) (AttrVal, error)
 	switch attributeType {
 	case Int256Type:
 		a.I256Val = value.(*Int256)
-	case BigDecType:
+	case DecimalType:
 		a.DecVal = value.(*Decimal)
 	case StrType:
 		a.StrVal = value.(string)
@@ -169,7 +170,7 @@ func strToAttrVal(typ attributeType, value string) (interface{}, error) {
 	switch typ {
 	case Int256Type:
 		return NewInt256(value)
-	case BigDecType:
+	case DecimalType:
 		return NewDecimal(value)
 	case StrType:
 		return value, nil
@@ -187,14 +188,14 @@ func attrValToStr(value AttrVal) string {
 	switch value.AttrType {
 	case Int256Type:
 		return value.I256Val.String()
-	case BigDecType:
+	case DecimalType:
 		return value.DecVal.String()
 	case StrType:
 		return value.StrVal
 	case BytsType:
 		return hexutil.Encode(value.BytVal)
 	case TimestmpType:
-		return string(value.TSVal)
+		return strconv.FormatInt(value.TSVal, 10)
 	default:
 		log.Error("value: %v seems to be corrupt", value)
 		return ""

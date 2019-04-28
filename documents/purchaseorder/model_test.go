@@ -145,6 +145,7 @@ func TestPO_UnpackCoreDocument(t *testing.T) {
 func TestPOModel_getClientData(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
 	poModel := new(PurchaseOrder)
+	poModel.CoreDocument = &documents.CoreDocument{}
 	err := poModel.loadFromP2PProtobuf(&poData)
 	assert.NoError(t, err)
 

@@ -317,6 +317,7 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.Recipient = dids[0]
 	p.Sender = dids[1]
 	p.LineItems = li
+	p.Attributes = make(map[documents.AttrKey]documents.Attribute)
 	return nil
 }
 
