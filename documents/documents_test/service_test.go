@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	srv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
+	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil)
 
 	// self failed
 	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
@@ -87,9 +87,9 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 	assert.NoError(t, err)
 	nextAid, err := anchors.ToAnchorID(doc.NextVersion())
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
@@ -107,9 +107,9 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	nextAid, err = anchors.ToAnchorID(doc.NextVersion())
 	assert.NoError(t, err)
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -147,10 +147,10 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	nextAid, err = anchors.ToAnchorID(doc.NextVersion())
 	assert.NoError(t, err)
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -162,7 +162,7 @@ func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentit
 	idService := testingcommons.MockIdentityService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
+	return documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
 
 type mockAnchorRepo struct {
@@ -191,7 +191,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 	assert.NoError(t, err)
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
-	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	return idService
 }
 
@@ -242,6 +242,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_RequestDocumentSignature(t *testing.T) {
 	srv, _ := getServiceWithMockedLayers()
 
+	mockAnchor.On("GetAnchorData", mock.Anything).Return(nil, nil, errors.New("missing"))
 	// self failed
 	_, err := srv.RequestDocumentSignature(context.Background(), nil, did)
 	assert.Error(t, err)
@@ -263,13 +264,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	ar := new(mockAnchorRepo)
-	docRoot, err := doc.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	dr, err := anchors.ToDocumentRoot(docRoot)
-	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
@@ -294,7 +289,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition
-	_, err = srv.RequestDocumentSignature(ctxh, doc, id)
+	_, err = srv.RequestDocumentSignature(ctxh, doc, did)
 	assert.NoError(t, err)
 }
 

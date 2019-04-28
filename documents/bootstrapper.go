@@ -50,7 +50,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialized")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(repo, anchorRepo, registry, didService)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	if !ok {
+		return ErrDocumentConfigNotInitialised
+	}
+
+	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil

@@ -187,7 +187,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory))
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory, s.anchorRepo))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

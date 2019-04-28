@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -38,6 +39,7 @@ type service struct {
 	queueSrv       queue.TaskQueuer
 	jobManager     jobs.Manager
 	tokenRegFinder func() documents.TokenRegistry
+	anchorRepo     anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
@@ -47,6 +49,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
 	tokenRegFinder func() documents.TokenRegistry,
+	anchorRepo anchors.AnchorRepository,
 ) Service {
 	return service{
 		repo:           repo,
@@ -54,6 +57,7 @@ func DefaultService(
 		jobManager:     jobManager,
 		Service:        srv,
 		tokenRegFinder: tokenRegFinder,
+		anchorRepo:     anchorRepo,
 	}
 }
 
@@ -127,7 +131,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.anchorRepo))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

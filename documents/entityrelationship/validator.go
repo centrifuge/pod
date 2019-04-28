@@ -1,6 +1,7 @@
 package entityrelationship
 
 import (
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -38,9 +39,9 @@ func CreateValidator(factory identity.Factory) documents.ValidatorGroup {
 }
 
 // UpdateValidator returns a validator group that should be run before updating the entity
-func UpdateValidator(factory identity.Factory) documents.ValidatorGroup {
+func UpdateValidator(factory identity.Factory, repo anchors.AnchorRepository) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(factory),
-		documents.UpdateVersionValidator(),
+		documents.UpdateVersionValidator(repo),
 	}
 }

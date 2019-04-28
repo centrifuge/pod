@@ -4,10 +4,8 @@ package purchaseorder
 
 import (
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -16,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -32,18 +31,6 @@ var (
 	accountID = did[:]
 )
 
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
-	args := r.Called(anchorID)
-	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
-	anchoredTime, _ = args.Get(1).(time.Time)
-	return docRoot, anchoredTime, args.Error(2)
-}
-
 func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service) {
 	idService := &testingcommons.MockIdentityService{}
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
@@ -51,11 +38,12 @@ func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	repo := testRepo()
-	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
+	anchorRepo := &testinganchors.MockAnchorRepo{}
+	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), idService)
 	return idService, DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
 		return nil
-	})
+	}, anchorRepo)
 }
 
 func TestService_Update(t *testing.T) {
