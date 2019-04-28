@@ -725,6 +725,11 @@ func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
 	cd.Document.AnchorRepositoryUsed = addr.Bytes()
 }
 
+// AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
+func (cd *CoreDocument) AnchorRepoAddress() common.Address {
+	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
+}
+
 // initAttributes initiates attributes if they are empty, otherwise fills the newer or update attributes into the document.
 func (cd *CoreDocument) initAttributes(attributes map[string]*documentpb.Attribute) (err error) {
 	for k, v := range attributes {

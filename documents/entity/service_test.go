@@ -21,6 +21,7 @@ import (
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -117,13 +118,15 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 	idFactory := new(testingcommons.MockIdentityFactory)
 	repo := testRepo()
 	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService)
+	docSrv := documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService)
+	anchorRepo := &testinganchors.MockAnchorRepo{}
+	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
 	return idService, idFactory, DefaultService(
 		docSrv,
 		repo,
 		queueSrv,
 		ctx[jobs.BootstrappedService].(jobs.Manager), idFactory,
-		nil, nil, nil, nil, nil)
+		nil, nil, anchorRepo, nil, nil)
 }
 
 func TestService_Update(t *testing.T) {

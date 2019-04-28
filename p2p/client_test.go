@@ -58,7 +58,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	assert.NoError(t, err, "signature request could not be created")
 
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(nil, errors.New("some error"))
-	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Nil(t, resp, "must be nil")
@@ -77,7 +77,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	assert.NoError(t, err, "signature request could not be created")
 
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp("", nil), nil)
-	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
 	assert.Contains(t, err.Error(), "Incompatible version")
@@ -100,7 +100,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	signature := &coredocumentpb.Signature{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}
 	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
 
-	resp, err := testClient.getSignatureForDocument(ctx, cd, did)
+	resp, err := testClient.getSignatureForDocument(ctx, cd, did, did)
 
 	m.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")

@@ -193,7 +193,7 @@ func (s *peer) getPeerID(id identity.DID) (libp2pPeer.ID, error) {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.CoreDocument, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
-	tc, err := s.config.GetAccount(id[:])
+	tc, err := s.config.GetAccount(collaborator[:])
 	if err == nil {
 		// this is a local account
 		h := s.handlerCreator()
@@ -210,22 +210,20 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		if err != nil {
 			return nil, err
 		}
-		if err != nil {
-			return nil, err
-		}
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, id)
+
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, sender)
 		if err != nil {
 			return nil, err
 		}
 		header = &p2ppb.Header{NodeVersion: version.GetVersion().String()}
 	} else {
 		// this is a remote account
-		err = s.idService.Exists(ctx, id)
+		err = s.idService.Exists(ctx, collaborator)
 		if err != nil {
 			return nil, err
 		}
 
-		receiverPeer, err := s.getPeerID(id)
+		receiverPeer, err := s.getPeerID(collaborator)
 		if err != nil {
 			return nil, err
 		}
@@ -234,7 +232,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 			return nil, err
 		}
 		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&id))
+		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
 		if err != nil {
 			return nil, err
 		}
@@ -257,12 +255,12 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		header = recvEnvelope.Header
 	}
 
-	err = validateSignatureResp(id, header, resp)
+	err = validateSignatureResp(collaborator, header, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("Signature successfully received from %s\n", id)
+	log.Infof("Signature successfully received from %s\n", collaborator)
 	return resp, nil
 }
 
@@ -271,8 +269,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, cd, id)
+func (s *peer) getSignatureAsync(ctx context.Context, cd coredocumentpb.CoreDocument, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, cd, collaborator, sender)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -309,7 +307,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 	defer cancel()
 	for _, c := range cs {
 		count++
-		go s.getSignatureAsync(peerCtx, cd, c, in)
+		go s.getSignatureAsync(peerCtx, cd, c, selfDID, in)
 	}
 
 	var responses []signatureResponseWrap

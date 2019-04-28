@@ -311,6 +311,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		err = po.InitPurchaseOrderInput(payload, defaultDID)
 		assert.NoError(t, err)
 	}
+	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()

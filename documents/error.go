@@ -102,9 +102,6 @@ const (
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
 
-	// ErrDocumentAnchor must be used if it is not possible to access an anchor from chain
-	ErrDocumentAnchor = errors.Error("failed to get document anchor from chain")
-
 	// ErrDocumentNotLatest must be used if document is not the latest version
 	ErrDocumentNotLatest = errors.Error("document is not the latest version")
 
@@ -124,6 +121,15 @@ const (
 
 	// ErrNotImplemented must be used when an method has not been implemented
 	ErrNotImplemented = errors.Error("Method not implemented")
+
+	// ErrDocumentConfigNotInitialised is a sentinal error when document config is missing
+	ErrDocumentConfigNotInitialised = errors.Error("document config not initialised")
+
+	// ErrDifferentAnchoredAddress is a sentinal error when anchor address is different from the configured one.
+	ErrDifferentAnchoredAddress = errors.Error("anchor address is not the node configured address")
+
+	// ErrDocumentIDReused is a sentinal error when identifier is re-used
+	ErrDocumentIDReused = errors.Error("document identifier is already used")
 )
 
 // Error wraps an error with specific key

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -33,7 +34,7 @@ func TestHost_ValidSignature(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
@@ -54,7 +55,7 @@ func TestHost_FakedSignature(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
 	assert.NoError(t, err)
@@ -79,7 +80,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 
 	// Eve creates document with Bob and signs with Revoked key
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey)
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
@@ -103,7 +104,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 }
 
 // Helper Methods
-func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte) documents.Model {
+func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
 	payload := testingdocuments.CreatePOPayload()
 	var cs []string
 	for _, c := range collaborators {
@@ -117,6 +118,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	err := po.InitPurchaseOrderInput(payload, identityDID)
 	assert.NoError(t, err)
 
+	po.SetUsedAnchorRepoAddress(anchorRepo)
 	err = po.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 
