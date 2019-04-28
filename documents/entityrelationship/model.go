@@ -87,7 +87,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entity
 	}
 
 	oldCD := old.(*EntityRelationship).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{})
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{}, nil)
 	if err != nil {
 		return err
 	}

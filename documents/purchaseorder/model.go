@@ -132,6 +132,7 @@ func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData
 		PaymentDetails:          documents.ToClientPaymentDetails(p.PaymentDetails),
 		Attachments:             documents.ToClientAttachments(p.Attachments),
 		LineItems:               toClientLineItems(p.LineItems),
+		Attributes:              documents.ToClientAttributes(p.Attributes),
 	}
 
 }
@@ -200,7 +201,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 
 	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), cs)
+	cd, err := documents.NewCoreDocumentForDoc(compactPrefix(), cs, payload.Data.Attributes)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -428,7 +429,7 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 	}
 
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
+	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, data.Attributes)
 	if err != nil {
 		return err
 	}

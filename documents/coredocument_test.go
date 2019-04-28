@@ -165,7 +165,7 @@ func TestNewCoreDocumentWithCollaborators(t *testing.T) {
 		ReadCollaborators:      []identity.DID{did1},
 		ReadWriteCollaborators: []identity.DID{did2},
 	}
-	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), *c)
+	cd, err := NewCoreDocumentForDoc([]byte("inv"), *c, nil)
 	assert.NoError(t, err)
 
 	collabs, err := cd.GetCollaborators(identity.DID{})
@@ -226,7 +226,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	c4 := testingidentity.GenerateRandomDID()
 
 	// successful preparation of new version with new read collaborators
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
@@ -240,7 +240,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 
 	// successful preparation of new version with read and write collaborators
 	assert.NoError(t, err)
-	ncd, err = cd.PrepareNewVersion([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}})
+	ncd, err = cd.PrepareNewVersion([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	rc, err = ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
@@ -496,7 +496,7 @@ func TestCoreDocument_getReadCollaborators(t *testing.T) {
 	cas := CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id1},
 	}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
@@ -526,7 +526,7 @@ func TestCoreDocument_getWriteCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), cas)
+	cd, err := NewCoreDocumentForDoc([]byte("inv"), cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
@@ -547,7 +547,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -588,7 +588,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
@@ -618,7 +618,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 func TestCoreDocument_AddAttribute(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
 	assert.NoError(t, err)
 	cd, err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
 	assert.NoError(t, err)
@@ -630,7 +630,7 @@ func TestCoreDocument_AddAttribute(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(hashedKey) > 0)
 	assert.Equal(t, attrType, StrType.String())
-	assert.Equal(t, "100", val)
+	assert.Equal(t, "100", val.StrVal)
 
 	// TODO add tests for each type + failures, once converters are ready
 }

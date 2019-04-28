@@ -66,9 +66,11 @@ func TestNewAttribute(t *testing.T) {
 			StrType,
 			"someval",
 			&Attribute{
-				AttrType: StrType,
 				KeyLabel: "string",
-				Value:    "someval",
+				Value: AttrVal{
+					StrVal:   "someval",
+					AttrType: StrType,
+				},
 			},
 			false,
 			"",
@@ -77,11 +79,13 @@ func TestNewAttribute(t *testing.T) {
 			"int256",
 			"int256",
 			Int256Type,
-			big.NewInt(123),
+			&Int256{*big.NewInt(123)},
 			&Attribute{
-				AttrType: Int256Type,
 				KeyLabel: "int256",
-				Value:    big.NewInt(123),
+				Value: AttrVal{
+					I256Val:  &Int256{*big.NewInt(123)},
+					AttrType: Int256Type,
+				},
 			},
 			false,
 			"",
@@ -92,9 +96,11 @@ func TestNewAttribute(t *testing.T) {
 			BigDecType,
 			testdecimal,
 			&Attribute{
-				AttrType: BigDecType,
 				KeyLabel: "bigdecimal",
-				Value:    testdecimal,
+				Value: AttrVal{
+					DecVal:   testdecimal,
+					AttrType: BigDecType,
+				},
 			},
 			false,
 			"",
@@ -105,9 +111,11 @@ func TestNewAttribute(t *testing.T) {
 			BytsType,
 			[]byte{1},
 			&Attribute{
-				AttrType: BytsType,
 				KeyLabel: "bytes",
-				Value:    []byte{1},
+				Value: AttrVal{
+					BytVal:   []byte{1},
+					AttrType: BytsType,
+				},
 			},
 			false,
 			"",
@@ -118,9 +126,11 @@ func TestNewAttribute(t *testing.T) {
 			TimestmpType,
 			ttime.Unix(),
 			&Attribute{
-				AttrType: TimestmpType,
 				KeyLabel: "timestamp",
-				Value:    ttime.Unix(),
+				Value: AttrVal{
+					TSVal:    ttime.Unix(),
+					AttrType: TimestmpType,
+				},
 			},
 			false,
 			"",
@@ -141,10 +151,10 @@ func TestNewAttribute(t *testing.T) {
 				hashedKey, err := NewAttrKey(test.at.KeyLabel)
 				assert.NoError(t, err)
 				if assert.NotNil(t, attr) {
-					assert.Equal(t, attr.Key, hashedKey)
-					assert.Equal(t, attr.AttrType, test.at.AttrType)
-					assert.Equal(t, attr.Value, test.at.Value)
-					assert.Equal(t, attr.KeyLabel, test.at.KeyLabel)
+					assert.Equal(t, hashedKey, attr.Key)
+					assert.Equal(t, test.at.Value.AttrType, attr.Value.AttrType)
+					assert.Equal(t, test.at.Value, attr.Value)
+					assert.Equal(t, test.at.KeyLabel, attr.KeyLabel)
 				}
 			}
 		})

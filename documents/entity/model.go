@@ -75,7 +75,7 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 	}
 
 	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)
-	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), ca)
+	cd, err := documents.NewCoreDocumentForDoc(compactPrefix(), ca, payload.Data.Attributes)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -246,7 +246,7 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 	}
 
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, data.Attributes)
 	if err != nil {
 		return err
 	}

@@ -121,7 +121,7 @@ type Model interface {
 	AddAttribute(name string, attributeType attributeType, value string) (*CoreDocument, error)
 
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-	GetAttribute(name AttrKey) (hashedKey AttrKey, attrType string, value interface{}, valueStr string, err error)
+	GetAttribute(name AttrKey) (hashedKey AttrKey, attrType string, value AttrVal, valueStr string, err error)
 
 	// DeleteAttribute deletes a custom attribute from the model
 	DeleteAttribute(key AttrKey) (*CoreDocument, error)

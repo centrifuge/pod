@@ -3,6 +3,7 @@ package documents
 import (
 	"math/big"
 	"regexp"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
@@ -20,8 +21,14 @@ type Int256 struct {
 	v big.Int
 }
 
+// String converts Int256 to string
+func (i *Int256) String() string {
+	return i.v.Text(10)
+}
+
 // NewInt256 creates a new Int256 given a string
 func NewInt256(n string) (*Int256, error) {
+	n = strings.TrimSpace(n)
 	if !validInt.MatchString(n) {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("probably a decimal value: %s", n))
 	}

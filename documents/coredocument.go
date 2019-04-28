@@ -109,9 +109,9 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 	return &CoreDocument{Document: cd}
 }
 
-// NewCoreDocumentWithCollaborators generates new core document with a document type specified by the prefix: po or invoice.
+// NewCoreDocumentForDoc generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
+func NewCoreDocumentForDoc(documentPrefix []byte, collaborators CollaboratorsAccess, attributes map[string]*documentpb.Attribute) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
@@ -119,6 +119,11 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
+
+	err = cd.initAttributes(attributes)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to init attributes: %v", err))
+	}
 	return cd, nil
 }
 
@@ -139,7 +144,7 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 		ReadCollaborators:      []identity.DID{*did[0]},
 		ReadWriteCollaborators: []identity.DID{selfDID},
 	}
-	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, collaborators)
+	cd, err := NewCoreDocumentForDoc(documentPrefix, collaborators, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +191,7 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess, attributes map[string]*documentpb.Attribute) (*CoreDocument, error) {
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
@@ -216,6 +221,10 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	ncd.Attributes = copyAttrMap(cd.Attributes)
+	err = ncd.initAttributes(attributes)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
+	}
 	ncd.Modified = true
 	return ncd, nil
 
@@ -635,36 +644,30 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeType, value string) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 	}
-	// TODO convert value from string to correct type
-	// For now its only string that is supported
-	nAttr, err := newAttribute(keyLabel, attributeType, value)
+
+	err = createAttrInCD(ncd, keyLabel, attributeType, value)
 	if err != nil {
 		return nil, err
 	}
-	if ncd.Attributes == nil {
-		ncd.Attributes = make(map[AttrKey]Attribute)
-	}
-	ncd.Attributes[nAttr.Key] = nAttr
-	ncd.Modified = true
+
 	return ncd, nil
 }
 
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-func (cd *CoreDocument) GetAttribute(key AttrKey) (hashedKey AttrKey, attrType string, value interface{}, valueStr string, err error) {
-	if attr, ok := cd.Attributes[key]; ok {
-		// TODO convert value to its string repr
-		return attr.Key, string(attr.AttrType), attr.Value, "", nil
+func (cd *CoreDocument) GetAttribute(name AttrKey) (hashedKey AttrKey, attrType string, value AttrVal, valueStr string, err error) {
+	if attr, ok := cd.Attributes[name]; ok {
+		return attr.Key, string(attr.Value.AttrType), attr.Value, attrValToStr(attr.Value), nil
 	}
 	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 }
 
 // DeleteAttribute deletes a custom attribute from the model
 func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 	}
@@ -720,4 +723,34 @@ func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
 // SetUsedAnchorRepoAddress sets used anchor repo address.
 func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
 	cd.Document.AnchorRepositoryUsed = addr.Bytes()
+}
+
+// initAttributes initiates attributes if they are empty, otherwise fills the newer or update attributes into the document.
+func (cd *CoreDocument) initAttributes(attributes map[string]*documentpb.Attribute) (err error) {
+	for k, v := range attributes {
+		nerr := createAttrInCD(cd, k, attributeType(v.Type), v.Value)
+		if nerr != nil {
+			err = errors.AppendError(err, nerr)
+		}
+	}
+	return err
+}
+
+// createAttrInCD creates the given attribute in the given coredoc, replaces if it already exists.
+func createAttrInCD(ncd *CoreDocument, keyLabel string, attributeType attributeType, value string) error {
+	v, err := strToAttrVal(attributeType, value)
+	if err != nil {
+		return errors.NewTypedError(ErrCDAttribute, errors.New("failed to convert string to attribute value: %v", err))
+	}
+
+	nAttr, err := newAttribute(keyLabel, attributeType, v)
+	if err != nil {
+		return err
+	}
+	if ncd.Attributes == nil {
+		ncd.Attributes = make(map[AttrKey]Attribute)
+	}
+	ncd.Attributes[nAttr.Key] = nAttr
+	ncd.Modified = true
+	return nil
 }

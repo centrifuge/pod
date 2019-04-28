@@ -330,6 +330,19 @@ func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess,
 	return &documentpb.ReadAccess{Collaborators: rcs}, &documentpb.WriteAccess{Collaborators: wcs}
 }
 
+// ToClientAttributes converts attribute map to the client api format
+func ToClientAttributes(attributes map[AttrKey]Attribute) map[string]*documentpb.Attribute {
+	m := make(map[string]*documentpb.Attribute)
+	for k, v := range attributes {
+		m[v.KeyLabel] = &documentpb.Attribute{
+			Key:   k.String(),
+			Type:  v.Value.AttrType.String(),
+			Value: attrValToStr(v.Value),
+		}
+	}
+	return m
+}
+
 // DeriveResponseHeader derives common response header for model
 func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb.ResponseHeader, error) {
 	cs, err := model.GetCollaborators()

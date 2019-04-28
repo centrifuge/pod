@@ -306,7 +306,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 
 	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), cs)
+	cd, err := documents.NewCoreDocumentForDoc(compactPrefix(), cs, payload.Data.Attributes)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -623,7 +623,7 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 	}
 
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
+	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, data.Attributes)
 	if err != nil {
 		return err
 	}
