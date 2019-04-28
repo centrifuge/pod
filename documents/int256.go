@@ -66,12 +66,11 @@ func FromBytes(b []byte) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// Bytes returns the big endian 32 byte representation of this int256. First bit of LSB is used as the sign bit.
+// Bytes returns the big endian 32 byte representation of this int256. First bit of LSB(least significant byte) is used as the sign bit.
 func (i *Int256) Bytes() [32]byte {
-
 	var b [32]byte
 	// no of bits in i.v.Bytes() <= 255
-	// if its less pad the number in big endian order and copy to the 32 byte array
+	// if its less, pad the number in big endian order and copy to the 32 byte array
 	copy(b[:], math.PaddedBigBytes(&i.v, 32))
 
 	//  set the sign bit

@@ -624,7 +624,9 @@ func TestCoreDocument_AddAttribute(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(cd.Attributes) == 1)
 
-	hashedKey, attrType, val, _, err := cd.GetAttribute("com.basf.deliverynote.chemicalnumber")
+	key, err := NewAttrKey("com.basf.deliverynote.chemicalnumber")
+	assert.NoError(t, err)
+	hashedKey, attrType, val, _, err := cd.GetAttribute(key)
 	assert.NoError(t, err)
 	assert.True(t, len(hashedKey) > 0)
 	assert.Equal(t, attrType, StrType.String())

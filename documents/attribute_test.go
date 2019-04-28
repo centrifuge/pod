@@ -1,11 +1,11 @@
 package documents
 
 import (
+	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +20,7 @@ func TestNewAttribute(t *testing.T) {
 		readableKey string
 		attrType    attributeType
 		value       interface{}
-		at          *attribute
+		at          *Attribute
 		errs        bool
 		errStr      string
 	}{
@@ -65,10 +65,10 @@ func TestNewAttribute(t *testing.T) {
 			"string",
 			StrType,
 			"someval",
-			&attribute{
-				attrType:    StrType,
-				readableKey: "string",
-				value:       "someval",
+			&Attribute{
+				AttrType: StrType,
+				KeyLabel: "string",
+				Value:    "someval",
 			},
 			false,
 			"",
@@ -78,10 +78,10 @@ func TestNewAttribute(t *testing.T) {
 			"int256",
 			Int256Type,
 			big.NewInt(123),
-			&attribute{
-				attrType:    Int256Type,
-				readableKey: "int256",
-				value:       big.NewInt(123),
+			&Attribute{
+				AttrType: Int256Type,
+				KeyLabel: "int256",
+				Value:    big.NewInt(123),
 			},
 			false,
 			"",
@@ -91,10 +91,10 @@ func TestNewAttribute(t *testing.T) {
 			"bigdecimal",
 			BigDecType,
 			testdecimal,
-			&attribute{
-				attrType:    BigDecType,
-				readableKey: "bigdecimal",
-				value:       testdecimal,
+			&Attribute{
+				AttrType: BigDecType,
+				KeyLabel: "bigdecimal",
+				Value:    testdecimal,
 			},
 			false,
 			"",
@@ -104,10 +104,10 @@ func TestNewAttribute(t *testing.T) {
 			"bytes",
 			BytsType,
 			[]byte{1},
-			&attribute{
-				attrType:    BytsType,
-				readableKey: "bytes",
-				value:       []byte{1},
+			&Attribute{
+				AttrType: BytsType,
+				KeyLabel: "bytes",
+				Value:    []byte{1},
 			},
 			false,
 			"",
@@ -117,10 +117,10 @@ func TestNewAttribute(t *testing.T) {
 			"timestamp",
 			TimestmpType,
 			ttime.Unix(),
-			&attribute{
-				attrType:    TimestmpType,
-				readableKey: "timestamp",
-				value:       ttime.Unix(),
+			&Attribute{
+				AttrType: TimestmpType,
+				KeyLabel: "timestamp",
+				Value:    ttime.Unix(),
 			},
 			false,
 			"",
@@ -138,15 +138,27 @@ func TestNewAttribute(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
-				hashedKey, err := crypto.Sha256Hash([]byte(test.at.readableKey))
+				hashedKey, err := NewAttrKey(test.at.KeyLabel)
 				assert.NoError(t, err)
 				if assert.NotNil(t, attr) {
-					assert.Equal(t, attr.hashedKey, hashedKey)
-					assert.Equal(t, attr.attrType, test.at.attrType)
-					assert.Equal(t, attr.value, test.at.value)
-					assert.Equal(t, attr.readableKey, test.at.readableKey)
+					assert.Equal(t, attr.Key, hashedKey)
+					assert.Equal(t, attr.AttrType, test.at.AttrType)
+					assert.Equal(t, attr.Value, test.at.Value)
+					assert.Equal(t, attr.KeyLabel, test.at.KeyLabel)
 				}
 			}
 		})
 	}
+}
+
+func TestAttrKey_MarshalText(t *testing.T) {
+	a, err := NewAttrKey("somekey")
+	assert.NoError(t, err)
+	m := map[AttrKey]string{a: "dwefw"}
+	mstr, err := json.Marshal(m)
+	assert.NoError(t, err)
+	m1 := make(map[AttrKey]string)
+	err = json.Unmarshal(mstr, &m1)
+	assert.NoError(t, err)
+	assert.Equal(t, m[a], m1[a])
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // attributeType represents the custom attribute types allowed in models
@@ -14,6 +15,42 @@ type attributeType string
 // String string repr
 func (a attributeType) String() string {
 	return string(a)
+}
+
+// AttrKey represents a sha256 hash of a attribute label given by a user.
+type AttrKey [32]byte
+
+// NewAttrKey creates a new AttrKey from label
+func NewAttrKey(label string) (AttrKey, error) {
+	hashedKey, err := crypto.Sha256Hash([]byte(label))
+	if err != nil {
+		return AttrKey{}, errors.NewTypedError(ErrCDAttribute, err)
+	}
+	var a [32]byte
+	copy(a[:], hashedKey)
+	return AttrKey(a), nil
+}
+
+// AttrKeyFromBytes converts bytes to AttrKey
+func AttrKeyFromBytes(b []byte) AttrKey {
+	var a [32]byte
+	copy(a[:], b)
+	return a
+}
+
+// MarshalText converts the AttrKey to its text form
+func (a AttrKey) MarshalText() (text []byte, err error) {
+	return []byte(hexutil.Encode(a[:])), nil
+}
+
+// UnmarshalText converts text to AttrKey
+func (a *AttrKey) UnmarshalText(text []byte) error {
+	b, err := hexutil.Decode(string(text))
+	if err != nil {
+		return err
+	}
+	*a = AttrKeyFromBytes(b)
+	return nil
 }
 
 const (
@@ -51,46 +88,46 @@ func allowedAttributeTypes(typ attributeType) (reflect.Type, error) {
 	}
 }
 
-// attribute represents a custom attribute of a document
-type attribute struct {
-	attrType    attributeType
-	readableKey string
-	hashedKey   []byte
-	value       interface{}
+// Attribute represents a custom attribute of a document
+type Attribute struct {
+	AttrType attributeType `json:"attr_type"`
+	KeyLabel string        `json:"key_label"`
+	Key      AttrKey       `json:"key"`
+	Value    interface{}   `json:"value"`
 }
 
 // newAttribute creates a new custom attribute
-func newAttribute(readableKey string, attributeType attributeType, value interface{}) (*attribute, error) {
-	if readableKey == "" {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
+func newAttribute(keyLabel string, attributeType attributeType, value interface{}) (Attribute, error) {
+	if keyLabel == "" {
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
 	}
 
 	if value == nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
 	}
 
 	tp, err := allowedAttributeTypes(attributeType)
 	if err != nil {
-		return nil, err
+		return Attribute{}, err
 	}
 
 	if !reflect.TypeOf(value).AssignableTo(tp) {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
 	}
 
-	hashedKey, err := crypto.Sha256Hash([]byte(readableKey))
+	hashedKey, err := NewAttrKey(keyLabel)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, err)
+		return Attribute{}, errors.NewTypedError(ErrCDAttribute, err)
 	}
 
-	return &attribute{
-		readableKey: readableKey,
-		hashedKey:   hashedKey,
-		attrType:    attributeType,
-		value:       value,
+	return Attribute{
+		KeyLabel: keyLabel,
+		Key:      hashedKey,
+		AttrType: attributeType,
+		Value:    value,
 	}, nil
 }
 
-func (a *attribute) copy() *attribute {
-	return &attribute{a.attrType, a.readableKey, a.hashedKey, a.value}
+func (a *Attribute) copy() Attribute {
+	return Attribute{a.AttrType, a.KeyLabel, a.Key, a.Value}
 }

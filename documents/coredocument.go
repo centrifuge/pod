@@ -79,7 +79,7 @@ type CoreDocument struct {
 	Modified bool
 
 	// Attributes are the custom attributes added to the document
-	Attributes map[string]*attribute
+	Attributes map[AttrKey]Attribute
 
 	Document coredocumentpb.CoreDocument
 }
@@ -100,7 +100,7 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{Document: cd, Modified: true}, nil
+	return &CoreDocument{Document: cd, Modified: true, Attributes: make(map[AttrKey]Attribute)}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -222,8 +222,8 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 }
 
 // copyAttrMap copies the attributes map
-func copyAttrMap(attributes map[string]*attribute) map[string]*attribute {
-	m := make(map[string]*attribute)
+func copyAttrMap(attributes map[AttrKey]Attribute) map[AttrKey]Attribute {
+	m := make(map[AttrKey]Attribute)
 	for k, v := range attributes {
 		m[k] = v.copy()
 	}
@@ -634,41 +634,41 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttribute(name string, attributeType attributeType, value string) (*CoreDocument, error) {
+func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeType, value string) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 	}
 	// TODO convert value from string to correct type
 	// For now its only string that is supported
-	nAttr, err := newAttribute(name, attributeType, value)
+	nAttr, err := newAttribute(keyLabel, attributeType, value)
 	if err != nil {
 		return nil, err
 	}
 	if ncd.Attributes == nil {
-		ncd.Attributes = make(map[string]*attribute)
+		ncd.Attributes = make(map[AttrKey]Attribute)
 	}
-	ncd.Attributes[name] = nAttr
+	ncd.Attributes[nAttr.Key] = nAttr
 	ncd.Modified = true
 	return ncd, nil
 }
 
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-func (cd *CoreDocument) GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error) {
-	if attr, ok := cd.Attributes[name]; ok {
+func (cd *CoreDocument) GetAttribute(key AttrKey) (hashedKey AttrKey, attrType string, value interface{}, valueStr string, err error) {
+	if attr, ok := cd.Attributes[key]; ok {
 		// TODO convert value to its string repr
-		return attr.hashedKey, string(attr.attrType), attr.value, "", nil
+		return attr.Key, string(attr.AttrType), attr.Value, "", nil
 	}
 	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 }
 
 // DeleteAttribute deletes a custom attribute from the model
-func (cd *CoreDocument) DeleteAttribute(name string) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 	}
-	delete(ncd.Attributes, name)
+	delete(ncd.Attributes, key)
 	ncd.Modified = true
 	return ncd, nil
 }
