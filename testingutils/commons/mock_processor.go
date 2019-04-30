@@ -15,8 +15,8 @@ type MockRequestProcessor struct {
 }
 
 func (m *MockRequestProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier,
-	entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
-	args := m.Called(granterDID, tokenIdentifier, entityIdentifier, entityRelationIdentifier)
+	documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+	args := m.Called(granterDID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier)
 	resp, _ := args.Get(0).(*p2ppb.GetDocumentResponse)
 	return resp, args.Error(1)
 }
