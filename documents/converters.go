@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -432,4 +433,110 @@ func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts
 		})
 	}
 	return nnfts, err
+}
+
+// toP2PAttributes convert model attributes to p2p attributes
+// since the p2p respresentation of attributes is a list, we will always sort the keys and then insert to the list.
+func toP2PAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attribute, err error) {
+	var keys [][32]byte
+	for k := range attrs {
+		k := k
+		keys = append(keys, k)
+	}
+
+	keys = byteutils.SortByte32Slice(keys)
+	for _, k := range keys {
+		attr := attrs[k]
+		pattr := &coredocumentpb.Attribute{
+			Key:      attr.Key[:],
+			KeyLabel: []byte(attr.KeyLabel),
+			Type:     getP2PAttributeType(attr.Value.Type),
+		}
+
+		switch attr.Value.Type {
+		case AttrInt256:
+			b := attr.Value.Int256.Bytes()
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b[:]}
+		case AttrDecimal:
+			b, err := attr.Value.Decimal.Bytes()
+			if err != nil {
+				return nil, err
+			}
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b}
+		case AttrString:
+			pattr.Value = &coredocumentpb.Attribute_StrVal{StrVal: attr.Value.Str}
+		case AttrBytes:
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
+		case AttrTimestamp:
+			pattr.Value = &coredocumentpb.Attribute_TimeVal{TimeVal: attr.Value.Timestamp}
+		}
+
+		pattrs = append(pattrs, pattr)
+	}
+
+	return pattrs, nil
+}
+
+const attributeP2PPrefix = "ATTRIBUTE_TYPE_"
+
+func getP2PAttributeType(attrType attributeType) coredocumentpb.AttributeType {
+	str := attributeP2PPrefix + strings.ToUpper(attrType.String())
+	return coredocumentpb.AttributeType(coredocumentpb.AttributeType_value[str])
+}
+
+func getAttributeTypeFromP2P(attrType coredocumentpb.AttributeType) attributeType {
+	str := coredocumentpb.AttributeType_name[int32(attrType)]
+	return attributeType(strings.ToLower(strings.TrimPrefix(str, attributeP2PPrefix)))
+}
+
+// fromP2PAttributes converts p2p attribute list to model attribute map
+func fromP2PAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribute, error) {
+	if len(pattrs) < 1 {
+		return nil, nil
+	}
+
+	m := make(map[AttrKey]Attribute)
+	for _, pattr := range pattrs {
+		attrKey, err := AttrKeyFromBytes(pattr.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		attrType := getAttributeTypeFromP2P(pattr.Type)
+		attr := Attribute{
+			Key:      attrKey,
+			KeyLabel: string(pattr.KeyLabel),
+		}
+
+		attr.Value, err = attrValFromP2PAttribute(attrType, pattr)
+		if err != nil {
+			return nil, err
+		}
+
+		m[attrKey] = attr
+	}
+
+	return m, nil
+}
+
+func attrValFromP2PAttribute(attrType attributeType, attribute *coredocumentpb.Attribute) (attrVal AttrVal, err error) {
+	if !isAttrTypeAllowed(attrType) {
+		return attrVal, ErrNotValidAttrType
+	}
+
+	attrVal.Type = attrType
+	switch attrType {
+	case AttrInt256:
+		attrVal.Int256, err = Int256FromBytes(attribute.GetByteVal())
+	case AttrDecimal:
+		attrVal.Decimal, err = DecimalFromBytes(attribute.GetByteVal())
+	case AttrString:
+		attrVal.Str = attribute.GetStrVal()
+	case AttrBytes:
+		attrVal.Bytes = attribute.GetByteVal()
+	case AttrTimestamp:
+		attrVal.Timestamp = attribute.GetTimeVal()
+	}
+
+	return attrVal, err
 }

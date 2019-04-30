@@ -120,6 +120,7 @@ type Model interface {
 	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 	AddAttribute(keyLabel string, attributeType attributeType, value string) (*CoreDocument, error)
 
+	// TODO(ved): add exists attribute
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
 	GetAttribute(key AttrKey) (Attribute, error)
 

@@ -19,10 +19,10 @@ func (a attributeType) String() string {
 
 const (
 	// AttrInt256 is the standard integer custom attribute type
-	AttrInt256 attributeType = "int256"
+	AttrInt256 attributeType = "integer"
 
 	// AttrDecimal is the standard big decimal custom attribute type
-	AttrDecimal attributeType = "bigdecimal"
+	AttrDecimal attributeType = "decimal"
 
 	// AttrString is the standard string custom attribute type
 	AttrString attributeType = "string"

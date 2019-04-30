@@ -456,3 +456,54 @@ func TestAttributes(t *testing.T) {
 	attrMap, err = FromClientAttributes(attrs)
 	assert.Error(t, err)
 }
+
+func TestP2PAttributes(t *testing.T) {
+	cattrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrs, err := FromClientAttributes(cattrs)
+	assert.NoError(t, err)
+
+	pattrs, err := toP2PAttributes(attrs)
+	assert.NoError(t, err)
+
+	attrs1, err := fromP2PAttributes(pattrs)
+	assert.NoError(t, err)
+	assert.Equal(t, attrs, attrs1)
+
+	pattrs1, err := toP2PAttributes(attrs1)
+	assert.NoError(t, err)
+	assert.Equal(t, pattrs, pattrs1)
+
+	pattrs[0].Type = coredocumentpb.AttributeType(0)
+	_, err = fromP2PAttributes(pattrs)
+	assert.Error(t, err)
+
+	pattrs[0].Key = utils.RandomSlice(31)
+	_, err = fromP2PAttributes(pattrs)
+	assert.Error(t, err)
+}
