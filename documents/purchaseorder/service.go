@@ -203,7 +203,7 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return po.getClientData(), nil
+	return po.getClientData()
 }
 
 // DerivePurchaseOrderResponse returns po response from the model

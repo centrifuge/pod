@@ -87,7 +87,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entity
 	}
 
 	oldCD := old.(*EntityRelationship).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{})
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{}, nil)
 	if err != nil {
 		return err
 	}
@@ -189,9 +189,6 @@ func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	eProto := e.createP2PProtobuf()
-	if err != nil {
-		return nil, err
-	}
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}

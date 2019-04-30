@@ -154,6 +154,16 @@ func (d *Decimal) SetBytes(dec []byte) error {
 	return d.SetString(s)
 }
 
+// NewDecimal returns a new decimal from given string
+func NewDecimal(s string) (*Decimal, error) {
+	dec := new(Decimal)
+	err := dec.SetString(s)
+	if err != nil {
+		return nil, err
+	}
+	return dec, nil
+}
+
 // DecimalsToStrings converts decimals to string.
 // nil decimal leads to empty string.
 func DecimalsToStrings(decs ...*Decimal) []string {
@@ -196,8 +206,7 @@ func StringsToDecimals(strs ...string) ([]*Decimal, error) {
 			continue
 		}
 
-		dec := new(Decimal)
-		err := dec.SetString(s)
+		dec, err := NewDecimal(s)
 		if err != nil {
 			return nil, err
 		}

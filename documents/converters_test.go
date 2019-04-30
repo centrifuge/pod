@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -396,4 +397,62 @@ func TestConvertNFTs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAttributes(t *testing.T) {
+	attrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrMap, err := FromClientAttributes(attrs)
+	assert.NoError(t, err)
+
+	cattrs, err := ToClientAttributes(attrMap)
+	assert.NoError(t, err)
+	for k := range cattrs {
+		cattrs[k].Key = ""
+	}
+	assert.Equal(t, attrs, cattrs)
+
+	// failed ToClient
+	var key AttrKey
+	var attr Attribute
+	for k := range attrMap {
+		key = k
+		attr = attrMap[k]
+		break
+	}
+
+	attr.Value.Type = attributeType("some type")
+	attrMap[key] = attr
+	cattrs, err = ToClientAttributes(attrMap)
+	assert.Error(t, err)
+
+	// failed FromClient
+	attrs[""] = &documentpb.Attribute{}
+	attrMap, err = FromClientAttributes(attrs)
+	assert.Error(t, err)
 }

@@ -1,41 +1,76 @@
 package documents
 
 import (
-	"math/big"
-	"reflect"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // attributeType represents the custom attribute types allowed in models
 type attributeType string
 
-// String string repr
+// String returns the readable name of the attribute type.
 func (a attributeType) String() string {
 	return string(a)
+}
+
+const (
+	// AttrInt256 is the standard integer custom attribute type
+	AttrInt256 attributeType = "int256"
+
+	// AttrDecimal is the standard big decimal custom attribute type
+	AttrDecimal attributeType = "bigdecimal"
+
+	// AttrString is the standard string custom attribute type
+	AttrString attributeType = "string"
+
+	// AttrBytes is the standard bytes custom attribute type
+	AttrBytes attributeType = "bytes"
+
+	// AttrTimestamp is the standard time stamp custom attribute type
+	AttrTimestamp attributeType = "timestamp"
+)
+
+// allowedAttrTypes holds a map of allowed attribute types and their reflect.Type
+var allowedAttrTypes = map[attributeType]struct{}{
+	AttrInt256:    {},
+	AttrDecimal:   {},
+	AttrString:    {},
+	AttrBytes:     {},
+	AttrTimestamp: {},
+}
+
+// isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
+func isAttrTypeAllowed(attr attributeType) bool {
+	_, ok := allowedAttrTypes[attr]
+	return ok
 }
 
 // AttrKey represents a sha256 hash of a attribute label given by a user.
 type AttrKey [32]byte
 
-// NewAttrKey creates a new AttrKey from label
-func NewAttrKey(label string) (AttrKey, error) {
+// AttrKeyFromLabel creates a new AttrKey from label.
+func AttrKeyFromLabel(label string) (attrKey AttrKey, err error) {
 	hashedKey, err := crypto.Sha256Hash([]byte(label))
 	if err != nil {
-		return AttrKey{}, errors.NewTypedError(ErrCDAttribute, err)
+		return attrKey, err
 	}
-	var a [32]byte
-	copy(a[:], hashedKey)
-	return AttrKey(a), nil
+
+	return AttrKeyFromBytes(hashedKey)
 }
 
 // AttrKeyFromBytes converts bytes to AttrKey
-func AttrKeyFromBytes(b []byte) AttrKey {
-	var a [32]byte
-	copy(a[:], b)
-	return a
+func AttrKeyFromBytes(b []byte) (attrKey AttrKey, err error) {
+	a, err := utils.SliceToByte32(b)
+	return AttrKey(a), err
+}
+
+// String converts the AttrKey to a hex string
+func (a AttrKey) String() string {
+	return hexutil.Encode(a[:])
 }
 
 // MarshalText converts the AttrKey to its text form
@@ -49,85 +84,104 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 	if err != nil {
 		return err
 	}
-	*a = AttrKeyFromBytes(b)
-	return nil
+
+	*a, err = AttrKeyFromBytes(b)
+	return err
 }
 
-const (
-	// Int256Type is the standard integer custom attribute type
-	Int256Type attributeType = "int256"
+// AttrVal represents a strongly typed value of an attribute
+type AttrVal struct {
+	Type      attributeType
+	Int256    *Int256
+	Decimal   *Decimal
+	Str       string
+	Bytes     []byte
+	Timestamp *timestamp.Timestamp
+}
 
-	// BigDecType is the standard big decimal custom attribute type
-	BigDecType attributeType = "bigdecimal"
-
-	// StrType is the standard string custom attribute type
-	StrType attributeType = "string"
-
-	// BytsType is the standard bytes custom attribute type
-	BytsType attributeType = "bytes"
-
-	// TimestmpType is the standard time stamp custom attribute type
-	TimestmpType attributeType = "timestamp"
-)
-
-func allowedAttributeTypes(typ attributeType) (reflect.Type, error) {
-	switch typ {
-	case Int256Type:
-		// TODO IMPORTANT!!! use our own type for int256 with size checks
-		return reflect.TypeOf(&big.Int{}), nil
-	case BigDecType:
-		return reflect.TypeOf(&Decimal{}), nil
-	case StrType:
-		return reflect.TypeOf(""), nil
-	case BytsType:
-		return reflect.TypeOf([]byte{}), nil
-	case TimestmpType:
-		return reflect.TypeOf(int64(1)), nil
-	default:
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("can't find the given attribute in allowed attribute types"))
+// AttrValFromString converts the string value to necessary type based on the attribute type.
+func AttrValFromString(attrType attributeType, value string) (attrVal AttrVal, err error) {
+	if !isAttrTypeAllowed(attrType) {
+		return attrVal, ErrNotValidAttrType
 	}
+
+	attrVal.Type = attrType
+	switch attrType {
+	case AttrInt256:
+		attrVal.Int256, err = NewInt256(value)
+	case AttrDecimal:
+		attrVal.Decimal, err = NewDecimal(value)
+	case AttrString:
+		attrVal.Str = value
+	case AttrBytes:
+		attrVal.Bytes, err = hexutil.Decode(value)
+	case AttrTimestamp:
+		var t time.Time
+		t, err = time.Parse(time.RFC3339, value)
+		if err != nil {
+			return attrVal, err
+		}
+
+		attrVal.Timestamp, err = utils.ToTimestamp(t)
+	}
+
+	return attrVal, err
+}
+
+// String returns the string representation of the AttrVal.
+func (attrVal AttrVal) String() (str string, err error) {
+	if !isAttrTypeAllowed(attrVal.Type) {
+		return str, ErrNotValidAttrType
+	}
+
+	switch attrVal.Type {
+	case AttrInt256:
+		str = attrVal.Int256.String()
+	case AttrDecimal:
+		str = attrVal.Decimal.String()
+	case AttrString:
+		str = attrVal.Str
+	case AttrBytes:
+		str = hexutil.Encode(attrVal.Bytes)
+	case AttrTimestamp:
+		var tp time.Time
+		tp, err = utils.FromTimestamp(attrVal.Timestamp)
+		if err != nil {
+			break
+		}
+
+		str = tp.Format(time.RFC3339)
+	}
+
+	return str, err
 }
 
 // Attribute represents a custom attribute of a document
 type Attribute struct {
-	AttrType attributeType `json:"attr_type"`
-	KeyLabel string        `json:"key_label"`
-	Key      AttrKey       `json:"key"`
-	Value    interface{}   `json:"value"`
+	KeyLabel string
+	Key      AttrKey
+	Value    AttrVal
 }
 
-// newAttribute creates a new custom attribute
-func newAttribute(keyLabel string, attributeType attributeType, value interface{}) (Attribute, error) {
+// newAttribute creates a new custom attribute.
+func newAttribute(keyLabel string, attrType attributeType, value string) (attr Attribute, err error) {
 	if keyLabel == "" {
-		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with an empty string as name"))
+		return attr, ErrEmptyAttrLabel
 	}
 
-	if value == nil {
-		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("can't create attribute with a nil value"))
-	}
-
-	tp, err := allowedAttributeTypes(attributeType)
+	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
-		return Attribute{}, err
+		return attr, err
 	}
 
-	if !reflect.TypeOf(value).AssignableTo(tp) {
-		return Attribute{}, errors.NewTypedError(ErrCDAttribute, errors.New("provided type doesn't match the actual type of the value"))
-	}
-
-	hashedKey, err := NewAttrKey(keyLabel)
+	attrVal, err := AttrValFromString(attrType, value)
 	if err != nil {
-		return Attribute{}, errors.NewTypedError(ErrCDAttribute, err)
+		return attr, err
 	}
 
 	return Attribute{
 		KeyLabel: keyLabel,
-		Key:      hashedKey,
-		AttrType: attributeType,
-		Value:    value,
+		Key:      attrKey,
+		Value:    attrVal,
 	}, nil
-}
-
-func (a *Attribute) copy() Attribute {
-	return Attribute{a.AttrType, a.KeyLabel, a.Key, a.Value}
 }

@@ -55,22 +55,23 @@ const (
 	SignaturesTreePrefix = "signatures_tree"
 )
 
+var compactProps = map[string][]byte{
+	CDRootField:         {0, 0, 0, 7},
+	DataRootField:       {0, 0, 0, 5},
+	DocumentTypeField:   {0, 0, 0, 100},
+	SignaturesRootField: {0, 0, 0, 6},
+	SigningRootField:    {0, 0, 0, 10},
+
+	// tree prefixes use the first byte of a 4 byte slice by convention
+	CDTreePrefix:         {1, 0, 0, 0},
+	SigningTreePrefix:    {2, 0, 0, 0},
+	SignaturesTreePrefix: {3, 0, 0, 0},
+	DRTreePrefix:         {4, 0, 0, 0},
+}
+
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
-	m := map[string][]byte{
-		CDRootField:         {0, 0, 0, 7},
-		DataRootField:       {0, 0, 0, 5},
-		DocumentTypeField:   {0, 0, 0, 100},
-		SignaturesRootField: {0, 0, 0, 6},
-		SigningRootField:    {0, 0, 0, 10},
-
-		// tree prefixes use the first byte of a 4 byte slice by convention
-		CDTreePrefix:         {1, 0, 0, 0},
-		SigningTreePrefix:    {2, 0, 0, 0},
-		SignaturesTreePrefix: {3, 0, 0, 0},
-		DRTreePrefix:         {4, 0, 0, 0},
-	}
-	return m[key]
+	return compactProps[key]
 }
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
@@ -109,9 +110,9 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
 	return &CoreDocument{Document: cd}
 }
 
-// NewCoreDocumentWithCollaborators generates new core document with a document type specified by the prefix: po or invoice.
+// NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
+func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, attributes map[AttrKey]Attribute) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
@@ -119,6 +120,7 @@ func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators Colla
 
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
+	cd.Attributes = attributes
 	return cd, nil
 }
 
@@ -139,7 +141,7 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 		ReadCollaborators:      []identity.DID{*did[0]},
 		ReadWriteCollaborators: []identity.DID{selfDID},
 	}
-	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, collaborators)
+	cd, err := NewCoreDocument(documentPrefix, collaborators, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +188,7 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
@@ -216,16 +218,23 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	ncd.Attributes = copyAttrMap(cd.Attributes)
+	for k, attr := range attrs {
+		ncd.Attributes[k] = attr
+	}
 	ncd.Modified = true
 	return ncd, nil
 
 }
 
-// copyAttrMap copies the attributes map
+// copyAttrMap copies the attributes map.
 func copyAttrMap(attributes map[AttrKey]Attribute) map[AttrKey]Attribute {
 	m := make(map[AttrKey]Attribute)
 	for k, v := range attributes {
-		m[k] = v.copy()
+		m[k] = Attribute{
+			KeyLabel: v.KeyLabel,
+			Key:      v.Key,
+			Value:    v.Value,
+		}
 	}
 	return m
 }
@@ -635,41 +644,47 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeType, value string) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 	}
-	// TODO convert value from string to correct type
-	// For now its only string that is supported
-	nAttr, err := newAttribute(keyLabel, attributeType, value)
-	if err != nil {
-		return nil, err
-	}
+
 	if ncd.Attributes == nil {
 		ncd.Attributes = make(map[AttrKey]Attribute)
 	}
-	ncd.Attributes[nAttr.Key] = nAttr
-	ncd.Modified = true
+
+	attr, err := newAttribute(keyLabel, attributeType, value)
+	if err != nil {
+		return nil, err
+	}
+
+	ncd.Attributes[attr.Key] = attr
 	return ncd, nil
 }
 
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-func (cd *CoreDocument) GetAttribute(key AttrKey) (hashedKey AttrKey, attrType string, value interface{}, valueStr string, err error) {
-	if attr, ok := cd.Attributes[key]; ok {
-		// TODO convert value to its string repr
-		return attr.Key, string(attr.AttrType), attr.Value, "", nil
+func (cd *CoreDocument) GetAttribute(key AttrKey) (attr Attribute, err error) {
+	attr, ok := cd.Attributes[key]
+	if !ok {
+		return attr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 	}
-	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
+
+	return attr, nil
 }
 
-// DeleteAttribute deletes a custom attribute from the model
+// DeleteAttribute deletes a custom attribute from the model.
+// If the attribute is missing, delete returns an error
 func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	if _, ok := cd.Attributes[key]; !ok {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("missing attribute: %v", key))
+	}
+
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 	}
+
 	delete(ncd.Attributes, key)
-	ncd.Modified = true
 	return ncd, nil
 }
 

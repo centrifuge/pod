@@ -144,6 +144,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
+	assert.NoError(t, err)
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
@@ -151,7 +152,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
-	assert.Equal(t, payload.Data, doc.(*PurchaseOrder).getClientData())
+	data, err := doc.(*PurchaseOrder).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, payload.Data, data)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
@@ -274,7 +277,8 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.Nil(t, err)
 
-	data := doc.(*PurchaseOrder).getClientData()
+	data, err := doc.(*PurchaseOrder).getClientData()
+	assert.NoError(t, err)
 	data.Currency = "INR"
 	doc2 := new(PurchaseOrder)
 	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))

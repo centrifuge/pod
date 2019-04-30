@@ -175,7 +175,7 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
 func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
@@ -442,7 +442,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 
 // AddAccessToken adds the AccessToken to the document
 func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +459,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 
 // DeleteAccessToken deletes an access token on the Document
 func (cd *CoreDocument) DeleteAccessToken(ctx context.Context, granteeID string) (*CoreDocument, error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, err
 	}
