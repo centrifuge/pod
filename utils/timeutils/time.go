@@ -14,6 +14,7 @@ func EnsureDelayOperation(start time.Time, opDelay time.Duration) {
 	if consumed < opDelay {
 		t := time.NewTimer(opDelay - consumed)
 		<-t.C
+		t.Stop()
 	}
 	apiLog.Infof("Time consumed by operation [%s]", consumed.String())
 	apiLog.Infof("Real Response Time of operation [%s]", time.Now().Sub(start).String())
