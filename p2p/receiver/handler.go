@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils/timeutils"
-
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
@@ -17,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
@@ -56,8 +55,7 @@ func New(
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
 func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
-	start := time.Now()
-	defer timeutils.EnsureDelayOperation(start, responseDelay)
+	defer timeutils.EnsureDelayOperation(time.Now(), responseDelay)
 
 	if msg == nil {
 		return srv.convertToErrorEnvelop(errors.New("nil payload provided"))
