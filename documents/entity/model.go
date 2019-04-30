@@ -320,3 +320,26 @@ func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator ide
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
+// PrepareNewVersionWithExistingData prepares new version with existing current entity data
+func (e *Entity) PrepareNewVersionWithExistingData() (documents.Model, error) {
+	newVersion := new(Entity)
+
+	// copy current data to new version
+	err := newVersion.initEntityFromData(e.getClientData())
+	if err != nil {
+		return nil, err
+	}
+
+	// no new collaborators needed
+	coll := documents.CollaboratorsAccess{
+		ReadCollaborators:      nil,
+		ReadWriteCollaborators: nil,
+	}
+
+	// create next core document
+	newVersion.CoreDocument, err = e.CoreDocument.PrepareNewVersion(compactPrefix(), coll)
+	if err != nil {
+		return nil, err
+	}
+	return newVersion, nil
+}

@@ -274,3 +274,27 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 	}
 	return nil
 }
+
+// PrepareNewVersionWithExistingData prepares new version with existing current entity relationship data
+func (e *EntityRelationship) PrepareNewVersionWithExistingData() (documents.Model, error) {
+	newVersion := new(EntityRelationship)
+
+	// copy current data to new version
+	err := newVersion.initEntityRelationshipFromData(e.getRelationshipData())
+	if err != nil {
+		return nil, err
+	}
+
+	// no new collaborators needed
+	coll := documents.CollaboratorsAccess{
+		ReadCollaborators:      nil,
+		ReadWriteCollaborators: nil,
+	}
+
+	// create next core document
+	newVersion.CoreDocument, err = e.CoreDocument.PrepareNewVersion(compactPrefix(), coll)
+	if err != nil {
+		return nil, err
+	}
+	return newVersion, nil
+}

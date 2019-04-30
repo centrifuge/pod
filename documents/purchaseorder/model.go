@@ -521,3 +521,27 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
+
+// PrepareNewVersionWithExistingData prepares new version with existing current purchase order data
+func (p *PurchaseOrder) PrepareNewVersionWithExistingData() (documents.Model, error) {
+	newVersion := new(PurchaseOrder)
+
+	// copy current data to new version
+	err := newVersion.initPurchaseOrderFromData(p.getClientData())
+	if err != nil {
+		return nil, err
+	}
+
+	// no new collaborators needed
+	coll := documents.CollaboratorsAccess{
+		ReadCollaborators:      nil,
+		ReadWriteCollaborators: nil,
+	}
+
+	// create next core document
+	newVersion.CoreDocument, err = p.CoreDocument.PrepareNewVersion(compactPrefix(), coll)
+	if err != nil {
+		return nil, err
+	}
+	return newVersion, nil
+}

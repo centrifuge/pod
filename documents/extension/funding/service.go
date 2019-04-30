@@ -41,7 +41,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	return model, nil
 }
 
-// DeriveInvoiceResponse returns create response from invoice model
+// DeriveFundingResponse returns create response from the added funding
 func (s service) DeriveFundingResponse(model documents.Model, payload *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error) {
 	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
 	if err != nil {
