@@ -134,6 +134,9 @@ type Model interface {
 
 	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
 	AnchorRepoAddress() common.Address
+
+	// PrepareNewVersionWithExistingData prepares new version with existing document data
+	PrepareNewVersionWithExistingData() (Model, error)
 }
 
 // TokenRegistry defines NFT related functions.

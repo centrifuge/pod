@@ -15,14 +15,14 @@ import "protoc-gen-swagger/options/annotations.proto";
 service FundingService {
   rpc Create(FundingCreatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/document/{document_version}/extension/funding/agreement"
+      post: "/document/{identifier}/extension/funding/agreement"
       body: "*"
     };
   }
 }
 
 message FundingCreatePayload {
-  string document_version = 1;
+  string identifier = 1;
   FundingData data = 2;
 }
 

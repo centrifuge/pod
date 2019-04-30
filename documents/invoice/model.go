@@ -615,6 +615,33 @@ func (*Invoice) DocumentType() string {
 	return documenttypes.InvoiceDataTypeUrl
 }
 
+
+// PrepareNewVersionWithExistingData prepares new version with existing current invoice data
+func (i *Invoice) PrepareNewVersionWithExistingData() (documents.Model, error) {
+	newVersion := new(Invoice)
+
+	// copy current data to new version
+	err := newVersion.initInvoiceFromData(i.getClientData())
+	if err != nil {
+		return nil, err
+	}
+
+	// no new collaborators needed
+	coll := documents.CollaboratorsAccess{
+		ReadCollaborators:      nil,
+		ReadWriteCollaborators: nil,
+	}
+
+	// create next core document
+	newVersion.CoreDocument, err = i.CoreDocument.PrepareNewVersion(compactPrefix(), coll)
+	if err != nil {
+		return nil, err
+	}
+	return newVersion, nil
+}
+
+
+
 // PrepareNewVersion prepares new version from the old invoice.
 func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess) error {
 	err := i.initInvoiceFromData(data)
