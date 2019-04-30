@@ -25,7 +25,7 @@ type Config interface {
 
 // DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
 type DocumentRequestProcessor interface {
-	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
+	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
 }
 
 // Client defines methods that can be implemented by any type handling p2p communications.
