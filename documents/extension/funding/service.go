@@ -29,7 +29,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	new, err := current.PrepareNewVersionWithExistingData()
+	model, err := current.PrepareNewVersionWithExistingData()
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 
 	// todo add custom attributes to model
 
-	return new, nil
+	return model, nil
 }
 
 // DeriveInvoiceResponse returns create response from invoice model
