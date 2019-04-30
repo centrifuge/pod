@@ -240,6 +240,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
+	assert.NoError(t, err)
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
@@ -247,7 +248,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
-	assert.Equal(t, payload.Data, doc.(*Entity).getClientData())
+	data, err := doc.(*Entity).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, payload.Data, data)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
@@ -423,7 +426,8 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
 
-	data := doc.(*Entity).getClientData()
+	data, err := doc.(*Entity).getClientData()
+	assert.NoError(t, err)
 	data.LegalName = "test company"
 	doc2 := new(Entity)
 	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))

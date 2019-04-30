@@ -194,6 +194,7 @@ func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	e = new(EntityRelationship)
 	data.TargetIdentity = "some random string"
 	err = e.InitEntityRelationshipInput(ctxh, entityID, data)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 }
 
@@ -310,6 +311,7 @@ func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	oldRelationship := model
 	assert.NoError(t, err)
 	err = er.CollaboratorCanUpdate(oldRelationship, id1)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "identity attempting to update the document does not own this entity relationship")
 
 	// attempted updater is owner of the relationship

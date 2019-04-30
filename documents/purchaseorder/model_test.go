@@ -136,7 +136,11 @@ func TestPO_UnpackCoreDocument(t *testing.T) {
 	po, cd := createCDWithEmbeddedPO(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), po.(*PurchaseOrder).getClientData())
+	data, err := model.getClientData()
+	assert.NoError(t, err)
+	data1, err := po.(*PurchaseOrder).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, data, data1)
 	assert.Equal(t, model.ID(), po.ID())
 	assert.Equal(t, model.CurrentVersion(), po.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), po.PreviousVersion())
@@ -149,7 +153,8 @@ func TestPOModel_getClientData(t *testing.T) {
 	err := poModel.loadFromP2PProtobuf(&poData)
 	assert.NoError(t, err)
 
-	data := poModel.getClientData()
+	data, err := poModel.getClientData()
+	assert.NoError(t, err)
 	assert.NotNil(t, data, "purchase order data should not be nil")
 	assert.Equal(t, data.TotalAmount, data.TotalAmount, "gross amount must match")
 	assert.Equal(t, data.Recipient, poModel.Recipient.String(), "recipient should match")
@@ -177,6 +182,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 
 	collabs := []string{"0x010102040506", "some id"}
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -312,7 +318,8 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], po.CurrentVersion())
 	assert.NoError(t, err)
 	oldPO := model.(*PurchaseOrder)
-	data := oldPO.getClientData()
+	data, err := oldPO.getClientData()
+	assert.NoError(t, err)
 	data.TotalAmount = "50"
 	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
@@ -334,7 +341,8 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], po.CurrentVersion())
 	assert.NoError(t, err)
 	oldPO = model.(*PurchaseOrder)
-	data = oldPO.getClientData()
+	data, err = oldPO.getClientData()
+	assert.NoError(t, err)
 	data.TotalAmount = "55"
 	data.Currency = "INR"
 	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{})

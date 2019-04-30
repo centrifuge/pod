@@ -189,9 +189,6 @@ func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	eProto := e.createP2PProtobuf()
-	if err != nil {
-		return nil, err
-	}
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}

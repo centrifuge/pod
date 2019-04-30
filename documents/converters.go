@@ -331,16 +331,45 @@ func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess,
 }
 
 // ToClientAttributes converts attribute map to the client api format
-func ToClientAttributes(attributes map[AttrKey]Attribute) map[string]*documentpb.Attribute {
+func ToClientAttributes(attributes map[AttrKey]Attribute) (map[string]*documentpb.Attribute, error) {
+	if len(attributes) < 1 {
+		return nil, nil
+	}
+
 	m := make(map[string]*documentpb.Attribute)
 	for k, v := range attributes {
+		val, err := v.Value.String()
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, err)
+		}
+
 		m[v.KeyLabel] = &documentpb.Attribute{
 			Key:   k.String(),
-			Type:  v.Value.AttrType.String(),
-			Value: attrValToStr(v.Value),
+			Type:  v.Value.Type.String(),
+			Value: val,
 		}
 	}
-	return m
+
+	return m, nil
+}
+
+// FromClientAttributes converts the api attributes type to local Attributes map.
+func FromClientAttributes(attrs map[string]*documentpb.Attribute) (map[AttrKey]Attribute, error) {
+	if len(attrs) < 1 {
+		return nil, nil
+	}
+
+	m := make(map[AttrKey]Attribute)
+	for k, at := range attrs {
+		attr, err := newAttribute(k, attributeType(at.Type), at.Value)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, err)
+		}
+
+		m[attr.Key] = attr
+	}
+
+	return m, nil
 }
 
 // DeriveResponseHeader derives common response header for model

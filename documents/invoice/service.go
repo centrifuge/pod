@@ -190,7 +190,7 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return inv.getClientData(), nil
+	return inv.getClientData()
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload

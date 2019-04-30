@@ -113,7 +113,7 @@ func TestCoreDocument_addNFTToReadRules(t *testing.T) {
 
 func TestCoreDocument_NFTOwnerCanRead(t *testing.T) {
 	account := testingidentity.GenerateRandomDID()
-	cd, err := NewCoreDocumentForDoc(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{account}}, nil)
+	cd, err := NewCoreDocument(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{account}}, nil)
 	assert.NoError(t, err)
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 
@@ -356,7 +356,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	granterID, err := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
-	cd, err := NewCoreDocumentForDoc(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{granterID}}, nil)
+	cd, err := NewCoreDocument(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{granterID}}, nil)
 	assert.NoError(t, err)
 	payload := documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
@@ -434,6 +434,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	}
 
 	_, err = m.AddAccessToken(ctx, payload)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: invalid identifier length")
 	// valid
 	payload = documentpb.AccessTokenParams{

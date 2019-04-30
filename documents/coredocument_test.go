@@ -165,7 +165,7 @@ func TestNewCoreDocumentWithCollaborators(t *testing.T) {
 		ReadCollaborators:      []identity.DID{did1},
 		ReadWriteCollaborators: []identity.DID{did2},
 	}
-	cd, err := NewCoreDocumentForDoc([]byte("inv"), *c, nil)
+	cd, err := NewCoreDocument([]byte("inv"), *c, nil)
 	assert.NoError(t, err)
 
 	collabs, err := cd.GetCollaborators(identity.DID{})
@@ -415,6 +415,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
 	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	testTree := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
 	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
@@ -496,7 +497,7 @@ func TestCoreDocument_getReadCollaborators(t *testing.T) {
 	cas := CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id1},
 	}
-	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
@@ -526,7 +527,7 @@ func TestCoreDocument_getWriteCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentForDoc([]byte("inv"), cas, nil)
+	cd, err := NewCoreDocument([]byte("inv"), cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
@@ -547,7 +548,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -588,7 +589,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
@@ -615,24 +616,63 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.Contains(t, cs, id1)
 }
 
-func TestCoreDocument_AddAttribute(t *testing.T) {
+func TestCoreDocument_Attribute(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentForDoc(nil, cas, nil)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
-	cd, err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
+	cd.Attributes = nil
+	label := "com.basf.deliverynote.chemicalnumber"
+	value := "100"
+	key, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)
-	assert.True(t, len(cd.Attributes) == 1)
 
-	key, err := NewAttrKey("com.basf.deliverynote.chemicalnumber")
-	assert.NoError(t, err)
-	hashedKey, attrType, val, _, err := cd.GetAttribute(key)
-	assert.NoError(t, err)
-	assert.True(t, len(hashedKey) > 0)
-	assert.Equal(t, attrType, StrType.String())
-	assert.Equal(t, "100", val.StrVal)
+	// failure unknown type
+	_, err = cd.AddAttribute(label, attributeType("some unknown"), value)
+	assert.Error(t, err)
 
-	// TODO add tests for each type + failures, once converters are ready
+	// failed get
+	_, err = cd.GetAttribute(key)
+	assert.Error(t, err)
+
+	// failed delete
+	_, err = cd.DeleteAttribute(key)
+	assert.Error(t, err)
+
+	// success
+	cd, err = cd.AddAttribute(label, AttrString, value)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 1)
+
+	// check
+	attr, err := cd.GetAttribute(key)
+	assert.NoError(t, err)
+	assert.Equal(t, key, attr.Key)
+	assert.Equal(t, label, attr.KeyLabel)
+	str, err := attr.Value.String()
+	assert.NoError(t, err)
+	assert.Equal(t, value, str)
+	assert.Equal(t, AttrString, attr.Value.Type)
+
+	// update
+	nvalue := "2000"
+	cd, err = cd.AddAttribute(label, AttrDecimal, nvalue)
+	assert.NoError(t, err)
+	attr, err = cd.GetAttribute(key)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 1)
+	assert.Equal(t, key, attr.Key)
+	assert.Equal(t, label, attr.KeyLabel)
+	str, err = attr.Value.String()
+	assert.NoError(t, err)
+	assert.NotEqual(t, value, str)
+	assert.Equal(t, nvalue, str)
+	assert.Equal(t, AttrDecimal, attr.Value.Type)
+
+	// delete
+	cd, err = cd.DeleteAttribute(key)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 0)
 }
 
 func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {

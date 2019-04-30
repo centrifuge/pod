@@ -125,9 +125,14 @@ type TaxItem struct {
 }
 
 // getClientData returns the client data from the invoice model
-func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
+func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
 	decs := documents.DecimalsToStrings(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
 	dids := identity.DIDsToStrings(i.Recipient, i.Sender, i.Payee)
+	attrs, err := documents.ToClientAttributes(i.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientinvoicepb.InvoiceData{
 		Number:                   i.Number,
 		Status:                   i.Status,
@@ -195,8 +200,8 @@ func (i *Invoice) getClientData() *clientinvoicepb.InvoiceData {
 		LineItems:                toClientLineItems(i.LineItems),
 		PaymentDetails:           documents.ToClientPaymentDetails(i.PaymentDetails),
 		TaxItems:                 toClientTaxItems(i.TaxItems),
-	}
-
+		Attributes:               attrs,
+	}, nil
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
@@ -304,9 +309,13 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	if err != nil {
 		return err
 	}
-
 	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-	cd, err := documents.NewCoreDocumentForDoc(compactPrefix(), cs, payload.Data.Attributes)
+
+	attrs, err := documents.FromClientAttributes(payload.Data.Attributes)
+	if err != nil {
+		return err
+	}
+	cd, err := documents.NewCoreDocument(compactPrefix(), cs, attrs)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -622,8 +631,13 @@ func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.I
 		return err
 	}
 
+	attrs, err := documents.FromClientAttributes(data.Attributes)
+	if err != nil {
+		return err
+	}
+
 	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, data.Attributes)
+	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
 	if err != nil {
 		return err
 	}

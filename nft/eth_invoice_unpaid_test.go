@@ -158,7 +158,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager) {
-				cd, err := documents.NewCoreDocumentForDoc(nil, documents.CollaboratorsAccess{}, nil)
+				cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}

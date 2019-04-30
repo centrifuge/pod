@@ -100,9 +100,14 @@ type LineItem struct {
 }
 
 // getClientData returns the client data from the purchaseOrder model
-func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData {
+func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderData, error) {
 	decs := documents.DecimalsToStrings(p.TotalAmount)
 	dids := identity.DIDsToStrings(p.Recipient, p.Sender)
+	attr, err := documents.ToClientAttributes(p.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientpurchaseorderpb.PurchaseOrderData{
 		Status:                  p.Status,
 		Number:                  p.Number,
@@ -132,9 +137,8 @@ func (p *PurchaseOrder) getClientData() *clientpurchaseorderpb.PurchaseOrderData
 		PaymentDetails:          documents.ToClientPaymentDetails(p.PaymentDetails),
 		Attachments:             documents.ToClientAttachments(p.Attachments),
 		LineItems:               toClientLineItems(p.LineItems),
-		Attributes:              documents.ToClientAttributes(p.Attributes),
-	}
-
+		Attributes:              attr,
+	}, nil
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific purchaseOrderData
@@ -199,9 +203,14 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	if err != nil {
 		return err
 	}
-
 	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-	cd, err := documents.NewCoreDocumentForDoc(compactPrefix(), cs, payload.Data.Attributes)
+
+	attrs, err := documents.FromClientAttributes(payload.Data.Attributes)
+	if err != nil {
+		return err
+	}
+
+	cd, err := documents.NewCoreDocument(compactPrefix(), cs, attrs)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -317,7 +326,6 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.Recipient = dids[0]
 	p.Sender = dids[1]
 	p.LineItems = li
-	p.Attributes = make(map[documents.AttrKey]documents.Attribute)
 	return nil
 }
 
@@ -429,8 +437,13 @@ func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurch
 		return err
 	}
 
+	attrs, err := documents.FromClientAttributes(data.Attributes)
+	if err != nil {
+		return err
+	}
+
 	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, data.Attributes)
+	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
 	if err != nil {
 		return err
 	}
