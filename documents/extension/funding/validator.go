@@ -4,11 +4,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 )
 
-
 // fieldValidateFunc validates the fields of the funding extension
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
-
 
 		return nil
 	})

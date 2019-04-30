@@ -615,7 +615,6 @@ func (*Invoice) DocumentType() string {
 	return documenttypes.InvoiceDataTypeUrl
 }
 
-
 // PrepareNewVersionWithExistingData prepares new version with existing current invoice data
 func (i *Invoice) PrepareNewVersionWithExistingData() (documents.Model, error) {
 	newVersion := new(Invoice)
@@ -639,8 +638,6 @@ func (i *Invoice) PrepareNewVersionWithExistingData() (documents.Model, error) {
 	}
 	return newVersion, nil
 }
-
-
 
 // PrepareNewVersion prepares new version from the old invoice.
 func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess) error {

@@ -2,6 +2,7 @@ package funding
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -44,7 +45,6 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 
 	// returns model with added funding custom fields
 	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
-
 
 	model, jobID, _, err := h.service.Update(ctx, model)
 	if err != nil {

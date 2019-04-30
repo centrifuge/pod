@@ -2,6 +2,7 @@ package funding
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -13,7 +14,6 @@ type Service interface {
 	documents.Service
 	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
 	DeriveFundingResponse(model documents.Model, payload *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error)
-
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -36,9 +36,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 
 	// todo validate funding payload
 
-
 	// todo add custom attributes to model
-
 
 	return new, nil
 }
@@ -56,4 +54,3 @@ func (s service) DeriveFundingResponse(model documents.Model, payload *clientfun
 	}, nil
 
 }
-
