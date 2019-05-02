@@ -216,7 +216,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		return nil, err
 	}
 
-	pd, err := documents.ToP2PPaymentDetails(i.PaymentDetails)
+	pd, err := documents.ToProtocolPaymentDetails(i.PaymentDetails)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		DatePaid:                i.DatePaid,
 		DateCreated:             i.DateCreated,
 		DateUpdated:             i.DateUpdated,
-		Attachments:             documents.ToP2PAttachments(i.Attachments),
+		Attachments:             documents.ToProtocolAttachments(i.Attachments),
 		LineItems:               li,
 		PaymentDetails:          pd,
 		TaxItems:                ti,
@@ -437,13 +437,13 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 		return err
 	}
 
-	atts := documents.FromP2PAttachments(data.Attachments)
+	atts := documents.FromProtocolAttachments(data.Attachments)
 	li, err := fromP2PLineItems(data.LineItems)
 	if err != nil {
 		return err
 	}
 
-	pd, err := documents.FromP2PPaymentDetails(data.PaymentDetails)
+	pd, err := documents.FromProtocolPaymentDetails(data.PaymentDetails)
 	if err != nil {
 		return err
 	}
@@ -558,8 +558,8 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	i.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	i.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals Invoice into a json bytes
@@ -728,4 +728,26 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	rules := i.CoreDocument.TransitionRulesFor(collaborator)
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
+}
+
+// AddAttributes adds attributes to the Invoice model.
+func (i *Invoice) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := i.CoreDocument.AddAttributes(attrs...)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	i.CoreDocument = ncd
+	return nil
+}
+
+// DeleteAttribute deletes the attribute from the model.
+func (i *Invoice) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := i.CoreDocument.DeleteAttribute(key)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	i.CoreDocument = ncd
+	return nil
 }

@@ -168,6 +168,9 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 
 	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
 	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
+	if err != nil {
+		return err
+	}
 
 	isDone := <-done
 	if !isDone {

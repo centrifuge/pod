@@ -360,3 +360,43 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 	assert.Contains(t, err.Error(), "po.currency")
 }
+
+func TestPurchaseOrder_AddAttributes(t *testing.T) {
+	po, _ := createCDWithEmbeddedPO(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = po.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, po.AttributeExists(attr.Key))
+	gattr, err := po.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = po.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestPurchaseOrder_DeleteAttribute(t *testing.T) {
+	po, _ := createCDWithEmbeddedPO(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = po.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, po.AddAttributes(attr))
+	assert.True(t, po.AttributeExists(attr.Key))
+	assert.NoError(t, po.DeleteAttribute(attr.Key))
+	assert.False(t, po.AttributeExists(attr.Key))
+}

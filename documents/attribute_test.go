@@ -11,7 +11,7 @@ import (
 
 func TestAttribute_isAttrTypeAllowed(t *testing.T) {
 	tests := []struct {
-		attrType attributeType
+		attrType AttributeType
 		result   bool
 	}{
 		{
@@ -20,7 +20,7 @@ func TestAttribute_isAttrTypeAllowed(t *testing.T) {
 		},
 
 		{
-			attrType: attributeType("some type"),
+			attrType: AttributeType("some type"),
 			result:   false,
 		},
 	}
@@ -34,7 +34,7 @@ func TestNewAttribute(t *testing.T) {
 	tests := []struct {
 		name        string
 		readableKey string
-		attrType    attributeType
+		attrType    AttributeType
 		value       string
 		errs        bool
 		errStr      string
@@ -100,7 +100,7 @@ func TestNewAttribute(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			attr, err := newAttribute(test.readableKey, test.attrType, test.value)
+			attr, err := NewAttribute(test.readableKey, test.attrType, test.value)
 			if test.errs {
 				assert.Error(t, err)
 				assert.Equal(t, test.errStr, err.Error())
@@ -135,7 +135,7 @@ func TestAttrKey(t *testing.T) {
 func TestAttrValFromString(t *testing.T) {
 	tests := []struct {
 		name  string
-		tp    attributeType
+		tp    AttributeType
 		value string
 		error bool
 	}{
@@ -172,7 +172,7 @@ func TestAttrValFromString(t *testing.T) {
 
 		{
 			"unknown type",
-			attributeType("some type"),
+			AttributeType("some type"),
 			"",
 			true,
 		},
@@ -190,7 +190,7 @@ func TestAttrValFromString(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.value, str)
 
-			v.Type = attributeType("some type")
+			v.Type = AttributeType("some type")
 			_, err = v.String()
 			assert.Error(t, err)
 		})

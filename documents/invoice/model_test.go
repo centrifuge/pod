@@ -454,3 +454,43 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 	assert.Contains(t, err.Error(), "invoice.currency")
 }
+
+func TestInvoice_AddAttributes(t *testing.T) {
+	inv, _ := createCDWithEmbeddedInvoice(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = inv.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, inv.AttributeExists(attr.Key))
+	gattr, err := inv.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = inv.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestInvoice_DeleteAttribute(t *testing.T) {
+	inv, _ := createCDWithEmbeddedInvoice(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = inv.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, inv.AddAttributes(attr))
+	assert.True(t, inv.AttributeExists(attr.Key))
+	assert.NoError(t, inv.DeleteAttribute(attr.Key))
+	assert.False(t, inv.AttributeExists(attr.Key))
+}

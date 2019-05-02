@@ -122,7 +122,7 @@ func TestInt256_Bytes(t *testing.T) {
 			intVal, err := NewInt256(test.val)
 			assert.NoError(t, err)
 			b := intVal.Bytes()
-			intValGot, err := FromBytes(b[:])
+			intValGot, err := Int256FromBytes(b[:])
 			assert.NoError(t, err)
 			assert.True(t, expectBig.Cmp(&intValGot.v) == 0)
 			assert.True(t, intValGot.Equals(intVal))
@@ -159,7 +159,7 @@ func TestFromBytes(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			i, err := FromBytes(test.val)
+			i, err := Int256FromBytes(test.val)
 			if test.isErr {
 				assert.Error(t, err)
 			} else {

@@ -40,13 +40,13 @@ func TestBinaryAttachments(t *testing.T) {
 	}
 
 	catts := ToClientAttachments(atts)
-	patts := ToP2PAttachments(atts)
+	patts := ToProtocolAttachments(atts)
 
 	fcatts, err := FromClientAttachments(catts)
 	assert.NoError(t, err)
 	assert.Equal(t, atts, fcatts)
 
-	fpatts := FromP2PAttachments(patts)
+	fpatts := FromProtocolAttachments(patts)
 	assert.Equal(t, atts, fpatts)
 
 	catts[0].Checksum = "some checksum"
@@ -72,12 +72,12 @@ func TestPaymentDetails(t *testing.T) {
 	}
 
 	cdetails := ToClientPaymentDetails(details)
-	pdetails, err := ToP2PPaymentDetails(details)
+	pdetails, err := ToProtocolPaymentDetails(details)
 	assert.NoError(t, err)
 
 	fcdetails, err := FromClientPaymentDetails(cdetails)
 	assert.NoError(t, err)
-	fpdetails, err := FromP2PPaymentDetails(pdetails)
+	fpdetails, err := FromProtocolPaymentDetails(pdetails)
 	assert.NoError(t, err)
 
 	assert.Equal(t, details, fcdetails)
@@ -92,7 +92,7 @@ func TestPaymentDetails(t *testing.T) {
 	assert.Error(t, err)
 
 	pdetails[0].Amount = utils.RandomSlice(40)
-	_, err = FromP2PPaymentDetails(pdetails)
+	_, err = FromProtocolPaymentDetails(pdetails)
 	assert.Error(t, err)
 }
 
@@ -446,7 +446,7 @@ func TestAttributes(t *testing.T) {
 		break
 	}
 
-	attr.Value.Type = attributeType("some type")
+	attr.Value.Type = AttributeType("some type")
 	attrMap[key] = attr
 	cattrs, err = ToClientAttributes(attrMap)
 	assert.Error(t, err)
@@ -454,5 +454,65 @@ func TestAttributes(t *testing.T) {
 	// failed FromClient
 	attrs[""] = &documentpb.Attribute{}
 	attrMap, err = FromClientAttributes(attrs)
+	assert.Error(t, err)
+}
+
+func TestP2PAttributes(t *testing.T) {
+	cattrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrs, err := FromClientAttributes(cattrs)
+	assert.NoError(t, err)
+
+	pattrs, err := toProtocolAttributes(attrs)
+	assert.NoError(t, err)
+
+	attrs1, err := fromProtocolAttributes(pattrs)
+	assert.NoError(t, err)
+	assert.Equal(t, attrs, attrs1)
+
+	pattrs1, err := toProtocolAttributes(attrs1)
+	assert.NoError(t, err)
+	assert.Equal(t, pattrs, pattrs1)
+
+	attrKey, err := AttrKeyFromBytes(pattrs1[0].Key)
+	assert.NoError(t, err)
+	val := attrs1[attrKey]
+	val.Value.Type = AttributeType("some type")
+	attrs1[attrKey] = val
+	_, err = toProtocolAttributes(attrs1)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNotValidAttrType, err))
+
+	pattrs[0].Type = coredocumentpb.AttributeType(0)
+	_, err = fromProtocolAttributes(pattrs)
+	assert.Error(t, err)
+
+	pattrs[0].Key = utils.RandomSlice(31)
+	_, err = fromProtocolAttributes(pattrs)
 	assert.Error(t, err)
 }
