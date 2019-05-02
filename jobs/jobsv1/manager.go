@@ -3,13 +3,13 @@ package jobsv1
 import (
 	"context"
 	"fmt"
-	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
-	"github.com/centrifuge/go-centrifuge/notification"
 	"time"
 
+	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
@@ -39,8 +39,8 @@ func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
 // manager implements JobManager.
 // TODO [JobManager] convert this into an implementation of node.Server and start it at node start so that we can bring down transaction go routines cleanly
 type manager struct {
-	config jobs.Config
-	repo   jobs.Repository
+	config   jobs.Config
+	repo     jobs.Repository
 	notifier notification.Sender
 }
 
@@ -134,10 +134,12 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 				EventType:    uint32(notification.JobCompleted),
 				AccountId:    accountID.String(),
 				Recorded:     ts,
-				DocumentType: jobs.JobDataTypeUrl,
+				DocumentType: jobs.JobDataTypeURL,
 				DocumentId:   mJob.ID.String(),
 				Status:       string(mJob.Status),
-				Message:      mJob.Logs[len(mJob.Logs)-1].Message,
+			}
+			if len(mJob.Logs) > 0 {
+				notificationMsg.Message = mJob.Logs[len(mJob.Logs)-1].Message
 			}
 			// Send Job notification webhook
 			go s.notifier.Send(ctx, notificationMsg)
