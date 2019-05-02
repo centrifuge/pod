@@ -558,8 +558,8 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	i.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	i.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals Invoice into a json bytes

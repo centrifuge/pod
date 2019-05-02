@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -627,11 +628,8 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	key, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)
 
-	// failure unknown type
-	_, err = cd.AddAttribute(label, attributeType("some unknown"), value)
-	assert.Error(t, err)
-
 	// failed get
+	assert.False(t, cd.AttributeExists(key))
 	_, err = cd.GetAttribute(key)
 	assert.Error(t, err)
 
@@ -640,12 +638,15 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	cd, err = cd.AddAttribute(label, AttrString, value)
+	attr, err := NewAttribute(label, AttrString, value)
+	assert.NoError(t, err)
+	cd, err = cd.AddAttribute(attr)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 1)
 
 	// check
-	attr, err := cd.GetAttribute(key)
+	assert.True(t, cd.AttributeExists(key))
+	attr, err = cd.GetAttribute(key)
 	assert.NoError(t, err)
 	assert.Equal(t, key, attr.Key)
 	assert.Equal(t, label, attr.KeyLabel)
@@ -656,8 +657,11 @@ func TestCoreDocument_Attribute(t *testing.T) {
 
 	// update
 	nvalue := "2000"
-	cd, err = cd.AddAttribute(label, AttrDecimal, nvalue)
+	attr, err = NewAttribute(label, AttrDecimal, nvalue)
 	assert.NoError(t, err)
+	cd, err = cd.AddAttribute(attr)
+	assert.NoError(t, err)
+	assert.True(t, cd.AttributeExists(key))
 	attr, err = cd.GetAttribute(key)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 1)
@@ -673,6 +677,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	cd, err = cd.DeleteAttribute(key)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 0)
+	assert.False(t, cd.AttributeExists(key))
 }
 
 func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
@@ -680,4 +685,88 @@ func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
 	cd := new(CoreDocument)
 	cd.SetUsedAnchorRepoAddress(addr.ToAddress())
 	assert.Equal(t, addr.ToAddress().Bytes(), cd.AnchorRepoAddress().Bytes())
+}
+
+func TestCoreDocument_UpdateAttributes(t *testing.T) {
+	oldCAttrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	updates := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "new string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("new bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000002",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000002",
+		},
+
+		"decimal_test_1": {
+			Type:  AttrDecimal.String(),
+			Value: "1111.00012",
+		},
+	}
+
+	oldAttrs, err := FromClientAttributes(oldCAttrs)
+	assert.NoError(t, err)
+
+	newAttrs, err := FromClientAttributes(updates)
+	assert.NoError(t, err)
+
+	newPattrs, err := toP2PAttributes(newAttrs)
+	assert.NoError(t, err)
+
+	oldPattrs, err := toP2PAttributes(oldAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(oldPattrs, newAttrs)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, newPattrs)
+	assert.Equal(t, newAttrs, uattrs)
+
+	oldPattrs[0].Key = utils.RandomSlice(31)
+	_, _, err = updateAttributes(oldPattrs, newAttrs)
+	assert.Error(t, err)
+
 }

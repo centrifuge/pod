@@ -164,8 +164,8 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	e.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals Entity into a json bytes

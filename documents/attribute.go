@@ -9,33 +9,33 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// attributeType represents the custom attribute types allowed in models
-type attributeType string
+// AttributeType represents the custom attribute type.
+type AttributeType string
 
 // String returns the readable name of the attribute type.
-func (a attributeType) String() string {
+func (a AttributeType) String() string {
 	return string(a)
 }
 
 const (
 	// AttrInt256 is the standard integer custom attribute type
-	AttrInt256 attributeType = "integer"
+	AttrInt256 AttributeType = "integer"
 
 	// AttrDecimal is the standard big decimal custom attribute type
-	AttrDecimal attributeType = "decimal"
+	AttrDecimal AttributeType = "decimal"
 
 	// AttrString is the standard string custom attribute type
-	AttrString attributeType = "string"
+	AttrString AttributeType = "string"
 
 	// AttrBytes is the standard bytes custom attribute type
-	AttrBytes attributeType = "bytes"
+	AttrBytes AttributeType = "bytes"
 
 	// AttrTimestamp is the standard time stamp custom attribute type
-	AttrTimestamp attributeType = "timestamp"
+	AttrTimestamp AttributeType = "timestamp"
 )
 
 // allowedAttrTypes holds a map of allowed attribute types and their reflect.Type
-var allowedAttrTypes = map[attributeType]struct{}{
+var allowedAttrTypes = map[AttributeType]struct{}{
 	AttrInt256:    {},
 	AttrDecimal:   {},
 	AttrString:    {},
@@ -44,7 +44,7 @@ var allowedAttrTypes = map[attributeType]struct{}{
 }
 
 // isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
-func isAttrTypeAllowed(attr attributeType) bool {
+func isAttrTypeAllowed(attr AttributeType) bool {
 	_, ok := allowedAttrTypes[attr]
 	return ok
 }
@@ -63,9 +63,8 @@ func AttrKeyFromLabel(label string) (attrKey AttrKey, err error) {
 }
 
 // AttrKeyFromBytes converts bytes to AttrKey
-func AttrKeyFromBytes(b []byte) (attrKey AttrKey, err error) {
-	a, err := utils.SliceToByte32(b)
-	return AttrKey(a), err
+func AttrKeyFromBytes(b []byte) (AttrKey, error) {
+	return utils.SliceToByte32(b)
 }
 
 // String converts the AttrKey to a hex string
@@ -91,7 +90,7 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 
 // AttrVal represents a strongly typed value of an attribute
 type AttrVal struct {
-	Type      attributeType
+	Type      AttributeType
 	Int256    *Int256
 	Decimal   *Decimal
 	Str       string
@@ -100,7 +99,7 @@ type AttrVal struct {
 }
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
-func AttrValFromString(attrType attributeType, value string) (attrVal AttrVal, err error) {
+func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, err error) {
 	if !isAttrTypeAllowed(attrType) {
 		return attrVal, ErrNotValidAttrType
 	}
@@ -163,8 +162,8 @@ type Attribute struct {
 	Value    AttrVal
 }
 
-// newAttribute creates a new custom attribute.
-func newAttribute(keyLabel string, attrType attributeType, value string) (attr Attribute, err error) {
+// NewAttribute creates a new custom attribute.
+func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr Attribute, err error) {
 	if keyLabel == "" {
 		return attr, ErrEmptyAttrLabel
 	}

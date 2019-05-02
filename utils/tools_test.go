@@ -112,7 +112,7 @@ func TestByte32ToSlice(t *testing.T) {
 func TestSliceToByte32(t *testing.T) {
 	exp := [32]byte{}
 	act := [32]byte{}
-	tst := []byte{}
+	var tst []byte
 
 	tst = []byte("12345678901234567890123456789032")
 	copy(exp[:], tst[:32])
@@ -125,14 +125,12 @@ func TestSliceToByte32(t *testing.T) {
 	tst = []byte{}
 	exp = [32]byte{}
 	act, err = SliceToByte32(tst)
-	assert.Nil(t, err)
-	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
+	assert.Error(t, err)
 
 	tst = []byte("123456789012345678901234567890321")
 	exp = [32]byte{}
 	act, err = SliceToByte32(tst)
 	assert.Error(t, err)
-	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 }
 
 func TestByteSliceToBigInt(t *testing.T) {

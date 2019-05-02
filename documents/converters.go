@@ -362,7 +362,7 @@ func FromClientAttributes(attrs map[string]*documentpb.Attribute) (map[AttrKey]A
 
 	m := make(map[AttrKey]Attribute)
 	for k, at := range attrs {
-		attr, err := newAttribute(k, attributeType(at.Type), at.Value)
+		attr, err := NewAttribute(k, AttributeType(at.Type), at.Value)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrCDAttribute, err)
 		}
@@ -479,22 +479,18 @@ func toP2PAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attr
 
 const attributeP2PPrefix = "ATTRIBUTE_TYPE_"
 
-func getP2PAttributeType(attrType attributeType) coredocumentpb.AttributeType {
+func getP2PAttributeType(attrType AttributeType) coredocumentpb.AttributeType {
 	str := attributeP2PPrefix + strings.ToUpper(attrType.String())
 	return coredocumentpb.AttributeType(coredocumentpb.AttributeType_value[str])
 }
 
-func getAttributeTypeFromP2P(attrType coredocumentpb.AttributeType) attributeType {
+func getAttributeTypeFromP2P(attrType coredocumentpb.AttributeType) AttributeType {
 	str := coredocumentpb.AttributeType_name[int32(attrType)]
-	return attributeType(strings.ToLower(strings.TrimPrefix(str, attributeP2PPrefix)))
+	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeP2PPrefix)))
 }
 
 // fromP2PAttributes converts p2p attribute list to model attribute map
 func fromP2PAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribute, error) {
-	if len(pattrs) < 1 {
-		return nil, nil
-	}
-
 	m := make(map[AttrKey]Attribute)
 	for _, pattr := range pattrs {
 		attrKey, err := AttrKeyFromBytes(pattr.Key)
@@ -519,7 +515,7 @@ func fromP2PAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribut
 	return m, nil
 }
 
-func attrValFromP2PAttribute(attrType attributeType, attribute *coredocumentpb.Attribute) (attrVal AttrVal, err error) {
+func attrValFromP2PAttribute(attrType AttributeType, attribute *coredocumentpb.Attribute) (attrVal AttrVal, err error) {
 	if !isAttrTypeAllowed(attrType) {
 		return attrVal, ErrNotValidAttrType
 	}

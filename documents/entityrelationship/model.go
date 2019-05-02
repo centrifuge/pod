@@ -156,8 +156,8 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 	if err != nil {
 		return err
 	}
-	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	e.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals EntityRelationship into a json bytes

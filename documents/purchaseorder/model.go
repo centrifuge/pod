@@ -366,7 +366,8 @@ func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 	if err != nil {
 		return err
 	}
-	p.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
+
+	p.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
 	return err
 
 }

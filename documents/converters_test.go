@@ -446,7 +446,7 @@ func TestAttributes(t *testing.T) {
 		break
 	}
 
-	attr.Value.Type = attributeType("some type")
+	attr.Value.Type = AttributeType("some type")
 	attrMap[key] = attr
 	cattrs, err = ToClientAttributes(attrMap)
 	assert.Error(t, err)

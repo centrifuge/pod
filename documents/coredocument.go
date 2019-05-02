@@ -105,9 +105,11 @@ func newCoreDocument() (*CoreDocument, error) {
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
-func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
+func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
 	cd.EmbeddedData = nil
-	return &CoreDocument{Document: cd}
+	coreDoc = &CoreDocument{Document: cd}
+	coreDoc.Attributes, err = fromP2PAttributes(cd.Attributes)
+	return coreDoc, err
 }
 
 // NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
@@ -217,26 +219,30 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
-	ncd.Attributes = copyAttrMap(cd.Attributes)
-	for k, attr := range attrs {
-		ncd.Attributes[k] = attr
+	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)
+	if err != nil {
+		return nil, err
 	}
+
+	ncd.Document.Attributes = p2pAttrs
+	ncd.Attributes = attrs
 	ncd.Modified = true
 	return ncd, nil
-
 }
 
-// copyAttrMap copies the attributes map.
-func copyAttrMap(attributes map[AttrKey]Attribute) map[AttrKey]Attribute {
-	m := make(map[AttrKey]Attribute)
-	for k, v := range attributes {
-		m[k] = Attribute{
-			KeyLabel: v.KeyLabel,
-			Key:      v.Key,
-			Value:    v.Value,
-		}
+// updateAttributes updates the p2p attributes with new one and returns the both the formats
+func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey]Attribute) ([]*coredocumentpb.Attribute, map[AttrKey]Attribute, error) {
+	oldAttrsMap, err := fromP2PAttributes(oldAttrs)
+	if err != nil {
+		return nil, nil, err
 	}
-	return m
+
+	for k, v := range newAttrs {
+		oldAttrsMap[k] = v
+	}
+
+	uattrs, err := toP2PAttributes(oldAttrsMap)
+	return uattrs, oldAttrsMap, err
 }
 
 // newRole returns a new role with random role key
@@ -643,7 +649,7 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeType, value string) (*CoreDocument, error) {
+func (cd *CoreDocument) AddAttribute(attr Attribute) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
@@ -653,13 +659,15 @@ func (cd *CoreDocument) AddAttribute(keyLabel string, attributeType attributeTyp
 		ncd.Attributes = make(map[AttrKey]Attribute)
 	}
 
-	attr, err := newAttribute(keyLabel, attributeType, value)
-	if err != nil {
-		return nil, err
-	}
-
 	ncd.Attributes[attr.Key] = attr
-	return ncd, nil
+	ncd.Document.Attributes, err = toP2PAttributes(ncd.Attributes)
+	return ncd, err
+}
+
+// AttributeExists checks if an attribute associated with the key exists.
+func (cd *CoreDocument) AttributeExists(key AttrKey) bool {
+	_, ok := cd.Attributes[key]
+	return ok
 }
 
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
@@ -685,7 +693,8 @@ func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
 	}
 
 	delete(ncd.Attributes, key)
-	return ncd, nil
+	ncd.Document.Attributes, err = toP2PAttributes(ncd.Attributes)
+	return ncd, err
 }
 
 func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {
@@ -701,10 +710,7 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 		}
 	}
 	cd.NextPreimage, cd.NextVersion, err = crypto.GenerateHashPair(idSize)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // IsDIDCollaborator returns true if the did is a collaborator of the document
