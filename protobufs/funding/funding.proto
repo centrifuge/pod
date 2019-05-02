@@ -33,15 +33,15 @@ message FundingResponse {
 
 // FundingData is the default funding extension schema
 message FundingData {
-  bytes agreement_id = 1;
-  bytes amount = 2;
-  bytes apr = 3;
-  bytes days = 4;
-  bytes fee = 5;
+  string agreement_id = 1;
+  string amount = 2;
+  string apr = 3;
+  string days = 4;
+  string fee = 5;
   string repayment_due_date = 7; //(e.g. invoice date + grace days)
   string repayment_occurred_date = 8;
-  bytes repayment_amount = 9;
+  string repayment_amount = 9;
   string currency = 10; // optional if not set currency of payment details will be used
   string nft_address = 11;
-  bytes payment_details_id = 12;
+  string payment_details_id = 12;
 }

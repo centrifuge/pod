@@ -2,6 +2,12 @@ package funding
 
 import (
 	"context"
+	"fmt"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -22,6 +28,75 @@ type service struct {
 	tokenRegFinder func() documents.TokenRegistry
 }
 
+const fundingKey = "centrifuge_funding"
+const fundingFieldKey = "centrifuge_funding[{IDX}]."
+const fundingIdx = "{IDX}"
+
+const fundingIdKey = "funding_id"
+
+func generateKey(idx int, fieldName string) string {
+	return strings.Replace(fundingFieldKey, fundingIdx, strconv.Itoa(idx) , -1) +fieldName
+}
+
+func keyFromJsonTag(idx int, jsonTag string) (key string, err error) {
+	correctJsonParts := 2
+	jsonKeyIdx := 0
+
+	// example `json:"days,omitempty"`
+	jsonParts := strings.Split(jsonTag,",")
+	if len(jsonParts) == correctJsonParts {
+		return generateKey(idx,jsonParts[jsonKeyIdx]), nil
+
+	}
+	return key, ErrNoFundingField
+
+}
+
+func defineFundingIdx(model documents.Model) (int, error) {
+	_,_,_,idx,err := model.GetAttribute(fundingKey)
+	if err != nil { // todo replace with Exists method
+		return 0,nil
+	}
+
+	idxInt, err := strconv.Atoi(idx)
+	if err != nil {
+		return -1,err
+	}
+
+	if idxInt < 0 {
+		return -1, ErrFundingIndex
+	}
+
+	return idxInt+1,nil
+
+}
+
+func addFundingAttributes(model documents.Model, req *clientfundingpb.FundingCreatePayload) (documents.Model, error) {
+	idx, err := defineFundingIdx(model)
+	if err != nil {
+		return nil,err
+	}
+
+	req.Data.AgreementId = hexutil.Encode(utils.RandomSlice(32))
+
+	fields := reflect.TypeOf(*req.Data)
+	for i := 0; i < fields.NumField(); i++ {
+
+		jsonKey := fields.Field(i).Tag.Get("json")
+		key, err := keyFromJsonTag(idx, jsonKey)
+		if err != nil {
+			continue
+		}
+		fmt.Println(key)
+
+		//todo add attribute to model without update
+		//model.AddAttribute(key,documents.StrType,"dummy test")
+
+	}
+
+	return model, nil
+}
+
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
 	current, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
@@ -34,9 +109,20 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, err
 	}
 
-	// todo validate funding payload
+	model, err = addFundingAttributes(model,req)
+	if err != nil {
+		return nil, err
+	}
 
-	// todo add custom attributes to model
+	// todo validate funding payload
+	// validate funding payload
+	/*validator := CreateValidator()
+
+	err = validator.Validate(current, model)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+	*/
 
 	return model, nil
 }
