@@ -3,6 +3,9 @@ package jobsv1
 import (
 	"context"
 	"fmt"
+	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -31,7 +34,7 @@ type extendedManager interface {
 
 // NewManager returns a JobManager implementation.
 func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
-	return &manager{config: config, repo: repo}
+	return &manager{config: config, repo: repo, notifier: notification.NewWebhookSender()}
 }
 
 // manager implements JobManager.
@@ -39,6 +42,7 @@ func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
 type manager struct {
 	config jobs.Config
 	repo   jobs.Repository
+	notifier notification.Sender
 }
 
 func (s *manager) GetDefaultTaskTimeout() time.Duration {
@@ -81,9 +85,10 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 		err := make(chan error)
 		go work(accountID, job.ID, s, err)
 
+		var tempJob *jobs.Job
 		select {
 		case e := <-err:
-			tempJob, err := s.repo.Get(accountID, job.ID)
+			tempJob, err = s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(e, err)
 				break
@@ -105,7 +110,7 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 		case <-ctx.Done():
 			msg := fmt.Sprintf("Job %s for account %s with description \"%s\" is stopped because of context close", job.ID.String(), job.DID, job.Description)
 			log.Warningf(msg)
-			tempJob, err := s.repo.Get(accountID, job.ID)
+			tempJob, err = s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(err)
 				break
@@ -116,6 +121,22 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 				log.Error(e)
 			}
 		}
+
+		ts, err1 := utils.ToTimestamp(time.Now().UTC())
+		if err1 != nil {
+			log.Error(err1)
+		}
+		notificationMsg := &notificationpb.NotificationMessage{
+			EventType:    uint32(notification.ReceivedPayload),
+			AccountId:    accountID.String(),
+			Recorded:     ts,
+			DocumentType: jobs.JobDataTypeUrl,
+			DocumentId:   tempJob.ID.String(),
+			Status:       string(tempJob.Status),
+			Message:      tempJob.Logs[len(tempJob.Logs)-1].Message,
+		}
+
+		go s.notifier.Send(ctx, notificationMsg)
 		done <- true
 	}(ctx)
 	return job.ID, done, nil

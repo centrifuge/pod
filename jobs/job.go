@@ -34,6 +34,8 @@ const (
 
 	// BootstrappedService is the key to mapped jobs.JobManager
 	BootstrappedService = "BootstrappedService"
+
+	JobDataTypeUrl = "http://github.com/centrifuge/go-centrifuge/jobs/#Job"
 )
 
 // Log represents a single task in a job.
