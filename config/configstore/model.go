@@ -341,6 +341,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		P2PPort:                        c.GetP2PPort(),
 		P2PExternalIP:                  c.GetP2PExternalIP(),
 		P2PConnectionTimeout:           c.GetP2PConnectionTimeout(),
+		P2PResponseDelay:               c.GetP2PResponseDelay(),
 		ServerPort:                     c.GetServerPort(),
 		ServerAddress:                  c.GetServerAddress(),
 		NumWorkers:                     c.GetNumWorkers(),
