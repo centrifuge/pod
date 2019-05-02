@@ -119,6 +119,10 @@ p2p:
   port: 38202
   # Timeout when opening connections to peers
   connectTimeout: "30s"
+  # minimum delay for every p2p response to avoid timing attacks
+  # adjust based on host resources (SSD, CPU, cores ...)
+  # Look in logs for: "Time consumed by operation" if x=(valueRead * 2) is less than value below, then change responseDelay to x
+  responseDelay: "500ms"
 
 # Queue configurations for asynchronous processing
 queue:

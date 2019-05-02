@@ -44,6 +44,11 @@ func (m *MockConfig) GetP2PConnectionTimeout() time.Duration {
 	return args.Get(0).(time.Duration)
 }
 
+func (m *MockConfig) GetP2PResponseDelay() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
 func (m *MockConfig) GetReceiveEventNotificationEndpoint() string {
 	args := m.Called()
 	return args.Get(0).(string)
