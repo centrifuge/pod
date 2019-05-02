@@ -3,7 +3,6 @@
 package funding
 
 import (
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -27,16 +26,9 @@ func TestAddFundingAttributes(t *testing.T) {
 
 	payload := &clientfundingpb.FundingCreatePayload{Data:&clientfundingpb.FundingData{Currency:"eur"}}
 
-	model, err := addFundingAttributes(inv,payload)
+	_, err := createAttributeMap(inv,payload)
 	assert.NoError(t, err)
 
-
-	_,attrType,value,_,err := model.GetAttribute("centrifuge_funding[0].days")
-	fmt.Println(attrType)
-	assert.NoError(t, err)
-	value = value.(string)
-
-	assert.Equal(t, "lala",value)
 }
 
 

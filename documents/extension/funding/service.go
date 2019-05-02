@@ -32,8 +32,6 @@ const fundingKey = "centrifuge_funding"
 const fundingFieldKey = "centrifuge_funding[{IDX}]."
 const fundingIdx = "{IDX}"
 
-const fundingIdKey = "funding_id"
-
 func generateKey(idx int, fieldName string) string {
 	return strings.Replace(fundingFieldKey, fundingIdx, strconv.Itoa(idx) , -1) +fieldName
 }
@@ -71,30 +69,35 @@ func defineFundingIdx(model documents.Model) (int, error) {
 
 }
 
-func addFundingAttributes(model documents.Model, req *clientfundingpb.FundingCreatePayload) (documents.Model, error) {
-	idx, err := defineFundingIdx(model)
+func createAttributeMap(current documents.Model, req *clientfundingpb.FundingCreatePayload) (map[string]int, error) {
+
+	var attributes map[string]int
+
+	idx, err := defineFundingIdx(current)
 	if err != nil {
 		return nil,err
 	}
 
 	req.Data.AgreementId = hexutil.Encode(utils.RandomSlice(32))
+	
+	types := reflect.TypeOf(*req.Data)
+	values := reflect.ValueOf(*req.Data)
+	for i := 0; i < types.NumField(); i++ {
 
-	fields := reflect.TypeOf(*req.Data)
-	for i := 0; i < fields.NumField(); i++ {
-
-		jsonKey := fields.Field(i).Tag.Get("json")
+		jsonKey := types.Field(i).Tag.Get("json")
 		key, err := keyFromJsonTag(idx, jsonKey)
 		if err != nil {
 			continue
 		}
-		fmt.Println(key)
 
-		//todo add attribute to model without update
-		//model.AddAttribute(key,documents.StrType,"dummy test")
+		fmt.Println(key)
+		fmt.Println(types.Field(i).Type.String())
+		fmt.Println(values.Field(i).Interface())
 
 	}
 
-	return model, nil
+	// todo return attributeMap
+	return attributes, nil
 }
 
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
@@ -109,7 +112,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, err
 	}
 
-	model, err = addFundingAttributes(model,req)
+	_, err = createAttributeMap(model,req)
 	if err != nil {
 		return nil, err
 	}
