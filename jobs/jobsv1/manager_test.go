@@ -52,10 +52,12 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 	errStr := "dummy"
 	did := testingidentity.GenerateRandomDID()
 	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
-	mngr := srv.(*manager)
-	mngr.notifier = &mockSender{}
+	msrv := srv.(*manager)
+	mngr := NewManager(msrv.config, msrv.repo)
+	omgr := mngr.(*manager)
+	omgr.notifier = &mockSender{}
 	sendChan = make(chan *notificationpb.NotificationMessage)
-	jobID, done, err := mngr.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
+	jobID, done, err := omgr.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- errors.New(errStr)
 	})
 	<-done
@@ -66,7 +68,7 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 	assert.Equal(t, errStr, ntf.Message)
 	assert.NoError(t, err)
 	assert.NotNil(t, jobID)
-	job, err := mngr.GetJob(did, jobID)
+	job, err := omgr.GetJob(did, jobID)
 	assert.NoError(t, err)
 	assert.Equal(t, jobs.Failed, job.Status)
 	assert.Len(t, job.Logs, 1)
