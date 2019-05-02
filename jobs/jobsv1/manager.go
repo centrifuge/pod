@@ -5,7 +5,6 @@ import (
 	"fmt"
 	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -85,10 +84,10 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 		err := make(chan error)
 		go work(accountID, job.ID, s, err)
 
-		var tempJob *jobs.Job
+		var mJob *jobs.Job
 		select {
 		case e := <-err:
-			tempJob, err = s.repo.Get(accountID, job.ID)
+			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(e, err)
 				break
@@ -107,10 +106,11 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			if e != nil {
 				log.Error(e)
 			}
+			mJob = tempJob
 		case <-ctx.Done():
 			msg := fmt.Sprintf("Job %s for account %s with description \"%s\" is stopped because of context close", job.ID.String(), job.DID, job.Description)
 			log.Warningf(msg)
-			tempJob, err = s.repo.Get(accountID, job.ID)
+			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(err)
 				break
@@ -120,24 +120,29 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			if e != nil {
 				log.Error(e)
 			}
+			mJob = tempJob
 		}
 
-		ts, err1 := utils.ToTimestamp(time.Now().UTC())
-		if err1 != nil {
-			log.Error(err1)
-		}
-		notificationMsg := &notificationpb.NotificationMessage{
-			EventType:    uint32(notification.ReceivedPayload),
-			AccountId:    accountID.String(),
-			Recorded:     ts,
-			DocumentType: jobs.JobDataTypeUrl,
-			DocumentId:   tempJob.ID.String(),
-			Status:       string(tempJob.Status),
-			Message:      tempJob.Logs[len(tempJob.Logs)-1].Message,
-		}
-
-		go s.notifier.Send(ctx, notificationMsg)
 		done <- true
+
+		if mJob != nil {
+			ts, err1 := utils.ToTimestamp(time.Now().UTC())
+			if err1 != nil {
+				log.Error(err1)
+			}
+			notificationMsg := &notificationpb.NotificationMessage{
+				EventType:    uint32(notification.JobCompleted),
+				AccountId:    accountID.String(),
+				Recorded:     ts,
+				DocumentType: jobs.JobDataTypeUrl,
+				DocumentId:   mJob.ID.String(),
+				Status:       string(mJob.Status),
+				Message:      mJob.Logs[len(mJob.Logs)-1].Message,
+			}
+			// Send Job notification webhook
+			go s.notifier.Send(ctx, notificationMsg)
+		}
+
 	}(ctx)
 	return job.ID, done, nil
 }
