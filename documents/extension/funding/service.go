@@ -2,11 +2,12 @@ package funding
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -42,8 +43,8 @@ func DefaultService(
 	}
 }
 
-func generateKey(idx ,fieldName string) string {
-	return strings.Replace(fundingFieldKey, fundingIdx, idx , -1) +fieldName
+func generateKey(idx, fieldName string) string {
+	return strings.Replace(fundingFieldKey, fundingIdx, idx, -1) + fieldName
 }
 
 func keyFromJsonTag(idx, jsonTag string) (key string, err error) {
@@ -51,43 +52,43 @@ func keyFromJsonTag(idx, jsonTag string) (key string, err error) {
 	jsonKeyIdx := 0
 
 	// example `json:"days,omitempty"`
-	jsonParts := strings.Split(jsonTag,",")
+	jsonParts := strings.Split(jsonTag, ",")
 	if len(jsonParts) == correctJsonParts {
-		return generateKey(idx,jsonParts[jsonKeyIdx]), nil
+		return generateKey(idx, jsonParts[jsonKeyIdx]), nil
 
 	}
 	return key, ErrNoFundingField
 
 }
 
-func defineFundingIdx(model documents.Model) (attr documents.Attribute,err error) {
+func defineFundingIdx(model documents.Model) (attr documents.Attribute, err error) {
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
 		return attr, err
 	}
 
 	if !model.AttributeExists(key) {
-		return documents.NewAttribute(fundingLabel,documents.AttrString,"0")
+		return documents.NewAttribute(fundingLabel, documents.AttrString, "0")
 
 	}
 
-	attr ,err = model.GetAttribute(key)
+	attr, err = model.GetAttribute(key)
 	if err != nil {
-		return attr ,err
+		return attr, err
 	}
 
 	idxInt, err := strconv.Atoi(attr.Value.Str)
 	if err != nil {
-		return attr ,err
+		return attr, err
 	}
 
 	if idxInt < 0 {
 		return attr, ErrFundingIndex
 	}
 
-	newIdx, err := documents.AttrValFromString(documents.AttrString,strconv.Itoa(idxInt+1))
+	newIdx, err := documents.AttrValFromString(documents.AttrString, strconv.Itoa(idxInt+1))
 	if err != nil {
-		return attr ,err
+		return attr, err
 	}
 
 	attr.Value = newIdx
@@ -100,14 +101,14 @@ func createAttributesList(current documents.Model, req *clientfundingpb.FundingC
 
 	idx, err := defineFundingIdx(current)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	// define id
 	req.Data.AgreementId = hexutil.Encode(utils.RandomSlice(32))
 
 	// add updated idx
-	attributes = append(attributes,idx)
+	attributes = append(attributes, idx)
 
 	types := reflect.TypeOf(*req.Data)
 	values := reflect.ValueOf(*req.Data)
@@ -127,7 +128,7 @@ func createAttributesList(current documents.Model, req *clientfundingpb.FundingC
 			return nil, err
 		}
 
-		attributes = append(attributes,attr)
+		attributes = append(attributes, attr)
 
 	}
 
@@ -141,7 +142,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	attributes, err := createAttributesList(model,req)
+	attributes, err := createAttributesList(model, req)
 	if err != nil {
 		return nil, err
 	}
