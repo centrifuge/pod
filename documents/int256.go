@@ -45,8 +45,8 @@ func NewInt256(n string) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// FromBytes converts the a big endian byte slice to an Int256
-func FromBytes(b []byte) (*Int256, error) {
+// Int256FromBytes converts the a big endian byte slice to an Int256
+func Int256FromBytes(b []byte) (*Int256, error) {
 	if len(b) != 32 {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %x", b))
 	}

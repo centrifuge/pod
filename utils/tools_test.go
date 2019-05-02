@@ -112,7 +112,7 @@ func TestByte32ToSlice(t *testing.T) {
 func TestSliceToByte32(t *testing.T) {
 	exp := [32]byte{}
 	act := [32]byte{}
-	tst := []byte{}
+	var tst []byte
 
 	tst = []byte("12345678901234567890123456789032")
 	copy(exp[:], tst[:32])

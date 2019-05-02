@@ -164,6 +164,13 @@ func NewDecimal(s string) (*Decimal, error) {
 	return dec, nil
 }
 
+// DecimalFromBytes returns a new decimal from bytes
+func DecimalFromBytes(b []byte) (*Decimal, error) {
+	d := new(Decimal)
+	err := d.SetBytes(b)
+	return d, err
+}
+
 // DecimalsToStrings converts decimals to string.
 // nil decimal leads to empty string.
 func DecimalsToStrings(decs ...*Decimal) []string {
