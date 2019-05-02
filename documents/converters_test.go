@@ -40,13 +40,13 @@ func TestBinaryAttachments(t *testing.T) {
 	}
 
 	catts := ToClientAttachments(atts)
-	patts := ToP2PAttachments(atts)
+	patts := ToProtocolAttachments(atts)
 
 	fcatts, err := FromClientAttachments(catts)
 	assert.NoError(t, err)
 	assert.Equal(t, atts, fcatts)
 
-	fpatts := FromP2PAttachments(patts)
+	fpatts := FromProtocolAttachments(patts)
 	assert.Equal(t, atts, fpatts)
 
 	catts[0].Checksum = "some checksum"
@@ -72,12 +72,12 @@ func TestPaymentDetails(t *testing.T) {
 	}
 
 	cdetails := ToClientPaymentDetails(details)
-	pdetails, err := ToP2PPaymentDetails(details)
+	pdetails, err := ToProtocolPaymentDetails(details)
 	assert.NoError(t, err)
 
 	fcdetails, err := FromClientPaymentDetails(cdetails)
 	assert.NoError(t, err)
-	fpdetails, err := FromP2PPaymentDetails(pdetails)
+	fpdetails, err := FromProtocolPaymentDetails(pdetails)
 	assert.NoError(t, err)
 
 	assert.Equal(t, details, fcdetails)
@@ -92,7 +92,7 @@ func TestPaymentDetails(t *testing.T) {
 	assert.Error(t, err)
 
 	pdetails[0].Amount = utils.RandomSlice(40)
-	_, err = FromP2PPaymentDetails(pdetails)
+	_, err = FromProtocolPaymentDetails(pdetails)
 	assert.Error(t, err)
 }
 
@@ -488,22 +488,31 @@ func TestP2PAttributes(t *testing.T) {
 	attrs, err := FromClientAttributes(cattrs)
 	assert.NoError(t, err)
 
-	pattrs, err := toP2PAttributes(attrs)
+	pattrs, err := toProtocolAttributes(attrs)
 	assert.NoError(t, err)
 
-	attrs1, err := fromP2PAttributes(pattrs)
+	attrs1, err := fromProtocolAttributes(pattrs)
 	assert.NoError(t, err)
 	assert.Equal(t, attrs, attrs1)
 
-	pattrs1, err := toP2PAttributes(attrs1)
+	pattrs1, err := toProtocolAttributes(attrs1)
 	assert.NoError(t, err)
 	assert.Equal(t, pattrs, pattrs1)
 
+	attrKey, err := AttrKeyFromBytes(pattrs1[0].Key)
+	assert.NoError(t, err)
+	val := attrs1[attrKey]
+	val.Value.Type = AttributeType("some type")
+	attrs1[attrKey] = val
+	_, err = toProtocolAttributes(attrs1)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNotValidAttrType, err))
+
 	pattrs[0].Type = coredocumentpb.AttributeType(0)
-	_, err = fromP2PAttributes(pattrs)
+	_, err = fromProtocolAttributes(pattrs)
 	assert.Error(t, err)
 
 	pattrs[0].Key = utils.RandomSlice(31)
-	_, err = fromP2PAttributes(pattrs)
+	_, err = fromProtocolAttributes(pattrs)
 	assert.Error(t, err)
 }

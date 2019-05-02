@@ -148,7 +148,7 @@ func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData,
 		return nil, err
 	}
 
-	pd, err := documents.ToP2PPaymentDetails(p.PaymentDetails)
+	pd, err := documents.ToProtocolPaymentDetails(p.PaymentDetails)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData,
 		RecipientOrderId:        p.RecipientOrderID,
 		RequisitionId:           p.RequisitionID,
 		PaymentDetails:          pd,
-		Attachments:             documents.ToP2PAttachments(p.Attachments),
+		Attachments:             documents.ToProtocolAttachments(p.Attachments),
 		LineItems:               li,
 	}, nil
 
@@ -279,7 +279,7 @@ func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.Pu
 
 // loadFromP2PProtobuf loads the purcase order from centrifuge protobuf purchase order data
 func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderData) error {
-	pdetails, err := documents.FromP2PPaymentDetails(data.PaymentDetails)
+	pdetails, err := documents.FromProtocolPaymentDetails(data.PaymentDetails)
 	if err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ func (p *PurchaseOrder) loadFromP2PProtobuf(data *purchaseorderpb.PurchaseOrderD
 	p.DateUpdated = data.DateUpdated
 	p.DateCreated = data.DateCreated
 	p.DateConfirmed = data.DateConfirmed
-	p.Attachments = documents.FromP2PAttachments(data.Attachments)
+	p.Attachments = documents.FromProtocolAttachments(data.Attachments)
 	p.PaymentDetails = pdetails
 	p.TotalAmount = decs[0]
 	p.Recipient = dids[0]

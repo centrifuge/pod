@@ -71,8 +71,8 @@ func ToClientAttachments(atts []*BinaryAttachment) []*documentpb.BinaryAttachmen
 	return catts
 }
 
-// ToP2PAttachments converts Binary Attchments to P2P attachments.
-func ToP2PAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachment {
+// ToProtocolAttachments converts Binary Attchments to protocol attachments.
+func ToProtocolAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachment {
 	var patts []*commonpb.BinaryAttachment
 	for _, att := range atts {
 		patts = append(patts, &commonpb.BinaryAttachment{
@@ -119,8 +119,8 @@ func FromClientAttachments(catts []*documentpb.BinaryAttachment) ([]*BinaryAttac
 	return atts, nil
 }
 
-// FromP2PAttachments converts P2P attachments to Binary Attchments
-func FromP2PAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttachment {
+// FromProtocolAttachments converts Protocol attachments to Binary Attachments
+func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttachment {
 	var atts []*BinaryAttachment
 	for _, att := range patts {
 		atts = append(atts, &BinaryAttachment{
@@ -166,8 +166,8 @@ func ToClientPaymentDetails(details []*PaymentDetails) []*documentpb.PaymentDeta
 	return cdetails
 }
 
-// ToP2PPaymentDetails converts payment details to P2P payment details
-func ToP2PPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDetails, error) {
+// ToProtocolPaymentDetails converts payment details to protocol payment details
+func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDetails, error) {
 	var pdetails []*commonpb.PaymentDetails
 	for _, detail := range details {
 		decs, err := DecimalsToBytes(detail.Amount)
@@ -239,8 +239,8 @@ func FromClientPaymentDetails(cdetails []*documentpb.PaymentDetails) ([]*Payment
 	return details, nil
 }
 
-// FromP2PPaymentDetails converts P2P payment details to PaymentDetails
-func FromP2PPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetails, error) {
+// FromProtocolPaymentDetails converts protocol payment details to PaymentDetails
+func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetails, error) {
 	var details []*PaymentDetails
 	for _, detail := range pdetails {
 		decs, err := BytesToDecimals(detail.Amount)
@@ -435,9 +435,9 @@ func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts
 	return nnfts, err
 }
 
-// toP2PAttributes convert model attributes to p2p attributes
-// since the p2p respresentation of attributes is a list, we will always sort the keys and then insert to the list.
-func toP2PAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attribute, err error) {
+// toProtocolAttributes convert model attributes to p2p attributes
+// since the protocol representation of attributes is a list, we will always sort the keys and then insert to the list.
+func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attribute, err error) {
 	var keys [][32]byte
 	for k := range attrs {
 		k := k
@@ -447,10 +447,14 @@ func toP2PAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attr
 	keys = byteutils.SortByte32Slice(keys)
 	for _, k := range keys {
 		attr := attrs[k]
+		if !isAttrTypeAllowed(attr.Value.Type) {
+			return nil, ErrNotValidAttrType
+		}
+
 		pattr := &coredocumentpb.Attribute{
 			Key:      attr.Key[:],
 			KeyLabel: []byte(attr.KeyLabel),
-			Type:     getP2PAttributeType(attr.Value.Type),
+			Type:     getProtocolAttributeType(attr.Value.Type),
 		}
 
 		switch attr.Value.Type {
@@ -477,20 +481,20 @@ func toP2PAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attr
 	return pattrs, nil
 }
 
-const attributeP2PPrefix = "ATTRIBUTE_TYPE_"
+const attributeProtocolPrefix = "ATTRIBUTE_TYPE_"
 
-func getP2PAttributeType(attrType AttributeType) coredocumentpb.AttributeType {
-	str := attributeP2PPrefix + strings.ToUpper(attrType.String())
+func getProtocolAttributeType(attrType AttributeType) coredocumentpb.AttributeType {
+	str := attributeProtocolPrefix + strings.ToUpper(attrType.String())
 	return coredocumentpb.AttributeType(coredocumentpb.AttributeType_value[str])
 }
 
-func getAttributeTypeFromP2P(attrType coredocumentpb.AttributeType) AttributeType {
+func getAttributeTypeFromProtocolType(attrType coredocumentpb.AttributeType) AttributeType {
 	str := coredocumentpb.AttributeType_name[int32(attrType)]
-	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeP2PPrefix)))
+	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeProtocolPrefix)))
 }
 
-// fromP2PAttributes converts p2p attribute list to model attribute map
-func fromP2PAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribute, error) {
+// fromProtocolAttributes converts protocol attribute list to model attribute map
+func fromProtocolAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribute, error) {
 	m := make(map[AttrKey]Attribute)
 	for _, pattr := range pattrs {
 		attrKey, err := AttrKeyFromBytes(pattr.Key)
@@ -498,13 +502,13 @@ func fromP2PAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribut
 			return nil, err
 		}
 
-		attrType := getAttributeTypeFromP2P(pattr.Type)
+		attrType := getAttributeTypeFromProtocolType(pattr.Type)
 		attr := Attribute{
 			Key:      attrKey,
 			KeyLabel: string(pattr.KeyLabel),
 		}
 
-		attr.Value, err = attrValFromP2PAttribute(attrType, pattr)
+		attr.Value, err = attrValFromProtocolAttribute(attrType, pattr)
 		if err != nil {
 			return nil, err
 		}
@@ -515,7 +519,7 @@ func fromP2PAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribut
 	return m, nil
 }
 
-func attrValFromP2PAttribute(attrType AttributeType, attribute *coredocumentpb.Attribute) (attrVal AttrVal, err error) {
+func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumentpb.Attribute) (attrVal AttrVal, err error) {
 	if !isAttrTypeAllowed(attrType) {
 		return attrVal, ErrNotValidAttrType
 	}

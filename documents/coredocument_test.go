@@ -753,10 +753,10 @@ func TestCoreDocument_UpdateAttributes(t *testing.T) {
 	newAttrs, err := FromClientAttributes(updates)
 	assert.NoError(t, err)
 
-	newPattrs, err := toP2PAttributes(newAttrs)
+	newPattrs, err := toProtocolAttributes(newAttrs)
 	assert.NoError(t, err)
 
-	oldPattrs, err := toP2PAttributes(oldAttrs)
+	oldPattrs, err := toProtocolAttributes(oldAttrs)
 	assert.NoError(t, err)
 
 	upattrs, uattrs, err := updateAttributes(oldPattrs, newAttrs)

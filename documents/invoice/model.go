@@ -216,7 +216,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		return nil, err
 	}
 
-	pd, err := documents.ToP2PPaymentDetails(i.PaymentDetails)
+	pd, err := documents.ToProtocolPaymentDetails(i.PaymentDetails)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		DatePaid:                i.DatePaid,
 		DateCreated:             i.DateCreated,
 		DateUpdated:             i.DateUpdated,
-		Attachments:             documents.ToP2PAttachments(i.Attachments),
+		Attachments:             documents.ToProtocolAttachments(i.Attachments),
 		LineItems:               li,
 		PaymentDetails:          pd,
 		TaxItems:                ti,
@@ -437,13 +437,13 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 		return err
 	}
 
-	atts := documents.FromP2PAttachments(data.Attachments)
+	atts := documents.FromProtocolAttachments(data.Attachments)
 	li, err := fromP2PLineItems(data.LineItems)
 	if err != nil {
 		return err
 	}
 
-	pd, err := documents.FromP2PPaymentDetails(data.PaymentDetails)
+	pd, err := documents.FromProtocolPaymentDetails(data.PaymentDetails)
 	if err != nil {
 		return err
 	}

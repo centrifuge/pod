@@ -108,7 +108,7 @@ func newCoreDocument() (*CoreDocument, error) {
 func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
 	cd.EmbeddedData = nil
 	coreDoc = &CoreDocument{Document: cd}
-	coreDoc.Attributes, err = fromP2PAttributes(cd.Attributes)
+	coreDoc.Attributes, err = fromProtocolAttributes(cd.Attributes)
 	return coreDoc, err
 }
 
@@ -231,9 +231,9 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	return ncd, nil
 }
 
-// updateAttributes updates the p2p attributes with new one and returns the both the formats
+// updateAttributes updates the p2p attributes with new ones and returns the both the formats
 func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey]Attribute) ([]*coredocumentpb.Attribute, map[AttrKey]Attribute, error) {
-	oldAttrsMap, err := fromP2PAttributes(oldAttrs)
+	oldAttrsMap, err := fromProtocolAttributes(oldAttrs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -242,7 +242,7 @@ func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey
 		oldAttrsMap[k] = v
 	}
 
-	uattrs, err := toP2PAttributes(oldAttrsMap)
+	uattrs, err := toProtocolAttributes(oldAttrsMap)
 	return uattrs, oldAttrsMap, err
 }
 
@@ -649,7 +649,7 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 	return utils.FromTimestamp(cd.Document.Timestamp)
 }
 
-// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
+// AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 func (cd *CoreDocument) AddAttributes(attrs ...Attribute) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
@@ -667,7 +667,7 @@ func (cd *CoreDocument) AddAttributes(attrs ...Attribute) (*CoreDocument, error)
 
 		ncd.Attributes[attr.Key] = attr
 	}
-	ncd.Document.Attributes, err = toP2PAttributes(ncd.Attributes)
+	ncd.Document.Attributes, err = toProtocolAttributes(ncd.Attributes)
 	return ncd, err
 }
 
@@ -700,7 +700,7 @@ func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
 	}
 
 	delete(ncd.Attributes, key)
-	ncd.Document.Attributes, err = toP2PAttributes(ncd.Attributes)
+	ncd.Document.Attributes, err = toProtocolAttributes(ncd.Attributes)
 	return ncd, err
 }
 

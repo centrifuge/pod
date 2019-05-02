@@ -103,7 +103,7 @@ func (a BytesArray) Swap(i, j int) {
 	a[j], a[i] = a[i], a[j]
 }
 
-// SortByte32Slice sorts the byte32 slices
+// SortByte32Slice sorts the byte32 slices in ascending order.
 func SortByte32Slice(arr [][32]byte) [][32]byte {
 	ba := BytesArray(arr)
 	sort.Sort(ba)
