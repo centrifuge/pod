@@ -96,7 +96,7 @@ func TestCreateProofData(t *testing.T) {
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
-			errors.New("input length is not 32"),
+			errors.New("input exceeds length of 32"),
 		},
 		{
 			"invalid salts",
@@ -119,14 +119,13 @@ func TestCreateProofData(t *testing.T) {
 				Proofs: [][][32]byte{{byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}, {byteSliceToByteArray32(sortedHashes[0]), byteSliceToByteArray32(sortedHashes[1])}},
 				Salts:  [][32]byte{byteSliceToByteArray32(salt), byteSliceToByteArray32(salt)},
 			},
-			errors.New("input length is not 32"),
+			errors.New("input exceeds length of 32"),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			proofData, err := convertToProofData(test.proofs)
 			if test.err != nil {
-				assert.Error(t, err)
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
 				panic(err)
@@ -215,7 +214,6 @@ func TestInvoiceUnpaid(t *testing.T) {
 			}
 			_, _, err := service.MintNFT(ctxh, req)
 			if test.err != nil {
-				assert.Error(t, err)
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
 				panic(err)

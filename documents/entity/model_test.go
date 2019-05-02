@@ -402,3 +402,43 @@ func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.C
 	assert.NoError(t, err)
 	return e, cd
 }
+
+func TestEntity_AddAttributes(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntity(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = e.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, e.AttributeExists(attr.Key))
+	gattr, err := e.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = e.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestEntity_DeleteAttribute(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntity(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = e.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, e.AddAttributes(attr))
+	assert.True(t, e.AttributeExists(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key))
+	assert.False(t, e.AttributeExists(attr.Key))
+}

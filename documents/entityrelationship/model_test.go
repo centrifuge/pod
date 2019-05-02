@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
@@ -370,4 +371,44 @@ func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, core
 	cd, err := e.PackCoreDocument()
 	assert.NoError(t, err)
 	return e, cd
+}
+
+func TestEntityRelationship_AddAttributes(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntityRelationship(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = e.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, e.AttributeExists(attr.Key))
+	gattr, err := e.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = e.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestEntityRelationship_DeleteAttribute(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntityRelationship(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = e.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, e.AddAttributes(attr))
+	assert.True(t, e.AttributeExists(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key))
+	assert.False(t, e.AttributeExists(attr.Key))
 }

@@ -537,3 +537,25 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
+
+// AddAttributes adds attributes to the PurchaseOrder model.
+func (p *PurchaseOrder) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := p.CoreDocument.AddAttributes(attrs...)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	p.CoreDocument = ncd
+	return nil
+}
+
+// DeleteAttribute deletes the attribute from the model.
+func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := p.CoreDocument.DeleteAttribute(key)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	p.CoreDocument = ncd
+	return nil
+}

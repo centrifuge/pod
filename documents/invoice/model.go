@@ -729,3 +729,25 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
+
+// AddAttributes adds attributes to the Invoice model.
+func (i *Invoice) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := i.CoreDocument.AddAttributes(attrs...)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	i.CoreDocument = ncd
+	return nil
+}
+
+// DeleteAttribute deletes the attribute from the model.
+func (i *Invoice) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := i.CoreDocument.DeleteAttribute(key)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	i.CoreDocument = ncd
+	return nil
+}

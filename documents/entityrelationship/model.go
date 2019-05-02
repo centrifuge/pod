@@ -271,3 +271,25 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 	}
 	return nil
 }
+
+// AddAttributes adds attributes to the EntityRelationship model.
+func (e *EntityRelationship) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(attrs...)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	e.CoreDocument = ncd
+	return nil
+}
+
+// DeleteAttribute deletes the attribute from the model.
+func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	e.CoreDocument = ncd
+	return nil
+}

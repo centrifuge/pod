@@ -640,7 +640,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	// success
 	attr, err := NewAttribute(label, AttrString, value)
 	assert.NoError(t, err)
-	cd, err = cd.AddAttribute(attr)
+	cd, err = cd.AddAttributes(attr)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 1)
 
@@ -659,7 +659,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	nvalue := "2000"
 	attr, err = NewAttribute(label, AttrDecimal, nvalue)
 	assert.NoError(t, err)
-	cd, err = cd.AddAttribute(attr)
+	cd, err = cd.AddAttributes(attr)
 	assert.NoError(t, err)
 	assert.True(t, cd.AttributeExists(key))
 	attr, err = cd.GetAttribute(key)
@@ -765,8 +765,7 @@ func TestCoreDocument_UpdateAttributes(t *testing.T) {
 	assert.Equal(t, upattrs, newPattrs)
 	assert.Equal(t, newAttrs, uattrs)
 
-	oldPattrs[0].Key = utils.RandomSlice(31)
+	oldPattrs[0].Key = utils.RandomSlice(33)
 	_, _, err = updateAttributes(oldPattrs, newAttrs)
 	assert.Error(t, err)
-
 }

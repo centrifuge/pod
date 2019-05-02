@@ -191,6 +191,7 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
+	// TODO(ved): check for modified
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
@@ -649,7 +650,7 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttribute(attr Attribute) (*CoreDocument, error) {
+func (cd *CoreDocument) AddAttributes(attrs ...Attribute) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
@@ -659,7 +660,13 @@ func (cd *CoreDocument) AddAttribute(attr Attribute) (*CoreDocument, error) {
 		ncd.Attributes = make(map[AttrKey]Attribute)
 	}
 
-	ncd.Attributes[attr.Key] = attr
+	for _, attr := range attrs {
+		if !isAttrTypeAllowed(attr.Value.Type) {
+			return nil, ErrNotValidAttrType
+		}
+
+		ncd.Attributes[attr.Key] = attr
+	}
 	ncd.Document.Attributes, err = toP2PAttributes(ncd.Attributes)
 	return ncd, err
 }

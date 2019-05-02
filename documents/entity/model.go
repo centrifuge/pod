@@ -333,3 +333,25 @@ func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator ide
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
+
+// AddAttributes adds attributes to the Entity model.
+func (e *Entity) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(attrs...)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	e.CoreDocument = ncd
+	return nil
+}
+
+// DeleteAttribute deletes the attribute from the model.
+func (e *Entity) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	e.CoreDocument = ncd
+	return nil
+}
