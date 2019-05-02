@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 
+	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/go-centrifuge/notification"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -20,6 +23,16 @@ type mockConfig struct{}
 
 func (mockConfig) GetEthereumContextWaitTimeout() time.Duration {
 	panic("implement me")
+}
+
+var sendChan chan *notificationpb.NotificationMessage
+
+type mockSender struct{}
+
+// Send mocks failure and returns to channel
+func (mockSender) Send(ctx context.Context, ntf *notificationpb.NotificationMessage) (notification.Status, error) {
+	sendChan <- ntf
+	return notification.Failure, nil
 }
 
 func TestService_ExecuteWithinTX_happy(t *testing.T) {
@@ -40,13 +53,21 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 	errStr := "dummy"
 	did := testingidentity.GenerateRandomDID()
 	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
-	jobID, done, err := srv.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
+	mngr := srv.(*manager)
+	mngr.notifier = &mockSender{}
+	sendChan = make(chan *notificationpb.NotificationMessage)
+	jobID, done, err := mngr.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- errors.New(errStr)
 	})
 	<-done
+	ntf := <-sendChan
+	assert.Equal(t, uint32(notification.JobCompleted), ntf.EventType)
+	assert.Equal(t, jobs.JobDataTypeURL, ntf.DocumentType)
+	assert.Equal(t, string(jobs.Failed), ntf.Status)
+	assert.Equal(t, errStr, ntf.Message)
 	assert.NoError(t, err)
 	assert.NotNil(t, jobID)
-	job, err := srv.GetJob(did, jobID)
+	job, err := mngr.GetJob(did, jobID)
 	assert.NoError(t, err)
 	assert.Equal(t, jobs.Failed, job.Status)
 	assert.Len(t, job.Logs, 1)
