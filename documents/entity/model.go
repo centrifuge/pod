@@ -39,15 +39,21 @@ type Entity struct {
 }
 
 // getClientData returns the client data from the entity model
-func (e *Entity) getClientData() *cliententitypb.EntityData {
+func (e *Entity) getClientData() (*cliententitypb.EntityData, error) {
 	dids := identity.DIDsToStrings(e.Identity)
+	attrs, err := documents.ToClientAttributes(e.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	return &cliententitypb.EntityData{
 		Identity:       dids[0],
 		LegalName:      e.LegalName,
 		Addresses:      e.Addresses,
 		PaymentDetails: e.PaymentDetails,
 		Contacts:       e.Contacts,
-	}
+		Attributes:     attrs,
+	}, nil
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
@@ -75,7 +81,12 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 	}
 
 	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)
-	cd, err := documents.NewCoreDocumentWithCollaborators(compactPrefix(), ca)
+	attrs, err := documents.FromClientAttributes(payload.Data.Attributes)
+	if err != nil {
+		return err
+	}
+
+	cd, err := documents.NewCoreDocument(compactPrefix(), ca, attrs)
 	if err != nil {
 		return errors.New("failed to init core document: %v", err)
 	}
@@ -153,8 +164,8 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 		return err
 	}
 
-	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	e.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals Entity into a json bytes
@@ -186,9 +197,6 @@ func (e *Entity) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	eProto := e.createP2PProtobuf()
-	if err != nil {
-		return nil, err
-	}
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
@@ -245,8 +253,13 @@ func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.Ent
 		return err
 	}
 
+	attrs, err := documents.FromClientAttributes(data.Attributes)
+	if err != nil {
+		return err
+	}
+
 	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators)
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
 	if err != nil {
 		return err
 	}
@@ -320,26 +333,25 @@ func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator ide
 	cf := documents.GetChangedFields(oldTree, newTree)
 	return documents.ValidateTransitions(rules, cf)
 }
-// PrepareNewVersionWithExistingData prepares new version with existing current entity data
-func (e *Entity) PrepareNewVersionWithExistingData() (documents.Model, error) {
-	newVersion := new(Entity)
 
-	// copy current data to new version
-	err := newVersion.initEntityFromData(e.getClientData())
+// AddAttributes adds attributes to the Entity model.
+func (e *Entity) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(attrs...)
 	if err != nil {
-		return nil, err
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
 
-	// no new collaborators needed
-	coll := documents.CollaboratorsAccess{
-		ReadCollaborators:      nil,
-		ReadWriteCollaborators: nil,
-	}
+	e.CoreDocument = ncd
+	return nil
+}
 
-	// create next core document
-	newVersion.CoreDocument, err = e.CoreDocument.PrepareNewVersion(compactPrefix(), coll)
+// DeleteAttribute deletes the attribute from the model.
+func (e *Entity) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key)
 	if err != nil {
-		return nil, err
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
-	return newVersion, nil
+
+	e.CoreDocument = ncd
+	return nil
 }

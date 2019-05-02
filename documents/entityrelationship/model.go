@@ -87,7 +87,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entity
 	}
 
 	oldCD := old.(*EntityRelationship).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{})
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{}, nil)
 	if err != nil {
 		return err
 	}
@@ -156,8 +156,8 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 	if err != nil {
 		return err
 	}
-	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	e.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals EntityRelationship into a json bytes
@@ -189,9 +189,6 @@ func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	eProto := e.createP2PProtobuf()
-	if err != nil {
-		return nil, err
-	}
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
@@ -275,26 +272,24 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 	return nil
 }
 
-// PrepareNewVersionWithExistingData prepares new version with existing current entity relationship data
-func (e *EntityRelationship) PrepareNewVersionWithExistingData() (documents.Model, error) {
-	newVersion := new(EntityRelationship)
-
-	// copy current data to new version
-	err := newVersion.initEntityRelationshipFromData(e.getRelationshipData())
+// AddAttributes adds attributes to the EntityRelationship model.
+func (e *EntityRelationship) AddAttributes(attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(attrs...)
 	if err != nil {
-		return nil, err
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
 
-	// no new collaborators needed
-	coll := documents.CollaboratorsAccess{
-		ReadCollaborators:      nil,
-		ReadWriteCollaborators: nil,
-	}
+	e.CoreDocument = ncd
+	return nil
+}
 
-	// create next core document
-	newVersion.CoreDocument, err = e.CoreDocument.PrepareNewVersion(compactPrefix(), coll)
+// DeleteAttribute deletes the attribute from the model.
+func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key)
 	if err != nil {
-		return nil, err
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
-	return newVersion, nil
+
+	e.CoreDocument = ncd
+	return nil
 }

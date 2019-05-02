@@ -117,6 +117,8 @@ message EntityData {
   repeated PaymentDetail payment_details = 4;
   // Entity contact list
   repeated Contact contacts = 5;
+  // custom attributes
+  map<string, document.Attribute> attributes = 6;
 }
 
 // Entity Relationships

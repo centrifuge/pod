@@ -2,9 +2,9 @@ package receiver
 
 import (
 	"context"
+	"time"
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -15,11 +15,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 )
+
+// Higher response delay for all p2p operations
+// MessageTypeRequestSignature (~11ms): >25ms
+// MessageTypeSendAnchoredDoc (~13ms): >30ms
+// MessageTypeGetDoc (~1.5-5ms): >10ms
+const responseDelay = 30 * time.Millisecond
 
 // Handler implements protocol message handlers
 type Handler struct {
@@ -48,6 +55,8 @@ func New(
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
 func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+	defer timeutils.EnsureDelayOperation(time.Now(), responseDelay)
+
 	if msg == nil {
 		return srv.convertToErrorEnvelop(errors.New("nil payload provided"))
 	}

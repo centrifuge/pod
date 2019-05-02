@@ -131,6 +131,22 @@
     }
   },
   "definitions": {
+    "documentAttribute": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "this is the sha256 hash of the label of the attribute, is not allowed to be updated by the client"
+        },
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "Attribute represents a custom attribute"
+    },
     "documentBinaryAttachment": {
       "type": "object",
       "properties": {
@@ -540,6 +556,13 @@
           "items": {
             "$ref": "#/definitions/invTaxItem"
           }
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       },
       "title": "InvoiceData is the default invoice schema"

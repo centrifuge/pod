@@ -156,6 +156,8 @@ message InvoiceData {
   repeated LineItem line_items = 65;
   repeated document.PaymentDetails payment_details = 66;
   repeated TaxItem tax_items = 67;
+  // custom attributes
+  map<string, document.Attribute> attributes = 68;
 }
 
 message TaxItem {

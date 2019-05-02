@@ -1,8 +1,10 @@
 package byteutils
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
+	"sort"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -76,4 +78,34 @@ func ClearBit(n byte, pos uint) byte {
 func IsBitSet(n byte, pos uint) bool {
 	val := n & (1 << pos)
 	return val > 0
+}
+
+// BytesArray is a alias for 32 byte alice
+type BytesArray [][32]byte
+
+// Len returns the length of the slice
+func (a BytesArray) Len() int {
+	return len(a)
+}
+
+// Less returns true if i'th item is less than j'th else false
+func (a BytesArray) Less(i, j int) bool {
+	switch bytes.Compare(a[i][:], a[j][:]) {
+	case -1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Swap swaps the i, j values with in the array.
+func (a BytesArray) Swap(i, j int) {
+	a[j], a[i] = a[i], a[j]
+}
+
+// SortByte32Slice sorts the byte32 slices in ascending order.
+func SortByte32Slice(arr [][32]byte) [][32]byte {
+	ba := BytesArray(arr)
+	sort.Sort(ba)
+	return ba
 }

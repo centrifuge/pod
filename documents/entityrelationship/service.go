@@ -240,9 +240,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	r.(*EntityRelationship).Document = cd.Document
-	r.(*EntityRelationship).Modified = cd.Modified
-
+	r.(*EntityRelationship).CoreDocument = cd
 	return r, nil
 }
 

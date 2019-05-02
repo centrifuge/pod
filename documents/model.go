@@ -118,13 +118,16 @@ type Model interface {
 	IsDIDCollaborator(did identity.DID) (bool, error)
 
 	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-	AddAttribute(name string, attributeType attributeType, value string) (*CoreDocument, error)
+	AddAttributes(attrs ...Attribute) error
 
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-	GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error)
+	GetAttribute(key AttrKey) (Attribute, error)
 
 	// DeleteAttribute deletes a custom attribute from the model
-	DeleteAttribute(name string) (*CoreDocument, error)
+	DeleteAttribute(key AttrKey) error
+
+	// AttributeExists checks if the attribute with the key exists
+	AttributeExists(key AttrKey) bool
 
 	// GetAccessTokens returns the access tokens of a core document
 	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)

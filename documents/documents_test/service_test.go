@@ -328,12 +328,14 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 
 		ga := new(documents.Decimal)
 		assert.NoError(t, ga.SetString(fmt.Sprint(i+1)))
+		coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+		assert.NoError(t, err)
 		inv := &invoice.Invoice{
 			GrossAmount:  ga,
-			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+			CoreDocument: coreDoc,
 		}
 
-		err := testRepo().Create(accountID, version, inv)
+		err = testRepo().Create(accountID, version, inv)
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
@@ -357,13 +359,15 @@ func TestService_GetVersion_successful(t *testing.T) {
 	}
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
 		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		CoreDocument: coreDoc,
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := testRepo().Create(accountID, currentVersion, inv)
+	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
@@ -389,9 +393,11 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
 		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		CoreDocument: coreDoc,
 	}
 
 	err = testRepo().Create(accountID, documentIdentifier, inv)
@@ -418,9 +424,11 @@ func TestService_GetVersion_error(t *testing.T) {
 	}
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
 		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		CoreDocument: coreDoc,
 	}
 	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
@@ -463,9 +471,11 @@ func TestService_Exists(t *testing.T) {
 	}
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
 		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		CoreDocument: coreDoc,
 	}
 
 	err = testRepo().Create(accountID, documentIdentifier, inv)

@@ -130,6 +130,12 @@ const (
 
 	// ErrDocumentIDReused is a sentinal error when identifier is re-used
 	ErrDocumentIDReused = errors.Error("document identifier is already used")
+
+	// ErrNotValidAttrType is a sentinal error when an unknown attribute type is given
+	ErrNotValidAttrType = errors.Error("not a valid attribute type")
+
+	// ErrEmptyAttrLabel is a sentinal error when the attribute label is empty
+	ErrEmptyAttrLabel = errors.Error("empty attribute label")
 )
 
 // Error wraps an error with specific key

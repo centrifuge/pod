@@ -3,8 +3,10 @@
 package byteutils
 
 import (
+	"bytes"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -284,5 +286,20 @@ func TestClearBit(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			assert.Equal(t, test.expect, ClearBit(test.b, test.p))
 		})
+	}
+}
+
+func TestSortByte32Slice(t *testing.T) {
+	bts := [][32]byte{
+		utils.RandomByte32(),
+		utils.RandomByte32(),
+		utils.RandomByte32(),
+		utils.RandomByte32(),
+	}
+
+	sortBytes := SortByte32Slice(bts)
+	// pre element must be less than equal to next one
+	for i := 1; i < len(sortBytes); i++ {
+		assert.NotEqual(t, bytes.Compare(sortBytes[i-1][:], sortBytes[i][:]), 1)
 	}
 }

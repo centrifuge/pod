@@ -136,7 +136,11 @@ func TestPO_UnpackCoreDocument(t *testing.T) {
 	po, cd := createCDWithEmbeddedPO(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), po.(*PurchaseOrder).getClientData())
+	data, err := model.getClientData()
+	assert.NoError(t, err)
+	data1, err := po.(*PurchaseOrder).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, data, data1)
 	assert.Equal(t, model.ID(), po.ID())
 	assert.Equal(t, model.CurrentVersion(), po.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), po.PreviousVersion())
@@ -145,10 +149,12 @@ func TestPO_UnpackCoreDocument(t *testing.T) {
 func TestPOModel_getClientData(t *testing.T) {
 	poData := testingdocuments.CreatePOData()
 	poModel := new(PurchaseOrder)
+	poModel.CoreDocument = &documents.CoreDocument{}
 	err := poModel.loadFromP2PProtobuf(&poData)
 	assert.NoError(t, err)
 
-	data := poModel.getClientData()
+	data, err := poModel.getClientData()
+	assert.NoError(t, err)
 	assert.NotNil(t, data, "purchase order data should not be nil")
 	assert.Equal(t, data.TotalAmount, data.TotalAmount, "gross amount must match")
 	assert.Equal(t, data.Recipient, poModel.Recipient.String(), "recipient should match")
@@ -176,6 +182,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 
 	collabs := []string{"0x010102040506", "some id"}
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -311,7 +318,8 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], po.CurrentVersion())
 	assert.NoError(t, err)
 	oldPO := model.(*PurchaseOrder)
-	data := oldPO.getClientData()
+	data, err := oldPO.getClientData()
+	assert.NoError(t, err)
 	data.TotalAmount = "50"
 	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
@@ -333,7 +341,8 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], po.CurrentVersion())
 	assert.NoError(t, err)
 	oldPO = model.(*PurchaseOrder)
-	data = oldPO.getClientData()
+	data, err = oldPO.getClientData()
+	assert.NoError(t, err)
 	data.TotalAmount = "55"
 	data.Currency = "INR"
 	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{})
@@ -350,4 +359,44 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
 	assert.Contains(t, err.Error(), "po.currency")
+}
+
+func TestPurchaseOrder_AddAttributes(t *testing.T) {
+	po, _ := createCDWithEmbeddedPO(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = po.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, po.AttributeExists(attr.Key))
+	gattr, err := po.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = po.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestPurchaseOrder_DeleteAttribute(t *testing.T) {
+	po, _ := createCDWithEmbeddedPO(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = po.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, po.AddAttributes(attr))
+	assert.True(t, po.AttributeExists(attr.Key))
+	assert.NoError(t, po.DeleteAttribute(attr.Key))
+	assert.False(t, po.AttributeExists(attr.Key))
 }

@@ -1,152 +1,198 @@
 package documents
 
 import (
-	"math/big"
+	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAttribute_isAttrTypeAllowed(t *testing.T) {
+	tests := []struct {
+		attrType AttributeType
+		result   bool
+	}{
+		{
+			attrType: AttrDecimal,
+			result:   true,
+		},
+
+		{
+			attrType: AttributeType("some type"),
+			result:   false,
+		},
+	}
+
+	for _, c := range tests {
+		assert.Equal(t, c.result, isAttrTypeAllowed(c.attrType))
+	}
+}
+
 func TestNewAttribute(t *testing.T) {
-	testdecimal := new(Decimal)
-	err := testdecimal.SetString("5.1321312")
-	assert.NoError(t, err)
-	ttime := time.Now()
 	tests := []struct {
 		name        string
 		readableKey string
-		attrType    attributeType
-		value       interface{}
-		at          *attribute
+		attrType    AttributeType
+		value       string
 		errs        bool
 		errStr      string
 	}{
 		{
 			"readable key empty",
 			"",
-			StrType,
+			AttrString,
 			"",
-			nil,
 			true,
-			"can't create attribute with an empty string as name",
+			ErrEmptyAttrLabel.Error(),
 		},
-		{
-			"value nil",
-			"somekey",
-			StrType,
-			nil,
-			nil,
-			true,
-			"can't create attribute with a nil value",
-		},
-		{
-			"type mismatch",
-			"somekey",
-			StrType,
-			12,
-			nil,
-			true,
-			"provided type doesn't match the actual type of the value",
-		},
+
 		{
 			"type not allowed",
 			"somekey",
-			"int",
-			12,
-			nil,
+			"some type",
+			"",
 			true,
-			"can't find the given attribute in allowed attribute types",
+			ErrNotValidAttrType.Error(),
 		},
+
 		{
 			"string",
 			"string",
-			StrType,
+			AttrString,
 			"someval",
-			&attribute{
-				attrType:    StrType,
-				readableKey: "string",
-				value:       "someval",
-			},
 			false,
 			"",
 		},
 		{
 			"int256",
 			"int256",
-			Int256Type,
-			big.NewInt(123),
-			&attribute{
-				attrType:    Int256Type,
-				readableKey: "int256",
-				value:       big.NewInt(123),
-			},
+			AttrInt256,
+			"123",
 			false,
 			"",
 		},
 		{
 			"bigdecimal",
 			"bigdecimal",
-			BigDecType,
-			testdecimal,
-			&attribute{
-				attrType:    BigDecType,
-				readableKey: "bigdecimal",
-				value:       testdecimal,
-			},
+			AttrDecimal,
+			"5.1321312",
 			false,
 			"",
 		},
 		{
 			"bytes",
 			"bytes",
-			BytsType,
-			[]byte{1},
-			&attribute{
-				attrType:    BytsType,
-				readableKey: "bytes",
-				value:       []byte{1},
-			},
+			AttrBytes,
+			hexutil.Encode([]byte{1}),
 			false,
 			"",
 		},
 		{
 			"timestamp",
 			"timestamp",
-			TimestmpType,
-			ttime.Unix(),
-			&attribute{
-				attrType:    TimestmpType,
-				readableKey: "timestamp",
-				value:       ttime.Unix(),
-			},
+			AttrTimestamp,
+			time.Now().UTC().Format(time.RFC3339),
 			false,
 			"",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			attr, err := newAttribute(test.readableKey, test.attrType, test.value)
+			attr, err := NewAttribute(test.readableKey, test.attrType, test.value)
 			if test.errs {
-				if assert.Error(t, err) {
-					assert.True(t, errors.IsOfType(ErrCDAttribute, err))
-					assert.Contains(t, err.Error(), test.errStr)
-				} else {
-					t.Fail()
-				}
-			} else {
-				assert.NoError(t, err)
-				hashedKey, err := crypto.Sha256Hash([]byte(test.at.readableKey))
-				assert.NoError(t, err)
-				if assert.NotNil(t, attr) {
-					assert.Equal(t, attr.hashedKey, hashedKey)
-					assert.Equal(t, attr.attrType, test.at.attrType)
-					assert.Equal(t, attr.value, test.at.value)
-					assert.Equal(t, attr.readableKey, test.at.readableKey)
-				}
+				assert.Error(t, err)
+				assert.Equal(t, test.errStr, err.Error())
+				return
 			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, test.readableKey, attr.KeyLabel)
+			assert.Equal(t, test.attrType, attr.Value.Type)
+			attrKey, err := AttrKeyFromLabel(test.readableKey)
+			assert.NoError(t, err)
+			assert.Equal(t, attrKey, attr.Key)
+			str, err := attr.Value.String()
+			assert.NoError(t, err)
+			assert.Equal(t, test.value, str)
+		})
+	}
+}
+
+func TestAttrKey(t *testing.T) {
+	a, err := AttrKeyFromLabel("somekey")
+	assert.NoError(t, err)
+	m := map[AttrKey]string{a: "dwefw"}
+	mstr, err := json.Marshal(m)
+	assert.NoError(t, err)
+	m1 := make(map[AttrKey]string)
+	err = json.Unmarshal(mstr, &m1)
+	assert.NoError(t, err)
+	assert.Equal(t, m[a], m1[a])
+}
+
+func TestAttrValFromString(t *testing.T) {
+	tests := []struct {
+		name  string
+		tp    AttributeType
+		value string
+		error bool
+	}{
+		{
+			"Int256",
+			AttrInt256,
+			"12343",
+			false,
+		},
+		{
+			"Decimal",
+			AttrDecimal,
+			"12343.2121",
+			false,
+		},
+		{
+			"string",
+			AttrString,
+			"123ewqewqer",
+			false,
+		},
+		{
+			"byte",
+			AttrBytes,
+			"0x12321abc",
+			false,
+		},
+		{
+			"timestamp",
+			AttrTimestamp,
+			time.Now().UTC().Format(time.RFC3339),
+			false,
+		},
+
+		{
+			"unknown type",
+			AttributeType("some type"),
+			"",
+			true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v, err := AttrValFromString(test.tp, test.value)
+			if test.error {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			str, err := v.String()
+			assert.NoError(t, err)
+			assert.Equal(t, test.value, str)
+
+			v.Type = AttributeType("some type")
+			_, err = v.String()
+			assert.Error(t, err)
 		})
 	}
 }

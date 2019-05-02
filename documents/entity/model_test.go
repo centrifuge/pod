@@ -161,7 +161,12 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	entity, cd := createCDWithEmbeddedEntity(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), model.getClientData(), entity.(*Entity).getClientData())
+	// TODO: need to change the entity model to not use protobufs but instead use converters
+	//d, err := model.getClientData()
+	//assert.NoError(t, err)
+	//d1, err := entity.(*Entity).getClientData()
+	//assert.NoError(t, err)
+	//assert.Equal(t, d.Addresses[0], d1.Addresses[0])
 	assert.Equal(t, model.ID(), entity.ID())
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
@@ -170,10 +175,12 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 func TestEntityModel_getClientData(t *testing.T) {
 	entityData := testingdocuments.CreateEntityData()
 	entity := new(Entity)
+	entity.CoreDocument = new(documents.CoreDocument)
 	err := entity.loadFromP2PProtobuf(&entityData)
 	assert.NoError(t, err)
 
-	data := entity.getClientData()
+	data, err := entity.getClientData()
+	assert.NoError(t, err)
 	assert.NotNil(t, data, "entity data should not be nil")
 	assert.Equal(t, data.Addresses, entityData.Addresses, "addresses should match")
 	assert.Equal(t, data.Contacts, entityData.Contacts, "contacts should match")
@@ -203,6 +210,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	e = new(Entity)
 	collabs := []string{"0x010102040506", "some id"}
 	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -310,7 +318,8 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity := model.(*Entity)
-	data := oldEntity.getClientData()
+	data, err := oldEntity.getClientData()
+	assert.NoError(t, err)
 	data.LegalName = "new legal name"
 	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}})
 	assert.NoError(t, err)
@@ -330,7 +339,8 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity = model.(*Entity)
-	data = oldEntity.getClientData()
+	data, err = oldEntity.getClientData()
+	assert.NoError(t, err)
 	data.LegalName = "second new legal name"
 	data.Contacts = nil
 	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{})
@@ -391,4 +401,44 @@ func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.C
 	cd, err := e.PackCoreDocument()
 	assert.NoError(t, err)
 	return e, cd
+}
+
+func TestEntity_AddAttributes(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntity(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = e.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, e.AttributeExists(attr.Key))
+	gattr, err := e.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = e.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestEntity_DeleteAttribute(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntity(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = e.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, e.AddAttributes(attr))
+	assert.True(t, e.AttributeExists(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key))
+	assert.False(t, e.AttributeExists(attr.Key))
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -70,8 +71,8 @@ func ToClientAttachments(atts []*BinaryAttachment) []*documentpb.BinaryAttachmen
 	return catts
 }
 
-// ToP2PAttachments converts Binary Attchments to P2P attachments.
-func ToP2PAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachment {
+// ToProtocolAttachments converts Binary Attchments to protocol attachments.
+func ToProtocolAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachment {
 	var patts []*commonpb.BinaryAttachment
 	for _, att := range atts {
 		patts = append(patts, &commonpb.BinaryAttachment{
@@ -118,8 +119,8 @@ func FromClientAttachments(catts []*documentpb.BinaryAttachment) ([]*BinaryAttac
 	return atts, nil
 }
 
-// FromP2PAttachments converts P2P attachments to Binary Attchments
-func FromP2PAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttachment {
+// FromProtocolAttachments converts Protocol attachments to Binary Attachments
+func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttachment {
 	var atts []*BinaryAttachment
 	for _, att := range patts {
 		atts = append(atts, &BinaryAttachment{
@@ -165,8 +166,8 @@ func ToClientPaymentDetails(details []*PaymentDetails) []*documentpb.PaymentDeta
 	return cdetails
 }
 
-// ToP2PPaymentDetails converts payment details to P2P payment details
-func ToP2PPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDetails, error) {
+// ToProtocolPaymentDetails converts payment details to protocol payment details
+func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDetails, error) {
 	var pdetails []*commonpb.PaymentDetails
 	for _, detail := range details {
 		decs, err := DecimalsToBytes(detail.Amount)
@@ -238,8 +239,8 @@ func FromClientPaymentDetails(cdetails []*documentpb.PaymentDetails) ([]*Payment
 	return details, nil
 }
 
-// FromP2PPaymentDetails converts P2P payment details to PaymentDetails
-func FromP2PPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetails, error) {
+// FromProtocolPaymentDetails converts protocol payment details to PaymentDetails
+func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetails, error) {
 	var details []*PaymentDetails
 	for _, detail := range pdetails {
 		decs, err := BytesToDecimals(detail.Amount)
@@ -330,6 +331,48 @@ func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess,
 	return &documentpb.ReadAccess{Collaborators: rcs}, &documentpb.WriteAccess{Collaborators: wcs}
 }
 
+// ToClientAttributes converts attribute map to the client api format
+func ToClientAttributes(attributes map[AttrKey]Attribute) (map[string]*documentpb.Attribute, error) {
+	if len(attributes) < 1 {
+		return nil, nil
+	}
+
+	m := make(map[string]*documentpb.Attribute)
+	for k, v := range attributes {
+		val, err := v.Value.String()
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, err)
+		}
+
+		m[v.KeyLabel] = &documentpb.Attribute{
+			Key:   k.String(),
+			Type:  v.Value.Type.String(),
+			Value: val,
+		}
+	}
+
+	return m, nil
+}
+
+// FromClientAttributes converts the api attributes type to local Attributes map.
+func FromClientAttributes(attrs map[string]*documentpb.Attribute) (map[AttrKey]Attribute, error) {
+	if len(attrs) < 1 {
+		return nil, nil
+	}
+
+	m := make(map[AttrKey]Attribute)
+	for k, at := range attrs {
+		attr, err := NewAttribute(k, AttributeType(at.Type), at.Value)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, err)
+		}
+
+		m[attr.Key] = attr
+	}
+
+	return m, nil
+}
+
 // DeriveResponseHeader derives common response header for model
 func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb.ResponseHeader, error) {
 	cs, err := model.GetCollaborators()
@@ -390,4 +433,110 @@ func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts
 		})
 	}
 	return nnfts, err
+}
+
+// toProtocolAttributes convert model attributes to p2p attributes
+// since the protocol representation of attributes is a list, we will always sort the keys and then insert to the list.
+func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attribute, err error) {
+	var keys [][32]byte
+	for k := range attrs {
+		k := k
+		keys = append(keys, k)
+	}
+
+	keys = byteutils.SortByte32Slice(keys)
+	for _, k := range keys {
+		attr := attrs[k]
+		if !isAttrTypeAllowed(attr.Value.Type) {
+			return nil, ErrNotValidAttrType
+		}
+
+		pattr := &coredocumentpb.Attribute{
+			Key:      attr.Key[:],
+			KeyLabel: []byte(attr.KeyLabel),
+			Type:     getProtocolAttributeType(attr.Value.Type),
+		}
+
+		switch attr.Value.Type {
+		case AttrInt256:
+			b := attr.Value.Int256.Bytes()
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b[:]}
+		case AttrDecimal:
+			b, err := attr.Value.Decimal.Bytes()
+			if err != nil {
+				return nil, err
+			}
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b}
+		case AttrString:
+			pattr.Value = &coredocumentpb.Attribute_StrVal{StrVal: attr.Value.Str}
+		case AttrBytes:
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
+		case AttrTimestamp:
+			pattr.Value = &coredocumentpb.Attribute_TimeVal{TimeVal: attr.Value.Timestamp}
+		}
+
+		pattrs = append(pattrs, pattr)
+	}
+
+	return pattrs, nil
+}
+
+const attributeProtocolPrefix = "ATTRIBUTE_TYPE_"
+
+func getProtocolAttributeType(attrType AttributeType) coredocumentpb.AttributeType {
+	str := attributeProtocolPrefix + strings.ToUpper(attrType.String())
+	return coredocumentpb.AttributeType(coredocumentpb.AttributeType_value[str])
+}
+
+func getAttributeTypeFromProtocolType(attrType coredocumentpb.AttributeType) AttributeType {
+	str := coredocumentpb.AttributeType_name[int32(attrType)]
+	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeProtocolPrefix)))
+}
+
+// fromProtocolAttributes converts protocol attribute list to model attribute map
+func fromProtocolAttributes(pattrs []*coredocumentpb.Attribute) (map[AttrKey]Attribute, error) {
+	m := make(map[AttrKey]Attribute)
+	for _, pattr := range pattrs {
+		attrKey, err := AttrKeyFromBytes(pattr.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		attrType := getAttributeTypeFromProtocolType(pattr.Type)
+		attr := Attribute{
+			Key:      attrKey,
+			KeyLabel: string(pattr.KeyLabel),
+		}
+
+		attr.Value, err = attrValFromProtocolAttribute(attrType, pattr)
+		if err != nil {
+			return nil, err
+		}
+
+		m[attrKey] = attr
+	}
+
+	return m, nil
+}
+
+func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumentpb.Attribute) (attrVal AttrVal, err error) {
+	if !isAttrTypeAllowed(attrType) {
+		return attrVal, ErrNotValidAttrType
+	}
+
+	attrVal.Type = attrType
+	switch attrType {
+	case AttrInt256:
+		attrVal.Int256, err = Int256FromBytes(attribute.GetByteVal())
+	case AttrDecimal:
+		attrVal.Decimal, err = DecimalFromBytes(attribute.GetByteVal())
+	case AttrString:
+		attrVal.Str = attribute.GetStrVal()
+	case AttrBytes:
+		attrVal.Bytes = attribute.GetByteVal()
+	case AttrTimestamp:
+		attrVal.Timestamp = attribute.GetTimeVal()
+	}
+
+	return attrVal, err
 }

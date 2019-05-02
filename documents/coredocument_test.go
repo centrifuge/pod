@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -165,7 +166,7 @@ func TestNewCoreDocumentWithCollaborators(t *testing.T) {
 		ReadCollaborators:      []identity.DID{did1},
 		ReadWriteCollaborators: []identity.DID{did2},
 	}
-	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), *c)
+	cd, err := NewCoreDocument([]byte("inv"), *c, nil)
 	assert.NoError(t, err)
 
 	collabs, err := cd.GetCollaborators(identity.DID{})
@@ -226,7 +227,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	c4 := testingidentity.GenerateRandomDID()
 
 	// successful preparation of new version with new read collaborators
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil})
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
@@ -240,7 +241,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 
 	// successful preparation of new version with read and write collaborators
 	assert.NoError(t, err)
-	ncd, err = cd.PrepareNewVersion([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}})
+	ncd, err = cd.PrepareNewVersion([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	rc, err = ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
@@ -415,6 +416,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
 	cd, err := newCoreDocument()
+	assert.NoError(t, err)
 	testTree := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
 	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
@@ -496,7 +498,7 @@ func TestCoreDocument_getReadCollaborators(t *testing.T) {
 	cas := CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id1},
 	}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.NoError(t, err)
@@ -526,7 +528,7 @@ func TestCoreDocument_getWriteCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators([]byte("inv"), cas)
+	cd, err := NewCoreDocument([]byte("inv"), cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 	assert.NoError(t, err)
@@ -547,7 +549,7 @@ func TestCoreDocument_GetCollaborators(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetCollaborators()
 	assert.NoError(t, err)
@@ -588,7 +590,7 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
 	cs, err := cd.GetSignerCollaborators()
 	assert.NoError(t, err)
@@ -615,22 +617,67 @@ func TestCoreDocument_GetSignCollaborators(t *testing.T) {
 	assert.Contains(t, cs, id1)
 }
 
-func TestCoreDocument_AddAttribute(t *testing.T) {
+func TestCoreDocument_Attribute(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-	cd, err := NewCoreDocumentWithCollaborators(nil, cas)
+	cd, err := NewCoreDocument(nil, cas, nil)
 	assert.NoError(t, err)
-	cd, err = cd.AddAttribute("com.basf.deliverynote.chemicalnumber", StrType, "100")
+	cd.Attributes = nil
+	label := "com.basf.deliverynote.chemicalnumber"
+	value := "100"
+	key, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)
-	assert.True(t, len(cd.Attributes) == 1)
 
-	hashedKey, attrType, val, _, err := cd.GetAttribute("com.basf.deliverynote.chemicalnumber")
-	assert.NoError(t, err)
-	assert.True(t, len(hashedKey) > 0)
-	assert.Equal(t, attrType, StrType.String())
-	assert.Equal(t, "100", val)
+	// failed get
+	assert.False(t, cd.AttributeExists(key))
+	_, err = cd.GetAttribute(key)
+	assert.Error(t, err)
 
-	// TODO add tests for each type + failures, once converters are ready
+	// failed delete
+	_, err = cd.DeleteAttribute(key)
+	assert.Error(t, err)
+
+	// success
+	attr, err := NewAttribute(label, AttrString, value)
+	assert.NoError(t, err)
+	cd, err = cd.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 1)
+
+	// check
+	assert.True(t, cd.AttributeExists(key))
+	attr, err = cd.GetAttribute(key)
+	assert.NoError(t, err)
+	assert.Equal(t, key, attr.Key)
+	assert.Equal(t, label, attr.KeyLabel)
+	str, err := attr.Value.String()
+	assert.NoError(t, err)
+	assert.Equal(t, value, str)
+	assert.Equal(t, AttrString, attr.Value.Type)
+
+	// update
+	nvalue := "2000"
+	attr, err = NewAttribute(label, AttrDecimal, nvalue)
+	assert.NoError(t, err)
+	cd, err = cd.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, cd.AttributeExists(key))
+	attr, err = cd.GetAttribute(key)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 1)
+	assert.Equal(t, key, attr.Key)
+	assert.Equal(t, label, attr.KeyLabel)
+	str, err = attr.Value.String()
+	assert.NoError(t, err)
+	assert.NotEqual(t, value, str)
+	assert.Equal(t, nvalue, str)
+	assert.Equal(t, AttrDecimal, attr.Value.Type)
+
+	// delete
+	cd, err = cd.DeleteAttribute(key)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 0)
+	assert.False(t, cd.AttributeExists(key))
 }
 
 func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
@@ -638,4 +685,87 @@ func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
 	cd := new(CoreDocument)
 	cd.SetUsedAnchorRepoAddress(addr.ToAddress())
 	assert.Equal(t, addr.ToAddress().Bytes(), cd.AnchorRepoAddress().Bytes())
+}
+
+func TestCoreDocument_UpdateAttributes(t *testing.T) {
+	oldCAttrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	updates := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "new string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("new bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000002",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000002",
+		},
+
+		"decimal_test_1": {
+			Type:  AttrDecimal.String(),
+			Value: "1111.00012",
+		},
+	}
+
+	oldAttrs, err := FromClientAttributes(oldCAttrs)
+	assert.NoError(t, err)
+
+	newAttrs, err := FromClientAttributes(updates)
+	assert.NoError(t, err)
+
+	newPattrs, err := toProtocolAttributes(newAttrs)
+	assert.NoError(t, err)
+
+	oldPattrs, err := toProtocolAttributes(oldAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(oldPattrs, newAttrs)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, newPattrs)
+	assert.Equal(t, newAttrs, uattrs)
+
+	oldPattrs[0].Key = utils.RandomSlice(33)
+	_, _, err = updateAttributes(oldPattrs, newAttrs)
+	assert.Error(t, err)
 }

@@ -52,7 +52,7 @@
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[projects]]
-  digest = "1:46f888b315049515e364575d121ec54ca5b990afc2424613563b742126d1ba4f"
+  digest = "1:90a4ce74be45d1c90a2bbfee31fea1c3a49233c3a4dcca08d6f1b37f854fb8c1"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -66,7 +66,7 @@
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "c595dfecc3118c7456532d355c196a194b41425f"
+  revision = "16c045bc902aae06b656369d768dee5184f3845a"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -1530,6 +1530,7 @@
     "github.com/ethereum/go-ethereum/accounts/abi/bind",
     "github.com/ethereum/go-ethereum/common",
     "github.com/ethereum/go-ethereum/common/hexutil",
+    "github.com/ethereum/go-ethereum/common/math",
     "github.com/ethereum/go-ethereum/core/types",
     "github.com/ethereum/go-ethereum/crypto",
     "github.com/ethereum/go-ethereum/crypto/secp256k1",

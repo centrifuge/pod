@@ -138,7 +138,11 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	inv, cd := createCDWithEmbeddedInvoice(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), inv.(*Invoice).getClientData())
+	d, err := model.getClientData()
+	assert.NoError(t, err)
+	d1, err := inv.(*Invoice).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, d, d1)
 	assert.Equal(t, model.ID(), inv.ID())
 	assert.Equal(t, model.CurrentVersion(), inv.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), inv.PreviousVersion())
@@ -147,10 +151,12 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
 	inv := new(Invoice)
+	inv.CoreDocument = new(documents.CoreDocument)
 	err := inv.loadFromP2PProtobuf(&invData)
 	assert.NoError(t, err)
 
-	data := inv.getClientData()
+	data, err := inv.getClientData()
+	assert.NoError(t, err)
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
 	assert.Equal(t, data.Recipient, inv.Recipient.String(), "recipient should match")
@@ -201,6 +207,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 
 	collabs := []string{"0x010102040506", "some id"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -396,7 +403,8 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], inv.CurrentVersion())
 	assert.NoError(t, err)
 	oldInv := model.(*Invoice)
-	data := oldInv.getClientData()
+	data, err := oldInv.getClientData()
+	assert.NoError(t, err)
 	data.GrossAmount = "50"
 	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
@@ -427,7 +435,8 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], inv.CurrentVersion())
 	assert.NoError(t, err)
 	oldInv = model.(*Invoice)
-	data = oldInv.getClientData()
+	data, err = oldInv.getClientData()
+	assert.NoError(t, err)
 	data.GrossAmount = "55"
 	data.Currency = "INR"
 	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{})
@@ -444,4 +453,44 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
 	assert.Contains(t, err.Error(), "invoice.currency")
+}
+
+func TestInvoice_AddAttributes(t *testing.T) {
+	inv, _ := createCDWithEmbeddedInvoice(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = inv.AddAttributes(attr)
+	assert.NoError(t, err)
+	assert.True(t, inv.AttributeExists(attr.Key))
+	gattr, err := inv.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = inv.AddAttributes(attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestInvoice_DeleteAttribute(t *testing.T) {
+	inv, _ := createCDWithEmbeddedInvoice(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = inv.DeleteAttribute(attr.Key)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, inv.AddAttributes(attr))
+	assert.True(t, inv.AttributeExists(attr.Key))
+	assert.NoError(t, inv.DeleteAttribute(attr.Key))
+	assert.False(t, inv.AttributeExists(attr.Key))
 }

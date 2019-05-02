@@ -277,7 +277,7 @@ func (s service) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityDa
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return entity.getClientData(), nil
+	return entity.getClientData()
 }
 
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload

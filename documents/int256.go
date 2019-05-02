@@ -3,6 +3,7 @@ package documents
 import (
 	"math/big"
 	"regexp"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
@@ -20,8 +21,14 @@ type Int256 struct {
 	v big.Int
 }
 
+// String converts Int256 to string
+func (i *Int256) String() string {
+	return i.v.Text(10)
+}
+
 // NewInt256 creates a new Int256 given a string
 func NewInt256(n string) (*Int256, error) {
+	n = strings.TrimSpace(n)
 	if !validInt.MatchString(n) {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("probably a decimal value: %s", n))
 	}
@@ -38,8 +45,8 @@ func NewInt256(n string) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// FromBytes converts the a big endian byte slice to an Int256
-func FromBytes(b []byte) (*Int256, error) {
+// Int256FromBytes converts the a big endian byte slice to an Int256
+func Int256FromBytes(b []byte) (*Int256, error) {
 	if len(b) != 32 {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %x", b))
 	}
@@ -66,12 +73,11 @@ func FromBytes(b []byte) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// Bytes returns the big endian 32 byte representation of this int256. First bit of LSB is used as the sign bit.
+// Bytes returns the big endian 32 byte representation of this int256. First bit of LSB(least significant byte) is used as the sign bit.
 func (i *Int256) Bytes() [32]byte {
-
 	var b [32]byte
 	// no of bits in i.v.Bytes() <= 255
-	// if its less pad the number in big endian order and copy to the 32 byte array
+	// if its less, pad the number in big endian order and copy to the 32 byte array
 	copy(b[:], math.PaddedBigBytes(&i.v, 32))
 
 	//  set the sign bit
