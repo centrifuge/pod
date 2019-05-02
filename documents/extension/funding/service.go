@@ -18,7 +18,10 @@ import (
 // Service defines specific functions for extension funding
 type Service interface {
 	documents.Service
+	// DeriveFromPayload derives Funding from clientPayload
 	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
+
+	// DeriveFundingResponse returns a funding in client format
 	DeriveFundingResponse(model documents.Model, payload *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error)
 }
 
@@ -47,13 +50,13 @@ func generateKey(idx, fieldName string) string {
 	return strings.Replace(fundingFieldKey, fundingIdx, idx, -1) + fieldName
 }
 
-func keyFromJsonTag(idx, jsonTag string) (key string, err error) {
-	correctJsonParts := 2
+func keyFromJSONTag(idx, jsonTag string) (key string, err error) {
+	correctJSONParts := 2
 	jsonKeyIdx := 0
 
 	// example `json:"days,omitempty"`
 	jsonParts := strings.Split(jsonTag, ",")
-	if len(jsonParts) == correctJsonParts {
+	if len(jsonParts) == correctJSONParts {
 		return generateKey(idx, jsonParts[jsonKeyIdx]), nil
 
 	}
@@ -113,9 +116,8 @@ func createAttributesList(current documents.Model, req *clientfundingpb.FundingC
 	types := reflect.TypeOf(*req.Data)
 	values := reflect.ValueOf(*req.Data)
 	for i := 0; i < types.NumField(); i++ {
-
 		jsonKey := types.Field(i).Tag.Get("json")
-		key, err := keyFromJsonTag(idx.Value.Str, jsonKey)
+		key, err := keyFromJSONTag(idx.Value.Str, jsonKey)
 		if err != nil {
 			continue
 		}
