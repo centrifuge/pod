@@ -120,7 +120,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 
 	// todo add Attribute Map
 
-	
+
 	// todo validate funding payload
 	// validate funding payload
 	/*validator := CreateValidator()

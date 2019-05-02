@@ -45,6 +45,9 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 
 	// returns model with added funding custom fields
 	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
+	if err != nil {
+		return nil, err
+	}
 
 	model, jobID, _, err := h.service.Update(ctx, model)
 	if err != nil {
