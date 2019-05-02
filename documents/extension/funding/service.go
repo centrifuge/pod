@@ -2,7 +2,6 @@ package funding
 
 import (
 	"context"
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
@@ -69,9 +68,9 @@ func defineFundingIdx(model documents.Model) (int, error) {
 
 }
 
-func createAttributeMap(current documents.Model, req *clientfundingpb.FundingCreatePayload) (map[string]int, error) {
-
-	var attributes map[string]int
+func createAttributeMap(current documents.Model, req *clientfundingpb.FundingCreatePayload) (map[string]string, error) {
+	var attributes map[string]string
+	attributes = make(map[string]string)
 
 	idx, err := defineFundingIdx(current)
 	if err != nil {
@@ -79,7 +78,7 @@ func createAttributeMap(current documents.Model, req *clientfundingpb.FundingCre
 	}
 
 	req.Data.AgreementId = hexutil.Encode(utils.RandomSlice(32))
-	
+
 	types := reflect.TypeOf(*req.Data)
 	values := reflect.ValueOf(*req.Data)
 	for i := 0; i < types.NumField(); i++ {
@@ -90,9 +89,10 @@ func createAttributeMap(current documents.Model, req *clientfundingpb.FundingCre
 			continue
 		}
 
-		fmt.Println(key)
-		fmt.Println(types.Field(i).Type.String())
-		fmt.Println(values.Field(i).Interface())
+		// fmt.Println(key)
+		// fmt.Println(types.Field(i).Type.String())
+		// fmt.Println(values.Field(i).Interface())
+		attributes[key] = values.Field(i).Interface().(string)
 
 	}
 
@@ -107,16 +107,20 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	model, err := current.PrepareNewVersionWithExistingData()
+	/*model, err := current.PrepareNewVersionWithExistingData()
+	if err != nil {
+		return nil, err
+	}*/
+
+	_, err = createAttributeMap(current,req)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = createAttributeMap(model,req)
-	if err != nil {
-		return nil, err
-	}
 
+	// todo add Attribute Map
+
+	
 	// todo validate funding payload
 	// validate funding payload
 	/*validator := CreateValidator()
@@ -127,7 +131,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	}
 	*/
 
-	return model, nil
+	return current, nil
 }
 
 // DeriveFundingResponse returns create response from the added funding

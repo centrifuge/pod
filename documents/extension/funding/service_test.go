@@ -26,8 +26,9 @@ func TestAddFundingAttributes(t *testing.T) {
 
 	payload := &clientfundingpb.FundingCreatePayload{Data:&clientfundingpb.FundingData{Currency:"eur"}}
 
-	_, err := createAttributeMap(inv,payload)
+	attributes, err := createAttributeMap(inv,payload)
 	assert.NoError(t, err)
+	assert.Equal(t, "eur", attributes["centrifuge_funding[0].currency"])
 
 }
 
