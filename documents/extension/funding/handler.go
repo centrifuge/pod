@@ -13,8 +13,7 @@ import (
 
 var apiLog = logging.Logger("funding-api")
 
-// grpcHandler handles all the entity document related actions
-// anchoring, sending, finding stored entity document
+// grpcHandler handles all the funding extension related actions
 type grpcHandler struct {
 	service Service
 	config  config.Service

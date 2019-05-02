@@ -5,7 +5,22 @@ package funding
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -16,6 +31,47 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+var ctx = map[string]interface{}{}
+var cfg config.Configuration
+
+var (
+	did       = testingidentity.GenerateRandomDID()
+	didBytes  = did[:]
+	accountID = did[:]
+)
+
+func TestMain(m *testing.M) {
+	ethClient := &testingcommons.MockEthClient{}
+	ethClient.On("GetEthClient").Return(nil)
+	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	jobMan := &testingjobs.MockJobManager{}
+	ctx[jobs.BootstrappedService] = jobMan
+	done := make(chan bool)
+	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
+	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ibootstrappers := []bootstrap.TestBootstrapper{
+		&testlogging.TestLoggingBootstrapper{},
+		&config.Bootstrapper{},
+		&leveldb.Bootstrapper{},
+		&queue.Bootstrapper{},
+		&ideth.Bootstrapper{},
+		&configstore.Bootstrapper{},
+		anchors.Bootstrapper{},
+		documents.Bootstrapper{},
+		p2p.Bootstrapper{},
+		documents.PostBootstrapper{},
+		// &Bootstrapper{}, // todo add own bootstrapper
+		&queue.Starter{},
+	}
+	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
+	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	cfg.Set("identityId", did.String())
+	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
+	result := m.Run()
+	bootstrap.RunTestTeardown(ibootstrappers)
+	os.Exit(result)
+}
 
 func TestGenerateKey(t *testing.T) {
 	assert.Equal(t, "centrifuge_funding[1].days", generateKey("1", "days"))
@@ -32,7 +88,7 @@ func TestCreateAttributesList(t *testing.T) {
 
 	attributes, err := createAttributesList(inv, payload)
 	assert.NoError(t, err)
-	assert.Equal(t, 11, len(attributes))
+	assert.Equal(t, 12, len(attributes))
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "centrifuge_funding[0].currency" {
