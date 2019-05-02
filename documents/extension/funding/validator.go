@@ -7,7 +7,7 @@ import (
 // fieldValidateFunc validates the fields of the funding extension
 func fieldValidator() documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Model) error {
-
+		//todo implement validator
 		return nil
 	})
 }

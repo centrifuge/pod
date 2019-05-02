@@ -27,15 +27,26 @@ type service struct {
 	tokenRegFinder func() documents.TokenRegistry
 }
 
-const fundingKey = "centrifuge_funding"
+const fundingLabel = "centrifuge_funding"
 const fundingFieldKey = "centrifuge_funding[{IDX}]."
 const fundingIdx = "{IDX}"
 
-func generateKey(idx int, fieldName string) string {
-	return strings.Replace(fundingFieldKey, fundingIdx, strconv.Itoa(idx) , -1) +fieldName
+// DefaultService returns the default implementation of the service.
+func DefaultService(
+	srv documents.Service,
+	tokenRegFinder func() documents.TokenRegistry,
+) Service {
+	return service{
+		Service:        srv,
+		tokenRegFinder: tokenRegFinder,
+	}
 }
 
-func keyFromJsonTag(idx int, jsonTag string) (key string, err error) {
+func generateKey(idx ,fieldName string) string {
+	return strings.Replace(fundingFieldKey, fundingIdx, idx , -1) +fieldName
+}
+
+func keyFromJsonTag(idx, jsonTag string) (key string, err error) {
 	correctJsonParts := 2
 	jsonKeyIdx := 0
 
@@ -49,89 +60,104 @@ func keyFromJsonTag(idx int, jsonTag string) (key string, err error) {
 
 }
 
-func defineFundingIdx(model documents.Model) (int, error) {
-	_,_,_,idx,err := model.GetAttribute(fundingKey)
-	if err != nil { // todo replace with Exists method
-		return 0,nil
+func defineFundingIdx(model documents.Model) (attr documents.Attribute,err error) {
+	key, err := documents.AttrKeyFromLabel(fundingLabel)
+	if err != nil {
+		return attr, err
 	}
 
-	idxInt, err := strconv.Atoi(idx)
+	if !model.AttributeExists(key) {
+		return documents.NewAttribute(fundingLabel,documents.AttrString,"0")
+
+	}
+
+	attr ,err = model.GetAttribute(key)
 	if err != nil {
-		return -1,err
+		return attr ,err
+	}
+
+	idxInt, err := strconv.Atoi(attr.Value.Str)
+	if err != nil {
+		return attr ,err
 	}
 
 	if idxInt < 0 {
-		return -1, ErrFundingIndex
+		return attr, ErrFundingIndex
 	}
 
-	return idxInt+1,nil
+	newIdx, err := documents.AttrValFromString(documents.AttrString,strconv.Itoa(idxInt+1))
+	if err != nil {
+		return attr ,err
+	}
+
+	attr.Value = newIdx
+	return attr, nil
 
 }
 
-func createAttributeMap(current documents.Model, req *clientfundingpb.FundingCreatePayload) (map[string]string, error) {
-	var attributes map[string]string
-	attributes = make(map[string]string)
+func createAttributesList(current documents.Model, req *clientfundingpb.FundingCreatePayload) ([]documents.Attribute, error) {
+	var attributes []documents.Attribute
 
 	idx, err := defineFundingIdx(current)
 	if err != nil {
 		return nil,err
 	}
 
+	// define id
 	req.Data.AgreementId = hexutil.Encode(utils.RandomSlice(32))
+
+	// add updated idx
+	attributes = append(attributes,idx)
 
 	types := reflect.TypeOf(*req.Data)
 	values := reflect.ValueOf(*req.Data)
 	for i := 0; i < types.NumField(); i++ {
 
 		jsonKey := types.Field(i).Tag.Get("json")
-		key, err := keyFromJsonTag(idx, jsonKey)
+		key, err := keyFromJsonTag(idx.Value.Str, jsonKey)
 		if err != nil {
 			continue
 		}
 
-		// fmt.Println(key)
-		// fmt.Println(types.Field(i).Type.String())
-		// fmt.Println(values.Field(i).Interface())
-		attributes[key] = values.Field(i).Interface().(string)
+		value := values.Field(i).Interface().(string)
+		attrType := types.Field(i).Type.String()
+
+		attr, err := documents.NewAttribute(key, documents.AttributeType(attrType), value)
+		if err != nil {
+			return nil, err
+		}
+
+		attributes = append(attributes,attr)
 
 	}
 
-	// todo return attributeMap
 	return attributes, nil
 }
 
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
-	current, err := s.GetCurrentVersion(ctx, identifier)
+	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	/*model, err := current.PrepareNewVersionWithExistingData()
-	if err != nil {
-		return nil, err
-	}*/
-
-	_, err = createAttributeMap(current,req)
+	attributes, err := createAttributesList(model,req)
 	if err != nil {
 		return nil, err
 	}
 
+	err = model.AddAttributes(attributes...)
+	if err != nil {
+		return nil, err
+	}
 
-	// todo add Attribute Map
-
-
-	// todo validate funding payload
-	// validate funding payload
-	/*validator := CreateValidator()
-
-	err = validator.Validate(current, model)
+	validator := CreateValidator()
+	err = validator.Validate(nil, model)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
-	*/
 
-	return current, nil
+	return model, nil
 }
 
 // DeriveFundingResponse returns create response from the added funding
