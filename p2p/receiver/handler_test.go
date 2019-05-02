@@ -81,6 +81,20 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
+func TestHandler_HandleInterceptor_noConfig(t *testing.T) {
+	randomPath := leveldb.GetRandomTestStoragePath()
+	defer os.RemoveAll(randomPath)
+	db, err := leveldb.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+	fkRepo := configstore.NewDBRepository(leveldb.NewLevelDBRepository(db))
+	fkCfg := configstore.DefaultService(fkRepo, mockIDService)
+	hndlr := New(fkCfg, nil, nil, nil, nil)
+	resp, err := hndlr.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), &protocolpb.P2PEnvelope{})
+	assert.NoError(t, err)
+	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
+	assert.Error(t, err)
+}
+
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
 	id := testingidentity.GenerateRandomDID()
 	req := &p2ppb.SignatureRequest{}

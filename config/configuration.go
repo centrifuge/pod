@@ -106,6 +106,7 @@ type Configuration interface {
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
+	GetP2PResponseDelay() time.Duration
 	GetServerPort() int
 	GetServerAddress() string
 	GetNumWorkers() int
@@ -290,6 +291,11 @@ func (c *configuration) GetP2PExternalIP() string {
 // GetP2PConnectionTimeout returns P2P Connect Timeout.
 func (c *configuration) GetP2PConnectionTimeout() time.Duration {
 	return c.GetDuration("p2p.connectTimeout")
+}
+
+// GetP2PResponseDelay returns P2P Response Delay.
+func (c *configuration) GetP2PResponseDelay() time.Duration {
+	return c.GetDuration("p2p.responseDelay")
 }
 
 // GetReceiveEventNotificationEndpoint returns the webhook endpoint defined in the config.
