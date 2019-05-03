@@ -11,7 +11,7 @@ type Data struct {
 	FundingId             string `json:"funding_id,omitempty" attr:"string"`
 	Amount                string `json:"amount,omitempty" attr:"string"`
 	Apr                   string `json:"apr,omitempty" attr:"string"`
-	Days                  string `json:"days,omitempty" attr:"string"`
+	Days                  string `json:"days,omitempty" attr:"integer"`
 	Fee                   string `json:"fee,omitempty" attr:"string"`
 	RepaymentDueDate      string `json:"repayment_due_date,omitempty" attr:"string"`
 	RepaymentOccurredDate string `json:"repayment_occurred_date,omitempty" attr:"string"`

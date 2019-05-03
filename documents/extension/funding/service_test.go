@@ -84,7 +84,7 @@ func TestCreateAttributesList(t *testing.T) {
 	inv := &invoice.Invoice{}
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
-	data := Data{Currency: "eur"}
+	data := Data{Currency: "eur", Days:"90"}
 
 	attributes, err := createAttributesList(inv, data)
 	assert.NoError(t, err)
@@ -106,7 +106,7 @@ func TestDeriveFromPayload(t *testing.T) {
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
-	payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}}
+	payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur",Days:"90"}}
 
 	for i := 0; i < 10; i++ {
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
@@ -136,13 +136,14 @@ func TestDeriveFundingResponse(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		fundingId := newFundingID()
-		payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{FundingId: fundingId, Currency: "eur"}}
+		payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{FundingId: fundingId, Currency: "eur", Days:"90"}}
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 
 		response, err := srv.DeriveFundingResponse(model, fundingId)
 		assert.Equal(t, fundingId, response.Data.FundingId)
 		assert.Equal(t, "eur", response.Data.Currency)
+		assert.Equal(t, "90", response.Data.Days)
 
 	}
 

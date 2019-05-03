@@ -233,7 +233,13 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 
 		// set field in client data
 		n := types.Field(i).Name
-		reflect.ValueOf(data).Elem().FieldByName(n).SetString(attr.Value.Str)
+
+		v, err := attr.Value.String()
+		if err != nil {
+			return nil, err
+		}
+
+		reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
 
 	}
 	return data, nil
