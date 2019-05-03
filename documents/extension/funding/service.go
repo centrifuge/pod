@@ -2,6 +2,7 @@ package funding
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ type Service interface {
 	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
 
 	// DeriveFundingResponse returns a funding in client format
-	DeriveFundingResponse(model documents.Model, payload *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error)
+	DeriveFundingResponse(model documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -34,6 +35,7 @@ type service struct {
 const fundingLabel = "centrifuge_funding"
 const fundingFieldKey = "centrifuge_funding[{IDX}]."
 const fundingIdx = "{IDX}"
+const fundingIdLabel = "funding_id"
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
@@ -46,7 +48,11 @@ func DefaultService(
 	}
 }
 
-func generateKey(idx, fieldName string) string {
+func newFundingId() string {
+	return hexutil.Encode(utils.RandomSlice(32))
+}
+
+func generateLabel(idx, fieldName string) string {
 	return strings.Replace(fundingFieldKey, fundingIdx, idx, -1) + fieldName
 }
 
@@ -57,10 +63,34 @@ func keyFromJSONTag(idx, jsonTag string) (key string, err error) {
 	// example `json:"days,omitempty"`
 	jsonParts := strings.Split(jsonTag, ",")
 	if len(jsonParts) == correctJSONParts {
-		return generateKey(idx, jsonParts[jsonKeyIdx]), nil
+		return generateLabel(idx, jsonParts[jsonKeyIdx]), nil
 
 	}
 	return key, ErrNoFundingField
+
+}
+
+func getFundingsLatestIdx(model documents.Model) (idx int, err error){
+	key, err := documents.AttrKeyFromLabel(fundingLabel)
+	if err != nil {
+		return idx, err
+	}
+
+	attr, err := model.GetAttribute(key)
+	if err != nil {
+		return idx, err
+	}
+
+	idx, err = strconv.Atoi(attr.Value.Str)
+	if err != nil {
+		return idx, err
+	}
+
+	if idx < 0 {
+		return idx, ErrFundingIndex
+	}
+
+	return idx, nil
 
 }
 
@@ -75,31 +105,21 @@ func defineFundingIdx(model documents.Model) (attr documents.Attribute, err erro
 
 	}
 
-	attr, err = model.GetAttribute(key)
+	idx, err := getFundingsLatestIdx(model)
 	if err != nil {
 		return attr, err
 	}
 
-	idxInt, err := strconv.Atoi(attr.Value.Str)
+	newIdx, err := documents.AttrValFromString(documents.AttrString, strconv.Itoa(idx+1))
 	if err != nil {
 		return attr, err
 	}
 
-	if idxInt < 0 {
-		return attr, ErrFundingIndex
-	}
-
-	newIdx, err := documents.AttrValFromString(documents.AttrString, strconv.Itoa(idxInt+1))
-	if err != nil {
-		return attr, err
-	}
-
-	attr.Value = newIdx
-	return attr, nil
+	return documents.NewAttribute(fundingLabel, documents.AttrString, newIdx.Str)
 
 }
 
-func createAttributesList(current documents.Model, req *clientfundingpb.FundingCreatePayload) ([]documents.Attribute, error) {
+func createAttributesList(current documents.Model, data FundingData) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
 	idx, err := defineFundingIdx(current)
@@ -107,14 +127,11 @@ func createAttributesList(current documents.Model, req *clientfundingpb.FundingC
 		return nil, err
 	}
 
-	// define id
-	req.Data.FundingId = hexutil.Encode(utils.RandomSlice(32))
-
 	// add updated idx
 	attributes = append(attributes, idx)
 
-	types := reflect.TypeOf(*req.Data)
-	values := reflect.ValueOf(*req.Data)
+	types := reflect.TypeOf(data)
+	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
 		jsonKey := types.Field(i).Tag.Get("json")
 		key, err := keyFromJSONTag(idx.Value.Str, jsonKey)
@@ -138,16 +155,21 @@ func createAttributesList(current documents.Model, req *clientfundingpb.FundingC
 }
 
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
+	fd := FundingData{}
+	fd.initFundingFromData(req.Data)
+
 	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "document not found")
 	}
 
-	attributes, err := createAttributesList(model, req)
+	attributes, err := createAttributesList(model, fd)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(attributes)
 
 	err = model.AddAttributes(attributes...)
 	if err != nil {
@@ -163,8 +185,48 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	return model, nil
 }
 
+func (s service) findFunding(model documents.Model, fundingId string) (idx int,err error) {
+	lastIdx, err := getFundingsLatestIdx(model)
+
+	for i := 0; i <= lastIdx; i++ {
+		label := generateLabel(strconv.Itoa(i),fundingIdLabel)
+		k, err := documents.AttrKeyFromLabel(label)
+		if err != nil {
+			return idx, err
+		}
+
+		attr, err := model.GetAttribute(k)
+		if err != nil {
+			return idx, err
+		}
+
+		if  attr.Value.Str == fundingId {
+			return i, nil
+		}
+
+	}
+
+	return idx, ErrFundingNotFound
+}
+
+
+func (s service) deriveFundingData(model documents.Model, idx string) (*clientfundingpb.FundingData, error) {
+	//data := clientfundingpb.FundingData{}
+
+
+	//reflect.ValueOf(&data).Elem().FieldByName("N").SetInt(7)
+
+	return nil, nil
+
+}
+
 // DeriveFundingResponse returns create response from the added funding
-func (s service) DeriveFundingResponse(model documents.Model, payload *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error) {
+func (s service) DeriveFundingResponse(model documents.Model,fundingId string) (*clientfundingpb.FundingResponse, error) {
+	_, err := s.findFunding(model, fundingId)
+	if err != nil {
+		return nil, err
+	}
+
 	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
 	if err != nil {
 		return nil, errors.New("failed to derive response: %v", err)
@@ -172,7 +234,7 @@ func (s service) DeriveFundingResponse(model documents.Model, payload *clientfun
 
 	return &clientfundingpb.FundingResponse{
 		Header: h,
-		Data:   payload.Data,
+		Data:   nil,
 	}, nil
 
 }

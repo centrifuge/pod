@@ -27,13 +27,13 @@ type mockService struct {
 
 var configService config.Service
 
-func (m *mockService) DeriveFromPayload(ctx context.Context, payload *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
-	args := m.Called(ctx, payload)
+func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
+	args := m.Called(ctx, req)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) DeriveFundingResponse(doc documents.Model, payload *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error) {
+func (m *mockService) DeriveFundingResponse(doc documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error) {
 	args := m.Called(doc)
 	data, _ := args.Get(0).(*clientfundingpb.FundingResponse)
 	return data, args.Error(1)

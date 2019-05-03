@@ -9,4 +9,7 @@ const (
 
 	// ErrNoFundingField must be used if a field is not a funding field
 	ErrNoFundingField = errors.Error("field not a funding related field")
+
+	// ErrFundingNotFound must be used if a funding id is not found in a model
+	ErrFundingNotFound = errors.Error("funding not found in model")
 )

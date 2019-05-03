@@ -42,6 +42,10 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
 	}
 
+	// create new funding id
+	req.Data.FundingId = newFundingId()
+
+
 	// returns model with added funding custom fields
 	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
 	if err != nil {
@@ -54,7 +58,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 		return nil, centerrors.Wrap(err, "could not update document")
 	}
 
-	resp, err := h.service.DeriveFundingResponse(model, req)
+	resp, err := h.service.DeriveFundingResponse(model, req.Data.FundingId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "could not derive response")
@@ -67,6 +71,34 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 
 // Create handles a new funding document extension and adds it to an existing document
 func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
+	apiLog.Debugf("Get request %v", req)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+	}
+
+
+
+	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "document not found")
+	}
+
+	resp, err := h.service.DeriveFundingResponse(model, req.FundingId)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, centerrors.Wrap(err, "could not derive response")
+	}
+
+	return resp, nil
 
 	return nil, nil
 }

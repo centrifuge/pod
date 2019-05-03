@@ -74,8 +74,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	assert.Equal(t, "centrifuge_funding[1].days", generateKey("1", "days"))
-	assert.Equal(t, "centrifuge_funding[0].", generateKey("0", ""))
+	assert.Equal(t, "centrifuge_funding[1].days", generateLabel("1", "days"))
+	assert.Equal(t, "centrifuge_funding[0].", generateLabel("0", ""))
 
 }
 
@@ -84,9 +84,9 @@ func TestCreateAttributesList(t *testing.T) {
 	inv := &invoice.Invoice{}
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
-	payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}}
+	data := FundingData{Currency:"eur"}
 
-	attributes, err := createAttributesList(inv, payload)
+	attributes, err := createAttributesList(inv, data)
 	assert.NoError(t, err)
 	assert.Equal(t, 12, len(attributes))
 
@@ -105,11 +105,10 @@ func TestDeriveFromPayload(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-
 	srv := DefaultService(docSrv, nil)
 	payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i <10; i++ {
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 		label := fmt.Sprintf("centrifuge_funding[%d].currency", i)
@@ -118,9 +117,9 @@ func TestDeriveFromPayload(t *testing.T) {
 
 		attr, err := model.GetAttribute(key)
 		assert.NoError(t, err)
-
 		assert.Equal(t, "eur", attr.Value.Str)
 
 	}
 
 }
+
