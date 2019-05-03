@@ -144,7 +144,7 @@ func createAttributesList(current documents.Model, data FundingData) ([]document
 		}
 
 		value := values.Field(i).Interface().(string)
-		attrType := types.Field(i).Type.String()
+		attrType := types.Field(i).Tag.Get("attr")
 
 		attr, err := documents.NewAttribute(key, documents.AttributeType(attrType), value)
 		if err != nil {
