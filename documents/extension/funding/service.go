@@ -56,18 +56,11 @@ func generateLabel(idx, fieldName string) string {
 	return strings.Replace(fundingFieldKey, fundingIDx, idx, -1) + fieldName
 }
 
-func keyFromJSONTag(idx, jsonTag string) (key string, err error) {
-	correctJSONParts := 2
+func labelFromJSONTag(idx, jsonTag string) string {
 	jsonKeyIdx := 0
-
 	// example `json:"days,omitempty"`
 	jsonParts := strings.Split(jsonTag, ",")
-	if len(jsonParts) == correctJSONParts {
-		return generateLabel(idx, jsonParts[jsonKeyIdx]), nil
-
-	}
-	return key, ErrNoFundingField
-
+	return generateLabel(idx, jsonParts[jsonKeyIdx])
 }
 
 func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err error) {
@@ -138,15 +131,12 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
 		jsonKey := types.Field(i).Tag.Get("json")
-		key, err := keyFromJSONTag(idx.Value.Int256.String(), jsonKey)
-		if err != nil {
-			continue
-		}
-
+		label := labelFromJSONTag(idx.Value.Int256.String(), jsonKey)
+		
 		value := values.Field(i).Interface().(string)
 		attrType := types.Field(i).Tag.Get("attr")
 
-		attr, err := documents.NewAttribute(key, documents.AttributeType(attrType), value)
+		attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
 		if err != nil {
 			return nil, err
 		}
@@ -227,11 +217,9 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 	for i := 0; i < types.NumField(); i++ {
 		// generate attr key
 		jsonKey := types.Field(i).Tag.Get("json")
-		label, err := keyFromJSONTag(idx, jsonKey)
-		if err != nil {
-			continue
-		}
+		label := labelFromJSONTag(idx, jsonKey)
 
+		
 		attrKey, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return nil, err
