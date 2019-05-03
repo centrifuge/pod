@@ -113,22 +113,24 @@ func isValidInt256(n big.Int) bool {
 	return true
 }
 
-// Add int256 number
+// Add sets i to the sum x+y and returns i
 func (i *Int256) Add(x *Int256, y *Int256) *Int256 {
 	i.v.Add(&x.v, &y.v)
 	return i
 }
 
-
-// Add int256 number
+// Cmp compares i and y and returns:
+//
+//   -1 if i <  y
+//    0 if i == y
+//   +1 if i >  y
+//
 func (i *Int256) Cmp(y *Int256) int {
 	return i.v.Cmp(&y.v)
 }
 
-// Add int256 number
+// Inc increments i by one
 func (i *Int256) Inc() *Int256 {
 	i.v.Add(&i.v, big.NewInt(1))
 	return i
 }
-
-

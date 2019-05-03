@@ -43,8 +43,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 	}
 
 	// create new funding id
-	req.Data.FundingId = newFundingId()
-
+	req.Data.FundingId = newFundingID()
 
 	// returns model with added funding custom fields
 	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)

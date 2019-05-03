@@ -21,7 +21,7 @@ type Service interface {
 	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
 
 	// DeriveFundingResponse returns a funding in client format
-	DeriveFundingResponse(model documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error)
+	DeriveFundingResponse(model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -31,10 +31,10 @@ type service struct {
 }
 
 const (
-	fundingLabel = "centrifuge_funding"
+	fundingLabel    = "centrifuge_funding"
 	fundingFieldKey = "centrifuge_funding[{IDX}]."
-	fundingIdx = "{IDX}"
-	fundingIdLabel = "funding_id"
+	fundingIDx      = "{IDX}"
+	fundingIDLabel  = "funding_id"
 )
 
 // DefaultService returns the default implementation of the service.
@@ -48,12 +48,12 @@ func DefaultService(
 	}
 }
 
-func newFundingId() string {
+func newFundingID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
 func generateLabel(idx, fieldName string) string {
-	return strings.Replace(fundingFieldKey, fundingIdx, idx, -1) + fieldName
+	return strings.Replace(fundingFieldKey, fundingIDx, idx, -1) + fieldName
 }
 
 func keyFromJSONTag(idx, jsonTag string) (key string, err error) {
@@ -70,7 +70,7 @@ func keyFromJSONTag(idx, jsonTag string) (key string, err error) {
 
 }
 
-func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err error){
+func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err error) {
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
 		return idx, err
@@ -123,7 +123,7 @@ func defineFundingAttrIdx(model documents.Model) (attr documents.Attribute, err 
 
 }
 
-func createAttributesList(current documents.Model, data FundingData) ([]documents.Attribute, error) {
+func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
 	idx, err := defineFundingAttrIdx(current)
@@ -159,7 +159,7 @@ func createAttributesList(current documents.Model, data FundingData) ([]document
 }
 
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
-	fd := FundingData{}
+	fd := Data{}
 	fd.initFundingFromData(req.Data)
 
 	model, err := s.GetCurrentVersion(ctx, identifier)
@@ -187,7 +187,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	return model, nil
 }
 
-func (s service) findFunding(model documents.Model, fundingId string) (idx string ,err error) {
+func (s service) findFunding(model documents.Model, fundingID string) (idx string, err error) {
 	lastIdx, err := getFundingsLatestIdx(model)
 	if err != nil {
 		return idx, err
@@ -200,7 +200,7 @@ func (s service) findFunding(model documents.Model, fundingId string) (idx strin
 
 	r := 0
 	for r != 1 {
-		label := generateLabel(i.String(),fundingIdLabel)
+		label := generateLabel(i.String(), fundingIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
@@ -211,7 +211,7 @@ func (s service) findFunding(model documents.Model, fundingId string) (idx strin
 			return idx, err
 		}
 
-		if  attr.Value.Str == fundingId {
+		if attr.Value.Str == fundingID {
 			return i.String(), nil
 		}
 
@@ -223,10 +223,9 @@ func (s service) findFunding(model documents.Model, fundingId string) (idx strin
 	return idx, ErrFundingNotFound
 }
 
-
 func (s service) deriveFundingData(model documents.Model, idx string) (*clientfundingpb.FundingData, error) {
 	data := &clientfundingpb.FundingData{}
-	fd := FundingData{}
+	fd := Data{}
 
 	types := reflect.TypeOf(fd)
 	for i := 0; i < types.NumField(); i++ {
@@ -258,8 +257,8 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 }
 
 // DeriveFundingResponse returns create response from the added funding
-func (s service) DeriveFundingResponse(model documents.Model,fundingId string) (*clientfundingpb.FundingResponse, error) {
-	idx, err := s.findFunding(model, fundingId)
+func (s service) DeriveFundingResponse(model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error) {
+	idx, err := s.findFunding(model, fundingID)
 	if err != nil {
 		return nil, err
 	}
