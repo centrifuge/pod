@@ -121,7 +121,7 @@ func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, e
 			return attrVal, err
 		}
 
-		attrVal.Timestamp, err = utils.ToTimestamp(t)
+		attrVal.Timestamp, err = utils.ToTimestamp(t.UTC())
 	}
 
 	return attrVal, err
@@ -149,7 +149,7 @@ func (attrVal AttrVal) String() (str string, err error) {
 			break
 		}
 
-		str = tp.Format(time.RFC3339)
+		str = tp.UTC().Format(time.RFC3339)
 	}
 
 	return str, err

@@ -56,8 +56,8 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, false)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, false)
 
 	var response *httpexpect.Object
 	var err error
@@ -107,7 +107,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		t.Error(message)
 	}
 
-	docVal := getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
+	docVal := getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, false)
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
 

@@ -651,6 +651,10 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 
 // AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 func (cd *CoreDocument) AddAttributes(attrs ...Attribute) (*CoreDocument, error) {
+	if len(attrs) < 1 {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("require at least one attribute"))
+	}
+
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
@@ -753,4 +757,10 @@ func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
 // AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
 func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
+}
+
+// SetAttributesToCoreDoc sets the attributes to protocol core doc
+func (cd *CoreDocument) SetAttributesToCoreDoc() (err error) {
+	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
+	return err
 }

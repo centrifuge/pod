@@ -374,12 +374,21 @@ func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 
 // JSON marshals PurchaseOrder into a json bytes
 func (p *PurchaseOrder) JSON() ([]byte, error) {
-	return json.Marshal(p)
+	pattrs := p.Document.Attributes
+	p.Document.Attributes = nil
+	d, err := json.Marshal(p)
+	p.Document.Attributes = pattrs
+	return d, err
 }
 
 // FromJSON unmarshals the json bytes into PurchaseOrder
 func (p *PurchaseOrder) FromJSON(jsonData []byte) error {
-	return json.Unmarshal(jsonData, p)
+	err := json.Unmarshal(jsonData, p)
+	if err != nil {
+		return err
+	}
+
+	return p.SetAttributesToCoreDoc()
 }
 
 // Type gives the PurchaseOrder type

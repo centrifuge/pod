@@ -33,9 +33,9 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), typeInvoice, params)
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), typeInvoice, params)
-	getDocumentAndCheck(charlie.httpExpect, charlie.id.String(), typeInvoice, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), typeInvoice, params, true)
 	fmt.Println("Host test success")
 }
 

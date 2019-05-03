@@ -2,6 +2,10 @@
 
 package testworld
 
+import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
+)
+
 func defaultDocumentPayload(documentType string, collaborators []string) map[string]interface{} {
 	switch documentType {
 	case typeInvoice:
@@ -20,6 +24,7 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 			"date_created": "2018-09-26T23:12:37.902198664Z",
 			"total_amount": "40",
 			"currency":     "USD",
+			"attributes":   defaultAttributePayload(),
 		},
 		"write_access": map[string]interface{}{
 			"collaborators": collaborators,
@@ -67,6 +72,31 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 					"description":  "line item description",
 				},
 			},
+			"attributes": defaultAttributePayload(),
+		},
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
+	}
+}
+
+func wrongInvoicePayload(collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"number":       "12324",
+			"date_due":     "2018-09-26T23:12:37.902198664Z",
+			"gross_amount": "40",
+			"currency":     "USD",
+			"net_amount":   "40",
+			"line_items": []map[string]interface{}{
+				{
+					"item_number":  "12345",
+					"tax_amount":   "1.99",
+					"total_amount": "2.99",
+					"description":  "line item description",
+				},
+			},
+			"attributes": wrongAttributePayload(),
 		},
 		"write_access": map[string]interface{}{
 			"collaborators": collaborators,
@@ -189,5 +219,44 @@ func defaultProofPayload(documentType string) map[string]interface{} {
 	return map[string]interface{}{
 		"type":   "http://github.com/centrifuge/centrifuge-protobufs/purchaseorder/#purchaseorder.PurchaseOrderData",
 		"fields": []string{"po.total_amount", "po.currency"},
+	}
+}
+
+func wrongAttributePayload() map[string]map[string]string {
+	payload := defaultAttributePayload()
+	payload["test_invalid"] = map[string]string{
+		"type":  "timestamp",
+		"value": "some invalid time stamp",
+	}
+
+	return payload
+}
+
+func defaultAttributePayload() map[string]map[string]string {
+	return map[string]map[string]string{
+		"test_string": {
+			"type":  "string",
+			"value": "string value",
+		},
+
+		"test_decimal": {
+			"type":  "decimal",
+			"value": "100.000001",
+		},
+
+		"test_integer": {
+			"type":  "integer",
+			"value": "123456",
+		},
+
+		"test_bytes": {
+			"type":  "bytes",
+			"value": hexutil.Encode([]byte("byte value")),
+		},
+
+		"test_timestamp": {
+			"type":  "timestamp",
+			"value": "2019-05-03T12:49:05Z",
+		},
 	}
 }
