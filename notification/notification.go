@@ -24,6 +24,7 @@ type Status int
 // Constants defined for notification delivery.
 const (
 	ReceivedPayload EventType = 1
+	JobCompleted    EventType = 2
 	Failure         Status    = 0
 	Success         Status    = 1
 )
