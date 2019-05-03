@@ -198,7 +198,6 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 		return idx, err
 	}
 
-
 	for ; i.Cmp(lastIdx) != 1; i.Inc() {
 		label := generateLabel(i.String(), fundingIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
