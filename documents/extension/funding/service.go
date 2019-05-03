@@ -132,7 +132,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	for i := 0; i < types.NumField(); i++ {
 		jsonKey := types.Field(i).Tag.Get("json")
 		label := labelFromJSONTag(idx.Value.Int256.String(), jsonKey)
-		
+
 		value := values.Field(i).Interface().(string)
 		attrType := types.Field(i).Tag.Get("attr")
 
@@ -219,7 +219,6 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 		jsonKey := types.Field(i).Tag.Get("json")
 		label := labelFromJSONTag(idx, jsonKey)
 
-		
 		attrKey, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return nil, err
