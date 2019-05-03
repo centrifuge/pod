@@ -182,3 +182,25 @@ func intForString(s string) *big.Int {
 	n.SetString(s, 10)
 	return n
 }
+
+func TestAdd(t *testing.T) {
+	n1, err := NewInt256("5")
+	assert.NoError(t, err)
+	n2, err := NewInt256("3")
+	assert.NoError(t, err)
+	z := &Int256{}
+	assert.NoError(t, err)
+	sum := z.Add(n1,n2)
+	assert.Equal(t,"8",sum.String())
+	assert.Equal(t,"8",z.String())
+}
+
+func TestCmp(t *testing.T) {
+	n1, err := NewInt256("5")
+	assert.NoError(t, err)
+	n2, err := NewInt256("3")
+	assert.Equal(t,1, n1.Cmp(n2))
+	assert.Equal(t,-1, n2.Cmp(n1))
+	assert.Equal(t,0, n1.Cmp(n1))
+}
+

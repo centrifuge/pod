@@ -2,9 +2,7 @@ package funding
 
 import (
 	"context"
-	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -70,7 +68,7 @@ func keyFromJSONTag(idx, jsonTag string) (key string, err error) {
 
 }
 
-func getFundingsLatestIdx(model documents.Model) (idx int, err error){
+func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err error){
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
 		return idx, err
@@ -81,12 +79,15 @@ func getFundingsLatestIdx(model documents.Model) (idx int, err error){
 		return idx, err
 	}
 
-	idx, err = strconv.Atoi(attr.Value.Str)
+	idx = attr.Value.Int256
+
+	z, err := documents.NewInt256("0")
 	if err != nil {
 		return idx, err
 	}
 
-	if idx < 0 {
+	// idx < 0
+	if idx.Cmp(z) == -1 {
 		return idx, ErrFundingIndex
 	}
 
@@ -101,8 +102,7 @@ func defineFundingIdx(model documents.Model) (attr documents.Attribute, err erro
 	}
 
 	if !model.AttributeExists(key) {
-		return documents.NewAttribute(fundingLabel, documents.AttrString, "0")
-
+		return documents.NewAttribute(fundingLabel, documents.AttrInt256, "0")
 	}
 
 	idx, err := getFundingsLatestIdx(model)
@@ -110,12 +110,18 @@ func defineFundingIdx(model documents.Model) (attr documents.Attribute, err erro
 		return attr, err
 	}
 
-	newIdx, err := documents.AttrValFromString(documents.AttrString, strconv.Itoa(idx+1))
+	// increment idx
+	one, err := documents.NewInt256("1")
+	if err != nil {
+		return attr, err
+	}
+	newIdx := idx.Add(idx, one)
+
 	if err != nil {
 		return attr, err
 	}
 
-	return documents.NewAttribute(fundingLabel, documents.AttrString, newIdx.Str)
+	return documents.NewAttribute(fundingLabel, documents.AttrInt256, newIdx.String())
 
 }
 
@@ -134,7 +140,7 @@ func createAttributesList(current documents.Model, data FundingData) ([]document
 	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
 		jsonKey := types.Field(i).Tag.Get("json")
-		key, err := keyFromJSONTag(idx.Value.Str, jsonKey)
+		key, err := keyFromJSONTag(idx.Value.Int256.String(), jsonKey)
 		if err != nil {
 			continue
 		}
@@ -169,8 +175,6 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, err
 	}
 
-	fmt.Println(attributes)
-
 	err = model.AddAttributes(attributes...)
 	if err != nil {
 		return nil, err
@@ -186,7 +190,10 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 }
 
 func (s service) findFunding(model documents.Model, fundingId string) (idx int,err error) {
-	lastIdx, err := getFundingsLatestIdx(model)
+
+/*
+
+_, err := getFundingsLatestIdx(model)
 
 	for i := 0; i <= lastIdx; i++ {
 		label := generateLabel(strconv.Itoa(i),fundingIdLabel)
@@ -204,7 +211,7 @@ func (s service) findFunding(model documents.Model, fundingId string) (idx int,e
 			return i, nil
 		}
 
-	}
+	} */
 
 	return idx, ErrFundingNotFound
 }

@@ -112,3 +112,16 @@ func isValidInt256(n big.Int) bool {
 
 	return true
 }
+
+// Add int256 number
+func (i *Int256) Add(x *Int256, y *Int256) *Int256 {
+	z := i.v.Add(&x.v, &y.v)
+	return &Int256{v:*z}
+}
+
+
+// Add int256 number
+func (i *Int256) Cmp(y *Int256) int {
+	return i.v.Cmp(&y.v)
+}
+
