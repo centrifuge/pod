@@ -15,8 +15,9 @@
     "application/json"
   ],
   "paths": {
-    "/document/{identifier}/extension/funding/agreement": {
+    "/document/{identifier}/extension/funding": {
       "post": {
+        "description": "Adds a funding to a document",
         "operationId": "Create",
         "responses": {
           "200": {
@@ -40,6 +41,37 @@
             "schema": {
               "$ref": "#/definitions/fundingFundingCreatePayload"
             }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/extension/funding/{funding_id}": {
+      "get": {
+        "description": "Get a funding agreement of a document",
+        "operationId": "Get",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
@@ -136,7 +168,7 @@
     "fundingFundingData": {
       "type": "object",
       "properties": {
-        "agreement_id": {
+        "funding_id": {
           "type": "string"
         },
         "amount": {

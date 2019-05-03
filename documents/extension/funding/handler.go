@@ -64,3 +64,9 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 	return resp, nil
 
 }
+
+// Create handles a new funding document extension and adds it to an existing document
+func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
+
+	return nil, nil
+}

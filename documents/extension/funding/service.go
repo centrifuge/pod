@@ -108,7 +108,7 @@ func createAttributesList(current documents.Model, req *clientfundingpb.FundingC
 	}
 
 	// define id
-	req.Data.AgreementId = hexutil.Encode(utils.RandomSlice(32))
+	req.Data.FundingId = hexutil.Encode(utils.RandomSlice(32))
 
 	// add updated idx
 	attributes = append(attributes, idx)
