@@ -71,7 +71,8 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 
 // Create handles a new funding document extension and adds it to an existing document
 func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
-	apiLog.Debugf("Get request %v", req)
+
+	/*apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
@@ -100,5 +101,6 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 
 	return resp, nil
 
-	return nil, nil
+*/
+return nil, nil
 }

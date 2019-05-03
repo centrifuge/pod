@@ -123,3 +123,28 @@ func TestDeriveFromPayload(t *testing.T) {
 
 }
 
+func TestDeriveFundingResponse(t *testing.T) {
+	testingdocuments.CreateInvoicePayload()
+	inv := &invoice.Invoice{}
+	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+
+	docSrv := &testingdocuments.MockService{}
+	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	srv := DefaultService(docSrv, func() documents.TokenRegistry {
+		return nil
+	})
+
+	for i := 0; i <10; i++ {
+		fundingId := newFundingId()
+		payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{FundingId: fundingId, Currency: "eur"}}
+		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
+		assert.NoError(t, err)
+
+		response, err := srv.DeriveFundingResponse(model, fundingId)
+		assert.Equal(t, fundingId,response.Data.FundingId)
+		assert.Equal(t, "eur", response.Data.Currency)
+
+	}
+
+}
+

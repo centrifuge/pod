@@ -30,10 +30,12 @@ type service struct {
 	tokenRegFinder func() documents.TokenRegistry
 }
 
-const fundingLabel = "centrifuge_funding"
-const fundingFieldKey = "centrifuge_funding[{IDX}]."
-const fundingIdx = "{IDX}"
-const fundingIdLabel = "funding_id"
+const (
+	fundingLabel = "centrifuge_funding"
+	fundingFieldKey = "centrifuge_funding[{IDX}]."
+	fundingIdx = "{IDX}"
+	fundingIdLabel = "funding_id"
+)
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
@@ -95,7 +97,7 @@ func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err err
 
 }
 
-func defineFundingIdx(model documents.Model) (attr documents.Attribute, err error) {
+func defineFundingAttrIdx(model documents.Model) (attr documents.Attribute, err error) {
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
 		return attr, err
@@ -111,11 +113,7 @@ func defineFundingIdx(model documents.Model) (attr documents.Attribute, err erro
 	}
 
 	// increment idx
-	one, err := documents.NewInt256("1")
-	if err != nil {
-		return attr, err
-	}
-	newIdx := idx.Add(idx, one)
+	newIdx := idx.Inc()
 
 	if err != nil {
 		return attr, err
@@ -128,7 +126,7 @@ func defineFundingIdx(model documents.Model) (attr documents.Attribute, err erro
 func createAttributesList(current documents.Model, data FundingData) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
-	idx, err := defineFundingIdx(current)
+	idx, err := defineFundingAttrIdx(current)
 	if err != nil {
 		return nil, err
 	}
@@ -189,14 +187,20 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	return model, nil
 }
 
-func (s service) findFunding(model documents.Model, fundingId string) (idx int,err error) {
+func (s service) findFunding(model documents.Model, fundingId string) (idx string ,err error) {
+	lastIdx, err := getFundingsLatestIdx(model)
+	if err != nil {
+		return idx, err
+	}
 
-/*
+	i, err := documents.NewInt256("0")
+	if err != nil {
+		return idx, err
+	}
 
-_, err := getFundingsLatestIdx(model)
-
-	for i := 0; i <= lastIdx; i++ {
-		label := generateLabel(strconv.Itoa(i),fundingIdLabel)
+	r := 0
+	for r != 1 {
+		label := generateLabel(i.String(),fundingIdLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
@@ -208,28 +212,54 @@ _, err := getFundingsLatestIdx(model)
 		}
 
 		if  attr.Value.Str == fundingId {
-			return i, nil
+			return i.String(), nil
 		}
 
-	} */
+		i.Inc()
+		r = i.Cmp(lastIdx)
+
+	}
 
 	return idx, ErrFundingNotFound
 }
 
 
 func (s service) deriveFundingData(model documents.Model, idx string) (*clientfundingpb.FundingData, error) {
-	//data := clientfundingpb.FundingData{}
+	data := &clientfundingpb.FundingData{}
+	fd := FundingData{}
 
+	types := reflect.TypeOf(fd)
+	for i := 0; i < types.NumField(); i++ {
+		// generate attr key
+		jsonKey := types.Field(i).Tag.Get("json")
+		label, err := keyFromJSONTag(idx, jsonKey)
+		if err != nil {
+			continue
+		}
 
-	//reflect.ValueOf(&data).Elem().FieldByName("N").SetInt(7)
+		attrKey, err := documents.AttrKeyFromLabel(label)
+		if err != nil {
+			return nil, err
+		}
 
-	return nil, nil
+		attr, err := model.GetAttribute(attrKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		// set field in client data
+		n := types.Field(i).Name
+		reflect.ValueOf(data).Elem().FieldByName(n).SetString(attr.Value.Str)
+
+	}
+	return data, nil
 
 }
 
 // DeriveFundingResponse returns create response from the added funding
 func (s service) DeriveFundingResponse(model documents.Model,fundingId string) (*clientfundingpb.FundingResponse, error) {
-	_, err := s.findFunding(model, fundingId)
+	idx, err := s.findFunding(model, fundingId)
 	if err != nil {
 		return nil, err
 	}
@@ -239,9 +269,14 @@ func (s service) DeriveFundingResponse(model documents.Model,fundingId string) (
 		return nil, errors.New("failed to derive response: %v", err)
 	}
 
+	data, err := s.deriveFundingData(model, idx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientfundingpb.FundingResponse{
 		Header: h,
-		Data:   nil,
+		Data:   data,
 	}, nil
 
 }

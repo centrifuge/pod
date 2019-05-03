@@ -204,3 +204,15 @@ func TestCmp(t *testing.T) {
 	assert.Equal(t,0, n1.Cmp(n1))
 }
 
+func TestInc(t *testing.T) {
+	n1,err := NewInt256("0")
+	assert.NoError(t, err)
+	n3 := n1.Inc()
+	n2, err := NewInt256("1")
+	assert.NoError(t, err)
+	assert.Equal(t,0, n1.Cmp(n2))
+	assert.Equal(t,0, n3.Cmp(n2))
+}
+
+
+
