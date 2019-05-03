@@ -182,3 +182,15 @@ func intForString(s string) *big.Int {
 	n.SetString(s, 10)
 	return n
 }
+
+func TestInt256JSON(t *testing.T) {
+	i, err := NewInt256("1000023455")
+	assert.NoError(t, err)
+
+	d, err := i.MarshalJSON()
+	assert.NoError(t, err)
+
+	i1 := new(Int256)
+	assert.NoError(t, i1.UnmarshalJSON(d))
+	assert.True(t, i.Equals(i1))
+}
