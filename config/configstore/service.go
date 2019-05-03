@@ -25,14 +25,14 @@ type ProtocolSetter interface {
 }
 
 type service struct {
-	repo                 repository
+	repo                 Repository
 	idFactory            identity.Factory
 	idService            identity.ServiceDID
 	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service
-func DefaultService(repository repository, idService identity.ServiceDID) config.Service {
+func DefaultService(repository Repository, idService identity.ServiceDID) config.Service {
 	return &service{repo: repository, idService: idService}
 }
 

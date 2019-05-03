@@ -48,8 +48,17 @@
         "document_type": {
           "type": "string"
         },
+        "status": {
+          "type": "string",
+          "title": "status - Failure or Success"
+        },
+        "message": {
+          "type": "string",
+          "title": "message associated to status, if error, error message enclosed"
+        },
         "document_id": {
-          "type": "string"
+          "type": "string",
+          "title": "document_id"
         },
         "account_id": {
           "type": "string",
@@ -64,7 +73,7 @@
           "title": "to_id if provided, final destination of the event"
         }
       },
-      "title": "NotificationMessage wraps a single CoreDocument to be notified to upstream services"
+      "title": "NotificationMessage wraps a single document to be notified to upstream services"
     }
   }
 }

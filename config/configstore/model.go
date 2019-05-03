@@ -41,6 +41,7 @@ type NodeConfig struct {
 	P2PPort                        int
 	P2PExternalIP                  string
 	P2PConnectionTimeout           time.Duration
+	P2PResponseDelay               time.Duration
 	ServerPort                     int
 	ServerAddress                  string
 	NumWorkers                     int
@@ -137,6 +138,11 @@ func (nc *NodeConfig) GetP2PExternalIP() string {
 // GetP2PConnectionTimeout refer the interface
 func (nc *NodeConfig) GetP2PConnectionTimeout() time.Duration {
 	return nc.P2PConnectionTimeout
+}
+
+// GetP2PResponseDelay refer the interface
+func (nc *NodeConfig) GetP2PResponseDelay() time.Duration {
+	return nc.P2PResponseDelay
 }
 
 // GetServerPort refer the interface
@@ -335,6 +341,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		P2PPort:                        c.GetP2PPort(),
 		P2PExternalIP:                  c.GetP2PExternalIP(),
 		P2PConnectionTimeout:           c.GetP2PConnectionTimeout(),
+		P2PResponseDelay:               c.GetP2PResponseDelay(),
 		ServerPort:                     c.GetServerPort(),
 		ServerAddress:                  c.GetServerAddress(),
 		NumWorkers:                     c.GetNumWorkers(),

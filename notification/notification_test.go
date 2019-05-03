@@ -54,6 +54,8 @@ func TestWebhookSender_Send(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	accountID := utils.RandomSlice(identity.DIDLength)
 	senderID := utils.RandomSlice(identity.DIDLength)
+	statusMsg := "failure"
+	message := "some random error"
 	ts, err := ptypes.TimestampProto(time.Now().UTC())
 	assert.Nil(t, err, "Should not error out")
 	var wg sync.WaitGroup
@@ -68,6 +70,8 @@ func TestWebhookSender_Send(t *testing.T) {
 			Recorded     *timestamp.Timestamp `json:"recorded,omitempty"`
 			DocumentType string               `json:"document_type,omitempty"`
 			DocumentId   string               `json:"document_id,omitempty"`
+			Status       string               `json:"status,omitempty"`
+			Message      string               `json:"message,omitempty"`
 		}
 		defer request.Body.Close()
 		data, err := ioutil.ReadAll(request.Body)
@@ -79,6 +83,8 @@ func TestWebhookSender_Send(t *testing.T) {
 		assert.Equal(t, hexutil.Encode(docID), resp.DocumentId)
 		assert.Equal(t, hexutil.Encode(accountID), resp.AccountId)
 		assert.Equal(t, hexutil.Encode(senderID), resp.FromId)
+		assert.Equal(t, statusMsg, resp.Status)
+		assert.Equal(t, message, resp.Message)
 		wg.Done()
 	})
 
@@ -95,6 +101,8 @@ func TestWebhookSender_Send(t *testing.T) {
 		ToId:         hexutil.Encode(accountID),
 		EventType:    uint32(ReceivedPayload),
 		Recorded:     ts,
+		Status:       statusMsg,
+		Message:      message,
 	}
 
 	cfg.Set("notifications.endpoint", "http://localhost:8090/webhook")

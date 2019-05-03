@@ -196,12 +196,12 @@ func cleanupDBFiles() {
 	}
 }
 
-func getRandomStorage() (repository, string, error) {
+func getRandomStorage() (Repository, string, error) {
 	randomPath := leveldb.GetRandomTestStoragePath()
 	db, err := leveldb.NewLevelDBStorage(randomPath)
 	if err != nil {
 		return nil, "", err
 	}
 	dbFiles = append(dbFiles, randomPath)
-	return newDBRepository(leveldb.NewLevelDBRepository(db)), randomPath, nil
+	return NewDBRepository(leveldb.NewLevelDBRepository(db)), randomPath, nil
 }

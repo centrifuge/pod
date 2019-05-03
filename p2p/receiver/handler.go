@@ -22,12 +22,6 @@ import (
 	"github.com/libp2p/go-libp2p-protocol"
 )
 
-// Higher response delay for all p2p operations
-// MessageTypeRequestSignature (~11ms): >25ms
-// MessageTypeSendAnchoredDoc (~13ms): >30ms
-// MessageTypeGetDoc (~1.5-5ms): >10ms
-const responseDelay = 30 * time.Millisecond
-
 // Handler implements protocol message handlers
 type Handler struct {
 	config             config.Service
@@ -55,7 +49,11 @@ func New(
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
 func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
-	defer timeutils.EnsureDelayOperation(time.Now(), responseDelay)
+	cfg, err := srv.config.GetConfig()
+	if err != nil {
+		return srv.convertToErrorEnvelop(err)
+	}
+	defer timeutils.EnsureDelayOperation(time.Now(), cfg.GetP2PResponseDelay())
 
 	if msg == nil {
 		return srv.convertToErrorEnvelop(errors.New("nil payload provided"))
