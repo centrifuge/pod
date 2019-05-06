@@ -32,8 +32,6 @@ service FundingService {
   }
 }
 
-//GET /document/0x[version id]/funding/agreement/0x[agreement id]/
-
 message FundingCreatePayload {
   string identifier = 1;
   FundingData data = 2;
