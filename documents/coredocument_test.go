@@ -687,7 +687,7 @@ func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
 	assert.Equal(t, addr.ToAddress().Bytes(), cd.AnchorRepoAddress().Bytes())
 }
 
-func TestCoreDocument_UpdateAttributes(t *testing.T) {
+func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 	oldCAttrs := map[string]*documentpb.Attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
@@ -768,4 +768,98 @@ func TestCoreDocument_UpdateAttributes(t *testing.T) {
 	oldPattrs[0].Key = utils.RandomSlice(33)
 	_, _, err = updateAttributes(oldPattrs, newAttrs)
 	assert.Error(t, err)
+}
+
+func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
+	updates := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "new string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("new bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000002",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000002",
+		},
+
+		"decimal_test_1": {
+			Type:  AttrDecimal.String(),
+			Value: "1111.00012",
+		},
+	}
+
+	newAttrs, err := FromClientAttributes(updates)
+	assert.NoError(t, err)
+
+	newPattrs, err := toProtocolAttributes(newAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(nil, newAttrs)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, newPattrs)
+	assert.Equal(t, newAttrs, uattrs)
+}
+
+func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
+	oldCAttrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	oldAttrs, err := FromClientAttributes(oldCAttrs)
+	assert.NoError(t, err)
+
+	oldPattrs, err := toProtocolAttributes(oldAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(oldPattrs, nil)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, oldPattrs)
+	assert.Equal(t, oldAttrs, uattrs)
+}
+
+func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
+	upattrs, uattrs, err := updateAttributes(nil, nil)
+	assert.NoError(t, err)
+	assert.Len(t, upattrs, 0)
+	assert.Len(t, uattrs, 0)
 }

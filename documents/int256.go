@@ -21,9 +21,26 @@ type Int256 struct {
 	v big.Int
 }
 
+// MarshalJSON marshals decimal to json bytes.
+func (i *Int256) MarshalJSON() ([]byte, error) {
+	return i.v.MarshalJSON()
+}
+
+// UnmarshalJSON loads json bytes to decimal
+func (i *Int256) UnmarshalJSON(data []byte) error {
+	v := new(big.Int)
+	err := v.UnmarshalJSON(data)
+	if err != nil {
+		return err
+	}
+
+	i.v = *v
+	return nil
+}
+
 // String converts Int256 to string
 func (i *Int256) String() string {
-	return i.v.Text(10)
+	return i.v.String()
 }
 
 // NewInt256 creates a new Int256 given a string

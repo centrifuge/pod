@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gavv/httpexpect"
+	"github.com/stretchr/testify/assert"
 )
 
 const typeInvoice string = "invoice"
@@ -41,13 +42,30 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func getDocumentAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}, checkattrs bool) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
 	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+	if checkattrs {
+		attrs := objGet.Path("$.data.attributes").Object().Raw()
+		eattrs := defaultAttributePayload()
+		cattrs := make(map[string]map[string]string)
+		for k, v := range attrs {
+			atr := v.(map[string]interface{})
+			delete(atr, "key")
+			atri := make(map[string]string)
+			for k1, v1 := range atr {
+				atri[k1] = v1.(string)
+			}
+
+			cattrs[k] = atri
+		}
+
+		assert.Equal(t, eattrs, cattrs)
+	}
 
 	return objGet
 }
