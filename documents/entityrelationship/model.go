@@ -2,7 +2,6 @@ package entityrelationship
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -162,21 +161,16 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 
 // JSON marshals EntityRelationship into a json bytes
 func (e *EntityRelationship) JSON() ([]byte, error) {
-	pattrs := e.Attributes
-	e.Attributes = nil
-	d, err := json.Marshal(e)
-	e.Attributes = pattrs
-	return d, err
+	return e.CoreDocument.MarshalJSON(e)
 }
 
 // FromJSON unmarshals the json bytes into EntityRelationship
 func (e *EntityRelationship) FromJSON(jsonData []byte) error {
-	err := json.Unmarshal(jsonData, e)
-	if err != nil {
-		return err
+	if e.CoreDocument == nil {
+		e.CoreDocument = new(documents.CoreDocument)
 	}
 
-	return e.SetAttributesToCoreDoc()
+	return e.CoreDocument.UnmarshalJSON(jsonData, e)
 }
 
 // Type gives the EntityRelationship type.

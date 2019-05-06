@@ -3,6 +3,7 @@ package documents
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -761,6 +762,25 @@ func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 
 // SetAttributesToCoreDoc sets the attributes to protocol core doc
 func (cd *CoreDocument) SetAttributesToCoreDoc() (err error) {
+	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
+	return err
+}
+
+// MarshalJSON marshals the model and returns the json data.
+func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
+	pattrs := cd.Document.Attributes
+	cd.Document.Attributes = nil
+	d, err := json.Marshal(m)
+	cd.Document.Attributes = pattrs
+	return d, err
+}
+
+func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
+	err := json.Unmarshal(data, m)
+	if err != nil {
+		return err
+	}
+
 	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
 	return err
 }

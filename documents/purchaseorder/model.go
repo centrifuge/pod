@@ -1,7 +1,6 @@
 package purchaseorder
 
 import (
-	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -374,21 +373,16 @@ func (p *PurchaseOrder) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
 
 // JSON marshals PurchaseOrder into a json bytes
 func (p *PurchaseOrder) JSON() ([]byte, error) {
-	pattrs := p.Attributes
-	p.Attributes = nil
-	d, err := json.Marshal(p)
-	p.Attributes = pattrs
-	return d, err
+	return p.CoreDocument.MarshalJSON(p)
 }
 
 // FromJSON unmarshals the json bytes into PurchaseOrder
 func (p *PurchaseOrder) FromJSON(jsonData []byte) error {
-	err := json.Unmarshal(jsonData, p)
-	if err != nil {
-		return err
+	if p.CoreDocument == nil {
+		p.CoreDocument = new(documents.CoreDocument)
 	}
 
-	return p.SetAttributesToCoreDoc()
+	return p.CoreDocument.UnmarshalJSON(jsonData, p)
 }
 
 // Type gives the PurchaseOrder type
