@@ -10,6 +10,7 @@ option java_package = "com.funding";
 import "document/service.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
+import "github.com/gogo/protobuf";
 
 // FundingService contains all common interactions for funding extension documents
 service FundingService {
@@ -49,7 +50,7 @@ message GetRequest {
 
 // FundingData is the default funding extension schema
 message FundingData {
-  string funding_id = 1;
+  string funding_id = 1; [(gogoproto.customname) = "FundingID"]
   string amount = 2;
   string apr = 3;
   string days = 4;

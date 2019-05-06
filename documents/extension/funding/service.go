@@ -63,7 +63,7 @@ func labelFromJSONTag(idx, jsonTag string) string {
 	return generateLabel(idx, jsonParts[jsonKeyIdx])
 }
 
-func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err error) {
+func getFundingsLatestIDX(model documents.Model) (idx *documents.Int256, err error) {
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
 		return idx, err
@@ -90,7 +90,7 @@ func getFundingsLatestIdx(model documents.Model) (idx *documents.Int256, err err
 
 }
 
-func defineFundingAttrIdx(model documents.Model) (attr documents.Attribute, err error) {
+func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, err error) {
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
 		return attr, err
@@ -100,7 +100,7 @@ func defineFundingAttrIdx(model documents.Model) (attr documents.Attribute, err 
 		return documents.NewAttribute(fundingLabel, documents.AttrInt256, "0")
 	}
 
-	idx, err := getFundingsLatestIdx(model)
+	idx, err := getFundingsLatestIDX(model)
 	if err != nil {
 		return attr, err
 	}
@@ -119,7 +119,7 @@ func defineFundingAttrIdx(model documents.Model) (attr documents.Attribute, err 
 func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
-	idx, err := defineFundingAttrIdx(current)
+	idx, err := incrementFundingAttrIDX(current)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 }
 
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
-	fd := Data{}
+	var fd Data
 	fd.initFundingFromData(req.Data)
 
 	model, err := s.GetCurrentVersion(ctx, identifier)
@@ -178,7 +178,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 }
 
 func (s service) findFunding(model documents.Model, fundingID string) (idx string, err error) {
-	lastIdx, err := getFundingsLatestIdx(model)
+	lastIdx, err := getFundingsLatestIDX(model)
 	if err != nil {
 		return idx, err
 	}
@@ -210,8 +210,8 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 }
 
 func (s service) deriveFundingData(model documents.Model, idx string) (*clientfundingpb.FundingData, error) {
-	data := &clientfundingpb.FundingData{}
-	fd := Data{}
+	data := new(clientfundingpb.FundingData)
+	var fd Data
 
 	types := reflect.TypeOf(fd)
 	for i := 0; i < types.NumField(); i++ {
