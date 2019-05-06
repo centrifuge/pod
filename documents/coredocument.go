@@ -775,6 +775,8 @@ func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
 	return d, err
 }
 
+// UnmarshalJSON unmarshals the data into model and set the attributes back to the document.
+// Note: Coredocument should not be nil and should be initialised to the Model before passing to this function.
 func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
 	err := json.Unmarshal(data, m)
 	if err != nil {
