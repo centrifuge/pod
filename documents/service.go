@@ -194,6 +194,10 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	if err != nil {
 		return nil, err
 	}
+	// If there is a previous version and we have successfully validated the transition then set the signature flag
+	if old != nil {
+		sig.TransitionValidated = true
+	}
 	model.AppendSignatures(sig)
 
 	// Logic for receiving version n (n > 1) of the document for the first time
