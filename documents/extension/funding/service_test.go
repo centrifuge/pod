@@ -133,7 +133,7 @@ func TestDeriveFromPayload(t *testing.T) {
 
 func TestDeriveFundingResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
 	docSrv := &testingdocuments.MockService{}
