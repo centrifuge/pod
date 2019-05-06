@@ -760,12 +760,6 @@ func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
 }
 
-// SetAttributesToCoreDoc sets the attributes to protocol core doc
-func (cd *CoreDocument) SetAttributesToCoreDoc() (err error) {
-	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
-	return err
-}
-
 // MarshalJSON marshals the model and returns the json data.
 func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
 	pattrs := cd.Document.Attributes

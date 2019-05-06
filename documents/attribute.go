@@ -1,9 +1,12 @@
 package documents
 
 import (
+	"strings"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -32,6 +35,9 @@ const (
 
 	// AttrTimestamp is the standard time stamp custom attribute type
 	AttrTimestamp AttributeType = "timestamp"
+
+	// AttrSigned is the custom signature attribute type
+	AttrSigned AttributeType = "signed"
 )
 
 // allowedAttrTypes holds a map of allowed attribute types and their reflect.Type
@@ -54,6 +60,10 @@ type AttrKey [32]byte
 
 // AttrKeyFromLabel creates a new AttrKey from label.
 func AttrKeyFromLabel(label string) (attrKey AttrKey, err error) {
+	if strings.TrimSpace(label) == "" {
+		return attrKey, ErrEmptyAttrLabel
+	}
+
 	hashedKey, err := crypto.Sha256Hash([]byte(label))
 	if err != nil {
 		return attrKey, err
@@ -88,6 +98,12 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 	return err
 }
 
+// Signed is a custom attribute type with signature.
+type Signed struct {
+	Identity                          identity.DID
+	DocumentVersion, Value, Signature []byte
+}
+
 // AttrVal represents a strongly typed value of an attribute
 type AttrVal struct {
 	Type      AttributeType
@@ -96,6 +112,7 @@ type AttrVal struct {
 	Str       string
 	Bytes     []byte
 	Timestamp *timestamp.Timestamp
+	Signed    Signed
 }
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
@@ -164,10 +181,6 @@ type Attribute struct {
 
 // NewAttribute creates a new custom attribute.
 func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr Attribute, err error) {
-	if keyLabel == "" {
-		return attr, ErrEmptyAttrLabel
-	}
-
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
@@ -176,6 +189,43 @@ func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr A
 	attrVal, err := AttrValFromString(attrType, value)
 	if err != nil {
 		return attr, err
+	}
+
+	return Attribute{
+		KeyLabel: keyLabel,
+		Key:      attrKey,
+		Value:    attrVal,
+	}, nil
+}
+
+// NewSignedAttribute returns a new signed attribute
+// takes keyLabel, signer identity, signer account, model and value
+// signature payload: sign(identity + docID + docVersion + value)
+func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, model Model, value []byte) (attr Attribute, err error) {
+	attrKey, err := AttrKeyFromLabel(keyLabel)
+	if err != nil {
+		return attr, err
+	}
+
+	var signPayload []byte
+	signPayload = append(signPayload, identity[:]...)
+	signPayload = append(signPayload, model.ID()...)
+	signPayload = append(signPayload, model.CurrentVersion()...)
+	signPayload = append(signPayload, value...)
+
+	sig, err := account.SignMsg(signPayload)
+	if err != nil {
+		return attr, err
+	}
+
+	attrVal := AttrVal{
+		Type: AttrSigned,
+		Signed: Signed{
+			Identity:        identity,
+			DocumentVersion: model.CurrentVersion(),
+			Value:           value,
+			Signature:       sig.Signature,
+		},
 	}
 
 	return Attribute{

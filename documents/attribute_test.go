@@ -5,8 +5,14 @@ import (
 	"testing"
 	"time"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestAttribute_isAttrTypeAllowed(t *testing.T) {
@@ -121,7 +127,9 @@ func TestNewAttribute(t *testing.T) {
 }
 
 func TestAttrKey(t *testing.T) {
-	a, err := AttrKeyFromLabel("somekey")
+	a, err := AttrKeyFromLabel("")
+	assert.Error(t, err)
+	a, err = AttrKeyFromLabel("somekey")
 	assert.NoError(t, err)
 	m := map[AttrKey]string{a: "dwefw"}
 	mstr, err := json.Marshal(m)
@@ -195,4 +203,64 @@ func TestAttrValFromString(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+type mockAccount struct {
+	config.Account
+	mock.Mock
+}
+
+func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+	args := m.Called(msg)
+	sig, _ := args.Get(0).(*coredocumentpb.Signature)
+	return sig, args.Error(1)
+}
+
+func TestNewSignedAttribute(t *testing.T) {
+	// empty label
+	_, err := NewSignedAttribute("", testingidentity.GenerateRandomDID(), nil, nil, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
+
+	// failed sign
+	label := "signed_label"
+	did := testingidentity.GenerateRandomDID()
+	id := utils.RandomSlice(32)
+	version := utils.RandomSlice(32)
+	value := utils.RandomSlice(50)
+
+	var epayload []byte
+	epayload = append(epayload, did[:]...)
+	epayload = append(epayload, id...)
+	epayload = append(epayload, version...)
+	epayload = append(epayload, value...)
+
+	acc := new(mockAccount)
+	acc.On("SignMsg", epayload).Return(nil, errors.New("failed")).Once()
+	model := new(mockModel)
+	model.On("ID").Return(id).Once()
+	model.On("CurrentVersion").Return(version).Once()
+	_, err = NewSignedAttribute(label, did, acc, model, value)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed")
+	acc.AssertExpectations(t)
+	model.AssertExpectations(t)
+
+	// success
+	signature := utils.RandomSlice(32)
+	acc = new(mockAccount)
+	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
+	model = new(mockModel)
+	model.On("ID").Return(id).Once()
+	model.On("CurrentVersion").Return(version).Twice()
+	attr, err := NewSignedAttribute(label, did, acc, model, value)
+	assert.NoError(t, err)
+	attrKey, err := AttrKeyFromLabel(label)
+	assert.NoError(t, err)
+	assert.Equal(t, attrKey, attr.Key)
+	assert.Equal(t, label, attr.KeyLabel)
+	assert.Equal(t, AttrSigned, attr.Value.Type)
+	assert.Equal(t, signature, attr.Value.Signed.Signature)
+	acc.AssertExpectations(t)
+	model.AssertExpectations(t)
 }
