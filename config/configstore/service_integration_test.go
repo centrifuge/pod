@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var identityService identity.ServiceDID
+var identityService identity.Service
 var cfgSvc config.Service
 var cfg config.Configuration
 
@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 	cfgSvc = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	ctx[bootstrap.BootstrappedPeer] = &MockProtocolSetter{}
-	identityService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	identityService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)

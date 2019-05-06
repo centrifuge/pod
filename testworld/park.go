@@ -237,7 +237,7 @@ type host struct {
 	config             config.Configuration
 	identity           identity.DID
 	idFactory          identity.Factory
-	idService          identity.ServiceDID
+	idService          identity.Service
 	node               *node.Node
 	canc               context.CancelFunc
 	createConfig       bool
@@ -313,7 +313,7 @@ func (h *host) init() error {
 		return err
 	}
 	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
-	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.Service)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)

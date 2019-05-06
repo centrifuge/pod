@@ -69,7 +69,7 @@ type service struct {
 	notifier   notification.Sender
 	anchorRepo anchors.AnchorRepository
 	registry   *ServiceRegistry
-	idService  identity.ServiceDID
+	idService  identity.Service
 }
 
 var srvLog = logging.Logger("document-service")
@@ -80,7 +80,7 @@ func DefaultService(
 	repo Repository,
 	anchorRepo anchors.AnchorRepository,
 	registry *ServiceRegistry,
-	idService identity.ServiceDID) Service {
+	idService identity.Service) Service {
 	return service{
 		config:     config,
 		repo:       repo,

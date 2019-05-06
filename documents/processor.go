@@ -43,14 +43,14 @@ type Client interface {
 
 // defaultProcessor implements AnchorProcessor interface
 type defaultProcessor struct {
-	identityService  identity.ServiceDID
+	identityService  identity.Service
 	p2pClient        Client
 	anchorRepository anchors.AnchorRepository
 	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.ServiceDID, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
+func DefaultProcessor(idService identity.Service, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
 	return defaultProcessor{
 		identityService:  idService,
 		p2pClient:        p2pClient,

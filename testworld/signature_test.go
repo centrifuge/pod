@@ -145,7 +145,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	return po
 }
 
-func RevokeKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identityDID identity.DID, ctx context.Context) {
+func RevokeKey(t *testing.T, idService identity.Service, key [32]byte, identityDID identity.DID, ctx context.Context) {
 	err := idService.RevokeKey(ctx, key)
 	assert.NoError(t, err)
 	response, err := idService.GetKey(identityDID, key)
@@ -153,7 +153,7 @@ func RevokeKey(t *testing.T, idService identity.ServiceDID, key [32]byte, identi
 	assert.NotEqual(t, utils.ByteSliceToBigInt([]byte{0}), response.RevokedAt, "Revoked key successfully")
 }
 
-func AddKey(t *testing.T, idService identity.ServiceDID, testKey identity.KeyDID, identityDID identity.DID, ctx context.Context) {
+func AddKey(t *testing.T, idService identity.Service, testKey identity.Key, identityDID identity.DID, ctx context.Context) {
 	err := idService.AddKey(ctx, testKey)
 	assert.Nil(t, err, "Add Key should be successful")
 
@@ -164,7 +164,7 @@ func AddKey(t *testing.T, idService identity.ServiceDID, testKey identity.KeyDID
 	assert.Nil(t, err, "Key with purpose should exist")
 }
 
-func GetSigningKeyPair(t *testing.T, idService identity.ServiceDID, identityDID identity.DID, ctx context.Context) ([]byte, []byte) {
+func GetSigningKeyPair(t *testing.T, idService identity.Service, identityDID identity.DID, ctx context.Context) ([]byte, []byte) {
 	// Generate PublicKey and PrivateKey
 	publicKey, privateKey, err := secp256k1.GenerateSigningKeyPair()
 	assert.NoError(t, err)

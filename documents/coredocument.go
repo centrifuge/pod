@@ -692,6 +692,15 @@ func (cd *CoreDocument) GetAttribute(key AttrKey) (attr Attribute, err error) {
 	return attr, nil
 }
 
+// GetAttributes returns all the attributes present in the coredocument.
+func (cd *CoreDocument) GetAttributes() (attrs []Attribute) {
+	for _, attr := range cd.Attributes {
+		attrs = append(attrs, attr)
+	}
+
+	return attrs
+}
+
 // DeleteAttribute deletes a custom attribute from the model.
 // If the attribute is missing, delete returns an error
 func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {

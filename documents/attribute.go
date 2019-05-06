@@ -207,13 +207,14 @@ func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr A
 
 // NewSignedAttribute returns a new signed attribute
 // takes keyLabel, signer identity, signer account, model and value
-// signature payload: sign(identity + docID + docVersion + value)
+// signature payload: sign(identity + docID + docVersion + value + time)
 func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, model Model, value []byte) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
 	}
 
+	// TODO(ved): time should be part of the signature
 	var signPayload []byte
 	signPayload = append(signPayload, identity[:]...)
 	signPayload = append(signPayload, model.ID()...)

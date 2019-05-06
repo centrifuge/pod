@@ -41,7 +41,7 @@ type Config interface {
 // ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
 type ethInvoiceUnpaid struct {
 	cfg             Config
-	identityService identity.ServiceDID
+	identityService identity.Service
 	ethClient       ethereum.Client
 	queue           queue.TaskQueuer
 	docSrv          documents.Service
@@ -53,7 +53,7 @@ type ethInvoiceUnpaid struct {
 // newEthInvoiceUnpaid creates InvoiceUnpaid given the parameters
 func newEthInvoiceUnpaid(
 	cfg Config,
-	identityService identity.ServiceDID,
+	identityService identity.Service,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,

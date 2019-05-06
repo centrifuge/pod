@@ -22,11 +22,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestKey() id.KeyDID {
+func getTestKey() id.Key {
 	return id.NewKey(utils.RandomByte32(), utils.ByteSliceToBigInt([]byte{123}), utils.ByteSliceToBigInt([]byte{123}), 0)
 }
 
-func initIdentity() id.ServiceDID {
+func initIdentity() id.Service {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
@@ -57,7 +57,7 @@ func deployIdentityContract(t *testing.T) *id.DID {
 
 }
 
-func addKey(aCtx context.Context, t *testing.T, did id.DID, idSrv id.ServiceDID, testKey id.KeyDID) {
+func addKey(aCtx context.Context, t *testing.T, did id.DID, idSrv id.Service, testKey id.Key) {
 	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
 

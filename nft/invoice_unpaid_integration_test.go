@@ -33,7 +33,7 @@ import (
 var registry *documents.ServiceRegistry
 var cfg config.Configuration
 var cfgService config.Service
-var idService identity.ServiceDID
+var idService identity.Service
 var idFactory identity.Factory
 var invoiceUnpaid nft.InvoiceUnpaid
 var jobManager jobs.Manager
@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
