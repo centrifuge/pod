@@ -47,6 +47,7 @@ var allowedAttrTypes = map[AttributeType]struct{}{
 	AttrString:    {},
 	AttrBytes:     {},
 	AttrTimestamp: {},
+	AttrSigned:    {},
 }
 
 // isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
@@ -100,8 +101,14 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 
 // Signed is a custom attribute type with signature.
 type Signed struct {
-	Identity                          identity.DID
-	DocumentVersion, Value, Signature []byte
+	Identity                                     identity.DID
+	DocumentVersion, Value, Signature, PublicKey []byte
+	Timestamp                                    time.Time
+}
+
+// String returns the hex value of the signature.
+func (s Signed) String() string {
+	return hexutil.Encode(s.Signature)
 }
 
 // AttrVal represents a strongly typed value of an attribute
@@ -117,10 +124,6 @@ type AttrVal struct {
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
 func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, err error) {
-	if !isAttrTypeAllowed(attrType) {
-		return attrVal, ErrNotValidAttrType
-	}
-
 	attrVal.Type = attrType
 	switch attrType {
 	case AttrInt256:
@@ -139,6 +142,8 @@ func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, e
 		}
 
 		attrVal.Timestamp, err = utils.ToTimestamp(t.UTC())
+	default:
+		return attrVal, ErrNotValidAttrType
 	}
 
 	return attrVal, err
@@ -167,6 +172,8 @@ func (attrVal AttrVal) String() (str string, err error) {
 		}
 
 		str = tp.UTC().Format(time.RFC3339)
+	case AttrSigned:
+		str = attrVal.Signed.String()
 	}
 
 	return str, err
@@ -225,6 +232,8 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 			DocumentVersion: model.CurrentVersion(),
 			Value:           value,
 			Signature:       sig.Signature,
+			PublicKey:       sig.PublicKey,
+			Timestamp:       time.Now().UTC(),
 		},
 	}
 
