@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service defines specific functions for extension funding
@@ -29,8 +29,8 @@ type service struct {
 }
 
 const (
-	fundingLabel    = "centrifuge_funding"
-	fundingFieldKey = "centrifuge_funding[{IDX}]."
+	fundingLabel    = "funding_agreement"
+	fundingFieldKey = "funding_agreement[{IDX}]."
 	fundingIDx      = "{IDX}"
 	fundingIDLabel  = "funding_id"
 )
@@ -103,7 +103,7 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 	}
 
 	// increment idx
-	newIdx := idx.Inc()
+	newIdx, err := idx.Inc()
 
 	if err != nil {
 		return attr, err

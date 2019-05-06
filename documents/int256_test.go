@@ -202,9 +202,17 @@ func TestAdd(t *testing.T) {
 	assert.NoError(t, err)
 	z := &Int256{}
 	assert.NoError(t, err)
-	sum := z.Add(n1, n2)
+	sum, err := z.Add(n1, n2)
+	assert.NoError(t, err)
 	assert.Equal(t, "8", sum.String())
 	assert.Equal(t, "8", z.String())
+
+	// max value
+	n3, err := NewInt256("57896044618658097711785492504343953926634992332820282019728792003956564819967")
+	assert.NoError(t, err)
+	sum, err = z.Add(n3, n2)
+	assert.Error(t, err)
+	assert.Nil(t, sum)
 }
 
 func TestCmp(t *testing.T) {
@@ -220,7 +228,8 @@ func TestCmp(t *testing.T) {
 func TestInc(t *testing.T) {
 	n1, err := NewInt256("0")
 	assert.NoError(t, err)
-	n3 := n1.Inc()
+	n3, err := n1.Inc()
+	assert.NoError(t, err)
 	n2, err := NewInt256("1")
 	assert.NoError(t, err)
 	assert.Equal(t, 0, n1.Cmp(n2))
