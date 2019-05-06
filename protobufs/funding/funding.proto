@@ -30,7 +30,7 @@ service FundingService {
       description: "Get a funding agreement of a document"
     };
   }
-  rpc GetList(GetRequest) returns (FundingResponse) {
+  rpc GetList(GetListRequest) returns (FundingListResponse) {
     option (google.api.http) = {
       get: "/documents/{identifier}/extension/funding"
     };
@@ -58,6 +58,10 @@ message FundingListResponse {
 message GetRequest {
   string identifier = 1;
   string funding_id = 2;
+}
+
+message GetListRequest {
+  string identifier = 1;
 }
 
 // FundingData is the default funding extension schema

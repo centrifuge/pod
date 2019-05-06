@@ -21,6 +21,9 @@ type Service interface {
 
 	// DeriveFundingResponse returns a funding in client format
 	DeriveFundingResponse(model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
+
+	// DeriveFundingListResponse returns a funding list in client format
+	DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -274,4 +277,44 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 		Data:   data,
 	}, nil
 
+}
+
+// DeriveFundingListResponse returns a funding list in client format
+func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error) {
+	response := new(clientfundingpb.FundingListResponse)
+
+	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
+	if err != nil {
+		return nil, errors.New("failed to derive response: %v", err)
+	}
+	response.Header = h
+
+	fl, err := documents.AttrKeyFromLabel(fundingLabel)
+	if err != nil {
+		return nil, err
+	}
+
+	if model.AttributeExists(fl) {
+		lastIdx, err := getFundingsLatestIDX(model)
+		if err != nil {
+			return nil, err
+		}
+
+		i, err := documents.NewInt256("0")
+		if err != nil {
+			return nil, err
+		}
+
+		for ; i.Cmp(lastIdx) != 1; i.Inc() {
+			funding, err := s.deriveFundingData(model, i.String())
+			if err != nil {
+				continue
+			}
+
+			response.List = append(response.List, funding)
+		}
+
+	}
+
+	return response, nil
 }

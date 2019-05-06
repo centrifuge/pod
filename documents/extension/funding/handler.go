@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
@@ -71,7 +70,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 
 }
 
-// Create handles a new funding document extension and adds it to an existing document
+// Get returns a funding agreement from an existing document
 func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
@@ -83,19 +82,50 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 	identifier, err := hexutil.Decode(req.Identifier)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
+		return nil, documents.ErrDocumentIdentifier
 	}
 
 	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "document not found")
+		return nil, ErrPayload
 	}
 
 	resp, err := h.service.DeriveFundingResponse(model, req.FundingId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
+		return nil, ErrPayload
+	}
+
+	return resp, nil
+
+}
+
+// GetList returns all funding agreements of a existing document
+func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListRequest) (*clientfundingpb.FundingListResponse, error) {
+	apiLog.Debugf("Get request %v", req)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, ErrPayload
+	}
+
+	resp, err := h.service.DeriveFundingListResponse(model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, ErrPayload
 	}
 
 	return resp, nil
