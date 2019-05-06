@@ -10,7 +10,6 @@ option java_package = "com.funding";
 import "document/service.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
-import "github.com/gogo/protobuf";
 
 // FundingService contains all common interactions for funding extension documents
 service FundingService {
