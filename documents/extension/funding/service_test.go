@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -84,17 +87,21 @@ func TestCreateAttributesList(t *testing.T) {
 	inv := &invoice.Invoice{}
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
-	data := Data{Currency: "eur", Days: "90"}
+	data := createTestData()
 
 	attributes, err := createAttributesList(inv, data)
 	assert.NoError(t, err)
-	assert.Equal(t, 12, len(attributes))
+
+	assert.Equal(t, 11, len(attributes))
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "centrifuge_funding[0].currency" {
 			assert.Equal(t, "eur", attribute.Value.Str)
 			break
 		}
+
+		// apr was not set
+		assert.NotEqual(t, "centrifuge_funding[0].apr", attribute.KeyLabel)
 	}
 }
 
@@ -106,7 +113,8 @@ func TestDeriveFromPayload(t *testing.T) {
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
-	payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur", Days: "90"}}
+
+	payload := createTestPayload()
 
 	for i := 0; i < 10; i++ {
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
@@ -135,16 +143,56 @@ func TestDeriveFundingResponse(t *testing.T) {
 	})
 
 	for i := 0; i < 10; i++ {
-		fundingId := newFundingID()
-		payload := &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{FundingId: fundingId, Currency: "eur", Days: "90"}}
+		payload := createTestPayload()
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 
-		response, err := srv.DeriveFundingResponse(model, fundingId)
-		assert.Equal(t, fundingId, response.Data.FundingId)
-		assert.Equal(t, "eur", response.Data.Currency)
-		assert.Equal(t, "90", response.Data.Days)
-
+		response, err := srv.DeriveFundingResponse(model, payload.Data.FundingId)
+		checkResponse(t, payload, response)
 	}
 
+}
+
+func createTestClientData() *clientfundingpb.FundingData {
+	fundingId := newFundingID()
+	return &clientfundingpb.FundingData{
+		FundingId:             fundingId,
+		Currency:              "eur",
+		Days:                  "90",
+		Amount:                "1000",
+		RepaymentAmount:       "1200.12",
+		Fee:                   "10",
+		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
+		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
+		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
+		PaymentDetailsId:      hexutil.Encode(utils.RandomSlice(32)),
+	}
+}
+
+func createTestData() Data {
+	fundingId := newFundingID()
+	return Data{
+		FundingId:             fundingId,
+		Currency:              "eur",
+		Days:                  "90",
+		Amount:                "1000",
+		RepaymentAmount:       "1200.12",
+		Fee:                   "10",
+		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
+		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
+		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
+		PaymentDetailsId:      hexutil.Encode(utils.RandomSlice(32)),
+	}
+}
+
+func createTestPayload() *clientfundingpb.FundingCreatePayload {
+	return &clientfundingpb.FundingCreatePayload{Data: createTestClientData()}
+}
+
+func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, response *clientfundingpb.FundingResponse) {
+	assert.Equal(t, payload.Data.FundingId, response.Data.FundingId)
+	assert.Equal(t, payload.Data.Currency, response.Data.Currency)
+	assert.Equal(t, payload.Data.Days, response.Data.Days)
+	assert.Equal(t, payload.Data.Amount, response.Data.Amount)
+	assert.Equal(t, payload.Data.RepaymentDueDate, response.Data.RepaymentDueDate)
 }

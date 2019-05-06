@@ -5,9 +5,9 @@ package funding
 import (
 	"testing"
 
+	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/stretchr/testify/assert"
 )
-import clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 
 func TestInitFundingFromData(t *testing.T) {
 	fdc := &clientfundingpb.FundingData{Currency: "eur"}

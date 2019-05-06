@@ -8,17 +8,17 @@ import (
 
 // Data is the default funding extension schema
 type Data struct {
-	FundingId             string `json:"funding_id,omitempty" attr:"string"`
-	Amount                string `json:"amount,omitempty" attr:"string"`
+	FundingId             string `json:"funding_id,omitempty" attr:"bytes"`
+	Amount                string `json:"amount,omitempty" attr:"decimal"`
 	Apr                   string `json:"apr,omitempty" attr:"string"`
 	Days                  string `json:"days,omitempty" attr:"integer"`
-	Fee                   string `json:"fee,omitempty" attr:"string"`
-	RepaymentDueDate      string `json:"repayment_due_date,omitempty" attr:"string"`
-	RepaymentOccurredDate string `json:"repayment_occurred_date,omitempty" attr:"string"`
-	RepaymentAmount       string `json:"repayment_amount,omitempty" attr:"string"`
+	Fee                   string `json:"fee,omitempty" attr:"decimal"`
+	RepaymentDueDate      string `json:"repayment_due_date,omitempty" attr:"timestamp"`
+	RepaymentOccurredDate string `json:"repayment_occurred_date,omitempty" attr:"timestamp"`
+	RepaymentAmount       string `json:"repayment_amount,omitempty" attr:"decimal"`
 	Currency              string `json:"currency,omitempty" attr:"string"`
-	NftAddress            string `json:"nft_address,omitempty" attr:"string"`
-	PaymentDetailsId      string `json:"payment_details_id,omitempty" attr:"string"`
+	NftAddress            string `json:"nft_address,omitempty" attr:"bytes"`
+	PaymentDetailsId      string `json:"payment_details_id,omitempty" attr:"bytes"`
 }
 
 func (f *Data) initFundingFromData(data *clientfundingpb.FundingData) {

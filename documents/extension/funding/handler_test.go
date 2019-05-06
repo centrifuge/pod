@@ -55,7 +55,6 @@ func TestGRPCHandler_Create(t *testing.T) {
 	response, err := h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}})
 	assert.Nil(t, response)
 	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "empty hex string")
 
 	// successful
 	srv.On("DeriveFromPayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)

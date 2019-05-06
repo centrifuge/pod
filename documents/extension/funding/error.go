@@ -12,4 +12,10 @@ const (
 
 	// ErrFundingNotFound must be used if a funding id is not found in a model
 	ErrFundingNotFound = errors.Error("funding not found in model")
+
+	// ErrFundingAttr must be used if it is not possible to derive a funding from a document
+	ErrFundingAttr = errors.Error("stored funding in document has an error")
+
+	// ErrPayload must be used if it is not possible to derive an a funding from a payload
+	ErrPayload = errors.Error("could not derive funding from payload")
 )

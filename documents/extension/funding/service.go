@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
@@ -66,24 +65,24 @@ func labelFromJSONTag(idx, jsonTag string) string {
 func getFundingsLatestIDX(model documents.Model) (idx *documents.Int256, err error) {
 	key, err := documents.AttrKeyFromLabel(fundingLabel)
 	if err != nil {
-		return idx, err
+		return nil, err
 	}
 
 	attr, err := model.GetAttribute(key)
 	if err != nil {
-		return idx, err
+		return nil, err
 	}
 
 	idx = attr.Value.Int256
 
 	z, err := documents.NewInt256("0")
 	if err != nil {
-		return idx, err
+		return nil, err
 	}
 
 	// idx < 0
 	if idx.Cmp(z) == -1 {
-		return idx, ErrFundingIndex
+		return nil, ErrFundingIndex
 	}
 
 	return idx, nil
@@ -130,18 +129,20 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	types := reflect.TypeOf(data)
 	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
-		jsonKey := types.Field(i).Tag.Get("json")
-		label := labelFromJSONTag(idx.Value.Int256.String(), jsonKey)
 
 		value := values.Field(i).Interface().(string)
-		attrType := types.Field(i).Tag.Get("attr")
+		if value != "" {
+			jsonKey := types.Field(i).Tag.Get("json")
+			label := labelFromJSONTag(idx.Value.Int256.String(), jsonKey)
 
-		attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
-		if err != nil {
-			return nil, err
+			attrType := types.Field(i).Tag.Get("attr")
+			attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
+			if err != nil {
+				return nil, err
+			}
+
+			attributes = append(attributes, attr)
 		}
-
-		attributes = append(attributes, attr)
 
 	}
 
@@ -155,7 +156,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "document not found")
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	attributes, err := createAttributesList(model, fd)
@@ -200,7 +201,11 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 			return idx, err
 		}
 
-		if attr.Value.Str == fundingID {
+		attrFundingID, err := attr.Value.String()
+		if err != nil {
+			return idx, err
+		}
+		if attrFundingID == fundingID {
 			return i.String(), nil
 		}
 
@@ -224,21 +229,23 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 			return nil, err
 		}
 
-		attr, err := model.GetAttribute(attrKey)
+		if model.AttributeExists(attrKey) {
+			attr, err := model.GetAttribute(attrKey)
+			if err != nil {
+				return nil, err
+			}
 
-		if err != nil {
-			return nil, err
+			// set field in client data
+			n := types.Field(i).Name
+
+			v, err := attr.Value.String()
+			if err != nil {
+				return nil, err
+			}
+
+			reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
+
 		}
-
-		// set field in client data
-		n := types.Field(i).Name
-
-		v, err := attr.Value.String()
-		if err != nil {
-			return nil, err
-		}
-
-		reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
 
 	}
 	return data, nil
