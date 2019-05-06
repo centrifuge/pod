@@ -564,7 +564,11 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 
 // JSON marshals Invoice into a json bytes
 func (i *Invoice) JSON() ([]byte, error) {
-	return i.CoreDocument.MarshallJSON(i)
+	pattrs := i.Attributes
+	i.Attributes = nil
+	d, err := json.Marshal(i)
+	i.Attributes = pattrs
+	return d, err
 }
 
 // FromJSON unmarshals the json bytes into Invoice

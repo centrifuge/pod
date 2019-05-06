@@ -170,7 +170,11 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 
 // JSON marshals Entity into a json bytes
 func (e *Entity) JSON() ([]byte, error) {
-	return e.CoreDocument.MarshallJSON(e)
+	pattrs := e.Attributes
+	e.Attributes = nil
+	d, err := json.Marshal(e)
+	e.Attributes = pattrs
+	return d, err
 }
 
 // FromJSON unmarshals the json bytes into Entity
