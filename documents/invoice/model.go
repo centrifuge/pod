@@ -1,7 +1,6 @@
 package invoice
 
 import (
-	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -564,12 +563,16 @@ func (i *Invoice) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 
 // JSON marshals Invoice into a json bytes
 func (i *Invoice) JSON() ([]byte, error) {
-	return json.Marshal(i)
+	return i.CoreDocument.MarshalJSON(i)
 }
 
 // FromJSON unmarshals the json bytes into Invoice
 func (i *Invoice) FromJSON(jsonData []byte) error {
-	return json.Unmarshal(jsonData, i)
+	if i.CoreDocument == nil {
+		i.CoreDocument = new(documents.CoreDocument)
+	}
+
+	return i.CoreDocument.UnmarshalJSON(jsonData, i)
 }
 
 // Type gives the Invoice type

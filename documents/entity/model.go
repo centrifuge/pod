@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"encoding/json"
 	"reflect"
 	"strings"
 
@@ -170,12 +169,16 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 
 // JSON marshals Entity into a json bytes
 func (e *Entity) JSON() ([]byte, error) {
-	return json.Marshal(e)
+	return e.CoreDocument.MarshalJSON(e)
 }
 
 // FromJSON unmarshals the json bytes into Entity
 func (e *Entity) FromJSON(jsonData []byte) error {
-	return json.Unmarshal(jsonData, e)
+	if e.CoreDocument == nil {
+		e.CoreDocument = new(documents.CoreDocument)
+	}
+
+	return e.CoreDocument.UnmarshalJSON(jsonData, e)
 }
 
 // Type gives the Entity type
