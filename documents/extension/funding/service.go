@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
@@ -84,7 +83,6 @@ func getFundingsLatestIDX(model documents.Model) (idx *documents.Int256, err err
 	if idx.Cmp(z) == -1 {
 		return nil, ErrFundingIndex
 	}
-
 	return idx, nil
 
 }
@@ -110,7 +108,6 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 	if err != nil {
 		return attr, err
 	}
-
 	return documents.NewAttribute(fundingLabel, documents.AttrInt256, newIdx.String())
 
 }
@@ -129,7 +126,6 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	types := reflect.TypeOf(data)
 	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
-
 		value := values.Field(i).Interface().(string)
 		if value != "" {
 			jsonKey := types.Field(i).Tag.Get("json")
@@ -145,7 +141,6 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 		}
 
 	}
-
 	return attributes, nil
 }
 
@@ -174,7 +169,6 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
-
 	return model, nil
 }
 
@@ -210,7 +204,6 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 		}
 
 	}
-
 	return idx, ErrFundingNotFound
 }
 
@@ -246,10 +239,8 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 			reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
 
 		}
-
 	}
 	return data, nil
-
 }
 
 // DeriveFundingResponse returns create response from the added funding
@@ -273,5 +264,4 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 		Header: h,
 		Data:   data,
 	}, nil
-
 }

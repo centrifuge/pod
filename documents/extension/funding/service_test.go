@@ -24,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
