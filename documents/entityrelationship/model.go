@@ -162,11 +162,7 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 
 // JSON marshals EntityRelationship into a json bytes
 func (e *EntityRelationship) JSON() ([]byte, error) {
-	pattrs := e.Document.Attributes
-	e.Document.Attributes = nil
-	d, err := json.Marshal(e)
-	e.Document.Attributes = pattrs
-	return d, err
+	return e.CoreDocument.MarshallJSON(e)
 }
 
 // FromJSON unmarshals the json bytes into EntityRelationship
