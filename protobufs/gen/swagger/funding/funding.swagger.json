@@ -48,6 +48,37 @@
         ]
       }
     },
+    "/documents/{identifier}/extension/funding": {
+      "get": {
+        "description": "Get all fundings agreements of a document",
+        "operationId": "GetList",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
     "/documents/{identifier}/extension/funding/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a document",

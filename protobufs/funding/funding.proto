@@ -10,7 +10,6 @@ option java_package = "com.funding";
 import "document/service.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
-import "github.com/gogo/protobuf";
 
 // FundingService contains all common interactions for funding extension documents
 service FundingService {
@@ -31,6 +30,14 @@ service FundingService {
       description: "Get a funding agreement of a document"
     };
   }
+  rpc GetList(GetRequest) returns (FundingResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/extension/funding"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get all fundings agreements of a document"
+    };
+  }
 }
 
 message FundingCreatePayload {
@@ -41,6 +48,11 @@ message FundingCreatePayload {
 message FundingResponse {
   document.ResponseHeader header = 1;
   FundingData data = 2;
+}
+
+message FundingListResponse {
+  document.ResponseHeader header = 1;
+  repeated FundingData list = 2;
 }
 
 message GetRequest {
