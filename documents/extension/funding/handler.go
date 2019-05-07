@@ -115,7 +115,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfundingpb.GetVe
 	version, err := hexutil.Decode(req.Version)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, documents.ErrDocumentVersionNotFound
+		return nil, documents.ErrDocumentVersion
 	}
 
 	model, err := h.service.GetVersion(ctxHeader, identifier, version)
@@ -152,7 +152,7 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, documents.ErrDocumentVersionNotFound
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	resp, err := h.service.DeriveFundingListResponse(model)
