@@ -48,6 +48,45 @@
         ]
       }
     },
+    "/document/{identifier}/extension/funding/{funding_id}": {
+      "put": {
+        "description": "Updates a funding agreement in a document",
+        "operationId": "Update",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fundingFundingUpdatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
     "/documents/{identifier}/extension/funding": {
       "get": {
         "description": "Get all fundings agreements of a latest document",
@@ -316,6 +355,20 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
+        },
+        "data": {
+          "$ref": "#/definitions/fundingFundingData"
+        }
+      }
+    },
+    "fundingFundingUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "funding_id": {
+          "type": "string"
         },
         "data": {
           "$ref": "#/definitions/fundingFundingData"
