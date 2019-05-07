@@ -10,7 +10,7 @@
 **DISCLAIMER:** The code released here presents a very early alpha version that should not be used in production and has not been audited. Use this at your own risk.
 
 ## Table of Contents
-- [Installing pre-requisites](#installing-pre-requisites)
+- [Installing prerequisites](#installing-prerequisites)
  - [Linux](#linux)
     - [Install Docker Compose](#install-docker-compose)
  - [Mac](#mac)
@@ -33,7 +33,7 @@
 - [Protobufs bindings](#protobufs-bindings)
 
 
-## Installing pre-requisites
+## Installing prerequisites
 ### Linux
 ```bash
 # install jq
