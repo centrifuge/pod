@@ -227,6 +227,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 		return nil, documents.ErrDocumentNotFound
 	}
 
+	fd.FundingId = req.FundingId
 	idx, err := s.findFunding(model,fd.FundingId)
 	if err != nil {
 		return nil, err
