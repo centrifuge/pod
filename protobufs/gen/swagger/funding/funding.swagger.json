@@ -15,39 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/document/{identifier}/extension/funding": {
-      "post": {
-        "description": "Adds a funding to a document",
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/fundingFundingCreatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
-    },
     "/document/{identifier}/extension/funding/{funding_id}": {
       "put": {
         "description": "Updates a funding agreement in a document",
@@ -87,7 +54,40 @@
         ]
       }
     },
-    "/documents/{identifier}/extension/funding": {
+    "/document/{identifier}/funding": {
+      "post": {
+        "description": "Adds a funding to a document",
+        "operationId": "Create",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fundingFundingCreatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/funding": {
       "get": {
         "description": "Get all fundings agreements of a latest document",
         "operationId": "GetList",
@@ -112,7 +112,7 @@
         ]
       }
     },
-    "/documents/{identifier}/extension/funding/{funding_id}": {
+    "/documents/{identifier}/funding/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a latest document",
         "operationId": "Get",
@@ -143,7 +143,7 @@
         ]
       }
     },
-    "/documents/{identifier}/{version}/extension/funding": {
+    "/documents/{identifier}/{version}/funding": {
       "get": {
         "description": "Get all fundings agreements of a document version",
         "operationId": "GetListVersion",
@@ -174,7 +174,7 @@
         ]
       }
     },
-    "/documents/{identifier}/{version}/extension/funding/{funding_id}": {
+    "/documents/{identifier}/{version}/funding/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a document version",
         "operationId": "GetVersion",
