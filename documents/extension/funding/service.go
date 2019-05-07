@@ -121,7 +121,7 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 
 }
 
-func fillAttributeList(data Data, idx documents.Attribute) ([]documents.Attribute, error) {
+func fillAttributeList(data Data, idx string) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
 	types := reflect.TypeOf(data)
@@ -131,7 +131,7 @@ func fillAttributeList(data Data, idx documents.Attribute) ([]documents.Attribut
 		value := values.Field(i).Interface().(string)
 		if value != "" {
 			jsonKey := types.Field(i).Tag.Get("json")
-			label := labelFromJSONTag(idx.Value.Int256.String(), jsonKey)
+			label := labelFromJSONTag(idx, jsonKey)
 
 			attrType := types.Field(i).Tag.Get("attr")
 			attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
@@ -154,7 +154,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 		return nil, err
 	}
 
-	attributes, err = fillAttributeList(data, idx)
+	attributes, err = fillAttributeList(data, idx.Value.Int256.String())
 	if err != nil {
 		return nil, err
 	}
@@ -239,12 +239,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 		return nil, err
 	}
 
-	idxAttr, err := documents.NewAttribute("index", documents.AttrInt256, idx)
-	if err != nil {
-		return nil, err
-	}
-
-	attributes, err := fillAttributeList(fd, idxAttr)
+	attributes, err := fillAttributeList(fd, idx)
 	if err != nil {
 		return nil, err
 	}
