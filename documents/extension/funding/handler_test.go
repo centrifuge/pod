@@ -33,7 +33,6 @@ func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfundingp
 	return model, args.Error(1)
 }
 
-
 func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
 	args := m.Called(ctx, req)
 	model, _ := args.Get(0).(documents.Model)
