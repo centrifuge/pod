@@ -159,6 +159,12 @@ func (m *mockModel) AnchorRepoAddress() common.Address {
 	return args.Get(0).(common.Address)
 }
 
+func (m *mockModel) GetAttributes() []Attribute {
+	args := m.Called()
+	attrs, _ := args.Get(0).([]Attribute)
+	return attrs
+}
+
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)

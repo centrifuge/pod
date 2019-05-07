@@ -250,6 +250,7 @@ func TestValidator_TransitionValidator(t *testing.T) {
 	old := new(mockModel)
 	old.On("CollaboratorCanUpdate", updated, id1).Return(errors.New("error"))
 	err = tv.Validate(old, updated)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid document state transition: error")
 
 	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
@@ -707,5 +708,87 @@ func TestValidator_anchorRepoAddressValidator(t *testing.T) {
 
 	// success
 	assert.NoError(t, arv.Validate(nil, model))
+	model.AssertExpectations(t)
+}
+
+func TestValidator_attributeSignatureValidator(t *testing.T) {
+	asv := attributeValidator(nil, nil)
+
+	// failed to get timestamp
+	model := new(mockModel)
+	model.On("Timestamp").Return(nil, errors.New("failed to get timestamp")).Once()
+	err := asv.Validate(nil, model)
+	assert.Error(t, err)
+	model.AssertExpectations(t)
+
+	attrs := []Attribute{
+		{
+			KeyLabel: "label 1",
+			Value:    AttrVal{Type: AttrString},
+		},
+
+		{
+			KeyLabel: "label 2",
+			Value: AttrVal{
+				Type: AttrSigned,
+				Signed: Signed{
+					Identity:        testingidentity.GenerateRandomDID(),
+					DocumentVersion: utils.RandomSlice(20),
+					Value:           utils.RandomSlice(32),
+					Signature:       utils.RandomSlice(32),
+					PublicKey:       utils.RandomSlice(32),
+				},
+			},
+		},
+	}
+	// failed anchor id
+	model = new(mockModel)
+	model.On("Timestamp").Return(time.Now().UTC(), nil).Once()
+	model.On("GetAttributes").Return(attrs).Once()
+	err = asv.Validate(nil, model)
+	assert.Error(t, err)
+	model.AssertExpectations(t)
+
+	// not anchored yet, failed Validation
+	id := utils.RandomSlice(32)
+	attrs[1].Value.Signed.DocumentVersion = id
+	aid, err := anchors.ToAnchorID(id)
+	assert.NoError(t, err)
+	repo := new(mockRepo)
+	repo.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+
+	ts := time.Now().UTC()
+	model = new(mockModel)
+	model.On("Timestamp").Return(ts, nil).Once()
+	model.On("GetAttributes").Return(attrs).Once()
+	docID := utils.RandomSlice(32)
+	model.On("ID").Return(docID).Once()
+
+	signed := attrs[1].Value.Signed
+	payload := attributeSignaturePayload(signed.Identity[:], docID, id, signed.Value)
+	srv := new(testingcommons.MockIdentityService)
+	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(errors.New("failed")).Once()
+	asv = attributeValidator(repo, srv)
+	err = asv.Validate(nil, model)
+	assert.Error(t, err)
+	repo.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	model.AssertExpectations(t)
+
+	// success
+	repo = new(mockRepo)
+	repo.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+
+	model = new(mockModel)
+	model.On("Timestamp").Return(ts, nil).Once()
+	model.On("GetAttributes").Return(attrs).Once()
+	model.On("ID").Return(docID).Once()
+	srv = new(testingcommons.MockIdentityService)
+	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(nil).Once()
+	asv = attributeValidator(repo, srv)
+	err = asv.Validate(nil, model)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	srv.AssertExpectations(t)
 	model.AssertExpectations(t)
 }

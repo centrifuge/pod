@@ -103,7 +103,6 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 type Signed struct {
 	Identity                                     identity.DID
 	DocumentVersion, Value, Signature, PublicKey []byte
-	Timestamp                                    time.Time
 }
 
 // String returns the hex value of the signature.
@@ -214,13 +213,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		return attr, err
 	}
 
-	// TODO(ved): time should be part of the signature
-	var signPayload []byte
-	signPayload = append(signPayload, identity[:]...)
-	signPayload = append(signPayload, model.ID()...)
-	signPayload = append(signPayload, model.CurrentVersion()...)
-	signPayload = append(signPayload, value...)
-
+	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.CurrentVersion(), value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -234,7 +227,6 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 			Value:           value,
 			Signature:       sig.Signature,
 			PublicKey:       sig.PublicKey,
-			Timestamp:       time.Now().UTC(),
 		},
 	}
 
@@ -243,4 +235,13 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		Key:      attrKey,
 		Value:    attrVal,
 	}, nil
+}
+
+func attributeSignaturePayload(did, id, version, value []byte) []byte {
+	var signPayload []byte
+	signPayload = append(signPayload, did...)
+	signPayload = append(signPayload, id...)
+	signPayload = append(signPayload, version...)
+	signPayload = append(signPayload, value...)
+	return signPayload
 }

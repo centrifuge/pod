@@ -579,13 +579,8 @@ func TestAttributes_signed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, attrs, gattrs)
 
-	// wrong timestamp
-	signed := pattrs[len(pattrs)-1].GetSignedVal()
-	signed.Timestamp.Nanos = -1
-	_, err = fromProtocolAttributes(pattrs)
-	assert.Error(t, err)
-
 	// wrong id
+	signed := pattrs[len(pattrs)-1].GetSignedVal()
 	signed.Identity = nil
 	_, err = fromProtocolAttributes(pattrs)
 	assert.Error(t, err)

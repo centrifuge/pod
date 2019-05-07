@@ -401,9 +401,13 @@ func anchorRepoAddressValidator(anchoredRepoAddr common.Address) Validator {
 }
 
 // attributeValidator validates the signed attributes.
-// TODO(ved): tests
-func attributeValidator(idSrv identity.Service) Validator {
+func attributeValidator(repo anchors.AnchorRepository, idSrv identity.Service) Validator {
 	return ValidatorFunc(func(_, model Model) (err error) {
+		ts, err := model.Timestamp()
+		if err != nil {
+			return err
+		}
+
 		attrs := model.GetAttributes()
 		for _, attr := range attrs {
 			if attr.Value.Type != AttrSigned {
@@ -411,15 +415,22 @@ func attributeValidator(idSrv identity.Service) Validator {
 			}
 
 			signed := attr.Value.Signed
-			var payload []byte
-			payload = append(payload, signed.Identity[:]...)
-			payload = append(payload, model.ID()...)
-			payload = append(payload, signed.DocumentVersion...)
-			payload = append(payload, signed.Value...)
+			var aid anchors.AnchorID
+			aid, err = anchors.ToAnchorID(signed.DocumentVersion)
+			if err != nil {
+				return err
+			}
 
-			erri := idSrv.ValidateSignature(signed.Identity, signed.PublicKey, signed.Signature, payload, signed.Timestamp)
+			_, ats, erro := repo.GetAnchorData(aid)
+			if erro != nil {
+				// maybe not anchored yet
+				ats = ts
+			}
+
+			payload := attributeSignaturePayload(signed.Identity[:], model.ID(), signed.DocumentVersion, signed.Value)
+			erri := idSrv.ValidateSignature(signed.Identity, signed.PublicKey, signed.Signature, payload, ats)
 			if erri != nil {
-				err = errors.AppendError(err, errors.New("failed to validate signed attribute %s : %v", attr.KeyLabel, erri))
+				err = errors.AppendError(err, errors.New("failed to validate signed attribute %s: %v", attr.KeyLabel, erri))
 			}
 		}
 

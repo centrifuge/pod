@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -476,10 +475,6 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 			pattr.Value = &coredocumentpb.Attribute_TimeVal{TimeVal: attr.Value.Timestamp}
 		case AttrSigned:
 			signed := attr.Value.Signed
-			ts, err := utils.ToTimestamp(signed.Timestamp)
-			if err != nil {
-				return nil, err
-			}
 			pattr.Value = &coredocumentpb.Attribute_SignedVal{
 				SignedVal: &coredocumentpb.Signed{
 					DocVersion: signed.DocumentVersion,
@@ -487,7 +482,6 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 					Signature:  signed.Signature,
 					PublicKey:  signed.PublicKey,
 					Identity:   signed.Identity[:],
-					Timestamp:  ts,
 				},
 			}
 		}
@@ -560,18 +554,12 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 			return attrVal, err
 		}
 
-		ts, err := utils.FromTimestamp(val.Timestamp)
-		if err != nil {
-			return attrVal, err
-		}
-
 		attrVal.Signed = Signed{
 			Identity:        did,
 			DocumentVersion: val.DocVersion,
 			PublicKey:       val.PublicKey,
 			Value:           val.Value,
 			Signature:       val.Signature,
-			Timestamp:       ts.UTC(),
 		}
 	}
 
