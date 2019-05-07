@@ -98,7 +98,6 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 }
 
 // Get returns a funding agreement from an existing document
-// Create handles a new funding document extension and adds it to an existing document
 func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfundingpb.GetVersionRequest) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
@@ -161,7 +160,6 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
 	}
-
 	return resp, nil
 }
 // GetList returns all funding agreements of a existing document
@@ -196,6 +194,5 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
 	}
-
 	return resp, nil
 }

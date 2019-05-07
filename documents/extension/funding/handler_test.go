@@ -82,7 +82,6 @@ func TestGRPCHandler_Create(t *testing.T) {
 	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
-
 }
 
 func TestGRPCHandler_Get(t *testing.T) {
@@ -95,7 +94,6 @@ func TestGRPCHandler_Get(t *testing.T) {
 	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.GetRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
-
 }
 
 
@@ -109,7 +107,6 @@ func TestGRPCHandler_GetVersion(t *testing.T) {
 	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
-
 }
 
 func TestGRPCHandler_GetList(t *testing.T) {
@@ -122,5 +119,4 @@ func TestGRPCHandler_GetList(t *testing.T) {
 	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)),Version: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
-
 }
