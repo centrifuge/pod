@@ -96,7 +96,6 @@ func TestGRPCHandler_Get(t *testing.T) {
 	assert.NotNil(t, response)
 }
 
-
 func TestGRPCHandler_GetVersion(t *testing.T) {
 	srv := &mockService{}
 	h := &grpcHandler{service: srv, config: configService}
@@ -113,10 +112,10 @@ func TestGRPCHandler_GetList(t *testing.T) {
 	srv := &mockService{}
 	h := &grpcHandler{service: srv, config: configService}
 
-	srv.On("GetVersion", mock.Anything, mock.Anything,mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("DeriveFundingListResponse", mock.Anything).Return(&clientfundingpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)),Version: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
