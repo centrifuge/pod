@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"

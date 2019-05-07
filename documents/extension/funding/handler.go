@@ -5,7 +5,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
