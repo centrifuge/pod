@@ -3,10 +3,10 @@ package funding
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -69,7 +69,6 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 }
 
 // Get returns a funding agreement from an existing document
-// Create handles a new funding document extension and adds it to an existing document
 func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)

@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 )
 
@@ -292,24 +292,26 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 		return nil, err
 	}
 
-	if model.AttributeExists(fl) {
-		lastIdx, err := getFundingsLatestIDX(model)
-		if err != nil {
-			return nil, err
-		}
-
-		i, err := documents.NewInt256("0")
-		if err != nil {
-			return nil, err
-		}
-
-		for ; i.Cmp(lastIdx) != 1; i.Inc() {
-			funding, err := s.deriveFundingData(model, i.String())
-			if err != nil {
-				continue
-			}
-			response.List = append(response.List, funding)
-		}
+	if !model.AttributeExists(fl) {
+		return response, nil
 	}
+
+	lastIdx, err := getFundingsLatestIDX(model)
+	if err != nil {
+		return nil, err
+	}
+
+	i, err := documents.NewInt256("0")
+	if err != nil {
+		return nil, err
+	}
+
+	for ; i.Cmp(lastIdx) != 1; i.Inc() {
+		funding, err := s.deriveFundingData(model, i.String())
+		if err != nil {
+			continue
+		}
+		response.List = append(response.List, funding)
+    }
 	return response, nil
 }
