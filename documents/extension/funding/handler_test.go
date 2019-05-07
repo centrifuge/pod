@@ -57,6 +57,12 @@ func (m *mockService) GetCurrentVersion(ctx context.Context, identifier []byte) 
 	return model, args.Error(1)
 }
 
+func (m *mockService) GetVersion(ctx context.Context, identifier, version []byte) (documents.Model, error) {
+	args := m.Called(ctx, identifier)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
 func TestGRPCHandler_Create(t *testing.T) {
 	srv := &mockService{}
 
@@ -92,14 +98,28 @@ func TestGRPCHandler_Get(t *testing.T) {
 
 }
 
+
+func TestGRPCHandler_GetVersion(t *testing.T) {
+	srv := &mockService{}
+	h := &grpcHandler{service: srv, config: configService}
+
+	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+
+	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+
+}
+
 func TestGRPCHandler_GetList(t *testing.T) {
 	srv := &mockService{}
 	h := &grpcHandler{service: srv, config: configService}
 
-	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("GetVersion", mock.Anything, mock.Anything,mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("DeriveFundingListResponse", mock.Anything).Return(&clientfundingpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.GetList(testingconfig.HandlerContext(configService), &clientfundingpb.GetListRequest{Identifier: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)),Version: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 

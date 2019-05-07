@@ -17,6 +17,9 @@ const (
 	// ErrDocumentIdentifier must be used for errors caused by document identifier problems
 	ErrDocumentIdentifier = errors.Error("document identifier error")
 
+	// ErrDocumentVersion must be used for errors caused by document version problems
+	ErrDocumentVersion= errors.Error("document version error")
+
 	// ErrDocumentInvalidType must be used when a provided document type is not valid to be processed by the service
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
