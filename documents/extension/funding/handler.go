@@ -87,13 +87,13 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrPayload
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	resp, err := h.service.DeriveFundingResponse(model, req.FundingId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrPayload
+		return nil, ErrFundingAttr
 	}
 	return resp, nil
 }
@@ -116,13 +116,13 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrPayload
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	resp, err := h.service.DeriveFundingListResponse(model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrPayload
+		return nil, ErrFundingAttr
 	}
 
 	return resp, nil
