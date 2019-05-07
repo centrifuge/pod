@@ -132,7 +132,7 @@ func TestDeriveFromPayload(t *testing.T) {
 
 func TestDeriveFundingResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
+	inv := &invoice.Invoice{}
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
 	docSrv := &testingdocuments.MockService{}
@@ -147,7 +147,39 @@ func TestDeriveFundingResponse(t *testing.T) {
 		assert.NoError(t, err)
 
 		response, err := srv.DeriveFundingResponse(model, payload.Data.FundingId)
-		checkResponse(t, payload, response)
+		checkResponse(t, payload, response.Data)
+	}
+
+}
+
+func TestDeriveFundingListResponse(t *testing.T) {
+	testingdocuments.CreateInvoicePayload()
+	inv := &invoice.Invoice{}
+	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+
+	docSrv := &testingdocuments.MockService{}
+	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	srv := DefaultService(docSrv, func() documents.TokenRegistry {
+		return nil
+	})
+
+	var model documents.Model
+	var err error
+	var payloads []*clientfundingpb.FundingCreatePayload
+	for i := 0; i < 10; i++ {
+		p := createTestPayload()
+		payloads = append(payloads, p)
+		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
+		assert.NoError(t, err)
+
+	}
+
+	response, err := srv.DeriveFundingListResponse(model)
+	assert.Equal(t, 10, len(response.List))
+
+	for i := 0; i < 10; i++ {
+		checkResponse(t, payloads[i], response.List[i])
+
 	}
 
 }
@@ -188,10 +220,10 @@ func createTestPayload() *clientfundingpb.FundingCreatePayload {
 	return &clientfundingpb.FundingCreatePayload{Data: createTestClientData()}
 }
 
-func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, response *clientfundingpb.FundingResponse) {
-	assert.Equal(t, payload.Data.FundingId, response.Data.FundingId)
-	assert.Equal(t, payload.Data.Currency, response.Data.Currency)
-	assert.Equal(t, payload.Data.Days, response.Data.Days)
-	assert.Equal(t, payload.Data.Amount, response.Data.Amount)
-	assert.Equal(t, payload.Data.RepaymentDueDate, response.Data.RepaymentDueDate)
+func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, response *clientfundingpb.FundingData) {
+	assert.Equal(t, payload.Data.FundingId, response.FundingId)
+	assert.Equal(t, payload.Data.Currency, response.Currency)
+	assert.Equal(t, payload.Data.Days, response.Days)
+	assert.Equal(t, payload.Data.Amount, response.Amount)
+	assert.Equal(t, payload.Data.RepaymentDueDate, response.RepaymentDueDate)
 }

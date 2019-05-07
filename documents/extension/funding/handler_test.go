@@ -39,10 +39,22 @@ func (m *mockService) DeriveFundingResponse(doc documents.Model, fundingId strin
 	return data, args.Error(1)
 }
 
+func (m *mockService) DeriveFundingListResponse(doc documents.Model) (*clientfundingpb.FundingListResponse, error) {
+	args := m.Called(doc)
+	data, _ := args.Get(0).(*clientfundingpb.FundingListResponse)
+	return data, args.Error(1)
+}
+
 func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	doc1, _ := args.Get(0).(documents.Model)
 	return doc1, contextutil.Job(ctx), nil, args.Error(2)
+}
+
+func (m *mockService) GetCurrentVersion(ctx context.Context, identifier []byte) (documents.Model, error) {
+	args := m.Called(ctx, identifier)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func TestGRPCHandler_Create(t *testing.T) {
@@ -62,6 +74,32 @@ func TestGRPCHandler_Create(t *testing.T) {
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+
+}
+
+func TestGRPCHandler_Get(t *testing.T) {
+	srv := &mockService{}
+	h := &grpcHandler{service: srv, config: configService}
+
+	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+
+	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.GetRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+
+}
+
+func TestGRPCHandler_GetList(t *testing.T) {
+	srv := &mockService{}
+	h := &grpcHandler{service: srv, config: configService}
+
+	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("DeriveFundingListResponse", mock.Anything).Return(&clientfundingpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+
+	response, err := h.GetList(testingconfig.HandlerContext(configService), &clientfundingpb.GetListRequest{Identifier: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 

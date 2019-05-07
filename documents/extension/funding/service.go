@@ -20,6 +20,9 @@ type Service interface {
 
 	// DeriveFundingResponse returns a funding in client format
 	DeriveFundingResponse(model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
+
+	// DeriveFundingListResponse returns a funding list in client format
+	DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -83,6 +86,7 @@ func getFundingsLatestIDX(model documents.Model) (idx *documents.Int256, err err
 	if idx.Cmp(z) == -1 {
 		return nil, ErrFundingIndex
 	}
+
 	return idx, nil
 
 }
@@ -108,6 +112,7 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 	if err != nil {
 		return attr, err
 	}
+
 	return documents.NewAttribute(fundingLabel, documents.AttrInt256, newIdx.String())
 
 }
@@ -126,6 +131,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	types := reflect.TypeOf(data)
 	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
+
 		value := values.Field(i).Interface().(string)
 		if value != "" {
 			jsonKey := types.Field(i).Tag.Get("json")
@@ -141,6 +147,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 		}
 
 	}
+
 	return attributes, nil
 }
 
@@ -169,6 +176,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
+
 	return model, nil
 }
 
@@ -183,7 +191,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 		return idx, err
 	}
 
-	for ; i.Cmp(lastIdx) != 1; i.Inc() {
+	for i.Cmp(lastIdx) != 1 {
 		label := generateLabel(i.String(), fundingIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
@@ -202,8 +210,14 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 		if attrFundingID == fundingID {
 			return i.String(), nil
 		}
+		i, err = i.Inc()
+
+		if err != nil {
+			return idx, err
+		}
 
 	}
+
 	return idx, ErrFundingNotFound
 }
 
@@ -239,6 +253,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 			reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
 
 		}
+
 	}
 	return data, nil
 }
@@ -264,4 +279,50 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 		Header: h,
 		Data:   data,
 	}, nil
+
+}
+
+// DeriveFundingListResponse returns a funding list in client format
+func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error) {
+	response := new(clientfundingpb.FundingListResponse)
+
+	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
+	if err != nil {
+		return nil, errors.New("failed to derive response: %v", err)
+	}
+	response.Header = h
+
+	fl, err := documents.AttrKeyFromLabel(fundingLabel)
+	if err != nil {
+		return nil, err
+	}
+
+	if !model.AttributeExists(fl) {
+		return response, nil
+	}
+
+	lastIdx, err := getFundingsLatestIDX(model)
+	if err != nil {
+		return nil, err
+	}
+
+	i, err := documents.NewInt256("0")
+	if err != nil {
+		return nil, err
+	}
+
+	for i.Cmp(lastIdx) != 1 {
+		funding, err := s.deriveFundingData(model, i.String())
+		if err != nil {
+			continue
+		}
+		response.List = append(response.List, funding)
+		i, err = i.Inc()
+
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	return response, nil
 }

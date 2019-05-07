@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/document/{identifier}/extension/funding": {
+    "/document/{identifier}/funding": {
       "post": {
         "description": "Adds a funding to a document",
         "operationId": "Create",
@@ -48,7 +48,32 @@
         ]
       }
     },
-    "/documents/{identifier}/extension/funding/{funding_id}": {
+    "/documents/{identifier}/funding": {
+      "get": {
+        "description": "Get all fundings agreements of a document",
+        "operationId": "GetList",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingListResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/funding/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a document",
         "operationId": "Get",
@@ -203,6 +228,20 @@
         }
       },
       "title": "FundingData is the default funding extension schema"
+    },
+    "fundingFundingListResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fundingFundingData"
+          }
+        }
+      }
     },
     "fundingFundingResponse": {
       "type": "object",
