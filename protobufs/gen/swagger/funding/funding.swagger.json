@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/document/{identifier}/extension/funding": {
+    "/document/{identifier}/funding": {
       "post": {
         "description": "Adds a funding to a document",
         "operationId": "Create",
@@ -48,7 +48,7 @@
         ]
       }
     },
-    "/documents/{identifier}/extension/funding": {
+    "/documents/{identifier}/funding": {
       "get": {
         "description": "Get all fundings agreements of a document",
         "operationId": "GetList",
@@ -73,7 +73,7 @@
         ]
       }
     },
-    "/documents/{identifier}/extension/funding/{funding_id}": {
+    "/documents/{identifier}/funding/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a document",
         "operationId": "Get",
