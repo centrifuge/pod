@@ -198,7 +198,7 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 }
 
 // Create handles a new funding document extension and adds it to an existing document
-func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCreatePayload) (*clientfundingpb.FundingResponse, error) {
+func (h *grpcHandler) Update(ctx context.Context, req *clientfundingpb.FundingUpdatePayload) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("create funding request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
@@ -212,11 +212,8 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 		return nil, documents.ErrDocumentIdentifier
 	}
 
-	// create new funding id
-	req.Data.FundingId = newFundingID()
-
-	// returns model with added funding custom fields
-	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
+	// returns model with updated funding custom fields
+	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req, identifier)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrPayload, err)
 	}

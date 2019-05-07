@@ -15,6 +15,10 @@ import (
 // Service defines specific functions for extension funding
 type Service interface {
 	documents.Service
+
+	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
+	DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
+
 	// DeriveFromPayload derives Funding from clientPayload
 	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
 
@@ -117,16 +121,8 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 
 }
 
-func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
+func fillAttributeList(data Data, idx documents.Attribute) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
-
-	idx, err := incrementFundingAttrIDX(current)
-	if err != nil {
-		return nil, err
-	}
-
-	// add updated idx
-	attributes = append(attributes, idx)
 
 	types := reflect.TypeOf(data)
 	values := reflect.ValueOf(data)
@@ -147,6 +143,25 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 		}
 
 	}
+	return attributes,nil
+}
+
+func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
+	var attributes []documents.Attribute
+
+	idx, err := incrementFundingAttrIDX(current)
+	if err != nil {
+		return nil, err
+	}
+
+	attributes, err = fillAttributeList(data,idx)
+	if err != nil {
+		return nil, err
+	}
+
+	// add updated idx
+	attributes = append(attributes, idx)
+
 
 	return attributes, nil
 }
@@ -162,6 +177,74 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 	}
 
 	attributes, err := createAttributesList(model, fd)
+	if err != nil {
+		return nil, err
+	}
+
+	err = model.AddAttributes(attributes...)
+	if err != nil {
+		return nil, err
+	}
+
+	validator := CreateValidator()
+	err = validator.Validate(nil, model)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	return model, nil
+}
+
+func (s service) deleteFunding(model documents.Model, idx string) (documents.Model, error) {
+	var data Data
+	types := reflect.TypeOf(data)
+	for i := 0; i < types.NumField(); i++ {
+		jsonKey := types.Field(i).Tag.Get("json")
+		key, err := documents.AttrKeyFromLabel(labelFromJSONTag(idx, jsonKey))
+		if err != nil {
+			continue
+		}
+
+		if model.AttributeExists(key) {
+			err := model.DeleteAttribute(key)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	}
+	return model, nil
+}
+
+// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
+func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
+	var fd Data
+	fd.initFundingFromData(req.Data)
+
+	model, err := s.GetCurrentVersion(ctx, identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	idx, err := s.findFunding(model,fd.FundingId)
+	if err != nil {
+		return nil, err
+	}
+
+	// overwriting is not enough because it is not required that
+	// the payload contains all funding attributes
+	model, err = s.deleteFunding(model, idx)
+	if err != nil {
+		return nil, err
+	}
+
+	idxAttr, err := documents.NewAttribute("index",documents.AttrInt256,idx)
+	if err != nil {
+		return nil, err
+	}
+
+	attributes, err := fillAttributeList(fd, idxAttr)
 	if err != nil {
 		return nil, err
 	}
