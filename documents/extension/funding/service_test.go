@@ -228,4 +228,3 @@ func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, 
 	assert.Equal(t, payload.Data.Amount, response.Amount)
 	assert.Equal(t, payload.Data.RepaymentDueDate, response.RepaymentDueDate)
 }
-

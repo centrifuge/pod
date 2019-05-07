@@ -309,11 +309,8 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 			if err != nil {
 				continue
 			}
-
 			response.List = append(response.List, funding)
 		}
-
 	}
-
 	return response, nil
 }

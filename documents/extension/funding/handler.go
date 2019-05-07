@@ -67,7 +67,6 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 
 	resp.Header.JobId = jobID.String()
 	return resp, nil
-
 }
 
 // Get returns a funding agreement from an existing document
@@ -97,9 +96,7 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 		apiLog.Error(err)
 		return nil, ErrPayload
 	}
-
 	return resp, nil
-
 }
 
 // GetList returns all funding agreements of a existing document
@@ -130,5 +127,4 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 	}
 
 	return resp, nil
-
 }
