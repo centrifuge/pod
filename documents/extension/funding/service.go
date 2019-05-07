@@ -33,8 +33,8 @@ type service struct {
 }
 
 const (
-	fundingLabel    = "centrifuge_funding"
-	fundingFieldKey = "centrifuge_funding[{IDX}]."
+	fundingLabel    = "funding_agreement"
+	fundingFieldKey = "funding_agreement[{IDX}]."
 	fundingIDx      = "{IDX}"
 	fundingIDLabel  = "funding_id"
 )
@@ -108,7 +108,7 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 	}
 
 	// increment idx
-	newIdx := idx.Inc()
+	newIdx, err := idx.Inc()
 
 	if err != nil {
 		return attr, err
@@ -252,7 +252,6 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 
 	}
 	return data, nil
-
 }
 
 // DeriveFundingResponse returns create response from the added funding

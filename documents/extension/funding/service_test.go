@@ -77,8 +77,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	assert.Equal(t, "centrifuge_funding[1].days", generateLabel("1", "days"))
-	assert.Equal(t, "centrifuge_funding[0].", generateLabel("0", ""))
+	assert.Equal(t, "funding_agreement[1].days", generateLabel("1", "days"))
+	assert.Equal(t, "funding_agreement[0].", generateLabel("0", ""))
 
 }
 
@@ -95,13 +95,13 @@ func TestCreateAttributesList(t *testing.T) {
 	assert.Equal(t, 11, len(attributes))
 
 	for _, attribute := range attributes {
-		if attribute.KeyLabel == "centrifuge_funding[0].currency" {
+		if attribute.KeyLabel == "funding_agreement[0].currency" {
 			assert.Equal(t, "eur", attribute.Value.Str)
 			break
 		}
 
 		// apr was not set
-		assert.NotEqual(t, "centrifuge_funding[0].apr", attribute.KeyLabel)
+		assert.NotEqual(t, "funding_agreement[0].apr", attribute.KeyLabel)
 	}
 }
 
@@ -119,7 +119,7 @@ func TestDeriveFromPayload(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
-		label := fmt.Sprintf("centrifuge_funding[%d].currency", i)
+		label := fmt.Sprintf("funding_agreement[%d].currency", i)
 		key, err := documents.AttrKeyFromLabel(label)
 		assert.NoError(t, err)
 
@@ -228,3 +228,4 @@ func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, 
 	assert.Equal(t, payload.Data.Amount, response.Amount)
 	assert.Equal(t, payload.Data.RepaymentDueDate, response.RepaymentDueDate)
 }
+

@@ -71,6 +71,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 }
 
 // Get returns a funding agreement from an existing document
+// Create handles a new funding document extension and adds it to an existing document
 func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
