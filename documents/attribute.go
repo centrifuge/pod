@@ -206,7 +206,7 @@ func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr A
 
 // NewSignedAttribute returns a new signed attribute
 // takes keyLabel, signer identity, signer account, model and value
-// signature payload: sign(identity + docID + docVersion + value + time)
+// signature payload: sign(identity + docID + docVersion + value)
 func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, model Model, value []byte) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {

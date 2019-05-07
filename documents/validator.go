@@ -461,9 +461,9 @@ func transitionValidator(collaborator identity.DID) Validator {
 // document root validator
 // signatures validator
 // should be called before pre anchoring
-func PreAnchorValidator(idService identity.Service) ValidatorGroup {
+func PreAnchorValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
-		SignatureValidator(idService),
+		SignatureValidator(idService, repo),
 		documentRootValidator(),
 	}
 }
@@ -474,7 +474,7 @@ func PreAnchorValidator(idService identity.Service) ValidatorGroup {
 // should be called after anchoring the document/when received anchored document
 func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
-		PreAnchorValidator(idService),
+		PreAnchorValidator(idService, repo),
 		anchoredValidator(repo),
 		LatestVersionValidator(repo),
 	}
@@ -509,7 +509,7 @@ func RequestDocumentSignatureValidator(
 		LatestVersionValidator(repo),
 		anchorRepoAddressValidator(anchorRepoAddress),
 		transitionValidator(collaborator),
-		SignatureValidator(idService),
+		SignatureValidator(idService, repo),
 	}
 }
 
@@ -518,10 +518,11 @@ func RequestDocumentSignatureValidator(
 // signingRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
-func SignatureValidator(idService identity.Service) ValidatorGroup {
+func SignatureValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
 		signaturesValidator(idService),
+		attributeValidator(repo, idService),
 	}
 }
