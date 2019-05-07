@@ -233,7 +233,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 	}
 
 	// overwriting is not enough because it is not required that
-	// the payload contains all funding attributes
+	// the funding payload contains all funding attributes
 	model, err = s.deleteFunding(model, idx)
 	if err != nil {
 		return nil, err
