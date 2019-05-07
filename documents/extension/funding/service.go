@@ -143,7 +143,7 @@ func fillAttributeList(data Data, idx documents.Attribute) ([]documents.Attribut
 		}
 
 	}
-	return attributes,nil
+	return attributes, nil
 }
 
 func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
@@ -154,14 +154,13 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 		return nil, err
 	}
 
-	attributes, err = fillAttributeList(data,idx)
+	attributes, err = fillAttributeList(data, idx)
 	if err != nil {
 		return nil, err
 	}
 
 	// add updated idx
 	attributes = append(attributes, idx)
-
 
 	return attributes, nil
 }
@@ -228,7 +227,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 	}
 
 	fd.FundingId = req.FundingId
-	idx, err := s.findFunding(model,fd.FundingId)
+	idx, err := s.findFunding(model, fd.FundingId)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +239,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 		return nil, err
 	}
 
-	idxAttr, err := documents.NewAttribute("index",documents.AttrInt256,idx)
+	idxAttr, err := documents.NewAttribute("index", documents.AttrInt256, idx)
 	if err != nil {
 		return nil, err
 	}

@@ -222,9 +222,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	p3 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
-	assert.Contains(t,err,ErrFundingNotFound)
+	assert.Contains(t, err, ErrFundingNotFound)
 }
-
 
 func createTestClientData() *clientfundingpb.FundingData {
 	fundingId := newFundingID()
