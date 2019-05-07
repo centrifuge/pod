@@ -191,7 +191,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 		return idx, err
 	}
 
-	for ; i.Cmp(lastIdx) != 1; i.Inc() {
+	for i.Cmp(lastIdx) != 1 {
 		label := generateLabel(i.String(), fundingIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
@@ -209,6 +209,11 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 		}
 		if attrFundingID == fundingID {
 			return i.String(), nil
+		}
+		i, err = i.Inc()
+
+		if err != nil {
+			return idx, err
 		}
 
 	}
@@ -306,12 +311,18 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 		return nil, err
 	}
 
-	for ; i.Cmp(lastIdx) != 1; i.Inc() {
+	for i.Cmp(lastIdx) != 1 {
 		funding, err := s.deriveFundingData(model, i.String())
 		if err != nil {
 			continue
 		}
 		response.List = append(response.List, funding)
+		i, err = i.Inc()
+
+		if err != nil {
+			return nil, err
+		}
+
 	}
 	return response, nil
 }

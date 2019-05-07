@@ -15,7 +15,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service FundingService {
   rpc Create(FundingCreatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/document/{identifier}/extension/funding"
+      post: "/document/{identifier}/funding"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -24,7 +24,7 @@ service FundingService {
   }
   rpc Get(GetRequest) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/extension/funding/{funding_id}"
+      get: "/documents/{identifier}/funding/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a latest document"
@@ -32,7 +32,7 @@ service FundingService {
   }
   rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/{version}/extension/funding/{funding_id}"
+      get: "/documents/{identifier}/{version}/funding/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a document version"
@@ -40,7 +40,7 @@ service FundingService {
   }
   rpc GetList(GetListRequest) returns (FundingListResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/extension/funding"
+      get: "/documents/{identifier}/funding"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get all fundings agreements of a latest document"
@@ -48,7 +48,7 @@ service FundingService {
   }
   rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/{version}/extension/funding"
+      get: "/documents/{identifier}/{version}/funding"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get all fundings agreements of a document version"
