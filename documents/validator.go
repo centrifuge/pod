@@ -278,8 +278,11 @@ func signaturesValidator(idService identity.ServiceDID) Validator {
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), terr))
 				continue
 			}
-
-			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, sr, tm); erri != nil {
+			var transitionValidatedFlag int8
+			if sig.TransitionValidated {
+				transitionValidatedFlag = 1
+			}
+			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, append(sr, []byte{byte(transitionValidatedFlag)}...), tm); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))

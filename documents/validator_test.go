@@ -420,6 +420,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// signature length mismatch
 	sr := utils.RandomSlice(32)
+	msg := append(sr, []byte{0}...)
 	model = new(mockModel)
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
@@ -447,7 +448,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	srv = new(testingcommons.MockIdentityService)
 	sid, err := identity.NewDIDFromBytes(s.SignerId)
 	assert.NoError(t, err)
-	srv.On("ValidateSignature", sid, s.PublicKey, s.Signature, sr, tm).Return(errors.New("error")).Once()
+	srv.On("ValidateSignature", sid, s.PublicKey, s.Signature, msg, tm).Return(errors.New("error")).Once()
 	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -464,7 +465,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model.On("Timestamp").Return(tm, nil)
 	model.sigs = append(model.sigs, s)
 	srv = new(testingcommons.MockIdentityService)
-	srv.On("ValidateSignature", sid, s.PublicKey, s.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", sid, s.PublicKey, s.Signature, msg, tm).Return(nil).Once()
 	ssv = signaturesValidator(srv)
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
