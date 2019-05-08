@@ -108,7 +108,7 @@ func (i service) bindContract(did id.DID) (contract, error) {
 }
 
 // NewService creates a instance of the identity service
-func NewService(client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, conf id.Config) id.ServiceDID {
+func NewService(client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, conf id.Config) id.Service {
 	return service{client: client, jobManager: jobManager, queue: queue, config: conf}
 }
 
@@ -118,7 +118,7 @@ func logTxHash(tx *types.Transaction) {
 }
 
 // AddKey adds a key to identity contract
-func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
+func (i service) AddKey(ctx context.Context, key id.Key) error {
 	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
@@ -278,7 +278,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
-func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, error) {
+func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.Key, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, er
 		return nil, err
 	}
 
-	var keyResp []id.KeyDID
+	var keyResp []id.Key
 	for i, k := range keyStruct.KeysByPurpose {
 		keyResp = append(keyResp, id.NewKey(k, purpose, keyStruct.KeyTypes[i], keyStruct.KeysRevokedAt[i]))
 	}
@@ -401,8 +401,8 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
-func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.KeyDID, error) {
-	keys := map[string]id.KeyDID{}
+func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.Key, error) {
+	keys := map[string]id.Key{}
 	for k, v := range accKeys {
 		pk32, err := utils.SliceToByte32(v.PublicKey)
 		if err != nil {

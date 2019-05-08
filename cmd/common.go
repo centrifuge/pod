@@ -69,7 +69,7 @@ func CreateConfig(
 	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("bootstrapped identity service not initialized")
 	}

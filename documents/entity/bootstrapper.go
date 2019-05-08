@@ -77,7 +77,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialized")
 	}
