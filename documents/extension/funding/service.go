@@ -28,7 +28,7 @@ type Service interface {
 // service implements Service and handles all funding related persistence and validations
 type service struct {
 	documents.Service
-	tokenRegFinder func() documents.TokenRegistry
+	tokenRegistry documents.TokenRegistry
 }
 
 const (
@@ -41,11 +41,11 @@ const (
 // DefaultService returns the default implementation of the service.
 func DefaultService(
 	srv documents.Service,
-	tokenRegFinder func() documents.TokenRegistry,
+	tokenRegistry documents.TokenRegistry,
 ) Service {
 	return service{
-		Service:        srv,
-		tokenRegFinder: tokenRegFinder,
+		Service:       srv,
+		tokenRegistry: tokenRegistry,
 	}
 }
 
@@ -114,7 +114,6 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 	}
 
 	return documents.NewAttribute(fundingLabel, documents.AttrInt256, newIdx.String())
-
 }
 
 func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
@@ -265,7 +264,7 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 		return nil, err
 	}
 
-	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
+	h, err := documents.DeriveResponseHeader(s.tokenRegistry, model)
 	if err != nil {
 		return nil, errors.New("failed to derive response: %v", err)
 	}
@@ -286,7 +285,7 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error) {
 	response := new(clientfundingpb.FundingListResponse)
 
-	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), model)
+	h, err := documents.DeriveResponseHeader(s.tokenRegistry, model)
 	if err != nil {
 		return nil, errors.New("failed to derive response: %v", err)
 	}

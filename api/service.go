@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/extension/funding"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	fundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
@@ -135,5 +137,16 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 	}
 
 	entitypb.RegisterEntityServiceServer(grpcServer, entityHandler)
-	return entitypb.RegisterEntityServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	err = entitypb.RegisterEntityServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	if err != nil {
+		return err
+	}
+
+	fundingHandler, ok := nodeObjReg[funding.BootstrappedFundingAPIHandler].(fundingpb.FundingServiceServer)
+	if !ok {
+		return errors.New("funding API handler not registered")
+	}
+
+	fundingpb.RegisterFundingServiceServer(grpcServer, fundingHandler)
+	return fundingpb.RegisterFundingServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }

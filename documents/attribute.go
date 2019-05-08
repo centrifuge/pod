@@ -107,7 +107,7 @@ type Signed struct {
 
 // String returns the hex value of the signature.
 func (s Signed) String() string {
-	return hexutil.Encode(s.Signature)
+	return s.Identity.String()
 }
 
 // AttrVal represents a strongly typed value of an attribute
