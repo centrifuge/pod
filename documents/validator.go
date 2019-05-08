@@ -423,7 +423,8 @@ func attributeValidator(repo anchors.AnchorRepository, idSrv identity.Service) V
 
 			_, ats, erro := repo.GetAnchorData(aid)
 			if erro != nil {
-				// maybe not anchored yet
+				// the attribute was added in this update itself.
+				// pick the update time from the model itself
 				ats = ts
 			}
 
