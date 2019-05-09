@@ -3,7 +3,9 @@ package funding
 import (
 	"context"
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"reflect"
 	"strings"
 
@@ -410,9 +412,43 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 	return response, nil
 }
 
+
+func (s service) createSignAttrs(model documents.Model, idxFunding string, selfDID identity.DID, account config.Account) ([]documents.Attribute, error) {
+	var attributes []documents.Attribute
+	data, err := s.deriveFundingData(model,idxFunding)
+	if err != nil {
+		return nil, err
+	}
+
+	signMsg, err := json.Marshal(data)
+	if err != nil {
+		return nil, ErrJSON
+	}
+
+	// example sLabel = "funding_agreement[2].signatures"
+	sLabel := generateLabel(fundingFieldKey,idxFunding,fundingSignatures)
+	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
+	if err != nil {
+		return nil, err
+	}
+	attributes = append(attributes,attrIdx)
+
+	// example: sLabel = "funding_agreement[2].signatures[4]"
+	sFieldLabel := generateLabel(generateLabel(fundingFieldKey,idxFunding,"") + fundingSignaturesFieldKey,attrIdx.Value.Int256.String(),"")
+
+	attrSign, err := documents.NewSignedAttribute(sFieldLabel,selfDID,account,model,signMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	attributes = append(attributes,attrSign)
+
+	return attributes, nil
+
+}
+
 // Sign adds a signature to an existing document
 func (s service) Sign(ctx context.Context,fundingID string, identifier []byte) (documents.Model, error) {
-	var attributes []documents.Attribute
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -433,35 +469,11 @@ func (s service) Sign(ctx context.Context,fundingID string, identifier []byte) (
 		return nil, ErrFundingNotFound
 	}
 
-	data, err := s.deriveFundingData(model,idxFunding)
+
+	attributes, err := s.createSignAttrs(model,idxFunding,selfDID,account)
 	if err != nil {
 		return nil, err
 	}
-
-	signMsg, err := json.Marshal(data)
-	if err != nil {
-		return nil, ErrJSON
-	}
-
-	// example sLabel = "funding_agreement[2].signatures"
-	sLabel := generateLabel(fundingFieldKey,idxFunding,fundingSignatures)
-	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
-	if err != nil {
-		return nil, err
-	}
-
-	attributes = append(attributes,attrIdx)
-
-	// example: sLabel = "funding_agreement[2].signatures[4]"
-	sFieldLabel := generateLabel(generateLabel(fundingFieldKey,idxFunding,"") + fundingSignaturesFieldKey,attrIdx.Value.Int256.String(),"")
-
-
-	attrSignature, err := documents.NewSignedAttribute(sFieldLabel,selfDID,account,model,signMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	attributes = append(attributes,attrSignature)
 
 	err = model.AddAttributes(attributes...)
 	if err != nil {
