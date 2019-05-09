@@ -196,7 +196,7 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 	return resp, nil
 }
 
-// Create handles a new funding document extension and adds it to an existing document
+// Update handles an update over an existing funding document extension
 func (h *grpcHandler) Update(ctx context.Context, req *clientfundingpb.FundingUpdatePayload) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("create funding request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)

@@ -190,9 +190,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, func() documents.TokenRegistry {
-		return nil
-	})
+	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
 	var err error
