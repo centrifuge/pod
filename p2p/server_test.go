@@ -32,7 +32,7 @@ import (
 
 var (
 	cfg       config.Service
-	idService identity.ServiceDID
+	idService identity.Service
 )
 
 func TestMain(m *testing.M) {

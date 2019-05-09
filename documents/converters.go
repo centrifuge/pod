@@ -473,6 +473,17 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
 		case AttrTimestamp:
 			pattr.Value = &coredocumentpb.Attribute_TimeVal{TimeVal: attr.Value.Timestamp}
+		case AttrSigned:
+			signed := attr.Value.Signed
+			pattr.Value = &coredocumentpb.Attribute_SignedVal{
+				SignedVal: &coredocumentpb.Signed{
+					DocVersion: signed.DocumentVersion,
+					Value:      signed.Value,
+					Signature:  signed.Signature,
+					PublicKey:  signed.PublicKey,
+					Identity:   signed.Identity[:],
+				},
+			}
 		}
 
 		pattrs = append(pattrs, pattr)
@@ -536,6 +547,20 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 		attrVal.Bytes = attribute.GetByteVal()
 	case AttrTimestamp:
 		attrVal.Timestamp = attribute.GetTimeVal()
+	case AttrSigned:
+		val := attribute.GetSignedVal()
+		did, err := identity.NewDIDFromBytes(val.Identity)
+		if err != nil {
+			return attrVal, err
+		}
+
+		attrVal.Signed = Signed{
+			Identity:        did,
+			DocumentVersion: val.DocVersion,
+			PublicKey:       val.PublicKey,
+			Value:           val.Value,
+			Signature:       val.Signature,
+		}
 	}
 
 	return attrVal, err

@@ -38,9 +38,7 @@ var ctx = map[string]interface{}{}
 var cfg config.Configuration
 
 var (
-	did       = testingidentity.GenerateRandomDID()
-	didBytes  = did[:]
-	accountID = did[:]
+	did = testingidentity.GenerateRandomDID()
 )
 
 func TestMain(m *testing.M) {
@@ -84,7 +82,8 @@ func TestGenerateKey(t *testing.T) {
 func TestCreateAttributesList(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
-	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
 
 	data := createTestData()
 
@@ -107,7 +106,8 @@ func TestCreateAttributesList(t *testing.T) {
 func TestDeriveFromPayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
-	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -133,13 +133,12 @@ func TestDeriveFromPayload(t *testing.T) {
 func TestDeriveFundingResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
-	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, func() documents.TokenRegistry {
-		return nil
-	})
+	srv := DefaultService(docSrv, nil)
 
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
@@ -147,6 +146,7 @@ func TestDeriveFundingResponse(t *testing.T) {
 		assert.NoError(t, err)
 
 		response, err := srv.DeriveFundingResponse(model, payload.Data.FundingId)
+		assert.NoError(t, err)
 		checkResponse(t, payload, response.Data)
 	}
 
@@ -155,16 +155,14 @@ func TestDeriveFundingResponse(t *testing.T) {
 func TestDeriveFundingListResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
-	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, func() documents.TokenRegistry {
-		return nil
-	})
+	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
-	var err error
 	var payloads []*clientfundingpb.FundingCreatePayload
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
@@ -175,6 +173,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 	}
 
 	response, err := srv.DeriveFundingListResponse(model)
+	assert.NoError(t, err)
 	assert.Equal(t, 10, len(response.List))
 
 	for i := 0; i < 10; i++ {

@@ -516,3 +516,72 @@ func TestP2PAttributes(t *testing.T) {
 	_, err = fromProtocolAttributes(pattrs)
 	assert.Error(t, err)
 }
+
+func TestAttributes_signed(t *testing.T) {
+	cattrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrs, err := FromClientAttributes(cattrs)
+	assert.NoError(t, err)
+
+	label := "signed_label"
+	did := testingidentity.GenerateRandomDID()
+	id := utils.RandomSlice(32)
+	version := utils.RandomSlice(32)
+	value := utils.RandomSlice(50)
+
+	var epayload []byte
+	epayload = append(epayload, did[:]...)
+	epayload = append(epayload, id...)
+	epayload = append(epayload, version...)
+	epayload = append(epayload, value...)
+
+	signature := utils.RandomSlice(32)
+	acc := new(mockAccount)
+	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
+	model := new(mockModel)
+	model.On("ID").Return(id).Once()
+	model.On("CurrentVersion").Return(version).Twice()
+	attr, err := NewSignedAttribute(label, did, acc, model, value)
+	assert.NoError(t, err)
+	acc.AssertExpectations(t)
+	model.AssertExpectations(t)
+	attrs[attr.Key] = attr
+
+	pattrs, err := toProtocolAttributes(attrs)
+	assert.NoError(t, err)
+
+	gattrs, err := fromProtocolAttributes(pattrs)
+	assert.NoError(t, err)
+	assert.Equal(t, attrs, gattrs)
+
+	// wrong id
+	signed := pattrs[len(pattrs)-1].GetSignedVal()
+	signed.Identity = nil
+	_, err = fromProtocolAttributes(pattrs)
+	assert.Error(t, err)
+}

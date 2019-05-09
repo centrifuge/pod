@@ -71,7 +71,7 @@ func TestCreateConfig(t *testing.T) {
 
 	// Keys exists
 	// type KeyPurposeP2P
-	idSrv := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idSrv := ctx[identity.BootstrappedDIDService].(identity.Service)
 	pk, _, err := ed25519.GetSigningKeyPair(cfg.GetP2PKeyPair())
 	assert.Nil(t, err)
 	pk32, err := utils.SliceToByte32(pk)

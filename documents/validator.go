@@ -223,7 +223,7 @@ func documentTimestampForSigningValidator() Validator {
 // assumes signing root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
-func signaturesValidator(idService identity.ServiceDID) Validator {
+func signaturesValidator(idService identity.Service) Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		if model == nil {
 			return ErrModelNil
@@ -400,6 +400,45 @@ func anchorRepoAddressValidator(anchoredRepoAddr common.Address) Validator {
 	})
 }
 
+// attributeValidator validates the signed attributes.
+func attributeValidator(repo anchors.AnchorRepository, idSrv identity.Service) Validator {
+	return ValidatorFunc(func(_, model Model) (err error) {
+		ts, err := model.Timestamp()
+		if err != nil {
+			return err
+		}
+
+		attrs := model.GetAttributes()
+		for _, attr := range attrs {
+			if attr.Value.Type != AttrSigned {
+				continue
+			}
+
+			signed := attr.Value.Signed
+			var aid anchors.AnchorID
+			aid, err = anchors.ToAnchorID(signed.DocumentVersion)
+			if err != nil {
+				return err
+			}
+
+			_, ats, erro := repo.GetAnchorData(aid)
+			if erro != nil {
+				// the attribute was added in this update itself.
+				// pick the update time from the model itself
+				ats = ts
+			}
+
+			payload := attributeSignaturePayload(signed.Identity[:], model.ID(), signed.DocumentVersion, signed.Value)
+			erri := idSrv.ValidateSignature(signed.Identity, signed.PublicKey, signed.Signature, payload, ats)
+			if erri != nil {
+				err = errors.AppendError(err, errors.New("failed to validate signed attribute %s: %v", attr.KeyLabel, erri))
+			}
+		}
+
+		return err
+	})
+}
+
 // transitionValidator checks that the document changes are within the transition_rule capability of the
 // collaborator making the changes
 func transitionValidator(collaborator identity.DID) Validator {
@@ -423,9 +462,9 @@ func transitionValidator(collaborator identity.DID) Validator {
 // document root validator
 // signatures validator
 // should be called before pre anchoring
-func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
+func PreAnchorValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
-		SignatureValidator(idService),
+		SignatureValidator(idService, repo),
 		documentRootValidator(),
 	}
 }
@@ -434,9 +473,9 @@ func PreAnchorValidator(idService identity.ServiceDID) ValidatorGroup {
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRepository) ValidatorGroup {
+func PostAnchoredValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
-		PreAnchorValidator(idService),
+		PreAnchorValidator(idService, repo),
 		anchoredValidator(repo),
 		LatestVersionValidator(repo),
 	}
@@ -446,7 +485,7 @@ func PostAnchoredValidator(idService identity.ServiceDID, repo anchors.AnchorRep
 // transitionValidator
 // PostAnchoredValidator
 func ReceivedAnchoredDocumentValidator(
-	idService identity.ServiceDID,
+	idService identity.Service,
 	repo anchors.AnchorRepository,
 	collaborator identity.DID) ValidatorGroup {
 	return ValidatorGroup{
@@ -461,7 +500,7 @@ func ReceivedAnchoredDocumentValidator(
 // it should be called when a document is received over the p2p layer before signing
 func RequestDocumentSignatureValidator(
 	repo anchors.AnchorRepository,
-	idService identity.ServiceDID,
+	idService identity.Service,
 	collaborator identity.DID,
 	anchorRepoAddress common.Address) ValidatorGroup {
 	return ValidatorGroup{
@@ -471,7 +510,7 @@ func RequestDocumentSignatureValidator(
 		LatestVersionValidator(repo),
 		anchorRepoAddressValidator(anchorRepoAddress),
 		transitionValidator(collaborator),
-		SignatureValidator(idService),
+		SignatureValidator(idService, repo),
 	}
 }
 
@@ -480,10 +519,11 @@ func RequestDocumentSignatureValidator(
 // signingRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
-func SignatureValidator(idService identity.ServiceDID) ValidatorGroup {
+func SignatureValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),
 		signaturesValidator(idService),
+		attributeValidator(repo, idService),
 	}
 }

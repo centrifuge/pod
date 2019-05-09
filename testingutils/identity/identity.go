@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.ServiceDID, idFactory identity.Factory) (identity.DID, error) {
+func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.Service, idFactory identity.Factory) (identity.DID, error) {
 	ctxh, _ := contextutil.New(context.Background(), acc)
 	idKeys, err := acc.GetKeys()
 	if err != nil {
