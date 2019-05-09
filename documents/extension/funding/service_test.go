@@ -203,7 +203,6 @@ func (m *mockAccount) GetIdentityID() ([]byte, error) {
 	return sig, args.Error(1)
 }
 
-
 func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, documents.Model, string) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
@@ -234,7 +233,7 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, document
 
 func TestService_Sign(t *testing.T) {
 	fundingAmount := 5
-	srv, model, lastFundingId := setupFundingsForTesting(t,fundingAmount)
+	srv, model, lastFundingId := setupFundingsForTesting(t, fundingAmount)
 
 	// add signature
 	acc := &mockAccount{}
