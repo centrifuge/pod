@@ -74,8 +74,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	assert.Equal(t, "funding_agreement[1].days", generateLabel("1", "days"))
-	assert.Equal(t, "funding_agreement[0].", generateLabel("0", ""))
+	assert.Equal(t, "funding_agreement[1].days", generateLabel(fundingFieldKey,"1", "days"))
+	assert.Equal(t, "funding_agreement[0].", generateLabel(fundingFieldKey,"0", ""))
 
 }
 

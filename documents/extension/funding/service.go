@@ -3,6 +3,7 @@ package funding
 import (
 	"context"
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"reflect"
 	"strings"
 
@@ -42,8 +43,10 @@ type service struct {
 const (
 	fundingLabel    = "funding_agreement"
 	fundingFieldKey = "funding_agreement[{IDX}]."
-	fundingIDx      = "{IDX}"
+	idxKey      = "{IDX}"
 	fundingIDLabel  = "funding_id"
+	fundingSignatures = "signatures"
+	fundingSignaturesFieldKey = "signatures[{IDX}]"
 )
 
 // DefaultService returns the default implementation of the service.
@@ -61,15 +64,15 @@ func newFundingID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
-func generateLabel(idx, fieldName string) string {
-	return strings.Replace(fundingFieldKey, fundingIDx, idx, -1) + fieldName
+func generateLabel(field, idx, fieldName string) string {
+	return strings.Replace(field, idxKey, idx, -1) + fieldName
 }
 
 func labelFromJSONTag(idx, jsonTag string) string {
 	jsonKeyIdx := 0
 	// example `json:"days,omitempty"`
 	jsonParts := strings.Split(jsonTag, ",")
-	return generateLabel(idx, jsonParts[jsonKeyIdx])
+	return generateLabel(fundingFieldKey,idx, jsonParts[jsonKeyIdx])
 }
 
 func getArrayLatestIDX(model documents.Model,arrayLabel string) (idx *documents.Int256, err error) {
@@ -273,7 +276,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		label := generateLabel(i.String(), fundingIDLabel)
+		label := generateLabel(fundingFieldKey,i.String(), fundingIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
@@ -409,6 +412,17 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 
 // Sign adds a signature to an existing document
 func (s service) Sign(ctx context.Context,fundingID string, identifier []byte) (documents.Model, error) {
+	var attributes []documents.Attribute
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	account, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
 	model, err := s.Service.GetCurrentVersion(ctx, identifier)
 	if err != nil {
 		return nil, documents.ErrDocumentNotFound
@@ -424,17 +438,37 @@ func (s service) Sign(ctx context.Context,fundingID string, identifier []byte) (
 		return nil, err
 	}
 
-	_, err = json.Marshal(data)
+	signMsg, err := json.Marshal(data)
 	if err != nil {
 		return nil, ErrJSON
 	}
 
+	// example sLabel = "funding_agreement[2].signatures"
+	sLabel := generateLabel(fundingFieldKey,idxFunding,fundingSignatures)
+	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
+	if err != nil {
+		return nil, err
+	}
+
+	attributes = append(attributes,attrIdx)
+
+	// example: sLabel = "funding_agreement[2].signatures[4]"
+	sFieldLabel := generateLabel(generateLabel(fundingFieldKey,idxFunding,"") + fundingSignaturesFieldKey,attrIdx.Value.Int256.String(),"")
 
 
+	attrSignature, err := documents.NewSignedAttribute(sFieldLabel,selfDID,account,model,signMsg)
+	if err != nil {
+		return nil, err
+	}
 
+	attributes = append(attributes,attrSignature)
 
+	err = model.AddAttributes(attributes...)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return model, nil
 }
 
 
