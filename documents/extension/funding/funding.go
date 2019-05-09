@@ -45,4 +45,3 @@ func (f *Data) getClientData() *clientfundingpb.FundingData {
 	}
 	return clientData
 }
-

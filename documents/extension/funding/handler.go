@@ -112,8 +112,6 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfundingpb.Request) (*
 		return nil, documents.ErrDocumentIdentifier
 	}
 
-
-
 	// returns model with a signature
 	model, err := h.service.Sign(ctxHeader, req.FundingId, identifier)
 	if err != nil {
