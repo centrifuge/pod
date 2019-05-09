@@ -15,7 +15,40 @@
     "application/json"
   ],
   "paths": {
-    "/document/{identifier}/extension/funding/{funding_id}": {
+    "/document/{identifier}/funding": {
+      "post": {
+        "description": "Adds a funding to a document",
+        "operationId": "Create",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fundingFundingCreatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/document/{identifier}/funding/{funding_id}": {
       "put": {
         "description": "Updates a funding agreement in a document",
         "operationId": "Update",
@@ -54,10 +87,10 @@
         ]
       }
     },
-    "/document/{identifier}/funding": {
+    "/document/{identifier}/funding/{funding_id}/sign": {
       "post": {
-        "description": "Adds a funding to a document",
-        "operationId": "Create",
+        "description": "Updates a funding agreement in a document",
+        "operationId": "Sign",
         "responses": {
           "200": {
             "description": "",
@@ -74,11 +107,17 @@
             "type": "string"
           },
           {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/fundingFundingCreatePayload"
+              "$ref": "#/definitions/fundingRequest"
             }
           }
         ],
@@ -89,7 +128,7 @@
     },
     "/documents/{identifier}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a latest document",
+        "description": "Get all funding agreements of a latest document",
         "operationId": "GetList",
         "responses": {
           "200": {
@@ -145,7 +184,7 @@
     },
     "/documents/{identifier}/{version}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a document version",
+        "description": "Get all funding agreements of a document version",
         "operationId": "GetListVersion",
         "responses": {
           "200": {
@@ -372,6 +411,17 @@
         },
         "data": {
           "$ref": "#/definitions/fundingFundingData"
+        }
+      }
+    },
+    "fundingRequest": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "funding_id": {
+          "type": "string"
         }
       }
     }
