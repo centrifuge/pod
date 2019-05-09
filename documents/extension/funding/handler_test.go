@@ -118,7 +118,7 @@ func TestGRPCHandler_Get(t *testing.T) {
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.GetRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }

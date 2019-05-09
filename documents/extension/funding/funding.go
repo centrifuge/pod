@@ -31,3 +31,18 @@ func (f *Data) initFundingFromData(data *clientfundingpb.FundingData) {
 
 	}
 }
+
+func (f *Data) getClientData() *clientfundingpb.FundingData {
+	clientData := new(clientfundingpb.FundingData)
+
+	types := reflect.TypeOf(*f)
+	values := reflect.ValueOf(*f)
+	for i := 0; i < types.NumField(); i++ {
+		n := types.Field(i).Name
+		v := values.FieldByName(n).Interface().(string)
+		reflect.ValueOf(clientData).Elem().FieldByName(n).SetString(v)
+
+	}
+	return clientData
+}
+

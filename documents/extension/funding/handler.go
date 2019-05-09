@@ -69,7 +69,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 }
 
 // Get returns a funding agreement from an existing document
-func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) (*clientfundingpb.FundingResponse, error) {
+func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.Request) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
@@ -94,6 +94,45 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
 	}
+	return resp, nil
+}
+
+// Sign adds a funding signature to a document
+func (h *grpcHandler) Sign(ctx context.Context, req *clientfundingpb.Request) (*clientfundingpb.FundingResponse, error) {
+	apiLog.Debugf("create funding request %v", req)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+
+
+	// returns model with a signature
+	model, err := h.service.Sign(ctxHeader, req.FundingId, identifier)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrPayload, err)
+	}
+
+	model, jobID, _, err := h.service.Update(ctx, model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	resp, err := h.service.DeriveFundingResponse(model, req.FundingId)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, errors.NewTypedError(ErrFundingAttr, err)
+	}
+
+	resp.Header.JobId = jobID.String()
 	return resp, nil
 }
 
