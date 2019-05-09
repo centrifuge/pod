@@ -22,7 +22,7 @@ type Service interface {
 	documents.Service
 
 	// Sign adds a signature to an existing document
-	Sign(ctx context.Context, fundingId string, identifier []byte) (documents.Model, error)
+	Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
 	DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
@@ -425,7 +425,7 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 		return nil, ErrJSON
 	}
 
-	// example sLabel = "funding_agreement[2].signatures"
+	// example "funding_agreement[2].signatures"
 	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
 	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
 	if err != nil {
@@ -433,7 +433,7 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 	}
 	attributes = append(attributes, attrIdx)
 
-	// example: sLabel = "funding_agreement[2].signatures[4]"
+	// example: "funding_agreement[2].signatures[4]"
 	sFieldLabel := generateLabel(generateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, attrIdx.Value.Int256.String(), "")
 
 	attrSign, err := documents.NewSignedAttribute(sFieldLabel, selfDID, account, model, signMsg)
