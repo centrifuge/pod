@@ -89,7 +89,7 @@
     },
     "/documents/{identifier}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a latest document",
+        "description": "Get all funding agreements of a latest document",
         "operationId": "GetList",
         "responses": {
           "200": {
@@ -145,7 +145,7 @@
     },
     "/documents/{identifier}/{version}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a document version",
+        "description": "Get all funding agreements of a document version",
         "operationId": "GetListVersion",
         "responses": {
           "200": {
