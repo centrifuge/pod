@@ -22,6 +22,15 @@ service FundingService {
       description: "Adds a funding to a document"
     };
   }
+  rpc Update(FundingUpdatePayload) returns (FundingResponse) {
+    option (google.api.http) = {
+      put: "/document/{identifier}/extension/funding/{funding_id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Updates a funding agreement in a document"
+    };
+  }
   rpc Get(GetRequest) returns (FundingResponse) {
     option (google.api.http) = {
       get: "/documents/{identifier}/funding/{funding_id}"
@@ -43,7 +52,7 @@ service FundingService {
       get: "/documents/{identifier}/funding"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get all fundings agreements of a latest document"
+      description: "Get all funding agreements of a latest document"
     };
   }
   rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
@@ -51,7 +60,7 @@ service FundingService {
       get: "/documents/{identifier}/{version}/funding"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get all fundings agreements of a document version"
+      description: "Get all funding agreements of a document version"
     };
   }
 }
@@ -59,6 +68,12 @@ service FundingService {
 message FundingCreatePayload {
   string identifier = 1;
   FundingData data = 2;
+}
+
+message FundingUpdatePayload {
+  string identifier = 1;
+  string funding_id = 2;
+  FundingData data = 3;
 }
 
 message FundingResponse {

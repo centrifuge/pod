@@ -15,6 +15,45 @@
     "application/json"
   ],
   "paths": {
+    "/document/{identifier}/extension/funding/{funding_id}": {
+      "put": {
+        "description": "Updates a funding agreement in a document",
+        "operationId": "Update",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fundingFundingUpdatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
     "/document/{identifier}/funding": {
       "post": {
         "description": "Adds a funding to a document",
@@ -50,7 +89,7 @@
     },
     "/documents/{identifier}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a latest document",
+        "description": "Get all funding agreements of a latest document",
         "operationId": "GetList",
         "responses": {
           "200": {
@@ -106,7 +145,7 @@
     },
     "/documents/{identifier}/{version}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a document version",
+        "description": "Get all funding agreements of a document version",
         "operationId": "GetListVersion",
         "responses": {
           "200": {
@@ -316,6 +355,20 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
+        },
+        "data": {
+          "$ref": "#/definitions/fundingFundingData"
+        }
+      }
+    },
+    "fundingFundingUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "funding_id": {
+          "type": "string"
         },
         "data": {
           "$ref": "#/definitions/fundingFundingData"

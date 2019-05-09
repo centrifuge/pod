@@ -195,3 +195,40 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 	}
 	return resp, nil
 }
+
+// Update handles an update over an existing funding document extension
+func (h *grpcHandler) Update(ctx context.Context, req *clientfundingpb.FundingUpdatePayload) (*clientfundingpb.FundingResponse, error) {
+	apiLog.Debugf("create funding request %v", req)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+	// returns model with updated funding custom fields
+	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req, identifier)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrPayload, err)
+	}
+
+	model, jobID, _, err := h.service.Update(ctx, model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	resp, err := h.service.DeriveFundingResponse(model, req.Data.FundingId)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, errors.NewTypedError(ErrFundingAttr, err)
+	}
+
+	resp.Header.JobId = jobID.String()
+	return resp, nil
+}

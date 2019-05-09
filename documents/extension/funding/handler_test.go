@@ -33,6 +33,12 @@ func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfundingp
 	return model, args.Error(1)
 }
 
+func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
+	args := m.Called(ctx, req)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
 func (m *mockService) DeriveFundingResponse(doc documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error) {
 	args := m.Called(doc)
 	data, _ := args.Get(0).(*clientfundingpb.FundingResponse)
@@ -80,6 +86,27 @@ func TestGRPCHandler_Create(t *testing.T) {
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+}
+
+func TestGRPCHandler_Update(t *testing.T) {
+	srv := &mockService{}
+
+	h := &grpcHandler{service: srv, config: configService}
+	jobID := jobs.NewJobID()
+
+	// no identifier
+	response, err := h.Update(testingconfig.HandlerContext(configService), &clientfundingpb.FundingUpdatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	assert.Nil(t, response)
+	assert.Error(t, err, "must be non nil")
+
+	// successful
+	srv.On("DeriveFromUpdatePayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+
+	response, err = h.Update(testingconfig.HandlerContext(configService), &clientfundingpb.FundingUpdatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
