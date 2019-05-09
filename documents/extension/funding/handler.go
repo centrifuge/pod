@@ -97,6 +97,41 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.GetRequest) 
 	return resp, nil
 }
 
+// Get returns a funding agreement from an existing document
+func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfundingpb.GetVersionRequest) (*clientfundingpb.FundingResponse, error) {
+	apiLog.Debugf("Get request %v", req)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+	version, err := hexutil.Decode(req.Version)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentVersion
+	}
+
+	model, err := h.service.GetVersion(ctxHeader, identifier, version)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentVersionNotFound
+	}
+
+	resp, err := h.service.DeriveFundingResponse(model, req.FundingId)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, ErrFundingAttr
+	}
+	return resp, nil
+}
+
 // GetList returns all funding agreements of a existing document
 func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListRequest) (*clientfundingpb.FundingListResponse, error) {
 	apiLog.Debugf("Get request %v", req)
@@ -123,6 +158,40 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
 	}
+	return resp, nil
+}
 
+// GetList returns all funding agreements of a existing document
+func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.GetListVersionRequest) (*clientfundingpb.FundingListResponse, error) {
+	apiLog.Debugf("Get request %v", req)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, err
+	}
+
+	identifier, err := hexutil.Decode(req.Identifier)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+	version, err := hexutil.Decode(req.Version)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentVersion
+	}
+
+	model, err := h.service.GetVersion(ctxHeader, identifier, version)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	resp, err := h.service.DeriveFundingListResponse(model)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, ErrFundingAttr
+	}
 	return resp, nil
 }

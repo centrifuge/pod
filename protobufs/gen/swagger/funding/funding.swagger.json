@@ -50,7 +50,7 @@
     },
     "/documents/{identifier}/funding": {
       "get": {
-        "description": "Get all fundings agreements of a document",
+        "description": "Get all fundings agreements of a latest document",
         "operationId": "GetList",
         "responses": {
           "200": {
@@ -75,7 +75,7 @@
     },
     "/documents/{identifier}/funding/{funding_id}": {
       "get": {
-        "description": "Get a funding agreement of a document",
+        "description": "Get a funding agreement of a latest document",
         "operationId": "Get",
         "responses": {
           "200": {
@@ -88,6 +88,74 @@
         "parameters": [
           {
             "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/{version}/funding": {
+      "get": {
+        "description": "Get all fundings agreements of a document version",
+        "operationId": "GetListVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingListResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/{version}/funding/{funding_id}": {
+      "get": {
+        "description": "Get a funding agreement of a document version",
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
             "in": "path",
             "required": true,
             "type": "string"

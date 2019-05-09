@@ -27,7 +27,15 @@ service FundingService {
       get: "/documents/{identifier}/funding/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get a funding agreement of a document"
+      description: "Get a funding agreement of a latest document"
+    };
+  }
+  rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/{version}/funding/{funding_id}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get a funding agreement of a document version"
     };
   }
   rpc GetList(GetListRequest) returns (FundingListResponse) {
@@ -35,7 +43,15 @@ service FundingService {
       get: "/documents/{identifier}/funding"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get all fundings agreements of a document"
+      description: "Get all fundings agreements of a latest document"
+    };
+  }
+  rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/{version}/funding"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get all fundings agreements of a document version"
     };
   }
 }
@@ -60,8 +76,19 @@ message GetRequest {
   string funding_id = 2;
 }
 
+message GetVersionRequest {
+  string identifier = 1;
+  string version = 2;
+  string funding_id = 3;
+}
+
 message GetListRequest {
   string identifier = 1;
+}
+
+message GetListVersionRequest {
+  string identifier = 1;
+  string version = 2;
 }
 
 // FundingData is the default funding extension schema
