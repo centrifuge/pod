@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 	"time"
-	
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"

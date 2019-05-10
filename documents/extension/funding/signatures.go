@@ -90,16 +90,23 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 	}
 
 
+
 	//docSigned, err := s.Service.GetVersion(ctx,current.ID(),signAttr.Value.Signed.DocumentVersion)
 
 	return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID())},nil
 }
 
 func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, idxFunding string) ([]*clientfundingpb.FundingSignature, error) {
-
 	var signatures []*clientfundingpb.FundingSignature
-	// example "funding_agreement[2].signatures"
 	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
+	key, err := documents.AttrKeyFromLabel(sLabel)
+	if err != nil {
+		return nil, err
+	}
+
+	if !model.AttributeExists(key) {
+		return signatures, nil
+	}
 
 	lastIdx, err := getArrayLatestIDX(model, sLabel)
 	if err != nil {
@@ -112,7 +119,6 @@ func (s service) deriveFundingSignatures(ctx context.Context, model documents.Mo
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		// example: "funding_agreement[2].signatures[4]"
 		sFieldLabel := generateLabel(generateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, i.String(), "")
 		key, err := documents.AttrKeyFromLabel(sFieldLabel)
 		if err != nil {
