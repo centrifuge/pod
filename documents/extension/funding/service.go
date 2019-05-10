@@ -29,7 +29,7 @@ type Service interface {
 	DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
 
 	// DeriveFundingListResponse returns a funding list in client format
-	DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error)
+	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfundingpb.FundingListResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -368,7 +368,7 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 
 
 // DeriveFundingListResponse returns a funding list in client format
-func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error) {
+func (s service) DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfundingpb.FundingListResponse, error) {
 	response := new(clientfundingpb.FundingListResponse)
 
 	h, err := documents.DeriveResponseHeader(s.tokenRegistry, model)
@@ -401,7 +401,9 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 		if err != nil {
 			continue
 		}
-		response.List = append(response.List, funding.getClientData())
+
+		signatures , err := s.deriveFundingSignatures(ctx, model, i.String())
+		response.List = append(response.List, &clientfundingpb.FundingResponseData{Funding:funding.getClientData(),Signatures:signatures})
 		i, err = i.Inc()
 
 		if err != nil {

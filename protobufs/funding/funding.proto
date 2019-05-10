@@ -92,7 +92,7 @@ message FundingResponse {
 
 message FundingListResponse {
   document.ResponseHeader header = 1;
-  repeated FundingData list = 2;
+  repeated FundingResponseData list = 2;
 }
 
 message Request {

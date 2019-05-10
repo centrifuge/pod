@@ -190,7 +190,7 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	resp, err := h.service.DeriveFundingListResponse(model)
+	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -225,7 +225,7 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	resp, err := h.service.DeriveFundingListResponse(model)
+	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
