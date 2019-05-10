@@ -2,13 +2,8 @@ package funding
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"strings"
-
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -31,7 +26,7 @@ type Service interface {
 	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
 
 	// DeriveFundingResponse returns a funding in client format
-	DeriveFundingResponse(model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
+	DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
 
 	// DeriveFundingListResponse returns a funding list in client format
 	DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error)
@@ -345,7 +340,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*Data, er
 }
 
 // DeriveFundingResponse returns create response from the added funding
-func (s service) DeriveFundingResponse(model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error) {
+func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error) {
 	idx, err := s.findFunding(model, fundingID)
 	if err != nil {
 		return nil, err
@@ -361,12 +356,16 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 		return nil, err
 	}
 
+	signatures , err := s.deriveFundingSignatures(ctx, model, idx)
+
 	return &clientfundingpb.FundingResponse{
 		Header: h,
-		Data:   data.getClientData(),
+		Data:   &clientfundingpb.FundingResponseData{Funding:data.getClientData(),Signatures:signatures},
 	}, nil
 
 }
+
+
 
 // DeriveFundingListResponse returns a funding list in client format
 func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundingpb.FundingListResponse, error) {
@@ -413,71 +412,3 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 	return response, nil
 }
 
-func (s service) createSignAttrs(model documents.Model, idxFunding string, selfDID identity.DID, account config.Account) ([]documents.Attribute, error) {
-	var attributes []documents.Attribute
-	data, err := s.deriveFundingData(model, idxFunding)
-	if err != nil {
-		return nil, err
-	}
-
-	signMsg, err := json.Marshal(data)
-	if err != nil {
-		return nil, ErrJSON
-	}
-
-	// example "funding_agreement[2].signatures"
-	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
-	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
-	if err != nil {
-		return nil, err
-	}
-	attributes = append(attributes, attrIdx)
-
-	// example: "funding_agreement[2].signatures[4]"
-	sFieldLabel := generateLabel(generateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, attrIdx.Value.Int256.String(), "")
-
-	attrSign, err := documents.NewSignedAttribute(sFieldLabel, selfDID, account, model, signMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	attributes = append(attributes, attrSign)
-
-	return attributes, nil
-
-}
-
-// Sign adds a signature to an existing document
-func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error) {
-	selfDID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
-	}
-
-	account, err := contextutil.Account(ctx)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
-	}
-
-	model, err := s.Service.GetCurrentVersion(ctx, identifier)
-	if err != nil {
-		return nil, documents.ErrDocumentNotFound
-	}
-
-	idxFunding, err := s.findFunding(model, fundingID)
-	if err != nil {
-		return nil, ErrFundingNotFound
-	}
-
-	attributes, err := s.createSignAttrs(model, idxFunding, selfDID, account)
-	if err != nil {
-		return nil, err
-	}
-
-	err = model.AddAttributes(attributes...)
-	if err != nil {
-		return nil, err
-	}
-
-	return model, nil
-}

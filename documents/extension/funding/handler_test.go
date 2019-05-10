@@ -39,7 +39,7 @@ func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfu
 	return model, args.Error(1)
 }
 
-func (m *mockService) DeriveFundingResponse(doc documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error) {
+func (m *mockService) DeriveFundingResponse(ctx context.Context, doc documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error) {
 	args := m.Called(doc)
 	data, _ := args.Get(0).(*clientfundingpb.FundingResponse)
 	return data, args.Error(1)
@@ -89,7 +89,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 	// successful
 	srv.On("DeriveFromPayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
@@ -110,7 +110,7 @@ func TestGRPCHandler_Update(t *testing.T) {
 	// successful
 	srv.On("DeriveFromUpdatePayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err = h.Update(testingconfig.HandlerContext(configService), &clientfundingpb.FundingUpdatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
@@ -124,7 +124,7 @@ func TestGRPCHandler_Sign(t *testing.T) {
 
 	// successful
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 	srv.On("Sign", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil).Once()
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
 
@@ -142,7 +142,7 @@ func TestGRPCHandler_Get(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
@@ -154,7 +154,7 @@ func TestGRPCHandler_GetVersion(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)

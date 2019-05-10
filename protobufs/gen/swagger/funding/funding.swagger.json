@@ -396,7 +396,40 @@
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
+          "$ref": "#/definitions/fundingFundingResponseData"
+        }
+      }
+    },
+    "fundingFundingResponseData": {
+      "type": "object",
+      "properties": {
+        "funding": {
           "$ref": "#/definitions/fundingFundingData"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fundingFundingSignature"
+          }
+        }
+      }
+    },
+    "fundingFundingSignature": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "outdated_signature": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "identity": {
+          "type": "string"
+        },
+        "signed_version": {
+          "type": "string"
         }
       }
     },

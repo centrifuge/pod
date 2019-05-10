@@ -21,4 +21,7 @@ const (
 
 	// ErrJSON must be used if it is not possible to derive a json from a funding
 	ErrJSON = errors.Error("could not create json for signing funding ")
+
+	// ErrFundingSignature must be used if a funding signature is invalid
+	ErrFundingSignature = errors.Error("stored funding in document has an error")
 )

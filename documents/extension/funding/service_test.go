@@ -5,6 +5,7 @@ package funding
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"os"
 	"testing"
 	"time"
@@ -143,14 +144,16 @@ func TestDeriveFundingResponse(t *testing.T) {
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 
-		response, err := srv.DeriveFundingResponse(model, payload.Data.FundingId)
+		response, err := srv.DeriveFundingResponse(ctxh, model, payload.Data.FundingId)
 		assert.NoError(t, err)
-		checkResponse(t, payload, response.Data)
+		checkResponse(t, payload, response.Data.Funding)
 	}
 
 }

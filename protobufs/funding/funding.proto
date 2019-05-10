@@ -87,7 +87,7 @@ message FundingUpdatePayload {
 
 message FundingResponse {
   document.ResponseHeader header = 1;
-  FundingData data = 2;
+  FundingResponseData data = 2;
 }
 
 message FundingListResponse {
@@ -128,4 +128,16 @@ message FundingData {
   string currency = 10; // optional if not set currency of payment details will be used
   string nft_address = 11;
   string payment_details_id = 12;
+}
+
+message FundingResponseData {
+  FundingData funding = 1;
+  repeated FundingSignature signatures = 2;
+}
+
+message FundingSignature {
+  bool valid = 1;
+  bool outdated_signature = 2;
+  string identity = 3;
+  string signed_version = 4;
 }
