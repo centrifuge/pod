@@ -428,7 +428,7 @@ func attributeValidator(repo anchors.AnchorRepository, idSrv identity.Service) V
 				ats = ts
 			}
 
-			payload := attributeSignaturePayload(signed.Identity[:], model.ID(), signed.DocumentVersion, signed.Value)
+			payload := AttributeSignaturePayload(signed.Identity[:], model.ID(), signed.DocumentVersion, signed.Value)
 			erri := idSrv.ValidateSignature(signed.Identity, signed.PublicKey, signed.Signature, payload, ats)
 			if erri != nil {
 				err = errors.AppendError(err, errors.New("failed to validate signed attribute %s: %v", attr.KeyLabel, erri))

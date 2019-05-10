@@ -231,7 +231,7 @@ func TestNewSignedAttribute(t *testing.T) {
 	version := utils.RandomSlice(32)
 	value := utils.RandomSlice(50)
 
-	epayload := attributeSignaturePayload(did[:], id, version, value)
+	epayload := AttributeSignaturePayload(did[:], id, version, value)
 	acc := new(mockAccount)
 	acc.On("SignMsg", epayload).Return(nil, errors.New("failed")).Once()
 	model := new(mockModel)
