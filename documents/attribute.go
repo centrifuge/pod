@@ -206,6 +206,7 @@ func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr A
 
 // NewSignedAttribute returns a new signed attribute
 // takes keyLabel, signer identity, signer account, model and value
+// doc version is next version of the document since that is the document version in which the attribute is added.
 // signature payload: sign(identity + docID + docVersion + value)
 func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, model Model, value []byte) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
@@ -213,7 +214,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		return attr, err
 	}
 
-	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.CurrentVersion(), value)
+	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.NextVersion(), value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -223,7 +224,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		Type: AttrSigned,
 		Signed: Signed{
 			Identity:        identity,
-			DocumentVersion: model.CurrentVersion(),
+			DocumentVersion: model.NextVersion(),
 			Value:           value,
 			Signature:       sig.Signature,
 			PublicKey:       sig.PublicKey,
