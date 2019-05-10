@@ -2,6 +2,7 @@ package funding
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"reflect"
 	"strings"
 
@@ -36,6 +37,7 @@ type Service interface {
 type service struct {
 	documents.Service
 	tokenRegistry documents.TokenRegistry
+	idSrv identity.Service
 }
 
 const (
@@ -51,10 +53,12 @@ const (
 func DefaultService(
 	srv documents.Service,
 	tokenRegistry documents.TokenRegistry,
+	idSrv identity.Service,
 ) Service {
 	return service{
 		Service:       srv,
 		tokenRegistry: tokenRegistry,
+		idSrv: idSrv,
 	}
 }
 
@@ -356,7 +360,7 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 		return nil, err
 	}
 
-	signatures , err := s.deriveFundingSignatures(ctx, model, idx)
+	signatures , err := s.deriveFundingSignatures(ctx, model,data, idx)
 
 	return &clientfundingpb.FundingResponse{
 		Header: h,
@@ -402,7 +406,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 			continue
 		}
 
-		signatures , err := s.deriveFundingSignatures(ctx, model, i.String())
+		signatures , err := s.deriveFundingSignatures(ctx, model,funding, i.String())
 		response.List = append(response.List, &clientfundingpb.FundingResponseData{Funding:funding.getClientData(),Signatures:signatures})
 		i, err = i.Inc()
 

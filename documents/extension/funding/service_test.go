@@ -111,7 +111,7 @@ func TestDeriveFromPayload(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(docSrv, nil,nil)
 
 	payload := createTestPayload()
 
@@ -138,7 +138,7 @@ func TestDeriveFundingResponse(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(docSrv, nil,nil)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -162,7 +162,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(docSrv, nil,nil)
 
 	var model documents.Model
 	var payloads []*clientfundingpb.FundingCreatePayload
@@ -193,7 +193,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(docSrv, nil,nil)
 
 	var model documents.Model
 	var err error

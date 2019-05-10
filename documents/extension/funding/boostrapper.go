@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 )
 
 const (
@@ -38,7 +39,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		return errors.New("token registry not initialisation")
 	}
 
-	srv := DefaultService(docSrv, tokenRegistry)
+	idSrv, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	if !ok {
+		return errors.New("identity service not initialized")
+	}
+
+	srv := DefaultService(docSrv, tokenRegistry,idSrv)
 	handler := GRPCHandler(cfgSrv, srv)
 	ctx[BootstrappedFundingAPIHandler] = handler
 	return nil

@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"time"
 )
 
 func (s service) createSignAttrs(model documents.Model, idxFunding string, selfDID identity.DID, account config.Account) ([]documents.Attribute, error) {
@@ -82,13 +86,56 @@ func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) 
 }
 
 
-//func verifySignature()
+func (s service) 
 
-func (s service) signAttrToClientData(ctx context.Context, current documents.Model, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
+func (s service) signAttrToClientData(ctx context.Context,current documents.Model,funding *Data,  signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
 	if signAttr.Value.Type != documents.AttrSigned {
 		return nil, ErrFundingSignature
 	}
+	account, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
 
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(signAttr.Value.Signed.PublicKey)))
+	did := signAttr.Value.Signed.Identity
+	version := signAttr.Value.Signed.DocumentVersion
+
+	value, err := json.Marshal(funding)
+	if err != nil {
+		return nil, ErrJSON
+	}
+
+	payload := documents.AttributeSignaturePayload(did[:],current.ID(),signAttr.Value.Signed.DocumentVersion,value)
+	err = s.idSrv.ValidateSignature(did,address32Bytes[:],signAttr.Value.Signed.Signature,payload, time.Now())
+
+	if err == nil {
+		// signature correct (funding data didn't change since signing)
+		return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID()),Identity:did.String(),OutdatedSignature:false},nil
+	}
+	outDatedSignature := true
+
+	signedVersionDoc, err := s.Service.GetVersion(ctx,current.ID(),version)
+	if err != nil {
+		return nil, ErrFundingNotFound
+	}
+
+	valueSignedVersion, err := json.Marshal(funding)
+	if err != nil {
+		return nil, ErrJSON
+	}
+	payload = documents.AttributeSignaturePayload(did[:],current.ID(),signAttr.Value.Signed.DocumentVersion,valueSignedVersion)
+	err = s.idSrv.ValidateSignature(did,address32Bytes[:],signAttr.Value.Signed.Signature,payload, time.Now())
+
+	if err == nil {
+		// signature correct (funding data didn't change since signing)
+		return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID()),Identity:did.String(),OutdatedSignature:ture},nil
+	}
+
+
+
+
+	// todo check PK belongs to DID
 
 
 	//docSigned, err := s.Service.GetVersion(ctx,current.ID(),signAttr.Value.Signed.DocumentVersion)
@@ -96,7 +143,7 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 	return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID())},nil
 }
 
-func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, idxFunding string) ([]*clientfundingpb.FundingSignature, error) {
+func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model,funding *Data, idxFunding string) ([]*clientfundingpb.FundingSignature, error) {
 	var signatures []*clientfundingpb.FundingSignature
 	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
 	key, err := documents.AttrKeyFromLabel(sLabel)
@@ -129,7 +176,7 @@ func (s service) deriveFundingSignatures(ctx context.Context, model documents.Mo
 			return nil, err
 		}
 
-		clientSign, err := s.signAttrToClientData(ctx, model, attrSign)
+		clientSign, err := s.signAttrToClientData(ctx, model,funding, attrSign)
 		if err != nil {
 			continue
 		}
