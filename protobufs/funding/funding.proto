@@ -37,7 +37,7 @@ service FundingService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates a funding agreement in a document"
+      description: "Signs funding agreement in a document"
     };
   }
   rpc Get(Request) returns (FundingResponse) {

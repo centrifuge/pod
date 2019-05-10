@@ -12,9 +12,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -245,7 +243,7 @@ func TestService_Sign(t *testing.T) {
 	signature := utils.RandomSlice(32)
 	acc.On("SignMsg", mock.Anything).Return(&coredocumentpb.Signature{Signature: signature}, nil)
 	ctx, err := contextutil.New(context.Background(), acc)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	for i := 0; i < 5; i++ {
 		model, err = srv.Sign(ctx, lastFundingId, utils.RandomSlice(32))

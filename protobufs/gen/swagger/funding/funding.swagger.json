@@ -89,7 +89,7 @@
     },
     "/document/{identifier}/funding/{funding_id}/sign": {
       "post": {
-        "description": "Updates a funding agreement in a document",
+        "description": "Signs funding agreement in a document",
         "operationId": "Sign",
         "responses": {
           "200": {
