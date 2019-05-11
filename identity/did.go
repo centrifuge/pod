@@ -199,10 +199,10 @@ type Factory interface {
 	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
-// ServiceDID interface contains the methods to interact with the identity contract
-type ServiceDID interface {
+// Service interface contains the methods to interact with the identity contract
+type Service interface {
 	// AddKey adds a key to identity contract
-	AddKey(ctx context.Context, key KeyDID) error
+	AddKey(ctx context.Context, key Key) error
 
 	// AddKeysForAccount adds key from configuration
 	AddKeysForAccount(acc config.Account) error
@@ -242,11 +242,11 @@ type ServiceDID interface {
 	GetClientsP2PURLs(dids []*DID) ([]string, error)
 
 	// GetKeysByPurpose returns keys grouped by purpose from the identity contract.
-	GetKeysByPurpose(did DID, purpose *big.Int) ([]KeyDID, error)
+	GetKeysByPurpose(did DID, purpose *big.Int) ([]Key, error)
 }
 
-// KeyDID defines a single ERC725 identity key
-type KeyDID interface {
+// Key defines a single ERC725 identity key
+type Key interface {
 	GetKey() [32]byte
 	GetPurpose() *big.Int
 	GetRevokedAt() uint32
@@ -269,7 +269,7 @@ type key struct {
 }
 
 //NewKey returns a new key struct
-func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int, revokedAt uint32) KeyDID {
+func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int, revokedAt uint32) Key {
 	return &key{pk, purpose, revokedAt, keyType}
 }
 

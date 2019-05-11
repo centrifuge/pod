@@ -129,3 +129,31 @@ func isValidInt256(n big.Int) bool {
 
 	return true
 }
+
+// Add sets i to the sum x+y and returns i
+func (i *Int256) Add(x *Int256, y *Int256) (*Int256, error) {
+	i.v.Add(&x.v, &y.v)
+	if !isValidInt256(i.v) {
+		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %s", &i.v))
+	}
+	return i, nil
+}
+
+// Cmp compares i and y and returns:
+//
+//   -1 if i <  y
+//    0 if i == y
+//   +1 if i >  y
+//
+func (i *Int256) Cmp(y *Int256) int {
+	return i.v.Cmp(&y.v)
+}
+
+// Inc increments i by one
+func (i *Int256) Inc() (*Int256, error) {
+	i.v.Add(&i.v, big.NewInt(1))
+	if !isValidInt256(i.v) {
+		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %s", &i.v))
+	}
+	return i, nil
+}

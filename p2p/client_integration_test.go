@@ -32,7 +32,7 @@ import (
 var (
 	client     documents.Client
 	cfg        config.Configuration
-	idService  identity.ServiceDID
+	idService  identity.Service
 	idFactory  identity.Factory
 	cfgStore   config.Service
 	defaultDID identity.DID
@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
-	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	tc, err := configstore.TempAccount("main", cfg)

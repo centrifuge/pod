@@ -66,7 +66,7 @@ func networkValidator(networkID uint32) Validator {
 	})
 }
 
-func peerValidator(idService identity.ServiceDID) Validator {
+func peerValidator(idService identity.Service) Validator {
 	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
@@ -94,7 +94,7 @@ func peerValidator(idService identity.ServiceDID) Validator {
 }
 
 // HandshakeValidator validates the p2p handshake details
-func HandshakeValidator(networkID uint32, idService identity.ServiceDID) ValidatorGroup {
+func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),

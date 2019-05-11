@@ -28,7 +28,7 @@ type Handler struct {
 	handshakeValidator ValidatorGroup
 	docSrv             documents.Service
 	tokenRegistry      documents.TokenRegistry
-	srvDID             identity.ServiceDID
+	srvDID             identity.Service
 }
 
 // New returns an implementation of P2PServiceServer
@@ -37,7 +37,7 @@ func New(
 	handshakeValidator ValidatorGroup,
 	docSrv documents.Service,
 	tokenRegistry documents.TokenRegistry,
-	srvDID identity.ServiceDID) *Handler {
+	srvDID identity.Service) *Handler {
 	return &Handler{
 		config:             config,
 		handshakeValidator: handshakeValidator,

@@ -1,0 +1,379 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "funding/funding.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/document/{identifier}/extension/funding/{funding_id}": {
+      "put": {
+        "description": "Updates a funding agreement in a document",
+        "operationId": "Update",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fundingFundingUpdatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/document/{identifier}/funding": {
+      "post": {
+        "description": "Adds a funding to a document",
+        "operationId": "Create",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/fundingFundingCreatePayload"
+            }
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/funding": {
+      "get": {
+        "description": "Get all funding agreements of a latest document",
+        "operationId": "GetList",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingListResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/funding/{funding_id}": {
+      "get": {
+        "description": "Get a funding agreement of a latest document",
+        "operationId": "Get",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/{version}/funding": {
+      "get": {
+        "description": "Get all funding agreements of a document version",
+        "operationId": "GetListVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingListResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    },
+    "/documents/{identifier}/{version}/funding/{funding_id}": {
+      "get": {
+        "description": "Get a funding agreement of a document version",
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "documentNFT": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "title": "read owner from Ethereum and empty when used in POST/PUT"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_index": {
+          "type": "string",
+          "title": "index of the token in the registry"
+        }
+      }
+    },
+    "documentReadAccess": {
+      "type": "object",
+      "properties": {
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "documentResponseHeader": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "nfts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/documentNFT"
+          }
+        }
+      }
+    },
+    "documentWriteAccess": {
+      "type": "object",
+      "properties": {
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "fundingFundingCreatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/fundingFundingData"
+        }
+      }
+    },
+    "fundingFundingData": {
+      "type": "object",
+      "properties": {
+        "funding_id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "apr": {
+          "type": "string"
+        },
+        "days": {
+          "type": "string"
+        },
+        "fee": {
+          "type": "string"
+        },
+        "repayment_due_date": {
+          "type": "string"
+        },
+        "repayment_occurred_date": {
+          "type": "string"
+        },
+        "repayment_amount": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "nft_address": {
+          "type": "string"
+        },
+        "payment_details_id": {
+          "type": "string"
+        }
+      },
+      "title": "FundingData is the default funding extension schema"
+    },
+    "fundingFundingListResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fundingFundingData"
+          }
+        }
+      }
+    },
+    "fundingFundingResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/documentResponseHeader"
+        },
+        "data": {
+          "$ref": "#/definitions/fundingFundingData"
+        }
+      }
+    },
+    "fundingFundingUpdatePayload": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "funding_id": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/fundingFundingData"
+        }
+      }
+    }
+  }
+}

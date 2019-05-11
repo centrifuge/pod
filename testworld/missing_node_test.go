@@ -53,7 +53,7 @@ func TestMissingNode_MissingP2PKey(t *testing.T) {
 }
 
 // Helper Methods
-func createIdentity(t *testing.T, idFactory identity.Factory, idService identity.ServiceDID, cfg config.Configuration) identity.DID {
+func createIdentity(t *testing.T, idFactory identity.Factory, idService identity.Service, cfg config.Configuration) identity.DID {
 	// Create Identity
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
 	assert.NoError(t, err)

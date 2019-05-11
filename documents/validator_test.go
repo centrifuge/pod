@@ -250,6 +250,7 @@ func TestValidator_TransitionValidator(t *testing.T) {
 	old := new(mockModel)
 	old.On("CollaboratorCanUpdate", updated, id1).Return(errors.New("error"))
 	err = tv.Validate(old, updated)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid document state transition: error")
 
 	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
@@ -260,8 +261,10 @@ func TestValidator_TransitionValidator(t *testing.T) {
 func TestValidator_SignatureValidator(t *testing.T) {
 	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	assert.NoError(t, err)
+	repo := new(mockRepo)
+	repo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	idService := new(testingcommons.MockIdentityService)
-	sv := SignatureValidator(idService)
+	sv := SignatureValidator(idService, repo)
 
 	// fail to get signing root
 	model := new(mockModel)
@@ -270,6 +273,8 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("NextVersion").Return(utils.RandomSlice(32))
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
+	model.On("Timestamp").Return(time.Now().UTC(), nil)
+	model.On("GetAttributes").Return(nil)
 	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
@@ -282,6 +287,8 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("NextVersion").Return(utils.RandomSlice(32))
 	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("Signatures").Return().Once()
+	model.On("Timestamp").Return(time.Now().UTC(), nil)
+	model.On("GetAttributes").Return(nil)
 	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
@@ -305,7 +312,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService)
+	sv = SignatureValidator(idService, repo)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -316,6 +323,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
 	model.On("Signatures").Return().Once()
+	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -324,7 +332,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// model author not found
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService)
+	sv = SignatureValidator(idService, repo)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -335,6 +343,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("Timestamp").Return(tm, nil)
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
+	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -344,7 +353,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// signer not part of signing collaborators
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService)
+	sv = SignatureValidator(idService, repo)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -355,6 +364,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("Timestamp").Return(tm, nil)
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
+	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, s, s2)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -364,7 +374,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// model timestamp err
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService)
+	sv = SignatureValidator(idService, repo)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -379,12 +389,12 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
-	assert.Equal(t, 1, errors.Len(err))
+	assert.Equal(t, 2, errors.Len(err))
 	assert.Contains(t, err.Error(), "some timestamp error")
 
 	// success
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService)
+	sv = SignatureValidator(idService, repo)
 	s, err = account.SignMsg(sr)
 	assert.NoError(t, err)
 	acID, err := account.GetIdentityID()
@@ -401,6 +411,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("Timestamp").Return(tm, nil)
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
+	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -474,7 +485,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 }
 
 func TestPreAnchorValidator(t *testing.T) {
-	pav := PreAnchorValidator(nil)
+	pav := PreAnchorValidator(nil, nil)
 	assert.Len(t, pav, 2)
 }
 
@@ -708,5 +719,87 @@ func TestValidator_anchorRepoAddressValidator(t *testing.T) {
 
 	// success
 	assert.NoError(t, arv.Validate(nil, model))
+	model.AssertExpectations(t)
+}
+
+func TestValidator_attributeSignatureValidator(t *testing.T) {
+	asv := attributeValidator(nil, nil)
+
+	// failed to get timestamp
+	model := new(mockModel)
+	model.On("Timestamp").Return(nil, errors.New("failed to get timestamp")).Once()
+	err := asv.Validate(nil, model)
+	assert.Error(t, err)
+	model.AssertExpectations(t)
+
+	attrs := []Attribute{
+		{
+			KeyLabel: "label 1",
+			Value:    AttrVal{Type: AttrString},
+		},
+
+		{
+			KeyLabel: "label 2",
+			Value: AttrVal{
+				Type: AttrSigned,
+				Signed: Signed{
+					Identity:        testingidentity.GenerateRandomDID(),
+					DocumentVersion: utils.RandomSlice(20),
+					Value:           utils.RandomSlice(32),
+					Signature:       utils.RandomSlice(32),
+					PublicKey:       utils.RandomSlice(32),
+				},
+			},
+		},
+	}
+	// failed anchor id
+	model = new(mockModel)
+	model.On("Timestamp").Return(time.Now().UTC(), nil).Once()
+	model.On("GetAttributes").Return(attrs).Once()
+	err = asv.Validate(nil, model)
+	assert.Error(t, err)
+	model.AssertExpectations(t)
+
+	// not anchored yet, failed Validation
+	id := utils.RandomSlice(32)
+	attrs[1].Value.Signed.DocumentVersion = id
+	aid, err := anchors.ToAnchorID(id)
+	assert.NoError(t, err)
+	repo := new(mockRepo)
+	repo.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+
+	ts := time.Now().UTC()
+	model = new(mockModel)
+	model.On("Timestamp").Return(ts, nil).Once()
+	model.On("GetAttributes").Return(attrs).Once()
+	docID := utils.RandomSlice(32)
+	model.On("ID").Return(docID).Once()
+
+	signed := attrs[1].Value.Signed
+	payload := attributeSignaturePayload(signed.Identity[:], docID, id, signed.Value)
+	srv := new(testingcommons.MockIdentityService)
+	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(errors.New("failed")).Once()
+	asv = attributeValidator(repo, srv)
+	err = asv.Validate(nil, model)
+	assert.Error(t, err)
+	repo.AssertExpectations(t)
+	srv.AssertExpectations(t)
+	model.AssertExpectations(t)
+
+	// success
+	repo = new(mockRepo)
+	repo.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+
+	model = new(mockModel)
+	model.On("Timestamp").Return(ts, nil).Once()
+	model.On("GetAttributes").Return(attrs).Once()
+	model.On("ID").Return(docID).Once()
+	srv = new(testingcommons.MockIdentityService)
+	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(nil).Once()
+	asv = attributeValidator(repo, srv)
+	err = asv.Validate(nil, model)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	srv.AssertExpectations(t)
 	model.AssertExpectations(t)
 }

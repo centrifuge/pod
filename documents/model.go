@@ -100,7 +100,7 @@ type Model interface {
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
-	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
+	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.Service, tokenID, docID []byte, grantee identity.DID) (err error)
 
 	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
 	AddUpdateLog(account identity.DID) error
@@ -122,6 +122,9 @@ type Model interface {
 
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
 	GetAttribute(key AttrKey) (Attribute, error)
+
+	// GetAttributes returns all the attributes in the current document
+	GetAttributes() []Attribute
 
 	// DeleteAttribute deletes a custom attribute from the model
 	DeleteAttribute(key AttrKey) error

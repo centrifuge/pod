@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/documents/extension/funding"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -51,6 +52,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
 		&entity.Bootstrapper{},
+		funding.Bootstrapper{},
 	}
 }
 

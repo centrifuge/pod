@@ -675,6 +675,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	cd, err = cd.AddAttributes(attr)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 1)
+	assert.Len(t, cd.GetAttributes(), 1)
 
 	// check
 	assert.True(t, cd.AttributeExists(key))
@@ -697,6 +698,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	attr, err = cd.GetAttribute(key)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 1)
+	assert.Len(t, cd.GetAttributes(), 1)
 	assert.Equal(t, key, attr.Key)
 	assert.Equal(t, label, attr.KeyLabel)
 	str, err = attr.Value.String()
@@ -709,6 +711,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	cd, err = cd.DeleteAttribute(key)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 0)
+	assert.Len(t, cd.GetAttributes(), 0)
 	assert.False(t, cd.AttributeExists(key))
 }
 

@@ -544,7 +544,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	idFactory.AssertExpectations(t)
 }
 
-func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *entityrelationship.EntityRelationship, identity.Factory, identity.ServiceDID, documents.Repository) {
+func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *entityrelationship.EntityRelationship, identity.Factory, identity.Service, documents.Repository) {
 	idService := &testingcommons.MockIdentityService{}
 	idFactory := new(testingcommons.MockIdentityFactory)
 	repo := testRepo()

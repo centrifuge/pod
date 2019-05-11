@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package funding;
+
+option go_package = "fundingpb";
+option java_multiple_files = true;
+option java_outer_classname = "FundingProto";
+option java_package = "com.funding";
+
+import "document/service.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+// FundingService contains all common interactions for funding extension documents
+service FundingService {
+  rpc Create(FundingCreatePayload) returns (FundingResponse) {
+    option (google.api.http) = {
+      post: "/document/{identifier}/funding"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Adds a funding to a document"
+    };
+  }
+  rpc Update(FundingUpdatePayload) returns (FundingResponse) {
+    option (google.api.http) = {
+      put: "/document/{identifier}/extension/funding/{funding_id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Updates a funding agreement in a document"
+    };
+  }
+  rpc Get(GetRequest) returns (FundingResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/funding/{funding_id}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get a funding agreement of a latest document"
+    };
+  }
+  rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/{version}/funding/{funding_id}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get a funding agreement of a document version"
+    };
+  }
+  rpc GetList(GetListRequest) returns (FundingListResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/funding"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get all funding agreements of a latest document"
+    };
+  }
+  rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
+    option (google.api.http) = {
+      get: "/documents/{identifier}/{version}/funding"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get all funding agreements of a document version"
+    };
+  }
+}
+
+message FundingCreatePayload {
+  string identifier = 1;
+  FundingData data = 2;
+}
+
+message FundingUpdatePayload {
+  string identifier = 1;
+  string funding_id = 2;
+  FundingData data = 3;
+}
+
+message FundingResponse {
+  document.ResponseHeader header = 1;
+  FundingData data = 2;
+}
+
+message FundingListResponse {
+  document.ResponseHeader header = 1;
+  repeated FundingData list = 2;
+}
+
+message GetRequest {
+  string identifier = 1;
+  string funding_id = 2;
+}
+
+message GetVersionRequest {
+  string identifier = 1;
+  string version = 2;
+  string funding_id = 3;
+}
+
+message GetListRequest {
+  string identifier = 1;
+}
+
+message GetListVersionRequest {
+  string identifier = 1;
+  string version = 2;
+}
+
+// FundingData is the default funding extension schema
+message FundingData {
+  string funding_id = 1;
+  string amount = 2;
+  string apr = 3;
+  string days = 4;
+  string fee = 5;
+  string repayment_due_date = 7; //(e.g. invoice date + grace days)
+  string repayment_occurred_date = 8;
+  string repayment_amount = 9;
+  string currency = 10; // optional if not set currency of payment details will be used
+  string nft_address = 11;
+  string payment_details_id = 12;
+}

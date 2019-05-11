@@ -66,7 +66,7 @@ type service struct {
 	processor               documents.DocumentRequestProcessor
 	erService               entityrelationship.Service
 	anchorRepo              anchors.AnchorRepository
-	idService               identity.ServiceDID
+	idService               identity.Service
 	receivedEntityValidator func() documents.ValidatorGroup
 }
 
@@ -78,7 +78,7 @@ func DefaultService(
 	jobManager jobs.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
-	idService identity.ServiceDID,
+	idService identity.Service,
 	anchorRepo anchors.AnchorRepository,
 	processor documents.DocumentRequestProcessor,
 	receivedEntityValidator func() documents.ValidatorGroup,

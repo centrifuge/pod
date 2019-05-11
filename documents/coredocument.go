@@ -692,6 +692,15 @@ func (cd *CoreDocument) GetAttribute(key AttrKey) (attr Attribute, err error) {
 	return attr, nil
 }
 
+// GetAttributes returns all the attributes present in the coredocument.
+func (cd *CoreDocument) GetAttributes() (attrs []Attribute) {
+	for _, attr := range cd.Attributes {
+		attrs = append(attrs, attr)
+	}
+
+	return attrs
+}
+
 // DeleteAttribute deletes a custom attribute from the model.
 // If the attribute is missing, delete returns an error
 func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
@@ -758,12 +767,6 @@ func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
 // AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
 func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
-}
-
-// SetAttributesToCoreDoc sets the attributes to protocol core doc
-func (cd *CoreDocument) SetAttributesToCoreDoc() (err error) {
-	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
-	return err
 }
 
 // MarshalJSON marshals the model and returns the json data.
