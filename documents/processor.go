@@ -2,6 +2,7 @@ package documents
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -110,7 +111,16 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	sig, err := self.SignMsg(sr)
+	// Signing root signature has to be verified on-chain, and we have a limit of 32 byte payload
+	pp := append(sr, []byte{0}...)
+	srvLog.Infof("hex payload %x", pp)
+	srvLog.Infof("hex payload len %d", len(pp))
+	payload, err := crypto.Sha256Hash(pp)
+	if err != nil {
+		return err
+	}
+
+	sig, err := self.SignMsg(payload)
 	if err != nil {
 		return err
 	}

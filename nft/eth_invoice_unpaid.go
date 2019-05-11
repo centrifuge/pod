@@ -77,7 +77,10 @@ func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *
 	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
 	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
 	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
-	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
+	var nonFilteredProofsMatch = []string{
+		fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4})),
+		fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 5})),
+	}
 
 	for i, p := range docProof.FieldProofs {
 		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
@@ -120,11 +123,17 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, err
 	}
 
-	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	drr, _ := model.CalculateDocumentRoot()
+	fmt.Printf("DocRoot: %x\n", drr)
+	fmt.Printf("DocID: %x\n", model.ID())
+	fmt.Printf("VersionID: %x\n", anchorID[:])
+	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: docProofs.DocumentID, VersionID: docProofs.VersionID, FieldProofs: docProofs.FieldProofs})
 	if err != nil {
 		return mreq, err
 	}
-
+	//c, _ := json.MarshalIndent(proof, "", "  ")
+	//log.Debug(string(c))
+	//println(string(c))
 	log.Debug(json.MarshalIndent(proof, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
@@ -156,7 +165,8 @@ func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Conte
 	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	signatureTransition := fmt.Sprintf("%s.signatures[%s].transition_validated", documents.SignaturesTreePrefix, signerID)
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, signatureTransition, documents.CDTreePrefix + ".next_version"}
 	return proofFields, nil
 }
 

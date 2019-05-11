@@ -284,7 +284,7 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
 // errors out when the proof generation is failed on core document tree.
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
-	treeProofs := make(map[string]*TreeProof, 3)
+	treeProofs := make(map[string]*TreeProof, 4)
 	drTree, err := cd.DocumentRootTree(docType, dataTree.RootHash())
 	if err != nil {
 		return nil, err
