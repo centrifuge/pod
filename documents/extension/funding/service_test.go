@@ -5,12 +5,12 @@ package funding
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -30,6 +30,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -111,7 +112,7 @@ func TestDeriveFromPayload(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil,nil)
+	srv := DefaultService(docSrv, nil, nil)
 
 	payload := createTestPayload()
 
@@ -138,7 +139,7 @@ func TestDeriveFundingResponse(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil,nil)
+	srv := DefaultService(docSrv, nil, nil)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -162,7 +163,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil,nil)
+	srv := DefaultService(docSrv, nil, nil)
 
 	var model documents.Model
 	var payloads []*clientfundingpb.FundingCreatePayload
@@ -185,7 +186,6 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 }
 
-
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
@@ -193,7 +193,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil,nil)
+	srv := DefaultService(docSrv, nil, nil)
 
 	var model documents.Model
 	var err error

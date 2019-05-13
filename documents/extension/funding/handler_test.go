@@ -166,7 +166,7 @@ func TestGRPCHandler_GetList(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingListResponse", mock.Anything,  mock.Anything).Return(&clientfundingpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingListResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
 	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)

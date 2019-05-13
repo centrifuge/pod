@@ -44,7 +44,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		return errors.New("identity service not initialized")
 	}
 
-	srv := DefaultService(docSrv, tokenRegistry,idSrv)
+	srv := DefaultService(docSrv, tokenRegistry, idSrv)
 	handler := GRPCHandler(cfgSrv, srv)
 	ctx[BootstrappedFundingAPIHandler] = handler
 	return nil

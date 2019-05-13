@@ -2,9 +2,10 @@ package funding
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"reflect"
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -37,7 +38,7 @@ type Service interface {
 type service struct {
 	documents.Service
 	tokenRegistry documents.TokenRegistry
-	idSrv identity.Service
+	idSrv         identity.Service
 }
 
 const (
@@ -58,7 +59,7 @@ func DefaultService(
 	return service{
 		Service:       srv,
 		tokenRegistry: tokenRegistry,
-		idSrv: idSrv,
+		idSrv:         idSrv,
 	}
 }
 
@@ -271,9 +272,8 @@ func (s service) findFunding(model documents.Model, fundingID string) (*Data, er
 	if err != nil {
 		return nil, err
 	}
-	return  s.deriveFundingData(model, idx)
+	return s.deriveFundingData(model, idx)
 }
-
 
 func (s service) findFundingIDX(model documents.Model, fundingID string) (idx string, err error) {
 	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
@@ -368,12 +368,11 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 		return nil, err
 	}
 
-
-	signatures , err := s.deriveFundingSignatures(ctx, model,data, idx)
+	signatures, err := s.deriveFundingSignatures(ctx, model, data, idx)
 
 	return &clientfundingpb.FundingResponse{
 		Header: h,
-		Data:   &clientfundingpb.FundingResponseData{Funding:data.getClientData(),Signatures:signatures},
+		Data:   &clientfundingpb.FundingResponseData{Funding: data.getClientData(), Signatures: signatures},
 	}, nil
 
 }
@@ -413,8 +412,8 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 			continue
 		}
 
-		signatures , err := s.deriveFundingSignatures(ctx, model,funding, i.String())
-		response.List = append(response.List, &clientfundingpb.FundingResponseData{Funding:funding.getClientData(),Signatures:signatures})
+		signatures, err := s.deriveFundingSignatures(ctx, model, funding, i.String())
+		response.List = append(response.List, &clientfundingpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
 		i, err = i.Inc()
 
 		if err != nil {
@@ -424,4 +423,3 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 	}
 	return response, nil
 }
-
