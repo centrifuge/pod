@@ -302,6 +302,17 @@ func TestFilterMintProofs(t *testing.T) {
 					utils.RandomSlice(32),
 				},
 			},
+			{
+				Property: proofs.CompactName(append([]byte{3, 0, 0, 0, 0, 0, 0, 1}, append(indexKey, []byte{0, 0, 0, 5}...)...)...),
+				Value:    utils.RandomSlice(32),
+				Salt:     utils.RandomSlice(32),
+				Hash:     utils.RandomSlice(32),
+				SortedHashes: [][]byte{
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+					utils.RandomSlice(32),
+				},
+			},
 		},
 	}
 
@@ -309,6 +320,7 @@ func TestFilterMintProofs(t *testing.T) {
 	assert.Len(t, docProofAux.FieldProofs[0].SortedHashes, 2)
 	assert.Len(t, docProofAux.FieldProofs[1].SortedHashes, 3)
 	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
+	assert.Len(t, docProofAux.FieldProofs[3].SortedHashes, 3)
 }
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
