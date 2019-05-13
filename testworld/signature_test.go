@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"testing"
 
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -103,6 +105,71 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Contains(t, message, "failed to validate signatures")
 }
 
+func TestHost_VerifyTransitionValidationFlag(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{}))
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier := getDocumentIdentifier(t, res)
+
+	params := map[string]interface{}{
+		"document_id": docIdentifier,
+		"currency":    "USD",
+	}
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
+
+	res = updateDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, docIdentifier, defaultInvoicePayload([]string{bob.id.String()}))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	ctxh := testingconfig.CreateAccountContext(t, alice.host.config)
+	docID, err := hexutil.Decode(docIdentifier)
+	assert.NoError(t, err)
+	payload := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: docID,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	// Bob could not validate transition as he didnt have the previous version
+	p2pDoc, err := alice.host.p2pClient.GetDocumentRequest(ctxh, bob.id, payload)
+	assert.NoError(t, err)
+	assert.Len(t, p2pDoc.Document.SignatureData.Signatures, 2)
+	assert.Equal(t, p2pDoc.Document.SignatureData.Signatures[1].SignerId, bob.id[:])
+	assert.False(t, p2pDoc.Document.SignatureData.Signatures[1].TransitionValidated)
+
+	res = updateDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, docIdentifier, defaultInvoicePayload([]string{bob.id.String()}))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	ctxh = testingconfig.CreateAccountContext(t, alice.host.config)
+	docID, err = hexutil.Decode(docIdentifier)
+	assert.NoError(t, err)
+	payload = &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: docID,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	// Bob validates transition as he has the previous version
+	p2pDoc, err = alice.host.p2pClient.GetDocumentRequest(ctxh, bob.id, payload)
+	assert.NoError(t, err)
+	assert.Len(t, p2pDoc.Document.SignatureData.Signatures, 2)
+	assert.Equal(t, p2pDoc.Document.SignatureData.Signatures[1].SignerId, bob.id[:])
+	assert.True(t, p2pDoc.Document.SignatureData.Signatures[1].TransitionValidated)
+
+}
+
 // Helper Methods
 func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
 	payload := testingdocuments.CreatePOPayload()
@@ -128,7 +195,10 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
+	msg, err := crypto.Sha256Hash(append(sr, []byte{0}...))
+	assert.NoError(t, err)
+
+	s, err := crypto.SignMessage(privateKey, msg, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
