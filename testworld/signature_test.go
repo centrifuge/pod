@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"testing"
 
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
