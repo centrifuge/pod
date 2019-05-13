@@ -5,11 +5,11 @@ import (
 	"math/big"
 	"net/url"
 	"reflect"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -35,7 +35,6 @@ type Config interface {
 	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
-	GetTxPoolAccessEnabled() bool
 	GetEthereumContextReadWaitTimeout() time.Duration
 }
 
@@ -45,11 +44,21 @@ func DefaultWaitForTransactionMiningContext(d time.Duration) (ctx context.Contex
 	return context.WithDeadline(context.Background(), toBeDone)
 }
 
+// EthClient abstracts the implementation of eth client
+type EthClient interface {
+	ethereum.ChainReader
+	ethereum.ChainSyncReader
+	ethereum.TransactionReader
+	bind.ContractBackend
+
+	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
+}
+
 // Client can be implemented by any chain client
 type Client interface {
 
 	// GetEthClient returns the ethereum client
-	GetEthClient() *ethclient.Client
+	GetEthClient() EthClient
 
 	// GetNodeURL returns the node url
 	GetNodeURL() *url.URL
@@ -81,7 +90,7 @@ type Client interface {
 
 // gethClient implements Client for Ethereum
 type gethClient struct {
-	client    *ethclient.Client
+	client    EthClient
 	rpcClient *rpc.Client
 	host      *url.URL
 	accounts  map[string]*bind.TransactOpts
@@ -184,7 +193,7 @@ func (gc *gethClient) copyOpts(ctx context.Context, original *bind.TransactOpts)
 }
 
 // GetEthClient returns the ethereum client
-func (gc *gethClient) GetEthClient() *ethclient.Client {
+func (gc *gethClient) GetEthClient() EthClient {
 	return gc.client
 }
 
@@ -313,7 +322,7 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 		}
 
 		current++
-		err = gc.incrementNonce(opts, gc.config.GetTxPoolAccessEnabled(), gc.client, gc.rpcClient)
+		err = gc.incrementNonce(opts)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to increment nonce: %v", err))
 		}
@@ -373,59 +382,17 @@ type callContexter interface {
 }
 
 // incrementNonce updates the opts.Nonce to next valid nonce
-// We pick the current nonce by getting latest transactions included in the blocks including pending blocks
-// then we check the txpool to see if there any new transactions from the address that are not included in any block
-// If there are no pending transactions in txpool, we use the current nonce + 1
-// else we increment the greater of current nonce or the nonce derived from txpool
-func (gc *gethClient) incrementNonce(opts *bind.TransactOpts, txpoolAccessEnabled bool, noncer noncer, cc callContexter) error {
-	// check if the txpool access is enabled
-	if !txpoolAccessEnabled {
-		log.Warningf("Ethereum Client doesn't support txpool API, may cause transactions failures")
-		opts.Nonce = nil
-		return nil
-	}
-
+func (gc *gethClient) incrementNonce(opts *bind.TransactOpts) error {
 	ctx, cancel := gc.defaultReadContext()
 	defer cancel()
 
 	// get current nonce
-	n, err := noncer.PendingNonceAt(ctx, opts.From)
+	n, err := gc.client.PendingNonceAt(ctx, opts.From)
 	if err != nil {
 		return errors.NewTypedError(ErrEthTransaction, errors.New("failed to get chain nonce for %s: %v", opts.From.String(), err))
 	}
 
 	// set the nonce
 	opts.Nonce = new(big.Int).SetUint64(n)
-
-	// check for any transactions in txpool
-	res := make(map[string]map[string]map[string]string)
-	err = cc.CallContext(ctx, &res, "txpool_inspect")
-	if err != nil {
-		return errors.NewTypedError(ErrEthTransaction, errors.New("failed to get txpool data: %v", err))
-	}
-
-	// no pending transaction from this account in tx pool
-	if len(res["pending"][opts.From.Hex()]) < 1 {
-		return nil
-	}
-
-	var keys []int
-	for k := range res["pending"][opts.From.Hex()] {
-		ki, err := strconv.Atoi(k)
-		if err != nil {
-			return errors.NewTypedError(ErrEthTransaction, errors.New("failed to convert nonce: %v", err))
-		}
-
-		keys = append(keys, ki)
-	}
-
-	// there are some pending transactions in txpool, check their nonce
-	// pick the largest one and increment it
-	sort.Ints(keys)
-	lastPoolNonce := keys[len(keys)-1]
-	if uint64(lastPoolNonce) >= n {
-		opts.Nonce = new(big.Int).Add(big.NewInt(int64(lastPoolNonce)), big.NewInt(1))
-	}
-
 	return nil
 }

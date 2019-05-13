@@ -50,7 +50,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := make(map[string]interface{})
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	ibootstappers := []bootstrap.TestBootstrapper{
