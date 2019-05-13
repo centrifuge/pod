@@ -3,13 +3,16 @@
 package funding
 
 import (
+	"fmt"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,8 +31,15 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document service not initialised")
 
-	// missing token registry
+	// missing identity service
 	ctx[documents.BootstrappedDocumentService] = new(mockService)
+	err = b.Bootstrap(ctx)
+	assert.Error(t, err)
+	fmt.Println(err)
+	assert.Contains(t, err.Error(), "identity service not initialized")
+
+	// missing token registry
+	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "token registry not initialisation")
@@ -37,6 +47,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	// success
 	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	err = b.Bootstrap(ctx)
-	assert.NoError(t, err)
+ 	assert.NoError(t, err)
 	assert.NotNil(t, ctx[BootstrappedFundingAPIHandler])
 }

@@ -565,7 +565,7 @@ func TestAttributes_signed(t *testing.T) {
 	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
 	model := new(mockModel)
 	model.On("ID").Return(id).Once()
-	model.On("CurrentVersion").Return(version).Twice()
+	model.On("NextVersion").Return(version).Twice()
 	attr, err := NewSignedAttribute(label, did, acc, model, value)
 	assert.NoError(t, err)
 	acc.AssertExpectations(t)

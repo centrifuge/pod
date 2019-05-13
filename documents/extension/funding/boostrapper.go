@@ -33,16 +33,17 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 	if !ok {
 		return errors.New("document service not initialised")
 	}
+	idSrv, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	if !ok {
+		return errors.New("identity service not initialized")
+	}
 
 	tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	if !ok {
 		return errors.New("token registry not initialisation")
 	}
 
-	idSrv, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialized")
-	}
+
 
 	srv := DefaultService(docSrv, tokenRegistry, idSrv)
 	handler := GRPCHandler(cfgSrv, srv)
