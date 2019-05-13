@@ -4,9 +4,10 @@ package funding
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -47,6 +48,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	// success
 	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	err = b.Bootstrap(ctx)
- 	assert.NoError(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, ctx[BootstrappedFundingAPIHandler])
 }

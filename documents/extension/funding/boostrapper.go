@@ -43,8 +43,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		return errors.New("token registry not initialisation")
 	}
 
-
-
 	srv := DefaultService(docSrv, tokenRegistry, idSrv)
 	handler := GRPCHandler(cfgSrv, srv)
 	ctx[BootstrappedFundingAPIHandler] = handler
