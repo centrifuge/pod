@@ -154,7 +154,6 @@ type Account interface {
 	storage.Model
 	GetKeys() (map[string]IDKey, error)
 	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
-	VerifyMsg(msg []byte, signature []byte, pk []byte) bool
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string

@@ -48,7 +48,6 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 	attributes = append(attributes, attrSign)
 
 	return attributes, nil
-
 }
 
 // Sign adds a signature to an existing document
@@ -139,7 +138,6 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 	}
 
 	return s.validateSignedFundingVersion(ctx, current.ID(), funding.FundingId, signAttr)
-
 }
 
 func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, funding *Data, idxFunding string) ([]*clientfundingpb.FundingSignature, error) {
