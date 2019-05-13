@@ -462,9 +462,8 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 
 // VerifyMsg verifies a message with a given public key
 func (acc *Account) VerifyMsg(msg []byte, signature []byte, pk []byte) bool {
-	return ed25519.VerifySignature(pk,msg,signature)
+	return ed25519.VerifySignature(pk, msg, signature)
 }
-
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
 	var ethAddr struct {

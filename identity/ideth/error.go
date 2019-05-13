@@ -1,6 +1,7 @@
 package ideth
+
 import (
-"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 const (

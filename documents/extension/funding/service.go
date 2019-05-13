@@ -369,6 +369,9 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 	}
 
 	signatures, err := s.deriveFundingSignatures(ctx, model, data, idx)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrFundingSignature, err)
+	}
 
 	return &clientfundingpb.FundingResponse{
 		Header: h,
@@ -413,6 +416,10 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 		}
 
 		signatures, err := s.deriveFundingSignatures(ctx, model, funding, i.String())
+		if err != nil {
+			return nil, errors.NewTypedError(ErrFundingSignature, err)
+		}
+
 		response.List = append(response.List, &clientfundingpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
 		i, err = i.Inc()
 

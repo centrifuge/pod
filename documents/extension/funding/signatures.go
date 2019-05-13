@@ -86,7 +86,7 @@ func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) 
 	return model, nil
 }
 
-func (s service) validateSignedFundingVersion(ctx context.Context, identifier []byte, fundingId string, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
+func (s service) validateSignedFundingVersion(ctx context.Context, identifier []byte, fundingID string, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(signAttr.Value.Signed.PublicKey)))
 	did := signAttr.Value.Signed.Identity
 
@@ -96,7 +96,7 @@ func (s service) validateSignedFundingVersion(ctx context.Context, identifier []
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	signedFunding, err := s.findFunding(signedDocVersion, fundingId)
+	signedFunding, err := s.findFunding(signedDocVersion, fundingID)
 	if err != nil {
 		return nil, ErrFundingNotFound
 	}
