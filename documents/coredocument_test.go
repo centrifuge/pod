@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"os"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
@@ -496,7 +496,6 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.fieldName, func(t *testing.T) {
 			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree, []string{test.fieldName})
-			fmt.Println(p)
 			assert.NoError(t, err)
 			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
 			var l *proofs.LeafNode
@@ -1105,47 +1104,53 @@ func TestValidateFullNFTProof(t *testing.T) {
     }
   ]
 }`
+
 	type Header struct {
-		DocumentId string `json:"document_id"`
-		VersionId string `json:"version_id"`
+		DocumentId   string `json:"document_id"`
+		VersionId    string `json:"version_id"`
 		DocumentRoot string `json:"document_root"`
 	}
 
 	type FieldProof struct {
-		Property string `json:"property"`
-		Value string `json:"value"`
-		Salt string `json:"salt"`
-		Hash string `json:"hash"`
+		Property     string   `json:"property"`
+		Value        string   `json:"value"`
+		Salt         string   `json:"salt"`
+		Hash         string   `json:"hash"`
 		SortedHashes []string `json:"sorted_hashes"`
 	}
 
 	type Payload struct {
-		Header Header	`json:"header"`
+		Header      Header       `json:"header"`
 		FieldProofs []FieldProof `json:"field_proofs"`
 	}
 
 	var obj Payload
 	err := json.Unmarshal([]byte(payload), &obj)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
-	for i := 0 ; i < len(obj.FieldProofs) ; i++ {
+	for i := 0; i < len(obj.FieldProofs); i++ {
 		var lh []byte
 		if obj.FieldProofs[i].Hash == "0x" {
-			prop, _ := hexutil.Decode(obj.FieldProofs[i].Property)
-			val, _ := hexutil.Decode(obj.FieldProofs[i].Value)
-			salt, _ := hexutil.Decode(obj.FieldProofs[i].Salt)
-			lh, _ = crypto.Sha256Hash(append(prop, append(val, salt...)...))
+			prop, err := hexutil.Decode(obj.FieldProofs[i].Property)
+			assert.NoError(t, err)
+			val, err := hexutil.Decode(obj.FieldProofs[i].Value)
+			assert.NoError(t, err)
+			salt, err := hexutil.Decode(obj.FieldProofs[i].Salt)
+			assert.NoError(t, err)
+			lh, err = crypto.Sha256Hash(append(prop, append(val, salt...)...))
+			assert.NoError(t, err)
 		} else {
-			lh, _ = hexutil.Decode(obj.FieldProofs[i].Hash)
+			lh, err = hexutil.Decode(obj.FieldProofs[i].Hash)
+			assert.NoError(t, err)
 		}
 		var sh [][]byte
-		for j := 0 ; j < len(obj.FieldProofs[i].SortedHashes); j++ {
-			shi, _ := hexutil.Decode(obj.FieldProofs[i].SortedHashes[j])
+		for j := 0; j < len(obj.FieldProofs[i].SortedHashes); j++ {
+			shi, err := hexutil.Decode(obj.FieldProofs[i].SortedHashes[j])
+			assert.NoError(t, err)
 			sh = append(sh, shi)
 		}
-		rh, _ := hexutil.Decode(obj.Header.DocumentRoot)
+		rh, err := hexutil.Decode(obj.Header.DocumentRoot)
+		assert.NoError(t, err)
 		valid, err := proofs.ValidateProofSortedHashes(lh, sh, rh, sha256.New())
 		assert.NoError(t, err)
 		msg := fmt.Sprintf("Failed for proof %d", i)

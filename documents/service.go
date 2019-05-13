@@ -3,7 +3,6 @@ package documents
 import (
 	"bytes"
 	"context"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -200,10 +200,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 
 	// Signing root signature has to be verified on-chain, and we have a limit of 32 byte payload
-	pp := append(sr, []byte{byte(transitionFlag)}...)
-	srvLog.Infof("hex payload %x", pp)
-	srvLog.Infof("hex payload len %d", len(pp))
-	payload, err := crypto.Sha256Hash(pp)
+	payload, err := crypto.Sha256Hash(append(sr, []byte{byte(transitionFlag)}...))
 	if err != nil {
 		return nil, err
 	}

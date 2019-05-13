@@ -123,17 +123,10 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, err
 	}
 
-	drr, _ := model.CalculateDocumentRoot()
-	fmt.Printf("DocRoot: %x\n", drr)
-	fmt.Printf("DocID: %x\n", model.ID())
-	fmt.Printf("VersionID: %x\n", anchorID[:])
 	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: docProofs.DocumentID, VersionID: docProofs.VersionID, FieldProofs: docProofs.FieldProofs})
 	if err != nil {
 		return mreq, err
 	}
-	//c, _ := json.MarshalIndent(proof, "", "  ")
-	//log.Debug(string(c))
-	//println(string(c))
 	log.Debug(json.MarshalIndent(proof, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)

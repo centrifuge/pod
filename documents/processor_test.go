@@ -197,6 +197,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 	// success
 	sr := utils.RandomSlice(32)
+	msg, err := crypto.Sha256Hash(append(sr, []byte{0}...))
+	assert.NoError(t, err)
 	model = new(mockModel)
 	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
@@ -213,7 +215,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NoError(t, err)
 	keys, err := self.GetKeys()
 	assert.NoError(t, err)
-	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
+	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, msg, sig.Signature, crypto.CurveSecp256K1))
 }
 
 type p2pClient struct {
@@ -337,11 +339,12 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	did, err := self.GetIdentityID()
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	msg, err := crypto.Sha256Hash(append(sr, []byte{0}...))
+	assert.NoError(t, err)
+	sig, err := self.SignMsg(msg)
 	assert.NoError(t, err)
 	did1, err := identity.NewDIDFromBytes(did)
 	assert.NoError(t, err)
-	msg := append(sr, []byte{0}...)
 
 	// validation failed
 	model := new(mockModel)
@@ -415,11 +418,12 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	did, err := self.GetIdentityID()
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	msg, err := crypto.Sha256Hash(append(sr, []byte{0}...))
+	assert.NoError(t, err)
+	sig, err := self.SignMsg(msg)
 	assert.NoError(t, err)
 	did1, err := identity.NewDIDFromBytes(did)
 	assert.NoError(t, err)
-	msg := append(sr, []byte{0}...)
 
 	// validations failed
 	id := utils.RandomSlice(32)
@@ -515,12 +519,13 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	did1, err := identity.NewDIDFromBytes(didb)
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	msg, err := crypto.Sha256Hash(append(sr, []byte{1}...))
+	assert.NoError(t, err)
+	sig, err := self.SignMsg(msg)
 	assert.NoError(t, err)
 	sig.TransitionValidated = true
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
-	msg := append(sr, []byte{1}...)
 
 	// validations failed
 	id := utils.RandomSlice(32)

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -431,7 +433,8 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// signature length mismatch
 	sr := utils.RandomSlice(32)
-	msg := append(sr, []byte{0}...)
+	msg, err := crypto.Sha256Hash(append(sr, []byte{0}...))
+	assert.NoError(t, err)
 	model = new(mockModel)
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("Signatures").Return().Once()
