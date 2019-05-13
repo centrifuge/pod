@@ -235,7 +235,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 	}
 
 	fd.FundingId = req.FundingId
-	idx, err := s.findFunding(model, fd.FundingId)
+	idx, err := s.findFundingIDX(model, fd.FundingId)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,16 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 	return model, nil
 }
 
-func (s service) findFunding(model documents.Model, fundingID string) (idx string, err error) {
+func (s service) findFunding(model documents.Model, fundingID string) (*Data, error) {
+	idx, err := s.findFundingIDX(model, fundingID)
+	if err != nil {
+		return nil, err
+	}
+	return  s.deriveFundingData(model, idx)
+}
+
+
+func (s service) findFundingIDX(model documents.Model, fundingID string) (idx string, err error) {
 	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return idx, err
@@ -345,7 +354,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*Data, er
 
 // DeriveFundingResponse returns create response from the added funding
 func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error) {
-	idx, err := s.findFunding(model, fundingID)
+	idx, err := s.findFundingIDX(model, fundingID)
 	if err != nil {
 		return nil, err
 	}
@@ -354,11 +363,11 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 	if err != nil {
 		return nil, errors.New("failed to derive response: %v", err)
 	}
-
 	data, err := s.deriveFundingData(model, idx)
 	if err != nil {
 		return nil, err
 	}
+
 
 	signatures , err := s.deriveFundingSignatures(ctx, model,data, idx)
 
@@ -368,8 +377,6 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 	}, nil
 
 }
-
-
 
 // DeriveFundingListResponse returns a funding list in client format
 func (s service) DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfundingpb.FundingListResponse, error) {

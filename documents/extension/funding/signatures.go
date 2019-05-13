@@ -67,7 +67,7 @@ func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) 
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	idxFunding, err := s.findFunding(model, fundingID)
+	idxFunding, err := s.findFundingIDX(model, fundingID)
 	if err != nil {
 		return nil, ErrFundingNotFound
 	}
@@ -85,21 +85,45 @@ func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) 
 	return model, nil
 }
 
+func (s service) validateSignedFundingVersion(ctx context.Context,identifier [] byte, fundingId string, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(signAttr.Value.Signed.PublicKey)))
+	did := signAttr.Value.Signed.Identity
 
-func (s service) 
+	version := signAttr.Value.Signed.DocumentVersion
+	signedDocVersion , err := s.Service.GetVersion(ctx,identifier,version)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
 
-func (s service) signAttrToClientData(ctx context.Context,current documents.Model,funding *Data,  signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
+	signedFunding, err := s.findFunding(signedDocVersion, fundingId)
+	if err != nil {
+		return nil, ErrFundingNotFound
+	}
+
+	valueSignedVersion, err := json.Marshal(signedFunding)
+	if err != nil {
+		return nil, ErrJSON
+	}
+
+	payload := documents.AttributeSignaturePayload(did[:],identifier,signAttr.Value.Signed.DocumentVersion,valueSignedVersion)
+	err = s.idSrv.ValidateSignature(did,address32Bytes[:],signAttr.Value.Signed.Signature,payload, time.Now())
+
+	if err == nil {
+		// the signature of the older funding version is correct
+		return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(identifier),Identity:did.String(),OutdatedSignature:true},nil
+	}
+
+	return &clientfundingpb.FundingSignature{Valid:false,SignedVersion:hexutil.Encode(identifier),Identity:did.String(),OutdatedSignature:true},nil
+}
+
+func (s service) signAttrToClientData(ctx context.Context,current documents.Model,funding *Data, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
 	if signAttr.Value.Type != documents.AttrSigned {
 		return nil, ErrFundingSignature
-	}
-	account, err := contextutil.Account(ctx)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(signAttr.Value.Signed.PublicKey)))
 	did := signAttr.Value.Signed.Identity
-	version := signAttr.Value.Signed.DocumentVersion
+
 
 	value, err := json.Marshal(funding)
 	if err != nil {
@@ -113,34 +137,9 @@ func (s service) signAttrToClientData(ctx context.Context,current documents.Mode
 		// signature correct (funding data didn't change since signing)
 		return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID()),Identity:did.String(),OutdatedSignature:false},nil
 	}
-	outDatedSignature := true
 
-	signedVersionDoc, err := s.Service.GetVersion(ctx,current.ID(),version)
-	if err != nil {
-		return nil, ErrFundingNotFound
-	}
+	return s.validateSignedFundingVersion(ctx, current.ID(),funding.FundingId, signAttr)
 
-	valueSignedVersion, err := json.Marshal(funding)
-	if err != nil {
-		return nil, ErrJSON
-	}
-	payload = documents.AttributeSignaturePayload(did[:],current.ID(),signAttr.Value.Signed.DocumentVersion,valueSignedVersion)
-	err = s.idSrv.ValidateSignature(did,address32Bytes[:],signAttr.Value.Signed.Signature,payload, time.Now())
-
-	if err == nil {
-		// signature correct (funding data didn't change since signing)
-		return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID()),Identity:did.String(),OutdatedSignature:ture},nil
-	}
-
-
-
-
-	// todo check PK belongs to DID
-
-
-	//docSigned, err := s.Service.GetVersion(ctx,current.ID(),signAttr.Value.Signed.DocumentVersion)
-
-	return &clientfundingpb.FundingSignature{Valid:true,SignedVersion:hexutil.Encode(current.ID())},nil
 }
 
 func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model,funding *Data, idxFunding string) ([]*clientfundingpb.FundingSignature, error) {
