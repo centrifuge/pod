@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -111,7 +110,7 @@ func TestService_Sign(t *testing.T) {
 
 func TestService_SignVerify(t *testing.T) {
 	fundingAmount := 5
-	srv, idSrv, docSrv, model, fundingID := setupFundingsForTesting(t, fundingAmount)
+	srv, _, docSrv, model, fundingID := setupFundingsForTesting(t, fundingAmount)
 
 	// add signature
 	acc := &mockAccount{}
@@ -122,32 +121,46 @@ func TestService_SignVerify(t *testing.T) {
 	ctx, err := contextutil.New(context.Background(), acc)
 	assert.NoError(t, err)
 
+	// add signature
 	model, err = srv.Sign(ctx, fundingID, utils.RandomSlice(32))
 	assert.NoError(t, err)
 
 	// funding current version: valid
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	response, err := srv.DeriveFundingResponse(ctx, model, fundingID)
 	assert.NoError(t, err)
 	assert.Equal(t, true, response.Data.Signatures[0].Valid)
 	assert.Equal(t, false, response.Data.Signatures[0].OutdatedSignature)
 
+	// update funding after signature
+	oldCD, err := model.PackCoreDocument()
+	assert.NoError(t, err)
+	oldInv := &invoice.Invoice{}
+	err = oldInv.UnpackCoreDocument(oldCD)
+	assert.NoError(t, err)
+
+	p2 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: fundingID}
+	p2.Data.Currency = ""
+	p2.Data.Fee = "13.37"
+	updatedModel, err := srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))
+	assert.NoError(t, err)
+
 	// older funding version signed: valid
-	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(model, nil)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ideth.ErrSignature).Once()
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	response, err = srv.DeriveFundingResponse(ctx, model, fundingID)
+	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil).Once()
+	response, err = srv.DeriveFundingResponse(ctx, updatedModel, fundingID)
 	assert.NoError(t, err)
 	assert.Equal(t, true, response.Data.Signatures[0].Valid)
 	assert.Equal(t, true, response.Data.Signatures[0].OutdatedSignature)
 
-	// older funding version signed: valid
-	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(model, nil)
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ideth.ErrSignature).Once()
-	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ideth.ErrSignature).Once()
-	response, err = srv.DeriveFundingResponse(ctx, model, fundingID)
+	// older funding version signed: invalid
+	invalidValue, err := hexutil.Decode("0x1234")
+	assert.NoError(t, err)
+	attr, err := documents.NewSignedAttribute("funding_agreement[4].signatures[0]", testingidentity.GenerateRandomDID(), acc, model, invalidValue)
+	assert.NoError(t, err)
+	oldInv.AddAttributes(attr)
+
+	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil)
+	response, err = srv.DeriveFundingResponse(ctx, oldInv, fundingID)
 	assert.NoError(t, err)
 	assert.Equal(t, false, response.Data.Signatures[0].Valid)
 	assert.Equal(t, true, response.Data.Signatures[0].OutdatedSignature)
-
 }

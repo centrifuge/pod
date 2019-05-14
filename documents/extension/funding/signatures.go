@@ -3,17 +3,14 @@ package funding
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -85,12 +82,17 @@ func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) 
 	return model, nil
 }
 
-func (s service) validateSignedFundingVersion(ctx context.Context, identifier []byte, fundingID string, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(signAttr.Value.Signed.PublicKey)))
-	did := signAttr.Value.Signed.Identity
+func (s service) validateValueOfSignAttr(funding *Data, signAttr documents.Attribute) (bool, error) {
+	value, err := json.Marshal(funding)
+	if err != nil {
+		return false, ErrJSON
+	}
+	return utils.IsSameByteSlice(value, signAttr.Value.Signed.Value), nil
+}
 
-	version := signAttr.Value.Signed.DocumentVersion
-	signedDocVersion, err := s.Service.GetVersion(ctx, identifier, version)
+func (s service) validateSignedFundingVersion(ctx context.Context, identifier []byte, fundingID string, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
+	did := signAttr.Value.Signed.Identity
+	signedDocVersion, err := s.Service.GetVersion(ctx, identifier, signAttr.Value.Signed.DocumentVersion)
 	if err != nil {
 		return nil, documents.ErrDocumentNotFound
 	}
@@ -100,16 +102,13 @@ func (s service) validateSignedFundingVersion(ctx context.Context, identifier []
 		return nil, ErrFundingNotFound
 	}
 
-	valueSignedVersion, err := json.Marshal(signedFunding)
+	valid, err := s.validateValueOfSignAttr(signedFunding, signAttr)
 	if err != nil {
-		return nil, ErrJSON
+		return nil, err
 	}
 
-	payload := documents.AttributeSignaturePayload(did[:], identifier, signAttr.Value.Signed.DocumentVersion, valueSignedVersion)
-	err = s.idSrv.ValidateSignature(did, address32Bytes[:], signAttr.Value.Signed.Signature, payload, time.Now())
-
-	if err == nil {
-		// the signature of the older funding version is correct
+	if valid {
+		// the value of the older funding version signature is correct
 		return &clientfundingpb.FundingSignature{Valid: true, SignedVersion: hexutil.Encode(identifier), Identity: did.String(), OutdatedSignature: true}, nil
 	}
 
@@ -121,19 +120,14 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 		return nil, ErrFundingSignature
 	}
 
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(signAttr.Value.Signed.PublicKey)))
 	did := signAttr.Value.Signed.Identity
-
-	value, err := json.Marshal(funding)
+	valid, err := s.validateValueOfSignAttr(funding, signAttr)
 	if err != nil {
-		return nil, ErrJSON
+		return nil, err
 	}
 
-	payload := documents.AttributeSignaturePayload(did[:], current.ID(), signAttr.Value.Signed.DocumentVersion, value)
-	err = s.idSrv.ValidateSignature(did, address32Bytes[:], signAttr.Value.Signed.Signature, payload, time.Now())
-
-	if err == nil {
-		// signature correct (funding data didn't change since signing)
+	// value correct (funding data didn't change since signing)
+	if valid {
 		return &clientfundingpb.FundingSignature{Valid: true, SignedVersion: hexutil.Encode(current.ID()), Identity: did.String(), OutdatedSignature: false}, nil
 	}
 
