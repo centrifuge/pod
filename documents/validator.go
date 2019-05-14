@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -283,13 +282,8 @@ func signaturesValidator(idService identity.Service) Validator {
 			if sig.TransitionValidated {
 				transitionValidatedFlag = 1
 			}
-			payload, erri := crypto.Sha256Hash(append(sr, []byte{byte(transitionValidatedFlag)}...))
-			if erri != nil {
-				err = errors.AppendError(
-					err,
-					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
-			}
-			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, payload, tm); erri != nil {
+
+			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, append(sr, []byte{byte(transitionValidatedFlag)}...), tm); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))

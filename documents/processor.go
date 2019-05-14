@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -111,13 +110,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	// Signing root signature has to be verified on-chain, and we have a limit of 32 byte payload
-	payload, err := crypto.Sha256Hash(append(sr, []byte{0}...))
-	if err != nil {
-		return err
-	}
-
-	sig, err := self.SignMsg(payload)
+	sig, err := self.SignMsg(append(sr, []byte{0}...))
 	if err != nil {
 		return err
 	}
