@@ -78,13 +78,14 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
 		signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 		signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+		signatureTransition := fmt.Sprintf("%s.signatures[%s].transition_validated", documents.SignaturesTreePrefix, signerId)
 
 		// mint an NFT
 		payload := map[string]interface{}{
 			"identifier":                docIdentifier,
 			"registryAddress":           registry.String(),
 			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, signatureTransition, documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,
