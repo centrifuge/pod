@@ -119,7 +119,6 @@ type Configuration interface {
 	GetEthereumMaxRetries() int
 	GetEthereumMaxGasPrice() *big.Int
 	GetEthereumGasLimit(op ContractOp) uint64
-	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
@@ -390,12 +389,6 @@ func (c *configuration) GetEthereumAccount(accountName string) (account *Account
 	}
 
 	return account, nil
-}
-
-// GetTxPoolAccessEnabled returns if the node can check the txpool for nonce increment.
-// Note:Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA).
-func (c *configuration) GetTxPoolAccessEnabled() bool {
-	return c.GetBool("ethereum.txPoolAccessEnabled")
 }
 
 // GetNetworkString returns defined network the node is connected to.
