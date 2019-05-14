@@ -304,3 +304,11 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   branch = "master"
   name = "github.com/common-nighthawk/go-figure"
+
+[[constraint]]
+  name = "github.com/go-chi/chi"
+  version = "4.0.2"
+
+[[constraint]]
+  name = "github.com/go-chi/render"
+  version = "1.0.1"

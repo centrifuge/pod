@@ -57,6 +57,8 @@ proto-all: ## runs prototool all
 
 gen-swagger: ## generates the swagger documentation
 	npm --prefix ./build run build_swagger
+	swag init -g ./httpapi/router.go -o ./httpapi
+	rm -rf ./httpapi/docs.go ./httpapi/swagger.yaml
 
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
@@ -68,6 +70,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go get -u github.com/jteeuwen/go-bindata/...
+	go get -u github.com/swaggo/swag/cmd/swag
 
 abigen-install: ## Installs ABIGEN from vendor
 abigen-install: vendorinstall
