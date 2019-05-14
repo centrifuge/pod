@@ -146,7 +146,7 @@ func Test_incrementNonce(t *testing.T) {
 	mockClient := &MockEthCl{}
 	mockClient.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(0), errors.New("error")).Once()
 	gc.client = mockClient
-	err := gc.incrementNonce(opts)
+	err := gc.setNonce(opts)
 	mockClient.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get chain nonce")
@@ -154,7 +154,7 @@ func Test_incrementNonce(t *testing.T) {
 	// noncer success
 	mockClient.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1), nil).Once()
 	gc.client = mockClient
-	err = gc.incrementNonce(opts)
+	err = gc.setNonce(opts)
 	mockClient.AssertExpectations(t)
 	assert.NoError(t, err)
 }

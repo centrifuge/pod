@@ -9,13 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -322,7 +321,7 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 		}
 
 		current++
-		err = gc.incrementNonce(opts)
+		err = gc.setNonce(opts)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to increment nonce: %v", err))
 		}
@@ -381,8 +380,8 @@ type callContexter interface {
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 }
 
-// incrementNonce updates the opts.Nonce to next valid nonce
-func (gc *gethClient) incrementNonce(opts *bind.TransactOpts) error {
+// setNonce updates the opts.Nonce to next valid nonce
+func (gc *gethClient) setNonce(opts *bind.TransactOpts) error {
 	ctx, cancel := gc.defaultReadContext()
 	defer cancel()
 
