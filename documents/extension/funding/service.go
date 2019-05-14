@@ -54,12 +54,10 @@ const (
 func DefaultService(
 	srv documents.Service,
 	tokenRegistry documents.TokenRegistry,
-	idSrv identity.Service,
 ) Service {
 	return service{
 		Service:       srv,
 		tokenRegistry: tokenRegistry,
-		idSrv:         idSrv,
 	}
 }
 

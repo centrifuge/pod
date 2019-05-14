@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -39,7 +38,7 @@ func (m *mockAccount) GetIdentityID() ([]byte, error) {
 	return sig, args.Error(1)
 }
 
-func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testingcommons.MockIdentityService, *testingdocuments.MockService, documents.Model, string) {
+func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
 	testingdocuments.CreateInvoicePayload()
 	inv := &invoice.Invoice{}
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
@@ -48,8 +47,7 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 	docSrv := &testingdocuments.MockService{}
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 
-	idSrv := &testingcommons.MockIdentityService{}
-	srv := DefaultService(docSrv, nil, idSrv)
+	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
 	var payloads []*clientfundingpb.FundingCreatePayload
@@ -66,12 +64,12 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 
 	}
 
-	return srv, idSrv, docSrv, model, lastFundingId
+	return srv, docSrv, model, lastFundingId
 }
 
 func TestService_Sign(t *testing.T) {
 	fundingAmount := 5
-	srv, _, _, model, lastFundingId := setupFundingsForTesting(t, fundingAmount)
+	srv, _, model, lastFundingId := setupFundingsForTesting(t, fundingAmount)
 
 	// add signature
 	acc := &mockAccount{}
@@ -110,7 +108,7 @@ func TestService_Sign(t *testing.T) {
 
 func TestService_SignVerify(t *testing.T) {
 	fundingAmount := 5
-	srv, _, docSrv, model, fundingID := setupFundingsForTesting(t, fundingAmount)
+	srv, docSrv, model, fundingID := setupFundingsForTesting(t, fundingAmount)
 
 	// add signature
 	acc := &mockAccount{}
