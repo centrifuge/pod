@@ -174,7 +174,7 @@ func (_AnchorContract *AnchorContractTransactorRaw) Transact(opts *bind.Transact
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(uint256 id) constant returns(uint256 anchorId, bytes32 documentRoot, uint32 blockNumber)
+// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32, blockNumber uint32)
 func (_AnchorContract *AnchorContractCaller) GetAnchorById(opts *bind.CallOpts, id *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
@@ -192,7 +192,7 @@ func (_AnchorContract *AnchorContractCaller) GetAnchorById(opts *bind.CallOpts, 
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(uint256 id) constant returns(uint256 anchorId, bytes32 documentRoot, uint32 blockNumber)
+// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32, blockNumber uint32)
 func (_AnchorContract *AnchorContractSession) GetAnchorById(id *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
@@ -203,7 +203,7 @@ func (_AnchorContract *AnchorContractSession) GetAnchorById(id *big.Int) (struct
 
 // GetAnchorById is a free data retrieval call binding the contract method 0x32bf361b.
 //
-// Solidity: function getAnchorById(uint256 id) constant returns(uint256 anchorId, bytes32 documentRoot, uint32 blockNumber)
+// Solidity: function getAnchorById(id uint256) constant returns(anchorId uint256, documentRoot bytes32, blockNumber uint32)
 func (_AnchorContract *AnchorContractCallerSession) GetAnchorById(id *big.Int) (struct {
 	AnchorId     *big.Int
 	DocumentRoot [32]byte
@@ -214,7 +214,7 @@ func (_AnchorContract *AnchorContractCallerSession) GetAnchorById(id *big.Int) (
 
 // HasValidPreCommit is a free data retrieval call binding the contract method 0xb5c7d034.
 //
-// Solidity: function hasValidPreCommit(uint256 anchorId) constant returns(bool valid)
+// Solidity: function hasValidPreCommit(anchorId uint256) constant returns(valid bool)
 func (_AnchorContract *AnchorContractCaller) HasValidPreCommit(opts *bind.CallOpts, anchorId *big.Int) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -226,56 +226,56 @@ func (_AnchorContract *AnchorContractCaller) HasValidPreCommit(opts *bind.CallOp
 
 // HasValidPreCommit is a free data retrieval call binding the contract method 0xb5c7d034.
 //
-// Solidity: function hasValidPreCommit(uint256 anchorId) constant returns(bool valid)
+// Solidity: function hasValidPreCommit(anchorId uint256) constant returns(valid bool)
 func (_AnchorContract *AnchorContractSession) HasValidPreCommit(anchorId *big.Int) (bool, error) {
 	return _AnchorContract.Contract.HasValidPreCommit(&_AnchorContract.CallOpts, anchorId)
 }
 
 // HasValidPreCommit is a free data retrieval call binding the contract method 0xb5c7d034.
 //
-// Solidity: function hasValidPreCommit(uint256 anchorId) constant returns(bool valid)
+// Solidity: function hasValidPreCommit(anchorId uint256) constant returns(valid bool)
 func (_AnchorContract *AnchorContractCallerSession) HasValidPreCommit(anchorId *big.Int) (bool, error) {
 	return _AnchorContract.Contract.HasValidPreCommit(&_AnchorContract.CallOpts, anchorId)
 }
 
 // Commit is a paid mutator transaction binding the contract method 0x1cd98bce.
 //
-// Solidity: function commit(uint256 anchorIdPreImage, bytes32 documentRoot, bytes32 proof) returns()
+// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, proof bytes32) returns()
 func (_AnchorContract *AnchorContractTransactor) Commit(opts *bind.TransactOpts, anchorIdPreImage *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error) {
 	return _AnchorContract.contract.Transact(opts, "commit", anchorIdPreImage, documentRoot, proof)
 }
 
 // Commit is a paid mutator transaction binding the contract method 0x1cd98bce.
 //
-// Solidity: function commit(uint256 anchorIdPreImage, bytes32 documentRoot, bytes32 proof) returns()
+// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, proof bytes32) returns()
 func (_AnchorContract *AnchorContractSession) Commit(anchorIdPreImage *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error) {
 	return _AnchorContract.Contract.Commit(&_AnchorContract.TransactOpts, anchorIdPreImage, documentRoot, proof)
 }
 
 // Commit is a paid mutator transaction binding the contract method 0x1cd98bce.
 //
-// Solidity: function commit(uint256 anchorIdPreImage, bytes32 documentRoot, bytes32 proof) returns()
+// Solidity: function commit(anchorIdPreImage uint256, documentRoot bytes32, proof bytes32) returns()
 func (_AnchorContract *AnchorContractTransactorSession) Commit(anchorIdPreImage *big.Int, documentRoot [32]byte, proof [32]byte) (*types.Transaction, error) {
 	return _AnchorContract.Contract.Commit(&_AnchorContract.TransactOpts, anchorIdPreImage, documentRoot, proof)
 }
 
 // PreCommit is a paid mutator transaction binding the contract method 0x53b36015.
 //
-// Solidity: function preCommit(uint256 anchorId, bytes32 signingRoot) returns()
+// Solidity: function preCommit(anchorId uint256, signingRoot bytes32) returns()
 func (_AnchorContract *AnchorContractTransactor) PreCommit(opts *bind.TransactOpts, anchorId *big.Int, signingRoot [32]byte) (*types.Transaction, error) {
 	return _AnchorContract.contract.Transact(opts, "preCommit", anchorId, signingRoot)
 }
 
 // PreCommit is a paid mutator transaction binding the contract method 0x53b36015.
 //
-// Solidity: function preCommit(uint256 anchorId, bytes32 signingRoot) returns()
+// Solidity: function preCommit(anchorId uint256, signingRoot bytes32) returns()
 func (_AnchorContract *AnchorContractSession) PreCommit(anchorId *big.Int, signingRoot [32]byte) (*types.Transaction, error) {
 	return _AnchorContract.Contract.PreCommit(&_AnchorContract.TransactOpts, anchorId, signingRoot)
 }
 
 // PreCommit is a paid mutator transaction binding the contract method 0x53b36015.
 //
-// Solidity: function preCommit(uint256 anchorId, bytes32 signingRoot) returns()
+// Solidity: function preCommit(anchorId uint256, signingRoot bytes32) returns()
 func (_AnchorContract *AnchorContractTransactorSession) PreCommit(anchorId *big.Int, signingRoot [32]byte) (*types.Transaction, error) {
 	return _AnchorContract.Contract.PreCommit(&_AnchorContract.TransactOpts, anchorId, signingRoot)
 }
@@ -358,7 +358,7 @@ type AnchorContractAnchorCommitted struct {
 
 // FilterAnchorCommitted is a free log retrieval operation binding the contract event 0xd1eb81d62e07e99a310f0f4c9a107a644e475be1f4b7eaa3d5c731c140195ee9.
 //
-// Solidity: event AnchorCommitted(address indexed from, uint256 indexed anchorId, bytes32 documentRoot, uint32 blockHeight)
+// Solidity: e AnchorCommitted(from indexed address, anchorId indexed uint256, documentRoot bytes32, blockHeight uint32)
 func (_AnchorContract *AnchorContractFilterer) FilterAnchorCommitted(opts *bind.FilterOpts, from []common.Address, anchorId []*big.Int) (*AnchorContractAnchorCommittedIterator, error) {
 
 	var fromRule []interface{}
@@ -379,7 +379,7 @@ func (_AnchorContract *AnchorContractFilterer) FilterAnchorCommitted(opts *bind.
 
 // WatchAnchorCommitted is a free log subscription operation binding the contract event 0xd1eb81d62e07e99a310f0f4c9a107a644e475be1f4b7eaa3d5c731c140195ee9.
 //
-// Solidity: event AnchorCommitted(address indexed from, uint256 indexed anchorId, bytes32 documentRoot, uint32 blockHeight)
+// Solidity: e AnchorCommitted(from indexed address, anchorId indexed uint256, documentRoot bytes32, blockHeight uint32)
 func (_AnchorContract *AnchorContractFilterer) WatchAnchorCommitted(opts *bind.WatchOpts, sink chan<- *AnchorContractAnchorCommitted, from []common.Address, anchorId []*big.Int) (event.Subscription, error) {
 
 	var fromRule []interface{}
@@ -500,7 +500,7 @@ type AnchorContractAnchorPreCommitted struct {
 
 // FilterAnchorPreCommitted is a free log retrieval operation binding the contract event 0xaa2928be4e330731bc1f0289edebfc72ccb9979ffc703a3de4edd8ea760462da.
 //
-// Solidity: event AnchorPreCommitted(address indexed from, uint256 indexed anchorId, uint32 blockHeight)
+// Solidity: e AnchorPreCommitted(from indexed address, anchorId indexed uint256, blockHeight uint32)
 func (_AnchorContract *AnchorContractFilterer) FilterAnchorPreCommitted(opts *bind.FilterOpts, from []common.Address, anchorId []*big.Int) (*AnchorContractAnchorPreCommittedIterator, error) {
 
 	var fromRule []interface{}
@@ -521,7 +521,7 @@ func (_AnchorContract *AnchorContractFilterer) FilterAnchorPreCommitted(opts *bi
 
 // WatchAnchorPreCommitted is a free log subscription operation binding the contract event 0xaa2928be4e330731bc1f0289edebfc72ccb9979ffc703a3de4edd8ea760462da.
 //
-// Solidity: event AnchorPreCommitted(address indexed from, uint256 indexed anchorId, uint32 blockHeight)
+// Solidity: e AnchorPreCommitted(from indexed address, anchorId indexed uint256, blockHeight uint32)
 func (_AnchorContract *AnchorContractFilterer) WatchAnchorPreCommitted(opts *bind.WatchOpts, sink chan<- *AnchorContractAnchorPreCommitted, from []common.Address, anchorId []*big.Int) (event.Subscription, error) {
 
 	var fromRule []interface{}

@@ -194,9 +194,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	sr, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	msg, err := crypto.Sha256Hash(append(sr, []byte{0}...))
-	assert.NoError(t, err)
-
+	msg := append(sr, []byte{0}...)
 	s, err := crypto.SignMessage(privateKey, msg, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 

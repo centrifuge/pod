@@ -145,7 +145,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	sig := resp.Signature
 	signingRoot, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), append(signingRoot, []byte{0}...)), "signature must be valid")
 
 	// document already exists
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)

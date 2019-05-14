@@ -77,6 +77,7 @@ gen-abi-bindings: ## Generates GO ABI Bindings
 gen-abi-bindings: install-deps abigen-install
 	npm install --prefix vendor/github.com/centrifuge/centrifuge-ethereum-contracts
 	npm run compile --prefix vendor/github.com/centrifuge/centrifuge-ethereum-contracts
+	@mkdir -p tmp/contracts
 	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
 	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/AnchorRepository.json | jq '.abi' > tmp/contracts/ar.abi
 	@cat vendor/github.com/centrifuge/centrifuge-ethereum-contracts/build/contracts/InvoiceUnpaidNFT.json | jq '.abi' > tmp/contracts/po.abi
