@@ -41,7 +41,6 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 	if err != nil {
 		return nil, err
 	}
-
 	attributes = append(attributes, attrSign)
 
 	return attributes, nil

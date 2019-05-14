@@ -3,16 +3,14 @@
 package funding
 
 import (
-	"fmt"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +34,6 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[documents.BootstrappedDocumentService] = new(mockService)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
-	fmt.Println(err)
 	assert.Contains(t, err.Error(), "identity service not initialized")
 
 	// missing token registry
