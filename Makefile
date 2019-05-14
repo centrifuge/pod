@@ -56,9 +56,10 @@ proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all protobufs
 
 gen-swagger: ## generates the swagger documentation
+	swag init -g ./httpapi/router.go -o ./protobufs/gen/swagger/api
+	rm -rf ./protobufs/gen/swagger/api/docs.go ./protobufs/gen/swagger/api/swagger.yaml
+	mv ./protobufs/gen/swagger/api/swagger.json ./protobufs/gen/swagger/api/api.swagger.json
 	npm --prefix ./build run build_swagger
-	swag init -g ./httpapi/router.go -o ./httpapi
-	rm -rf ./httpapi/docs.go ./httpapi/swagger.yaml
 
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go

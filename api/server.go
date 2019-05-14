@@ -68,7 +68,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	mux := httpapi.Router(c.config)
 	gwmux := runtime.NewServeMux()
 
-	err = registerServices(ctx, c.config, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
+	err = registerServices(ctx, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
 	if err != nil {
 		startupErr <- err
 		return

@@ -7,7 +7,6 @@ import (
 )
 
 // Router returns the http mux for the server.
-
 // @title Centrifuge OS Node API
 // @description Centrifuge OS Node API
 // @version 0.0.4
