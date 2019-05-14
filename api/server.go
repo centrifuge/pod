@@ -79,7 +79,10 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 		mux.Handle("/debug/", http.DefaultServeMux)
 	}
 
-	mux.Handle("/", gwmux)
+	// if we dont find the route in the mux, we will redirect it to gmux
+	mux.NotFound(func(writer http.ResponseWriter, request *http.Request) {
+		gwmux.ServeHTTP(writer, request)
+	})
 	srv := &http.Server{
 		Addr:    apiAddr,
 		Handler: mux,

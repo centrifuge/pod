@@ -20,8 +20,9 @@ import (
 func Router(config Config) *chi.Mux {
 	r := chi.NewRouter()
 
-	// add recovery middleware
+	// add middlewares
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.DefaultLogger)
 
 	// health check
 	health.Register(r, config)
