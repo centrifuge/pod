@@ -214,7 +214,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		return attr, err
 	}
 
-	signPayload := AttributeSignaturePayload(identity[:], model.ID(), model.NextVersion(), value)
+	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.NextVersion(), value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -239,7 +239,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 }
 
 // AttributeSignaturePayload creates the payload for signing an attribute
-func AttributeSignaturePayload(did, id, version, value []byte) []byte {
+func attributeSignaturePayload(did, id, version, value []byte) []byte {
 	var signPayload []byte
 	signPayload = append(signPayload, did...)
 	signPayload = append(signPayload, id...)

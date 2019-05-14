@@ -775,7 +775,7 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	model.On("ID").Return(docID).Once()
 
 	signed := attrs[1].Value.Signed
-	payload := AttributeSignaturePayload(signed.Identity[:], docID, id, signed.Value)
+	payload := attributeSignaturePayload(signed.Identity[:], docID, id, signed.Value)
 	srv := new(testingcommons.MockIdentityService)
 	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(errors.New("failed")).Once()
 	asv = attributeValidator(repo, srv)
