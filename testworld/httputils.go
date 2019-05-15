@@ -42,6 +42,17 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
+
+func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string, params map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/document/"+identifier+"/funding/"+fundingID), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(identifier)
+	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
+	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
+	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
+	return objGet
+}
+
 func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}, checkattrs bool) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
@@ -127,6 +138,13 @@ func createDocument(e *httpexpect.Expect, auth string, documentType string, stat
 		Expect().Status(status).JSON().Object()
 	return obj
 }
+func createFunding(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/document/"+identifier+"/funding"), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 
 func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/share"), auth).
@@ -148,6 +166,14 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 		t.Error("docIdentifier empty")
 	}
 	return docIdentifier
+}
+
+func getFundingId(t *testing.T, response *httpexpect.Object) string {
+	fundingID := response.Value("data").Path("$.funding.funding_id").String().NotEmpty().Raw()
+	if fundingID == "" {
+		t.Error("fundingId empty")
+	}
+	return fundingID
 }
 
 func getTransactionID(t *testing.T, resp *httpexpect.Object) string {

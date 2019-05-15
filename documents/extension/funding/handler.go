@@ -52,13 +52,13 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfundingpb.FundingCr
 		return nil, errors.NewTypedError(ErrPayload, err)
 	}
 
-	model, jobID, _, err := h.service.Update(ctx, model)
+	model, jobID, _, err := h.service.Update(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctx, model, req.Data.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.FundingId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, errors.NewTypedError(ErrFundingAttr, err)

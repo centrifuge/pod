@@ -16,6 +16,29 @@
   ],
   "paths": {
     "/document/{identifier}/funding": {
+      "get": {
+        "description": "Get all funding agreements of a latest document",
+        "operationId": "GetList",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingListResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      },
       "post": {
         "description": "Adds a funding to a document",
         "operationId": "Create",
@@ -49,6 +72,35 @@
       }
     },
     "/document/{identifier}/funding/{funding_id}": {
+      "get": {
+        "description": "Get a funding agreement of a latest document",
+        "operationId": "Get",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/fundingFundingResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "funding_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FundingService"
+        ]
+      },
       "put": {
         "description": "Updates a funding agreement in a document",
         "operationId": "Update",
@@ -126,63 +178,7 @@
         ]
       }
     },
-    "/documents/{identifier}/funding": {
-      "get": {
-        "description": "Get all funding agreements of a latest document",
-        "operationId": "GetList",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/fundingFundingListResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
-    },
-    "/documents/{identifier}/funding/{funding_id}": {
-      "get": {
-        "description": "Get a funding agreement of a latest document",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "funding_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
-    },
-    "/documents/{identifier}/{version}/funding": {
+    "/document/{identifier}/{version}/funding": {
       "get": {
         "description": "Get all funding agreements of a document version",
         "operationId": "GetListVersion",
@@ -213,7 +209,7 @@
         ]
       }
     },
-    "/documents/{identifier}/{version}/funding/{funding_id}": {
+    "/document/{identifier}/{version}/funding/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a document version",
         "operationId": "GetVersion",
