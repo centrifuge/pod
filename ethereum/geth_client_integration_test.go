@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ func registerMockedTransactionTask() {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 
-	mockClient := &testingcommons.MockEthClient{}
+	mockClient := &ethereum.MockEthClient{}
 
 	// txHash: 0x1 -> successful
 	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x1")).Return(&types.Transaction{}, false, nil).Once()

@@ -150,14 +150,14 @@ func (m *MockInvoiceUnpaid) Mint(opts *bind.TransactOpts, _to common.Address, _t
 func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name    string
-		mocker  func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager)
+		mocker  func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager)
 		request *nftpb.NFTMintRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, testingcommons.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager) {
+			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager) {
 				cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
@@ -166,7 +166,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				invoiceUnpaidMock := &MockInvoiceUnpaid{}
 				idServiceMock := testingcommons.MockIdentityService{}
-				ethClientMock := testingcommons.MockEthClient{}
+				ethClientMock := ethereum.MockEthClient{}
 				ethClientMock.On("GetTxOpts", "ethacc").Return(&bind.TransactOpts{}, nil)
 				ethClientMock.On("SubmitTransactionWithRetries",
 					mock.Anything, mock.Anything, mock.Anything, mock.Anything,

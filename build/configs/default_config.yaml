@@ -158,8 +158,6 @@ ethereum:
   maxRetries: 200
   # Node transaction pool interval retry when a concurrent transaction has been detected
   intervalRetry: "2s"
-  # Disable when some ethereum clients do not support txpool api
-  txPoolAccessEnabled: true
 
 # any debugging config will go here
 debug:

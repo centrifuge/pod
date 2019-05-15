@@ -210,11 +210,6 @@ func (m *mockConfig) GetEthereumAccount(accountName string) (account *config.Acc
 	return args.Get(0).(*config.AccountConfig), args.Error(1)
 }
 
-func (m *mockConfig) GetTxPoolAccessEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *mockConfig) GetNetworkString() string {
 	args := m.Called()
 	return args.Get(0).(string)
@@ -392,7 +387,6 @@ func createMockConfig() *mockConfig {
 	c.On("GetEthereumMaxRetries").Return(1).Once()
 	c.On("GetEthereumMaxGasPrice").Return(big.NewInt(1)).Once()
 	c.On("GetEthereumGasLimit", mock.Anything).Return(uint64(100))
-	c.On("GetTxPoolAccessEnabled").Return(true).Once()
 	c.On("GetNetworkString").Return("somehill").Once()
 	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()
 	c.On("GetNetworkID").Return(uint32(1)).Once()
