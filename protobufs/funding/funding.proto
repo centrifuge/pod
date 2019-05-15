@@ -140,8 +140,8 @@ message FundingResponseData {
 }
 
 message FundingSignature {
-  bool valid = 1;
-  bool outdated_signature = 2;
+  string valid = 1;
+  string outdated_signature = 2;
   string identity = 3;
   string signed_version = 4;
 }

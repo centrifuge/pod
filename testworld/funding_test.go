@@ -8,15 +8,43 @@ import (
 	"testing"
 )
 
-func TestHost_FundingBasic(t *testing.T) {
+func TestHost_Funding(t *testing.T) {
 	t.Parallel()
-
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	// alice creates invoice
+	fundingId, identifier := createInvoiceWithFunding(t, alice, bob, charlie)
+	signTest(t, alice, bob, charlie, fundingId, identifier)
+
+}
+
+func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
+	// alice adds a funding and shares with charlie
+	res := signFunding(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, http.StatusOK)
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	fundingId = getFundingId(t, res)
+	params := map[string]interface{}{
+		"document_id": docIdentifier,
+		"currency":    "USD",
+		"amount":      "20000",
+		"apr":         "0.33",
+	}
+
+	// check if everybody received to funding with a signature
+	getFundingWithSignatureAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, fundingId, "true", "false", params)
+	getFundingWithSignatureAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, fundingId, "true", "false", params)
+	getFundingWithSignatureAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, fundingId, "true", "false", params)
+
+}
+
+func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (fundingId, docIdentifier string) {
 	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -24,7 +52,7 @@ func TestHost_FundingBasic(t *testing.T) {
 		t.Error(message)
 	}
 
-	docIdentifier := getDocumentIdentifier(t, res)
+	docIdentifier = getDocumentIdentifier(t, res)
 
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
@@ -42,17 +70,17 @@ func TestHost_FundingBasic(t *testing.T) {
 		t.Error(message)
 	}
 
-	fundingId := getFundingId(t,res)
+	fundingId = getFundingId(t, res)
 	params = map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
-		"amount": "20000",
-		"apr":     "0.33",
+		"amount":      "20000",
+		"apr":         "0.33",
 	}
 
 	// check if everybody received to funding
-	getFundingAndCheck(alice.httpExpect,alice.id.String(),docIdentifier,fundingId, params)
-	getFundingAndCheck(bob.httpExpect,bob.id.String(),docIdentifier,fundingId, params)
-	getFundingAndCheck(charlie.httpExpect,charlie.id.String(),docIdentifier,fundingId, params)
-
+	getFundingAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, params)
+	getFundingAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, fundingId, params)
+	getFundingAndCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, fundingId, params)
+	return fundingId, docIdentifier
 }

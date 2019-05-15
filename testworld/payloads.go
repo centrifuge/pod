@@ -83,12 +83,12 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 func defaultFundingPayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"amount":       "20000",
-			"apr":     "0.33",
-			"days": "90",
-			"currency":     "USD",
-			"fee":   "30.30",
-			"repayment_due_date":     "2018-09-26T23:12:37.902198664Z",
+			"amount":             "20000",
+			"apr":                "0.33",
+			"days":               "90",
+			"currency":           "USD",
+			"fee":                "30.30",
+			"repayment_due_date": "2018-09-26T23:12:37.902198664Z",
 		},
 		"write_access": map[string]interface{}{
 			"collaborators": collaborators,

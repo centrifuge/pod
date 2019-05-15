@@ -420,12 +420,10 @@
       "type": "object",
       "properties": {
         "valid": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "string"
         },
         "outdated_signature": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "string"
         },
         "identity": {
           "type": "string"

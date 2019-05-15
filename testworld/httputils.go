@@ -4,6 +4,7 @@ package testworld
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -42,7 +43,6 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-
 func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string, params map[string]interface{}) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/document/"+identifier+"/funding/"+fundingID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
@@ -50,6 +50,22 @@ func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string
 	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
 	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
 	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
+	return objGet
+}
+
+func getFundingWithSignatureAndCheck(t *testing.T, e *httpexpect.Expect, auth, identifier, fundingID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/document/"+identifier+"/funding/"+fundingID), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+
+	objGet.Path("$.header.document_id").String().Equal(identifier)
+	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
+	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
+	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
+
+	fmt.Println(objGet.Path("$.data.signatures").Array().Element(0))
+
+	objGet.Path("$.data.signatures").Array().Element(0).Path("$.valid").Equal(valid)
+	objGet.Path("$.data.signatures").Array().Element(0).Path("$.outdated_signature").Equal(outDatedSignature)
 	return objGet
 }
 
@@ -145,6 +161,11 @@ func createFunding(e *httpexpect.Expect, auth string, identifier string, status 
 	return obj
 }
 
+func signFunding(e *httpexpect.Expect, auth, identifier, fundingId string, status int) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/document/"+identifier+"/funding/"+fundingId+"/sign"), auth).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
 
 func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/share"), auth).

@@ -126,8 +126,8 @@ func TestService_SignVerify(t *testing.T) {
 	// funding current version: valid
 	response, err := srv.DeriveFundingResponse(ctx, model, fundingID)
 	assert.NoError(t, err)
-	assert.Equal(t, true, response.Data.Signatures[0].Valid)
-	assert.Equal(t, false, response.Data.Signatures[0].OutdatedSignature)
+	assert.Equal(t, "true", response.Data.Signatures[0].Valid)
+	assert.Equal(t, "false", response.Data.Signatures[0].OutdatedSignature)
 
 	// update funding after signature
 	oldCD, err := model.PackCoreDocument()
@@ -146,8 +146,8 @@ func TestService_SignVerify(t *testing.T) {
 	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil).Once()
 	response, err = srv.DeriveFundingResponse(ctx, updatedModel, fundingID)
 	assert.NoError(t, err)
-	assert.Equal(t, true, response.Data.Signatures[0].Valid)
-	assert.Equal(t, true, response.Data.Signatures[0].OutdatedSignature)
+	assert.Equal(t, "true", response.Data.Signatures[0].Valid)
+	assert.Equal(t, "true", response.Data.Signatures[0].OutdatedSignature)
 
 	// older funding version signed: invalid
 	invalidValue, err := hexutil.Decode("0x1234")
@@ -159,6 +159,6 @@ func TestService_SignVerify(t *testing.T) {
 	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil)
 	response, err = srv.DeriveFundingResponse(ctx, oldInv, fundingID)
 	assert.NoError(t, err)
-	assert.Equal(t, false, response.Data.Signatures[0].Valid)
-	assert.Equal(t, true, response.Data.Signatures[0].OutdatedSignature)
+	assert.Equal(t, "false", response.Data.Signatures[0].Valid)
+	assert.Equal(t, "true", response.Data.Signatures[0].OutdatedSignature)
 }

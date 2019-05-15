@@ -108,10 +108,10 @@ func (s service) validateSignedFundingVersion(ctx context.Context, identifier []
 
 	if valid {
 		// the value of the older funding version signature is correct
-		return &clientfundingpb.FundingSignature{Valid: true, SignedVersion: hexutil.Encode(identifier), Identity: did.String(), OutdatedSignature: true}, nil
+		return &clientfundingpb.FundingSignature{Valid: "true", SignedVersion: hexutil.Encode(identifier), Identity: did.String(), OutdatedSignature: "true"}, nil
 	}
 
-	return &clientfundingpb.FundingSignature{Valid: false, SignedVersion: hexutil.Encode(identifier), Identity: did.String(), OutdatedSignature: true}, nil
+	return &clientfundingpb.FundingSignature{Valid: "false", SignedVersion: hexutil.Encode(identifier), Identity: did.String(), OutdatedSignature: "true"}, nil
 }
 
 func (s service) signAttrToClientData(ctx context.Context, current documents.Model, funding *Data, signAttr documents.Attribute) (*clientfundingpb.FundingSignature, error) {
@@ -127,7 +127,7 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 
 	// value correct (funding data didn't change since signing)
 	if valid {
-		return &clientfundingpb.FundingSignature{Valid: true, SignedVersion: hexutil.Encode(current.ID()), Identity: did.String(), OutdatedSignature: false}, nil
+		return &clientfundingpb.FundingSignature{Valid: "true", SignedVersion: hexutil.Encode(current.ID()), Identity: did.String(), OutdatedSignature: "false"}, nil
 	}
 
 	return s.validateSignedFundingVersion(ctx, current.ID(), funding.FundingId, signAttr)
