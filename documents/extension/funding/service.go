@@ -2,11 +2,15 @@ package funding
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"strings"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -15,6 +19,9 @@ import (
 // Service defines specific functions for extension funding
 type Service interface {
 	documents.Service
+
+	// Sign adds a signature to an existing document
+	Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
 	DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
@@ -36,10 +43,12 @@ type service struct {
 }
 
 const (
-	fundingLabel    = "funding_agreement"
-	fundingFieldKey = "funding_agreement[{IDX}]."
-	fundingIDx      = "{IDX}"
-	fundingIDLabel  = "funding_id"
+	fundingLabel              = "funding_agreement"
+	fundingFieldKey           = "funding_agreement[{IDX}]."
+	idxKey                    = "{IDX}"
+	fundingIDLabel            = "funding_id"
+	fundingSignatures         = "signatures"
+	fundingSignaturesFieldKey = "signatures[{IDX}]"
 )
 
 // DefaultService returns the default implementation of the service.
@@ -57,19 +66,19 @@ func newFundingID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
-func generateLabel(idx, fieldName string) string {
-	return strings.Replace(fundingFieldKey, fundingIDx, idx, -1) + fieldName
+func generateLabel(field, idx, fieldName string) string {
+	return strings.Replace(field, idxKey, idx, -1) + fieldName
 }
 
 func labelFromJSONTag(idx, jsonTag string) string {
 	jsonKeyIdx := 0
 	// example `json:"days,omitempty"`
 	jsonParts := strings.Split(jsonTag, ",")
-	return generateLabel(idx, jsonParts[jsonKeyIdx])
+	return generateLabel(fundingFieldKey, idx, jsonParts[jsonKeyIdx])
 }
 
-func getFundingsLatestIDX(model documents.Model) (idx *documents.Int256, err error) {
-	key, err := documents.AttrKeyFromLabel(fundingLabel)
+func getArrayLatestIDX(model documents.Model, arrayLabel string) (idx *documents.Int256, err error) {
+	key, err := documents.AttrKeyFromLabel(arrayLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -95,17 +104,17 @@ func getFundingsLatestIDX(model documents.Model) (idx *documents.Int256, err err
 
 }
 
-func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, err error) {
-	key, err := documents.AttrKeyFromLabel(fundingLabel)
+func incrementArrayAttrIDX(model documents.Model, arrayLabel string) (attr documents.Attribute, err error) {
+	key, err := documents.AttrKeyFromLabel(arrayLabel)
 	if err != nil {
 		return attr, err
 	}
 
 	if !model.AttributeExists(key) {
-		return documents.NewAttribute(fundingLabel, documents.AttrInt256, "0")
+		return documents.NewAttribute(arrayLabel, documents.AttrInt256, "0")
 	}
 
-	idx, err := getFundingsLatestIDX(model)
+	idx, err := getArrayLatestIDX(model, arrayLabel)
 	if err != nil {
 		return attr, err
 	}
@@ -117,7 +126,7 @@ func incrementFundingAttrIDX(model documents.Model) (attr documents.Attribute, e
 		return attr, err
 	}
 
-	return documents.NewAttribute(fundingLabel, documents.AttrInt256, newIdx.String())
+	return documents.NewAttribute(arrayLabel, documents.AttrInt256, newIdx.String())
 }
 
 func fillAttributeList(data Data, idx string) ([]documents.Attribute, error) {
@@ -148,7 +157,7 @@ func fillAttributeList(data Data, idx string) ([]documents.Attribute, error) {
 func createAttributesList(current documents.Model, data Data) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
-	idx, err := incrementFundingAttrIDX(current)
+	idx, err := incrementArrayAttrIDX(current, fundingLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +267,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 }
 
 func (s service) findFunding(model documents.Model, fundingID string) (idx string, err error) {
-	lastIdx, err := getFundingsLatestIDX(model)
+	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return idx, err
 	}
@@ -269,7 +278,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		label := generateLabel(i.String(), fundingIDLabel)
+		label := generateLabel(fundingFieldKey, i.String(), fundingIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
@@ -298,11 +307,10 @@ func (s service) findFunding(model documents.Model, fundingID string) (idx strin
 	return idx, ErrFundingNotFound
 }
 
-func (s service) deriveFundingData(model documents.Model, idx string) (*clientfundingpb.FundingData, error) {
-	data := new(clientfundingpb.FundingData)
-	var fd Data
+func (s service) deriveFundingData(model documents.Model, idx string) (*Data, error) {
+	data := new(Data)
 
-	types := reflect.TypeOf(fd)
+	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {
 		// generate attr key
 		jsonKey := types.Field(i).Tag.Get("json")
@@ -319,7 +327,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*clientfu
 				return nil, err
 			}
 
-			// set field in client data
+			// set field in data
 			n := types.Field(i).Name
 
 			v, err := attr.Value.String()
@@ -354,7 +362,7 @@ func (s service) DeriveFundingResponse(model documents.Model, fundingID string) 
 
 	return &clientfundingpb.FundingResponse{
 		Header: h,
-		Data:   data,
+		Data:   data.getClientData(),
 	}, nil
 
 }
@@ -378,7 +386,7 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 		return response, nil
 	}
 
-	lastIdx, err := getFundingsLatestIDX(model)
+	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +401,7 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 		if err != nil {
 			continue
 		}
-		response.List = append(response.List, funding)
+		response.List = append(response.List, funding.getClientData())
 		i, err = i.Inc()
 
 		if err != nil {
@@ -402,4 +410,73 @@ func (s service) DeriveFundingListResponse(model documents.Model) (*clientfundin
 
 	}
 	return response, nil
+}
+
+func (s service) createSignAttrs(model documents.Model, idxFunding string, selfDID identity.DID, account config.Account) ([]documents.Attribute, error) {
+	var attributes []documents.Attribute
+	data, err := s.deriveFundingData(model, idxFunding)
+	if err != nil {
+		return nil, err
+	}
+
+	signMsg, err := json.Marshal(data)
+	if err != nil {
+		return nil, ErrJSON
+	}
+
+	// example "funding_agreement[2].signatures"
+	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
+	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
+	if err != nil {
+		return nil, err
+	}
+	attributes = append(attributes, attrIdx)
+
+	// example: "funding_agreement[2].signatures[4]"
+	sFieldLabel := generateLabel(generateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, attrIdx.Value.Int256.String(), "")
+
+	attrSign, err := documents.NewSignedAttribute(sFieldLabel, selfDID, account, model, signMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	attributes = append(attributes, attrSign)
+
+	return attributes, nil
+
+}
+
+// Sign adds a signature to an existing document
+func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	account, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	model, err := s.Service.GetCurrentVersion(ctx, identifier)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	idxFunding, err := s.findFunding(model, fundingID)
+	if err != nil {
+		return nil, ErrFundingNotFound
+	}
+
+	attributes, err := s.createSignAttrs(model, idxFunding, selfDID, account)
+	if err != nil {
+		return nil, err
+	}
+
+	err = model.AddAttributes(attributes...)
+	if err != nil {
+		return nil, err
+	}
+
+	return model, nil
 }

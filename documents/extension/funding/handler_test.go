@@ -69,6 +69,12 @@ func (m *mockService) GetVersion(ctx context.Context, identifier, version []byte
 	return model, args.Error(1)
 }
 
+func (m *mockService) Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error) {
+	args := m.Called(ctx, fundingID, identifier)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
 func TestGRPCHandler_Create(t *testing.T) {
 	srv := &mockService{}
 
@@ -111,6 +117,26 @@ func TestGRPCHandler_Update(t *testing.T) {
 	assert.NotNil(t, response)
 }
 
+func TestGRPCHandler_Sign(t *testing.T) {
+	srv := &mockService{}
+	h := &grpcHandler{service: srv, config: configService}
+	jobID := jobs.NewJobID()
+
+	// successful
+	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("Sign", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil).Once()
+	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
+
+	response, err := h.Sign(testingconfig.HandlerContext(configService), &clientfundingpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+
+	// fail
+	response, err = h.Sign(testingconfig.HandlerContext(configService), &clientfundingpb.Request{FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	assert.Error(t, err)
+}
+
 func TestGRPCHandler_Get(t *testing.T) {
 	srv := &mockService{}
 	h := &grpcHandler{service: srv, config: configService}
@@ -118,7 +144,7 @@ func TestGRPCHandler_Get(t *testing.T) {
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.GetRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
