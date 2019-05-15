@@ -462,7 +462,7 @@ func TestInvoice_AddAttributes(t *testing.T) {
 	assert.NoError(t, err)
 
 	// success
-	err = inv.AddAttributes(attr)
+	err = inv.AddAttributes(nil, attr)
 	assert.NoError(t, err)
 	assert.True(t, inv.AttributeExists(attr.Key))
 	gattr, err := inv.GetAttribute(attr.Key)
@@ -471,7 +471,7 @@ func TestInvoice_AddAttributes(t *testing.T) {
 
 	// fail
 	attr.Value.Type = documents.AttributeType("some attr")
-	err = inv.AddAttributes(attr)
+	err = inv.AddAttributes(nil, attr)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
 }
@@ -488,7 +488,7 @@ func TestInvoice_DeleteAttribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	assert.NoError(t, inv.AddAttributes(attr))
+	assert.NoError(t, inv.AddAttributes(nil, attr))
 	assert.True(t, inv.AttributeExists(attr.Key))
 	assert.NoError(t, inv.DeleteAttribute(attr.Key))
 	assert.False(t, inv.AttributeExists(attr.Key))

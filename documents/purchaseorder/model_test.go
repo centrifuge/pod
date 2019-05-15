@@ -368,7 +368,7 @@ func TestPurchaseOrder_AddAttributes(t *testing.T) {
 	assert.NoError(t, err)
 
 	// success
-	err = po.AddAttributes(attr)
+	err = po.AddAttributes(nil, attr)
 	assert.NoError(t, err)
 	assert.True(t, po.AttributeExists(attr.Key))
 	gattr, err := po.GetAttribute(attr.Key)
@@ -377,7 +377,7 @@ func TestPurchaseOrder_AddAttributes(t *testing.T) {
 
 	// fail
 	attr.Value.Type = documents.AttributeType("some attr")
-	err = po.AddAttributes(attr)
+	err = po.AddAttributes(nil, attr)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
 }
@@ -394,7 +394,7 @@ func TestPurchaseOrder_DeleteAttribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	assert.NoError(t, po.AddAttributes(attr))
+	assert.NoError(t, po.AddAttributes(nil, attr))
 	assert.True(t, po.AttributeExists(attr.Key))
 	assert.NoError(t, po.DeleteAttribute(attr.Key))
 	assert.False(t, po.AttributeExists(attr.Key))

@@ -76,13 +76,17 @@ service FundingService {
 
 message FundingCreatePayload {
   string identifier = 1;
-  FundingData data = 2;
+  document.ReadAccess read_access = 2;
+  document.WriteAccess write_access = 3;
+  FundingData data = 4;
 }
 
 message FundingUpdatePayload {
   string identifier = 1;
   string funding_id = 2;
-  FundingData data = 3;
+  document.ReadAccess read_access = 3;
+  document.WriteAccess write_access = 4;
+  FundingData data = 5;
 }
 
 message FundingResponse {

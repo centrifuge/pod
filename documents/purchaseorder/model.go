@@ -542,8 +542,8 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 }
 
 // AddAttributes adds attributes to the PurchaseOrder model.
-func (p *PurchaseOrder) AddAttributes(attrs ...documents.Attribute) error {
-	ncd, err := p.CoreDocument.AddAttributes(attrs...)
+func (p *PurchaseOrder) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...documents.Attribute) error {
+	ncd, err := p.CoreDocument.AddAttributes(ca, attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

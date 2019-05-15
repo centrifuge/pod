@@ -181,12 +181,17 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.Fun
 		return nil, documents.ErrDocumentNotFound
 	}
 
+	ca, err := documents.FromClientCollaboratorAccess(req.ReadAccess, req.WriteAccess)
+	if err != nil {
+		return nil, err
+	}
+
 	attributes, err := createAttributesList(model, fd)
 	if err != nil {
 		return nil, err
 	}
 
-	err = model.AddAttributes(attributes...)
+	err = model.AddAttributes(&ca, attributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +243,11 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 		return nil, err
 	}
 
+	ca, err := documents.FromClientCollaboratorAccess(req.ReadAccess, req.WriteAccess)
+	if err != nil {
+		return nil, err
+	}
+
 	// overwriting is not enough because it is not required that
 	// the funding payload contains all funding attributes
 	model, err = s.deleteFunding(model, idx)
@@ -250,7 +260,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunding
 		return nil, err
 	}
 
-	err = model.AddAttributes(attributes...)
+	err = model.AddAttributes(&ca, attributes...)
 	if err != nil {
 		return nil, err
 	}

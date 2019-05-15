@@ -331,6 +331,12 @@
         "identifier": {
           "type": "string"
         },
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
+        },
         "data": {
           "$ref": "#/definitions/fundingFundingData"
         }
@@ -441,6 +447,12 @@
         },
         "funding_id": {
           "type": "string"
+        },
+        "read_access": {
+          "$ref": "#/definitions/documentReadAccess"
+        },
+        "write_access": {
+          "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
           "$ref": "#/definitions/fundingFundingData"
