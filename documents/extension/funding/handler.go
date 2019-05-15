@@ -89,7 +89,7 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfundingpb.Request) (*c
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctx, model, req.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.FundingId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -118,13 +118,13 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfundingpb.Request) (*
 		return nil, errors.NewTypedError(ErrPayload, err)
 	}
 
-	model, jobID, _, err := h.service.Update(ctx, model)
+	model, jobID, _, err := h.service.Update(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctx, model, req.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.FundingId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, errors.NewTypedError(ErrFundingAttr, err)
@@ -137,7 +137,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfundingpb.Request) (*
 // Get returns a funding agreement from an existing document
 func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfundingpb.GetVersionRequest) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)
-	ctx, err := contextutil.Context(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -155,13 +155,13 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfundingpb.GetVe
 		return nil, documents.ErrDocumentVersion
 	}
 
-	model, err := h.service.GetVersion(ctx, identifier, version)
+	model, err := h.service.GetVersion(ctxHeader, identifier, version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentVersionNotFound
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctx, model, req.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.FundingId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -172,7 +172,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfundingpb.GetVe
 // GetList returns all funding agreements of a existing document
 func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListRequest) (*clientfundingpb.FundingListResponse, error) {
 	apiLog.Debugf("Get request %v", req)
-	ctx, err := contextutil.Context(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -184,13 +184,13 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 		return nil, documents.ErrDocumentIdentifier
 	}
 
-	model, err := h.service.GetCurrentVersion(ctx, identifier)
+	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	resp, err := h.service.DeriveFundingListResponse(ctx, model)
+	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -201,7 +201,7 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfundingpb.GetListR
 // GetList returns all funding agreements of a existing document
 func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.GetListVersionRequest) (*clientfundingpb.FundingListResponse, error) {
 	apiLog.Debugf("Get request %v", req)
-	ctx, err := contextutil.Context(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -219,13 +219,13 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 		return nil, documents.ErrDocumentVersion
 	}
 
-	model, err := h.service.GetVersion(ctx, identifier, version)
+	model, err := h.service.GetVersion(ctxHeader, identifier, version)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	resp, err := h.service.DeriveFundingListResponse(ctx, model)
+	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -236,7 +236,7 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfundingpb.G
 // Update handles an update over an existing funding document extension
 func (h *grpcHandler) Update(ctx context.Context, req *clientfundingpb.FundingUpdatePayload) (*clientfundingpb.FundingResponse, error) {
 	apiLog.Debugf("create funding request %v", req)
-	ctx, err := contextutil.Context(ctx, h.config)
+	ctxHeader, err := contextutil.Context(ctx, h.config)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
@@ -249,18 +249,18 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfundingpb.FundingUp
 	}
 
 	// returns model with updated funding custom fields
-	model, err := h.service.DeriveFromUpdatePayload(ctx, req, identifier)
+	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req, identifier)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrPayload, err)
 	}
 
-	model, jobID, _, err := h.service.Update(ctx, model)
+	model, jobID, _, err := h.service.Update(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctx, model, req.Data.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.FundingId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, errors.NewTypedError(ErrFundingAttr, err)
