@@ -381,7 +381,7 @@
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
         },
-        "list": {
+        "data": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/fundingFundingResponseData"

@@ -417,7 +417,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 			return nil, errors.NewTypedError(ErrFundingSignature, err)
 		}
 
-		response.List = append(response.List, &clientfundingpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
+		response.Data = append(response.Data, &clientfundingpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
 		i, err = i.Inc()
 
 		if err != nil {
