@@ -27,7 +27,22 @@ func (f *Data) initFundingFromData(data *clientfundingpb.FundingData) {
 	for i := 0; i < types.NumField(); i++ {
 		n := types.Field(i).Name
 		v := values.FieldByName(n).Interface().(string)
+		// converter assumes string struct fields
 		reflect.ValueOf(f).Elem().FieldByName(n).SetString(v)
 
 	}
+}
+
+func (f *Data) getClientData() *clientfundingpb.FundingData {
+	clientData := new(clientfundingpb.FundingData)
+	types := reflect.TypeOf(*f)
+	values := reflect.ValueOf(*f)
+	for i := 0; i < types.NumField(); i++ {
+		n := types.Field(i).Name
+		v := values.FieldByName(n).Interface().(string)
+		// converter assumes string struct fields
+		reflect.ValueOf(clientData).Elem().FieldByName(n).SetString(v)
+
+	}
+	return clientData
 }

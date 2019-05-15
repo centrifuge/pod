@@ -42,7 +42,7 @@ var ctx = map[string]interface{}{}
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	ibootstrappers := []bootstrap.TestBootstrapper{

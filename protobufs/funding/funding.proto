@@ -24,14 +24,23 @@ service FundingService {
   }
   rpc Update(FundingUpdatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      put: "/document/{identifier}/extension/funding/{funding_id}"
+      put: "/document/{identifier}/funding/{funding_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Updates a funding agreement in a document"
     };
   }
-  rpc Get(GetRequest) returns (FundingResponse) {
+  rpc Sign(Request) returns (FundingResponse) {
+    option (google.api.http) = {
+      post: "/document/{identifier}/funding/{funding_id}/sign"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Signs funding agreement in a document"
+    };
+  }
+  rpc Get(Request) returns (FundingResponse) {
     option (google.api.http) = {
       get: "/documents/{identifier}/funding/{funding_id}"
     };
@@ -86,7 +95,7 @@ message FundingListResponse {
   repeated FundingData list = 2;
 }
 
-message GetRequest {
+message Request {
   string identifier = 1;
   string funding_id = 2;
 }

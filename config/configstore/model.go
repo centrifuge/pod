@@ -54,7 +54,6 @@ type NodeConfig struct {
 	EthereumMaxRetries             int
 	EthereumMaxGasPrice            *big.Int
 	EthereumGasLimits              map[config.ContractOp]uint64
-	TxPoolAccessEnabled            bool
 	NetworkString                  string
 	BootstrapPeers                 []string
 	NetworkID                      uint32
@@ -205,11 +204,6 @@ func (nc *NodeConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
 	return nc.EthereumGasLimits[op]
 }
 
-// GetTxPoolAccessEnabled refer the interface
-func (nc *NodeConfig) GetTxPoolAccessEnabled() bool {
-	return nc.TxPoolAccessEnabled
-}
-
 // GetNetworkString refer the interface
 func (nc *NodeConfig) GetNetworkString() string {
 	return nc.NetworkString
@@ -353,7 +347,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		EthereumMaxRetries:             c.GetEthereumMaxRetries(),
 		EthereumMaxGasPrice:            c.GetEthereumMaxGasPrice(),
 		EthereumGasLimits:              extractGasLimits(c),
-		TxPoolAccessEnabled:            c.GetTxPoolAccessEnabled(),
 		NetworkString:                  c.GetNetworkString(),
 		BootstrapPeers:                 c.GetBootstrapPeers(),
 		NetworkID:                      c.GetNetworkID(),

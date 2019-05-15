@@ -1,16 +1,14 @@
 // +build integration unit
 
-package testingcommons
+package ethereum
 
 import (
+	"context"
 	"math/big"
 	"net/url"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	"context"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/mock"
@@ -26,7 +24,7 @@ func (m *MockEthClient) GetGethCallOpts(pending bool) (*bind.CallOpts, context.C
 	return c, func() {}
 }
 
-func (m *MockEthClient) GetEthClient() *ethclient.Client {
+func (m *MockEthClient) GetEthClient() EthClient {
 	args := m.Called()
 	c, _ := args.Get(0).(*ethclient.Client)
 	return c

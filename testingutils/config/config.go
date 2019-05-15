@@ -119,11 +119,6 @@ func (m *MockConfig) GetEthereumAccount(accountName string) (account *config.Acc
 	return args.Get(0).(*config.AccountConfig), args.Error(1)
 }
 
-func (m *MockConfig) GetTxPoolAccessEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *MockConfig) GetNetworkString() string {
 	args := m.Called()
 	return args.Get(0).(string)

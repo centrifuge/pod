@@ -8,16 +8,13 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
@@ -129,7 +126,7 @@ func TestGetEventValueFromTransactionReceipt(t *testing.T) {
 	eventValue := []byte{0, 1, 2, 3, 4}
 	wrongEvent := "WrongEvent(bytes)"
 	eventIdx := 0
-	mockClient := &testingcommons.MockEthClient{}
+	mockClient := &MockEthClient{}
 
 	// Empty event list error
 	mockClient.On("TransactionReceipt", mock.Anything, common.HexToHash("0x1")).Return(&types.Receipt{Status: 1}, nil).Once()

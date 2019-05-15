@@ -18,4 +18,7 @@ const (
 
 	// ErrPayload must be used if it is not possible to derive an a funding from a payload
 	ErrPayload = errors.Error("could not derive funding from payload")
+
+	// ErrJSON must be used if it is not possible to derive a json from a funding
+	ErrJSON = errors.Error("could not create json for signing funding ")
 )
