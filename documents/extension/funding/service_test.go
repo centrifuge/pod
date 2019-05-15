@@ -175,10 +175,10 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(response.List))
+	assert.Equal(t, 10, len(response.Data))
 
 	for i := 0; i < 10; i++ {
-		checkResponse(t, payloads[i], response.List[i].Funding)
+		checkResponse(t, payloads[i], response.Data[i].Funding)
 
 	}
 
@@ -210,11 +210,11 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NoError(t, err)
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
-	assert.Equal(t, 1, len(response.List))
-	assert.Equal(t, p2.Data.Fee, response.List[0].Funding.Fee)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, p2.Data.Fee, response.Data[0].Funding.Fee)
 
 	// fee was not set in the update old fee field should not exist
-	assert.NotEqual(t, p.Data.Fee, response.List[0].Funding.Fee)
+	assert.NotEqual(t, p.Data.Fee, response.Data[0].Funding.Fee)
 
 	// non existing funding id
 	p3 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
