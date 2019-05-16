@@ -17,6 +17,33 @@ func TestHost_Funding(t *testing.T) {
 
 	fundingId, identifier := createInvoiceWithFunding(t, alice, bob, charlie)
 	signTest(t, alice, bob, charlie, fundingId, identifier)
+	listTest(t, alice,bob, charlie, identifier)
+
+}
+
+func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier string) {
+	var fundings []string
+	for i := 0; i < 5; i++ {
+		res := createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(nil))
+		txID := getTransactionID(t, res)
+		status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+		if status != "success" {
+			t.Error(message)
+		}
+
+		fundingId := getFundingId(t, res)
+		fundings = append(fundings, fundingId)
+
+	}
+
+	params := map[string]interface{}{
+		"document_id": docIdentifier,
+		"currency":    "USD",
+		"amount":      "20000",
+		"apr":         "0.33",
+	}
+
+	getListFundingCheck(alice.httpExpect, alice.id.String(), docIdentifier,6, params)
 
 }
 
@@ -38,9 +65,9 @@ func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIde
 	}
 
 	// check if everybody received to funding with a signature
-	getFundingWithSignatureAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, fundingId, "true", "false", params)
-	getFundingWithSignatureAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, fundingId, "true", "false", params)
-	getFundingWithSignatureAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, fundingId, "true", "false", params)
+	getFundingWithSignatureAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, "true", "false", params)
+	getFundingWithSignatureAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, fundingId, "true", "false", params)
+	getFundingWithSignatureAndCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, fundingId, "true", "false", params)
 
 }
 

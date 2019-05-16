@@ -4,7 +4,6 @@ package testworld
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -53,7 +52,24 @@ func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string
 	return objGet
 }
 
-func getFundingWithSignatureAndCheck(t *testing.T, e *httpexpect.Expect, auth, identifier, fundingID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
+func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen int, params map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/document/"+identifier+"/funding"), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+
+	objGet.Path("$.header.document_id").String().Equal(identifier)
+	objGet.Path("$.data").Array().Length().Equal(listLen)
+
+	for i := 0; i< listLen;i++ {
+		objGet.Path("$.data").Array().Element(i).Path("$.funding.currency").String().Equal(params["currency"].(string))
+		objGet.Path("$.data").Array().Element(i).Path("$.funding.amount").String().Equal(params["amount"].(string))
+		objGet.Path("$.data").Array().Element(i).Path("$.funding.apr").String().Equal(params["apr"].(string))
+	}
+
+	return objGet
+}
+
+
+func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, fundingID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/document/"+identifier+"/funding/"+fundingID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
@@ -61,8 +77,6 @@ func getFundingWithSignatureAndCheck(t *testing.T, e *httpexpect.Expect, auth, i
 	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
 	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
 	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
-
-	fmt.Println(objGet.Path("$.data.signatures").Array().Element(0))
 
 	objGet.Path("$.data.signatures").Array().Element(0).Path("$.valid").Equal(valid)
 	objGet.Path("$.data.signatures").Array().Element(0).Path("$.outdated_signature").Equal(outDatedSignature)
