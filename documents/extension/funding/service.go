@@ -216,7 +216,7 @@ func (s service) deleteFunding(model documents.Model, idx string) (documents.Mod
 		}
 
 		if model.AttributeExists(key) {
-			err := model.DeleteAttribute(key)
+			err := model.DeleteAttribute(key, false)
 			if err != nil {
 				return nil, err
 			}

@@ -553,8 +553,8 @@ func (p *PurchaseOrder) AddAttributes(ca *documents.CollaboratorsAccess, attrs .
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey) error {
-	ncd, err := p.CoreDocument.DeleteAttribute(key)
+func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
+	ncd, err := p.CoreDocument.DeleteAttribute(key,prepareNewVersion)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

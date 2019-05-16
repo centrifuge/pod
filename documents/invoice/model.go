@@ -745,8 +745,8 @@ func (i *Invoice) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...docu
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (i *Invoice) DeleteAttribute(key documents.AttrKey) error {
-	ncd, err := i.CoreDocument.DeleteAttribute(key)
+func (i *Invoice) DeleteAttribute(key documents.AttrKey,prepareNewVersion bool) error {
+	ncd, err := i.CoreDocument.DeleteAttribute(key, prepareNewVersion)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

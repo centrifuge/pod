@@ -287,8 +287,8 @@ func (e *EntityRelationship) AddAttributes(ca *documents.CollaboratorsAccess, at
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey) error {
-	ncd, err := e.CoreDocument.DeleteAttribute(key)
+func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key,prepareNewVersion)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

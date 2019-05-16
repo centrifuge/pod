@@ -390,12 +390,12 @@ func TestPurchaseOrder_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// failed
-	err = po.DeleteAttribute(attr.Key)
+	err = po.DeleteAttribute(attr.Key, true)
 	assert.Error(t, err)
 
 	// success
 	assert.NoError(t, po.AddAttributes(nil, attr))
 	assert.True(t, po.AttributeExists(attr.Key))
-	assert.NoError(t, po.DeleteAttribute(attr.Key))
+	assert.NoError(t, po.DeleteAttribute(attr.Key, true))
 	assert.False(t, po.AttributeExists(attr.Key))
 }

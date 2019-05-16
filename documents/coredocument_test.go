@@ -634,7 +634,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// failed delete
-	_, err = cd.DeleteAttribute(key)
+	_, err = cd.DeleteAttribute(key, true)
 	assert.Error(t, err)
 
 	// success
@@ -676,7 +676,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Equal(t, AttrDecimal, attr.Value.Type)
 
 	// delete
-	cd, err = cd.DeleteAttribute(key)
+	cd, err = cd.DeleteAttribute(key, true)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 0)
 	assert.Len(t, cd.GetAttributes(), 0)

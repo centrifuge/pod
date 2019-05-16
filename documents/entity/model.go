@@ -349,8 +349,8 @@ func (e *Entity) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...docum
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (e *Entity) DeleteAttribute(key documents.AttrKey) error {
-	ncd, err := e.CoreDocument.DeleteAttribute(key)
+func (e *Entity) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key, prepareNewVersion)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

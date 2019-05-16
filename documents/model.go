@@ -127,7 +127,7 @@ type Model interface {
 	GetAttributes() []Attribute
 
 	// DeleteAttribute deletes a custom attribute from the model
-	DeleteAttribute(key AttrKey) error
+	DeleteAttribute(key AttrKey, prepareNewVersion bool) error
 
 	// AttributeExists checks if the attribute with the key exists
 	AttributeExists(key AttrKey) bool

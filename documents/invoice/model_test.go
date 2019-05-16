@@ -484,12 +484,12 @@ func TestInvoice_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// failed
-	err = inv.DeleteAttribute(attr.Key)
+	err = inv.DeleteAttribute(attr.Key, true)
 	assert.Error(t, err)
 
 	// success
 	assert.NoError(t, inv.AddAttributes(nil, attr))
 	assert.True(t, inv.AttributeExists(attr.Key))
-	assert.NoError(t, inv.DeleteAttribute(attr.Key))
+	assert.NoError(t, inv.DeleteAttribute(attr.Key, true))
 	assert.False(t, inv.AttributeExists(attr.Key))
 }

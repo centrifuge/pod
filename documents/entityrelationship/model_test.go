@@ -402,12 +402,12 @@ func TestEntityRelationship_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// failed
-	err = e.DeleteAttribute(attr.Key)
+	err = e.DeleteAttribute(attr.Key, true)
 	assert.Error(t, err)
 
 	// success
 	assert.NoError(t, e.AddAttributes(nil, attr))
 	assert.True(t, e.AttributeExists(attr.Key))
-	assert.NoError(t, e.DeleteAttribute(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
 	assert.False(t, e.AttributeExists(attr.Key))
 }

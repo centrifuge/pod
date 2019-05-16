@@ -707,13 +707,21 @@ func (cd *CoreDocument) GetAttributes() (attrs []Attribute) {
 
 // DeleteAttribute deletes a custom attribute from the model.
 // If the attribute is missing, delete returns an error
-func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
+	func (cd *CoreDocument) DeleteAttribute(key AttrKey, prepareNewVersion bool) (*CoreDocument, error) {
 	if _, ok := cd.Attributes[key]; !ok {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("missing attribute: %v", key))
 	}
 
-	ncd := cd
+	var ncd *CoreDocument
 	var err error
+	if prepareNewVersion {
+		ncd, err = cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+		}
+	} else {
+		ncd = cd
+	}
 
 	delete(ncd.Attributes, key)
 	ncd.Document.Attributes, err = toProtocolAttributes(ncd.Attributes)
