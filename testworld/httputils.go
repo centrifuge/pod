@@ -59,7 +59,7 @@ func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen 
 	objGet.Path("$.header.document_id").String().Equal(identifier)
 	objGet.Path("$.data").Array().Length().Equal(listLen)
 
-	for i := 0; i< listLen;i++ {
+	for i := 0; i < listLen; i++ {
 		objGet.Path("$.data").Array().Element(i).Path("$.funding.currency").String().Equal(params["currency"].(string))
 		objGet.Path("$.data").Array().Element(i).Path("$.funding.amount").String().Equal(params["amount"].(string))
 		objGet.Path("$.data").Array().Element(i).Path("$.funding.apr").String().Equal(params["apr"].(string))
@@ -67,7 +67,6 @@ func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen 
 
 	return objGet
 }
-
 
 func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, fundingID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/document/"+identifier+"/funding/"+fundingID), auth).

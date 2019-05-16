@@ -734,8 +734,8 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 }
 
 // AddAttributes adds attributes to the Invoice model.
-func (i *Invoice) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...documents.Attribute) error {
-	ncd, err := i.CoreDocument.AddAttributes(ca, attrs...)
+func (i *Invoice) AddAttributes(ca *documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	ncd, err := i.CoreDocument.AddAttributes(ca, prepareNewVersion, attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
@@ -745,7 +745,7 @@ func (i *Invoice) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...docu
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (i *Invoice) DeleteAttribute(key documents.AttrKey,prepareNewVersion bool) error {
+func (i *Invoice) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
 	ncd, err := i.CoreDocument.DeleteAttribute(key, prepareNewVersion)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)

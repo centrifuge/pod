@@ -276,8 +276,8 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 }
 
 // AddAttributes adds attributes to the EntityRelationship model.
-func (e *EntityRelationship) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...documents.Attribute) error {
-	ncd, err := e.CoreDocument.AddAttributes(ca, attrs...)
+func (e *EntityRelationship) AddAttributes(ca *documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(ca, prepareNewVersion, attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
@@ -288,7 +288,7 @@ func (e *EntityRelationship) AddAttributes(ca *documents.CollaboratorsAccess, at
 
 // DeleteAttribute deletes the attribute from the model.
 func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
-	ncd, err := e.CoreDocument.DeleteAttribute(key,prepareNewVersion)
+	ncd, err := e.CoreDocument.DeleteAttribute(key, prepareNewVersion)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

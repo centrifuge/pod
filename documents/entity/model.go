@@ -338,8 +338,8 @@ func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator ide
 }
 
 // AddAttributes adds attributes to the Entity model.
-func (e *Entity) AddAttributes(ca *documents.CollaboratorsAccess, attrs ...documents.Attribute) error {
-	ncd, err := e.CoreDocument.AddAttributes(ca, attrs...)
+func (e *Entity) AddAttributes(ca *documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(ca, prepareNewVersion, attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
