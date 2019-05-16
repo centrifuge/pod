@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -50,7 +50,7 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
-	var payloads []*clientfundingpb.FundingCreatePayload
+	var payloads []*clientfunpb.FundingCreatePayload
 
 	var lastFundingId string
 
@@ -136,7 +136,7 @@ func TestService_SignVerify(t *testing.T) {
 	err = oldInv.UnpackCoreDocument(oldCD)
 	assert.NoError(t, err)
 
-	p2 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: fundingID}
+	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: fundingID}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 	updatedModel, err := srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))

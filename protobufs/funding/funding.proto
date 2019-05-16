@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package funding;
+package fun;
 
-option go_package = "fundingpb";
+option go_package = "funpb";
 option java_multiple_files = true;
 option java_outer_classname = "FundingProto";
-option java_package = "com.funding";
+option java_package = "com.fun";
 
 import "document/service.proto";
 import "google/api/annotations.proto";

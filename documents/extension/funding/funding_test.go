@@ -5,12 +5,12 @@ package funding
 import (
 	"testing"
 
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInitFundingFromData(t *testing.T) {
-	fdc := &clientfundingpb.FundingData{Currency: "eur"}
+	fdc := &clientfunpb.FundingData{Currency: "eur"}
 	fd := new(Data)
 	fd.initFundingFromData(fdc)
 	assert.Equal(t, fdc.Currency, fd.Currency)

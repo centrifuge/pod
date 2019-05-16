@@ -20,7 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -164,7 +164,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
-	var payloads []*clientfundingpb.FundingCreatePayload
+	var payloads []*clientfunpb.FundingCreatePayload
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
 		payloads = append(payloads, p)
@@ -202,7 +202,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
-	p2 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: p.Data.FundingId}
+	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: p.Data.FundingId}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 
@@ -217,15 +217,15 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotEqual(t, p.Data.Fee, response.Data[0].Funding.Fee)
 
 	// non existing funding id
-	p3 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
+	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
 	assert.Contains(t, err, ErrFundingNotFound)
 }
 
-func createTestClientData() *clientfundingpb.FundingData {
+func createTestClientData() *clientfunpb.FundingData {
 	fundingId := newFundingID()
-	return &clientfundingpb.FundingData{
+	return &clientfunpb.FundingData{
 		FundingId:             fundingId,
 		Currency:              "eur",
 		Days:                  "90",
@@ -255,11 +255,11 @@ func createTestData() Data {
 	}
 }
 
-func createTestPayload() *clientfundingpb.FundingCreatePayload {
-	return &clientfundingpb.FundingCreatePayload{Data: createTestClientData()}
+func createTestPayload() *clientfunpb.FundingCreatePayload {
+	return &clientfunpb.FundingCreatePayload{Data: createTestClientData()}
 }
 
-func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, response *clientfundingpb.FundingData) {
+func checkResponse(t *testing.T, payload *clientfunpb.FundingCreatePayload, response *clientfunpb.FundingData) {
 	assert.Equal(t, payload.Data.FundingId, response.FundingId)
 	assert.Equal(t, payload.Data.Currency, response.Currency)
 	assert.Equal(t, payload.Data.Days, response.Days)

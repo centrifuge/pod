@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -21,16 +21,16 @@ type Service interface {
 	Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
-	DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
 
 	// DeriveFromPayload derives Funding from clientPayload
-	DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
+	DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
 
 	// DeriveFundingResponse returns a funding in client format
-	DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error)
+	DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error)
 
 	// DeriveFundingListResponse returns a funding list in client format
-	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfundingpb.FundingListResponse, error)
+	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -171,7 +171,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	return attributes, nil
 }
 
-func (s service) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
+func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
 	var fd Data
 	fd.initFundingFromData(req.Data)
 
@@ -227,7 +227,7 @@ func (s service) deleteFunding(model documents.Model, idx string) (documents.Mod
 }
 
 // DeriveFromUpdatePayload derives Funding from clientUpdatePayload
-func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
 	var fd Data
 	fd.initFundingFromData(req.Data)
 
@@ -360,7 +360,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*Data, er
 }
 
 // DeriveFundingResponse returns create response from the added funding
-func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfundingpb.FundingResponse, error) {
+func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error) {
 	idx, err := s.findFundingIDX(model, fundingID)
 	if err != nil {
 		return nil, err
@@ -380,16 +380,16 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 		return nil, errors.NewTypedError(ErrFundingSignature, err)
 	}
 
-	return &clientfundingpb.FundingResponse{
+	return &clientfunpb.FundingResponse{
 		Header: h,
-		Data:   &clientfundingpb.FundingResponseData{Funding: data.getClientData(), Signatures: signatures},
+		Data:   &clientfunpb.FundingResponseData{Funding: data.getClientData(), Signatures: signatures},
 	}, nil
 
 }
 
 // DeriveFundingListResponse returns a funding list in client format
-func (s service) DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfundingpb.FundingListResponse, error) {
-	response := new(clientfundingpb.FundingListResponse)
+func (s service) DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error) {
+	response := new(clientfunpb.FundingListResponse)
 
 	h, err := documents.DeriveResponseHeader(s.tokenRegistry, model)
 	if err != nil {
@@ -427,7 +427,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 			return nil, errors.NewTypedError(ErrFundingSignature, err)
 		}
 
-		response.Data = append(response.Data, &clientfundingpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
+		response.Data = append(response.Data, &clientfunpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
 		i, err = i.Inc()
 
 		if err != nil {

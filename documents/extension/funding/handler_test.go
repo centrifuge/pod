@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -27,27 +27,27 @@ type mockService struct {
 
 var configService config.Service
 
-func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfundingpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
+func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
 	args := m.Called(ctx, req)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfundingpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
+func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
 	args := m.Called(ctx, req)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) DeriveFundingResponse(ctx context.Context, doc documents.Model, fundingId string) (*clientfundingpb.FundingResponse, error) {
+func (m *mockService) DeriveFundingResponse(ctx context.Context, doc documents.Model, fundingId string) (*clientfunpb.FundingResponse, error) {
 	args := m.Called(doc)
-	data, _ := args.Get(0).(*clientfundingpb.FundingResponse)
+	data, _ := args.Get(0).(*clientfunpb.FundingResponse)
 	return data, args.Error(1)
 }
 
-func (m *mockService) DeriveFundingListResponse(ctx context.Context, doc documents.Model) (*clientfundingpb.FundingListResponse, error) {
+func (m *mockService) DeriveFundingListResponse(ctx context.Context, doc documents.Model) (*clientfunpb.FundingListResponse, error) {
 	args := m.Called(doc)
-	data, _ := args.Get(0).(*clientfundingpb.FundingListResponse)
+	data, _ := args.Get(0).(*clientfunpb.FundingListResponse)
 	return data, args.Error(1)
 }
 
@@ -82,16 +82,16 @@ func TestGRPCHandler_Create(t *testing.T) {
 	jobID := jobs.NewJobID()
 
 	// no identifier
-	response, err := h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	response, err := h.Create(testingconfig.HandlerContext(configService), &clientfunpb.FundingCreatePayload{Data: &clientfunpb.FundingData{Currency: "eur"}})
 	assert.Nil(t, response)
 	assert.Error(t, err, "must be non nil")
 
 	// successful
 	srv.On("DeriveFromPayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfundingpb.FundingCreatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfunpb.FundingCreatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
@@ -103,16 +103,16 @@ func TestGRPCHandler_Update(t *testing.T) {
 	jobID := jobs.NewJobID()
 
 	// no identifier
-	response, err := h.Update(testingconfig.HandlerContext(configService), &clientfundingpb.FundingUpdatePayload{Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	response, err := h.Update(testingconfig.HandlerContext(configService), &clientfunpb.FundingUpdatePayload{Data: &clientfunpb.FundingData{Currency: "eur"}})
 	assert.Nil(t, response)
 	assert.Error(t, err, "must be non nil")
 
 	// successful
 	srv.On("DeriveFromUpdatePayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err = h.Update(testingconfig.HandlerContext(configService), &clientfundingpb.FundingUpdatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfundingpb.FundingData{Currency: "eur"}})
+	response, err = h.Update(testingconfig.HandlerContext(configService), &clientfunpb.FundingUpdatePayload{Identifier: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
@@ -124,16 +124,16 @@ func TestGRPCHandler_Sign(t *testing.T) {
 
 	// successful
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 	srv.On("Sign", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil).Once()
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
 
-	response, err := h.Sign(testingconfig.HandlerContext(configService), &clientfundingpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 
 	// fail
-	response, err = h.Sign(testingconfig.HandlerContext(configService), &clientfundingpb.Request{FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err = h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.Error(t, err)
 }
 
@@ -142,9 +142,9 @@ func TestGRPCHandler_Get(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfundingpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfunpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
@@ -154,9 +154,9 @@ func TestGRPCHandler_GetVersion(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfundingpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfunpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
@@ -166,9 +166,9 @@ func TestGRPCHandler_GetList(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingListResponse", mock.Anything, mock.Anything).Return(&clientfundingpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
+	srv.On("DeriveFundingListResponse", mock.Anything, mock.Anything).Return(&clientfunpb.FundingListResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfundingpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.GetListVersion(testingconfig.HandlerContext(configService), &clientfunpb.GetListVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }

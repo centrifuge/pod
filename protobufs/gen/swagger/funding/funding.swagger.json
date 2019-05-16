@@ -23,7 +23,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingListResponse"
+              "$ref": "#/definitions/funFundingListResponse"
             }
           }
         },
@@ -46,7 +46,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
+              "$ref": "#/definitions/funFundingResponse"
             }
           }
         },
@@ -62,7 +62,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/fundingFundingCreatePayload"
+              "$ref": "#/definitions/funFundingCreatePayload"
             }
           }
         ],
@@ -79,7 +79,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
+              "$ref": "#/definitions/funFundingResponse"
             }
           }
         },
@@ -108,7 +108,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
+              "$ref": "#/definitions/funFundingResponse"
             }
           }
         },
@@ -130,7 +130,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/fundingFundingUpdatePayload"
+              "$ref": "#/definitions/funFundingUpdatePayload"
             }
           }
         ],
@@ -147,7 +147,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
+              "$ref": "#/definitions/funFundingResponse"
             }
           }
         },
@@ -169,7 +169,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/fundingRequest"
+              "$ref": "#/definitions/funRequest"
             }
           }
         ],
@@ -186,7 +186,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingListResponse"
+              "$ref": "#/definitions/funFundingListResponse"
             }
           }
         },
@@ -217,7 +217,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/fundingFundingResponse"
+              "$ref": "#/definitions/funFundingResponse"
             }
           }
         },
@@ -321,7 +321,7 @@
         }
       }
     },
-    "fundingFundingCreatePayload": {
+    "funFundingCreatePayload": {
       "type": "object",
       "properties": {
         "identifier": {
@@ -334,11 +334,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/fundingFundingData"
+          "$ref": "#/definitions/funFundingData"
         }
       }
     },
-    "fundingFundingData": {
+    "funFundingData": {
       "type": "object",
       "properties": {
         "funding_id": {
@@ -377,7 +377,7 @@
       },
       "title": "FundingData is the default funding extension schema"
     },
-    "fundingFundingListResponse": {
+    "funFundingListResponse": {
       "type": "object",
       "properties": {
         "header": {
@@ -386,37 +386,37 @@
         "data": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/fundingFundingResponseData"
+            "$ref": "#/definitions/funFundingResponseData"
           }
         }
       }
     },
-    "fundingFundingResponse": {
+    "funFundingResponse": {
       "type": "object",
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
         },
         "data": {
-          "$ref": "#/definitions/fundingFundingResponseData"
+          "$ref": "#/definitions/funFundingResponseData"
         }
       }
     },
-    "fundingFundingResponseData": {
+    "funFundingResponseData": {
       "type": "object",
       "properties": {
         "funding": {
-          "$ref": "#/definitions/fundingFundingData"
+          "$ref": "#/definitions/funFundingData"
         },
         "signatures": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/fundingFundingSignature"
+            "$ref": "#/definitions/funFundingSignature"
           }
         }
       }
     },
-    "fundingFundingSignature": {
+    "funFundingSignature": {
       "type": "object",
       "properties": {
         "valid": {
@@ -433,7 +433,7 @@
         }
       }
     },
-    "fundingFundingUpdatePayload": {
+    "funFundingUpdatePayload": {
       "type": "object",
       "properties": {
         "identifier": {
@@ -449,11 +449,11 @@
           "$ref": "#/definitions/documentWriteAccess"
         },
         "data": {
-          "$ref": "#/definitions/fundingFundingData"
+          "$ref": "#/definitions/funFundingData"
         }
       }
     },
-    "fundingRequest": {
+    "funRequest": {
       "type": "object",
       "properties": {
         "identifier": {
