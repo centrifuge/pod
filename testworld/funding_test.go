@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func Test_CreateList(t *testing.T) {
@@ -140,6 +141,7 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 		"apr":         "0.33",
 	}
 
+	time.Sleep(2000)
 	// check if everybody received to funding
 	getFundingAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, params)
 	getFundingAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, fundingId, params)

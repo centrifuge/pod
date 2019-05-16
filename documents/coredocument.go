@@ -663,7 +663,7 @@ func (cd *CoreDocument) AddAttributes(ca *CollaboratorsAccess, prepareNewVersion
 	var ncd *CoreDocument
 	var err error
 	if prepareNewVersion {
-		ncd, err = cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
+		ncd, err = cd.PrepareNewVersion(nil, *ca, nil)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 		}
