@@ -712,10 +712,8 @@ func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("missing attribute: %v", key))
 	}
 
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
-	}
+	ncd := cd
+	var err error
 
 	delete(ncd.Attributes, key)
 	ncd.Document.Attributes, err = toProtocolAttributes(ncd.Attributes)

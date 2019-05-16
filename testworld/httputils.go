@@ -174,6 +174,12 @@ func createFunding(e *httpexpect.Expect, auth string, identifier string, status 
 		Expect().Status(status).JSON().Object()
 	return obj
 }
+func updateFunding(e *httpexpect.Expect, auth string, fundingId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PUT("/document/"+docIdentifier+"/funding/"+fundingId), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
 
 func signFunding(e *httpexpect.Expect, auth, identifier, fundingId string, status int) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/document/"+identifier+"/funding/"+fundingId+"/sign"), auth).

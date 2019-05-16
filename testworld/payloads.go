@@ -96,6 +96,23 @@ func defaultFundingPayload(collaborators []string) map[string]interface{} {
 	}
 }
 
+func updateFundingPayload(fundingId string, collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"funding_id": fundingId,
+			"amount":             "10000",
+			"apr":                "0.55",
+			"days":               "90",
+			"currency":           "USD",
+			"fee":                "30.30",
+			"repayment_due_date": "2018-09-26T23:12:37.902198664Z",
+		},
+		"write_access": map[string]interface{}{
+			"collaborators": collaborators,
+		},
+	}
+}
+
 func wrongInvoicePayload(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{

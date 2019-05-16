@@ -8,7 +8,17 @@ import (
 	"testing"
 )
 
-func TestHost_Funding(t *testing.T) {
+func Test_CreateList(t *testing.T) {
+	t.Parallel()
+	// Hosts
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+
+	_, identifier := createInvoiceWithFunding(t, alice, bob, charlie)
+	listTest(t, alice,bob, charlie, identifier)
+}
+func Test_SignUpdate(t *testing.T)  {
 	t.Parallel()
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
@@ -17,7 +27,30 @@ func TestHost_Funding(t *testing.T) {
 
 	fundingId, identifier := createInvoiceWithFunding(t, alice, bob, charlie)
 	signTest(t, alice, bob, charlie, fundingId, identifier)
-	listTest(t, alice,bob, charlie, identifier)
+	updateTest(t, alice, bob, charlie, fundingId, identifier)
+}
+
+func updateTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
+	// alice adds a funding and shares with charlie
+	res := updateFunding(alice.httpExpect, alice.id.String(),fundingId,http.StatusOK, docIdentifier, updateFundingPayload(fundingId,nil))
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	fundingId = getFundingId(t, res)
+	params := map[string]interface{}{
+		"document_id": docIdentifier,
+		"currency":    "USD",
+		"amount":      "10000",
+		"apr":         "0.55",
+	}
+
+	// check if everybody received the update with an outdated signature
+	getFundingWithSignatureAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, "true", "true", params)
+	getFundingWithSignatureAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, fundingId, "true", "true", params)
+	getFundingWithSignatureAndCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, fundingId, "true", "true", params)
 
 }
 
@@ -44,6 +77,8 @@ func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier str
 	}
 
 	getListFundingCheck(alice.httpExpect, alice.id.String(), docIdentifier,6, params)
+	getListFundingCheck(bob.httpExpect, bob.id.String(), docIdentifier,6, params)
+	getListFundingCheck(charlie.httpExpect, charlie.id.String(), docIdentifier,6, params)
 
 }
 
