@@ -70,8 +70,8 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 	go-vendorinstall golang.org/x/tools/cmd/goimports
+	go-vendorinstall github.com/swaggo/swag/cmd/swag
 	go get -u github.com/jteeuwen/go-bindata/...
-	go get -u github.com/swaggo/swag/cmd/swag
 
 abigen-install: ## Installs ABIGEN from vendor
 abigen-install: vendorinstall
