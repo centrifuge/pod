@@ -651,19 +651,15 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttributes(ca *CollaboratorsAccess, prepareNewVersion bool, attrs ...Attribute) (*CoreDocument, error) {
+func (cd *CoreDocument) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, attrs ...Attribute) (*CoreDocument, error) {
 	if len(attrs) < 1 {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("require at least one attribute"))
-	}
-
-	if ca == nil {
-		ca = new(CollaboratorsAccess)
 	}
 
 	var ncd *CoreDocument
 	var err error
 	if prepareNewVersion {
-		ncd, err = cd.PrepareNewVersion(nil, *ca, nil)
+		ncd, err = cd.PrepareNewVersion(nil, ca, nil)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 		}

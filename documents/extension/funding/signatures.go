@@ -73,7 +73,7 @@ func (s service) Sign(ctx context.Context, fundingID string, identifier []byte) 
 		return nil, err
 	}
 
-	err = model.AddAttributes(nil, true, attributes...)
+	err = model.AddAttributes(documents.CollaboratorsAccess{}, true, attributes...)
 	if err != nil {
 		return nil, err
 	}

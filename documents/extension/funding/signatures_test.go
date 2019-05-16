@@ -154,7 +154,7 @@ func TestService_SignVerify(t *testing.T) {
 	assert.NoError(t, err)
 	attr, err := documents.NewSignedAttribute("funding_agreement[4].signatures[0]", testingidentity.GenerateRandomDID(), acc, model, invalidValue)
 	assert.NoError(t, err)
-	oldInv.AddAttributes(nil, true, attr)
+	oldInv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 
 	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil)
 	response, err = srv.DeriveFundingResponse(ctx, oldInv, fundingID)

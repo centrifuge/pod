@@ -191,7 +191,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		return nil, err
 	}
 
-	err = model.AddAttributes(&ca, true, attributes...)
+	err = model.AddAttributes(ca, true, attributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, err
 	}
 
-	err = model.AddAttributes(&ca, true, attributes...)
+	err = model.AddAttributes(ca, true, attributes...)
 	if err != nil {
 		return nil, err
 	}
