@@ -210,6 +210,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NoError(t, err)
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(response.Data))
 	assert.Equal(t, p2.Data.Fee, response.Data[0].Funding.Fee)
 

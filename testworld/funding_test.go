@@ -3,10 +3,8 @@
 package testworld
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func Test_CreateList(t *testing.T) {
@@ -69,7 +67,6 @@ func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier str
 		fundings = append(fundings, fundingId)
 
 	}
-
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -123,7 +120,6 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	}
 	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
 	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
-	fmt.Println("Host test success")
 
 	// alice adds a funding and shares with charlie
 	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload([]string{charlie.id.String()}))
@@ -141,7 +137,6 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 		"apr":         "0.33",
 	}
 
-	time.Sleep(2000)
 	// check if everybody received to funding
 	getFundingAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, params)
 	getFundingAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, fundingId, params)

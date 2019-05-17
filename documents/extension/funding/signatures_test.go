@@ -44,14 +44,13 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
 	var payloads []*clientfunpb.FundingCreatePayload
-
 	var lastFundingId string
 
 	// create a list of fundings
@@ -61,7 +60,6 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
 		assert.NoError(t, err)
 		lastFundingId = p.Data.FundingId
-
 	}
 
 	return srv, docSrv, model, lastFundingId
@@ -97,8 +95,9 @@ func TestService_Sign(t *testing.T) {
 		key, err = documents.AttrKeyFromLabel(label)
 		assert.NoError(t, err)
 		attr, err = model.GetAttribute(key)
-		assert.Equal(t, fmt.Sprintf("%d", i), attr.Value.Int256.String())
 		assert.NoError(t, err)
+		assert.Equal(t, fmt.Sprintf("%d", i), attr.Value.Int256.String())
+
 	}
 
 	// funding id not exists
@@ -111,7 +110,7 @@ func TestService_SignVerify(t *testing.T) {
 	srv, docSrv, model, fundingID := setupFundingsForTesting(t, fundingAmount)
 
 	// add signature
-	acc := &mockAccount{}
+	acc := new(mockAccount)
 	acc.On("GetIdentityID").Return(utils.RandomSlice(20), nil)
 	// success
 	signature := utils.RandomSlice(32)
@@ -132,7 +131,7 @@ func TestService_SignVerify(t *testing.T) {
 	// update funding after signature
 	oldCD, err := model.PackCoreDocument()
 	assert.NoError(t, err)
-	oldInv := &invoice.Invoice{}
+	oldInv := new(invoice.Invoice)
 	err = oldInv.UnpackCoreDocument(oldCD)
 	assert.NoError(t, err)
 
@@ -154,7 +153,8 @@ func TestService_SignVerify(t *testing.T) {
 	assert.NoError(t, err)
 	attr, err := documents.NewSignedAttribute("funding_agreement[4].signatures[0]", testingidentity.GenerateRandomDID(), acc, model, invalidValue)
 	assert.NoError(t, err)
-	oldInv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	err = oldInv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.NoError(t, err)
 
 	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil)
 	response, err = srv.DeriveFundingResponse(ctx, oldInv, fundingID)
