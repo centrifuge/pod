@@ -52,6 +52,8 @@ sudo mv go /usr/local
 export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+# execute this command to use go in the current shell. 
 source ~/.profile
 
 # install jq
