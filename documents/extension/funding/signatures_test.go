@@ -40,7 +40,7 @@ func (m *mockAccount) GetIdentityID() ([]byte, error) {
 
 func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
@@ -70,7 +70,7 @@ func TestService_Sign(t *testing.T) {
 	srv, _, model, lastFundingId := setupFundingsForTesting(t, fundingAmount)
 
 	// add signature
-	acc := &mockAccount{}
+	acc := new(mockAccount)
 	acc.On("GetIdentityID").Return(utils.RandomSlice(20), nil)
 	// success
 	signature := utils.RandomSlice(32)

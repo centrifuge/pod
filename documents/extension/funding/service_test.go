@@ -41,7 +41,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ethClient := &ethereum.MockEthClient{}
+	ethClient := new(ethereum.MockEthClient)
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	jobMan := &testingjobs.MockJobManager{}
@@ -80,7 +80,7 @@ func TestGenerateKey(t *testing.T) {
 
 func TestCreateAttributesList(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
@@ -104,11 +104,11 @@ func TestCreateAttributesList(t *testing.T) {
 
 func TestDeriveFromPayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
@@ -131,11 +131,11 @@ func TestDeriveFromPayload(t *testing.T) {
 
 func TestDeriveFundingResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
@@ -155,11 +155,11 @@ func TestDeriveFundingResponse(t *testing.T) {
 
 func TestDeriveFundingListResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
@@ -186,10 +186,10 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
