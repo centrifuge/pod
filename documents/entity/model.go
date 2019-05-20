@@ -338,8 +338,8 @@ func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator ide
 }
 
 // AddAttributes adds attributes to the Entity model.
-func (e *Entity) AddAttributes(attrs ...documents.Attribute) error {
-	ncd, err := e.CoreDocument.AddAttributes(attrs...)
+func (e *Entity) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(ca, prepareNewVersion, compactPrefix(), attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
@@ -349,8 +349,8 @@ func (e *Entity) AddAttributes(attrs ...documents.Attribute) error {
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (e *Entity) DeleteAttribute(key documents.AttrKey) error {
-	ncd, err := e.CoreDocument.DeleteAttribute(key)
+func (e *Entity) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key, prepareNewVersion, compactPrefix())
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

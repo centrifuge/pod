@@ -3,7 +3,7 @@ package funding
 import (
 	"reflect"
 
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 )
 
 // Data is the default funding extension schema
@@ -21,7 +21,7 @@ type Data struct {
 	PaymentDetailsId      string `json:"payment_details_id,omitempty" attr:"bytes"`
 }
 
-func (f *Data) initFundingFromData(data *clientfundingpb.FundingData) {
+func (f *Data) initFundingFromData(data *clientfunpb.FundingData) {
 	types := reflect.TypeOf(*f)
 	values := reflect.ValueOf(*data)
 	for i := 0; i < types.NumField(); i++ {
@@ -33,8 +33,8 @@ func (f *Data) initFundingFromData(data *clientfundingpb.FundingData) {
 	}
 }
 
-func (f *Data) getClientData() *clientfundingpb.FundingData {
-	clientData := new(clientfundingpb.FundingData)
+func (f *Data) getClientData() *clientfunpb.FundingData {
+	clientData := new(clientfunpb.FundingData)
 	types := reflect.TypeOf(*f)
 	values := reflect.ValueOf(*f)
 	for i := 0; i < types.NumField(); i++ {
