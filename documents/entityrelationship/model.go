@@ -277,7 +277,7 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 
 // AddAttributes adds attributes to the EntityRelationship model.
 func (e *EntityRelationship) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
-	ncd, err := e.CoreDocument.AddAttributes(ca, prepareNewVersion, attrs...)
+	ncd, err := e.CoreDocument.AddAttributes(ca, prepareNewVersion,compactPrefix(), attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

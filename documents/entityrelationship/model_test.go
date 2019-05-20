@@ -389,7 +389,7 @@ func TestEntityRelationship_AddAttributes(t *testing.T) {
 
 	// fail
 	attr.Value.Type = documents.AttributeType("some attr")
-	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true,  attr)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
 }

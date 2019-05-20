@@ -735,7 +735,7 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 
 // AddAttributes adds attributes to the Invoice model.
 func (i *Invoice) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
-	ncd, err := i.CoreDocument.AddAttributes(ca, prepareNewVersion, attrs...)
+	ncd, err := i.CoreDocument.AddAttributes(ca, prepareNewVersion,compactPrefix(), attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
