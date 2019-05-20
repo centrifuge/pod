@@ -123,9 +123,14 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			mJob = tempJob
 		}
 
-		done <- true
+		// non blocking send
+		select {
+		case done <- true:
+		default:
+			log.Debug("job done channel has no listener")
+		}
 
-		if mJob != nil {
+		if mJob != nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
 			ts, err1 := utils.ToTimestamp(time.Now().UTC())
 			if err1 != nil {
 				log.Error(err1)
@@ -142,7 +147,10 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 				notificationMsg.Message = mJob.Logs[len(mJob.Logs)-1].Message
 			}
 			// Send Job notification webhook
-			go s.notifier.Send(ctx, notificationMsg)
+			_, err1 = s.notifier.Send(ctx, notificationMsg)
+			if err1 != nil {
+				log.Error(err1)
+			}
 		}
 
 	}(ctx)

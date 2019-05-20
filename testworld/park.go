@@ -63,6 +63,9 @@ type hostManager struct {
 	// bernard is the bootnode for all the hosts
 	bernard *host
 
+	// maeve is the webhook receiver for all hosts
+	maeve *webhookReceiver
+
 	// niceHosts are the happy and nice hosts at the Testworld such as Teddy
 	niceHosts map[string]*host
 
@@ -112,7 +115,12 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
+
+	// start listening to webhooks
+	r.maeve = newWebhookReceiver(8083, "/webhook")
+	go r.maeve.start(r.cancCtx)
+
+	r.bernard = r.createHost("Bernard", "", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -132,7 +140,8 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
+		m := r.maeve.url()
+		r.niceHosts[h.name] = r.createHost(h.name, m, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -178,7 +187,7 @@ func (r *hostManager) addNiceHost(name string, host *host) {
 }
 
 func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	tempHost := r.createHost(name, twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+	tempHost := r.createHost(name, "", twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
 	r.tempHosts[name] = tempHost
 	return tempHost
 }
@@ -197,22 +206,8 @@ func (r *hostManager) startTempHost(name string) error {
 	return nil
 }
 
-func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	return newHost(
-		name,
-		r.ethNodeUrl,
-		r.accountKeyPath,
-		r.accountPassword,
-		r.network,
-		"0.0.0.0",
-		twConfigName,
-		p2pTimeout,
-		apiPort, p2pPort, bootstraps,
-		r.txPoolAccess,
-		createConfig,
-		multiAccount,
-		r.contractAddresses,
-	)
+func (r *hostManager) createHost(name, webhookURL string, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	return newHost(name, r.ethNodeUrl, webhookURL, r.accountKeyPath, r.accountPassword, r.network, "0.0.0.0", twConfigName, p2pTimeout, apiPort, p2pPort, bootstraps, r.txPoolAccess, createConfig, multiAccount, r.contractAddresses)
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
@@ -227,7 +222,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 }
 
 type host struct {
-	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost,
+	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
 	apiPort, p2pPort   int64
 	bootstrapNodes     []string
@@ -250,16 +245,11 @@ type host struct {
 	entityService      entity.Service
 }
 
-func newHost(
-	name, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string,
-	apiPort, p2pPort int64,
-	bootstraps []string,
-	txPoolAccess, createConfig, multiAccount bool,
-	smartContractAddrs *config.SmartContractAddresses,
-) *host {
+func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, createConfig, multiAccount bool, smartContractAddrs *config.SmartContractAddresses) *host {
 	return &host{
 		name:               name,
 		ethNodeUrl:         ethNodeUrl,
+		webhookURL:         webhookURL,
 		accountKeyPath:     accountKeyPath,
 		accountPassword:    accountPassword,
 		network:            network,
@@ -278,7 +268,7 @@ func newHost(
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
 		if err != nil {
 			return err
 		}
