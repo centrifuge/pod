@@ -15,7 +15,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service FundingService {
   rpc Create(FundingCreatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/document/{identifier}/funding"
+      post: "/documents/{identifier}/fundings"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -24,7 +24,7 @@ service FundingService {
   }
   rpc Update(FundingUpdatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      put: "/document/{identifier}/funding/{funding_id}"
+      put: "/documents/{identifier}/fundings/{funding_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -33,7 +33,7 @@ service FundingService {
   }
   rpc Sign(Request) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/document/{identifier}/funding/{funding_id}/sign"
+      post: "/documents/{identifier}/fundings/{funding_id}/sign"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -42,7 +42,7 @@ service FundingService {
   }
   rpc Get(Request) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/document/{identifier}/funding/{funding_id}"
+      get: "/documents/{identifier}/fundings/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a latest document"
@@ -50,7 +50,7 @@ service FundingService {
   }
   rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/document/{identifier}/{version}/funding/{funding_id}"
+      get: "/documents/{identifier}/{version}/fundings/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a document version"
@@ -58,7 +58,7 @@ service FundingService {
   }
   rpc GetList(GetListRequest) returns (FundingListResponse) {
     option (google.api.http) = {
-      get: "/document/{identifier}/funding"
+      get: "/documents/{identifier}/fundings"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get all funding agreements of a latest document"
@@ -66,7 +66,7 @@ service FundingService {
   }
   rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
     option (google.api.http) = {
-      get: "/document/{identifier}/{version}/funding"
+      get: "/documents/{identifier}/{version}/fundings"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get all funding agreements of a document version"

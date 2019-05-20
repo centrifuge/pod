@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/document/{identifier}/funding": {
+    "/documents/{identifier}/fundings": {
       "get": {
         "description": "Get all funding agreements of a latest document",
         "operationId": "GetList",
@@ -71,7 +71,7 @@
         ]
       }
     },
-    "/document/{identifier}/funding/{funding_id}": {
+    "/documents/{identifier}/fundings/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a latest document",
         "operationId": "Get",
@@ -139,7 +139,7 @@
         ]
       }
     },
-    "/document/{identifier}/funding/{funding_id}/sign": {
+    "/documents/{identifier}/fundings/{funding_id}/sign": {
       "post": {
         "description": "Signs funding agreement in a document",
         "operationId": "Sign",
@@ -178,7 +178,7 @@
         ]
       }
     },
-    "/document/{identifier}/{version}/funding": {
+    "/documents/{identifier}/{version}/fundings": {
       "get": {
         "description": "Get all funding agreements of a document version",
         "operationId": "GetListVersion",
@@ -209,7 +209,7 @@
         ]
       }
     },
-    "/document/{identifier}/{version}/funding/{funding_id}": {
+    "/documents/{identifier}/{version}/fundings/{funding_id}": {
       "get": {
         "description": "Get a funding agreement of a document version",
         "operationId": "GetVersion",
