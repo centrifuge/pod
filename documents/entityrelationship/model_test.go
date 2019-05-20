@@ -380,7 +380,7 @@ func TestEntityRelationship_AddAttributes(t *testing.T) {
 	assert.NoError(t, err)
 
 	// success
-	err = e.AddAttributes(attr)
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.NoError(t, err)
 	assert.True(t, e.AttributeExists(attr.Key))
 	gattr, err := e.GetAttribute(attr.Key)
@@ -389,7 +389,7 @@ func TestEntityRelationship_AddAttributes(t *testing.T) {
 
 	// fail
 	attr.Value.Type = documents.AttributeType("some attr")
-	err = e.AddAttributes(attr)
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
 }
@@ -402,12 +402,12 @@ func TestEntityRelationship_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// failed
-	err = e.DeleteAttribute(attr.Key)
+	err = e.DeleteAttribute(attr.Key, true)
 	assert.Error(t, err)
 
 	// success
-	assert.NoError(t, e.AddAttributes(attr))
+	assert.NoError(t, e.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
 	assert.True(t, e.AttributeExists(attr.Key))
-	assert.NoError(t, e.DeleteAttribute(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
 	assert.False(t, e.AttributeExists(attr.Key))
 }

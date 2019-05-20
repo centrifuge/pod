@@ -232,6 +232,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 	}, nil
 }
 
+// attributeSignaturePayload creates the payload for signing an attribute
 func attributeSignaturePayload(did, id, version, value []byte) []byte {
 	var signPayload []byte
 	signPayload = append(signPayload, did...)
