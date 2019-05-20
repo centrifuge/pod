@@ -543,7 +543,7 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 
 // AddAttributes adds attributes to the PurchaseOrder model.
 func (p *PurchaseOrder) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
-	ncd, err := p.CoreDocument.AddAttributes(ca, prepareNewVersion,compactPrefix(), attrs...)
+	ncd, err := p.CoreDocument.AddAttributes(ca, prepareNewVersion, compactPrefix(), attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
@@ -554,7 +554,7 @@ func (p *PurchaseOrder) AddAttributes(ca documents.CollaboratorsAccess, prepareN
 
 // DeleteAttribute deletes the attribute from the model.
 func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
-	ncd, err := p.CoreDocument.DeleteAttribute(key, prepareNewVersion)
+	ncd, err := p.CoreDocument.DeleteAttribute(key, prepareNewVersion, compactPrefix())
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

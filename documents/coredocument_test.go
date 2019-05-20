@@ -634,13 +634,13 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// failed delete
-	_, err = cd.DeleteAttribute(key, true)
+	_, err = cd.DeleteAttribute(key, true, nil)
 	assert.Error(t, err)
 
 	// success
 	attr, err := NewAttribute(label, AttrString, value)
 	assert.NoError(t, err)
-	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true,nil, attr)
+	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true, nil, attr)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 1)
 	assert.Len(t, cd.GetAttributes(), 1)
@@ -660,7 +660,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	nvalue := "2000"
 	attr, err = NewAttribute(label, AttrDecimal, nvalue)
 	assert.NoError(t, err)
-	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true,nil, attr)
+	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true, nil, attr)
 	assert.NoError(t, err)
 	assert.True(t, cd.AttributeExists(key))
 	attr, err = cd.GetAttribute(key)
@@ -676,7 +676,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Equal(t, AttrDecimal, attr.Value.Type)
 
 	// delete
-	cd, err = cd.DeleteAttribute(key, true)
+	cd, err = cd.DeleteAttribute(key, true, nil)
 	assert.NoError(t, err)
 	assert.Len(t, cd.Attributes, 0)
 	assert.Len(t, cd.GetAttributes(), 0)

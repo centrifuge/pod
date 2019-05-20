@@ -652,7 +652,7 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 
 // AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 // Note: The prepareNewVersion flags defines if the returned model should be a new version of the document.
-func (cd *CoreDocument) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool,documentPrefix []byte, attrs ...Attribute) (*CoreDocument, error) {
+func (cd *CoreDocument) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, documentPrefix []byte, attrs ...Attribute) (*CoreDocument, error) {
 	if len(attrs) < 1 {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("require at least one attribute"))
 	}
@@ -710,7 +710,7 @@ func (cd *CoreDocument) GetAttributes() (attrs []Attribute) {
 
 // DeleteAttribute deletes a custom attribute from the model.
 // If the attribute is missing, delete returns an error
-func (cd *CoreDocument) DeleteAttribute(key AttrKey, prepareNewVersion bool) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAttribute(key AttrKey, prepareNewVersion bool, documentPrefix []byte) (*CoreDocument, error) {
 	if _, ok := cd.Attributes[key]; !ok {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("missing attribute: %v", key))
 	}
@@ -718,7 +718,7 @@ func (cd *CoreDocument) DeleteAttribute(key AttrKey, prepareNewVersion bool) (*C
 	var ncd *CoreDocument
 	var err error
 	if prepareNewVersion {
-		ncd, err = cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
+		ncd, err = cd.PrepareNewVersion(documentPrefix, CollaboratorsAccess{}, nil)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
 		}
