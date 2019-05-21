@@ -10,31 +10,35 @@ import (
 
 const dbPrefix = "migration_"
 
-type migrationRepo struct {
+// Repository holds DB info
+type Repository struct {
 	db     *leveldb.DB
 	dbPath string
 }
 
-type migrationItem struct {
+// Item holds migration item info
+type Item struct {
 	ID       string        `json:"id"`
 	Hash     string        `json:"hash"`
 	DateRun  time.Time     `json:"date_run,string"`
 	Duration time.Duration `json:"duration,string"`
 }
 
-func NewMigrationRepository(path string) (*migrationRepo, error) {
+// NewMigrationRepository takes a path and creates a DB repository
+func NewMigrationRepository(path string) (*Repository, error) {
 	i, err := leveldb.OpenFile(path, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &migrationRepo{i, path}, nil
+	return &Repository{i, path}, nil
 }
 
 func getKeyFromID(id string) []byte {
 	return []byte(dbPrefix + id)
 }
 
-func (repo *migrationRepo) Exists(id string) bool {
+// Exists checks that migrationID has been ran
+func (repo *Repository) Exists(id string) bool {
 	key := getKeyFromID(id)
 	res, err := repo.db.Has(key, nil)
 	if err != nil {
@@ -43,8 +47,9 @@ func (repo *migrationRepo) Exists(id string) bool {
 	return res
 }
 
-func (repo *migrationRepo) GetMigrationByID(id string) (*migrationItem, error) {
-	v := new(migrationItem)
+// GetMigrationByID returns migration ID if it exists
+func (repo *Repository) GetMigrationByID(id string) (*Item, error) {
+	v := new(Item)
 	key := getKeyFromID(id)
 	data, err := repo.db.Get(key, nil)
 	if err != nil {
@@ -57,7 +62,8 @@ func (repo *migrationRepo) GetMigrationByID(id string) (*migrationItem, error) {
 	return v, nil
 }
 
-func (repo *migrationRepo) CreateMigration(migrationItem *migrationItem) error {
+// CreateMigration stores a migration item in DB
+func (repo *Repository) CreateMigration(migrationItem *Item) error {
 	if migrationItem == nil {
 		return errors.New("nil migration item provided")
 	}
@@ -72,7 +78,8 @@ func (repo *migrationRepo) CreateMigration(migrationItem *migrationItem) error {
 	return repo.db.Put(key, data, nil)
 }
 
-func (repo *migrationRepo) RefreshDB() (err error) {
+// RefreshDB reopens a DB, requires it to be closed or it will error out
+func (repo *Repository) RefreshDB() (err error) {
 	repo.db, err = leveldb.OpenFile(repo.dbPath, nil)
 	return err
 }

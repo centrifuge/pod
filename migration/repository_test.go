@@ -51,7 +51,7 @@ func TestMigrationRepo_CreateMigration(t *testing.T) {
 	defer repo.db.Close()
 
 	// Successfully creates migration
-	mi := &migrationItem{
+	mi := &Item{
 		Hash:     "Smthng",
 		DateRun:  time.Now().UTC(),
 		Duration: 3 * time.Second,

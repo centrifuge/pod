@@ -26,6 +26,10 @@ func fakeCalculateMigrationHash(name string) (string, error) {
 	return hexutil.Encode(out), nil
 }
 
+func failCalculateMigrationHash(name string) (string, error) {
+	return "", errors.New(name)
+}
+
 // Test migration items
 func Migration0(db *leveldb.DB) error {
 	err := db.Put([]byte("new"), []byte("sample"), nil)
@@ -199,7 +203,25 @@ func TestRunMigrations_singleSuccess(t *testing.T) {
 
 }
 
-func TestRunMigrations_Failure(t *testing.T) {
+func TestRunner_RunMigrations_FailureHashFunction(t *testing.T) {
+	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+
+	// Cleanup after test
+	defer cleanupDBFiles(prefix)
+
+	// Override migrations for testing purposes
+	migrations = map[string]func(*leveldb.DB) error{
+		"0SuccessMigration": Migration0,
+	}
+	runner := NewMigrationRunnerWithHashFunction(failCalculateMigrationHash)
+	// Run migration and expect error in calculateHash function
+	err := runner.RunMigrations(targetDir)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "0SuccessMigration")
+}
+
+func TestRunner_RunMigrations_Failure(t *testing.T) {
 	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 

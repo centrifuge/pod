@@ -28,25 +28,29 @@ var migrations = map[string]func(*leveldb.DB) error{
 	"0JobKeyToHex": files.RunMigration0,
 }
 
+// Runner is the actor that runs the migrations
 type Runner struct {
 	CalculateHash func(string) (string, error)
 }
 
+// NewMigrationRunner creates default runner
 func NewMigrationRunner() *Runner {
 	return NewMigrationRunnerWithHashFunction(calculateMigrationHash)
 }
 
+// NewMigrationRunnerWithHashFunction creates runner with custom hash function
 func NewMigrationRunnerWithHashFunction(hashFn func(string) (string, error)) *Runner {
 	return &Runner{hashFn}
 }
 
+// RunMigrations executes the migrations
 func (mr *Runner) RunMigrations(dbPath string) error {
 	repo, err := NewMigrationRepository(dbPath)
 	if err != nil {
 		return err
 	}
 
-	var bkpRepo *migrationRepo
+	var bkpRepo *Repository
 	migrationList := make([]string, 0, len(migrations))
 	for k := range migrations {
 		migrationList = append(migrationList, k)
@@ -87,7 +91,7 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 			}
 			return err
 		}
-		mi := &migrationItem{
+		mi := &Item{
 			ID:       k,
 			DateRun:  time.Now().UTC(),
 			Duration: time.Now().Sub(start),
@@ -128,7 +132,7 @@ func getBackupName(path, name string) string {
 	return fmt.Sprintf("%s_%s.leveldb", bkpPath, name)
 }
 
-func backupDB(srcRepo *migrationRepo, migrationID string) (bkp *migrationRepo, err error) {
+func backupDB(srcRepo *Repository, migrationID string) (bkp *Repository, err error) {
 	//Closing src to make backup
 	err = srcRepo.db.Close()
 	if err != nil {
@@ -150,7 +154,7 @@ func backupDB(srcRepo *migrationRepo, migrationID string) (bkp *migrationRepo, e
 	return NewMigrationRepository(dstPath)
 }
 
-func revertDBToBackup(srcDB, bkpDB *migrationRepo) error {
+func revertDBToBackup(srcDB, bkpDB *Repository) error {
 	erri := srcDB.db.Close()
 	if erri != nil {
 		return erri
@@ -167,8 +171,8 @@ func revertDBToBackup(srcDB, bkpDB *migrationRepo) error {
 	return os.Rename(bkpDB.dbPath, srcDB.dbPath)
 }
 
+// CopyFile copies a single file from src to dst
 // Code taken from https://blog.depado.eu/post/copy-files-and-directories-in-go
-// File copies a single file from src to dst
 func CopyFile(src, dst string) error {
 	var err error
 	var srcfd *os.File
@@ -194,7 +198,7 @@ func CopyFile(src, dst string) error {
 	return os.Chmod(dst, srcinfo.Mode())
 }
 
-// Dir copies a whole directory recursively
+// CopyDir copies a whole directory recursively
 func CopyDir(src string, dst string) error {
 	var err error
 	var fds []os.FileInfo
@@ -228,7 +232,7 @@ func CopyDir(src string, dst string) error {
 	return nil
 }
 
-// Sha256Hash wraps inconvenient sha256 hashing ops
+// sha256Hash wraps inconvenient sha256 hashing ops
 func sha256Hash(value []byte) (hash []byte, err error) {
 	h := sha256.New()
 	_, err = h.Write(value)
