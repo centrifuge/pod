@@ -71,7 +71,8 @@ func TestPaymentDetails(t *testing.T) {
 		},
 	}
 
-	cdetails := ToClientPaymentDetails(details)
+	cdetails, err := ToClientPaymentDetails(details)
+	assert.NoError(t, err)
 	pdetails, err := ToProtocolPaymentDetails(details)
 	assert.NoError(t, err)
 

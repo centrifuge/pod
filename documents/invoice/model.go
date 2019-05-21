@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -22,6 +23,76 @@ const prefix string = "invoice"
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 1, 0, 0} }
+
+// Data holds the invoice specific fields.
+type Data struct {
+	Number                   string                        `json:"number"` // invoice number or reference number
+	Status                   string                        `json:"status"` // invoice status
+	SenderInvoiceID          string                        `json:"sender_invoice_id"`
+	RecipientInvoiceID       string                        `json:"recipient_invoice_id"`
+	SenderCompanyName        string                        `json:"sender_company_name"`
+	SenderContactPersonName  string                        `json:"sender_contact_person_name"`
+	SenderStreet1            string                        `json:"sender_street_1"` // street and address details of the sender company
+	SenderStreet2            string                        `json:"sender_street_2"`
+	SenderCity               string                        `json:"sender_city"`
+	SenderZipcode            string                        `json:"sender_zipcode"`
+	SenderState              string                        `json:"sender_state"`
+	SenderCountry            string                        `json:"sender_country"` // country ISO code of the sender of this invoice
+	BillToCompanyName        string                        `json:"bill_to_company_name"`
+	BillToContactPersonName  string                        `json:"bill_to_contact_person_name"`
+	BillToStreet1            string                        `json:"bill_to_street_1"`
+	BillToStreet2            string                        `json:"bill_to_street_2"`
+	BillToCity               string                        `json:"bill_to_city"`
+	BillToZipcode            string                        `json:"bill_to_zipcode"`
+	BillToState              string                        `json:"bill_to_state"`
+	BillToCountry            string                        `json:"bill_to_country"`
+	BillToVatNumber          string                        `json:"bill_to_vat_number"`
+	BillToLocalTaxID         string                        `json:"bill_to_local_tax_id"`
+	RemitToCompanyName       string                        `json:"remit_to_company_name"`
+	RemitToContactPersonName string                        `json:"remit_to_contact_person_name"`
+	RemitToStreet1           string                        `json:"remit_to_street_1"`
+	RemitToStreet2           string                        `json:"remit_to_street_2"`
+	RemitToCity              string                        `json:"remit_to_city"`
+	RemitToZipcode           string                        `json:"remit_to_zipcode"`
+	RemitToState             string                        `json:"remit_to_state"`
+	RemitToCountry           string                        `json:"remit_to_country"`
+	RemitToVatNumber         string                        `json:"remit_to_vat_number"`
+	RemitToLocalTaxID        string                        `json:"remit_to_local_tax_id"`
+	RemitToTaxCountry        string                        `json:"remit_to_tax_country"`
+	ShipToCompanyName        string                        `json:"ship_to_company_name"`
+	ShipToContactPersonName  string                        `json:"ship_to_contact_person_name"`
+	ShipToStreet1            string                        `json:"ship_to_street_1"`
+	ShipToStreet2            string                        `json:"ship_to_street_2"`
+	ShipToCity               string                        `json:"ship_to_city"`
+	ShipToZipcode            string                        `json:"ship_to_zipcode"`
+	ShipToState              string                        `json:"ship_to_state"`
+	ShipToCountry            string                        `json:"ship_to_country"`
+	Currency                 string                        `json:"currency"`               // ISO currency code
+	GrossAmount              *documents.Decimal            `json:"gross_amount,omitempty"` // invoice amount including tax
+	NetAmount                *documents.Decimal            `json:"net_amount,omitempty"`   // invoice amount excluding tax
+	TaxAmount                *documents.Decimal            `json:"tax_amount,omitempty"`
+	TaxRate                  *documents.Decimal            `json:"tax_rate,omitempty"`
+	TaxOnLineLevel           bool                          `json:"tax_on_line_level"`
+	Recipient                *identity.DID                 `json:"recipient,string,omitempty"` // centrifuge ID of the recipient
+	Sender                   *identity.DID                 `json:"sender,string,omitempty"`    // centrifuge ID of the sender
+	Payee                    *identity.DID                 `json:"payee,string,omitempty"`     // centrifuge ID of the payee
+	Comment                  string                        `json:"comment"`
+	ShippingTerms            string                        `json:"shipping_terms"`
+	RequesterEmail           string                        `json:"requester_email"`
+	RequesterName            string                        `json:"requester_name"`
+	DeliveryNumber           string                        `json:"delivery_number"` // number of the delivery note
+	IsCreditNote             bool                          `json:"is_credit_note"`
+	CreditNoteInvoiceNumber  string                        `json:"credit_note_invoice_number"`
+	CreditForInvoiceDate     *time.Time                    `json:"credit_for_invoice_date,omitempty"`
+	DateDue                  *time.Time                    `json:"date_due,omitempty"`
+	DatePaid                 *time.Time                    `json:"date_paid,omitempty"`
+	DateUpdated              *time.Time                    `json:"date_updated,omitempty"`
+	DateCreated              *time.Time                    `json:"date_created,omitempty"`
+	Attachments              []*documents.BinaryAttachment `json:"attachments"`
+	LineItems                []*LineItem                   `json:"line_items"`
+	PaymentDetails           []*documents.PaymentDetails   `json:"payment_details"`
+	TaxItems                 []*TaxItem                    `json:"tax_items"`
+}
 
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
@@ -97,30 +168,30 @@ type Invoice struct {
 
 // LineItem represents a single invoice line item.
 type LineItem struct {
-	ItemNumber              string
-	Description             string
-	SenderPartNo            string
-	PricePerUnit            *documents.Decimal
-	Quantity                *documents.Decimal
-	UnitOfMeasure           string
-	NetWeight               *documents.Decimal
-	TaxAmount               *documents.Decimal
-	TaxRate                 *documents.Decimal
-	TaxCode                 *documents.Decimal
-	TotalAmount             *documents.Decimal // the total amount of the line item
-	PurchaseOrderNumber     string
-	PurchaseOrderItemNumber string
-	DeliveryNoteNumber      string
+	ItemNumber              string             `json:"item_number"`
+	Description             string             `json:"description"`
+	SenderPartNo            string             `json:"sender_part_no"`
+	PricePerUnit            *documents.Decimal `json:"price_per_unit,omitempty"`
+	Quantity                *documents.Decimal `json:"quantity,omitempty"`
+	UnitOfMeasure           string             `json:"unit_of_measure"`
+	NetWeight               *documents.Decimal `json:"net_weight,omitempty"`
+	TaxAmount               *documents.Decimal `json:"tax_amount,omitempty"`
+	TaxRate                 *documents.Decimal `json:"tax_rate,omitempty"`
+	TaxCode                 *documents.Decimal `json:"tax_code,omitempty"`
+	TotalAmount             *documents.Decimal `json:"total_amount,omitempty"` // the total amount of the line item
+	PurchaseOrderNumber     string             `json:"purchase_order_number"`
+	PurchaseOrderItemNumber string             `json:"purchase_order_item_number"`
+	DeliveryNoteNumber      string             `json:"delivery_note_number"`
 }
 
 // TaxItem represents a single invoice tax item.
 type TaxItem struct {
-	ItemNumber        string
-	InvoiceItemNumber string
-	TaxAmount         *documents.Decimal
-	TaxRate           *documents.Decimal
-	TaxCode           *documents.Decimal
-	TaxBaseAmount     *documents.Decimal
+	ItemNumber        string             `json:"item_number"`
+	InvoiceItemNumber string             `json:"invoice_item_number"`
+	TaxAmount         *documents.Decimal `json:"tax_amount,omitempty"`
+	TaxRate           *documents.Decimal `json:"tax_rate,omitempty"`
+	TaxCode           *documents.Decimal `json:"tax_code,omitempty"`
+	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount,omitempty"`
 }
 
 // getClientData returns the client data from the invoice model
@@ -128,6 +199,11 @@ func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
 	decs := documents.DecimalsToStrings(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
 	dids := identity.DIDsToStrings(i.Recipient, i.Sender, i.Payee)
 	attrs, err := documents.ToClientAttributes(i.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	pd, err := documents.ToClientPaymentDetails(i.PaymentDetails)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +273,7 @@ func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
 		DateUpdated:              i.DateUpdated,
 		Attachments:              documents.ToClientAttachments(i.Attachments),
 		LineItems:                toClientLineItems(i.LineItems),
-		PaymentDetails:           documents.ToClientPaymentDetails(i.PaymentDetails),
+		PaymentDetails:           pd,
 		TaxItems:                 toClientTaxItems(i.TaxItems),
 		Attributes:               attrs,
 	}, nil
