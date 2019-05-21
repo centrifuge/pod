@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/healthcheck"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -18,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/health"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
@@ -29,7 +27,7 @@ import (
 )
 
 // registerServices registers all endpoints to the grpc server
-func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 	// node object registry
 	nodeObjReg, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
@@ -66,7 +64,7 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	}
 
 	// register other api endpoints
-	err = registerAPIs(ctx, cfg, invoiceUnpaidService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
+	err = registerAPIs(ctx, invoiceUnpaidService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
@@ -74,19 +72,11 @@ func registerServices(ctx context.Context, cfg Config, grpcServer *grpc.Server, 
 	return nil
 }
 
-func registerAPIs(ctx context.Context, cfg Config, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
-
-	// healthcheck
-	hcCfg := cfg.(healthcheck.Config)
-	healthpb.RegisterHealthCheckServiceServer(grpcServer, healthcheck.GRPCHandler(hcCfg))
-	err := healthpb.RegisterHealthCheckServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
+func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 
 	// nft api
 	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, InvoiceUnpaidService))
-	err = nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	err := nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
