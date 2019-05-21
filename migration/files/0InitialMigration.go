@@ -9,7 +9,7 @@ var log = logging.Logger("migrate-files")
 
 // RunMigration0 Job key to hex
 func RunMigration0(db *leveldb.DB) error {
-	err := db.Put([]byte("perico"), []byte("sample"), nil)
+	err := db.Put([]byte("sample"), []byte("value"), nil)
 	if err != nil {
 		return err
 	}
