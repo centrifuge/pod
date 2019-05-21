@@ -1,6 +1,6 @@
 module.exports = {
     info: {
-        version: "0.0.4",
+        version: "0.0.5",
         title: "Centrifuge OS Node API",
         description: "\n",
         contact: {

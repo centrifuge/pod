@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-	fundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
@@ -132,11 +132,11 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 		return err
 	}
 
-	fundingHandler, ok := nodeObjReg[funding.BootstrappedFundingAPIHandler].(fundingpb.FundingServiceServer)
+	fundingHandler, ok := nodeObjReg[funding.BootstrappedFundingAPIHandler].(funpb.FundingServiceServer)
 	if !ok {
 		return errors.New("funding API handler not registered")
 	}
 
-	fundingpb.RegisterFundingServiceServer(grpcServer, fundingHandler)
-	return fundingpb.RegisterFundingServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	funpb.RegisterFundingServiceServer(grpcServer, fundingHandler)
+	return funpb.RegisterFundingServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }

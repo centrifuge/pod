@@ -9,22 +9,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	clientfundingpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
@@ -42,7 +41,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ethClient := &ethereum.MockEthClient{}
+	ethClient := new(ethereum.MockEthClient)
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	jobMan := &testingjobs.MockJobManager{}
@@ -81,7 +80,7 @@ func TestGenerateKey(t *testing.T) {
 
 func TestCreateAttributesList(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
@@ -105,11 +104,11 @@ func TestCreateAttributesList(t *testing.T) {
 
 func TestDeriveFromPayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
@@ -132,38 +131,40 @@ func TestDeriveFromPayload(t *testing.T) {
 
 func TestDeriveFundingResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
+
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 
-		response, err := srv.DeriveFundingResponse(model, payload.Data.FundingId)
+		response, err := srv.DeriveFundingResponse(ctxh, model, payload.Data.FundingId)
 		assert.NoError(t, err)
-		checkResponse(t, payload, response.Data)
+		checkResponse(t, payload, response.Data.Funding)
 	}
 
 }
 
 func TestDeriveFundingListResponse(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
-	var payloads []*clientfundingpb.FundingCreatePayload
+	var payloads []*clientfunpb.FundingCreatePayload
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
 		payloads = append(payloads, p)
@@ -172,107 +173,23 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 	}
 
-	response, err := srv.DeriveFundingListResponse(model)
+	response, err := srv.DeriveFundingListResponse(context.Background(), model)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, len(response.List))
+	assert.Equal(t, 10, len(response.Data))
 
 	for i := 0; i < 10; i++ {
-		checkResponse(t, payloads[i], response.List[i])
+		checkResponse(t, payloads[i], response.Data[i].Funding)
 
 	}
 
-}
-
-type mockAccount struct {
-	config.Account
-	mock.Mock
-}
-
-func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
-	args := m.Called(msg)
-	sig, _ := args.Get(0).(*coredocumentpb.Signature)
-	return sig, args.Error(1)
-}
-
-func (m *mockAccount) GetIdentityID() ([]byte, error) {
-	args := m.Called()
-	sig, _ := args.Get(0).([]byte)
-	return sig, args.Error(1)
-}
-
-func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, documents.Model, string) {
-	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
-
-	docSrv := &testingdocuments.MockService{}
-	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	srv := DefaultService(docSrv, nil)
-
-	var model documents.Model
-	var payloads []*clientfundingpb.FundingCreatePayload
-
-	var lastFundingId string
-
-	// create a list of fundings
-	for i := 0; i < fundingAmount; i++ {
-		p := createTestPayload()
-		payloads = append(payloads, p)
-		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
-		assert.NoError(t, err)
-		lastFundingId = p.Data.FundingId
-
-	}
-
-	return srv, model, lastFundingId
-}
-
-func TestService_Sign(t *testing.T) {
-	fundingAmount := 5
-	srv, model, lastFundingId := setupFundingsForTesting(t, fundingAmount)
-
-	// add signature
-	acc := &mockAccount{}
-	acc.On("GetIdentityID").Return(utils.RandomSlice(20), nil)
-	// success
-	signature := utils.RandomSlice(32)
-	acc.On("SignMsg", mock.Anything).Return(&coredocumentpb.Signature{Signature: signature}, nil)
-	ctx, err := contextutil.New(context.Background(), acc)
-	assert.NoError(t, err)
-
-	for i := 0; i < 5; i++ {
-		model, err = srv.Sign(ctx, lastFundingId, utils.RandomSlice(32))
-		assert.NoError(t, err)
-		// signature should exist
-		label := fmt.Sprintf("funding_agreement[%d].signatures[%d]", fundingAmount-1, i)
-		key, err := documents.AttrKeyFromLabel(label)
-		assert.NoError(t, err)
-		attr, err := model.GetAttribute(key)
-		assert.NoError(t, err)
-		assert.Equal(t, documents.AttrSigned, attr.Value.Type)
-		assert.Equal(t, signature, attr.Value.Signed.Signature)
-
-		// array idx should exist
-		label = fmt.Sprintf("funding_agreement[%d].signatures", fundingAmount-1)
-		key, err = documents.AttrKeyFromLabel(label)
-		assert.NoError(t, err)
-		attr, err = model.GetAttribute(key)
-		assert.Equal(t, fmt.Sprintf("%d", i), attr.Value.Int256.String())
-		assert.NoError(t, err)
-	}
-
-	// funding id not exists
-	model, err = srv.Sign(ctx, hexutil.Encode(utils.RandomSlice(32)), utils.RandomSlice(32))
-	assert.Error(t, err)
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
-	inv := &invoice.Invoice{}
+	inv := new(invoice.Invoice)
 	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 
-	docSrv := &testingdocuments.MockService{}
+	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
@@ -285,30 +202,31 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
-	p2 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: p.Data.FundingId}
+	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: p.Data.FundingId}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	response, err := srv.DeriveFundingListResponse(model)
-	assert.Equal(t, 1, len(response.List))
-	assert.Equal(t, p2.Data.Fee, response.List[0].Fee)
+	response, err := srv.DeriveFundingListResponse(context.Background(), model)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(response.Data))
+	assert.Equal(t, p2.Data.Fee, response.Data[0].Funding.Fee)
 
 	// fee was not set in the update old fee field should not exist
-	assert.NotEqual(t, p.Data.Fee, response.List[0].Fee)
+	assert.NotEqual(t, p.Data.Fee, response.Data[0].Funding.Fee)
 
 	// non existing funding id
-	p3 := &clientfundingpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
+	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
 	assert.Contains(t, err, ErrFundingNotFound)
 }
 
-func createTestClientData() *clientfundingpb.FundingData {
+func createTestClientData() *clientfunpb.FundingData {
 	fundingId := newFundingID()
-	return &clientfundingpb.FundingData{
+	return &clientfunpb.FundingData{
 		FundingId:             fundingId,
 		Currency:              "eur",
 		Days:                  "90",
@@ -338,11 +256,11 @@ func createTestData() Data {
 	}
 }
 
-func createTestPayload() *clientfundingpb.FundingCreatePayload {
-	return &clientfundingpb.FundingCreatePayload{Data: createTestClientData()}
+func createTestPayload() *clientfunpb.FundingCreatePayload {
+	return &clientfunpb.FundingCreatePayload{Data: createTestClientData()}
 }
 
-func checkResponse(t *testing.T, payload *clientfundingpb.FundingCreatePayload, response *clientfundingpb.FundingData) {
+func checkResponse(t *testing.T, payload *clientfunpb.FundingCreatePayload, response *clientfunpb.FundingData) {
 	assert.Equal(t, payload.Data.FundingId, response.FundingId)
 	assert.Equal(t, payload.Data.Currency, response.Currency)
 	assert.Equal(t, payload.Data.Days, response.Days)
