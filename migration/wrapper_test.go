@@ -48,11 +48,93 @@ func Migration1(db *leveldb.DB) error {
 //
 
 func TestHashContent_Migration0(t *testing.T) {
-	data, err := Asset("migration/files/0JobKeyToHex.go")
+	hs, err := calculateMigrationHash("0JobKeyToHex")
 	assert.NoError(t, err)
-	hd, err := sha256Hash(data)
+	assert.Equal(t, "0x34199e7ce2ccdd360b0f3f8b6c6d40fa5ec603c8bd21ae80a39ebdf66fa67188", hs)
+}
+
+func TestNewMigrationRunner(t *testing.T) {
+	assert.NotNil(t, NewMigrationRunner())
+}
+
+func TestRunner_RunMigrations_AlreadyOpenError(t *testing.T) {
+	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+
+	// Cleanup after test
+	defer cleanupDBFiles(prefix)
+
+	_, err := leveldb.OpenFile(targetDir, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, "0x34199e7ce2ccdd360b0f3f8b6c6d40fa5ec603c8bd21ae80a39ebdf66fa67188", hexutil.Encode(hd))
+
+	runner := NewMigrationRunnerWithHashFunction(fakeCalculateMigrationHash)
+	err = runner.RunMigrations(targetDir)
+	assert.Error(t, err)
+}
+
+func TestBackupDB(t *testing.T) {
+	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+
+	// Cleanup after test
+	defer cleanupDBFiles(prefix)
+
+	repo, err := NewMigrationRepository(targetDir)
+	assert.NoError(t, err)
+
+	// Force DB close error
+	err = repo.db.Close()
+	assert.NoError(t, err)
+	_, err = backupDB(repo, "SomeID")
+	assert.Error(t, err)
+
+	err = repo.RefreshDB()
+	assert.NoError(t, err)
+
+	bkp, err := backupDB(repo, "SomeID")
+	assert.NoError(t, err)
+	assert.NotNil(t, bkp)
+	_, err = os.Stat(bkp.dbPath)
+	assert.NoError(t, err)
+}
+
+func TestRevertToBackupDB(t *testing.T) {
+	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+
+	// Cleanup after test
+	defer cleanupDBFiles(prefix)
+
+	repo, err := NewMigrationRepository(targetDir)
+	assert.NoError(t, err)
+
+	bkp, err := backupDB(repo, "SomeID")
+	assert.NoError(t, err)
+
+	// Force already closed error
+	assert.NoError(t, bkp.db.Close())
+	assert.Error(t, revertDBToBackup(repo, bkp))
+
+	// Force wrong src path
+	assert.NoError(t, bkp.RefreshDB())
+	repoPath := repo.dbPath
+	repo.dbPath = repo.dbPath + "_wrong"
+	assert.Error(t, revertDBToBackup(repo, bkp))
+	repo.dbPath = repoPath
+
+	// Force wrong bkp path
+	bkpPath := bkp.dbPath
+	bkp.dbPath = bkp.dbPath + "_wrong"
+	assert.Error(t, revertDBToBackup(repo, bkp))
+	bkp.dbPath = bkpPath
+
+	// Backup revert succeeds
+	assert.NoError(t, repo.RefreshDB())
+	assert.NoError(t, revertDBToBackup(repo, bkp))
+
+	// Bkp doesnt exist anymore
+	_, err = os.Stat(bkp.dbPath)
+	assert.Error(t, err)
 }
 
 func TestRunMigrations_singleSuccess(t *testing.T) {

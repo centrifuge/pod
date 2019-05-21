@@ -25,8 +25,7 @@ import (
 var log = logging.Logger("migrate-cmd")
 
 var migrations = map[string]func(*leveldb.DB) error{
-	"0JobKeyToHex":   files.RunMigration0,
-	"1SomethingElse": files.RunMigration1,
+	"0JobKeyToHex": files.RunMigration0,
 }
 
 type Runner struct {

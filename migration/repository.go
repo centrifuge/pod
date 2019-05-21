@@ -58,6 +58,9 @@ func (repo *migrationRepo) GetMigrationByID(id string) (*migrationItem, error) {
 }
 
 func (repo *migrationRepo) CreateMigration(migrationItem *migrationItem) error {
+	if migrationItem == nil {
+		return errors.New("nil migration item provided")
+	}
 	if repo.Exists(migrationItem.ID) {
 		return errors.New("migration ID already exists")
 	}
@@ -67,14 +70,6 @@ func (repo *migrationRepo) CreateMigration(migrationItem *migrationItem) error {
 		return err
 	}
 	return repo.db.Put(key, data, nil)
-}
-
-func (repo *migrationRepo) DeleteMigration(id string) error {
-	if !repo.Exists(id) {
-		return errors.New("migration ID does not exist")
-	}
-	key := getKeyFromID(id)
-	return repo.db.Delete(key, nil)
 }
 
 func (repo *migrationRepo) RefreshDB() (err error) {
