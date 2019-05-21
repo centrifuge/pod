@@ -8,10 +8,6 @@ package migration
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/migration/files"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	logging "github.com/ipfs/go-log"
-	"github.com/syndtr/goleveldb/leveldb"
 	"io"
 	"io/ioutil"
 	"os"
@@ -19,24 +15,29 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/migration/files"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	logging "github.com/ipfs/go-log"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var log = logging.Logger("migrate-cmd")
 
-var migrations = map[string]func(*leveldb.DB)error{
-	"0_job_key_to_hex": files.RunMigration0,
-	"1_something_else": files.RunMigration1,
+var migrations = map[string]func(*leveldb.DB) error{
+	"0JobKeyToHex":   files.RunMigration0,
+	"1SomethingElse": files.RunMigration1,
 }
 
 type Runner struct {
-	CalculateHash func (string) (string, error)
+	CalculateHash func(string) (string, error)
 }
 
 func NewMigrationRunner() *Runner {
 	return NewMigrationRunnerWithHashFunction(calculateMigrationHash)
 }
 
-func NewMigrationRunnerWithHashFunction(hashFn func(string)(string, error)) *Runner {
+func NewMigrationRunnerWithHashFunction(hashFn func(string) (string, error)) *Runner {
 	return &Runner{hashFn}
 }
 
@@ -46,7 +47,7 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 		return err
 	}
 
-	var bkp *leveldb.DB
+	var bkpRepo *migrationRepo
 	migrationList := make([]string, 0, len(migrations))
 	for k := range migrations {
 		migrationList = append(migrationList, k)
@@ -61,46 +62,29 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 			log.Infof("Migration %s already run", k)
 			continue
 		}
-		//Closing to make backup
-		err = repo.db.Close()
-		if err != nil {
-			return err
-		}
 
 		// backup DB
-		bkp, err = backupDB(dbPath, k)
+		bkpRepo, err = backupDB(repo, k)
 		if err != nil {
 			return nil
 		}
+
 		// execute migration file
-		err = repo.RefreshDB()
-		if err != nil {
-			return nil
-		}
 		if err = migrations[k](repo.db); err != nil {
 			log.Errorf("Migration %s failed", k)
-			erri := repo.db.Close()
-			if erri != nil {
-				return erri
-			}
-			erri = bkp.Close()
-			if erri != nil {
-				return erri
-			}
-			erri = revertToBackup(getBackupName(dbPath, k), dbPath)
-			if erri != nil {
-				return erri
+			err1 := revertDBToBackup(repo, bkpRepo)
+			if err1 != nil {
+				return err1
 			}
 			return err
 		}
 
-		// else store migration in DB
+		// on success store migration item in DB
 		hash, err := mr.CalculateHash(k)
 		if err != nil {
-			repo.db.Close()
-			erri := revertToBackup(getBackupName(dbPath, k), dbPath)
-			if erri != nil {
-				return erri
+			err1 := revertDBToBackup(repo, bkpRepo)
+			if err1 != nil {
+				return err1
 			}
 			return err
 		}
@@ -111,15 +95,14 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 			Hash:     hash,
 		}
 		if err = repo.CreateMigration(mi); err != nil {
-			repo.db.Close()
-			erri := revertToBackup(getBackupName(dbPath, k), dbPath)
-			if erri != nil {
-				return erri
+			err1 := revertDBToBackup(repo, bkpRepo)
+			if err1 != nil {
+				return err1
 			}
 			return err
 		}
 
-		err = bkp.Close()
+		err = bkpRepo.db.Close()
 		if err != nil {
 			return err
 		}
@@ -146,22 +129,43 @@ func getBackupName(path, name string) string {
 	return fmt.Sprintf("%s_%s.leveldb", bkpPath, name)
 }
 
-func backupDB(srcPath, migrationID string) (bkp *leveldb.DB, err error) {
-	dstPath := getBackupName(srcPath, migrationID)
-	err = CopyDir(srcPath, dstPath)
+func backupDB(srcRepo *migrationRepo, migrationID string) (bkp *migrationRepo, err error) {
+	//Closing src to make backup
+	err = srcRepo.db.Close()
 	if err != nil {
 		return nil, err
 	}
 
-	return leveldb.OpenFile(dstPath, nil)
+	dstPath := getBackupName(srcRepo.dbPath, migrationID)
+	err = CopyDir(srcRepo.dbPath, dstPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Refreshing src DB
+	err = srcRepo.RefreshDB()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewMigrationRepository(dstPath)
 }
 
-func revertToBackup(bkpPath, srcPath string) error {
-	err := os.RemoveAll(srcPath)
+func revertDBToBackup(srcDB, bkpDB *migrationRepo) error {
+	erri := srcDB.db.Close()
+	if erri != nil {
+		return erri
+	}
+	erri = bkpDB.db.Close()
+	if erri != nil {
+		return erri
+	}
+
+	err := os.RemoveAll(srcDB.dbPath)
 	if err != nil {
 		return err
 	}
-	return os.Rename(bkpPath, srcPath)
+	return os.Rename(bkpDB.dbPath, srcDB.dbPath)
 }
 
 // Code taken from https://blog.depado.eu/post/copy-files-and-directories-in-go

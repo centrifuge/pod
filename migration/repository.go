@@ -2,23 +2,23 @@ package migration
 
 import (
 	"encoding/json"
-	"github.com/go-errors/errors"
 	"time"
 
+	"github.com/go-errors/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const dbPrefix = "migration_"
 
 type migrationRepo struct {
-	db *leveldb.DB
+	db     *leveldb.DB
 	dbPath string
 }
 
 type migrationItem struct {
-	ID string              `json:"id"`
-	Hash string        		 `json:"hash"`
-	DateRun time.Time  		 `json:"date_run,string"`
+	ID       string        `json:"id"`
+	Hash     string        `json:"hash"`
+	DateRun  time.Time     `json:"date_run,string"`
 	Duration time.Duration `json:"duration,string"`
 }
 
@@ -31,7 +31,7 @@ func NewMigrationRepository(path string) (*migrationRepo, error) {
 }
 
 func getKeyFromID(id string) []byte {
-	return []byte(dbPrefix+id)
+	return []byte(dbPrefix + id)
 }
 
 func (repo *migrationRepo) Exists(id string) bool {

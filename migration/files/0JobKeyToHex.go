@@ -16,4 +16,3 @@ func RunMigration0(db *leveldb.DB) error {
 	log.Infof("Migration 0 Run successfully")
 	return nil
 }
-

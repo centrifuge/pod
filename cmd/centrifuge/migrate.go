@@ -24,5 +24,3 @@ func init() {
 
 	rootCmd.AddCommand(migrateCmd)
 }
-
-
