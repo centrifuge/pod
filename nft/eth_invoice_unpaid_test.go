@@ -162,7 +162,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
 				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{Number: "1232", CoreDocument: cd}, nil)
+				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&invoice.Invoice{Data: invoice.Data{Number: "1232"}, CoreDocument: cd}, nil)
 				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				invoiceUnpaidMock := &MockInvoiceUnpaid{}
 				idServiceMock := testingcommons.MockIdentityService{}

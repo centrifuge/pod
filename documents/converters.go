@@ -9,8 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -142,14 +142,14 @@ func ToClientPaymentDetails(details []*PaymentDetails) ([]*documentpb.PaymentDet
 	for _, detail := range details {
 		decs := DecimalsToStrings(detail.Amount)
 		dids := identity.DIDsToStrings(detail.Payee, detail.Payer)
-		dt, err := utils.ToTimestamp(*detail.DateExecuted)
+		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
 		if err != nil {
 			return nil, err
 		}
 
 		cdetails = append(cdetails, &documentpb.PaymentDetails{
 			Id:                    detail.ID,
-			DateExecuted:          dt,
+			DateExecuted:          tms[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
@@ -181,7 +181,7 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 			return nil, err
 		}
 
-		dt, err := utils.ToTimestamp(*detail.DateExecuted)
+		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +189,7 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 		dids := identity.DIDsToBytes(detail.Payee, detail.Payer)
 		pdetails = append(pdetails, &commonpb.PaymentDetails{
 			Id:                    detail.ID,
-			DateExecuted:          dt,
+			DateExecuted:          tms[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
@@ -226,14 +226,14 @@ func FromClientPaymentDetails(cdetails []*documentpb.PaymentDetails) ([]*Payment
 			return nil, err
 		}
 
-		dt, err := utils.FromTimestamp(detail.DateExecuted)
+		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
 		if err != nil {
 			return nil, err
 		}
 
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
-			DateExecuted:          &dt,
+			DateExecuted:          pts[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
@@ -269,14 +269,14 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 			return nil, err
 		}
 
-		dt, err := utils.FromTimestamp(detail.DateExecuted)
+		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
 		if err != nil {
 			return nil, err
 		}
 
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
-			DateExecuted:          &dt,
+			DateExecuted:          pts[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
