@@ -4,8 +4,11 @@ package testworld
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,6 +80,16 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	}
 	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
 	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
+	// account a completes job with a webhook
+	msg, err := doctorFord.maeve.getReceivedMsg(a, int(notification.JobCompleted), txID)
+	assert.NoError(t, err)
+	assert.Equal(t, string(jobs.Success), msg.Status)
+
+	// account b sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromId))
+	log.Debug("Host test success")
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// b updates invoice and shares with c as well
@@ -95,6 +108,10 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
 	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
 	getDocumentAndCheck(t, bob.httpExpect, c, documentType, params, true)
+	// account c sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromId))
 }
 
 func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType string) {
@@ -130,6 +147,15 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
 	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
 	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
+	// alices main account completes job with a webhook
+	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
+	assert.NoError(t, err)
+	assert.Equal(t, string(jobs.Success), msg.Status)
+
+	// bobs account b sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
