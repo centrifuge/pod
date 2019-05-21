@@ -25,7 +25,7 @@ import (
 var log = logging.Logger("migrate-cmd")
 
 var migrations = map[string]func(*leveldb.DB) error{
-	"0JobKeyToHex": files.RunMigration0,
+	"0InitialMigration": files.RunMigration0,
 }
 
 // Runner is the actor that runs the migrations

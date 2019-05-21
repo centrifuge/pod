@@ -13,9 +13,7 @@ func init() {
 		Short: "Runs node migrations",
 		Long:  ``,
 		Run: func(c *cobra.Command, args []string) {
-			cfg := config.LoadConfiguration(cfgFile)
-			runner := migration.NewMigrationRunner()
-			err := runner.RunMigrations(cfg.GetStoragePath())
+			err := doMigrate()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -23,4 +21,10 @@ func init() {
 	}
 
 	rootCmd.AddCommand(migrateCmd)
+}
+
+func doMigrate() error {
+	cfg := config.LoadConfiguration(cfgFile)
+	runner := migration.NewMigrationRunner()
+	return runner.RunMigrations(cfg.GetStoragePath())
 }

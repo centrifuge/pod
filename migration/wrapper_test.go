@@ -52,9 +52,9 @@ func Migration1(db *leveldb.DB) error {
 //
 
 func TestHashContent_Migration0(t *testing.T) {
-	hs, err := calculateMigrationHash("0JobKeyToHex")
+	hs, err := calculateMigrationHash("0InitialMigration")
 	assert.NoError(t, err)
-	assert.Equal(t, "0x34199e7ce2ccdd360b0f3f8b6c6d40fa5ec603c8bd21ae80a39ebdf66fa67188", hs)
+	assert.Equal(t, "0xe2a8e55d3de5572221a685f724c5af8126bfdb6eb20885961bae75764b12fb0b", hs)
 }
 
 func TestNewMigrationRunner(t *testing.T) {
