@@ -155,7 +155,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	// bobs account b sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
