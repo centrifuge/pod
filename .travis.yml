@@ -38,7 +38,7 @@ jobs:
       name: "Linting"
       script:
         - make lint-check proto-lint proto-all gen-swagger generate format-go
-        - echo "Checking that prototool, format-go and go-bindata don't result in a modified git tree" && git diff --exit-code protobufs/gen resources migration
+        - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code protobufs/gen
     - stage: "Tests"
       name: "Unit and CMD tests"
       script:
