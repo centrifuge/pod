@@ -3,6 +3,7 @@
 package jobsv1
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"os"
 	"testing"
 
@@ -50,7 +51,7 @@ func Test_getKey(t *testing.T) {
 	id = jobs.NewJobID()
 	key, err = getKey(did, id)
 	assert.Nil(t, err)
-	assert.Equal(t, append(did[:], id.Bytes()...), key)
+	assert.Equal(t, []byte(hexutil.Encode(append(did[:], id.Bytes()...))), key)
 }
 
 func TestRepository(t *testing.T) {
