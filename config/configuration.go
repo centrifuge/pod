@@ -532,10 +532,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
-	webhookURL, ok := args["webhookURL"].(string)
-	if !ok {
-		webhookURL = ""
-	}
+	webhookURL, _ := args["webhookURL"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")

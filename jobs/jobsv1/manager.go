@@ -79,7 +79,8 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			return jobs.NilJobID(), nil, err
 		}
 	}
-	done = make(chan bool)
+	// set capacity to one so that any late listener won't miss updates.
+	done = make(chan bool, 1)
 	go func(ctx context.Context) {
 		err := make(chan error)
 		go work(accountID, job.ID, s, err)
@@ -127,7 +128,8 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 		select {
 		case done <- true:
 		default:
-			log.Debug("job done channel has no listener")
+			// must not happen
+			log.Error("job done channel capacity breach")
 		}
 
 		if mJob != nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {

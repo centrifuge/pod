@@ -44,7 +44,7 @@ sudo apt-get -y upgrade
 #download go using this command
 wget https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz
 
-#extract the aechive and move it to /usr/local folder
+#extract the archive and move it to /usr/local folder
 sudo tar -xvf go1.11.4.linux-amd64.tar.gz
 sudo mv go /usr/local
 
