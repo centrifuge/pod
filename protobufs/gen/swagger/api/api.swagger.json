@@ -25,6 +25,9 @@
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Health"
+                ],
                 "summary": "Health check for Node",
                 "operationId": "ping",
                 "responses": {
