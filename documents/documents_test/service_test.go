@@ -331,7 +331,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 		coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
 		assert.NoError(t, err)
 		inv := &invoice.Invoice{
-			GrossAmount:  ga,
+			Data:         invoice.Data{GrossAmount: ga},
 			CoreDocument: coreDoc,
 		}
 
@@ -362,7 +362,7 @@ func TestService_GetVersion_successful(t *testing.T) {
 	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
 	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
+		Data:         invoice.Data{GrossAmount: ga},
 		CoreDocument: coreDoc,
 	}
 
@@ -396,7 +396,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
 	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
+		Data:         invoice.Data{GrossAmount: ga},
 		CoreDocument: coreDoc,
 	}
 
@@ -427,7 +427,7 @@ func TestService_GetVersion_error(t *testing.T) {
 	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
 	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
+		Data:         invoice.Data{GrossAmount: ga},
 		CoreDocument: coreDoc,
 	}
 	err = testRepo().Create(accountID, currentVersion, inv)
@@ -474,7 +474,7 @@ func TestService_Exists(t *testing.T) {
 	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
 	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
+		Data:         invoice.Data{GrossAmount: ga},
 		CoreDocument: coreDoc,
 	}
 

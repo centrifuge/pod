@@ -217,8 +217,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	inv, ok := m.(*Invoice)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, inv.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, inv.GrossAmount.String(), "42")
+	assert.Equal(t, inv.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	assert.Equal(t, inv.Data.GrossAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {

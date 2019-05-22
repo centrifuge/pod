@@ -2,6 +2,7 @@ package documents
 
 import (
 	"strings"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/common"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -9,41 +10,41 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // BinaryAttachment represent a single file attached to invoice.
 type BinaryAttachment struct {
-	Name     string
-	FileType string // mime type of attached file
-	Size     uint64 // in bytes
-	Data     []byte
-	Checksum []byte // the md5 checksum of the original file for easier verification
+	Name     string             `json:"name"`
+	FileType string             `json:"file_type"` // mime type of attached file
+	Size     uint64             `json:"size"`      // in bytes
+	Data     byteutils.HexBytes `json:"data"`
+	Checksum byteutils.HexBytes `json:"checksum"` // the md5 checksum of the original file for easier verification
 }
 
 // PaymentDetails holds the payment related details for invoice.
 type PaymentDetails struct {
-	ID                    string // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *timestamp.Timestamp
-	Payee                 *identity.DID // centrifuge id of payee
-	Payer                 *identity.DID // centrifuge id of payer
-	Amount                *Decimal
-	Currency              string
-	Reference             string // payment reference (e.g. reference field on bank transfer)
-	BankName              string
-	BankAddress           string
-	BankCountry           string
-	BankAccountNumber     string
-	BankAccountCurrency   string
-	BankAccountHolderName string
-	BankKey               string
+	ID                    string        `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
+	DateExecuted          *time.Time    `json:"date_executed,omitempty"`
+	Payee                 *identity.DID `json:"payee,omitempty"` // centrifuge id of payee
+	Payer                 *identity.DID `json:"payer,omitempty"` // centrifuge id of payer
+	Amount                *Decimal      `json:"amount,omitempty"`
+	Currency              string        `json:"currency"`
+	Reference             string        `json:"reference"` // payment reference (e.g. reference field on bank transfer)
+	BankName              string        `json:"bank_name"`
+	BankAddress           string        `json:"bank_address"`
+	BankCountry           string        `json:"bank_country"`
+	BankAccountNumber     string        `json:"bank_account_number"`
+	BankAccountCurrency   string        `json:"bank_account_currency"`
+	BankAccountHolderName string        `json:"bank_account_holder_name"`
+	BankKey               string        `json:"bank_key"`
 
-	CryptoChainURI      string // the ID of the chain to use in URI format. e.g. "ethereum://42/<tokenaddress>"
-	CryptoTransactionID string // the transaction in which the payment happened
-	CryptoFrom          string // from address
-	CryptoTo            string // to address
+	CryptoChainURI      string `json:"crypto_chain_uri"`      // the ID of the chain to use in URI format. e.g. "ethereum://42/<tokenaddress>"
+	CryptoTransactionID string `json:"crypto_transaction_id"` // the transaction in which the payment happened
+	CryptoFrom          string `json:"crypto_from"`           // from address
+	CryptoTo            string `json:"crypto_to"`             // to address
 }
 
 // ToClientAttachments converts Attachments to Client Attachments.
@@ -136,14 +137,19 @@ func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttach
 }
 
 // ToClientPaymentDetails converts PaymentDetails to client payment details.
-func ToClientPaymentDetails(details []*PaymentDetails) []*documentpb.PaymentDetails {
+func ToClientPaymentDetails(details []*PaymentDetails) ([]*documentpb.PaymentDetails, error) {
 	var cdetails []*documentpb.PaymentDetails
 	for _, detail := range details {
 		decs := DecimalsToStrings(detail.Amount)
 		dids := identity.DIDsToStrings(detail.Payee, detail.Payer)
+		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
+		if err != nil {
+			return nil, err
+		}
+
 		cdetails = append(cdetails, &documentpb.PaymentDetails{
 			Id:                    detail.ID,
-			DateExecuted:          detail.DateExecuted,
+			DateExecuted:          tms[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
@@ -163,7 +169,7 @@ func ToClientPaymentDetails(details []*PaymentDetails) []*documentpb.PaymentDeta
 		})
 	}
 
-	return cdetails
+	return cdetails, nil
 }
 
 // ToProtocolPaymentDetails converts payment details to protocol payment details
@@ -174,10 +180,16 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 		if err != nil {
 			return nil, err
 		}
+
+		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
+		if err != nil {
+			return nil, err
+		}
+
 		dids := identity.DIDsToBytes(detail.Payee, detail.Payer)
 		pdetails = append(pdetails, &commonpb.PaymentDetails{
 			Id:                    detail.ID,
-			DateExecuted:          detail.DateExecuted,
+			DateExecuted:          tms[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
@@ -214,9 +226,14 @@ func FromClientPaymentDetails(cdetails []*documentpb.PaymentDetails) ([]*Payment
 			return nil, err
 		}
 
+		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
+		if err != nil {
+			return nil, err
+		}
+
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
-			DateExecuted:          detail.DateExecuted,
+			DateExecuted:          pts[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],
@@ -251,9 +268,15 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 		if err != nil {
 			return nil, err
 		}
+
+		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
+		if err != nil {
+			return nil, err
+		}
+
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
-			DateExecuted:          detail.DateExecuted,
+			DateExecuted:          pts[0],
 			Payee:                 dids[0],
 			Payer:                 dids[1],
 			Amount:                decs[0],

@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -10,12 +11,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 const prefix string = "invoice"
@@ -23,273 +24,294 @@ const prefix string = "invoice"
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 1, 0, 0} }
 
+// Data holds the invoice specific fields.
+type Data struct {
+	Number                   string                        `json:"number"` // invoice number or reference number
+	Status                   string                        `json:"status"` // invoice status
+	SenderInvoiceID          string                        `json:"sender_invoice_id"`
+	RecipientInvoiceID       string                        `json:"recipient_invoice_id"`
+	SenderCompanyName        string                        `json:"sender_company_name"`
+	SenderContactPersonName  string                        `json:"sender_contact_person_name"`
+	SenderStreet1            string                        `json:"sender_street_1"` // street and address details of the sender company
+	SenderStreet2            string                        `json:"sender_street_2"`
+	SenderCity               string                        `json:"sender_city"`
+	SenderZipcode            string                        `json:"sender_zipcode"`
+	SenderState              string                        `json:"sender_state"`
+	SenderCountry            string                        `json:"sender_country"` // country ISO code of the sender of this invoice
+	BillToCompanyName        string                        `json:"bill_to_company_name"`
+	BillToContactPersonName  string                        `json:"bill_to_contact_person_name"`
+	BillToStreet1            string                        `json:"bill_to_street_1"`
+	BillToStreet2            string                        `json:"bill_to_street_2"`
+	BillToCity               string                        `json:"bill_to_city"`
+	BillToZipcode            string                        `json:"bill_to_zipcode"`
+	BillToState              string                        `json:"bill_to_state"`
+	BillToCountry            string                        `json:"bill_to_country"`
+	BillToVatNumber          string                        `json:"bill_to_vat_number"`
+	BillToLocalTaxID         string                        `json:"bill_to_local_tax_id"`
+	RemitToCompanyName       string                        `json:"remit_to_company_name"`
+	RemitToContactPersonName string                        `json:"remit_to_contact_person_name"`
+	RemitToStreet1           string                        `json:"remit_to_street_1"`
+	RemitToStreet2           string                        `json:"remit_to_street_2"`
+	RemitToCity              string                        `json:"remit_to_city"`
+	RemitToZipcode           string                        `json:"remit_to_zipcode"`
+	RemitToState             string                        `json:"remit_to_state"`
+	RemitToCountry           string                        `json:"remit_to_country"`
+	RemitToVatNumber         string                        `json:"remit_to_vat_number"`
+	RemitToLocalTaxID        string                        `json:"remit_to_local_tax_id"`
+	RemitToTaxCountry        string                        `json:"remit_to_tax_country"`
+	ShipToCompanyName        string                        `json:"ship_to_company_name"`
+	ShipToContactPersonName  string                        `json:"ship_to_contact_person_name"`
+	ShipToStreet1            string                        `json:"ship_to_street_1"`
+	ShipToStreet2            string                        `json:"ship_to_street_2"`
+	ShipToCity               string                        `json:"ship_to_city"`
+	ShipToZipcode            string                        `json:"ship_to_zipcode"`
+	ShipToState              string                        `json:"ship_to_state"`
+	ShipToCountry            string                        `json:"ship_to_country"`
+	Currency                 string                        `json:"currency"`               // ISO currency code
+	GrossAmount              *documents.Decimal            `json:"gross_amount,omitempty"` // invoice amount including tax
+	NetAmount                *documents.Decimal            `json:"net_amount,omitempty"`   // invoice amount excluding tax
+	TaxAmount                *documents.Decimal            `json:"tax_amount,omitempty"`
+	TaxRate                  *documents.Decimal            `json:"tax_rate,omitempty"`
+	TaxOnLineLevel           bool                          `json:"tax_on_line_level"`
+	Recipient                *identity.DID                 `json:"recipient,string,omitempty"` // centrifuge ID of the recipient
+	Sender                   *identity.DID                 `json:"sender,string,omitempty"`    // centrifuge ID of the sender
+	Payee                    *identity.DID                 `json:"payee,string,omitempty"`     // centrifuge ID of the payee
+	Comment                  string                        `json:"comment"`
+	ShippingTerms            string                        `json:"shipping_terms"`
+	RequesterEmail           string                        `json:"requester_email"`
+	RequesterName            string                        `json:"requester_name"`
+	DeliveryNumber           string                        `json:"delivery_number"` // number of the delivery note
+	IsCreditNote             bool                          `json:"is_credit_note"`
+	CreditNoteInvoiceNumber  string                        `json:"credit_note_invoice_number"`
+	CreditForInvoiceDate     *time.Time                    `json:"credit_for_invoice_date,omitempty"`
+	DateDue                  *time.Time                    `json:"date_due,omitempty"`
+	DatePaid                 *time.Time                    `json:"date_paid,omitempty"`
+	DateUpdated              *time.Time                    `json:"date_updated,omitempty"`
+	DateCreated              *time.Time                    `json:"date_created,omitempty"`
+	Attachments              []*documents.BinaryAttachment `json:"attachments"`
+	LineItems                []*LineItem                   `json:"line_items"`
+	PaymentDetails           []*documents.PaymentDetails   `json:"payment_details"`
+	TaxItems                 []*TaxItem                    `json:"tax_items"`
+}
+
 // Invoice implements the documents.Model keeps track of invoice related fields and state
 type Invoice struct {
 	*documents.CoreDocument
-
-	Number                   string // invoice number or reference number
-	Status                   string // invoice status
-	SenderInvoiceID          string
-	RecipientInvoiceID       string
-	SenderCompanyName        string
-	SenderContactPersonName  string
-	SenderStreet1            string // street and address details of the sender company
-	SenderStreet2            string
-	SenderCity               string
-	SenderZipcode            string
-	SenderState              string
-	SenderCountry            string // country ISO code of the sender of this invoice
-	BillToCompanyName        string
-	BillToContactPersonName  string
-	BillToStreet1            string
-	BillToStreet2            string
-	BillToCity               string
-	BillToZipcode            string
-	BillToState              string
-	BillToCountry            string
-	BillToVatNumber          string
-	BillToLocalTaxID         string
-	RemitToCompanyName       string
-	RemitToContactPersonName string
-	RemitToStreet1           string
-	RemitToStreet2           string
-	RemitToCity              string
-	RemitToZipcode           string
-	RemitToState             string
-	RemitToCountry           string
-	RemitToVatNumber         string
-	RemitToLocalTaxID        string
-	RemitToTaxCountry        string
-	ShipToCompanyName        string
-	ShipToContactPersonName  string
-	ShipToStreet1            string
-	ShipToStreet2            string
-	ShipToCity               string
-	ShipToZipcode            string
-	ShipToState              string
-	ShipToCountry            string
-	Currency                 string             // ISO currency code
-	GrossAmount              *documents.Decimal // invoice amount including tax
-	NetAmount                *documents.Decimal // invoice amount excluding tax
-	TaxAmount                *documents.Decimal
-	TaxRate                  *documents.Decimal
-	TaxOnLineLevel           bool
-	Recipient                *identity.DID `json:"recipient,string"` // centrifuge ID of the recipient
-	Sender                   *identity.DID `json:"sender,string"`    // centrifuge ID of the sender
-	Payee                    *identity.DID `json:"payee,string"`     // centrifuge ID of the payee
-	Comment                  string
-	ShippingTerms            string
-	RequesterEmail           string
-	RequesterName            string
-	DeliveryNumber           string // number of the delivery note
-	IsCreditNote             bool
-	CreditNoteInvoiceNumber  string
-	CreditForInvoiceDate     *timestamp.Timestamp
-	DateDue                  *timestamp.Timestamp
-	DatePaid                 *timestamp.Timestamp
-	DateUpdated              *timestamp.Timestamp
-	DateCreated              *timestamp.Timestamp
-	Attachments              []*documents.BinaryAttachment
-	LineItems                []*LineItem
-	PaymentDetails           []*documents.PaymentDetails
-	TaxItems                 []*TaxItem
+	Data Data
 }
 
 // LineItem represents a single invoice line item.
 type LineItem struct {
-	ItemNumber              string
-	Description             string
-	SenderPartNo            string
-	PricePerUnit            *documents.Decimal
-	Quantity                *documents.Decimal
-	UnitOfMeasure           string
-	NetWeight               *documents.Decimal
-	TaxAmount               *documents.Decimal
-	TaxRate                 *documents.Decimal
-	TaxCode                 *documents.Decimal
-	TotalAmount             *documents.Decimal // the total amount of the line item
-	PurchaseOrderNumber     string
-	PurchaseOrderItemNumber string
-	DeliveryNoteNumber      string
+	ItemNumber              string             `json:"item_number"`
+	Description             string             `json:"description"`
+	SenderPartNo            string             `json:"sender_part_no"`
+	PricePerUnit            *documents.Decimal `json:"price_per_unit,omitempty"`
+	Quantity                *documents.Decimal `json:"quantity,omitempty"`
+	UnitOfMeasure           string             `json:"unit_of_measure"`
+	NetWeight               *documents.Decimal `json:"net_weight,omitempty"`
+	TaxAmount               *documents.Decimal `json:"tax_amount,omitempty"`
+	TaxRate                 *documents.Decimal `json:"tax_rate,omitempty"`
+	TaxCode                 *documents.Decimal `json:"tax_code,omitempty"`
+	TotalAmount             *documents.Decimal `json:"total_amount,omitempty"` // the total amount of the line item
+	PurchaseOrderNumber     string             `json:"purchase_order_number"`
+	PurchaseOrderItemNumber string             `json:"purchase_order_item_number"`
+	DeliveryNoteNumber      string             `json:"delivery_note_number"`
 }
 
 // TaxItem represents a single invoice tax item.
 type TaxItem struct {
-	ItemNumber        string
-	InvoiceItemNumber string
-	TaxAmount         *documents.Decimal
-	TaxRate           *documents.Decimal
-	TaxCode           *documents.Decimal
-	TaxBaseAmount     *documents.Decimal
+	ItemNumber        string             `json:"item_number"`
+	InvoiceItemNumber string             `json:"invoice_item_number"`
+	TaxAmount         *documents.Decimal `json:"tax_amount,omitempty"`
+	TaxRate           *documents.Decimal `json:"tax_rate,omitempty"`
+	TaxCode           *documents.Decimal `json:"tax_code,omitempty"`
+	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount,omitempty"`
 }
 
 // getClientData returns the client data from the invoice model
 func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
-	decs := documents.DecimalsToStrings(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
-	dids := identity.DIDsToStrings(i.Recipient, i.Sender, i.Payee)
+	d := i.Data
+	decs := documents.DecimalsToStrings(d.GrossAmount, d.NetAmount, d.TaxAmount, d.TaxRate)
+	dids := identity.DIDsToStrings(d.Recipient, d.Sender, d.Payee)
 	attrs, err := documents.ToClientAttributes(i.Attributes)
 	if err != nil {
 		return nil, err
 	}
 
+	pd, err := documents.ToClientPaymentDetails(d.PaymentDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	pts, err := timeutils.ToProtoTimestamps(d.CreditForInvoiceDate, d.DateDue, d.DatePaid, d.DateCreated, d.DateUpdated)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientinvoicepb.InvoiceData{
-		Number:                   i.Number,
-		Status:                   i.Status,
-		SenderInvoiceId:          i.SenderInvoiceID,
-		RecipientInvoiceId:       i.RecipientInvoiceID,
-		SenderCompanyName:        i.SenderCompanyName,
-		SenderContactPersonName:  i.SenderContactPersonName,
-		SenderStreet1:            i.SenderStreet1,
-		SenderStreet2:            i.SenderStreet2,
-		SenderCity:               i.SenderCity,
-		SenderZipcode:            i.SenderZipcode,
-		SenderState:              i.SenderState,
-		SenderCountry:            i.SenderCountry,
-		BillToCompanyName:        i.BillToCompanyName,
-		BillToContactPersonName:  i.BillToContactPersonName,
-		BillToStreet1:            i.BillToStreet1,
-		BillToStreet2:            i.BillToStreet2,
-		BillToCity:               i.BillToCity,
-		BillToZipcode:            i.BillToZipcode,
-		BillToState:              i.BillToState,
-		BillToCountry:            i.BillToCountry,
-		BillToLocalTaxId:         i.BillToLocalTaxID,
-		BillToVatNumber:          i.BillToVatNumber,
-		RemitToCompanyName:       i.RemitToCompanyName,
-		RemitToContactPersonName: i.RemitToContactPersonName,
-		RemitToStreet1:           i.RemitToStreet1,
-		RemitToStreet2:           i.RemitToStreet2,
-		RemitToCity:              i.RemitToCity,
-		RemitToCountry:           i.RemitToCountry,
-		RemitToState:             i.RemitToState,
-		RemitToZipcode:           i.RemitToZipcode,
-		RemitToLocalTaxId:        i.RemitToLocalTaxID,
-		RemitToTaxCountry:        i.RemitToTaxCountry,
-		RemitToVatNumber:         i.RemitToVatNumber,
-		ShipToCompanyName:        i.ShipToCompanyName,
-		ShipToContactPersonName:  i.ShipToContactPersonName,
-		ShipToStreet1:            i.ShipToStreet1,
-		ShipToStreet2:            i.ShipToStreet2,
-		ShipToCity:               i.ShipToCity,
-		ShipToState:              i.ShipToState,
-		ShipToCountry:            i.ShipToCountry,
-		ShipToZipcode:            i.ShipToZipcode,
-		Currency:                 i.Currency,
+		Number:                   d.Number,
+		Status:                   d.Status,
+		SenderInvoiceId:          d.SenderInvoiceID,
+		RecipientInvoiceId:       d.RecipientInvoiceID,
+		SenderCompanyName:        d.SenderCompanyName,
+		SenderContactPersonName:  d.SenderContactPersonName,
+		SenderStreet1:            d.SenderStreet1,
+		SenderStreet2:            d.SenderStreet2,
+		SenderCity:               d.SenderCity,
+		SenderZipcode:            d.SenderZipcode,
+		SenderState:              d.SenderState,
+		SenderCountry:            d.SenderCountry,
+		BillToCompanyName:        d.BillToCompanyName,
+		BillToContactPersonName:  d.BillToContactPersonName,
+		BillToStreet1:            d.BillToStreet1,
+		BillToStreet2:            d.BillToStreet2,
+		BillToCity:               d.BillToCity,
+		BillToZipcode:            d.BillToZipcode,
+		BillToState:              d.BillToState,
+		BillToCountry:            d.BillToCountry,
+		BillToLocalTaxId:         d.BillToLocalTaxID,
+		BillToVatNumber:          d.BillToVatNumber,
+		RemitToCompanyName:       d.RemitToCompanyName,
+		RemitToContactPersonName: d.RemitToContactPersonName,
+		RemitToStreet1:           d.RemitToStreet1,
+		RemitToStreet2:           d.RemitToStreet2,
+		RemitToCity:              d.RemitToCity,
+		RemitToCountry:           d.RemitToCountry,
+		RemitToState:             d.RemitToState,
+		RemitToZipcode:           d.RemitToZipcode,
+		RemitToLocalTaxId:        d.RemitToLocalTaxID,
+		RemitToTaxCountry:        d.RemitToTaxCountry,
+		RemitToVatNumber:         d.RemitToVatNumber,
+		ShipToCompanyName:        d.ShipToCompanyName,
+		ShipToContactPersonName:  d.ShipToContactPersonName,
+		ShipToStreet1:            d.ShipToStreet1,
+		ShipToStreet2:            d.ShipToStreet2,
+		ShipToCity:               d.ShipToCity,
+		ShipToState:              d.ShipToState,
+		ShipToCountry:            d.ShipToCountry,
+		ShipToZipcode:            d.ShipToZipcode,
+		Currency:                 d.Currency,
 		GrossAmount:              decs[0],
 		NetAmount:                decs[1],
 		TaxAmount:                decs[2],
 		TaxRate:                  decs[3],
-		TaxOnLineLevel:           i.TaxOnLineLevel,
+		TaxOnLineLevel:           d.TaxOnLineLevel,
 		Recipient:                dids[0],
 		Sender:                   dids[1],
 		Payee:                    dids[2],
-		Comment:                  i.Comment,
-		ShippingTerms:            i.ShippingTerms,
-		RequesterEmail:           i.RequesterEmail,
-		RequesterName:            i.RequesterName,
-		DeliveryNumber:           i.DeliveryNumber,
-		IsCreditNote:             i.IsCreditNote,
-		CreditNoteInvoiceNumber:  i.CreditNoteInvoiceNumber,
-		CreditForInvoiceDate:     i.CreditForInvoiceDate,
-		DateDue:                  i.DateDue,
-		DatePaid:                 i.DatePaid,
-		DateCreated:              i.DateCreated,
-		DateUpdated:              i.DateUpdated,
-		Attachments:              documents.ToClientAttachments(i.Attachments),
-		LineItems:                toClientLineItems(i.LineItems),
-		PaymentDetails:           documents.ToClientPaymentDetails(i.PaymentDetails),
-		TaxItems:                 toClientTaxItems(i.TaxItems),
+		Comment:                  d.Comment,
+		ShippingTerms:            d.ShippingTerms,
+		RequesterEmail:           d.RequesterEmail,
+		RequesterName:            d.RequesterName,
+		DeliveryNumber:           d.DeliveryNumber,
+		IsCreditNote:             d.IsCreditNote,
+		CreditNoteInvoiceNumber:  d.CreditNoteInvoiceNumber,
+		CreditForInvoiceDate:     pts[0],
+		DateDue:                  pts[1],
+		DatePaid:                 pts[2],
+		DateCreated:              pts[3],
+		DateUpdated:              pts[4],
+		Attachments:              documents.ToClientAttachments(d.Attachments),
+		LineItems:                toClientLineItems(d.LineItems),
+		PaymentDetails:           pd,
+		TaxItems:                 toClientTaxItems(d.TaxItems),
 		Attributes:               attrs,
 	}, nil
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
 func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
-	decs, err := documents.DecimalsToBytes(i.GrossAmount, i.NetAmount, i.TaxAmount, i.TaxRate)
+	d := i.Data
+	decs, err := documents.DecimalsToBytes(d.GrossAmount, d.NetAmount, d.TaxAmount, d.TaxRate)
 	if err != nil {
 		return nil, err
 	}
 
-	li, err := toP2PLineItems(i.LineItems)
+	li, err := toP2PLineItems(d.LineItems)
 	if err != nil {
 		return nil, err
 	}
 
-	pd, err := documents.ToProtocolPaymentDetails(i.PaymentDetails)
+	pd, err := documents.ToProtocolPaymentDetails(d.PaymentDetails)
 	if err != nil {
 		return nil, err
 	}
 
-	ti, err := toP2PTaxItems(i.TaxItems)
+	ti, err := toP2PTaxItems(d.TaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	dids := identity.DIDsToBytes(i.Recipient, i.Sender, i.Payee)
+	pts, err := timeutils.ToProtoTimestamps(d.CreditForInvoiceDate, d.DateDue, d.DatePaid, d.DateCreated, d.DateUpdated)
+	if err != nil {
+		return nil, err
+	}
+
+	dids := identity.DIDsToBytes(d.Recipient, d.Sender, d.Payee)
 	return &invoicepb.InvoiceData{
-		Number:                   i.Number,
-		Status:                   i.Status,
-		SenderInvoiceId:          i.SenderInvoiceID,
-		RecipientInvoiceId:       i.RecipientInvoiceID,
-		SenderCompanyName:        i.SenderCompanyName,
-		SenderContactPersonName:  i.SenderContactPersonName,
-		SenderStreet1:            i.SenderStreet1,
-		SenderStreet2:            i.SenderStreet2,
-		SenderCity:               i.SenderCity,
-		SenderZipcode:            i.SenderZipcode,
-		SenderState:              i.SenderState,
-		SenderCountry:            i.SenderCountry,
-		BillToCompanyName:        i.BillToCompanyName,
-		BillToContactPersonName:  i.BillToContactPersonName,
-		BillToStreet1:            i.BillToStreet1,
-		BillToStreet2:            i.BillToStreet2,
-		BillToCity:               i.BillToCity,
-		BillToZipcode:            i.BillToZipcode,
-		BillToState:              i.BillToState,
-		BillToCountry:            i.BillToCountry,
-		BillToLocalTaxId:         i.BillToLocalTaxID,
-		BillToVatNumber:          i.BillToVatNumber,
-		RemitToCompanyName:       i.RemitToCompanyName,
-		RemitToContactPersonName: i.RemitToContactPersonName,
-		RemitToStreet1:           i.RemitToStreet1,
-		RemitToStreet2:           i.RemitToStreet2,
-		RemitToCity:              i.RemitToCity,
-		RemitToCountry:           i.RemitToCountry,
-		RemitToState:             i.RemitToState,
-		RemitToZipcode:           i.RemitToZipcode,
-		RemitToLocalTaxId:        i.RemitToLocalTaxID,
-		RemitToTaxCountry:        i.RemitToTaxCountry,
-		RemitToVatNumber:         i.RemitToVatNumber,
-		ShipToCompanyName:        i.ShipToCompanyName,
-		ShipToContactPersonName:  i.ShipToContactPersonName,
-		ShipToStreet1:            i.ShipToStreet1,
-		ShipToStreet2:            i.ShipToStreet2,
-		ShipToCity:               i.ShipToCity,
-		ShipToState:              i.ShipToState,
-		ShipToCountry:            i.ShipToCountry,
-		ShipToZipcode:            i.ShipToZipcode,
-		Currency:                 i.Currency,
+		Number:                   d.Number,
+		Status:                   d.Status,
+		SenderInvoiceId:          d.SenderInvoiceID,
+		RecipientInvoiceId:       d.RecipientInvoiceID,
+		SenderCompanyName:        d.SenderCompanyName,
+		SenderContactPersonName:  d.SenderContactPersonName,
+		SenderStreet1:            d.SenderStreet1,
+		SenderStreet2:            d.SenderStreet2,
+		SenderCity:               d.SenderCity,
+		SenderZipcode:            d.SenderZipcode,
+		SenderState:              d.SenderState,
+		SenderCountry:            d.SenderCountry,
+		BillToCompanyName:        d.BillToCompanyName,
+		BillToContactPersonName:  d.BillToContactPersonName,
+		BillToStreet1:            d.BillToStreet1,
+		BillToStreet2:            d.BillToStreet2,
+		BillToCity:               d.BillToCity,
+		BillToZipcode:            d.BillToZipcode,
+		BillToState:              d.BillToState,
+		BillToCountry:            d.BillToCountry,
+		BillToLocalTaxId:         d.BillToLocalTaxID,
+		BillToVatNumber:          d.BillToVatNumber,
+		RemitToCompanyName:       d.RemitToCompanyName,
+		RemitToContactPersonName: d.RemitToContactPersonName,
+		RemitToStreet1:           d.RemitToStreet1,
+		RemitToStreet2:           d.RemitToStreet2,
+		RemitToCity:              d.RemitToCity,
+		RemitToCountry:           d.RemitToCountry,
+		RemitToState:             d.RemitToState,
+		RemitToZipcode:           d.RemitToZipcode,
+		RemitToLocalTaxId:        d.RemitToLocalTaxID,
+		RemitToTaxCountry:        d.RemitToTaxCountry,
+		RemitToVatNumber:         d.RemitToVatNumber,
+		ShipToCompanyName:        d.ShipToCompanyName,
+		ShipToContactPersonName:  d.ShipToContactPersonName,
+		ShipToStreet1:            d.ShipToStreet1,
+		ShipToStreet2:            d.ShipToStreet2,
+		ShipToCity:               d.ShipToCity,
+		ShipToState:              d.ShipToState,
+		ShipToCountry:            d.ShipToCountry,
+		ShipToZipcode:            d.ShipToZipcode,
+		Currency:                 d.Currency,
 		GrossAmount:              decs[0],
 		NetAmount:                decs[1],
 		TaxAmount:                decs[2],
 		TaxRate:                  decs[3],
-		TaxOnLineLevel:           i.TaxOnLineLevel,
+		TaxOnLineLevel:           d.TaxOnLineLevel,
 		Recipient:                dids[0],
 		Sender:                   dids[1],
 		Payee:                    dids[2],
-		Comment:                  i.Comment,
-		ShippingTerms:            i.ShippingTerms,
-		RequesterEmail:           i.RequesterEmail,
-		RequesterName:            i.RequesterName,
-		DeliveryNumber:           i.DeliveryNumber,
-		IsCreditNote:             i.IsCreditNote,
-		CreditNoteInvoiceNumber:  i.CreditNoteInvoiceNumber,
-		CreditForInvoiceDate:     i.CreditForInvoiceDate,
-		DateDue:                  i.DateDue,
-		DatePaid:                 i.DatePaid,
-		DateCreated:              i.DateCreated,
-		DateUpdated:              i.DateUpdated,
-		Attachments:              documents.ToProtocolAttachments(i.Attachments),
+		Comment:                  d.Comment,
+		ShippingTerms:            d.ShippingTerms,
+		RequesterEmail:           d.RequesterEmail,
+		RequesterName:            d.RequesterName,
+		DeliveryNumber:           d.DeliveryNumber,
+		IsCreditNote:             d.IsCreditNote,
+		CreditNoteInvoiceNumber:  d.CreditNoteInvoiceNumber,
+		CreditForInvoiceDate:     pts[0],
+		DateDue:                  pts[1],
+		DatePaid:                 pts[2],
+		DateCreated:              pts[3],
+		DateUpdated:              pts[4],
+		Attachments:              documents.ToProtocolAttachments(d.Attachments),
 		LineItems:                li,
 		PaymentDetails:           pd,
 		TaxItems:                 ti,
@@ -355,72 +377,79 @@ func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
 		return err
 	}
 
-	i.Number = data.Number
-	i.Status = data.Status
-	i.SenderInvoiceID = data.SenderInvoiceId
-	i.RecipientInvoiceID = data.RecipientInvoiceId
-	i.SenderCompanyName = data.SenderCompanyName
-	i.SenderContactPersonName = data.SenderContactPersonName
-	i.SenderStreet1 = data.SenderStreet1
-	i.SenderStreet2 = data.SenderStreet2
-	i.SenderCity = data.SenderCity
-	i.SenderZipcode = data.SenderZipcode
-	i.SenderState = data.SenderState
-	i.SenderCountry = data.SenderCountry
-	i.BillToCompanyName = data.BillToCompanyName
-	i.BillToContactPersonName = data.BillToContactPersonName
-	i.BillToStreet1 = data.BillToStreet1
-	i.BillToStreet2 = data.BillToStreet2
-	i.BillToCity = data.BillToCity
-	i.BillToZipcode = data.BillToZipcode
-	i.BillToState = data.BillToState
-	i.BillToCountry = data.BillToCountry
-	i.BillToVatNumber = data.BillToVatNumber
-	i.BillToLocalTaxID = data.BillToLocalTaxId
-	i.RemitToCompanyName = data.RemitToCompanyName
-	i.RemitToContactPersonName = data.RemitToContactPersonName
-	i.RemitToStreet1 = data.RemitToStreet1
-	i.RemitToStreet2 = data.RemitToStreet2
-	i.RemitToCity = data.RemitToCity
-	i.RemitToZipcode = data.RemitToZipcode
-	i.RemitToState = data.RemitToState
-	i.RemitToCountry = data.RemitToCountry
-	i.RemitToVatNumber = data.RemitToVatNumber
-	i.RemitToLocalTaxID = data.RemitToLocalTaxId
-	i.RemitToTaxCountry = data.RemitToTaxCountry
-	i.ShipToCompanyName = data.ShipToCompanyName
-	i.ShipToContactPersonName = data.ShipToContactPersonName
-	i.ShipToStreet1 = data.ShipToStreet1
-	i.ShipToStreet2 = data.ShipToStreet2
-	i.ShipToCity = data.ShipToCity
-	i.ShipToZipcode = data.ShipToZipcode
-	i.ShipToState = data.ShipToState
-	i.ShipToCountry = data.ShipToCountry
-	i.Currency = data.Currency
-	i.GrossAmount = decs[0]
-	i.NetAmount = decs[1]
-	i.TaxAmount = decs[2]
-	i.TaxRate = decs[3]
-	i.TaxOnLineLevel = data.TaxOnLineLevel
-	i.Recipient = dids[0]
-	i.Sender = dids[1]
-	i.Payee = dids[2]
-	i.Comment = data.Comment
-	i.ShippingTerms = data.ShippingTerms
-	i.RequesterEmail = data.RequesterEmail
-	i.RequesterName = data.RequesterName
-	i.DeliveryNumber = data.DeliveryNumber
-	i.IsCreditNote = data.IsCreditNote
-	i.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
-	i.CreditForInvoiceDate = data.CreditForInvoiceDate
-	i.DateDue = data.DateDue
-	i.DatePaid = data.DatePaid
-	i.DateUpdated = data.DateUpdated
-	i.DateCreated = data.DateCreated
-	i.Attachments = atts
-	i.LineItems = li
-	i.PaymentDetails = pd
-	i.TaxItems = ti
+	tms, err := timeutils.FromProtoTimestamps(data.CreditForInvoiceDate, data.DateDue, data.DatePaid, data.DateCreated, data.DateUpdated)
+	if err != nil {
+		return err
+	}
+
+	var d Data
+	d.Number = data.Number
+	d.Status = data.Status
+	d.SenderInvoiceID = data.SenderInvoiceId
+	d.RecipientInvoiceID = data.RecipientInvoiceId
+	d.SenderCompanyName = data.SenderCompanyName
+	d.SenderContactPersonName = data.SenderContactPersonName
+	d.SenderStreet1 = data.SenderStreet1
+	d.SenderStreet2 = data.SenderStreet2
+	d.SenderCity = data.SenderCity
+	d.SenderZipcode = data.SenderZipcode
+	d.SenderState = data.SenderState
+	d.SenderCountry = data.SenderCountry
+	d.BillToCompanyName = data.BillToCompanyName
+	d.BillToContactPersonName = data.BillToContactPersonName
+	d.BillToStreet1 = data.BillToStreet1
+	d.BillToStreet2 = data.BillToStreet2
+	d.BillToCity = data.BillToCity
+	d.BillToZipcode = data.BillToZipcode
+	d.BillToState = data.BillToState
+	d.BillToCountry = data.BillToCountry
+	d.BillToVatNumber = data.BillToVatNumber
+	d.BillToLocalTaxID = data.BillToLocalTaxId
+	d.RemitToCompanyName = data.RemitToCompanyName
+	d.RemitToContactPersonName = data.RemitToContactPersonName
+	d.RemitToStreet1 = data.RemitToStreet1
+	d.RemitToStreet2 = data.RemitToStreet2
+	d.RemitToCity = data.RemitToCity
+	d.RemitToZipcode = data.RemitToZipcode
+	d.RemitToState = data.RemitToState
+	d.RemitToCountry = data.RemitToCountry
+	d.RemitToVatNumber = data.RemitToVatNumber
+	d.RemitToLocalTaxID = data.RemitToLocalTaxId
+	d.RemitToTaxCountry = data.RemitToTaxCountry
+	d.ShipToCompanyName = data.ShipToCompanyName
+	d.ShipToContactPersonName = data.ShipToContactPersonName
+	d.ShipToStreet1 = data.ShipToStreet1
+	d.ShipToStreet2 = data.ShipToStreet2
+	d.ShipToCity = data.ShipToCity
+	d.ShipToZipcode = data.ShipToZipcode
+	d.ShipToState = data.ShipToState
+	d.ShipToCountry = data.ShipToCountry
+	d.Currency = data.Currency
+	d.GrossAmount = decs[0]
+	d.NetAmount = decs[1]
+	d.TaxAmount = decs[2]
+	d.TaxRate = decs[3]
+	d.TaxOnLineLevel = data.TaxOnLineLevel
+	d.Recipient = dids[0]
+	d.Sender = dids[1]
+	d.Payee = dids[2]
+	d.Comment = data.Comment
+	d.ShippingTerms = data.ShippingTerms
+	d.RequesterEmail = data.RequesterEmail
+	d.RequesterName = data.RequesterName
+	d.DeliveryNumber = data.DeliveryNumber
+	d.IsCreditNote = data.IsCreditNote
+	d.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
+	d.CreditForInvoiceDate = tms[0]
+	d.DateDue = tms[1]
+	d.DatePaid = tms[2]
+	d.DateCreated = tms[3]
+	d.DateUpdated = tms[4]
+	d.Attachments = atts
+	d.LineItems = li
+	d.PaymentDetails = pd
+	d.TaxItems = ti
+	i.Data = d
 	return nil
 }
 
@@ -452,72 +481,79 @@ func (i *Invoice) loadFromP2PProtobuf(data *invoicepb.InvoiceData) error {
 		return err
 	}
 
-	i.Number = data.Number
-	i.Status = data.Status
-	i.SenderInvoiceID = data.SenderInvoiceId
-	i.RecipientInvoiceID = data.RecipientInvoiceId
-	i.SenderCompanyName = data.SenderCompanyName
-	i.SenderContactPersonName = data.SenderContactPersonName
-	i.SenderStreet1 = data.SenderStreet1
-	i.SenderStreet2 = data.SenderStreet2
-	i.SenderCity = data.SenderCity
-	i.SenderZipcode = data.SenderZipcode
-	i.SenderState = data.SenderState
-	i.SenderCountry = data.SenderCountry
-	i.BillToCompanyName = data.BillToCompanyName
-	i.BillToContactPersonName = data.BillToContactPersonName
-	i.BillToStreet1 = data.BillToStreet1
-	i.BillToStreet2 = data.BillToStreet2
-	i.BillToCity = data.BillToCity
-	i.BillToZipcode = data.BillToZipcode
-	i.BillToState = data.BillToState
-	i.BillToCountry = data.BillToCountry
-	i.BillToVatNumber = data.BillToVatNumber
-	i.BillToLocalTaxID = data.BillToLocalTaxId
-	i.RemitToCompanyName = data.RemitToCompanyName
-	i.RemitToContactPersonName = data.RemitToContactPersonName
-	i.RemitToStreet1 = data.RemitToStreet1
-	i.RemitToStreet2 = data.RemitToStreet2
-	i.RemitToCity = data.RemitToCity
-	i.RemitToZipcode = data.RemitToZipcode
-	i.RemitToState = data.RemitToState
-	i.RemitToCountry = data.RemitToCountry
-	i.RemitToVatNumber = data.RemitToVatNumber
-	i.RemitToLocalTaxID = data.RemitToLocalTaxId
-	i.RemitToTaxCountry = data.RemitToTaxCountry
-	i.ShipToCompanyName = data.ShipToCompanyName
-	i.ShipToContactPersonName = data.ShipToContactPersonName
-	i.ShipToStreet1 = data.ShipToStreet1
-	i.ShipToStreet2 = data.ShipToStreet2
-	i.ShipToCity = data.ShipToCity
-	i.ShipToZipcode = data.ShipToZipcode
-	i.ShipToState = data.ShipToState
-	i.ShipToCountry = data.ShipToCountry
-	i.Currency = data.Currency
-	i.GrossAmount = decs[0]
-	i.NetAmount = decs[1]
-	i.TaxAmount = decs[2]
-	i.TaxRate = decs[3]
-	i.TaxOnLineLevel = data.TaxOnLineLevel
-	i.Recipient = dids[0]
-	i.Sender = dids[1]
-	i.Payee = dids[2]
-	i.Comment = data.Comment
-	i.ShippingTerms = data.ShippingTerms
-	i.RequesterEmail = data.RequesterEmail
-	i.RequesterName = data.RequesterName
-	i.DeliveryNumber = data.DeliveryNumber
-	i.IsCreditNote = data.IsCreditNote
-	i.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
-	i.CreditForInvoiceDate = data.CreditForInvoiceDate
-	i.DateDue = data.DateDue
-	i.DatePaid = data.DatePaid
-	i.DateUpdated = data.DateUpdated
-	i.DateCreated = data.DateCreated
-	i.Attachments = atts
-	i.LineItems = li
-	i.PaymentDetails = pd
-	i.TaxItems = ti
+	tms, err := timeutils.FromProtoTimestamps(data.CreditForInvoiceDate, data.DateDue, data.DatePaid, data.DateCreated, data.DateUpdated)
+	if err != nil {
+		return err
+	}
+
+	var d Data
+	d.Number = data.Number
+	d.Status = data.Status
+	d.SenderInvoiceID = data.SenderInvoiceId
+	d.RecipientInvoiceID = data.RecipientInvoiceId
+	d.SenderCompanyName = data.SenderCompanyName
+	d.SenderContactPersonName = data.SenderContactPersonName
+	d.SenderStreet1 = data.SenderStreet1
+	d.SenderStreet2 = data.SenderStreet2
+	d.SenderCity = data.SenderCity
+	d.SenderZipcode = data.SenderZipcode
+	d.SenderState = data.SenderState
+	d.SenderCountry = data.SenderCountry
+	d.BillToCompanyName = data.BillToCompanyName
+	d.BillToContactPersonName = data.BillToContactPersonName
+	d.BillToStreet1 = data.BillToStreet1
+	d.BillToStreet2 = data.BillToStreet2
+	d.BillToCity = data.BillToCity
+	d.BillToZipcode = data.BillToZipcode
+	d.BillToState = data.BillToState
+	d.BillToCountry = data.BillToCountry
+	d.BillToVatNumber = data.BillToVatNumber
+	d.BillToLocalTaxID = data.BillToLocalTaxId
+	d.RemitToCompanyName = data.RemitToCompanyName
+	d.RemitToContactPersonName = data.RemitToContactPersonName
+	d.RemitToStreet1 = data.RemitToStreet1
+	d.RemitToStreet2 = data.RemitToStreet2
+	d.RemitToCity = data.RemitToCity
+	d.RemitToZipcode = data.RemitToZipcode
+	d.RemitToState = data.RemitToState
+	d.RemitToCountry = data.RemitToCountry
+	d.RemitToVatNumber = data.RemitToVatNumber
+	d.RemitToLocalTaxID = data.RemitToLocalTaxId
+	d.RemitToTaxCountry = data.RemitToTaxCountry
+	d.ShipToCompanyName = data.ShipToCompanyName
+	d.ShipToContactPersonName = data.ShipToContactPersonName
+	d.ShipToStreet1 = data.ShipToStreet1
+	d.ShipToStreet2 = data.ShipToStreet2
+	d.ShipToCity = data.ShipToCity
+	d.ShipToZipcode = data.ShipToZipcode
+	d.ShipToState = data.ShipToState
+	d.ShipToCountry = data.ShipToCountry
+	d.Currency = data.Currency
+	d.GrossAmount = decs[0]
+	d.NetAmount = decs[1]
+	d.TaxAmount = decs[2]
+	d.TaxRate = decs[3]
+	d.TaxOnLineLevel = data.TaxOnLineLevel
+	d.Recipient = dids[0]
+	d.Sender = dids[1]
+	d.Payee = dids[2]
+	d.Comment = data.Comment
+	d.ShippingTerms = data.ShippingTerms
+	d.RequesterEmail = data.RequesterEmail
+	d.RequesterName = data.RequesterName
+	d.DeliveryNumber = data.DeliveryNumber
+	d.IsCreditNote = data.IsCreditNote
+	d.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
+	d.CreditForInvoiceDate = tms[0]
+	d.DateDue = tms[1]
+	d.DatePaid = tms[2]
+	d.DateCreated = tms[3]
+	d.DateUpdated = tms[4]
+	d.Attachments = atts
+	d.LineItems = li
+	d.PaymentDetails = pd
+	d.TaxItems = ti
+	i.Data = d
 	return nil
 }
 
@@ -753,4 +789,9 @@ func (i *Invoice) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool)
 
 	i.CoreDocument = ncd
 	return nil
+}
+
+// GetData returns Invoice Data.
+func (i *Invoice) GetData() interface{} {
+	return i.Data
 }

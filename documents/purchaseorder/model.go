@@ -107,6 +107,11 @@ func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderDat
 		return nil, err
 	}
 
+	pd, err := documents.ToClientPaymentDetails(p.PaymentDetails)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientpurchaseorderpb.PurchaseOrderData{
 		Status:                  p.Status,
 		Number:                  p.Number,
@@ -133,7 +138,7 @@ func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderDat
 		PaymentTerms:            p.PaymentTerms,
 		RecipientOrderId:        p.RecipientOrderID,
 		RequisitionId:           p.RequisitionID,
-		PaymentDetails:          documents.ToClientPaymentDetails(p.PaymentDetails),
+		PaymentDetails:          pd,
 		Attachments:             documents.ToClientAttachments(p.Attachments),
 		LineItems:               toClientLineItems(p.LineItems),
 		Attributes:              attr,
