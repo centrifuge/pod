@@ -102,11 +102,11 @@ func TestCollaboratorAccess(t *testing.T) {
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 	rcs := &documentpb.ReadAccess{
-		Collaborators: []string{id1.String(), id2.String()},
+		Collaborators: []string{id1.String(), id2.String(), ""},
 	}
 
 	wcs := &documentpb.WriteAccess{
-		Collaborators: []string{id2.String(), id3.String()},
+		Collaborators: []string{id2.String(), id3.String(), ""},
 	}
 
 	ca, err := FromClientCollaboratorAccess(rcs, wcs)
