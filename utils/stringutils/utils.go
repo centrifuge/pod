@@ -28,7 +28,7 @@ func RemoveDuplicates(strs []string) []string {
 func ContainsStringMatch(match string, str string) bool {
 	elem := regexp.MustCompile(match)
 	found := elem.FindAllString(str, 1)
-	return (len(found) > 0)
+	return len(found) > 0
 }
 
 // ContainsStringMatchInSlice returns true if string is found as match in slice

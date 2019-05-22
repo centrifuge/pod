@@ -305,7 +305,11 @@ func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *docume
 	var wcs, rcs []string
 	if waccess != nil {
 		for _, c := range waccess.Collaborators {
-			c = strings.ToLower(c)
+			c = strings.TrimSpace(strings.ToLower(c))
+			if c == "" {
+				continue
+			}
+
 			if _, ok := wmap[c]; ok {
 				continue
 			}
@@ -317,7 +321,11 @@ func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *docume
 
 	if racess != nil {
 		for _, c := range racess.Collaborators {
-			c = strings.ToLower(c)
+			c = strings.TrimSpace(strings.ToLower(c))
+			if c == "" {
+				continue
+			}
+
 			if _, ok := wmap[c]; ok {
 				continue
 			}
