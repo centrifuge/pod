@@ -17,7 +17,7 @@ func init() {
 			//cm requires a config file
 			cfgFile := ensureConfigFile()
 
-			// Check if migrations should be ran
+			// Check if migrations should run
 			if runMigrations {
 				err := doMigrate()
 				if err != nil {

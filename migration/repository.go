@@ -78,8 +78,13 @@ func (repo *Repository) CreateMigration(migrationItem *Item) error {
 	return repo.db.Put(key, data, nil)
 }
 
-// RefreshDB reopens a DB, requires it to be closed or it will error out
-func (repo *Repository) RefreshDB() (err error) {
+// Open opens a DB, requires it to be closed before or it will error out
+func (repo *Repository) Open() (err error) {
 	repo.db, err = leveldb.OpenFile(repo.dbPath, nil)
 	return err
+}
+
+// Close closes a DB
+func (repo *Repository) Close() (err error) {
+	return repo.db.Close()
 }

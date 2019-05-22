@@ -19,7 +19,7 @@ func TestNewMigrationRepository(t *testing.T) {
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
 
-	defer repo.db.Close()
+	defer repo.Close()
 	// Fails opening on an already open DB
 	_, err = NewMigrationRepository(targetDir)
 	assert.Error(t, err)
@@ -34,7 +34,7 @@ func TestMigrationRepo_Exists_DBClosed(t *testing.T) {
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
 	// Forces error
-	err = repo.db.Close()
+	err = repo.Close()
 	assert.NoError(t, err)
 	assert.False(t, repo.Exists("blabla"))
 }
@@ -48,7 +48,7 @@ func TestMigrationRepo_CreateMigration(t *testing.T) {
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
 
-	defer repo.db.Close()
+	defer repo.Close()
 
 	// Successfully creates migration
 	mi := &Item{

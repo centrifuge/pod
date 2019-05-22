@@ -25,7 +25,7 @@ import (
 var log = logging.Logger("migrate-cmd")
 
 var migrations = map[string]func(*leveldb.DB) error{
-	"0InitialMigration": files.RunMigration0,
+	"00Initial": files.Initial00,
 }
 
 // Runner is the actor that runs the migrations
@@ -60,9 +60,8 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 	//For each of them, in order execute
 	for _, k := range migrationList {
 		start := time.Now()
-		// Add hash check
+
 		if repo.Exists(k) {
-			log.Infof("Migration %s already run", k)
 			continue
 		}
 
@@ -105,14 +104,15 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 			return err
 		}
 
-		err = bkpRepo.db.Close()
+		err = bkpRepo.Close()
 		if err != nil {
 			return err
 		}
 
+		log.Infof("Migration %s successfully run", k)
 	}
 
-	return repo.db.Close()
+	return repo.Close()
 }
 
 func calculateMigrationHash(name string) (string, error) {
@@ -134,7 +134,7 @@ func getBackupName(path, name string) string {
 
 func backupDB(srcRepo *Repository, migrationID string) (bkp *Repository, err error) {
 	//Closing src to make backup
-	err = srcRepo.db.Close()
+	err = srcRepo.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func backupDB(srcRepo *Repository, migrationID string) (bkp *Repository, err err
 	}
 
 	// Refreshing src DB
-	err = srcRepo.RefreshDB()
+	err = srcRepo.Open()
 	if err != nil {
 		return nil, err
 	}
@@ -155,16 +155,16 @@ func backupDB(srcRepo *Repository, migrationID string) (bkp *Repository, err err
 }
 
 func revertDBToBackup(srcDB, bkpDB *Repository) error {
-	erri := srcDB.db.Close()
-	if erri != nil {
-		return erri
+	err := srcDB.Close()
+	if err != nil {
+		return err
 	}
-	erri = bkpDB.db.Close()
-	if erri != nil {
-		return erri
+	err = bkpDB.Close()
+	if err != nil {
+		return err
 	}
 
-	err := os.RemoveAll(srcDB.dbPath)
+	err = os.RemoveAll(srcDB.dbPath)
 	if err != nil {
 		return err
 	}

@@ -59,9 +59,9 @@ func TestAllMigrationsExistAsAssets(t *testing.T) {
 }
 
 func TestHashContent_Migration0(t *testing.T) {
-	hs, err := calculateMigrationHash("0InitialMigration")
+	hs, err := calculateMigrationHash("00Initial")
 	assert.NoError(t, err)
-	assert.Equal(t, "0xe2a8e55d3de5572221a685f724c5af8126bfdb6eb20885961bae75764b12fb0b", hs)
+	assert.Equal(t, "0x0106e0eac196d3ef208cea7cb89d733a820bac0a401a992ed064270ecb2504b8", hs)
 }
 
 func TestNewMigrationRunner(t *testing.T) {
@@ -94,12 +94,12 @@ func TestBackupDB(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Force DB close error
-	err = repo.db.Close()
+	err = repo.Close()
 	assert.NoError(t, err)
 	_, err = backupDB(repo, "SomeID")
 	assert.Error(t, err)
 
-	err = repo.RefreshDB()
+	err = repo.Open()
 	assert.NoError(t, err)
 
 	bkp, err := backupDB(repo, "SomeID")
@@ -123,11 +123,11 @@ func TestRevertToBackupDB(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Force already closed error
-	assert.NoError(t, bkp.db.Close())
+	assert.NoError(t, bkp.Close())
 	assert.Error(t, revertDBToBackup(repo, bkp))
 
 	// Force wrong src path
-	assert.NoError(t, bkp.RefreshDB())
+	assert.NoError(t, bkp.Open())
 	repoPath := repo.dbPath
 	repo.dbPath = repo.dbPath + "_wrong"
 	assert.Error(t, revertDBToBackup(repo, bkp))
@@ -140,7 +140,7 @@ func TestRevertToBackupDB(t *testing.T) {
 	bkp.dbPath = bkpPath
 
 	// Backup revert succeeds
-	assert.NoError(t, repo.RefreshDB())
+	assert.NoError(t, repo.Open())
 	assert.NoError(t, revertDBToBackup(repo, bkp))
 
 	// Bkp doesnt exist anymore
@@ -194,19 +194,19 @@ func TestRunMigrations_singleSuccess(t *testing.T) {
 	hs, err := sha256Hash([]byte("0SuccessMigration"))
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(hs), mi.Hash)
-	assert.NoError(t, repo.db.Close())
+	assert.NoError(t, repo.Close())
 
 	// Try running again, and run should be skipped
 	dRun := mi.DateRun
 	err = runner.RunMigrations(targetDir)
 	assert.NoError(t, err)
-	err = repo.RefreshDB()
+	err = repo.Open()
 	assert.NoError(t, err)
 	mi, err = repo.GetMigrationByID("0SuccessMigration")
 	assert.NoError(t, err)
 	assert.Equal(t, "0SuccessMigration", mi.ID)
 	assert.Equal(t, dRun, mi.DateRun)
-	assert.NoError(t, repo.db.Close())
+	assert.NoError(t, repo.Close())
 
 }
 
