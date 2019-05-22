@@ -45,7 +45,7 @@ func printStartMessage() {
 	fmt.Println()
 	c.Print()
 	fmt.Println()
-	fmt.Println("Centrifuge OS and this client implementation are beta software. For more information refer to the disclaimer on https://developer.centrifuge.io")
+	fmt.Println("Centrifuge OS and this client implementation are beta software. For more information refer to the disclaimer on https://developer.centrifuge.io.")
 }
 
 func init() {
