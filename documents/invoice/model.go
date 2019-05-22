@@ -790,3 +790,8 @@ func (i *Invoice) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool)
 	i.CoreDocument = ncd
 	return nil
 }
+
+// GetData returns Invoice Data.
+func (i *Invoice) GetData() interface{} {
+	return i.Data
+}

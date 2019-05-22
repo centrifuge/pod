@@ -493,3 +493,9 @@ func TestInvoice_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, inv.DeleteAttribute(attr.Key, true))
 	assert.False(t, inv.AttributeExists(attr.Key))
 }
+
+func TestInvoice_GetData(t *testing.T) {
+	inv := createInvoice(t)
+	data := inv.GetData()
+	assert.Equal(t, inv.Data, data)
+}
