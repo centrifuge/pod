@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-kad-dht"
 )
 
 var log = logging.Logger("host")
@@ -115,7 +114,7 @@ func (r *hostManager) startHost(name string) {
 }
 
 func (r *hostManager) init(createConfig bool) error {
-	dht.KValue = 2
+	//dht.KValue = 2
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
 
 	// start listening to webhooks

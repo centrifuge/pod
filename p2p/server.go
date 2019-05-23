@@ -50,6 +50,7 @@ type peer struct {
 	host             host.Host
 	handlerCreator   func() *receiver.Handler
 	mes              messenger
+	dht              *dht.IpfsDHT
 }
 
 // Name returns the P2PServer
@@ -79,7 +80,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		startupErr <- err
 		return
 	}
-	s.host, err = makeBasicHost(priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
+	s.host, err = makeBasicHost(ctx, priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
@@ -93,7 +94,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 
 	// Start DHT and properly ignore errors :)
-	_ = runDHT(ctx, s.host, nc.GetBootstrapPeers())
+	_ = s.runDHT(ctx, nc.GetBootstrapPeers())
 
 	if nc.IsDebugLogEnabled() {
 		go func() {
@@ -135,8 +136,37 @@ func (s *peer) InitProtocolForDID(DID *identity.DID) {
 	s.mes.Init(p)
 }
 
+func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
+	//dht.KValue = 1
+	s.dht = dht.NewDHT(ctx, s.host, ds.NewMapDatastore())
+	log.Infof("Bootstrapping %s\n", bootstrapPeers)
+
+	for _, addr := range bootstrapPeers {
+		iaddr, _ := ipfsaddr.ParseString(addr)
+		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
+		if err := s.host.Connect(ctx, *pinfo); err != nil {
+			log.Info("Bootstrapping to peer failed: ", err)
+		}
+	}
+
+	// Using the sha256 of our "topic" as our rendezvous value
+	cidPref, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
+
+	// First, announce ourselves as participating in this topic
+	log.Info("Announcing ourselves...")
+	tctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	if err := s.dht.Provide(tctx, cidPref, true); err != nil {
+		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
+		log.Infof("Error: %s\n", err.Error())
+	}
+	cancel()
+
+	log.Info("Bootstrapping and discovery complete!")
+	return nil
+}
+
 // makeBasicHost creates a LibP2P host with a peer ID listening on the given port
-func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, error) {
+func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, error) {
 	// Obtain Peer ID from public key
 	// We should be using the following method to get the ID, but looks like is not compatible with
 	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
@@ -190,7 +220,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 		libp2p.AddrsFactory(addressFactory),
 	}
 
-	bhost, err := libp2p.New(context.Background(), opts...)
+	bhost, err := libp2p.New(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -202,33 +232,4 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 
 	log.Infof("P2P Server at: %s %s\n", hostAddr.String(), bhost.Addrs())
 	return bhost, nil
-}
-
-func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
-	dht.KValue = 1
-	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
-	log.Infof("Bootstrapping %s\n", bootstrapPeers)
-
-	for _, addr := range bootstrapPeers {
-		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
-		if err := h.Connect(ctx, *pinfo); err != nil {
-			log.Info("Bootstrapping to peer failed: ", err)
-		}
-	}
-
-	// Using the sha256 of our "topic" as our rendezvous value
-	cidPref, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
-
-	// First, announce ourselves as participating in this topic
-	log.Info("Announcing ourselves...")
-	tctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	if err := dhtClient.Provide(tctx, cidPref, true); err != nil {
-		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
-		log.Infof("Error: %s\n", err.Error())
-	}
-	cancel()
-
-	log.Info("Bootstrapping and discovery complete!")
-	return nil
 }

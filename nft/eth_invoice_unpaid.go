@@ -199,7 +199,7 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	if err != nil {
 		return nil, nil, err
 	}
-	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
+	jobID, done, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Minting NFT",
 		s.minter(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err
