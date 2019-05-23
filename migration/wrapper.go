@@ -1,10 +1,5 @@
 package migration
 
-// Package the default resources into binary data that is embedded in centrifuge
-// executable
-//
-//go:generate go-bindata -pkg migration -prefix "../" -o ./data.go ./files/...
-
 import (
 	"crypto/sha256"
 	"fmt"
@@ -17,7 +12,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/migration/files"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -29,18 +23,11 @@ var migrations = map[string]func(*leveldb.DB) error{
 }
 
 // Runner is the actor that runs the migrations
-type Runner struct {
-	CalculateHash func(string) (string, error)
-}
+type Runner struct{}
 
 // NewMigrationRunner creates default runner
 func NewMigrationRunner() *Runner {
-	return NewMigrationRunnerWithHashFunction(calculateMigrationHash)
-}
-
-// NewMigrationRunnerWithHashFunction creates runner with custom hash function
-func NewMigrationRunnerWithHashFunction(hashFn func(string) (string, error)) *Runner {
-	return &Runner{hashFn}
+	return &Runner{}
 }
 
 // RunMigrations executes the migrations
@@ -82,19 +69,11 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 		}
 
 		// on success store migration item in DB
-		hash, err := mr.CalculateHash(k)
-		if err != nil {
-			err1 := revertDBToBackup(repo, bkpRepo)
-			if err1 != nil {
-				return err1
-			}
-			return err
-		}
 		mi := &Item{
 			ID:       k,
 			DateRun:  time.Now().UTC(),
 			Duration: time.Now().Sub(start),
-			Hash:     hash,
+			Hash:     "0x", // Not implemented yet
 		}
 		if err = repo.CreateMigration(mi); err != nil {
 			err1 := revertDBToBackup(repo, bkpRepo)
@@ -113,18 +92,6 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 	}
 
 	return repo.Close()
-}
-
-func calculateMigrationHash(name string) (string, error) {
-	data, err := Asset(fmt.Sprintf("migration/files/%s.go", name))
-	if err != nil {
-		return "", err
-	}
-	hb, err := sha256Hash(data)
-	if err != nil {
-		return "", err
-	}
-	return hexutil.Encode(hb), nil
 }
 
 func getBackupName(path, name string) string {
