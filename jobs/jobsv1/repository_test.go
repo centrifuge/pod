@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +50,7 @@ func Test_getKey(t *testing.T) {
 	id = jobs.NewJobID()
 	key, err = getKey(did, id)
 	assert.Nil(t, err)
-	assert.Equal(t, []byte(hexutil.Encode(append(did[:], id.Bytes()...))), key)
+	assert.Equal(t, append(did[:], id.Bytes()...), key)
 }
 
 func TestRepository(t *testing.T) {

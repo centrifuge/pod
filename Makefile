@@ -60,7 +60,6 @@ gen-swagger: ## generates the swagger documentation
 
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
-	go generate ./migration/wrapper.go
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall

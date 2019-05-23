@@ -5,7 +5,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // jobRepository implements Repository.
@@ -26,8 +25,7 @@ func getKey(did identity.DID, id jobs.JobID) ([]byte, error) {
 	if jobs.JobIDEqual(jobs.NilJobID(), id) {
 		return nil, errors.New("job ID is not valid")
 	}
-	hexKey := hexutil.Encode(append(did[:], id.Bytes()...))
-	return []byte(hexKey), nil
+	return append(did[:], id.Bytes()...), nil
 }
 
 // Get returns the job associated with identity and id.
