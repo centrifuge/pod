@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -166,9 +165,7 @@ func TestRunMigrations_singleSuccess(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "0SuccessMigration", mi.ID)
 	assert.NotNil(t, mi.DateRun)
-	hs, err := sha256Hash([]byte("0SuccessMigration"))
-	assert.NoError(t, err)
-	assert.Equal(t, hexutil.Encode(hs), mi.Hash)
+	assert.Equal(t, "0x", mi.Hash)
 	assert.NoError(t, repo.Close())
 
 	// Try running again, and run should be skipped
@@ -183,24 +180,6 @@ func TestRunMigrations_singleSuccess(t *testing.T) {
 	assert.Equal(t, dRun, mi.DateRun)
 	assert.NoError(t, repo.Close())
 
-}
-
-func TestRunner_RunMigrations_FailureHashFunction(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
-	targetDir := fmt.Sprintf("%s.leveldb", prefix)
-
-	// Cleanup after test
-	defer cleanupDBFiles(prefix)
-
-	// Override migrations for testing purposes
-	migrations = map[string]func(*leveldb.DB) error{
-		"0SuccessMigration": Migration0,
-	}
-	runner := NewMigrationRunner()
-	// Run migration and expect error in calculateHash function
-	err := runner.RunMigrations(targetDir)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "0SuccessMigration")
 }
 
 func TestRunner_RunMigrations_Failure(t *testing.T) {
