@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package funding;
+package fun;
 
-option go_package = "fundingpb";
+option go_package = "funpb";
 option java_multiple_files = true;
 option java_outer_classname = "FundingProto";
-option java_package = "com.funding";
+option java_package = "com.fun";
 
 import "document/service.proto";
 import "google/api/annotations.proto";
@@ -15,7 +15,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service FundingService {
   rpc Create(FundingCreatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/document/{identifier}/funding"
+      post: "/documents/{identifier}/fundings"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -24,7 +24,7 @@ service FundingService {
   }
   rpc Update(FundingUpdatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      put: "/document/{identifier}/funding/{funding_id}"
+      put: "/documents/{identifier}/fundings/{funding_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -33,7 +33,7 @@ service FundingService {
   }
   rpc Sign(Request) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/document/{identifier}/funding/{funding_id}/sign"
+      post: "/documents/{identifier}/fundings/{funding_id}/sign"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -42,7 +42,7 @@ service FundingService {
   }
   rpc Get(Request) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/funding/{funding_id}"
+      get: "/documents/{identifier}/fundings/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a latest document"
@@ -50,7 +50,7 @@ service FundingService {
   }
   rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/{version}/funding/{funding_id}"
+      get: "/documents/{identifier}/{version}/fundings/{funding_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a document version"
@@ -58,7 +58,7 @@ service FundingService {
   }
   rpc GetList(GetListRequest) returns (FundingListResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/funding"
+      get: "/documents/{identifier}/fundings"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get all funding agreements of a latest document"
@@ -66,7 +66,7 @@ service FundingService {
   }
   rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/{version}/funding"
+      get: "/documents/{identifier}/{version}/fundings"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get all funding agreements of a document version"
@@ -76,23 +76,27 @@ service FundingService {
 
 message FundingCreatePayload {
   string identifier = 1;
-  FundingData data = 2;
+  document.ReadAccess read_access = 2;
+  document.WriteAccess write_access = 3;
+  FundingData data = 4;
 }
 
 message FundingUpdatePayload {
   string identifier = 1;
   string funding_id = 2;
-  FundingData data = 3;
+  document.ReadAccess read_access = 3;
+  document.WriteAccess write_access = 4;
+  FundingData data = 5;
 }
 
 message FundingResponse {
   document.ResponseHeader header = 1;
-  FundingData data = 2;
+  FundingResponseData data = 2;
 }
 
 message FundingListResponse {
   document.ResponseHeader header = 1;
-  repeated FundingData list = 2;
+  repeated FundingResponseData data = 2;
 }
 
 message Request {
@@ -128,4 +132,16 @@ message FundingData {
   string currency = 10; // optional if not set currency of payment details will be used
   string nft_address = 11;
   string payment_details_id = 12;
+}
+
+message FundingResponseData {
+  FundingData funding = 1;
+  repeated FundingSignature signatures = 2;
+}
+
+message FundingSignature {
+  string valid = 1;
+  string outdated_signature = 2;
+  string identity = 3;
+  string signed_version = 4;
 }

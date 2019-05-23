@@ -158,9 +158,9 @@ func TestInvoiceModel_getClientData(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, inv.Recipient.String(), "recipient should match")
-	assert.Equal(t, data.Sender, inv.Sender.String(), "sender should match")
-	assert.Equal(t, data.Payee, inv.Payee.String(), "payee should match")
+	assert.Equal(t, data.Recipient, inv.Data.Recipient.String(), "recipient should match")
+	assert.Equal(t, data.Sender, inv.Data.Sender.String(), "sender should match")
+	assert.Equal(t, data.Payee, inv.Data.Payee.String(), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
@@ -176,33 +176,33 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "malformed address provided")
-	assert.Nil(t, inv.Recipient)
-	assert.Nil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.Nil(t, inv.Data.Recipient)
+	assert.Nil(t, inv.Data.Sender)
+	assert.Nil(t, inv.Data.Payee)
 
 	recipientDID := testingidentity.GenerateRandomDID()
 	data.Recipient = recipientDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.Recipient)
-	assert.Nil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.NotNil(t, inv.Data.Recipient)
+	assert.Nil(t, inv.Data.Sender)
+	assert.Nil(t, inv.Data.Payee)
 
 	senderDID := testingidentity.GenerateRandomDID()
 	data.Sender = senderDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.Recipient)
-	assert.NotNil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.NotNil(t, inv.Data.Recipient)
+	assert.NotNil(t, inv.Data.Sender)
+	assert.Nil(t, inv.Data.Payee)
 
 	payeeDID := testingidentity.GenerateRandomDID()
 	data.Payee = payeeDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.Recipient)
-	assert.NotNil(t, inv.Sender)
-	assert.NotNil(t, inv.Payee)
+	assert.NotNil(t, inv.Data.Recipient)
+	assert.NotNil(t, inv.Data.Sender)
+	assert.NotNil(t, inv.Data.Payee)
 
 	collabs := []string{"0x010102040506", "some id"}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
@@ -216,9 +216,9 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	collabs = []string{collab1.String(), collab2.String()}
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
 	assert.Nil(t, err, "must be nil")
-	assert.Equal(t, inv.Sender[:], senderDID[:])
-	assert.Equal(t, inv.Payee[:], payeeDID[:])
-	assert.Equal(t, inv.Recipient[:], recipientDID[:])
+	assert.Equal(t, inv.Data.Sender[:], senderDID[:])
+	assert.Equal(t, inv.Data.Payee[:], payeeDID[:])
+	assert.Equal(t, inv.Data.Recipient[:], recipientDID[:])
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
@@ -351,15 +351,15 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("2"))
 	i := createInvoice(t)
-	i.Number = "321321"
-	i.NetAmount = na
-	i.GrossAmount = ga
+	i.Data.Number = "321321"
+	i.Data.NetAmount = na
+	i.Data.GrossAmount = ga
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "invoice.number", leaf.Property.ReadableName())
-	assert.Equal(t, []byte(i.Number), leaf.Value)
+	assert.Equal(t, []byte(i.Data.Number), leaf.Value)
 }
 
 func createInvoice(t *testing.T) *Invoice {
@@ -462,7 +462,7 @@ func TestInvoice_AddAttributes(t *testing.T) {
 	assert.NoError(t, err)
 
 	// success
-	err = inv.AddAttributes(attr)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.NoError(t, err)
 	assert.True(t, inv.AttributeExists(attr.Key))
 	gattr, err := inv.GetAttribute(attr.Key)
@@ -471,7 +471,7 @@ func TestInvoice_AddAttributes(t *testing.T) {
 
 	// fail
 	attr.Value.Type = documents.AttributeType("some attr")
-	err = inv.AddAttributes(attr)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
 }
@@ -484,12 +484,18 @@ func TestInvoice_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// failed
-	err = inv.DeleteAttribute(attr.Key)
+	err = inv.DeleteAttribute(attr.Key, true)
 	assert.Error(t, err)
 
 	// success
-	assert.NoError(t, inv.AddAttributes(attr))
+	assert.NoError(t, inv.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
 	assert.True(t, inv.AttributeExists(attr.Key))
-	assert.NoError(t, inv.DeleteAttribute(attr.Key))
+	assert.NoError(t, inv.DeleteAttribute(attr.Key, true))
 	assert.False(t, inv.AttributeExists(attr.Key))
+}
+
+func TestInvoice_GetData(t *testing.T) {
+	inv := createInvoice(t)
+	data := inv.GetData()
+	assert.Equal(t, inv.Data, data)
 }

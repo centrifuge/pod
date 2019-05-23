@@ -56,23 +56,30 @@ const (
 	SignaturesTreePrefix = "signatures_tree"
 )
 
-var compactProps = map[string][]byte{
-	CDRootField:         {0, 0, 0, 7},
-	DataRootField:       {0, 0, 0, 5},
-	DocumentTypeField:   {0, 0, 0, 100},
-	SignaturesRootField: {0, 0, 0, 6},
-	SigningRootField:    {0, 0, 0, 10},
-
-	// tree prefixes use the first byte of a 4 byte slice by convention
-	CDTreePrefix:         {1, 0, 0, 0},
-	SigningTreePrefix:    {2, 0, 0, 0},
-	SignaturesTreePrefix: {3, 0, 0, 0},
-	DRTreePrefix:         {4, 0, 0, 0},
-}
-
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
-	return compactProps[key]
+	switch key {
+	case CDRootField:
+		return []byte{0, 0, 0, 7}
+	case DataRootField:
+		return []byte{0, 0, 0, 5}
+	case DocumentTypeField:
+		return []byte{0, 0, 0, 100}
+	case SignaturesRootField:
+		return []byte{0, 0, 0, 6}
+	case SigningRootField:
+		return []byte{0, 0, 0, 10}
+	case CDTreePrefix:
+		return []byte{1, 0, 0, 0}
+	case SigningTreePrefix:
+		return []byte{2, 0, 0, 0}
+	case SignaturesTreePrefix:
+		return []byte{3, 0, 0, 0}
+	case DRTreePrefix:
+		return []byte{4, 0, 0, 0}
+	default:
+		return []byte{}
+	}
 }
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
@@ -651,14 +658,21 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 }
 
 // AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttributes(attrs ...Attribute) (*CoreDocument, error) {
+// Note: The prepareNewVersion flags defines if the returned model should be a new version of the document.
+func (cd *CoreDocument) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, documentPrefix []byte, attrs ...Attribute) (*CoreDocument, error) {
 	if len(attrs) < 1 {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("require at least one attribute"))
 	}
 
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+	var ncd *CoreDocument
+	var err error
+	if prepareNewVersion {
+		ncd, err = cd.PrepareNewVersion(documentPrefix, ca, nil)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+		}
+	} else {
+		ncd = cd
 	}
 
 	if ncd.Attributes == nil {
@@ -703,14 +717,20 @@ func (cd *CoreDocument) GetAttributes() (attrs []Attribute) {
 
 // DeleteAttribute deletes a custom attribute from the model.
 // If the attribute is missing, delete returns an error
-func (cd *CoreDocument) DeleteAttribute(key AttrKey) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAttribute(key AttrKey, prepareNewVersion bool, documentPrefix []byte) (*CoreDocument, error) {
 	if _, ok := cd.Attributes[key]; !ok {
 		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("missing attribute: %v", key))
 	}
 
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+	var ncd *CoreDocument
+	var err error
+	if prepareNewVersion {
+		ncd, err = cd.PrepareNewVersion(documentPrefix, CollaboratorsAccess{}, nil)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+		}
+	} else {
+		ncd = cd
 	}
 
 	delete(ncd.Attributes, key)

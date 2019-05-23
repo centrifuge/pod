@@ -457,7 +457,7 @@ func (i service) ValidateSignature(did id.DID, pubKey []byte, signature []byte, 
 	}
 
 	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveSecp256K1) {
-		return errors.New("error when validating signature")
+		return ErrSignature
 	}
 
 	return nil

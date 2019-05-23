@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
@@ -108,4 +109,47 @@ func SortByte32Slice(arr [][32]byte) [][32]byte {
 	ba := BytesArray(arr)
 	sort.Sort(ba)
 	return ba
+}
+
+// HexBytes is of type bytes with JSON hex string marshaller.
+type HexBytes []byte
+
+// MarshalJSON marshall bytes to hex.
+func (h HexBytes) MarshalJSON() ([]byte, error) {
+	var str string
+	if len(h) > 0 {
+		str = hexutil.Encode(h)
+	}
+
+	str = "\"" + str + "\""
+	return []byte(str), nil
+}
+
+// UnmarshalJSON unmarshals hex string to bytes.
+func (h *HexBytes) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	str = strings.TrimSpace(strings.Trim(str, "\""))
+	if str == "" {
+		*h = HexBytes([]byte{})
+		return nil
+	}
+
+	d, err := hexutil.Decode(str)
+	if err != nil {
+		return err
+	}
+
+	*h = HexBytes(d)
+	return nil
+}
+
+// Bytes returns a copy of the HexBytes.
+func (h HexBytes) Bytes() []byte {
+	if len(h) < 1 {
+		return nil
+	}
+
+	d := make([]byte, len(h), len(h))
+	copy(d, h[:])
+	return d
 }

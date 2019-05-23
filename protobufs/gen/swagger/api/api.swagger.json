@@ -1,0 +1,58 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Centrifuge OS Node API",
+        "title": "Centrifuge OS Node API",
+        "contact": {
+            "name": "Centrifuge",
+            "url": "https://github.com/centrifuge/go-centrifuge",
+            "email": "hello@centrifuge.io"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "0.0.5"
+    },
+    "host": "localhost:8082",
+    "basePath": "/",
+    "paths": {
+        "/ping": {
+            "get": {
+                "description": "returns node version and network",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check for Node",
+                "operationId": "ping",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/health.Pong"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "health.Pong": {
+            "type": "object",
+            "properties": {
+                "network": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

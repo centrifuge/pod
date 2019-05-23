@@ -107,6 +107,11 @@ func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderDat
 		return nil, err
 	}
 
+	pd, err := documents.ToClientPaymentDetails(p.PaymentDetails)
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientpurchaseorderpb.PurchaseOrderData{
 		Status:                  p.Status,
 		Number:                  p.Number,
@@ -133,7 +138,7 @@ func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderDat
 		PaymentTerms:            p.PaymentTerms,
 		RecipientOrderId:        p.RecipientOrderID,
 		RequisitionId:           p.RequisitionID,
-		PaymentDetails:          documents.ToClientPaymentDetails(p.PaymentDetails),
+		PaymentDetails:          pd,
 		Attachments:             documents.ToClientAttachments(p.Attachments),
 		LineItems:               toClientLineItems(p.LineItems),
 		Attributes:              attr,
@@ -542,8 +547,8 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 }
 
 // AddAttributes adds attributes to the PurchaseOrder model.
-func (p *PurchaseOrder) AddAttributes(attrs ...documents.Attribute) error {
-	ncd, err := p.CoreDocument.AddAttributes(attrs...)
+func (p *PurchaseOrder) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	ncd, err := p.CoreDocument.AddAttributes(ca, prepareNewVersion, compactPrefix(), attrs...)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}
@@ -553,8 +558,8 @@ func (p *PurchaseOrder) AddAttributes(attrs ...documents.Attribute) error {
 }
 
 // DeleteAttribute deletes the attribute from the model.
-func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey) error {
-	ncd, err := p.CoreDocument.DeleteAttribute(key)
+func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
+	ncd, err := p.CoreDocument.DeleteAttribute(key, prepareNewVersion, compactPrefix())
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDAttribute, err)
 	}

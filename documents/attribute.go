@@ -40,20 +40,14 @@ const (
 	AttrSigned AttributeType = "signed"
 )
 
-// allowedAttrTypes holds a map of allowed attribute types and their reflect.Type
-var allowedAttrTypes = map[AttributeType]struct{}{
-	AttrInt256:    {},
-	AttrDecimal:   {},
-	AttrString:    {},
-	AttrBytes:     {},
-	AttrTimestamp: {},
-	AttrSigned:    {},
-}
-
 // isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
 func isAttrTypeAllowed(attr AttributeType) bool {
-	_, ok := allowedAttrTypes[attr]
-	return ok
+	switch attr {
+	case AttrInt256, AttrDecimal, AttrString, AttrBytes, AttrTimestamp, AttrSigned:
+		return true
+	default:
+		return false
+	}
 }
 
 // AttrKey represents a sha256 hash of a attribute label given by a user.
@@ -238,6 +232,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 	}, nil
 }
 
+// attributeSignaturePayload creates the payload for signing an attribute
 func attributeSignaturePayload(did, id, version, value []byte) []byte {
 	var signPayload []byte
 	signPayload = append(signPayload, did...)

@@ -92,3 +92,10 @@ func Context(ctx context.Context, cs config.Service) (context.Context, error) {
 	}
 	return ctxHeader, nil
 }
+
+// Copy creates a copy of the given context with relevant values
+func Copy(ctx context.Context) context.Context {
+	nctx := context.WithValue(context.Background(), self, ctx.Value(self))
+	nctx = context.WithValue(nctx, job, ctx.Value(job))
+	return nctx
+}
