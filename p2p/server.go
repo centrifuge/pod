@@ -161,6 +161,22 @@ func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 	}
 	cancel()
 
+	// Now, look for others who have announced
+	log.Info("Searching for other peers ...")
+	tctx, cancel = context.WithTimeout(ctx, time.Second*10)
+	peers, err := s.dht.FindProviders(tctx, cidPref)
+	if err != nil {
+		log.Error(err)
+	}
+	cancel()
+	log.Infof("Found %d peers!\n", len(peers))
+
+	// Now add them to the PeerStore
+	for _, pe := range peers {
+		log.Infof("Peer %s %s\n", pe.ID.Pretty(), pe.Addrs)
+		s.host.Peerstore().AddAddrs(pe.ID, pe.Addrs, pstore.ProviderAddrTTL)
+	}
+
 	log.Info("Bootstrapping and discovery complete!")
 	return nil
 }
