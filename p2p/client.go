@@ -190,32 +190,32 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 		return "", err
 	}
 
-	//if !s.disablePeerStore {
-	//	nc, err := s.config.GetConfig()
-	//	if err != nil {
-	//		return peerID, err
-	//	}
-	//	c, canc := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
-	//	defer canc()
-	//	pinfo, err := s.dht.FindPeer(c, peerID)
-	//	if err != nil {
-	//		return peerID, err
-	//	}
-	//
-	//	// We have a peer ID and a targetAddr so we add it to the peer store
-	//	// so LibP2P knows how to contact it (this call might be redundant)
-	//	s.host.Peerstore().AddAddrs(peerID, pinfo.Addrs, pstore.PermanentAddrTTL)
-	//}
-
 	if !s.disablePeerStore {
-		// Decapsulate the /ipfs/<peerID> part from the target
-		// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-		targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", pid))
-		targetAddr := ipfsAddr.Decapsulate(targetPeerAddr)
+		nc, err := s.config.GetConfig()
+		if err != nil {
+			return peerID, err
+		}
+		c, canc := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+		defer canc()
+		pinfo, err := s.dht.FindPeer(c, peerID)
+		if err != nil {
+			return peerID, err
+		}
+
 		// We have a peer ID and a targetAddr so we add it to the peer store
-		// so LibP2P knows how to contact it
-		s.host.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
+		// so LibP2P knows how to contact it (this call might be redundant)
+		s.host.Peerstore().AddAddrs(peerID, pinfo.Addrs, pstore.PermanentAddrTTL)
 	}
+
+	//if !s.disablePeerStore {
+	//	// Decapsulate the /ipfs/<peerID> part from the target
+	//	// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
+	//	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", pid))
+	//	targetAddr := ipfsAddr.Decapsulate(targetPeerAddr)
+	//	// We have a peer ID and a targetAddr so we add it to the peer store
+	//	// so LibP2P knows how to contact it
+	//	s.host.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
+	//}
 
 	return peerID, nil
 }
