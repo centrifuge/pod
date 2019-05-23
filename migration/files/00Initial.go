@@ -1,7 +1,5 @@
 package files
 
-// Any changes to this file requires to generate again go data bindings as shown in Makefile
-
 import (
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
