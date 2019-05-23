@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewMigrationRepository(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	// Succeeds on opening a new DB
 	repo, err := NewMigrationRepository(targetDir)
@@ -26,10 +26,10 @@ func TestNewMigrationRepository(t *testing.T) {
 }
 
 func TestMigrationRepo_Exists_DBClosed(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
@@ -40,10 +40,10 @@ func TestMigrationRepo_Exists_DBClosed(t *testing.T) {
 }
 
 func TestMigrationRepo_CreateMigration(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
