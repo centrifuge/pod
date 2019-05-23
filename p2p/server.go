@@ -10,22 +10,22 @@ import (
 	crypto2 "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
-	ipfsaddr "github.com/ipfs/go-ipfs-addr"
+	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
-	crypto "github.com/libp2p/go-libp2p-crypto"
-	host "github.com/libp2p/go-libp2p-host"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
-	pstoremem "github.com/libp2p/go-libp2p-peerstore/pstoremem"
-	protocol "github.com/libp2p/go-libp2p-protocol"
+	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
+	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 )
@@ -94,6 +94,17 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 
 	// Start DHT and properly ignore errors :)
 	_ = runDHT(ctx, s.host, nc.GetBootstrapPeers())
+
+	if nc.IsDebugLogEnabled() {
+		go func() {
+			for {
+				num := s.host.Peerstore().Peers()
+				log.Debugf("for host %s the peers in the peerstore are", s.host.ID(), num)
+				time.Sleep(2 * time.Second)
+			}
+		}()
+	}
+
 	<-ctx.Done()
 
 }
@@ -137,10 +148,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstore.NewPeerstore(
-		pstoremem.NewKeyBook(),
-		pstoremem.NewAddrBook(),
-		pstoremem.NewPeerMetadata())
+	ps := pstoremem.NewPeerstore()
 
 	// Add the keys to the peerstore
 	// for this peer ID.
@@ -175,6 +183,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	opts := []libp2p.Option{
+		libp2p.Peerstore(ps),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
 		libp2p.Identity(priv),
 		libp2p.DefaultMuxers,
@@ -196,7 +205,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 }
 
 func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
-	// Run it as a Bootstrap Node
+	dht.KValue = 1
 	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
@@ -219,32 +228,6 @@ func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
 		log.Infof("Error: %s\n", err.Error())
 	}
 	cancel()
-
-	// Now, look for others who have announced
-	log.Info("Searching for other peers ...")
-	tctx, cancel = context.WithTimeout(ctx, time.Second*10)
-	peers, err := dhtClient.FindProviders(tctx, cidPref)
-	if err != nil {
-		log.Error(err)
-	}
-	cancel()
-	log.Infof("Found %d peers!\n", len(peers))
-
-	// Now connect to them, so they are added to the PeerStore
-	for _, pe := range peers {
-		log.Infof("Peer %s %s\n", pe.ID.Pretty(), pe.Addrs)
-
-		if pe.ID == h.ID() {
-			// No sense connecting to ourselves
-			continue
-		}
-
-		tctx, cancel := context.WithTimeout(ctx, time.Second*5)
-		if err := h.Connect(tctx, pe); err != nil {
-			log.Info("Failed to connect to peer: ", err)
-		}
-		cancel()
-	}
 
 	log.Info("Bootstrapping and discovery complete!")
 	return nil
