@@ -137,7 +137,7 @@ func (s *peer) InitProtocolForDID(DID *identity.DID) {
 }
 
 func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
-	//dht.KValue = 1
+	dht.KValue = 1
 	s.dht = dht.NewDHT(ctx, s.host, ds.NewMapDatastore())
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 

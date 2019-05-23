@@ -114,7 +114,6 @@ func (r *hostManager) startHost(name string) {
 }
 
 func (r *hostManager) init(createConfig bool) error {
-	//dht.KValue = 2
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
 
 	// start listening to webhooks
