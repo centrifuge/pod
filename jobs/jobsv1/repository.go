@@ -25,7 +25,6 @@ func getKey(did identity.DID, id jobs.JobID) ([]byte, error) {
 	if jobs.JobIDEqual(jobs.NilJobID(), id) {
 		return nil, errors.New("job ID is not valid")
 	}
-
 	return append(did[:], id.Bytes()...), nil
 }
 
