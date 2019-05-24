@@ -233,7 +233,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	ncd.Document.Attributes = p2pAttrs

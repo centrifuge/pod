@@ -307,14 +307,17 @@ func TestSortByte32Slice(t *testing.T) {
 
 func TestHexBytes_MarshalJSON(t *testing.T) {
 	tests := []struct {
-		d []byte
+		d   []byte
+		err bool
 	}{
 		// nil
-		{},
-
-		// empty
 		{
-			d: []byte{},
+			err: true,
+		},
+
+		{
+			d:   []byte{},
+			err: true,
 		},
 
 		{
@@ -331,6 +334,11 @@ func TestHexBytes_MarshalJSON(t *testing.T) {
 		th := testHex{Hex: h}
 
 		d, err := json.Marshal(th)
+		if c.err {
+			assert.Error(t, err)
+			continue
+		}
+
 		assert.NoError(t, err)
 
 		nth := new(testHex)

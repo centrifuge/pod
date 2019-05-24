@@ -627,3 +627,72 @@ func TestInvoice_loadData(t *testing.T) {
 	assert.Equal(t, hexutil.Encode(data.Attachments[0].Checksum), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf3")
 	assert.Equal(t, hexutil.Encode(data.Attachments[0].Data), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
 }
+
+func TestInvoice_unpackFromCreatePayload(t *testing.T) {
+	payload := documents.CreatePayload{}
+	inv := new(Invoice)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := inv.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = inv.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = inv.unpackFromCreatePayload(did, payload)
+	assert.NoError(t, err)
+}
+
+func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	old := createInvoice(t)
+	inv := new(Invoice)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := inv.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = inv.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = inv.unpackFromUpdatePayload(old, payload)
+	assert.NoError(t, err)
+}

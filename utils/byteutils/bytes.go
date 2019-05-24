@@ -2,14 +2,17 @@ package byteutils
 
 import (
 	"bytes"
-	"errors"
 	"math/big"
 	"sort"
 	"strings"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+// ErrEmptyHexBytes is a sentinel error when hex bytes are empty
+const ErrEmptyHexBytes = errors.Error("empty bytes")
 
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
 func AddZeroBytesSuffix(data []byte, required int) []byte {
@@ -117,11 +120,11 @@ type HexBytes []byte
 // MarshalJSON marshall bytes to hex.
 func (h HexBytes) MarshalJSON() ([]byte, error) {
 	var str string
-	if len(h) > 0 {
-		str = hexutil.Encode(h)
+	if len(h) < 1 {
+		return nil, ErrEmptyHexBytes
 	}
 
-	str = "\"" + str + "\""
+	str = "\"" + hexutil.Encode(h) + "\""
 	return []byte(str), nil
 }
 
