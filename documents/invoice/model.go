@@ -802,9 +802,14 @@ func (i *Invoice) GetData() interface{} {
 	return i.Data
 }
 
+// loadData unmarshals json blob to Data.
+func (i *Invoice) loadData(data []byte) error {
+	return json.Unmarshal(data, &i.Data)
+}
+
 // unpackFromCreatePayload unpacks the invoice data from the Payload.
 func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := json.Unmarshal(payload.Data, &i.Data); err != nil {
+	if err := i.loadData(payload.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
@@ -820,7 +825,7 @@ func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.Cr
 
 // unpackFromUpdatePayload unpacks the update payload and prepares a new version.
 func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.UpdatePayload) error {
-	if err := json.Unmarshal(payload.Data, &i.Data); err != nil {
+	if err := i.loadData(payload.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 

@@ -355,7 +355,7 @@ func TestHexBytes_UnmarshalJSON(t *testing.T) {
 		{str: "{}"},
 
 		// empty
-		{str: `{"hex": ""}`},
+		{str: `{"hex": ""}`, err: true},
 
 		// invalid
 		{str: `{"hex": "12345dswr"}`, err: true},

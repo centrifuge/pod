@@ -129,11 +129,6 @@ func (h HexBytes) MarshalJSON() ([]byte, error) {
 func (h *HexBytes) UnmarshalJSON(data []byte) error {
 	str := string(data)
 	str = strings.TrimSpace(strings.Trim(str, "\""))
-	if str == "" {
-		*h = HexBytes([]byte{})
-		return nil
-	}
-
 	d, err := hexutil.Decode(str)
 	if err != nil {
 		return err

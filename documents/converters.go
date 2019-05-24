@@ -19,7 +19,7 @@ import (
 type BinaryAttachment struct {
 	Name     string             `json:"name"`
 	FileType string             `json:"file_type"` // mime type of attached file
-	Size     uint64             `json:"size"`      // in bytes
+	Size     int                `json:"size"`      // in bytes
 	Data     byteutils.HexBytes `json:"data"`
 	Checksum byteutils.HexBytes `json:"checksum"` // the md5 checksum of the original file for easier verification
 }
@@ -63,7 +63,7 @@ func ToClientAttachments(atts []*BinaryAttachment) []*documentpb.BinaryAttachmen
 		catts = append(catts, &documentpb.BinaryAttachment{
 			Name:     att.Name,
 			FileType: att.FileType,
-			Size:     att.Size,
+			Size:     uint64(att.Size),
 			Data:     data,
 			Checksum: checksum,
 		})
@@ -79,7 +79,7 @@ func ToProtocolAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachmen
 		patts = append(patts, &commonpb.BinaryAttachment{
 			Name:     att.Name,
 			FileType: att.FileType,
-			Size:     att.Size,
+			Size:     uint64(att.Size),
 			Data:     att.Data,
 			Checksum: att.Checksum,
 		})
@@ -111,7 +111,7 @@ func FromClientAttachments(catts []*documentpb.BinaryAttachment) ([]*BinaryAttac
 		atts = append(atts, &BinaryAttachment{
 			Name:     att.Name,
 			FileType: att.FileType,
-			Size:     att.Size,
+			Size:     int(att.Size),
 			Data:     data,
 			Checksum: checksum,
 		})
@@ -127,7 +127,7 @@ func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttach
 		atts = append(atts, &BinaryAttachment{
 			Name:     att.Name,
 			FileType: att.FileType,
-			Size:     att.Size,
+			Size:     int(att.Size),
 			Data:     att.Data,
 			Checksum: att.Checksum,
 		})
