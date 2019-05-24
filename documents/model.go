@@ -150,3 +150,17 @@ type TokenRegistry interface {
 	// CurrentIndexOfToken get the current index of the token
 	CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error)
 }
+
+// CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.
+type CreatePayload struct {
+	Scheme        string
+	Collaborators CollaboratorsAccess
+	Attributes    map[AttrKey]Attribute
+	Data          []byte
+}
+
+// UpdatePayload holds the scheme, CollaboratorsAccess, Attributes, Data and current document version.
+type UpdatePayload struct {
+	CreatePayload
+	CurrentVersion []byte
+}
