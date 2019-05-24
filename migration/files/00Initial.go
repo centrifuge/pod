@@ -1,4 +1,4 @@
-package files
+package migrationfiles
 
 import (
 	logging "github.com/ipfs/go-log"
