@@ -264,14 +264,14 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 		return nil, documents.ErrDocumentConfigAccountID
 	}
 
-	old, err := s.GetCurrentVersion(ctx, payload.CurrentVersion)
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
 	if err != nil {
 		return nil, err
 	}
 
 	oldInv, ok := old.(*Invoice)
 	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.CurrentVersion)))
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.DocumentID)))
 	}
 
 	inv := new(Invoice)

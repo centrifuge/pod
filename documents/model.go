@@ -159,8 +159,8 @@ type CreatePayload struct {
 	Data          []byte
 }
 
-// UpdatePayload holds the scheme, CollaboratorsAccess, Attributes, Data and current document version.
+// UpdatePayload holds the scheme, CollaboratorsAccess, Attributes, Data and document identifier.
 type UpdatePayload struct {
 	CreatePayload
-	CurrentVersion []byte
+	DocumentID []byte
 }
