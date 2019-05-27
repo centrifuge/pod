@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"encoding/json"
 	"reflect"
 	"time"
 
@@ -19,7 +20,12 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 )
 
-const prefix string = "invoice"
+const (
+	prefix string = "invoice"
+
+	// ErrInvoiceInvalidData sentinel error when data unmarshal is failed.
+	ErrInvoiceInvalidData = errors.Error("invalid invoice data")
+)
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 1, 0, 0} }
@@ -794,4 +800,40 @@ func (i *Invoice) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool)
 // GetData returns Invoice Data.
 func (i *Invoice) GetData() interface{} {
 	return i.Data
+}
+
+// loadData unmarshals json blob to Data.
+func (i *Invoice) loadData(data []byte) error {
+	return json.Unmarshal(data, &i.Data)
+}
+
+// unpackFromCreatePayload unpacks the invoice data from the Payload.
+func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
+	if err := i.loadData(payload.Data); err != nil {
+		return errors.NewTypedError(ErrInvoiceInvalidData, err)
+	}
+
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDCreate, err)
+	}
+
+	i.CoreDocument = cd
+	return nil
+}
+
+// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
+func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.UpdatePayload) error {
+	if err := i.loadData(payload.Data); err != nil {
+		return errors.NewTypedError(ErrInvoiceInvalidData, err)
+	}
+
+	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	i.CoreDocument = ncd
+	return nil
 }
