@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -43,11 +42,11 @@ func TestNewMigrationRunner(t *testing.T) {
 }
 
 func TestRunner_RunMigrations_AlreadyOpenError(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
 	// Cleanup after test
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	_, err := leveldb.OpenFile(targetDir, nil)
 	assert.NoError(t, err)
@@ -58,11 +57,11 @@ func TestRunner_RunMigrations_AlreadyOpenError(t *testing.T) {
 }
 
 func TestBackupDB(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
 	// Cleanup after test
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
@@ -84,11 +83,11 @@ func TestBackupDB(t *testing.T) {
 }
 
 func TestRevertToBackupDB(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
 	// Cleanup after test
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
@@ -123,16 +122,16 @@ func TestRevertToBackupDB(t *testing.T) {
 }
 
 func TestRunMigrations_singleSuccess(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
 	// Cleanup after test
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	// Create test leveldb with some random data with non hex bytes as keys
 	db, err := leveldb.OpenFile(targetDir, nil)
 	assert.NoError(t, err)
-	sampleKey := utils.RandomSlice(52)
+	sampleKey := migrationutils.RandomSlice(52)
 	data, err := json.Marshal(&content{"john"})
 	assert.NoError(t, err)
 	err = db.Put(sampleKey, data, nil)
@@ -183,16 +182,16 @@ func TestRunMigrations_singleSuccess(t *testing.T) {
 }
 
 func TestRunner_RunMigrations_Failure(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
+	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
 	targetDir := fmt.Sprintf("%s.leveldb", prefix)
 
 	// Cleanup after test
-	defer cleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(prefix)
 
 	// Create test leveldb with some random data with non hex bytes as keys
 	db, err := leveldb.OpenFile(targetDir, nil)
 	assert.NoError(t, err)
-	sampleKey := utils.RandomSlice(52)
+	sampleKey := migrationutils.RandomSlice(52)
 	data, err := json.Marshal(&content{"john"})
 	assert.NoError(t, err)
 	err = db.Put(sampleKey, data, nil)
@@ -217,17 +216,4 @@ func TestRunner_RunMigrations_Failure(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, has)
 	assert.NoError(t, db.Close())
-}
-
-// util functions
-func cleanupDBFiles(prefix string) {
-	files, err := filepath.Glob(prefix + "*")
-	if err != nil {
-		panic(err)
-	}
-	for _, f := range files {
-		if err := os.RemoveAll(f); err != nil {
-			panic(err)
-		}
-	}
 }
