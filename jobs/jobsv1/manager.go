@@ -79,7 +79,8 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			return jobs.NilJobID(), nil, err
 		}
 	}
-	done = make(chan bool)
+	// set capacity to one so that any late listener won't miss updates.
+	done = make(chan bool, 1)
 	go func(ctx context.Context) {
 		err := make(chan error)
 		go work(accountID, job.ID, s, err)
@@ -123,9 +124,15 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			mJob = tempJob
 		}
 
-		done <- true
+		// non blocking send
+		select {
+		case done <- true:
+		default:
+			// must not happen
+			log.Error("job done channel capacity breach")
+		}
 
-		if mJob != nil {
+		if mJob != nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
 			ts, err1 := utils.ToTimestamp(time.Now().UTC())
 			if err1 != nil {
 				log.Error(err1)
@@ -142,7 +149,10 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 				notificationMsg.Message = mJob.Logs[len(mJob.Logs)-1].Message
 			}
 			// Send Job notification webhook
-			go s.notifier.Send(ctx, notificationMsg)
+			_, err1 = s.notifier.Send(ctx, notificationMsg)
+			if err1 != nil {
+				log.Error(err1)
+			}
 		}
 
 	}(ctx)

@@ -26,6 +26,11 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		return nil, err
 	}
 
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 
@@ -38,7 +43,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		if err != nil {
 			return nil, err
 		}
-		return h.SendAnchoredDocument(localCtx, in, receiverID)
+		return h.SendAnchoredDocument(localCtx, in, selfDID)
 	}
 
 	err = s.idService.Exists(ctx, receiverID)
@@ -94,6 +99,11 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		return nil, err
 	}
 
+	sender, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 
@@ -106,7 +116,8 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		if err != nil {
 			return nil, err
 		}
-		return h.GetDocument(localCtx, in, requesterID)
+
+		return h.GetDocument(localCtx, in, sender)
 	}
 
 	err = s.idService.Exists(ctx, requesterID)

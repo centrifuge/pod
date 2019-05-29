@@ -142,7 +142,7 @@ func (s service) Create(ctx context.Context, relationship documents.Model) (docu
 	}
 
 	jobID := contextutil.Job(ctx)
-	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, relationship.CurrentVersion())
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, relationship.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -168,7 +168,7 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 	}
 
 	jobID := contextutil.Job(ctx)
-	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, updated.CurrentVersion())
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, updated.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}

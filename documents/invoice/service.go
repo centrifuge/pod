@@ -132,7 +132,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 	}
 
 	jobID := contextutil.Job(ctx)
-	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, inv.CurrentVersion())
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, inv.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -157,7 +157,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 	}
 
 	jobID := contextutil.Job(ctx)
-	jobID, done, err := documents.CreateAnchorJob(s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -221,4 +221,74 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	return inv, nil
+}
+
+// CreateModel creates invoice from the payload, validates, persists, and returns the invoice.
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, error) {
+	if payload.Data == nil {
+		return nil, documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigAccountID
+	}
+
+	inv := new(Invoice)
+	if err := inv.unpackFromCreatePayload(did, payload); err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// validate invoice
+	err = CreateValidator().Validate(nil, inv)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(did[:], inv.CurrentVersion(), inv)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+	return inv, err
+}
+
+// UpdateModel updates the migrates the current invoice to next version with data from the update payload
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	if payload.Data == nil {
+		return nil, documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, documents.ErrDocumentConfigAccountID
+	}
+
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
+	if err != nil {
+		return nil, err
+	}
+
+	oldInv, ok := old.(*Invoice)
+	if !ok {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.DocumentID)))
+	}
+
+	inv := new(Invoice)
+	err = inv.unpackFromUpdatePayload(oldInv, payload)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = UpdateValidator(s.anchorRepo).Validate(old, inv)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = s.repo.Create(did[:], inv.CurrentVersion(), inv)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	return inv, err
 }

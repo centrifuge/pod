@@ -44,11 +44,15 @@ let getSwaggerFiles = function(dir, filelist) {
 
 // Append auth header function
 let addAuthHeader = function(obj) {
-  if (!obj.hasOwnProperty("parameters")) {
-    obj.parameters = []
-  }
+    if (obj.hasOwnProperty("operationId") && obj.operationId === "ping") {
+        return
+    }
 
-  obj.parameters.push(authHeader);
+    if (!obj.hasOwnProperty("parameters")) {
+        obj.parameters = []
+    }
+
+    obj.parameters.push(authHeader);
 };
 
 let files = getSwaggerFiles(swaggerFilesPath);

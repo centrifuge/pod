@@ -56,23 +56,30 @@ const (
 	SignaturesTreePrefix = "signatures_tree"
 )
 
-var compactProps = map[string][]byte{
-	CDRootField:         {0, 0, 0, 7},
-	DataRootField:       {0, 0, 0, 5},
-	DocumentTypeField:   {0, 0, 0, 100},
-	SignaturesRootField: {0, 0, 0, 6},
-	SigningRootField:    {0, 0, 0, 10},
-
-	// tree prefixes use the first byte of a 4 byte slice by convention
-	CDTreePrefix:         {1, 0, 0, 0},
-	SigningTreePrefix:    {2, 0, 0, 0},
-	SignaturesTreePrefix: {3, 0, 0, 0},
-	DRTreePrefix:         {4, 0, 0, 0},
-}
-
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
-	return compactProps[key]
+	switch key {
+	case CDRootField:
+		return []byte{0, 0, 0, 7}
+	case DataRootField:
+		return []byte{0, 0, 0, 5}
+	case DocumentTypeField:
+		return []byte{0, 0, 0, 100}
+	case SignaturesRootField:
+		return []byte{0, 0, 0, 6}
+	case SigningRootField:
+		return []byte{0, 0, 0, 10}
+	case CDTreePrefix:
+		return []byte{1, 0, 0, 0}
+	case SigningTreePrefix:
+		return []byte{2, 0, 0, 0}
+	case SignaturesTreePrefix:
+		return []byte{3, 0, 0, 0}
+	case DRTreePrefix:
+		return []byte{4, 0, 0, 0}
+	default:
+		return []byte{}
+	}
 }
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
@@ -121,10 +128,13 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
 	}
 
+	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
+	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
 	cd.Attributes = attributes
-	return cd, nil
+	cd.Document.Attributes, err = toProtocolAttributes(attributes)
+	return cd, err
 }
 
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
@@ -223,7 +233,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	ncd.Document.Attributes = p2pAttrs
