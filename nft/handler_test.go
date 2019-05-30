@@ -34,6 +34,12 @@ func (m *mockInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Cont
 	return resp, args.Error(1)
 }
 
+func (m *mockInvoiceUnpaid) TransferFrom(ctx context.Context,registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+	args := m.Called(ctx)
+	resp, _ := args.Get(0).(*Response)
+	return resp, nil, args.Error(1)
+}
+
 func TestNFTMint_success(t *testing.T) {
 	nftMintRequest := getTestSetupData()
 	mockService := &mockInvoiceUnpaid{}
