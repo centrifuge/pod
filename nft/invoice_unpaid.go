@@ -85,6 +85,8 @@ type InvoiceUnpaid interface {
 	MintNFT(ctx context.Context, request MintNFTRequest) (*Response, chan bool, error)
 	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
 	GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error)
+	// TransferFrom transfers an NFT to another address
+	TransferFrom(ctx context.Context,registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error)
 }
 
 // Response holds tokenID and transaction ID.

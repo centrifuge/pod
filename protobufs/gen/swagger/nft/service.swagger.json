@@ -78,7 +78,7 @@
     },
     "/token/transfer/{token_id}": {
       "post": {
-        "description": "Transfer an NFT owned by the identity",
+        "description": "Transfer an NFT owned by the identity contract",
         "operationId": "TokenTransfer",
         "responses": {
           "200": {

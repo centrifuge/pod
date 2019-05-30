@@ -212,7 +212,7 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*Response, c
 }
 
 // TransferFrom transfers an NFT to another address
-func (s *service) TransferFrom(ctx context.Context,registry common.Address, from common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+func (s *service) TransferFrom(ctx context.Context,registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -228,7 +228,7 @@ func (s *service) TransferFrom(ctx context.Context,registry common.Address, from
 		return nil, nil, err
 	}
 	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Transfer From NFT",
-		s.transferFromJob(ctx,registry,from,to, tokenID))
+		s.transferFromJob(ctx,registry,did.ToAddress(),to, tokenID))
 	if err != nil {
 		return nil, nil, err
 	}
