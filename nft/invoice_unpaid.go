@@ -82,13 +82,13 @@ type MintNFTRequest struct {
 // InvoiceUnpaid handles transactions related to minting of NFTs for unpaid invoices
 type InvoiceUnpaid interface {
 	// MintNFT mints an NFT
-	MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error)
+	MintNFT(ctx context.Context, request MintNFTRequest) (*Response, chan bool, error)
 	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
 	GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error)
 }
 
-// MintNFTResponse holds tokenID and transaction ID.
-type MintNFTResponse struct {
+// Response holds tokenID and transaction ID.
+type Response struct {
 	TokenID string
 	JobID   string
 }

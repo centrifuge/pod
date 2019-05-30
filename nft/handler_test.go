@@ -22,9 +22,9 @@ type mockInvoiceUnpaid struct {
 	mock.Mock
 }
 
-func (m *mockInvoiceUnpaid) MintNFT(ctx context.Context, request MintNFTRequest) (*MintNFTResponse, chan bool, error) {
+func (m *mockInvoiceUnpaid) MintNFT(ctx context.Context, request MintNFTRequest) (*Response, chan bool, error) {
 	args := m.Called(ctx, request)
-	resp, _ := args.Get(0).(*MintNFTResponse)
+	resp, _ := args.Get(0).(*Response)
 	return resp, nil, args.Error(1)
 }
 
@@ -42,7 +42,7 @@ func TestNFTMint_success(t *testing.T) {
 	assert.NoError(t, err)
 
 	tokID := big.NewInt(1)
-	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
+	nftResponse := &Response{TokenID: tokID.String()}
 	req := MintNFTRequest{
 		DocumentID:      docID,
 		RegistryAddress: common.HexToAddress(nftMintRequest.RegistryAddress),
@@ -60,7 +60,7 @@ func TestPaymentObligationNFTMint_success(t *testing.T) {
 	mockService := &mockInvoiceUnpaid{}
 	mockConfigStore := mockmockConfigStore()
 	tokID := big.NewInt(1)
-	nftResponse := &MintNFTResponse{TokenID: tokID.String()}
+	nftResponse := &Response{TokenID: tokID.String()}
 	nftReq := &nftpb.NFTMintInvoiceUnpaidRequest{
 		Identifier:     "0x1234567890",
 		DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",

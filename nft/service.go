@@ -161,7 +161,7 @@ func (s *service) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]st
 }
 
 // MintNFT mints an NFT
-func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
+func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*Response, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -205,13 +205,39 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResp
 		return nil, nil, err
 	}
 
-	return &MintNFTResponse{
+	return &Response{
 		JobID:   jobID.String(),
 		TokenID: tokenID.String(),
 	}, done, nil
 }
 
+// TransferFrom transfers an NFT to another address
+func (s *service) TransferFrom(ctx context.Context,registry common.Address, from common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 
+	didBytes, err := tc.GetIdentityID()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	did, err := identity.NewDIDFromBytes(didBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Transfer From NFT",
+		s.transferFromJob(ctx,registry,from,to, tokenID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &Response{
+		JobID:   jobID.String(),
+		TokenID: tokenID.String(),
+	}, done, nil
+}
 
 func (s *service) minterJob(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
@@ -283,7 +309,6 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		return
 	}
 }
-
 
 func (s *service) transferFromJob(ctx context.Context,registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
