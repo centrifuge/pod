@@ -47,7 +47,8 @@ message ResponseHeader {
 
 message TokenTransferRequest {
   string token_id = 1;
-  string to = 2;
+  string registry_address = 2;
+  string to = 3;
 }
 
 message TokenTransferResponse {

@@ -200,7 +200,7 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResp
 		return nil, nil, err
 	}
 	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
-		s.minter(ctx, tokenID, model, req))
+		s.minterJob(ctx, tokenID, model, req))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -211,7 +211,9 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResp
 	}, done, nil
 }
 
-func (s *service) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+
+
+func (s *service) minterJob(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
@@ -276,6 +278,44 @@ func (s *service) minter(ctx context.Context, tokenID TokenID, model documents.M
 		}
 
 		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), txID)
+
+		errOut <- nil
+		return
+	}
+}
+
+
+func (s *service) transferFromJob(ctx context.Context,registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+
+		txID, done, err := s.identityService.Execute(ctx, registry, InvoiceUnpaidContractABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
+		if err != nil {
+			errOut <- err
+			return
+		}
+		log.Infof("sent off ethTX to transferFrom [registry: %s tokenID: %s, from: %s, to: %s].",
+			tokenID.String(), registry.String(), from.String(), to.String())
+
+
+		isDone := <-done
+		if !isDone {
+			// some problem occurred in a child task
+			errOut <- errors.New("failed to transfer token with transaction:  %s", txID)
+			return
+		}
+
+		// Check if tokenID is new owner is to address
+		owner, err := s.OwnerOf(registry, tokenID[:])
+		if err != nil {
+			errOut <- errors.New("error while checking new NFT owner %v", err)
+			return
+		}
+		if owner.Hex() != to.Hex() {
+			errOut <- errors.New("new owner for tokenID %s should be %s, instead got %s", tokenID.String(), registry.Hex(), owner.Hex())
+			return
+		}
+
+		log.Infof("token successfully transferred to %s with transaction %s ", from.Hex(), txID)
 
 		errOut <- nil
 		return

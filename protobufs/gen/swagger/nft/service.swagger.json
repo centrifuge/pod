@@ -183,6 +183,9 @@
         "token_id": {
           "type": "string"
         },
+        "registry_address": {
+          "type": "string"
+        },
         "to": {
           "type": "string"
         }
