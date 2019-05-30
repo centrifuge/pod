@@ -38,8 +38,8 @@ type Config interface {
 	GetLowEntropyNFTTokenEnabled() bool
 }
 
-// ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
-type ethInvoiceUnpaid struct {
+// service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
+type service struct {
 	cfg             Config
 	identityService identity.Service
 	ethClient       ethereum.Client
@@ -50,8 +50,8 @@ type ethInvoiceUnpaid struct {
 	blockHeightFunc func() (height uint64, err error)
 }
 
-// newEthInvoiceUnpaid creates InvoiceUnpaid given the parameters
-func newEthInvoiceUnpaid(
+// newService creates InvoiceUnpaid given the parameters
+func newService(
 	cfg Config,
 	identityService identity.Service,
 	ethClient ethereum.Client,
@@ -59,8 +59,8 @@ func newEthInvoiceUnpaid(
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
 	jobsMan jobs.Manager,
-	blockHeightFunc func() (uint64, error)) *ethInvoiceUnpaid {
-	return &ethInvoiceUnpaid{
+	blockHeightFunc func() (uint64, error)) *service {
+	return &service{
 		cfg:             cfg,
 		identityService: identityService,
 		ethClient:       ethClient,
@@ -72,7 +72,7 @@ func newEthInvoiceUnpaid(
 	}
 }
 
-func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
+func (s *service) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
 	// Compact properties
 	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
 	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
@@ -87,7 +87,7 @@ func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *
 	return docProof
 }
 
-func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
+func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
@@ -137,7 +137,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 }
 
 // GetRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
-func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+func (s *service) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
 	var proofFields []string
 
 	acc, err := contextutil.Account(ctx)
@@ -161,7 +161,7 @@ func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Conte
 }
 
 // MintNFT mints an NFT
-func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
+func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -211,7 +211,7 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	}, done, nil
 }
 
-func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s *service) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
@@ -283,7 +283,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
-func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
+func (s *service) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
 	contract, err := s.bindContract(registry, s.ethClient)
 	if err != nil {
 		return owner, errors.New("failed to bind the registry contract: %v", err)
@@ -296,7 +296,7 @@ func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (own
 }
 
 // CurrentIndexOfToken returns the current index of the token in the given registry
-func (s *ethInvoiceUnpaid) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
+func (s *service) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
 	contract, err := s.bindContract(registry, s.ethClient)
 	if err != nil {
 		return nil, errors.New("failed to bind the registry contract: %v", err)

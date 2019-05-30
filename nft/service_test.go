@@ -202,7 +202,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
-			service := newEthInvoiceUnpaid(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
+			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
 				return &InvoiceUnpaidContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
@@ -226,7 +226,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 }
 
 func TestEthereumInvoiceUnpaid_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
-	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
+	service := newService(nil, nil, nil, nil, nil, nil, nil, nil)
 
 	//missing account in context
 	ctxh := context.Background()
@@ -265,7 +265,7 @@ func TestEthereumInvoiceUnpaid_GetRequiredInvoiceUnpaidProofFields(t *testing.T)
 }
 
 func TestFilterMintProofs(t *testing.T) {
-	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
+	service := newService(nil, nil, nil, nil, nil, nil, nil, nil)
 	indexKey := utils.RandomSlice(52)
 	docProof := &documents.DocumentProof{
 		FieldProofs: []*proofspb.Proof{

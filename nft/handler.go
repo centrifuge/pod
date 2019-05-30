@@ -97,6 +97,13 @@ func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NF
 	return g.MintNFT(ctx, mintReq)
 }
 
+// TokenTransfer will be called to transfer a token owned by the identity contract
+func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTransferRequest) (*nftpb.TokenTransferResponse, error) {
+
+	return nil, nil
+}
+
+
 func validateParameters(request *nftpb.NFTMintRequest) error {
 	if !common.IsHexAddress(request.RegistryAddress) {
 		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")
