@@ -30,10 +30,28 @@ service NFTService {
       description: "Mints an NFT out of an Unpaid Centrifuge Invoice"
     };
   }
+  rpc TokenTransfer(TokenTransferRequest) returns (TokenTransferResponse) {
+    option (google.api.http) = {
+      post: "/token/transfer/{token_id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Transfer an NFT owned by the identity"
+    };
+  }
 }
 
 message ResponseHeader {
   string job_id = 5;
+}
+
+message TokenTransferRequest {
+  string token_id = 1;
+  string to = 2;
+}
+
+message TokenTransferResponse {
+  ResponseHeader header = 1;
 }
 
 message NFTMintInvoiceUnpaidRequest {

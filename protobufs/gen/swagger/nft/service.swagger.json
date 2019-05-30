@@ -75,6 +75,39 @@
           "NFTService"
         ]
       }
+    },
+    "/token/transfer/{token_id}": {
+      "post": {
+        "description": "Transfer an NFT owned by the identity",
+        "operationId": "TokenTransfer",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftTokenTransferResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/nftTokenTransferRequest"
+            }
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -141,6 +174,25 @@
       "properties": {
         "job_id": {
           "type": "string"
+        }
+      }
+    },
+    "nftTokenTransferRequest": {
+      "type": "object",
+      "properties": {
+        "token_id": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      }
+    },
+    "nftTokenTransferResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/nftResponseHeader"
         }
       }
     }
