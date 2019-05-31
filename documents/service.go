@@ -350,7 +350,7 @@ func (s service) getService(model Model) (Service, error) {
 func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error) {
 	srv, err := s.registry.LocateService(payload.Scheme)
 	if err != nil {
-		return nil, jobs.NilJobID(), errors.New("unknown document scheme: %v", payload.Scheme)
+		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
 	}
 
 	return srv.CreateModel(ctx, payload)
@@ -359,7 +359,7 @@ func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Model,
 func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error) {
 	srv, err := s.registry.LocateService(payload.Scheme)
 	if err != nil {
-		return nil, jobs.NilJobID(), errors.New("unknown document scheme: %v", payload.Scheme)
+		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
 	}
 
 	return srv.UpdateModel(ctx, payload)

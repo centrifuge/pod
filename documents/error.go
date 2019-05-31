@@ -29,6 +29,9 @@ const (
 	// ErrPayloadNil must be used when a required payload is nil
 	ErrPayloadNil = errors.Error("no(nil) payload provided")
 
+	// ErrDocumentSchemeUnknown is a sentinel error when the scheme provided is missing in the registry.
+	ErrDocumentSchemeUnknown = errors.Error("unknown document scheme provided")
+
 	// ErrDocumentNotification must be used when a notification about a document could not be delivered
 	ErrDocumentNotification = errors.Error("could not notify of the document")
 
