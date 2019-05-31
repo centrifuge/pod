@@ -60,6 +60,12 @@ type Service interface {
 
 	// Update validates and updates the model and return the updated model
 	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
+
+	// CreateMode creates a new model from the payload and initiates the anchor process.
+	CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error)
+
+	// UpdateModel prepares the next version from the payload and initiates the anchor process.
+	UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error)
 }
 
 // service implements Service
@@ -339,4 +345,22 @@ func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, ch
 
 func (s service) getService(model Model) (Service, error) {
 	return s.registry.LocateService(model.DocumentType())
+}
+
+func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error) {
+	srv, err := s.registry.LocateService(payload.Scheme)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.New("unknown document scheme: %v", payload.Scheme)
+	}
+
+	return srv.CreateModel(ctx, payload)
+}
+
+func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error) {
+	srv, err := s.registry.LocateService(payload.Scheme)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.New("unknown document scheme: %v", payload.Scheme)
+	}
+
+	return srv.UpdateModel(ctx, payload)
 }
