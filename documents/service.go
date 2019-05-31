@@ -61,7 +61,7 @@ type Service interface {
 	// Update validates and updates the model and return the updated model
 	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
 
-	// CreateMode creates a new model from the payload and initiates the anchor process.
+	// CreateModel creates a new model from the payload and initiates the anchor process.
 	CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error)
 
 	// UpdateModel prepares the next version from the payload and initiates the anchor process.
