@@ -14,7 +14,6 @@ import (
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
@@ -27,7 +26,6 @@ import (
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
 	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
-	mh "github.com/multiformats/go-multihash"
 )
 
 var log = logging.Logger("p2p-server")
@@ -137,7 +135,6 @@ func (s *peer) InitProtocolForDID(DID *identity.DID) {
 }
 
 func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
-	dht.KValue = 1
 	s.dht = dht.NewDHT(ctx, s.host, ds.NewMapDatastore())
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
@@ -149,17 +146,11 @@ func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 		}
 	}
 
-	// Using the sha256 of our "topic" as our rendezvous value
-	cidPref, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
-
-	// First, announce ourselves as participating in this topic
-	log.Info("Announcing ourselves...")
-	tctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	if err := s.dht.Provide(tctx, cidPref, true); err != nil {
-		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
-		log.Infof("Error: %s\n", err.Error())
+	err := s.dht.Bootstrap(ctx)
+	if err != nil {
+		log.Errorf("Bootstrap Error: %s", err.Error())
+		return err
 	}
-	cancel()
 
 	log.Info("Bootstrapping and discovery complete!")
 	return nil
