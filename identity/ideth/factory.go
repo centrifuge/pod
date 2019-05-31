@@ -129,7 +129,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 
 	createdDID := id.NewDID(*calcIdentityAddress)
 
-	jobID, done, err := s.jobManager.ExecuteWithinJob(context.Background(), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
+	jobID, done, err := s.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
 	if err != nil {
 		return nil, err
 	}

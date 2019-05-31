@@ -52,7 +52,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	}
 
 	// this is a remote account
-	pid, err := s.getPeerID(receiverID)
+	pid, err := s.getPeerID(ctx, receiverID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	}
 
 	// this is a remote account
-	pid, err := s.getPeerID(requesterID)
+	pid, err := s.getPeerID(ctx, requesterID)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +167,8 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	return r, nil
 }
 
-// OpenClient returns P2PServiceClient to contact the remote peer
-func (s *peer) getPeerID(id identity.DID) (libp2pPeer.ID, error) {
+// getPeerID returns peerID to contact the remote peer
+func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, error) {
 	lastB58Key, err := s.idService.CurrentP2PKey(id)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
@@ -191,13 +191,20 @@ func (s *peer) getPeerID(id identity.DID) (libp2pPeer.ID, error) {
 	}
 
 	if !s.disablePeerStore {
-		// Decapsulate the /ipfs/<peerID> part from the target
-		// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-		targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", pid))
-		targetAddr := ipfsAddr.Decapsulate(targetPeerAddr)
+		nc, err := s.config.GetConfig()
+		if err != nil {
+			return peerID, err
+		}
+		c, canc := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+		defer canc()
+		pinfo, err := s.dht.FindPeer(c, peerID)
+		if err != nil {
+			return peerID, err
+		}
+
 		// We have a peer ID and a targetAddr so we add it to the peer store
-		// so LibP2P knows how to contact it
-		s.host.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
+		// so LibP2P knows how to contact it (this call might be redundant)
+		s.host.Peerstore().AddAddrs(peerID, pinfo.Addrs, pstore.PermanentAddrTTL)
 	}
 
 	return peerID, nil
@@ -234,7 +241,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 			return nil, err
 		}
 
-		receiverPeer, err := s.getPeerID(collaborator)
+		receiverPeer, err := s.getPeerID(ctx, collaborator)
 		if err != nil {
 			return nil, err
 		}

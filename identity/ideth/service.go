@@ -131,7 +131,7 @@ func (i service) AddKey(ctx context.Context, key id.Key) error {
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
 	log.Info("Add key to identity contract %s", did.ToAddress().String())
-	jobID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Check Job for add key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Check Job for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
-	jobID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Check Job for add multi purpose key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Check Job for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevokeKey)
-	jobID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Check Job for revoke key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Check Job for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -259,7 +259,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte,
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	return i.jobManager.ExecuteWithinJob(context.Background(), did, jobID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	return i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
