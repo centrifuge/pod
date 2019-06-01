@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -405,34 +406,38 @@ func TestService_CreateModel(t *testing.T) {
 	srv := service{}
 
 	// nil  model
-	_, err := srv.CreateModel(context.Background(), payload)
+	_, _, err := srv.CreateModel(context.Background(), payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// empty context
 	payload.Data = utils.RandomSlice(32)
-	_, err = srv.CreateModel(context.Background(), payload)
+	_, _, err = srv.CreateModel(context.Background(), payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
 	// invalid data
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, err = srv.CreateModel(ctxh, payload)
+	_, _, err = srv.CreateModel(ctxh, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// validator failed
 	payload.Data = validData(t)
-	_, err = srv.CreateModel(ctxh, payload)
+	_, _, err = srv.CreateModel(ctxh, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// success
 	payload.Data = validDataWithCurrency(t)
 	srv.repo = testRepo()
-	m, err := srv.CreateModel(ctxh, payload)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.CreateModel(ctxh, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
 }
 
 func TestService_UpdateModel(t *testing.T) {
@@ -440,13 +445,13 @@ func TestService_UpdateModel(t *testing.T) {
 	srv := service{}
 
 	// nil  model
-	_, err := srv.UpdateModel(context.Background(), payload)
+	_, _, err := srv.UpdateModel(context.Background(), payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
 	// empty context
 	payload.Data = utils.RandomSlice(32)
-	_, err = srv.UpdateModel(context.Background(), payload)
+	_, _, err = srv.UpdateModel(context.Background(), payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
@@ -455,7 +460,7 @@ func TestService_UpdateModel(t *testing.T) {
 	_, srvr := getServiceWithMockedLayers()
 	srv = srvr.(service)
 	payload.DocumentID = utils.RandomSlice(32)
-	_, err = srv.UpdateModel(ctxh, payload)
+	_, _, err = srv.UpdateModel(ctxh, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
@@ -464,21 +469,24 @@ func TestService_UpdateModel(t *testing.T) {
 	err = testRepo().Create(did[:], inv.ID(), inv)
 	assert.NoError(t, err)
 	payload.DocumentID = inv.ID()
-	_, err = srv.UpdateModel(ctxh, payload)
+	_, _, err = srv.UpdateModel(ctxh, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// validator failed
 	payload.Data = validData(t)
-	_, err = srv.UpdateModel(ctxh, payload)
+	_, _, err = srv.UpdateModel(ctxh, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// Success
 	payload.Data = validDataWithCurrency(t)
-	m, err := srv.UpdateModel(ctxh, payload)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.UpdateModel(ctxh, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, m.ID(), inv.ID())
 	assert.Equal(t, m.CurrentVersion(), inv.NextVersion())
-
+	jm.AssertExpectations(t)
 }
