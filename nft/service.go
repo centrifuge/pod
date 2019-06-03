@@ -199,8 +199,10 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*Response, c
 	if err != nil {
 		return nil, nil, err
 	}
+
 	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
 		s.minterJob(ctx, tokenID, model, req))
+
 	if err != nil {
 		return nil, nil, err
 	}

@@ -38,7 +38,7 @@ func (s *ServiceRegistry) LocateService(serviceID string) (Service, error) {
 	defer s.mutex.RUnlock()
 
 	if s.services[serviceID] == nil {
-		return nil, errors.New("no service for core document type is registered")
+		return nil, errors.New("service [%s] not registered", serviceID)
 	}
 	return s.services[serviceID], nil
 }
