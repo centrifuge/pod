@@ -2,8 +2,6 @@ package coreapi
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -13,25 +11,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/render"
-	logging "github.com/ipfs/go-log"
 )
 
-var log = logging.Logger("core_api")
-
-type handler struct {
-	srv           Service
-	tokenRegistry documents.TokenRegistry
-}
+// AttributeMap defines a map of attributes with attribute key as key
+type AttributeMap map[string]Attribute
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string               `json:"scheme" enums:"invoice"`
-	ReadAccess  []identity.DID       `json:"read_access"`
-	WriteAccess []identity.DID       `json:"write_access"`
-	Data        json.RawMessage      `json:"data" enums:"invoice.Data"`
-	Attributes  map[string]Attribute `json:"attributes"`
+	Scheme      string           `json:"scheme" enums:"invoice"`
+	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
+	Data        interface{}      `json:"data"`
+	Attributes  AttributeMap     `json:"attributes"`
 }
 
 // Attribute defines a single attribute.
@@ -40,6 +31,7 @@ type Attribute struct {
 	Value string `json:"value"`
 }
 
+// NFT defines a single NFT.
 type NFT struct {
 	Registry   string `json:"registry"`
 	Owner      string `json:"owner"`
@@ -47,24 +39,22 @@ type NFT struct {
 	TokenIndex string `json:"token_index"`
 }
 
+// ResponseHeader holds the common response header fields
 type ResponseHeader struct {
-	DocumentID  string         `json:"document_id"`
-	Version     string         `json:"version"`
-	Author      string         `json:"author"`
-	CreatedAt   string         `json:"created_at"`
-	ReadAccess  []identity.DID `json:"read_access" swaggertype:"string"`
-	WriteAccess []identity.DID `json:"write_access" swaggertype:"string"`
-	JobID       string         `json:"job_id"`
-	NFTs        []NFT          `json:"nfts"`
+	DocumentID  string           `json:"document_id"`
+	Version     string           `json:"version"`
+	Author      string           `json:"author"`
+	CreatedAt   string           `json:"created_at"`
+	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
+	JobID       string           `json:"job_id"`
+	NFTs        []NFT            `json:"nfts"`
 }
 
+// DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
 	Header ResponseHeader `json:"header"`
-	Data   interface{}    `json:"data" enums:"invoice.Data"`
-}
-
-type HTTPError struct {
-	Message string `json:"message"`
+	Data   interface{}    `json:"data"`
 }
 
 func convertAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
@@ -85,18 +75,23 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	payload := documents.CreatePayload{
 		Scheme: request.Scheme,
 		Collaborators: documents.CollaboratorsAccess{
-			ReadCollaborators:      request.ReadAccess,
-			ReadWriteCollaborators: request.WriteAccess,
+			ReadCollaborators:      identity.AddressToDIDs(request.ReadAccess...),
+			ReadWriteCollaborators: identity.AddressToDIDs(request.WriteAccess...),
 		},
-		Data: request.Data,
 	}
+
+	data, err := json.Marshal(request.Data)
+	if err != nil {
+		return payload, err
+	}
+	payload.Data = data
 
 	attrs, err := convertAttributes(request.Attributes)
 	if err != nil {
 		return payload, err
 	}
-
 	payload.Attributes = attrs
+
 	return payload, nil
 }
 
@@ -153,78 +148,9 @@ func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		Version:     hexutil.Encode(model.CurrentVersion()),
 		Author:      author.String(),
 		CreatedAt:   ts,
-		ReadAccess:  cs.ReadCollaborators,
-		WriteAccess: cs.ReadWriteCollaborators,
+		ReadAccess:  identity.DIDsToAddress(cs.ReadCollaborators...),
+		WriteAccess: identity.DIDsToAddress(cs.ReadWriteCollaborators...),
 		NFTs:        cnfts,
 		JobID:       id.String(),
 	}, nil
-}
-
-// CreateDocument creates a document.
-// @summary Creates a new document and anchors it.
-// @description Creates a new document and anchors it.
-// @id create_document
-// @tags Documents
-// @accept json
-// @produce json
-// @success 200 {object} health.Pong
-// @router /documents [post]
-// TODO(ved) fine tune this
-// 1. finish the create
-// 2. Add AUth
-// 3. tests
-// 4. swagger
-func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var code int
-	defer func() {
-		if err == nil {
-			return
-		}
-
-		render.Status(r, code)
-		render.JSON(w, r, HTTPError{Message: err.Error()})
-	}()
-
-	ctx := r.Context()
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		return
-	}
-
-	var request CreateDocumentRequest
-	err = json.Unmarshal(data, &request)
-	if err != nil {
-		code = http.StatusBadRequest
-		return
-	}
-
-	payload, err := toDocumentsCreatePayload(request)
-	if err != nil {
-		code = http.StatusBadRequest
-		return
-	}
-
-	model, jobID, err := h.srv.CreateDocument(ctx, payload)
-	if err != nil {
-		code = http.StatusBadRequest
-		return
-	}
-
-	docData := model.GetData()
-	header, err := deriveResponseHeader(h.tokenRegistry, model, jobID)
-	if err != nil {
-		code = http.StatusInternalServerError
-		return
-	}
-
-	render.Status(r, http.StatusOK)
-	render.JSON(w, r, DocumentResponse{Header: header, Data: docData})
-}
-
-// Register registers the core apis to the router.
-func Register(r *chi.Mux, registry documents.TokenRegistry, docSrv documents.Service) {
-	h := handler{srv: Service{docService: docSrv}, tokenRegistry: registry}
-	r.Post("/documents", h.CreateDocument)
 }

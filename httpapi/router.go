@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -61,7 +62,7 @@ func auth(handler http.Handler) http.Handler {
 		did := r.Header.Get("authorization")
 		if !common.IsHexAddress(did) {
 			render.Status(r, http.StatusForbidden)
-			render.JSON(w, r, coreapi.HTTPError{Message: "'authorization' header missing"})
+			render.JSON(w, r, httputils.HTTPError{Message: "'authorization' header missing"})
 			return
 		}
 

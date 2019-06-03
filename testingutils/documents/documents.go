@@ -5,6 +5,7 @@ package testingdocuments
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -109,6 +110,36 @@ func (m *MockModel) JSON() ([]byte, error) {
 	args := m.Called()
 	data, _ := args.Get(0).([]byte)
 	return data, args.Error(1)
+}
+
+func (m *MockModel) ID() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *MockModel) NFTs() []*coredocumentpb.NFT {
+	args := m.Called()
+	dr, _ := args.Get(0).([]*coredocumentpb.NFT)
+	return dr
+}
+
+func (m *MockModel) Author() (identity.DID, error) {
+	args := m.Called()
+	id, _ := args.Get(0).(identity.DID)
+	return id, args.Error(1)
+}
+
+func (m *MockModel) Timestamp() (time.Time, error) {
+	args := m.Called()
+	dr, _ := args.Get(0).(time.Time)
+	return dr, args.Error(1)
+}
+
+func (m *MockModel) GetCollaborators(filterIDs ...identity.DID) (documents.CollaboratorsAccess, error) {
+	args := m.Called(filterIDs)
+	cas, _ := args.Get(0).(documents.CollaboratorsAccess)
+	return cas, args.Error(1)
 }
 
 type MockRegistry struct {
