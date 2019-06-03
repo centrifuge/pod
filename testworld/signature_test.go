@@ -17,11 +17,54 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+func TestHost_SignKeyNotInCollaboration(t *testing.T) {
+	// Hosts
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	mallory := doctorFord.getHostTestSuite(t, "Mallory")
+
+	actxh := testingconfig.CreateAccountContext(t, alice.host.config)
+
+	// Get PublicKey and PrivateKey
+	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
+	collaborators := [][]byte{mallory.id[:]}
+	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
+
+	//Following simulate attack by Mallory with random keys pair
+	sr, err := dm.CalculateSigningRoot()
+	assert.NoError(t, err)
+	// random keys pairs should cause signature verification failure
+	publicKey2, privateKey2, err := secp256k1.GenerateSigningKeyPair()
+	s, err := crypto.SignMessage(privateKey2, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+
+	sig := &coredocumentpb.Signature{
+		SignatureId: append(mallory.id[:], publicKey2...),
+		SignerId:    mallory.id[:],
+		PublicKey:   publicKey2,
+		Signature:   s,
+	}
+	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
+
+	// so when got request on signature of document, mocking documents.Service of Mallory return a random signature
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+
+	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
+
+	//TODO
+	signatures, signatureErrors, err := alice.host.p2pClient.GetSignaturesForDocument(actxh, dm)
+	//seems to me, following should get signature verification errors but it is not.  Currenly p2p/client.go just do validateSignatureResp verification (very simple DID verification?), is this the right behavior?
+	assert.NoError(t, err)
+	assert.Nil(t, signatureErrors)
+	assert.Equal(t, 1, len(signatures))
+}
 
 func TestHost_ValidSignature(t *testing.T) {
 	// Hosts
