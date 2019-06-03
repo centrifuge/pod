@@ -49,7 +49,7 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 
 	// check author field
-	ocd.Author = utils.RandomSlice(32)
+	ocd.Author = utils.RandomSlice(20)
 	oldTree = getTree(t, &ocd, "", nil)
 	newTree = getTree(t, &ocd, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
@@ -315,7 +315,7 @@ func getTree(t *testing.T, doc proto.Message, prefix string, compact []byte) *pr
 			Compact: compact,
 		}
 	}
-	tr := proofs.NewDocumentTree(proofs.TreeOptions{
+	tr, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		ParentPrefix:      prop,
 		CompactProperties: true,
 		EnableHashSorting: true,
@@ -324,7 +324,7 @@ func getTree(t *testing.T, doc proto.Message, prefix string, compact []byte) *pr
 			return utils.RandomSlice(32), nil
 		},
 	})
-
+	assert.NoError(t, err)
 	tree := &tr
 	assert.NoError(t, tree.AddLeavesFromDocument(doc))
 	assert.NoError(t, tree.Generate())
