@@ -224,6 +224,7 @@ func (s *service) TransferFrom(ctx context.Context,registry common.Address, to c
 	}
 
 	did, err := identity.NewDIDFromBytes(didBytes)
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -312,6 +313,12 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 
 func (s *service) transferFromJob(ctx context.Context,registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+		owner, err := s.OwnerOf(registry, tokenID[:])
+		if owner.Hex() != from.Hex() {
+			errOut <- errors.New("from address is not the owner of tokenID %s from should be %s, instead got %s", tokenID.String(), from.Hex(), owner.Hex())
+			return
+		}
+
 
 		txID, done, err := s.identityService.Execute(ctx, registry, InvoiceUnpaidContractABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
 		if err != nil {
@@ -330,7 +337,7 @@ func (s *service) transferFromJob(ctx context.Context,registry common.Address, f
 		}
 
 		// Check if tokenID is new owner is to address
-		owner, err := s.OwnerOf(registry, tokenID[:])
+	 	owner, err = s.OwnerOf(registry, tokenID[:])
 		if err != nil {
 			errOut <- errors.New("error while checking new NFT owner %v", err)
 			return

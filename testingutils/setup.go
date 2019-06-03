@@ -156,8 +156,8 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 // BuildIntegrationTestingContext sets up configuration for integration tests
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
-	StartPOAGeth()
-	RunSmartContractMigrations()
+	//StartPOAGeth()
+	//RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

@@ -47,6 +47,7 @@ type contract interface {
 
 	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
+const defaultGas = 100000
 
 func methodToOp(method string) config.ContractOp {
 	m := map[string]config.ContractOp{
@@ -275,7 +276,15 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
-	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
+
+	gasLimit := i.config.GetEthereumGasLimit(methodToOp(methodName))
+
+	if gasLimit == 0 {
+		// TODO add defaultGas to config
+		gasLimit = defaultGas
+	}
+
+	return i.RawExecute(ctx, to, data, gasLimit)
 }
 
 func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.Key, error) {
