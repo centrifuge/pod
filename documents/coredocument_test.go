@@ -335,7 +335,7 @@ func TestGetSignaturesTree(t *testing.T) {
 		SignerId:    utils.RandomSlice(identity.DIDLength),
 		PublicKey:   utils.RandomSlice(32),
 		SignatureId: utils.RandomSlice(52),
-		Signature:   utils.RandomSlice(32),
+		Signature:   utils.RandomSlice(65),
 	}
 	cd.GetTestCoreDocWithReset().SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 	signatureTree, err := cd.getSignatureDataTree()
@@ -353,11 +353,16 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
 
 	signerKey := hexutil.Encode(sig.SignatureId)
+	// SignerID is not part of the tree
 	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey))
-	assert.NotNil(t, signerLeaf)
-	assert.Equal(t, fmt.Sprintf("%s.signatures[%s].signer_id", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, append(sig.SignatureId, []byte{0, 0, 0, 2}...)...)...), signerLeaf.Property.CompactName())
-	assert.Equal(t, sig.SignerId, signerLeaf.Value)
+	assert.Nil(t, signerLeaf)
+	//Leaf contains signature+transitionValidated = 65+1 = 66 bytes
+	_, signatureLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey))
+	assert.NotNil(t, signatureLeaf)
+	assert.Equal(t, fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey), signatureLeaf.Property.ReadableName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, sig.SignatureId...)...), signatureLeaf.Property.CompactName())
+	assert.Len(t, signatureLeaf.Value, 66)
+	assert.Equal(t, append(sig.Signature, []byte{0}...), signatureLeaf.Value)
 }
 
 func TestGetDocumentSigningTree(t *testing.T) {
@@ -417,7 +422,8 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	testTree := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
 	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
 	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})

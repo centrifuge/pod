@@ -411,7 +411,10 @@ func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err er
 	if err != nil {
 		return nil, err
 	}
-	t := p.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := p.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, errors.New("getDocumentDataTree error %v", err)
+	}
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
