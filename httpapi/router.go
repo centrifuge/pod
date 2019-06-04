@@ -51,7 +51,10 @@ type Config interface {
 }
 
 func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
-	skippedURLs := []string{"/ping"}
+	skippedURLs := []string{
+		"/ping",
+		"/accounts", // since we use default account DID for endpoints
+	}
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path

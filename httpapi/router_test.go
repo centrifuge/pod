@@ -34,6 +34,18 @@ func TestRouter_auth(t *testing.T) {
 	auth(nil)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 
+	// accounts
+	r = httptest.NewRequest("POST", "/accounts/0x123456789", nil)
+	w = httptest.NewRecorder()
+	next = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		v := ctx.Value(config.AccountHeaderKey)
+		assert.Nil(t, v)
+		w.WriteHeader(http.StatusOK)
+	})
+	auth(nil)(next).ServeHTTP(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+
 	// success
 	did := testingidentity.GenerateRandomDID()
 	r = httptest.NewRequest("POST", "/documents", nil)
