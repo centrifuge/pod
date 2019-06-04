@@ -567,3 +567,9 @@ func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey, prepareNewVersion
 	p.CoreDocument = ncd
 	return nil
 }
+
+// GetData returns purchase order data
+// TODO(ved): return actual data post migration.
+func (p *PurchaseOrder) GetData() interface{} {
+	return nil
+}
