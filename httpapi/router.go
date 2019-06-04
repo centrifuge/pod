@@ -33,7 +33,6 @@ func Router(config Config, configSrv config.Service, registry documents.TokenReg
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.StripSlashes)
 	r.Use(middleware.DefaultLogger)
 	r.Use(auth(configSrv))
 
@@ -55,8 +54,8 @@ func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
 	skippedURLs := []string{"/ping"}
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rctx := chi.RouteContext(r.Context())
-			if utils.ContainsString(skippedURLs, rctx.RoutePath) {
+			path := r.URL.Path
+			if utils.ContainsString(skippedURLs, path) {
 				handler.ServeHTTP(w, r)
 				return
 			}
