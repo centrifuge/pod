@@ -140,6 +140,9 @@ type Model interface {
 
 	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
 	AnchorRepoAddress() common.Address
+
+	// GetData returns the document data. Ex: invoice.Data
+	GetData() interface{}
 }
 
 // TokenRegistry defines NFT related functions.

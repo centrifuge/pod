@@ -74,6 +74,11 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to register invoice service: %v", err)
 	}
 
+	err = registry.Register(scheme, srv)
+	if err != nil {
+		return errors.New("failed to register invoice service: %v", err)
+	}
+
 	ctx[BootstrappedInvoiceHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }

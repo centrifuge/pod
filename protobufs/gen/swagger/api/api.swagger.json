@@ -19,6 +19,71 @@
     "host": "localhost:8082",
     "basePath": "/",
     "paths": {
+        "/documents": {
+            "post": {
+                "description": "Creates a new document and anchors it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Creates a new document and anchors it.",
+                "operationId": "create_document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Document request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.CreateDocumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "description": "returns node version and network",
@@ -43,6 +108,146 @@
         }
     },
     "definitions": {
+        "coreapi.Attribute": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "integer",
+                        "decimal",
+                        "string",
+                        "bytes",
+                        "timestamp"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.AttributeMap": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "integer",
+                            "decimal",
+                            "string",
+                            "bytes",
+                            "timestamp"
+                        ]
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "coreapi.CreateDocumentRequest": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMap"
+                },
+                "data": {
+                    "type": "object"
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "scheme": {
+                    "type": "string",
+                    "enum": [
+                        "invoice"
+                    ]
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "coreapi.DocumentResponse": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMap"
+                },
+                "data": {
+                    "type": "object"
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.ResponseHeader"
+                }
+            }
+        },
+        "coreapi.NFT": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string"
+                },
+                "registry": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                },
+                "token_index": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.ResponseHeader": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "nfts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/coreapi.NFT"
+                    }
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "version": {
+                    "type": "string"
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "health.Pong": {
             "type": "object",
             "properties": {
@@ -50,6 +255,14 @@
                     "type": "string"
                 },
                 "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "httputils.HTTPError": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }
