@@ -86,7 +86,7 @@ type InvoiceUnpaid interface {
 	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
 	GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error)
 	// TransferFrom transfers an NFT to another address
-	TransferFrom(ctx context.Context,registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error)
+	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error)
 	// OwnerOf returns the owner of an NFT
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
 }

@@ -214,7 +214,7 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*Response, c
 }
 
 // TransferFrom transfers an NFT to another address
-func (s *service) TransferFrom(ctx context.Context,registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -231,7 +231,7 @@ func (s *service) TransferFrom(ctx context.Context,registry common.Address, to c
 		return nil, nil, err
 	}
 	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Transfer From NFT",
-		s.transferFromJob(ctx,registry,did.ToAddress(),to, tokenID))
+		s.transferFromJob(ctx, registry, did.ToAddress(), to, tokenID))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -313,14 +313,17 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 	}
 }
 
-func (s *service) transferFromJob(ctx context.Context,registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s *service) transferFromJob(ctx context.Context, registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		owner, err := s.OwnerOf(registry, tokenID[:])
+		if err != nil {
+			errOut <- errors.New("error while checking new NFT owner %v", err)
+			return
+		}
 		if owner.Hex() != from.Hex() {
 			errOut <- errors.New("from address is not the owner of tokenID %s from should be %s, instead got %s", tokenID.String(), from.Hex(), owner.Hex())
 			return
 		}
-
 
 		txID, done, err := s.identityService.Execute(ctx, registry, InvoiceUnpaidContractABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
 		if err != nil {
@@ -330,7 +333,6 @@ func (s *service) transferFromJob(ctx context.Context,registry common.Address, f
 		log.Infof("sent off ethTX to transferFrom [registry: %s tokenID: %s, from: %s, to: %s].",
 			tokenID.String(), registry.String(), from.String(), to.String())
 
-
 		isDone := <-done
 		if !isDone {
 			// some problem occurred in a child task
@@ -339,7 +341,7 @@ func (s *service) transferFromJob(ctx context.Context,registry common.Address, f
 		}
 
 		// Check if tokenID is new owner is to address
-	 	owner, err = s.OwnerOf(registry, tokenID[:])
+		owner, err = s.OwnerOf(registry, tokenID[:])
 		if err != nil {
 			errOut <- errors.New("error while checking new NFT owner %v", err)
 			return

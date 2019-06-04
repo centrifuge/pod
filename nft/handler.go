@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -114,7 +115,7 @@ func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTran
 		return nil, ErrInvalidAddress
 	}
 	registry := common.HexToAddress(request.RegistryAddress)
-	if err != nil  {
+	if err != nil {
 		return nil, err
 	}
 
@@ -122,11 +123,11 @@ func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTran
 		return nil, ErrInvalidAddress
 	}
 	to := common.HexToAddress(request.To)
-	if err != nil  {
+	if err != nil {
 		return nil, err
 	}
 
-	resp, _, err := g.service.TransferFrom(ctxHeader,registry,to,tokenID)
+	resp, _, err := g.service.TransferFrom(ctxHeader, registry, to, tokenID)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrTokenTransfer, err)
 	}
@@ -135,7 +136,6 @@ func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTran
 		Header: &nftpb.ResponseHeader{JobId: resp.JobID},
 	}, nil
 }
-
 
 func validateParameters(request *nftpb.NFTMintRequest) error {
 	if !common.IsHexAddress(request.RegistryAddress) {

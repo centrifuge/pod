@@ -4,9 +4,10 @@ package nft
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"math/big"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -35,7 +36,7 @@ func (m *mockInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Cont
 	return resp, args.Error(1)
 }
 
-func (m *mockInvoiceUnpaid) TransferFrom(ctx context.Context,registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+func (m *mockInvoiceUnpaid) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
 	args := m.Called(ctx)
 	resp, _ := args.Get(0).(*Response)
 	return resp, nil, args.Error(1)
@@ -170,14 +171,14 @@ func TestPaymentObligationNFTTransferFrom_success(t *testing.T) {
 	mockConfigStore := mockmockConfigStore()
 
 	tokenID := hexutil.Encode(utils.RandomSlice(32))
-	nftResponse := &Response{TokenID: tokenID, JobID:"0x123"}
+	nftResponse := &Response{TokenID: tokenID, JobID: "0x123"}
 	nftReq := &nftpb.TokenTransferRequest{
-		TokenId:     tokenID,
+		TokenId:         tokenID,
 		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-		To: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
+		To:              "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
 	}
 
-	mockService.On("TransferFrom", mock.Anything).Return(nftResponse,nil,nil).Once()
+	mockService.On("TransferFrom", mock.Anything).Return(nftResponse, nil, nil).Once()
 	handler := grpcHandler{mockConfigStore, mockService}
 
 	response, err := handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)
@@ -191,32 +192,32 @@ func TestPaymentObligationNFTTransferFrom_fail(t *testing.T) {
 
 	// invalid token length
 	tokenID := hexutil.Encode(utils.RandomSlice(10))
-	nftResponse := &Response{TokenID: tokenID, JobID:"0x123"}
+	nftResponse := &Response{TokenID: tokenID, JobID: "0x123"}
 	nftReq := &nftpb.TokenTransferRequest{
-		TokenId:     tokenID,
+		TokenId:         tokenID,
 		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-		To: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
+		To:              "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
 	}
 
-	mockService.On("TransferFrom", mock.Anything).Return(nftResponse,nil,nil).Once()
+	mockService.On("TransferFrom", mock.Anything).Return(nftResponse, nil, nil).Once()
 	handler := grpcHandler{mockConfigStore, mockService}
 
 	response, err := handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)
-	assert.Nil(t,response)
+	assert.Nil(t, response)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(),ErrInvalidParameter)
+	assert.Contains(t, err.Error(), ErrInvalidParameter)
 
 	tokenID = hexutil.Encode(utils.RandomSlice(32))
 	nftReq.TokenId = tokenID
 
 	// invalid address
 	nftReq.To = "0x123"
-	mockService.On("TransferFrom", mock.Anything).Return(nftResponse,nil,nil).Once()
+	mockService.On("TransferFrom", mock.Anything).Return(nftResponse, nil, nil).Once()
 	handler = grpcHandler{mockConfigStore, mockService}
 	response, err = handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)
-	assert.Nil(t,response)
+	assert.Nil(t, response)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(),ErrInvalidAddress)
+	assert.Contains(t, err.Error(), ErrInvalidAddress)
 }
 
 func getTestSetupData() *nftpb.NFTMintRequest {

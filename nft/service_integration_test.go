@@ -5,10 +5,11 @@ package nft_test
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -164,7 +165,7 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 }
 
 func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
-	ctx, id, registry, _,cid := prepareForNFTMinting(t)
+	ctx, id, registry, _, cid := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
@@ -185,7 +186,7 @@ func TestEthereumInvoiceUnpaid_MintNFT_no_grant_access(t *testing.T) {
 	failMintNFT(t, false, true)
 }
 
-func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) (context.Context, nft.TokenID,identity.DID ) {
+func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) (context.Context, nft.TokenID, identity.DID) {
 	ctx, id, registry, invSrv, cid := prepareForNFTMinting(t)
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
@@ -221,7 +222,6 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
-
 	}{
 		{
 			grantAccess:     true,
@@ -242,7 +242,7 @@ func TestTransferNFT(t *testing.T) {
 	to := common.HexToAddress("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe")
 	owner, err := invoiceUnpaid.OwnerOf(registry, tokenID[:])
 	assert.NoError(t, err)
-	assert.Equal(t, owner,did.ToAddress())
+	assert.Equal(t, owner, did.ToAddress())
 
 	// successful
 	resp, done, err := invoiceUnpaid.TransferFrom(ctx, registry, to, tokenID)
@@ -254,7 +254,7 @@ func TestTransferNFT(t *testing.T) {
 
 	owner, err = invoiceUnpaid.OwnerOf(registry, tokenID[:])
 	assert.NoError(t, err)
-	assert.Equal(t, owner,to)
+	assert.Equal(t, owner, to)
 
 	// should fail not owner anymore
 	secondTo := common.HexToAddress("0xFBb1b73C4f0BDa4f67dcA266ce6Ef42f520fBB98")

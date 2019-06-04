@@ -311,7 +311,7 @@ func TestFilterMintProofs(t *testing.T) {
 	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
 }
 
-func TestTokenTransfer(t *testing.T){
+func TestTokenTransfer(t *testing.T) {
 	configMock := &testingconfig.MockConfig{}
 	configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
 	cid := testingidentity.GenerateRandomDID()
@@ -331,16 +331,16 @@ func TestTokenTransfer(t *testing.T){
 
 	idServiceMock := &testingcommons.MockIdentityService{}
 
-	service := newService(configMock,idServiceMock, nil, nil, nil, nil, jobMan, nil)
+	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil)
 	ctxh := testingconfig.CreateAccountContext(t, configMock)
 
 	registryAddress := common.HexToAddress("0x111855759a39fb75fc7341139f5d7a3974d4da08")
 	to := common.HexToAddress("0x222855759a39fb75fc7341139f5d7a3974d4da08")
 
-	tokenID :=  NewTokenID()
-	resp, _, err := service.TransferFrom(ctxh,registryAddress, to,tokenID)
+	tokenID := NewTokenID()
+	resp, _, err := service.TransferFrom(ctxh, registryAddress, to, tokenID)
 	assert.NoError(t, err)
-	assert.Equal(t, jobID.String(),resp.JobID)
+	assert.Equal(t, jobID.String(), resp.JobID)
 }
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
