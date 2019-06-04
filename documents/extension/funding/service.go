@@ -44,7 +44,7 @@ const (
 	fundingLabel              = "funding_agreement"
 	fundingFieldKey           = "funding_agreement[{IDX}]."
 	idxKey                    = "{IDX}"
-	fundingIDLabel            = "funding_id"
+	agreementIDLabel            = "agreement_id"
 	fundingSignatures         = "signatures"
 	fundingSignaturesFieldKey = "signatures[{IDX}]"
 )
@@ -60,7 +60,7 @@ func DefaultService(
 	}
 }
 
-func newFundingID() string {
+func newAgreementID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
@@ -175,23 +175,44 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 	var fd Data
 	fd.initFundingFromData(req.Data)
 
+	fd.BorrowerId = req.Data.BorrowerId
+	fd.FunderId = req.Data.FunderId
+	funderId, err := identity.NewDIDFromString(req.Data.FunderId)
+	if err != nil {
+		return nil, err
+	}
+	borrowerId, err := identity.NewDIDFromString(req.Data.BorrowerId)
+	if err != nil {
+		return nil, err
+	}
 	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
-
-	ca, err := documents.FromClientCollaboratorAccess(req.ReadAccess, req.WriteAccess)
-	if err != nil {
-		return nil, err
-	}
-
 	attributes, err := createAttributesList(model, fd)
 	if err != nil {
 		return nil, err
 	}
 
-	err = model.AddAttributes(ca, true, attributes...)
+	// check which Id needs to be added as a new collaborator to the document
+	var c []identity.DID
+	for _, id := range []identity.DID{funderId, borrowerId} {
+		collaborator, err := model.IsDIDCollaborator(id)
+		if err != nil {
+			return nil, err
+		}
+		if !collaborator {
+			c = append(c, id)
+		}
+	}
+	err = model.AddAttributes(
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: c,
+		},
+		true,
+		attributes...
+		)
 	if err != nil {
 		return nil, err
 	}
@@ -237,15 +258,32 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	fd.FundingId = req.FundingId
-	idx, err := s.findFundingIDX(model, fd.FundingId)
+	fd.AgreementId = req.AgreementId
+	idx, err := s.findFundingIDX(model, fd.AgreementId)
 	if err != nil {
 		return nil, err
 	}
 
-	ca, err := documents.FromClientCollaboratorAccess(req.ReadAccess, req.WriteAccess)
+	fd.BorrowerId = req.Data.BorrowerId
+	fd.FunderId = req.Data.FunderId
+	funderId, err := identity.NewDIDFromString(req.Data.FunderId)
 	if err != nil {
 		return nil, err
+	}
+	borrowerId, err := identity.NewDIDFromString(req.Data.BorrowerId)
+	if err != nil {
+		return nil, err
+	}
+	// check which Id needs to be added as a new collaborator to the document
+	var c []identity.DID
+	for _, id := range []identity.DID{funderId, borrowerId} {
+		collaborator, err := model.IsDIDCollaborator(id)
+		if err != nil {
+			return nil, err
+		}
+		if !collaborator {
+			c = append(c, id)
+		}
 	}
 
 	// overwriting is not enough because it is not required that
@@ -260,7 +298,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, err
 	}
 
-	err = model.AddAttributes(ca, true, attributes...)
+	err = model.AddAttributes(
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: c,
+		},
+		true,
+		attributes...
+		)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +326,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (*Data, er
 	return s.deriveFundingData(model, idx)
 }
 
-func (s service) findFundingIDX(model documents.Model, fundingID string) (idx string, err error) {
+func (s service) findFundingIDX(model documents.Model, agreementId string) (idx string, err error) {
 	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return idx, err
@@ -294,7 +338,7 @@ func (s service) findFundingIDX(model documents.Model, fundingID string) (idx st
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		label := generateLabel(fundingFieldKey, i.String(), fundingIDLabel)
+		label := generateLabel(fundingFieldKey, i.String(), agreementIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
@@ -309,7 +353,7 @@ func (s service) findFundingIDX(model documents.Model, fundingID string) (idx st
 		if err != nil {
 			return idx, err
 		}
-		if attrFundingID == fundingID {
+		if attrFundingID == agreementId {
 			return i.String(), nil
 		}
 		i, err = i.Inc()

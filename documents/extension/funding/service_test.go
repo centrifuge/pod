@@ -89,7 +89,7 @@ func TestCreateAttributesList(t *testing.T) {
 	attributes, err := createAttributesList(inv, data)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 11, len(attributes))
+	assert.Equal(t, 13, len(attributes))
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "funding_agreement[0].currency" {
@@ -103,6 +103,7 @@ func TestCreateAttributesList(t *testing.T) {
 }
 
 func TestDeriveFromPayload(t *testing.T) {
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
@@ -115,7 +116,7 @@ func TestDeriveFromPayload(t *testing.T) {
 	payload := createTestPayload()
 
 	for i := 0; i < 10; i++ {
-		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
+		model, err := srv.DeriveFromPayload(ctxh, payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 		label := fmt.Sprintf("funding_agreement[%d].currency", i)
 		key, err := documents.AttrKeyFromLabel(label)
@@ -146,7 +147,7 @@ func TestDeriveFundingResponse(t *testing.T) {
 		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
 		assert.NoError(t, err)
 
-		response, err := srv.DeriveFundingResponse(ctxh, model, payload.Data.FundingId)
+		response, err := srv.DeriveFundingResponse(ctxh, model, payload.Data.AgreementId)
 		assert.NoError(t, err)
 		checkResponse(t, payload, response.Data.Funding)
 	}
@@ -202,7 +203,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
-	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: p.Data.FundingId}
+	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: p.Data.AgreementId}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 
@@ -218,21 +219,23 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotEqual(t, p.Data.Fee, response.Data[0].Funding.Fee)
 
 	// non existing funding id
-	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))}
+	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
 	assert.Contains(t, err, ErrFundingNotFound)
 }
 
 func createTestClientData() *clientfunpb.FundingData {
-	fundingId := newFundingID()
+	fundingId := newAgreementID()
 	return &clientfunpb.FundingData{
-		FundingId:             fundingId,
+		AgreementId:             fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
+		BorrowerId: 			testingidentity.GenerateRandomDID().String(),
+		FunderId: 				testingidentity.GenerateRandomDID().String(),
 		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
@@ -241,14 +244,16 @@ func createTestClientData() *clientfunpb.FundingData {
 }
 
 func createTestData() Data {
-	fundingId := newFundingID()
+	fundingId := newAgreementID()
 	return Data{
-		FundingId:             fundingId,
+		AgreementId:             fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
+		BorrowerId: 			testingidentity.GenerateRandomDID().String(),
+		FunderId: 				testingidentity.GenerateRandomDID().String(),
 		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
@@ -261,7 +266,7 @@ func createTestPayload() *clientfunpb.FundingCreatePayload {
 }
 
 func checkResponse(t *testing.T, payload *clientfunpb.FundingCreatePayload, response *clientfunpb.FundingData) {
-	assert.Equal(t, payload.Data.FundingId, response.FundingId)
+	assert.Equal(t, payload.Data.AgreementId, response.AgreementId)
 	assert.Equal(t, payload.Data.Currency, response.Currency)
 	assert.Equal(t, payload.Data.Days, response.Days)
 	assert.Equal(t, payload.Data.Amount, response.Amount)

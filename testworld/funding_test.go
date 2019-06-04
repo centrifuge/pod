@@ -38,7 +38,7 @@ func updateTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docI
 		t.Error(message)
 	}
 
-	fundingId = getFundingId(t, res)
+	fundingId = getAgreementId(t, res)
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -63,7 +63,7 @@ func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier str
 			t.Error(message)
 		}
 
-		fundingId := getFundingId(t, res)
+		fundingId := getAgreementId(t, res)
 		fundings = append(fundings, fundingId)
 
 	}
@@ -89,7 +89,7 @@ func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIde
 		t.Error(message)
 	}
 
-	fundingId = getFundingId(t, res)
+	fundingId = getAgreementId(t, res)
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -129,7 +129,7 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 		t.Error(message)
 	}
 
-	fundingId = getFundingId(t, res)
+	fundingId = getAgreementId(t, res)
 	params = map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",

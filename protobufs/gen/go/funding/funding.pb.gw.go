@@ -85,15 +85,15 @@ func request_FundingService_Update_0(ctx context.Context, marshaler runtime.Mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
 	}
 
-	val, ok = pathParams["funding_id"]
+	val, ok = pathParams["agreement_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "funding_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "agreement_id")
 	}
 
-	protoReq.FundingId, err = runtime.String(val)
+	protoReq.AgreementId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "funding_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "agreement_id", err)
 	}
 
 	msg, err := client.Update(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -127,15 +127,15 @@ func request_FundingService_Sign_0(ctx context.Context, marshaler runtime.Marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
 	}
 
-	val, ok = pathParams["funding_id"]
+	val, ok = pathParams["agreement_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "funding_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "agreement_id")
 	}
 
-	protoReq.FundingId, err = runtime.String(val)
+	protoReq.AgreementId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "funding_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "agreement_id", err)
 	}
 
 	msg, err := client.Sign(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -165,15 +165,15 @@ func request_FundingService_Get_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
 	}
 
-	val, ok = pathParams["funding_id"]
+	val, ok = pathParams["agreement_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "funding_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "agreement_id")
 	}
 
-	protoReq.FundingId, err = runtime.String(val)
+	protoReq.AgreementId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "funding_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "agreement_id", err)
 	}
 
 	msg, err := client.Get(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -214,15 +214,15 @@ func request_FundingService_GetVersion_0(ctx context.Context, marshaler runtime.
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "version", err)
 	}
 
-	val, ok = pathParams["funding_id"]
+	val, ok = pathParams["agreement_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "funding_id")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "agreement_id")
 	}
 
-	protoReq.FundingId, err = runtime.String(val)
+	protoReq.AgreementId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "funding_id", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "agreement_id", err)
 	}
 
 	msg, err := client.GetVersion(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -542,13 +542,13 @@ func RegisterFundingServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 var (
 	pattern_FundingService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"documents", "identifier", "fundings"}, ""))
 
-	pattern_FundingService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"documents", "identifier", "fundings", "funding_id"}, ""))
+	pattern_FundingService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"documents", "identifier", "fundings", "agreement_id"}, ""))
 
-	pattern_FundingService_Sign_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"documents", "identifier", "fundings", "funding_id", "sign"}, ""))
+	pattern_FundingService_Sign_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"documents", "identifier", "fundings", "agreement_id", "sign"}, ""))
 
-	pattern_FundingService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"documents", "identifier", "fundings", "funding_id"}, ""))
+	pattern_FundingService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"documents", "identifier", "fundings", "agreement_id"}, ""))
 
-	pattern_FundingService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"documents", "identifier", "version", "fundings", "funding_id"}, ""))
+	pattern_FundingService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"documents", "identifier", "version", "fundings", "agreement_id"}, ""))
 
 	pattern_FundingService_GetList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"documents", "identifier", "fundings"}, ""))
 

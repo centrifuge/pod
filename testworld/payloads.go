@@ -96,10 +96,10 @@ func defaultFundingPayload(collaborators []string) map[string]interface{} {
 	}
 }
 
-func updateFundingPayload(fundingId string, collaborators []string) map[string]interface{} {
+func updateFundingPayload(agreementId string, collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"funding_id":         fundingId,
+			"agreement_id":         agreementId,
 			"amount":             "10000",
 			"apr":                "0.55",
 			"days":               "90",
