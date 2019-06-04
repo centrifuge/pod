@@ -111,26 +111,3 @@ func TestIncorrectProto_InvalidHeader(t *testing.T){
 
 }
 
-/*
-func TestHost_dodgySignature(t *testing.T) {
-	// Hosts
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	oskar := doctorFord.getHostTestSuite(t, "Oskar")
-
-	ctxh := testingconfig.CreateAccountContext(t, oskar.host.config)
-
-	// Get PublicKey and PrivateKey
-	publicKey, privateKey := GetSigningKeyPair(t, oskar.host.idService, oskar.id, ctxh)
-
-
-	//p, ok := oskar.host.p2pClient.(p2p.peer); ok{
-	//	mes := p.getMessenger()
-	//}
-
-	//collaborators := [][]byte{bob.id[:]}
-	//dm := createCDWithEmbeddedPO(t, collaborators, oskar.id, publicKey, privateKey, oskar.host.config.GetContractAddress(config.AnchorRepo))
-
-
-}
-
-*/
