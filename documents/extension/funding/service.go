@@ -171,7 +171,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	return attributes, nil
 }
 
-func newCollaborations(m documents.Model, data clientfunpb.FundingData) ([]identity.DID, error) {
+func deriveDids(data clientfunpb.FundingData) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.BorrowerId, data.FunderId} {
 		if id != "" {
@@ -179,13 +179,7 @@ func newCollaborations(m documents.Model, data clientfunpb.FundingData) ([]ident
 			if err != nil {
 				return nil, err
 			}
-			collaborator, err := m.IsDIDCollaborator(did)
-			if err != nil {
-				return nil, err
-			}
-			if !collaborator {
-				c = append(c, did)
-			}
+			c = append(c, did)
 		}
 	}
 
@@ -206,7 +200,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		return nil, err
 	}
 
-	c, err := newCollaborations(model, *req.Data)
+	c, err := deriveDids(*req.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +263,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, err
 	}
 
-	c, err := newCollaborations(model, *req.Data)
+	c, err := deriveDids(*req.Data)
 	if err != nil {
 		return nil, err
 	}
