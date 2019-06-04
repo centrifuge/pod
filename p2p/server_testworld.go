@@ -79,7 +79,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 		if err != nil {
 			return nil, err
 		}
-		receiverPeer, err := s.getPeerID(collaborator)
+		receiverPeer, err := s.getPeerID(ctx, collaborator)
 		if err != nil {
 			return nil, err
 		}
