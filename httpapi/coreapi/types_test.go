@@ -35,12 +35,12 @@ func TestTypes_convertAttributes(t *testing.T) {
 		},
 	}
 
-	atts, err := convertAttributes(attrs)
+	atts, err := toDocumentAttributes(attrs)
 	assert.NoError(t, err)
 	assert.Len(t, atts, 2)
 
 	attrs["invalid"] = Attribute{Type: "unknown", Value: "some value"}
-	_, err = convertAttributes(attrs)
+	_, err = toDocumentAttributes(attrs)
 	assert.Error(t, err)
 }
 
@@ -77,9 +77,8 @@ func TestTypes_deriveResponseHeader(t *testing.T) {
 	model.AssertExpectations(t)
 }
 
-func TestTypes_toDocumentCreatePayload(t *testing.T) {
-	request := CreateDocumentRequest{Scheme: "invoice"}
-	request.Data = map[string]interface{}{
+func invoiceData() map[string]interface{} {
+	return map[string]interface{}{
 		"number":       "12345",
 		"status":       "unpaid",
 		"gross_amount": "12.345",
@@ -97,6 +96,11 @@ func TestTypes_toDocumentCreatePayload(t *testing.T) {
 			},
 		},
 	}
+}
+
+func TestTypes_toDocumentCreatePayload(t *testing.T) {
+	request := CreateDocumentRequest{Scheme: "invoice"}
+	request.Data = invoiceData()
 
 	// success
 	payload, err := toDocumentsCreatePayload(request)

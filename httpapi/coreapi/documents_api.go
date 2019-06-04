@@ -41,6 +41,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		log.Error(err)
 		render.Status(r, code)
 		render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
 	}()

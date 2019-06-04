@@ -79,6 +79,11 @@ type MockModel struct {
 	mock.Mock
 }
 
+func (m *MockModel) GetData() interface{} {
+	args := m.Called()
+	return args.Get(0)
+}
+
 func (m *MockModel) PreviousVersion() []byte {
 	args := m.Called()
 	return args.Get(0).([]byte)

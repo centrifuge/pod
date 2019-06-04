@@ -57,7 +57,7 @@ type DocumentResponse struct {
 	Data   interface{}    `json:"data"`
 }
 
-func convertAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
 		attr, err := documents.NewAttribute(k, documents.AttributeType(v.Type), v.Value)
@@ -86,7 +86,7 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	}
 	payload.Data = data
 
-	attrs, err := convertAttributes(request.Attributes)
+	attrs, err := toDocumentAttributes(request.Attributes)
 	if err != nil {
 		return payload, err
 	}

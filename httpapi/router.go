@@ -66,7 +66,7 @@ func auth(handler http.Handler) http.Handler {
 			return
 		}
 
-		r.WithContext(context.WithValue(r.Context(), config.AccountHeaderKey, did))
+		r = r.WithContext(context.WithValue(r.Context(), config.AccountHeaderKey, did))
 		handler.ServeHTTP(w, r)
 	})
 }
