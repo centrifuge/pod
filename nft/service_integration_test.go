@@ -244,6 +244,7 @@ func TestTransferNFT(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, owner,did.ToAddress())
 
+	// successful
 	resp, done, err := invoiceUnpaid.TransferFrom(ctx, registry, to, tokenID)
 	assert.NoError(t, err)
 	<-done
@@ -254,4 +255,16 @@ func TestTransferNFT(t *testing.T) {
 	owner, err = invoiceUnpaid.OwnerOf(registry, tokenID[:])
 	assert.NoError(t, err)
 	assert.Equal(t, owner,to)
+
+	// should fail not owner anymore
+	secondTo := common.HexToAddress("0xFBb1b73C4f0BDa4f67dcA266ce6Ef42f520fBB98")
+	resp, done, err = invoiceUnpaid.TransferFrom(ctx, registry, secondTo, tokenID)
+	assert.NoError(t, err)
+	<-done
+	jobID, err = jobs.FromString(resp.JobID)
+	assert.NoError(t, err)
+
+	err = jobManager.WaitForJob(did, jobID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "from address is not the owner of tokenID")
 }

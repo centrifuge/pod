@@ -54,6 +54,7 @@ func methodToOp(method string) config.ContractOp {
 		"mint":      config.NftMint,
 		"commit":    config.AnchorCommit,
 		"preCommit": config.AnchorPreCommit,
+		"transferFrom": config.NftTransferFrom,
 	}
 	return m[method]
 }
@@ -276,15 +277,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
-
-	gasLimit := i.config.GetEthereumGasLimit(methodToOp(methodName))
-
-	if gasLimit == 0 {
-		// TODO add defaultGas to config
-		gasLimit = defaultGas
-	}
-
-	return i.RawExecute(ctx, to, data, gasLimit)
+	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
 func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.Key, error) {
