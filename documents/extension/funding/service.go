@@ -171,21 +171,31 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	return attributes, nil
 }
 
+func newCollaborations(m documents.Model, data clientfunpb.FundingData) ([]identity.DID, error) {
+	var c []identity.DID
+	for _, id := range []string{data.BorrowerId, data.FunderId} {
+		if id != "" {
+			did, err := identity.NewDIDFromString(id)
+			if err != nil {
+				return nil, err
+			}
+			collaborator, err := m.IsDIDCollaborator(did)
+			if err != nil {
+				return nil, err
+			}
+			if !collaborator {
+				c = append(c, did)
+			}
+		}
+	}
+
+	return c, nil
+}
+
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
 	var fd Data
 	fd.initFundingFromData(req.Data)
 
-	fd.BorrowerId = req.Data.BorrowerId
-	fd.FunderId = req.Data.FunderId
-
-	funderID, err := identity.NewDIDFromString(req.Data.FunderId)
-	if err != nil {
-		return nil, err
-	}
-	borrowerID, err := identity.NewDIDFromString(req.Data.BorrowerId)
-	if err != nil {
-		return nil, err
-	}
 	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
 		apiLog.Error(err)
@@ -196,17 +206,11 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		return nil, err
 	}
 
-	// check which Id needs to be added as a new collaborator to the document
-	var c []identity.DID
-	for _, id := range []identity.DID{funderID, borrowerID} {
-		collaborator, err := model.IsDIDCollaborator(id)
-		if err != nil {
-			return nil, err
-		}
-		if !collaborator {
-			c = append(c, id)
-		}
+	c, err := newCollaborations(model, *req.Data)
+	if err != nil {
+		return nil, err
 	}
+
 	err = model.AddAttributes(
 		documents.CollaboratorsAccess{
 			ReadWriteCollaborators: c,
@@ -265,23 +269,9 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, err
 	}
 
-	// check which Id needs to be added as a new collaborator to the document
-	var c []identity.DID
-
-	for _, id := range []string{req.Data.BorrowerId, req.Data.FunderId} {
-		if id != "" {
-			did, err := identity.NewDIDFromString(id)
-			if err != nil {
-				return nil, err
-			}
-			collaborator, err := model.IsDIDCollaborator(did)
-			if err != nil {
-				return nil, err
-			}
-			if !collaborator {
-				c = append(c, did)
-			}
-		}
+	c, err := newCollaborations(model, *req.Data)
+	if err != nil {
+		return nil, err
 	}
 
 	// overwriting is not enough because it is not required that

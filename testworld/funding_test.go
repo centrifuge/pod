@@ -56,7 +56,7 @@ func updateTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docI
 func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier string) {
 	var fundings []string
 	for i := 0; i < 5; i++ {
-		res := createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(alice.id.String(), ""))
+		res := createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(alice.id.String(), bob.id.String()))
 		txID := getTransactionID(t, res)
 		status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 		if status != "success" {
@@ -77,7 +77,6 @@ func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier str
 	getListFundingCheck(alice.httpExpect, alice.id.String(), docIdentifier, 6, params)
 	getListFundingCheck(bob.httpExpect, bob.id.String(), docIdentifier, 6, params)
 	getListFundingCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, 6, params)
-
 }
 
 func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
