@@ -286,29 +286,29 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {
-	dr, err := e.CalculateDataRoot()
+	t, err := e.getDocumentDataTree()
 	if err != nil {
-		return dr, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dr)
+	return e.CoreDocument.CalculateDocumentDataRoot(e.DocumentType(), t)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := e.CalculateDataRoot()
+	t, err := e.getDocumentDataTree()
 	if err != nil {
-		return dr, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dr)
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), t)
 }
 
 // DocumentRootTree creates and returns the document root tree
 func (e *Entity) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := e.CalculateDataRoot()
+	t, err := e.getDocumentDataTree()
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dr)
+	return e.CoreDocument.DocumentRootTree(e.DocumentType(), t)
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.

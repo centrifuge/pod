@@ -240,29 +240,29 @@ func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Addres
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *EntityRelationship) CalculateSigningRoot() ([]byte, error) {
-	dr, err := e.CalculateDataRoot()
+	t, err := e.getDocumentDataTree()
 	if err != nil {
-		return dr, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dr)
+	return e.CoreDocument.CalculateDocumentDataRoot(e.DocumentType(), t)
 }
 
 // CalculateDocumentRoot calculates the document root.
 func (e *EntityRelationship) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := e.CalculateDataRoot()
+	t, err := e.getDocumentDataTree()
 	if err != nil {
-		return dr, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dr)
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), t)
 }
 
 // DocumentRootTree creates and returns the document root tree.
 func (e *EntityRelationship) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := e.CalculateDataRoot()
+	t, err := e.getDocumentDataTree()
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dr)
+	return e.CoreDocument.DocumentRootTree(e.DocumentType(), t)
 }
 
 // CollaboratorCanUpdate checks that the identity attempting to update the document is the identity which owns the document.

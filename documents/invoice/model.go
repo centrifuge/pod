@@ -706,29 +706,29 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
-	dr, err := i.CalculateDataRoot()
+	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return dr, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return i.CoreDocument.CalculateSigningRoot(i.DocumentType(), dr)
+	return i.CoreDocument.CalculateDocumentDataRoot(i.DocumentType(), t)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := i.CalculateDataRoot()
+	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return dr, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dr)
+	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), t)
 }
 
 // DocumentRootTree creates and returns the document root tree
 func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := i.CalculateDataRoot()
+	t, err := i.getDocumentDataTree()
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dr)
+	return i.CoreDocument.DocumentRootTree(i.DocumentType(), t)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.

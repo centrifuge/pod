@@ -18,11 +18,13 @@ import (
 )
 
 func TestInvoiceUnpaidMint_invoice_successful(t *testing.T) {
+	t.Skipped()
 	t.Parallel()
 	invoiceUnpaidMint(t, typeInvoice, true, true, true, false)
 }
 
 func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
+	t.Skipped()
 	t.Parallel()
 	invoiceUnpaidMint(t, typeInvoice, false, false, false, true)
 }
@@ -122,6 +124,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 }
 
 func TestInvoiceUnpaidMint_errors(t *testing.T) {
+	t.Skipped()
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	tests := []struct {
