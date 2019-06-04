@@ -206,12 +206,11 @@ func TestPaymentObligationNFTTransferFrom_fail(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(),ErrInvalidParameter)
 
-	// fix token length
 	tokenID = hexutil.Encode(utils.RandomSlice(32))
 	nftReq.TokenId = tokenID
+
 	// invalid address
 	nftReq.To = "0x123"
-
 	mockService.On("TransferFrom", mock.Anything).Return(nftResponse,nil,nil).Once()
 	handler = grpcHandler{mockConfigStore, mockService}
 	response, err = handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)

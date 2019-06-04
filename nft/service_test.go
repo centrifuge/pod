@@ -311,6 +311,38 @@ func TestFilterMintProofs(t *testing.T) {
 	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
 }
 
+func TestTokenTransfer(t *testing.T){
+	configMock := &testingconfig.MockConfig{}
+	configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
+	cid := testingidentity.GenerateRandomDID()
+	configMock.On("GetIdentityID").Return(cid[:], nil)
+	configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
+	configMock.On("GetEthereumContextWaitTimeout").Return(time.Second)
+	configMock.On("GetReceiveEventNotificationEndpoint").Return("")
+	configMock.On("GetP2PKeyPair").Return("", "")
+	configMock.On("GetSigningKeyPair").Return("", "")
+	configMock.On("GetPrecommitEnabled").Return(false)
+	configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
+
+	jobID := jobs.NewJobID()
+	jobMan := new(testingjobs.MockJobManager)
+	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return(jobID, make(chan bool), nil)
+
+	idServiceMock := &testingcommons.MockIdentityService{}
+
+	service := newService(configMock,idServiceMock, nil, nil, nil, nil, jobMan, nil)
+	ctxh := testingconfig.CreateAccountContext(t, configMock)
+
+	registryAddress := common.HexToAddress("0x111855759a39fb75fc7341139f5d7a3974d4da08")
+	to := common.HexToAddress("0x222855759a39fb75fc7341139f5d7a3974d4da08")
+
+	tokenID :=  NewTokenID()
+	resp, _, err := service.TransferFrom(ctxh,registryAddress, to,tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, jobID.String(),resp.JobID)
+}
+
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
 	v1, _ := hexutil.Decode("0x76616c756531")
 	v2, _ := hexutil.Decode("0x76616c756532")
