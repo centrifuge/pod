@@ -2,13 +2,17 @@ package byteutils
 
 import (
 	"bytes"
-	"errors"
 	"math/big"
 	"sort"
 	"strings"
 
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+// ErrEmptyHexBytes is a sentinel error when hex bytes are empty
+const ErrEmptyHexBytes = errors.Error("empty bytes")
 
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
 func AddZeroBytesSuffix(data []byte, required int) []byte {
@@ -108,4 +112,42 @@ func SortByte32Slice(arr [][32]byte) [][32]byte {
 	ba := BytesArray(arr)
 	sort.Sort(ba)
 	return ba
+}
+
+// HexBytes is of type bytes with JSON hex string marshaller.
+type HexBytes []byte
+
+// MarshalJSON marshall bytes to hex.
+func (h HexBytes) MarshalJSON() ([]byte, error) {
+	var str string
+	if len(h) < 1 {
+		return nil, ErrEmptyHexBytes
+	}
+
+	str = "\"" + hexutil.Encode(h) + "\""
+	return []byte(str), nil
+}
+
+// UnmarshalJSON unmarshals hex string to bytes.
+func (h *HexBytes) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	str = strings.TrimSpace(strings.Trim(str, "\""))
+	d, err := hexutil.Decode(str)
+	if err != nil {
+		return err
+	}
+
+	*h = HexBytes(d)
+	return nil
+}
+
+// Bytes returns a copy of the HexBytes.
+func (h HexBytes) Bytes() []byte {
+	if len(h) < 1 {
+		return nil
+	}
+
+	d := make([]byte, len(h), len(h))
+	copy(d, h[:])
+	return d
 }

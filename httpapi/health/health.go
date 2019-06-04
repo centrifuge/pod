@@ -29,6 +29,7 @@ type Pong struct {
 // @summary Health check for Node
 // @description returns node version and network
 // @id ping
+// @tags Health
 // @produce json
 // @success 200 {object} health.Pong
 // @router /ping [get]

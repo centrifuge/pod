@@ -4,6 +4,7 @@ package byteutils
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -301,5 +302,94 @@ func TestSortByte32Slice(t *testing.T) {
 	// pre element must be less than equal to next one
 	for i := 1; i < len(sortBytes); i++ {
 		assert.NotEqual(t, bytes.Compare(sortBytes[i-1][:], sortBytes[i][:]), 1)
+	}
+}
+
+func TestHexBytes_MarshalJSON(t *testing.T) {
+	tests := []struct {
+		d   []byte
+		err bool
+	}{
+		// nil
+		{
+			err: true,
+		},
+
+		{
+			d:   []byte{},
+			err: true,
+		},
+
+		{
+			d: utils.RandomSlice(10),
+		},
+	}
+
+	type testHex struct {
+		Hex HexBytes `json:"hex"`
+	}
+
+	for _, c := range tests {
+		h := HexBytes(c.d)
+		th := testHex{Hex: h}
+
+		d, err := json.Marshal(th)
+		if c.err {
+			assert.Error(t, err)
+			continue
+		}
+
+		assert.NoError(t, err)
+
+		nth := new(testHex)
+		err = json.Unmarshal(d, nth)
+		assert.NoError(t, err)
+		assert.Equal(t, len(c.d), len(nth.Hex.Bytes()))
+		if len(c.d) < 1 {
+			continue
+		}
+
+		assert.Equal(t, c.d, nth.Hex.Bytes())
+	}
+}
+
+func TestHexBytes_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		str string
+		d   []byte
+		err bool
+	}{
+		// nil
+		{str: "{}"},
+
+		// empty
+		{str: `{"hex": ""}`, err: true},
+
+		// invalid
+		{str: `{"hex": "12345dswr"}`, err: true},
+
+		// valid
+		{str: `{"hex": "0xde0a3a82af"}`, d: []byte{222, 10, 58, 130, 175}},
+	}
+
+	type testHex struct {
+		Hex HexBytes `json:"hex"`
+	}
+
+	for _, c := range tests {
+		th := new(testHex)
+		err := json.Unmarshal([]byte(c.str), th)
+		if c.err {
+			assert.Error(t, err)
+			continue
+		}
+
+		assert.NoError(t, err)
+		assert.Equal(t, len(c.d), len(th.Hex.Bytes()))
+		if len(c.d) < 1 {
+			continue
+		}
+
+		assert.Equal(t, c.d, th.Hex.Bytes())
 	}
 }

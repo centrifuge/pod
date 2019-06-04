@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
@@ -56,6 +57,20 @@ func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documen
 func (m *MockService) Exists(ctx context.Context, documentID []byte) bool {
 	args := m.Called()
 	return args.Get(0).(bool)
+}
+
+func (m *MockService) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+	args := m.Called(ctx, payload)
+	model, _ := args.Get(0).(documents.Model)
+	jobID, _ := args.Get(1).(jobs.JobID)
+	return model, jobID, args.Error(2)
+}
+
+func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+	args := m.Called(ctx, payload)
+	model, _ := args.Get(0).(documents.Model)
+	jobID, _ := args.Get(1).(jobs.JobID)
+	return model, jobID, args.Error(2)
 }
 
 type MockModel struct {

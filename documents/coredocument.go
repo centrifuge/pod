@@ -128,10 +128,13 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
 	}
 
+	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
+	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
 	cd.Attributes = attributes
-	return cd, nil
+	cd.Document.Attributes, err = toProtocolAttributes(attributes)
+	return cd, err
 }
 
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
@@ -230,7 +233,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	ncd.Document.Attributes = p2pAttrs

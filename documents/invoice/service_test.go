@@ -3,6 +3,7 @@
 package invoice
 
 import (
+	"context"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -19,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -217,8 +219,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	inv, ok := m.(*Invoice)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, inv.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, inv.GrossAmount.String(), "42")
+	assert.Equal(t, inv.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	assert.Equal(t, inv.Data.GrossAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {
@@ -397,4 +399,94 @@ func createCDWithEmbeddedInvoice(t *testing.T) (documents.Model, coredocumentpb.
 	cd, err := i.PackCoreDocument()
 	assert.NoError(t, err)
 	return i, cd
+}
+
+func TestService_CreateModel(t *testing.T) {
+	payload := documents.CreatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// invalid data
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	payload.Data = validData(t)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// success
+	payload.Data = validDataWithCurrency(t)
+	srv.repo = testRepo()
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.CreateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// missing id
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, srvr := getServiceWithMockedLayers()
+	srv = srvr.(service)
+	payload.DocumentID = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// payload invalid
+	inv := createInvoice(t)
+	err = testRepo().Create(did[:], inv.ID(), inv)
+	assert.NoError(t, err)
+	payload.DocumentID = inv.ID()
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	payload.Data = validData(t)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// Success
+	payload.Data = validDataWithCurrency(t)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.UpdateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m.ID(), inv.ID())
+	assert.Equal(t, m.CurrentVersion(), inv.NextVersion())
+	jm.AssertExpectations(t)
 }

@@ -120,8 +120,8 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	return true, nil
 }
 
-// InitDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
-func InitDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, jobID jobs.JobID) (queue.TaskResult, error) {
+// initDocumentAnchorTask enqueues a new document anchor task for a given combination of accountID/modelID/txID.
+func initDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID identity.DID, modelID []byte, jobID jobs.JobID) (queue.TaskResult, error) {
 	params := map[string]interface{}{
 		jobs.JobIDParam: jobID.String(),
 		DocumentIDParam: hexutil.Encode(modelID),
@@ -144,7 +144,7 @@ func InitDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID 
 // CreateAnchorJob creates a job for anchoring a document using jobs manager
 func CreateAnchorJob(parentCtx context.Context, jobsMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
 	jobID, done, err := jobsMan.ExecuteWithinJob(contextutil.Copy(parentCtx), self, jobID, "anchor document", func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errChan chan<- error) {
-		tr, err := InitDocumentAnchorTask(jobsMan, tq, accountID, documentID, jobID)
+		tr, err := initDocumentAnchorTask(jobsMan, tq, accountID, documentID, jobID)
 		if err != nil {
 			errChan <- err
 			return
