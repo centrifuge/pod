@@ -48,8 +48,6 @@ type contract interface {
 	RevokeKey(opts *bind.TransactOpts, _key [32]byte) (*types.Transaction, error)
 }
 
-const defaultGas = 100000
-
 func methodToOp(method string) config.ContractOp {
 	m := map[string]config.ContractOp{
 		"mint":         config.NftMint,
