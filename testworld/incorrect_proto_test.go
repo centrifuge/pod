@@ -6,27 +6,28 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 //send a valid signature request message
-func TestIncorrectProto_ValidMessage(t *testing.T){
+func TestIncorrectProto_ValidMessage(t *testing.T) {
 	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	oskar := doctorFord.getHostTestSuite(t, "Oskar")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ctxh := testingconfig.CreateAccountContext(t, oskar.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	// Get PublicKey and PrivateKey
-	publicKey, privateKey := GetSigningKeyPair(t, oskar.host.idService, oskar.id, ctxh)
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, oskar.id, publicKey, privateKey, oskar.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
-	p := p2p.AccessPeer(oskar.host.p2pClient)
+	p := p2p.AccessPeer(eve.host.p2pClient)
 
 	//send a signature request message with incorect protocol version
 	signatures, signatureErrors, err := p.GetSignaturesForDocument(ctxh, dm)
@@ -37,21 +38,21 @@ func TestIncorrectProto_ValidMessage(t *testing.T){
 }
 
 //send a signature request message with an incorrect node version
-func TestIncorrectProto_DifferentVersion(t *testing.T){
+func TestIncorrectProto_DifferentVersion(t *testing.T) {
 	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	oskar := doctorFord.getHostTestSuite(t, "Oskar")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ctxh := testingconfig.CreateAccountContext(t, oskar.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	// Get PublicKey and PrivateKey
-	publicKey, privateKey := GetSigningKeyPair(t, oskar.host.idService, oskar.id, ctxh)
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, oskar.id, publicKey, privateKey, oskar.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
-	p := p2p.AccessPeer(oskar.host.p2pClient)
+	p := p2p.AccessPeer(eve.host.p2pClient)
 
 	//send a signature request message with incorect protocol version
 	signatures, signatureErrors, err := p.GetSignaturesForDocumentIncorrectMessage(ctxh, dm, "incorrectNodeVersion")
@@ -62,21 +63,21 @@ func TestIncorrectProto_DifferentVersion(t *testing.T){
 }
 
 //send a signature request message with an invalid body
-func TestIncorrectProto_InvalidBody(t *testing.T){
+func TestIncorrectProto_InvalidBody(t *testing.T) {
 	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	oskar := doctorFord.getHostTestSuite(t, "Oskar")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ctxh := testingconfig.CreateAccountContext(t, oskar.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	// Get PublicKey and PrivateKey
-	publicKey, privateKey := GetSigningKeyPair(t, oskar.host.idService, oskar.id, ctxh)
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, oskar.id, publicKey, privateKey, oskar.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
-	p := p2p.AccessPeer(oskar.host.p2pClient)
+	p := p2p.AccessPeer(eve.host.p2pClient)
 
 	//send a signature request message with incorect protocol version
 	signatures, signatureErrors, err := p.GetSignaturesForDocumentIncorrectMessage(ctxh, dm, "invalidBody")
@@ -87,21 +88,21 @@ func TestIncorrectProto_InvalidBody(t *testing.T){
 }
 
 //send a signature request message with an invalid header
-func TestIncorrectProto_InvalidHeader(t *testing.T){
+func TestIncorrectProto_InvalidHeader(t *testing.T) {
 	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	oskar := doctorFord.getHostTestSuite(t, "Oskar")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
 
-	ctxh := testingconfig.CreateAccountContext(t, oskar.host.config)
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
 
 	// Get PublicKey and PrivateKey
-	publicKey, privateKey := GetSigningKeyPair(t, oskar.host.idService, oskar.id, ctxh)
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedPO(t, collaborators, oskar.id, publicKey, privateKey, oskar.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
-	p := p2p.AccessPeer(oskar.host.p2pClient)
+	p := p2p.AccessPeer(eve.host.p2pClient)
 
 	//send a signature request message with incorect protocol version
 	signatures, signatureErrors, err := p.GetSignaturesForDocumentIncorrectMessage(ctxh, dm, "invalidHeader")
@@ -110,4 +111,3 @@ func TestIncorrectProto_InvalidHeader(t *testing.T){
 	assert.Equal(t, 0, len(signatures))
 
 }
-

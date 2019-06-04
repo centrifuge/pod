@@ -4,6 +4,7 @@ package p2p
 
 import (
 	"context"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -13,29 +14,27 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	protocolpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
 )
 
 type MessageType string
 
-
 //allow accessing the messenger, idService and config of the peer
-func (s *peer) GetMessenger () messenger {
+func (s *peer) GetMessenger() messenger {
 	return s.mes
 }
 
-func (s *peer) GetConfig () config.Service {
+func (s *peer) GetConfig() config.Service {
 	return s.config
 }
 
-func (s *peer) GetIdService () identity.Service{
+func (s *peer) GetIdService() identity.Service {
 	return s.idService
 }
 
-func AccessPeer (client documents.Client) *peer{
+func AccessPeer(client documents.Client) *peer {
 	if p, ok := client.(*peer); ok {
-		return  p
+		return p
 	} else {
 		return nil
 	}
@@ -52,28 +51,8 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
-	tc, err := s.config.GetAccount(collaborator[:])
-	if err == nil {
-		// this is a local account
-		h := s.handlerCreator()
-		// create a context with receiving account value
-		localPeerCtx, err := contextutil.New(ctx, tc)
-		if err != nil {
-			return nil, err
-		}
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, sender)
-		if err != nil {
-			return nil, err
-		}
-		/*
-		//increment the node version by one
-		currentNodeVersion := version.GetVersion().String()
-		modifiedMajorVersion := strconv.FormatInt(version.GetVersion().Major()+1, 10)
-		modifiedNodeVersion := modifiedMajorVersion + currentNodeVersion[1:]
-		 */
-		header = &p2ppb.Header{NodeVersion:version.GetVersion().String() }
-
-	} else {
+	_, networkErr := s.config.GetAccount(collaborator[:])
+	if err != nil {
 		// this is a remote account
 		err = s.idService.Exists(ctx, collaborator)
 		if err != nil {
@@ -125,6 +104,8 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 			return nil, err
 		}
 		header = recvEnvelope.Header
+	} else {
+		return nil, networkErr
 	}
 
 	err = validateSignatureResp(collaborator, header, resp)
@@ -143,9 +124,6 @@ func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, cd coredoc
 		err:  err,
 	}
 }
-
-
-
 
 // GetSignaturesForDocument requests peer nodes for the signature, verifies them, and returns those signatures. The error type specifies which type of incorrect message should be sent
 func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, model documents.Model, errorType string) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
