@@ -53,8 +53,9 @@ type ResponseHeader struct {
 
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
-	Header ResponseHeader `json:"header"`
-	Data   interface{}    `json:"data"`
+	Header     ResponseHeader `json:"header"`
+	Data       interface{}    `json:"data"`
+	Attributes AttributeMap   `json:"attributes"`
 }
 
 func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
@@ -118,6 +119,23 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 		})
 	}
 	return nnfts, err
+}
+
+func convertAttributes(attrs []documents.Attribute) (AttributeMap, error) {
+	m := make(AttributeMap)
+	for _, v := range attrs {
+		val, err := v.Value.String()
+		if err != nil {
+			return nil, err
+		}
+
+		m[v.KeyLabel] = Attribute{
+			Type:  v.Value.Type.String(),
+			Value: val,
+		}
+	}
+
+	return m, nil
 }
 
 func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Model, id jobs.JobID) (response ResponseHeader, err error) {

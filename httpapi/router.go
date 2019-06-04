@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
@@ -27,14 +28,14 @@ import (
 // @license.name MIT
 // @host localhost:8082
 // @schemes http
-func Router(config Config, registry documents.TokenRegistry, service documents.Service) *chi.Mux {
+func Router(config Config, configSrv config.Service, registry documents.TokenRegistry, service documents.Service) *chi.Mux {
 	r := chi.NewRouter()
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth)
+	r.Use(auth(configSrv))
 
 	// health check
 	health.Register(r, config)
@@ -50,23 +51,31 @@ type Config interface {
 	GetNetworkString() string
 }
 
-func auth(handler http.Handler) http.Handler {
+func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
 	skippedURLs := []string{"/ping"}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rctx := chi.RouteContext(r.Context())
-		if utils.ContainsString(skippedURLs, rctx.RoutePath) {
+	return func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rctx := chi.RouteContext(r.Context())
+			if utils.ContainsString(skippedURLs, rctx.RoutePath) {
+				handler.ServeHTTP(w, r)
+				return
+			}
+
+			did := r.Header.Get("authorization")
+			if !common.IsHexAddress(did) {
+				render.Status(r, http.StatusForbidden)
+				render.JSON(w, r, httputils.HTTPError{Message: "'authorization' header missing"})
+				return
+			}
+
+			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, did), configSrv)
+			if err != nil {
+				render.Status(r, http.StatusForbidden)
+				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
+				return
+			}
+			r = r.WithContext(ctx)
 			handler.ServeHTTP(w, r)
-			return
-		}
-
-		did := r.Header.Get("authorization")
-		if !common.IsHexAddress(did) {
-			render.Status(r, http.StatusForbidden)
-			render.JSON(w, r, httputils.HTTPError{Message: "'authorization' header missing"})
-			return
-		}
-
-		r = r.WithContext(context.WithValue(r.Context(), config.AccountHeaderKey, did))
-		handler.ServeHTTP(w, r)
-	})
+		})
+	}
 }

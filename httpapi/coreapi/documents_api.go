@@ -41,7 +41,6 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Error(err)
 		render.Status(r, code)
 		render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
 	}()
@@ -50,6 +49,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		code = http.StatusInternalServerError
+		log.Error(err)
 		return
 	}
 
@@ -57,30 +57,41 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(data, &request)
 	if err != nil {
 		code = http.StatusBadRequest
+		log.Error(err)
 		return
 	}
 
 	payload, err := toDocumentsCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
+		log.Error(err)
 		return
 	}
 
 	model, jobID, err := h.srv.CreateDocument(ctx, payload)
 	if err != nil {
 		code = http.StatusBadRequest
+		log.Error(err)
 		return
 	}
 
 	docData := model.GetData()
+	attrMap, err := convertAttributes(model.GetAttributes())
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
 	header, err := deriveResponseHeader(h.tokenRegistry, model, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
+		log.Error(err)
 		return
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, DocumentResponse{Header: header, Data: docData})
+	render.JSON(w, r, DocumentResponse{Header: header, Data: docData, Attributes: attrMap})
 }
 
 // Register registers the core apis to the router.

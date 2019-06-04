@@ -23,6 +23,8 @@ import (
 const (
 	prefix string = "invoice"
 
+	scheme = prefix
+
 	// ErrInvoiceInvalidData sentinel error when data unmarshal is failed.
 	ErrInvoiceInvalidData = errors.Error("invalid invoice data")
 )

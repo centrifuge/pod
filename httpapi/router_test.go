@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ func TestRouter_auth(t *testing.T) {
 	// missing auth
 	r := httptest.NewRequest("POST", "/documents", nil).WithContext(ctx)
 	w := httptest.NewRecorder()
-	h := auth(nil)
+	h := auth(nil)(nil)
 	h.ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusForbidden)
 	assert.Contains(t, w.Body.String(), "'authorization' header missing")
@@ -35,7 +36,7 @@ func TestRouter_auth(t *testing.T) {
 		assert.Nil(t, v)
 		w.WriteHeader(http.StatusOK)
 	})
-	auth(next).ServeHTTP(w, r)
+	auth(nil)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	// success
@@ -50,12 +51,15 @@ func TestRouter_auth(t *testing.T) {
 		assert.Equal(t, did.String(), v)
 		w.WriteHeader(http.StatusOK)
 	})
-	auth(next).ServeHTTP(w, r)
+	cfgSrv := new(configstore.MockService)
+	cfgSrv.On("GetAccount", did[:]).Return(nil, nil)
+	auth(cfgSrv)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
+	cfgSrv.AssertExpectations(t)
 }
 
 func TestRouter(t *testing.T) {
-	r := Router(nil, nil, nil)
+	r := Router(nil, nil, nil, nil)
 	assert.Len(t, r.Middlewares(), 4)
 	assert.Len(t, r.Routes(), 2)
 }

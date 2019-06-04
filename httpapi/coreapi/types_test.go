@@ -23,7 +23,7 @@ import (
 )
 
 func TestTypes_convertAttributes(t *testing.T) {
-	attrs := map[string]Attribute{
+	attrs := AttributeMap{
 		"string_test": {
 			Type:  "string",
 			Value: "hello, world!",
@@ -39,8 +39,20 @@ func TestTypes_convertAttributes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, atts, 2)
 
+	var attrList []documents.Attribute
+	for _, v := range atts {
+		attrList = append(attrList, v)
+	}
+	cattrs, err := convertAttributes(attrList)
+	assert.NoError(t, err)
+	assert.Equal(t, attrs, cattrs)
+
 	attrs["invalid"] = Attribute{Type: "unknown", Value: "some value"}
 	_, err = toDocumentAttributes(attrs)
+	assert.Error(t, err)
+
+	attrList = append(attrList, documents.Attribute{Value: documents.AttrVal{Type: "invalid"}})
+	_, err = convertAttributes(attrList)
 	assert.Error(t, err)
 }
 

@@ -77,7 +77,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	cfg := nodeObjReg[bootstrap.BootstrappedConfig].(config.Configuration)
-	return httpapi.Router(cfg, invoiceUnpaidService.(documents.TokenRegistry), docService), nil
+	return httpapi.Router(cfg, configService, invoiceUnpaidService.(documents.TokenRegistry), docService), nil
 }
 
 func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {

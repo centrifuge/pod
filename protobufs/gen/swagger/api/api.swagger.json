@@ -180,6 +180,10 @@
         "coreapi.DocumentResponse": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMap"
+                },
                 "data": {
                     "type": "object"
                 },
