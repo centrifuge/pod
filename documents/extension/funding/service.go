@@ -44,7 +44,7 @@ const (
 	fundingLabel              = "funding_agreement"
 	fundingFieldKey           = "funding_agreement[{IDX}]."
 	idxKey                    = "{IDX}"
-	agreementIDLabel            = "agreement_id"
+	agreementIDLabel          = "agreement_id"
 	fundingSignatures         = "signatures"
 	fundingSignaturesFieldKey = "signatures[{IDX}]"
 )
@@ -177,11 +177,11 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 
 	fd.BorrowerId = req.Data.BorrowerId
 	fd.FunderId = req.Data.FunderId
-	funderId, err := identity.NewDIDFromString(req.Data.FunderId)
+	funderID, err := identity.NewDIDFromString(req.Data.FunderId)
 	if err != nil {
 		return nil, err
 	}
-	borrowerId, err := identity.NewDIDFromString(req.Data.BorrowerId)
+	borrowerID, err := identity.NewDIDFromString(req.Data.BorrowerId)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 
 	// check which Id needs to be added as a new collaborator to the document
 	var c []identity.DID
-	for _, id := range []identity.DID{funderId, borrowerId} {
+	for _, id := range []identity.DID{funderID, borrowerID} {
 		collaborator, err := model.IsDIDCollaborator(id)
 		if err != nil {
 			return nil, err
@@ -211,8 +211,8 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 			ReadWriteCollaborators: c,
 		},
 		true,
-		attributes...
-		)
+		attributes...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -266,17 +266,17 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 
 	fd.BorrowerId = req.Data.BorrowerId
 	fd.FunderId = req.Data.FunderId
-	funderId, err := identity.NewDIDFromString(req.Data.FunderId)
+	funderID, err := identity.NewDIDFromString(req.Data.FunderId)
 	if err != nil {
 		return nil, err
 	}
-	borrowerId, err := identity.NewDIDFromString(req.Data.BorrowerId)
+	borrowerID, err := identity.NewDIDFromString(req.Data.BorrowerId)
 	if err != nil {
 		return nil, err
 	}
 	// check which Id needs to be added as a new collaborator to the document
 	var c []identity.DID
-	for _, id := range []identity.DID{funderId, borrowerId} {
+	for _, id := range []identity.DID{funderID, borrowerID} {
 		collaborator, err := model.IsDIDCollaborator(id)
 		if err != nil {
 			return nil, err
@@ -303,8 +303,8 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 			ReadWriteCollaborators: c,
 		},
 		true,
-		attributes...
-		)
+		attributes...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (*Data, er
 	return s.deriveFundingData(model, idx)
 }
 
-func (s service) findFundingIDX(model documents.Model, agreementId string) (idx string, err error) {
+func (s service) findFundingIDX(model documents.Model, agreementID string) (idx string, err error) {
 	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return idx, err
@@ -353,7 +353,7 @@ func (s service) findFundingIDX(model documents.Model, agreementId string) (idx 
 		if err != nil {
 			return idx, err
 		}
-		if attrFundingID == agreementId {
+		if attrFundingID == agreementID {
 			return i.String(), nil
 		}
 		i, err = i.Inc()

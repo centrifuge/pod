@@ -99,7 +99,7 @@ func defaultFundingPayload(collaborators []string) map[string]interface{} {
 func updateFundingPayload(agreementId string, collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{
-			"agreement_id":         agreementId,
+			"agreement_id":       agreementId,
 			"amount":             "10000",
 			"apr":                "0.55",
 			"days":               "90",

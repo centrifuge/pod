@@ -228,14 +228,14 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 func createTestClientData() *clientfunpb.FundingData {
 	fundingId := newAgreementID()
 	return &clientfunpb.FundingData{
-		AgreementId:             fundingId,
+		AgreementId:           fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
-		BorrowerId: 			testingidentity.GenerateRandomDID().String(),
-		FunderId: 				testingidentity.GenerateRandomDID().String(),
+		BorrowerId:            testingidentity.GenerateRandomDID().String(),
+		FunderId:              testingidentity.GenerateRandomDID().String(),
 		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
@@ -246,14 +246,14 @@ func createTestClientData() *clientfunpb.FundingData {
 func createTestData() Data {
 	fundingId := newAgreementID()
 	return Data{
-		AgreementId:             fundingId,
+		AgreementId:           fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
-		BorrowerId: 			testingidentity.GenerateRandomDID().String(),
-		FunderId: 				testingidentity.GenerateRandomDID().String(),
+		BorrowerId:            testingidentity.GenerateRandomDID().String(),
+		FunderId:              testingidentity.GenerateRandomDID().String(),
 		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),

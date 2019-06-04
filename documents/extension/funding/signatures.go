@@ -47,7 +47,7 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 }
 
 // Sign adds a signature to an existing document
-func (s service) Sign(ctx context.Context, agreementId string, identifier []byte) (documents.Model, error) {
+func (s service) Sign(ctx context.Context, agreementID string, identifier []byte) (documents.Model, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -63,7 +63,7 @@ func (s service) Sign(ctx context.Context, agreementId string, identifier []byte
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	idxFunding, err := s.findFundingIDX(model, agreementId)
+	idxFunding, err := s.findFundingIDX(model, agreementID)
 	if err != nil {
 		return nil, ErrFundingNotFound
 	}
