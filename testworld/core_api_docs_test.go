@@ -27,7 +27,7 @@ func TestCoreAPI_DocumentCreate(t *testing.T) {
 
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
-		"currency":    "USD",
+		"currency":    "EUR",
 	}
 
 	// TODO(ved): move to core apis once the Get is ready
