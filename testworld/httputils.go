@@ -213,7 +213,7 @@ func getAgreementId(t *testing.T, response *httpexpect.Object) string {
 	if agreementID == "" {
 		t.Error("fundingId empty")
 	}
-	return fundingID
+	return agreementID
 }
 
 func getTransactionID(t *testing.T, resp *httpexpect.Object) string {

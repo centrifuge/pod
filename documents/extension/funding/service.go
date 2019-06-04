@@ -177,6 +177,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 
 	fd.BorrowerId = req.Data.BorrowerId
 	fd.FunderId = req.Data.FunderId
+
 	funderID, err := identity.NewDIDFromString(req.Data.FunderId)
 	if err != nil {
 		return nil, err
