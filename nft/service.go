@@ -235,7 +235,6 @@ func (s *service) TransferFrom(ctx context.Context, registry common.Address, to 
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return &Response{
 		JobID:   jobID.String(),
 		TokenID: tokenID.String(),

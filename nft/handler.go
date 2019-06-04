@@ -131,7 +131,6 @@ func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTran
 	if err != nil {
 		return nil, errors.NewTypedError(ErrTokenTransfer, err)
 	}
-
 	return &nftpb.TokenTransferResponse{
 		Header: &nftpb.ResponseHeader{JobId: resp.JobID},
 	}, nil
