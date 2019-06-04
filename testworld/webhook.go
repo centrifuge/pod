@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 

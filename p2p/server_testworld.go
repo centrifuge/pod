@@ -65,7 +65,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 		//select which envelope preparing function to call based on the error type
 		var envelope *protocolpb.P2PEnvelope
 		var envelopeErr error
-		switch errorType{
+		switch errorType {
 		case "incorrectNodeVersion":
 			envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeIncorrectNodeVersion(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 			if envelopeErr != nil {
