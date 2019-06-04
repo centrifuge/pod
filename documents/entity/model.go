@@ -358,3 +358,9 @@ func (e *Entity) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) 
 	e.CoreDocument = ncd
 	return nil
 }
+
+// GetData returns entity data
+// TODO(ved): return actual data post migration.
+func (e *Entity) GetData() interface{} {
+	return nil
+}

@@ -27,10 +27,10 @@ type BinaryAttachment struct {
 // PaymentDetails holds the payment related details for invoice.
 type PaymentDetails struct {
 	ID                    string        `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *time.Time    `json:"date_executed,omitempty"`
-	Payee                 *identity.DID `json:"payee,omitempty"` // centrifuge id of payee
-	Payer                 *identity.DID `json:"payer,omitempty"` // centrifuge id of payer
-	Amount                *Decimal      `json:"amount,omitempty"`
+	DateExecuted          *time.Time    `json:"date_executed"`
+	Payee                 *identity.DID `json:"payee"` // centrifuge id of payee
+	Payer                 *identity.DID `json:"payer"` // centrifuge id of payer
+	Amount                *Decimal      `json:"amount"`
 	Currency              string        `json:"currency"`
 	Reference             string        `json:"reference"` // payment reference (e.g. reference field on bank transfer)
 	BankName              string        `json:"bank_name"`
