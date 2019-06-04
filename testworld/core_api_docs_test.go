@@ -60,7 +60,7 @@ func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
 		},
 		"attributes": map[string]map[string]string{
 			"string_test": {
-				"type":  "invalid",
+				"type":  "string",
 				"value": "hello, world",
 			},
 		},

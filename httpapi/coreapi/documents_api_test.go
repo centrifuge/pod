@@ -66,6 +66,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 
 	m := new(testingdocuments.MockModel)
 	m.On("GetData").Return(data)
+	m.On("GetAttributes").Return(nil)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
 	docSrv = new(testingdocuments.MockService)
 	srv = Service{docService: docSrv}
@@ -87,6 +88,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 	m.On("Author").Return(nil, errors.New("somerror"))
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
+	m.On("GetAttributes").Return(nil)
 	docSrv = new(testingdocuments.MockService)
 	srv = Service{docService: docSrv}
 	h = handler{srv: srv}

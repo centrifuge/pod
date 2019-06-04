@@ -147,6 +147,12 @@ func (m *MockModel) GetCollaborators(filterIDs ...identity.DID) (documents.Colla
 	return cas, args.Error(1)
 }
 
+func (m *MockModel) GetAttributes() []documents.Attribute {
+	args := m.Called()
+	attrs, _ := args.Get(0).([]documents.Attribute)
+	return attrs
+}
+
 type MockRegistry struct {
 	mock.Mock
 }
