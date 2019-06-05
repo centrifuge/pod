@@ -68,8 +68,8 @@ func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen 
 	return objGet
 }
 
-func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, fundingID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/documents/"+identifier+"/fundings/"+fundingID), auth).
+func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, agreementID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/documents/"+identifier+"/fundings/"+agreementID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	objGet.Path("$.header.document_id").String().Equal(identifier)
@@ -173,15 +173,15 @@ func createFunding(e *httpexpect.Expect, auth string, identifier string, status 
 		Expect().Status(status).JSON().Object()
 	return obj
 }
-func updateFunding(e *httpexpect.Expect, auth string, fundingId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/documents/"+docIdentifier+"/fundings/"+fundingId), auth).
+func updateFunding(e *httpexpect.Expect, auth string, agreementId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PUT("/documents/"+docIdentifier+"/fundings/"+agreementId), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
-func signFunding(e *httpexpect.Expect, auth, identifier, fundingId string, status int) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/documents/"+identifier+"/fundings/"+fundingId+"/sign"), auth).
+func signFunding(e *httpexpect.Expect, auth, identifier, agreementId string, status int) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/documents/"+identifier+"/fundings/"+agreementId+"/sign"), auth).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
@@ -208,12 +208,12 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 	return docIdentifier
 }
 
-func getFundingId(t *testing.T, response *httpexpect.Object) string {
-	fundingID := response.Value("data").Path("$.funding.funding_id").String().NotEmpty().Raw()
-	if fundingID == "" {
+func getAgreementId(t *testing.T, response *httpexpect.Object) string {
+	agreementID := response.Value("data").Path("$.funding.agreement_id").String().NotEmpty().Raw()
+	if agreementID == "" {
 		t.Error("fundingId empty")
 	}
-	return fundingID
+	return agreementID
 }
 
 func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
