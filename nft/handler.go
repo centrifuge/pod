@@ -136,6 +136,33 @@ func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTran
 	}, nil
 }
 
+// OwnerOf returns the owner of an NFT
+func (g grpcHandler) OwnerOf(ctx context.Context, request *nftpb.OwnerOfRequest) (*nftpb.OwnerOfResponse, error) {
+	tokenID, err := TokenIDFromString(request.TokenId)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrInvalidParameter, err)
+	}
+
+	if !common.IsHexAddress(request.RegistryAddress) {
+		return nil, ErrInvalidAddress
+	}
+	registry := common.HexToAddress(request.RegistryAddress)
+	if err != nil {
+		return nil, err
+	}
+
+
+	owner, err := g.service.OwnerOf(registry, tokenID[:])
+	if err != nil {
+		return nil, errors.NewTypedError(ErrInvalidParameter, err)
+	}
+
+
+
+
+	return nil, nil
+}
+
 func validateParameters(request *nftpb.NFTMintRequest) error {
 	if !common.IsHexAddress(request.RegistryAddress) {
 		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")

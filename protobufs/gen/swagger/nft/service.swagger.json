@@ -94,6 +94,12 @@
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "registry_address",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
