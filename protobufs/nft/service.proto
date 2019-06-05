@@ -14,7 +14,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service NFTService {
   rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
-      post: "/token/mint"
+      post: "/nfts/mint"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -23,7 +23,7 @@ service NFTService {
   }
   rpc MintInvoiceUnpaidNFT(NFTMintInvoiceUnpaidRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
-      post: "/token/mint/invoice/unpaid/{identifier}"
+      post: "/nfts/{identifier}/invoice/unpaid/mint"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -32,7 +32,7 @@ service NFTService {
   }
   rpc TokenTransfer(TokenTransferRequest) returns (TokenTransferResponse) {
     option (google.api.http) = {
-      post: "/token/transfer/{token_id}"
+      post: "/nfts/{token_id}/transfer"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -41,7 +41,7 @@ service NFTService {
   }
   rpc OwnerOf(OwnerOfRequest) returns (OwnerOfResponse) {
     option (google.api.http) = {
-      get: "/token/owner/{token_id}/registry/{registry_address}"
+      get: "/nfts/{token_id}/registry/{registry_address}/owner"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get the owner of an NFT"

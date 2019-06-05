@@ -299,13 +299,13 @@ func RegisterNFTServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 }
 
 var (
-	pattern_NFTService_MintNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"token", "mint"}, ""))
+	pattern_NFTService_MintNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"nfts", "mint"}, ""))
 
-	pattern_NFTService_MintInvoiceUnpaidNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"token", "mint", "invoice", "unpaid", "identifier"}, ""))
+	pattern_NFTService_MintInvoiceUnpaidNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 2, 4}, []string{"nfts", "identifier", "invoice", "unpaid", "mint"}, ""))
 
-	pattern_NFTService_TokenTransfer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"token", "transfer", "token_id"}, ""))
+	pattern_NFTService_TokenTransfer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"nfts", "token_id", "transfer"}, ""))
 
-	pattern_NFTService_OwnerOf_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"token", "owner", "token_id", "registry", "registry_address"}, ""))
+	pattern_NFTService_OwnerOf_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"nfts", "token_id", "registry", "registry_address", "owner"}, ""))
 )
 
 var (

@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/token/mint": {
+    "/nfts/mint": {
       "post": {
         "description": "Mint an NFT from a Centrifuge Document",
         "operationId": "MintNFT",
@@ -42,7 +42,7 @@
         ]
       }
     },
-    "/token/mint/invoice/unpaid/{identifier}": {
+    "/nfts/{identifier}/invoice/unpaid/mint": {
       "post": {
         "description": "Mints an NFT out of an Unpaid Centrifuge Invoice",
         "operationId": "MintInvoiceUnpaidNFT",
@@ -76,7 +76,7 @@
         ]
       }
     },
-    "/token/owner/{token_id}/registry/{registry_address}": {
+    "/nfts/{token_id}/registry/{registry_address}/owner": {
       "get": {
         "description": "Get the owner of an NFT",
         "operationId": "OwnerOf",
@@ -107,7 +107,7 @@
         ]
       }
     },
-    "/token/transfer/{token_id}": {
+    "/nfts/{token_id}/transfer": {
       "post": {
         "description": "Transfer an NFT owned by the identity contract",
         "operationId": "TokenTransfer",
