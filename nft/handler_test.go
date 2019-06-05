@@ -24,9 +24,9 @@ type mockInvoiceUnpaid struct {
 	mock.Mock
 }
 
-func (m *mockInvoiceUnpaid) MintNFT(ctx context.Context, request MintNFTRequest) (*Response, chan bool, error) {
+func (m *mockInvoiceUnpaid) MintNFT(ctx context.Context, request MintNFTRequest) (*TokenResponse, chan bool, error) {
 	args := m.Called(ctx, request)
-	resp, _ := args.Get(0).(*Response)
+	resp, _ := args.Get(0).(*TokenResponse)
 	return resp, nil, args.Error(1)
 }
 
@@ -36,9 +36,9 @@ func (m *mockInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Cont
 	return resp, args.Error(1)
 }
 
-func (m *mockInvoiceUnpaid) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+func (m *mockInvoiceUnpaid) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan bool, error) {
 	args := m.Called(ctx)
-	resp, _ := args.Get(0).(*Response)
+	resp, _ := args.Get(0).(*TokenResponse)
 	return resp, nil, args.Error(1)
 }
 
@@ -56,7 +56,7 @@ func TestNFTMint_success(t *testing.T) {
 	assert.NoError(t, err)
 
 	tokID := big.NewInt(1)
-	nftResponse := &Response{TokenID: tokID.String()}
+	nftResponse := &TokenResponse{TokenID: tokID.String()}
 	req := MintNFTRequest{
 		DocumentID:      docID,
 		RegistryAddress: common.HexToAddress(nftMintRequest.RegistryAddress),
@@ -74,7 +74,7 @@ func TestPaymentObligationNFTMint_success(t *testing.T) {
 	mockService := &mockInvoiceUnpaid{}
 	mockConfigStore := mockmockConfigStore()
 	tokID := big.NewInt(1)
-	nftResponse := &Response{TokenID: tokID.String()}
+	nftResponse := &TokenResponse{TokenID: tokID.String()}
 	nftReq := &nftpb.NFTMintInvoiceUnpaidRequest{
 		Identifier:     "0x1234567890",
 		DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
@@ -171,7 +171,7 @@ func TestPaymentObligationNFTTransferFrom_success(t *testing.T) {
 	mockConfigStore := mockmockConfigStore()
 
 	tokenID := hexutil.Encode(utils.RandomSlice(32))
-	nftResponse := &Response{TokenID: tokenID, JobID: "0x123"}
+	nftResponse := &TokenResponse{TokenID: tokenID, JobID: "0x123"}
 	nftReq := &nftpb.TokenTransferRequest{
 		TokenId:         tokenID,
 		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
@@ -186,13 +186,33 @@ func TestPaymentObligationNFTTransferFrom_success(t *testing.T) {
 	assert.Equal(t, response.Header.JobId, nftResponse.JobID)
 }
 
+func TestPaymentObligationNFTOwnerOf_success(t *testing.T) {
+	mockService := &mockInvoiceUnpaid{}
+	mockConfigStore := mockmockConfigStore()
+
+	tokenID := hexutil.Encode(utils.RandomSlice(32))
+
+	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	ownerReq := &nftpb.OwnerOfRequest{
+		TokenId:         tokenID,
+		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
+	}
+
+	mockService.On("OwnerOf", mock.Anything, mock.Anything).Return(owner, nil).Once()
+	handler := grpcHandler{mockConfigStore, mockService}
+
+	response, err := handler.OwnerOf(testingconfig.HandlerContext(mockConfigStore), ownerReq)
+	assert.NoError(t, err)
+	assert.Equal(t, response.Owner, owner.String())
+}
+
 func TestPaymentObligationNFTTransferFrom_fail(t *testing.T) {
 	mockService := &mockInvoiceUnpaid{}
 	mockConfigStore := mockmockConfigStore()
 
 	// invalid token length
 	tokenID := hexutil.Encode(utils.RandomSlice(10))
-	nftResponse := &Response{TokenID: tokenID, JobID: "0x123"}
+	nftResponse := &TokenResponse{TokenID: tokenID, JobID: "0x123"}
 	nftReq := &nftpb.TokenTransferRequest{
 		TokenId:         tokenID,
 		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",

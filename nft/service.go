@@ -161,7 +161,7 @@ func (s *service) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]st
 }
 
 // MintNFT mints an NFT
-func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*Response, chan bool, error) {
+func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -207,14 +207,14 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*Response, c
 		return nil, nil, err
 	}
 
-	return &Response{
+	return &TokenResponse{
 		JobID:   jobID.String(),
 		TokenID: tokenID.String(),
 	}, done, nil
 }
 
 // TransferFrom transfers an NFT to another address
-func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*Response, chan bool, error) {
+func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -235,7 +235,7 @@ func (s *service) TransferFrom(ctx context.Context, registry common.Address, to 
 	if err != nil {
 		return nil, nil, err
 	}
-	return &Response{
+	return &TokenResponse{
 		JobID:   jobID.String(),
 		TokenID: tokenID.String(),
 	}, done, nil
