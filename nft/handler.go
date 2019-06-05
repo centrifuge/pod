@@ -151,16 +151,12 @@ func (g grpcHandler) OwnerOf(ctx context.Context, request *nftpb.OwnerOfRequest)
 		return nil, err
 	}
 
-
 	owner, err := g.service.OwnerOf(registry, tokenID[:])
 	if err != nil {
-		return nil, errors.NewTypedError(ErrInvalidParameter, err)
+		return nil, errors.NewTypedError(ErrOwnerOf, err)
 	}
 
-
-
-
-	return nil, nil
+	return &nftpb.OwnerOfResponse{TokenId: request.TokenId, Owner:owner.Hex()}, nil
 }
 
 func validateParameters(request *nftpb.NFTMintRequest) error {

@@ -11,4 +11,7 @@ const (
 
 	// ErrTokenTransfer must be used if token transfer transaction fails
 	ErrTokenTransfer = errors.Error("token transfer transaction failed")
+
+	// ErrOwnerOf must be used if an ownerOf calls to a NFT registry fails
+	ErrOwnerOf = errors.Error("ownerOf call on NFT registry failed")
 )
