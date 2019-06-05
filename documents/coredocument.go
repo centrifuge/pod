@@ -290,11 +290,11 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 }
 
 // CreateProofs takes document data tree and list to fields and generates proofs.
-// we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
+// we will try generating proofs from the dataLeaves. If failed, we will generate proofs from CoreDocument.
 // errors out when the proof generation is failed on core document tree.
-func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
+func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNode, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
-	drTree, err := cd.DocumentRootTree(docType, dataTree)
+	drTree, err := cd.DocumentRootTree(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
@@ -304,12 +304,12 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signatures tree: %v", err))
 	}
 
-	docDataTree, err := cd.dataTree(docType, dataTree)
+	docDataTree, err := cd.docDataTree(docType, dataLeaves)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing root: %v", err))
 	}
 
-	dataPrefix, err := getDataTreePrefix(dataTree)
+	dataPrefix, err := getDataTreePrefix(dataLeaves)
 	if err != nil {
 		return nil, err
 	}
@@ -325,15 +325,13 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	return generateProofs(fields, treeProofs)
 }
 
-// TODO remove as soon as we have a public method that retrieves the parent prefix
-func getDataTreePrefix(dataTree *proofs.DocumentTree) (string, error) {
-	props := dataTree.PropertyOrder()
-	if len(props) == 0 {
-		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data tree"))
+func getDataTreePrefix(dataLeaves []proofs.LeafNode) (string, error) {
+	if len(dataLeaves) == 0 {
+		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data leaves"))
 	}
-	fidx := strings.Split(props[0].ReadableName(), ".")
+	fidx := strings.Split(dataLeaves[0].Property.ReadableName(), ".")
 	if len(fidx) == 1 {
-		return "", errors.NewTypedError(ErrCDTree, errors.New("no prefix found in data tree property"))
+		return "", errors.NewTypedError(ErrCDTree, errors.New("no prefix found in data leaf property"))
 	}
 	return fidx[0], nil
 }
@@ -388,8 +386,8 @@ func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err e
 }
 
 // DocumentRootTree returns the merkle tree for the document root.
-func (cd *CoreDocument) DocumentRootTree(docType string, docDataTree *proofs.DocumentTree) (tree *proofs.DocumentTree, err error) {
-	docDataRoot, err := cd.CalculateDocumentDataRoot(docType, docDataTree)
+func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+	docDataRoot, err := cd.CalculateDocumentDataRoot(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
@@ -428,22 +426,22 @@ func (cd *CoreDocument) DocumentRootTree(docType string, docDataTree *proofs.Doc
 	return tree, nil
 }
 
-// dataTree returns the merkle tree for the document data tree provided.
-func (cd *CoreDocument) dataTree(docType string, docDataTree *proofs.DocumentTree) (tree *proofs.DocumentTree, err error) {
-	if docDataTree == nil {
+// docDataTree returns the merkle tree for the document data tree provided.
+func (cd *CoreDocument) docDataTree(docType string, dataLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+	if dataLeaves == nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
-	cdTree, err := cd.coredocTree(docType)
+	cdLeaves, err := cd.coredocLeaves(docType)
 	if err != nil {
 		return nil, err
 	}
-	// create the dataTree out of docData and coredoc trees
+	// create the docDataTree out of docData and coredoc trees
 	tree, err = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
 	if err != nil {
 		return nil, err
 	}
 
-	err = tree.AddLeaves(append(docDataTree.GetLeaves(), cdTree.GetLeaves()...))
+	err = tree.AddLeaves(append(dataLeaves, cdLeaves...))
 	if err != nil {
 		return nil, err
 	}
@@ -454,9 +452,8 @@ func (cd *CoreDocument) dataTree(docType string, docDataTree *proofs.DocumentTre
 	return tree, nil
 }
 
-// coredocTree returns the merkle tree of the CoreDocument.
-func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree, err = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
+func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, error) {
+	tree, err := cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -478,6 +475,23 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 		return nil, err
 	}
 
+	return tree, nil
+}
+
+func (cd *CoreDocument) coredocLeaves(docType string) ([]proofs.LeafNode, error) {
+	tree, err := cd.coredocRawTree(docType)
+	if err != nil {
+		return nil, err
+	}
+	return tree.GetLeaves(), nil
+}
+
+// coredocTree returns the merkle tree of the CoreDocument.
+func (cd *CoreDocument) coredocTree(docType string) (*proofs.DocumentTree, error) {
+	tree, err := cd.coredocRawTree(docType)
+	if err != nil {
+		return nil, err
+	}
 	err = tree.Generate()
 	if err != nil {
 		return nil, err
@@ -582,8 +596,8 @@ func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filtered
 }
 
 // CalculateDocumentRoot calculates the document root of the CoreDocument.
-func (cd *CoreDocument) CalculateDocumentRoot(docType string, docDataTree *proofs.DocumentTree) ([]byte, error) {
-	tree, err := cd.DocumentRootTree(docType, docDataTree)
+func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataLeaves []proofs.LeafNode) ([]byte, error) {
+	tree, err := cd.DocumentRootTree(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
@@ -592,8 +606,8 @@ func (cd *CoreDocument) CalculateDocumentRoot(docType string, docDataTree *proof
 }
 
 // CalculateDocumentDataRoot calculates the data root of the document.
-func (cd *CoreDocument) CalculateDocumentDataRoot(docType string, docDataTree *proofs.DocumentTree) ([]byte, error) {
-	tree, err := cd.dataTree(docType, docDataTree)
+func (cd *CoreDocument) CalculateDocumentDataRoot(docType string, dataLeaves []proofs.LeafNode) ([]byte, error) {
+	tree, err := cd.docDataTree(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}

@@ -180,33 +180,50 @@ func (e *EntityRelationship) Type() reflect.Type {
 
 // CalculateDataRoot calculates the data root.
 func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
-	t, err := e.getDocumentDataTree()
+	t, err := e.getDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
 
-	dr := t.RootHash()
-	return dr, nil
+	return t.RootHash(), nil
 }
 
-// getDocumentDataTree creates precise-proofs data tree for the model
-func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	eProto := e.createP2PProtobuf()
+func (e *EntityRelationship) getDataLeaves() ([]proofs.LeafNode, error) {
+	t, err := e.getRawDataTree()
+	if err != nil {
+		return nil, errors.New("getDataTree error %v", err)
+	}
+	return t.GetLeaves(), nil
+}
+
+func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
+	erProto := e.createP2PProtobuf()
 	if e.CoreDocument == nil {
-		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
+		return nil, errors.New("getDataTree error CoreDocument not set")
 	}
 	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDataTree error %v", err)
 	}
-	if err := t.AddLeavesFromDocument(eProto); err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+	err = t.AddLeavesFromDocument(erProto)
+	if err != nil {
+		return nil, errors.New("getDataTree error %v", err)
 	}
-	if err := t.Generate(); err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+	return t, nil
+}
+
+// getDataTree creates precise-proofs data tree for the model
+func (e *EntityRelationship) getDataTree() (*proofs.DocumentTree, error) {
+	tree, err := e.getRawDataTree()
+	if err != nil {
+		return nil, errors.New("getDataTree error %v", err)
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, errors.New("getDataTree error %v", err)
 	}
 
-	return t, nil
+	return tree, nil
 }
 
 // CreateNFTProofs is not implemented for EntityRelationship.
@@ -220,12 +237,12 @@ func (e *EntityRelationship) CreateNFTProofs(
 
 // CreateProofs generates proofs for given fields.
 func (e *EntityRelationship) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := e.getDocumentDataTree()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return e.CoreDocument.CreateProofs(e.DocumentType(), tree, fields)
+	return e.CoreDocument.CreateProofs(e.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the entity relationship document type.
@@ -240,29 +257,29 @@ func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Addres
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *EntityRelationship) CalculateSigningRoot() ([]byte, error) {
-	t, err := e.getDocumentDataTree()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.CalculateDocumentDataRoot(e.DocumentType(), t)
+	return e.CoreDocument.CalculateDocumentDataRoot(e.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root.
 func (e *EntityRelationship) CalculateDocumentRoot() ([]byte, error) {
-	t, err := e.getDocumentDataTree()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), t)
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dataLeaves)
 }
 
 // DocumentRootTree creates and returns the document root tree.
 func (e *EntityRelationship) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	t, err := e.getDocumentDataTree()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return e.CoreDocument.DocumentRootTree(e.DocumentType(), t)
+	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dataLeaves)
 }
 
 // CollaboratorCanUpdate checks that the identity attempting to update the document is the identity which owns the document.

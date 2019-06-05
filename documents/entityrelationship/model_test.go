@@ -286,7 +286,7 @@ func TestEntityRelationship_GetDocumentType(t *testing.T) {
 
 func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
 	e := createEntityRelationship(t)
-	tree, err := e.getDocumentDataTree()
+	tree, err := e.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("entity_relationship.owner_identity")
 	assert.NotNil(t, leaf)

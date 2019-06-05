@@ -624,7 +624,7 @@ func (i *Invoice) Type() reflect.Type {
 
 // CalculateDataRoot calculates the data root and sets the root to core document.
 func (i *Invoice) CalculateDataRoot() ([]byte, error) {
-	t, err := i.getDocumentDataTree()
+	t, err := i.getDataTree()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
@@ -632,39 +632,55 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 	return t.RootHash(), nil
 }
 
-// getDocumentDataTree creates precise-proofs data tree for the model
-func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+func (i *Invoice) getDataLeaves() ([]proofs.LeafNode, error) {
+	t, err := i.getRawDataTree()
+	if err != nil {
+		return nil, errors.New("getDataTree error %v", err)
+	}
+	return t.GetLeaves(), nil
+}
+
+func (i *Invoice) getRawDataTree() (*proofs.DocumentTree, error) {
 	invProto, err := i.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
 	if i.CoreDocument == nil {
-		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
+		return nil, errors.New("getDataTree error CoreDocument not set")
 	}
 	t, err := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDataTree error %v", err)
 	}
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDataTree error %v", err)
 	}
-	err = t.Generate()
+	return t, nil
+}
+
+// getDataTree creates precise-proofs data tree for the model
+func (i *Invoice) getDataTree() (*proofs.DocumentTree, error) {
+	tree, err := i.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.New("getDataTree error %v", err)
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, errors.New("getDataTree error %v", err)
 	}
 
-	return t, nil
+	return tree, nil
 }
 
 // CreateProofs generates proofs for given fields.
 func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := i.getDocumentDataTree()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return i.CoreDocument.CreateProofs(i.DocumentType(), tree, fields)
+	return i.CoreDocument.CreateProofs(i.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the invoice document type.
@@ -706,29 +722,29 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
-	t, err := i.getDocumentDataTree()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return i.CoreDocument.CalculateDocumentDataRoot(i.DocumentType(), t)
+	return i.CoreDocument.CalculateDocumentDataRoot(i.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
-	t, err := i.getDocumentDataTree()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), t)
+	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dataLeaves)
 }
 
 // DocumentRootTree creates and returns the document root tree
 func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	t, err := i.getDocumentDataTree()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)
 	}
-	return i.CoreDocument.DocumentRootTree(i.DocumentType(), t)
+	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dataLeaves)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -738,14 +754,14 @@ func (i *Invoice) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
-	tree, err := i.getDocumentDataTree()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
 
 	return i.CoreDocument.CreateNFTProofs(
 		i.DocumentType(),
-		tree,
+		dataLeaves,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
@@ -763,12 +779,12 @@ func (i *Invoice) CollaboratorCanUpdate(updated documents.Model, collaborator id
 	}
 
 	// check invoice specific changes
-	oldTree, err := i.getDocumentDataTree()
+	oldTree, err := i.getDataTree()
 	if err != nil {
 		return err
 	}
 
-	newTree, err := newInv.getDocumentDataTree()
+	newTree, err := newInv.getDataTree()
 	if err != nil {
 		return err
 	}

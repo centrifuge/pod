@@ -354,7 +354,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i.Data.Number = "321321"
 	i.Data.NetAmount = na
 	i.Data.GrossAmount = ga
-	tree, err := i.getDocumentDataTree()
+	tree, err := i.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)

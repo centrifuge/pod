@@ -294,7 +294,7 @@ func TestEntityModel_GetDocumentID(t *testing.T) {
 
 func TestEntityModel_getDocumentDataTree(t *testing.T) {
 	e := createEntity(t)
-	tree, err := e.getDocumentDataTree()
+	tree, err := e.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("entity.legal_name")
 	assert.NotNil(t, leaf)
