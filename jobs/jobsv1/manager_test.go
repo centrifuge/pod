@@ -107,7 +107,6 @@ func TestService_GetTransaction(t *testing.T) {
 
 	// no transaction
 	jobStatus, err := srv.GetJobStatus(did, job.ID)
-	assert.Nil(t, jobStatus)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
@@ -121,9 +120,7 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Equal(t, jobStatus.JobID, job.ID.String())
 	assert.Equal(t, string(jobs.Pending), jobStatus.Status)
 	assert.Empty(t, jobStatus.Message)
-	tm, err := utils.ToTimestamp(job.CreatedAt)
-	assert.NoError(t, err)
-	assert.Equal(t, tm, jobStatus.LastUpdated)
+	assert.Equal(t, job.CreatedAt, jobStatus.LastUpdated)
 
 	log := jobs.NewLog("action", "some message")
 	job.Logs = append(job.Logs, log)
@@ -137,9 +134,7 @@ func TestService_GetTransaction(t *testing.T) {
 	assert.Equal(t, jobStatus.JobID, job.ID.String())
 	assert.Equal(t, string(jobs.Success), jobStatus.Status)
 	assert.Equal(t, log.Message, jobStatus.Message)
-	tm, err = utils.ToTimestamp(log.CreatedAt)
-	assert.NoError(t, err)
-	assert.Equal(t, tm, jobStatus.LastUpdated)
+	assert.Equal(t, log.CreatedAt, jobStatus.LastUpdated)
 }
 
 func TestService_CreateTransaction(t *testing.T) {
