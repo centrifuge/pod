@@ -244,7 +244,7 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/token/mint/invoice/unpaid/"+documentID), auth).
+	resp := addCommonHeaders(e.POST("/nfts/"+documentID+"/invoice/unpaid/mint"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -253,7 +253,7 @@ func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, doc
 }
 
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/token/mint"), auth).
+	resp := addCommonHeaders(e.POST("/nfts/mint"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -261,15 +261,24 @@ func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[stri
 	return httpObj
 }
 
+func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/nfts/"+payload["tokenId"].(string)+"/transfer"), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+func ownerOfNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/nfts/"+payload["tokenId"].(string)+"/registry/"+payload["registryAddress"].(string)+"/owner"), auth).
+		Expect().Status(httpStatus).JSON().NotNull()
+	return objGet
+}
+
 func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/document/"+documentID+"/proof"), auth).
 		WithJSON(payload).
-		Expect().Status(httpStatus)
-	return resp.JSON().Object()
-}
-
-func getNodeConfig(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
-	resp := addCommonHeaders(e.GET("/config"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }

@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/token/mint": {
+    "/nfts/mint": {
       "post": {
         "description": "Mint an NFT from a Centrifuge Document",
         "operationId": "MintNFT",
@@ -42,7 +42,7 @@
         ]
       }
     },
-    "/token/mint/invoice/unpaid/{identifier}": {
+    "/nfts/{identifier}/invoice/unpaid/mint": {
       "post": {
         "description": "Mints an NFT out of an Unpaid Centrifuge Invoice",
         "operationId": "MintInvoiceUnpaidNFT",
@@ -68,6 +68,70 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/nftNFTMintInvoiceUnpaidRequest"
+            }
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
+    },
+    "/nfts/{token_id}/registry/{registry_address}/owner": {
+      "get": {
+        "description": "Get the owner of an NFT",
+        "operationId": "OwnerOf",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftOwnerOfResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "registry_address",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
+    },
+    "/nfts/{token_id}/transfer": {
+      "post": {
+        "description": "Transfer an NFT owned by the identity contract",
+        "operationId": "TokenTransfer",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftTokenTransferResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/nftTokenTransferRequest"
             }
           }
         ],
@@ -136,11 +200,47 @@
         }
       }
     },
+    "nftOwnerOfResponse": {
+      "type": "object",
+      "properties": {
+        "token_id": {
+          "type": "string"
+        },
+        "registry_address": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        }
+      }
+    },
     "nftResponseHeader": {
       "type": "object",
       "properties": {
         "job_id": {
           "type": "string"
+        }
+      }
+    },
+    "nftTokenTransferRequest": {
+      "type": "object",
+      "properties": {
+        "token_id": {
+          "type": "string"
+        },
+        "registry_address": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      }
+    },
+    "nftTokenTransferResponse": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "$ref": "#/definitions/nftResponseHeader"
         }
       }
     }

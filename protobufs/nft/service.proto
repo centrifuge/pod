@@ -14,7 +14,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service NFTService {
   rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
-      post: "/token/mint"
+      post: "/nfts/mint"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -23,17 +23,55 @@ service NFTService {
   }
   rpc MintInvoiceUnpaidNFT(NFTMintInvoiceUnpaidRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
-      post: "/token/mint/invoice/unpaid/{identifier}"
+      post: "/nfts/{identifier}/invoice/unpaid/mint"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Mints an NFT out of an Unpaid Centrifuge Invoice"
     };
   }
+  rpc TokenTransfer(TokenTransferRequest) returns (TokenTransferResponse) {
+    option (google.api.http) = {
+      post: "/nfts/{token_id}/transfer"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Transfer an NFT owned by the identity contract"
+    };
+  }
+  rpc OwnerOf(OwnerOfRequest) returns (OwnerOfResponse) {
+    option (google.api.http) = {
+      get: "/nfts/{token_id}/registry/{registry_address}/owner"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get the owner of an NFT"
+    };
+  }
 }
 
 message ResponseHeader {
   string job_id = 5;
+}
+
+message TokenTransferRequest {
+  string token_id = 1;
+  string registry_address = 2;
+  string to = 3;
+}
+
+message TokenTransferResponse {
+  ResponseHeader header = 1;
+}
+
+message OwnerOfRequest {
+  string token_id = 1;
+  string registry_address = 2;
+}
+
+message OwnerOfResponse {
+  string token_id = 1;
+  string registry_address = 2;
+  string owner = 3;
 }
 
 message NFTMintInvoiceUnpaidRequest {
