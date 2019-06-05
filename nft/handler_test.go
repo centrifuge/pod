@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/testingutils"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
