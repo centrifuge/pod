@@ -36,7 +36,7 @@ func TestCoreAPI_DocumentCreateAndUpdate(t *testing.T) {
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), "invoice", params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = createDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, invoiceCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, invoiceCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
