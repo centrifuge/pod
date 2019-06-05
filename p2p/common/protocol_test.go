@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -19,6 +19,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/identity"
 
+	"github.com/libp2p/go-libp2p-protocol"
 	"github.com/stretchr/testify/assert"
 )
 

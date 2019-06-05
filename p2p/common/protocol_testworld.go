@@ -4,15 +4,14 @@ package p2pcommon
 
 import (
 	"context"
-	"strconv"
-	"time"
-
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	protocolpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
+	"strconv"
+	"time"
 )
 
 //prepare incorrect protobuf messages
@@ -120,7 +119,7 @@ func PrepareP2PEnvelopeInvalidHeader(ctx context.Context, networkID uint32, mess
 	InvalidSenderId := utils.RandomSlice(32)
 	InvalidNodeVersion := " "
 	byteArrayforNetworkID := utils.RandomByte32()
-	InvalidNetworkID := uint32(utils.ConvertByte32ToInt(byteArrayforNetworkID))
+	InvalidNetworkID :=  uint32(utils.ConvertByte32ToInt(byteArrayforNetworkID))
 	InvalidmessageType := " "
 
 	p2pheader := &p2ppb.Header{

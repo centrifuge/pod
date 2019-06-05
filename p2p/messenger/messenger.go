@@ -13,8 +13,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
 	"github.com/jbenet/go-context/io"
+	"github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-protocol"
 )
 
 const (

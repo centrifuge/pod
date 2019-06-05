@@ -15,10 +15,16 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
+	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
+	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 )
 

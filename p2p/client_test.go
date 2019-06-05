@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
@@ -24,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
