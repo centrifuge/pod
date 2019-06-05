@@ -167,12 +167,21 @@ func createDocument(e *httpexpect.Expect, auth string, documentType string, stat
 		Expect().Status(status).JSON().Object()
 	return obj
 }
+
+func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PUT("/"+documentType), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func createFunding(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/documents/"+identifier+"/fundings"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
+
 func updateFunding(e *httpexpect.Expect, auth string, agreementId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/documents/"+docIdentifier+"/fundings/"+agreementId), auth).
 		WithJSON(payload).

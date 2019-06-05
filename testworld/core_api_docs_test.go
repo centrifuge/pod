@@ -7,13 +7,13 @@ import (
 	"testing"
 )
 
-func TestCoreAPI_DocumentCreate(t *testing.T) {
+func TestCoreAPI_DocumentCreateAndUpdate(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, invoiceCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -34,6 +34,23 @@ func TestCoreAPI_DocumentCreate(t *testing.T) {
 	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), "invoice", params, false)
 	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), "invoice", params, false)
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), "invoice", params)
+
+	// Bob updates invoice and shares with Charlie as well
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, invoiceCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier = getDocumentIdentifier(t, res)
+	if docIdentifier == "" {
+		t.Error("docIdentifier empty")
+	}
+	params["currency"] = "EUR"
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), "invoice", params, false)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), "invoice", params, false)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), "invoice", params, false)
 }
 
 func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
@@ -65,4 +82,16 @@ func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
 			},
 		},
 	}
+}
+
+func invoiceCoreAPIUpdate(docID string, collaborators []string) map[string]interface{} {
+	payload := invoiceCoreAPICreate(collaborators)
+	payload["document_id"] = docID
+	payload["attributes"] = map[string]map[string]string{
+		"decimal_test": {
+			"type":  "decimal",
+			"value": "100.001",
+		},
+	}
+	return payload
 }
