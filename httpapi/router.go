@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +29,12 @@ import (
 // @license.name MIT
 // @host localhost:8082
 // @schemes http
-func Router(config Config, configSrv config.Service, registry documents.TokenRegistry, service documents.Service) *chi.Mux {
+func Router(
+	config Config,
+	configSrv config.Service,
+	registry documents.TokenRegistry,
+	service documents.Service,
+	jobsSrv jobs.Manager) *chi.Mux {
 	r := chi.NewRouter()
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
@@ -40,7 +46,7 @@ func Router(config Config, configSrv config.Service, registry documents.TokenReg
 	health.Register(r, config)
 
 	// core apis
-	coreapi.Register(r, registry, service)
+	coreapi.Register(r, registry, service, jobsSrv)
 	return r
 }
 

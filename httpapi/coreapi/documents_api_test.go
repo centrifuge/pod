@@ -189,10 +189,12 @@ func TestHandler_UpdateDocument(t *testing.T) {
 
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
-	Register(r, nil, nil)
-	assert.Len(t, r.Routes(), 1)
+	Register(r, nil, nil, nil)
+	assert.Len(t, r.Routes(), 2)
 	assert.Equal(t, r.Routes()[0].Pattern, "/documents")
 	assert.Len(t, r.Routes()[0].Handlers, 2)
 	assert.NotNil(t, r.Routes()[0].Handlers["POST"])
 	assert.NotNil(t, r.Routes()[0].Handlers["PUT"])
+	assert.Equal(t, r.Routes()[1].Pattern, "/jobs/{job_id}")
+	assert.NotNil(t, r.Routes()[1].Handlers["GET"])
 }
