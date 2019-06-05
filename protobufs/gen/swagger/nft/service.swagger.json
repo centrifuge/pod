@@ -76,6 +76,31 @@
         ]
       }
     },
+    "/token/owner/{token_id}": {
+      "get": {
+        "description": "Get the owner of an NFT",
+        "operationId": "OwnerOf",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftOwnerOfResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
+    },
     "/token/transfer/{token_id}": {
       "post": {
         "description": "Transfer an NFT owned by the identity contract",
@@ -166,6 +191,17 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/nftResponseHeader"
+        }
+      }
+    },
+    "nftOwnerOfResponse": {
+      "type": "object",
+      "properties": {
+        "token_id": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
         }
       }
     },

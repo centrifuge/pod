@@ -39,6 +39,14 @@ service NFTService {
       description: "Transfer an NFT owned by the identity contract"
     };
   }
+  rpc OwnerOf(OwnerOfRequest) returns (OwnerOfResponse) {
+    option (google.api.http) = {
+      get: "/token/owner/{token_id}"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get the owner of an NFT"
+    };
+  }
 }
 
 message ResponseHeader {
@@ -53,6 +61,15 @@ message TokenTransferRequest {
 
 message TokenTransferResponse {
   ResponseHeader header = 1;
+}
+
+message OwnerOfRequest {
+  string token_id = 1;
+}
+
+message OwnerOfResponse {
+  string token_id = 1;
+  string owner = 2;
 }
 
 message NFTMintInvoiceUnpaidRequest {
