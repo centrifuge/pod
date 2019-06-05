@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -140,8 +141,12 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 // Register registers the core apis to the router.
-func Register(r *chi.Mux, registry documents.TokenRegistry, docSrv documents.Service) {
-	h := handler{srv: Service{docService: docSrv}, tokenRegistry: registry}
+func Register(r *chi.Mux,
+	registry documents.TokenRegistry,
+	docSrv documents.Service,
+	jobsSrv jobs.Manager) {
+	h := handler{srv: Service{docService: docSrv, jobsService: jobsSrv}, tokenRegistry: registry}
 	r.Post("/documents", h.CreateDocument)
 	r.Put("/documents", h.UpdateDocument)
+	r.Get("/jobs/{job_id}", h.GetJobStatus)
 }
