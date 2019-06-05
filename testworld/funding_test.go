@@ -31,14 +31,14 @@ func Test_SignUpdate(t *testing.T) {
 
 func updateTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
 	// alice adds a funding and shares with charlie
-	res := updateFunding(alice.httpExpect, alice.id.String(), fundingId, http.StatusOK, docIdentifier, updateFundingPayload(fundingId, nil))
+	res := updateFunding(alice.httpExpect, alice.id.String(), fundingId, http.StatusOK, docIdentifier, updateFundingPayload(fundingId, alice.id.String(), charlie.id.String()))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
 
-	fundingId = getFundingId(t, res)
+	fundingId = getAgreementId(t, res)
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -56,14 +56,14 @@ func updateTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docI
 func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier string) {
 	var fundings []string
 	for i := 0; i < 5; i++ {
-		res := createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(nil))
+		res := createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(alice.id.String(), bob.id.String()))
 		txID := getTransactionID(t, res)
 		status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 		if status != "success" {
 			t.Error(message)
 		}
 
-		fundingId := getFundingId(t, res)
+		fundingId := getAgreementId(t, res)
 		fundings = append(fundings, fundingId)
 
 	}
@@ -77,7 +77,6 @@ func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier str
 	getListFundingCheck(alice.httpExpect, alice.id.String(), docIdentifier, 6, params)
 	getListFundingCheck(bob.httpExpect, bob.id.String(), docIdentifier, 6, params)
 	getListFundingCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, 6, params)
-
 }
 
 func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
@@ -89,7 +88,7 @@ func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIde
 		t.Error(message)
 	}
 
-	fundingId = getFundingId(t, res)
+	fundingId = getAgreementId(t, res)
 	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -104,7 +103,7 @@ func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIde
 
 }
 
-func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (fundingId, docIdentifier string) {
+func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (agreementId, docIdentifier string) {
 	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -122,14 +121,14 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
 
 	// alice adds a funding and shares with charlie
-	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload([]string{charlie.id.String()}))
+	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(alice.id.String(), charlie.id.String()))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
 
-	fundingId = getFundingId(t, res)
+	agreementId = getAgreementId(t, res)
 	params = map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
@@ -138,8 +137,8 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	}
 
 	// check if everybody received to funding
-	getFundingAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, params)
-	getFundingAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, fundingId, params)
-	getFundingAndCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, fundingId, params)
-	return fundingId, docIdentifier
+	getFundingAndCheck(alice.httpExpect, alice.id.String(), docIdentifier, agreementId, params)
+	getFundingAndCheck(bob.httpExpect, bob.id.String(), docIdentifier, agreementId, params)
+	getFundingAndCheck(charlie.httpExpect, charlie.id.String(), docIdentifier, agreementId, params)
+	return agreementId, docIdentifier
 }

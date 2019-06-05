@@ -8,7 +8,9 @@ import (
 
 // Data is the default funding extension schema
 type Data struct {
-	FundingId             string `json:"funding_id,omitempty" attr:"bytes"`
+	AgreementId           string `json:"agreement_id,omitempty" attr:"bytes"`
+	BorrowerId			  string `json:"borrower_id,omitempty" attr:"bytes"`
+	FunderId			  string `json:"funder_id,omitempty" attr:"bytes"`
 	Amount                string `json:"amount,omitempty" attr:"decimal"`
 	Apr                   string `json:"apr,omitempty" attr:"string"`
 	Days                  string `json:"days,omitempty" attr:"integer"`
