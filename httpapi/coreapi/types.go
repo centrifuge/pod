@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -23,6 +24,12 @@ type CreateDocumentRequest struct {
 	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}      `json:"data"`
 	Attributes  AttributeMap     `json:"attributes"`
+}
+
+// UpdateDocumentRequest defines the payload for updating documents.
+type UpdateDocumentRequest struct {
+	CreateDocumentRequest
+	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
 }
 
 // Attribute defines a single attribute.
@@ -94,6 +101,19 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	payload.Attributes = attrs
 
 	return payload, nil
+}
+
+// toDocumentsUpdatePayload converts the update request to UpdatePayload.
+func toDocumentsUpdatePayload(request UpdateDocumentRequest) (payload documents.UpdatePayload, err error) {
+	createPayload, err := toDocumentsCreatePayload(request.CreateDocumentRequest)
+	if err != nil {
+		return payload, err
+	}
+
+	return documents.UpdatePayload{
+		CreatePayload: createPayload,
+		DocumentID:    request.DocumentID,
+	}, nil
 }
 
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
@@ -171,4 +191,19 @@ func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		NFTs:        cnfts,
 		JobID:       id.String(),
 	}, nil
+}
+
+func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
+	docData := model.GetData()
+	attrMap, err := convertAttributes(model.GetAttributes())
+	if err != nil {
+		return resp, err
+	}
+
+	header, err := deriveResponseHeader(tokenRegistry, model, jobID)
+	if err != nil {
+		return resp, err
+	}
+
+	return DocumentResponse{Header: header, Data: docData, Attributes: attrMap}, nil
 }

@@ -26,7 +26,7 @@ type handler struct {
 // @tags Documents
 // @accept json
 // @param authorization header string true "centrifuge identity"
-// @param body body coreapi.CreateDocumentRequest true "Document request"
+// @param body body coreapi.CreateDocumentRequest true "Document Create request"
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
@@ -36,14 +36,7 @@ type handler struct {
 func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
-	defer func() {
-		if err == nil {
-			return
-		}
-
-		render.Status(r, code)
-		render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
-	}()
+	defer httputils.RespondIfError(&code, &err, w, r)
 
 	ctx := r.Context()
 	data, err := ioutil.ReadAll(r.Body)
@@ -75,27 +68,80 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docData := model.GetData()
-	attrMap, err := convertAttributes(model.GetAttributes())
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	header, err := deriveResponseHeader(h.tokenRegistry, model, jobID)
+	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
 
-	render.Status(r, http.StatusOK)
-	render.JSON(w, r, DocumentResponse{Header: header, Data: docData, Attributes: attrMap})
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, resp)
+}
+
+// UpdateDocument updates an existing document.
+// @summary Updates an existing document and anchors it.
+// @description Updates an existing document and anchors it.
+// @id update_document
+// @tags Documents
+// @accept json
+// @param authorization header string true "centrifuge identity"
+// @param body body coreapi.UpdateDocumentRequest true "Document Update request"
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 200 {object} coreapi.DocumentResponse
+// @router /documents [put]
+func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	ctx := r.Context()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var request UpdateDocumentRequest
+	err = json.Unmarshal(data, &request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	payload, err := toDocumentsUpdatePayload(request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	model, jobID, err := h.srv.UpdateDocument(ctx, payload)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, resp)
 }
 
 // Register registers the core apis to the router.
 func Register(r *chi.Mux, registry documents.TokenRegistry, docSrv documents.Service) {
 	h := handler{srv: Service{docService: docSrv}, tokenRegistry: registry}
 	r.Post("/documents", h.CreateDocument)
+	r.Put("/documents", h.UpdateDocument)
 }

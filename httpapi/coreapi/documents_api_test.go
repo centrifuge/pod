@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -96,7 +97,92 @@ func TestHandler_CreateDocument(t *testing.T) {
 	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
 	w = httptest.NewRecorder()
 	h.CreateDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Equal(t, w.Code, http.StatusCreated)
+	m.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
+}
+
+func TestHandler_UpdateDocument(t *testing.T) {
+	id := hexutil.Encode(utils.RandomSlice(32))
+	data := map[string]interface{}{
+		"scheme":      "invoice",
+		"document_id": id,
+		"data":        invoiceData(),
+		"attributes": map[string]map[string]string{
+			"string_test": {
+				"type":  "invalid",
+				"value": "hello, world",
+			},
+		},
+	}
+
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	r := httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
+	w := httptest.NewRecorder()
+
+	h := handler{}
+	h.UpdateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "not a valid attribute")
+
+	data = map[string]interface{}{
+		"scheme":      "invoice",
+		"data":        invoiceData(),
+		"document_id": id,
+		"attributes": map[string]map[string]string{
+			"string_test": {
+				"type":  "string",
+				"value": "hello, world",
+			},
+		},
+	}
+	d, err = json.Marshal(data)
+	assert.NoError(t, err)
+	docSrv := new(testingdocuments.MockService)
+	srv := Service{docService: docSrv}
+	h = handler{srv: srv}
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("failed to update model"))
+	r = httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
+	w = httptest.NewRecorder()
+	h.UpdateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "failed to update model")
+	docSrv.AssertExpectations(t)
+
+	m := new(testingdocuments.MockModel)
+	m.On("GetData").Return(data)
+	m.On("GetAttributes").Return(nil)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
+	docSrv = new(testingdocuments.MockService)
+	srv = Service{docService: docSrv}
+	h = handler{srv: srv}
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	r = httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
+	w = httptest.NewRecorder()
+	h.UpdateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+	m.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
+
+	m = new(testingdocuments.MockModel)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	m.On("GetData").Return(data)
+	m.On("ID").Return(utils.RandomSlice(32)).Once()
+	m.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	m.On("Author").Return(nil, errors.New("somerror"))
+	m.On("Timestamp").Return(nil, errors.New("somerror"))
+	m.On("NFTs").Return(nil)
+	m.On("GetAttributes").Return(nil)
+	docSrv = new(testingdocuments.MockService)
+	srv = Service{docService: docSrv}
+	h = handler{srv: srv}
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	r = httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
+	w = httptest.NewRecorder()
+	h.UpdateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusCreated)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
@@ -106,4 +192,7 @@ func TestRegister(t *testing.T) {
 	Register(r, nil, nil)
 	assert.Len(t, r.Routes(), 1)
 	assert.Equal(t, r.Routes()[0].Pattern, "/documents")
+	assert.Len(t, r.Routes()[0].Handlers, 2)
+	assert.NotNil(t, r.Routes()[0].Handlers["POST"])
+	assert.NotNil(t, r.Routes()[0].Handlers["PUT"])
 }
