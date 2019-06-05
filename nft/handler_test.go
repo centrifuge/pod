@@ -204,7 +204,7 @@ func TestPaymentObligationNFTOwnerOf_success(t *testing.T) {
 	response, err := handler.OwnerOf(testingconfig.HandlerContext(mockConfigStore), ownerReq)
 	assert.NoError(t, err)
 	assert.Equal(t, response.Owner, owner.String())
-	assert.Equal(t, response.Registry, ownerReq.RegistryAddress)
+	assert.Equal(t, response.RegistryAddress, ownerReq.RegistryAddress)
 	assert.Equal(t, response.TokenId, ownerReq.TokenId)
 }
 

@@ -156,7 +156,7 @@ func (g grpcHandler) OwnerOf(ctx context.Context, request *nftpb.OwnerOfRequest)
 		return nil, errors.NewTypedError(ErrOwnerOf, err)
 	}
 
-	return &nftpb.OwnerOfResponse{TokenId: request.TokenId, Owner:owner.Hex(), Registry:request.RegistryAddress}, nil
+	return &nftpb.OwnerOfResponse{TokenId: request.TokenId, Owner:owner.Hex(), RegistryAddress:request.RegistryAddress}, nil
 }
 
 func validateParameters(request *nftpb.NFTMintRequest) error {

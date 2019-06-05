@@ -252,6 +252,16 @@ func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[stri
 	return httpObj
 }
 
+func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/token/transfer/"+payload["tokenId"].(string)), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+
 func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/document/"+documentID+"/proof"), auth).
 		WithJSON(payload).
