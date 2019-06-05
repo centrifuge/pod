@@ -61,7 +61,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 
 	var response *httpexpect.Object
 	var err error
-	
+
 	depositAddress := alice.id.String()
 
 	if !poWrapper {
@@ -168,12 +168,23 @@ func TestTransferNFT_successful(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
 
-	transferPayload := map[string]interface{}{
-		"tokenId": tokenID.String(),
-		"registryAddress":  registry.String(),
-		"to": bob.id.String(),
+	ownerOfPayload := map[string]interface{}{
+		"tokenId":         tokenID.String(),
+		"registryAddress": registry.String(),
 	}
 
+	transferPayload := map[string]interface{}{
+		"tokenId":         tokenID.String(),
+		"registryAddress": registry.String(),
+		"to":              bob.id.String(),
+	}
+
+	// nft owner should be alice
+	resp, err := alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	assert.NoError(t, err)
+	resp.Path("$.owner").String().Equal(alice.id.String())
+
+	// transfer nft from alice to bob
 	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
 	assert.NoError(t, err)
 	txID := getTransactionID(t, response)
@@ -181,5 +192,9 @@ func TestTransferNFT_successful(t *testing.T) {
 	if status != "success" {
 		t.Error(message)
 	}
-	
+
+	// nft owner should be alice
+	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	assert.NoError(t, err)
+	resp.Path("$.owner").String().Equal(bob.id.String())
 }

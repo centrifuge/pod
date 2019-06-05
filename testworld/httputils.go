@@ -261,16 +261,15 @@ func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[
 	return httpObj
 }
 
+func ownerOfNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/token/owner/"+payload["tokenId"].(string)+"/registry/"+payload["registryAddress"].(string)), auth).
+		Expect().Status(httpStatus).JSON().NotNull()
+	return objGet
+}
 
 func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/document/"+documentID+"/proof"), auth).
 		WithJSON(payload).
-		Expect().Status(httpStatus)
-	return resp.JSON().Object()
-}
-
-func getNodeConfig(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
-	resp := addCommonHeaders(e.GET("/config"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }

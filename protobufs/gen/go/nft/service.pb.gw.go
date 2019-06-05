@@ -103,10 +103,6 @@ func request_NFTService_TokenTransfer_0(ctx context.Context, marshaler runtime.M
 
 }
 
-var (
-	filter_NFTService_OwnerOf_0 = &utilities.DoubleArray{Encoding: map[string]int{"token_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_NFTService_OwnerOf_0(ctx context.Context, marshaler runtime.Marshaler, client NFTServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq OwnerOfRequest
 	var metadata runtime.ServerMetadata
@@ -129,8 +125,15 @@ func request_NFTService_OwnerOf_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "token_id", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_NFTService_OwnerOf_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	val, ok = pathParams["registry_address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "registry_address")
+	}
+
+	protoReq.RegistryAddress, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "registry_address", err)
 	}
 
 	msg, err := client.OwnerOf(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -302,7 +305,7 @@ var (
 
 	pattern_NFTService_TokenTransfer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"token", "transfer", "token_id"}, ""))
 
-	pattern_NFTService_OwnerOf_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"token", "owner", "token_id"}, ""))
+	pattern_NFTService_OwnerOf_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"token", "owner", "token_id", "registry", "registry_address"}, ""))
 )
 
 var (

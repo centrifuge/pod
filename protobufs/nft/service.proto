@@ -41,7 +41,7 @@ service NFTService {
   }
   rpc OwnerOf(OwnerOfRequest) returns (OwnerOfResponse) {
     option (google.api.http) = {
-      get: "/token/owner/{token_id}"
+      get: "/token/owner/{token_id}/registry/{registry_address}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get the owner of an NFT"

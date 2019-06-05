@@ -76,7 +76,7 @@
         ]
       }
     },
-    "/token/owner/{token_id}": {
+    "/token/owner/{token_id}/registry/{registry_address}": {
       "get": {
         "description": "Get the owner of an NFT",
         "operationId": "OwnerOf",
@@ -97,8 +97,8 @@
           },
           {
             "name": "registry_address",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],

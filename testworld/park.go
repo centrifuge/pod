@@ -387,6 +387,10 @@ func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params
 	return transferNFT(e, auth, status, params), nil
 }
 
+func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Value, error) {
+	return ownerOfNFT(e, auth, status, params), nil
+}
+
 func (h *host) mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintUnpaidInvoiceNFT(e, auth, status, documentID, inv), nil
 }
