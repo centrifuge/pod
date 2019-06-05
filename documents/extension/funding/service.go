@@ -171,7 +171,7 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	return attributes, nil
 }
 
-func deriveDids(data clientfunpb.FundingData) ([]identity.DID, error) {
+func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.BorrowerId, data.FunderId} {
 		if id != "" {
@@ -200,7 +200,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		return nil, err
 	}
 
-	c, err := deriveDids(*req.Data)
+	c, err := deriveDIDs(req.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, err
 	}
 
-	c, err := deriveDids(*req.Data)
+	c, err := deriveDIDs(req.Data)
 	if err != nil {
 		return nil, err
 	}
