@@ -392,7 +392,7 @@ func createCDWithEmbeddedInvoice(t *testing.T) (documents.Model, coredocumentpb.
 	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	_, err = i.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)

@@ -297,7 +297,7 @@ func TestCoreDocument_AddUpdateLog(t *testing.T) {
 	assert.True(t, cd.Modified)
 }
 
-func TestGetSigningProofHash(t *testing.T) {
+func TestGetDocumentDataProofHash(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
@@ -309,7 +309,7 @@ func TestGetSigningProofHash(t *testing.T) {
 	// Arbitrary tree just to pass it to the calculate function
 	drTree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
-	signingRoot, err := cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
+	docDataRoot, err := cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.Nil(t, err)
 
 	cd.GetTestCoreDocWithReset()
@@ -319,7 +319,7 @@ func TestGetSigningProofHash(t *testing.T) {
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
 
-	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
+	valid, err := proofs.ValidateProofSortedHashes(docDataRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -367,7 +367,7 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, append(sig.Signature, []byte{0}...), signatureLeaf.Value)
 }
 
-func TestGetDocumentSigningTree(t *testing.T) {
+func TestGetDocumentDocumentDataTree(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 
@@ -409,13 +409,13 @@ func TestGetDocumentRootTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// successful document root generation
-	signingRoot, err := cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
+	docDataRoot, err := cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.NoError(t, err)
 	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.NoError(t, err)
-	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField))
+	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, DocumentDataRootField))
 	assert.NotNil(t, leaf)
-	assert.Equal(t, signingRoot, leaf.Hash)
+	assert.Equal(t, docDataRoot, leaf.Hash)
 
 	// Get signaturesLeaf
 	_, signaturesLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField))

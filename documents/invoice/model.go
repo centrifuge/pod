@@ -720,8 +720,8 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 	return nil
 }
 
-// CalculateSigningRoot calculates the signing root of the document.
-func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
+// CalculateDocumentDataRoot calculates the document data root of the document.
+func (i *Invoice) CalculateDocumentDataRoot() ([]byte, error) {
 	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)

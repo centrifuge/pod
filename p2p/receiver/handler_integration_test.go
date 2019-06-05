@@ -102,7 +102,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	resp := resolveSignatureResponse(t, p2pResp)
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	signingRoot, err := po.CalculateSigningRoot()
+	signingRoot, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
 }
@@ -143,7 +143,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	signingRoot, err := po.CalculateSigningRoot()
+	signingRoot, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
 
@@ -316,7 +316,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
+	sr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)

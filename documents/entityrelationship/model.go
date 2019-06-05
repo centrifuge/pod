@@ -255,8 +255,8 @@ func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Addres
 	return documents.ErrNotImplemented
 }
 
-// CalculateSigningRoot calculates the signing root of the document.
-func (e *EntityRelationship) CalculateSigningRoot() ([]byte, error) {
+// CalculateDocumentDataRoot calculates the document data root of the document.
+func (e *EntityRelationship) CalculateDocumentDataRoot() ([]byte, error) {
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)

@@ -33,8 +33,8 @@ const (
 	// SignaturesRootField represents the signatures property of a tree
 	SignaturesRootField = "signatures_root"
 
-	// SigningRootField represents the signature root property of a tree
-	SigningRootField = "signing_root"
+	// DocumentDataRootField represents the document data root property of a tree
+	DocumentDataRootField = "dd_root"
 
 	// idSize represents the size of identifiers, roots etc..
 	idSize = 32
@@ -47,9 +47,6 @@ const (
 
 	// CDTreePrefix is the human readable prefix for core doc tree props
 	CDTreePrefix = "cd_tree"
-
-	// SigningTreePrefix is the human readable prefix for signing tree props
-	SigningTreePrefix = "signing_tree"
 
 	// SignaturesTreePrefix is the human readable prefix for signature props
 	SignaturesTreePrefix = "signatures_tree"
@@ -66,12 +63,10 @@ func CompactProperties(key string) []byte {
 		return []byte{0, 0, 0, 100}
 	case SignaturesRootField:
 		return []byte{0, 0, 0, 6}
-	case SigningRootField:
+	case DocumentDataRootField:
 		return []byte{0, 0, 0, 10}
 	case CDTreePrefix:
 		return []byte{1, 0, 0, 0}
-	case SigningTreePrefix:
-		return []byte{2, 0, 0, 0}
 	case SignaturesTreePrefix:
 		return []byte{3, 0, 0, 0}
 	case DRTreePrefix:
@@ -306,7 +301,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNod
 
 	docDataTree, err := cd.docDataTree(docType, dataLeaves)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing root: %v", err))
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate document data tree: %v", err))
 	}
 
 	dataPrefix, err := getDataTreePrefix(dataLeaves)
@@ -319,7 +314,7 @@ func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNod
 	treeProofs[dataPrefix] = newTreeProof(docDataTree, [][]byte{signatureTree.RootHash()})
 	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
 	treeProofs[CDTreePrefix] = treeProofs[dataPrefix]
-	// (signatureProof => signatureRoot) + signingRoot = documentRoot
+	// (signatureProof => signatureRoot) + docDataRoot = documentRoot
 	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{docDataTree.RootHash()})
 
 	return generateProofs(fields, treeProofs)
@@ -396,11 +391,11 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.Lea
 	if err != nil {
 		return nil, err
 	}
-	// The first leave added is the signing_root
+	// The first leave added is the document data root
 	err = tree.AddLeaf(proofs.LeafNode{
 		Hash:     docDataRoot,
 		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...))})
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, DocumentDataRootField), append(CompactProperties(DRTreePrefix), CompactProperties(DocumentDataRootField)...))})
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +431,7 @@ func (cd *CoreDocument) docDataTree(docType string, dataLeaves []proofs.LeafNode
 		return nil, err
 	}
 	// create the docDataTree out of docData and coredoc trees
-	tree, err = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	tree, err = cd.DefaultTree()
 	if err != nil {
 		return nil, err
 	}

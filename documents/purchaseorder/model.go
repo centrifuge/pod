@@ -493,9 +493,9 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 	return nil
 }
 
-// CalculateSigningRoot returns the signing root of the document.
+// CalculateDocumentDataRoot returns the document data root of the document.
 // Calculates it if not generated yet.
-func (p *PurchaseOrder) CalculateSigningRoot() ([]byte, error) {
+func (p *PurchaseOrder) CalculateDocumentDataRoot() ([]byte, error) {
 	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("failed to get data tree: %v", err)

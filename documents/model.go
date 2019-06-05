@@ -47,8 +47,8 @@ type Model interface {
 	// CalculateDataRoot calculates the data root of the model.
 	CalculateDataRoot() ([]byte, error)
 
-	// CalculateSigningRoot calculates the signing root of the model.
-	CalculateSigningRoot() ([]byte, error)
+	// CalculateDocumentDataRoot calculates the document data root of the model.
+	CalculateDocumentDataRoot() ([]byte, error)
 
 	// CalculateDocumentRoot returns the document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
