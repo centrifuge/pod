@@ -49,62 +49,57 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
-	_, networkErr := s.config.GetAccount(collaborator[:])
+
+	err = s.idService.Exists(ctx, collaborator)
 	if err != nil {
-		// this is a remote account
-		err = s.idService.Exists(ctx, collaborator)
-		if err != nil {
-			return nil, err
-		}
-		receiverPeer, err := s.getPeerID(ctx, collaborator)
-		if err != nil {
-			return nil, err
-		}
-		//select which envelope preparing function to call based on the error type
-		var envelope *protocolpb.P2PEnvelope
-		var envelopeErr error
-		switch errorType {
-		case "incorrectNodeVersion":
-			envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeIncorrectNodeVersion(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
-			if envelopeErr != nil {
-				return nil, envelopeErr
-			}
-		case "invalidBody":
-			envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidBody(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
-			if envelopeErr != nil {
-				return nil, envelopeErr
-			}
-		default:
-			envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidHeader(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
-			if envelopeErr != nil {
-				return nil, envelopeErr
-			}
-		}
-		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
-		if err != nil {
-			return nil, err
-		}
-		recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
-		if err != nil {
-			return nil, err
-		}
-		// handle client error
-		if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
-			return nil, p2pcommon.ConvertClientError(recvEnvelope)
-		}
-		if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
-			return nil, errors.New("the received request signature response is incorrect")
-		}
-		resp = new(p2ppb.SignatureResponse)
-		err = proto.Unmarshal(recvEnvelope.Body, resp)
-		if err != nil {
-			return nil, err
-		}
-		header = recvEnvelope.Header
-	} else {
-		return nil, networkErr
+		return nil, err
 	}
+	receiverPeer, err := s.getPeerID(ctx, collaborator)
+	if err != nil {
+		return nil, err
+	}
+	//select which envelope preparing function to call based on the error type
+	var envelope *protocolpb.P2PEnvelope
+	var envelopeErr error
+	switch errorType{
+	case "incorrectNodeVersion":
+		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeIncorrectNodeVersion(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		if envelopeErr != nil {
+			return nil, envelopeErr
+		}
+	case "invalidBody":
+		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidBody(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		if envelopeErr != nil {
+			return nil, envelopeErr
+		}
+	default:
+		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidHeader(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		if envelopeErr != nil {
+			return nil, envelopeErr
+		}
+	}
+	log.Infof("Requesting signature from %s\n", receiverPeer)
+	recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
+	if err != nil {
+		return nil, err
+	}
+	recvEnvelope, err := p2pcommon.ResolveDataEnvelope(recv)
+	if err != nil {
+		return nil, err
+	}
+	// handle client error
+	if p2pcommon.MessageTypeError.Equals(recvEnvelope.Header.Type) {
+		return nil, p2pcommon.ConvertClientError(recvEnvelope)
+	}
+	if !p2pcommon.MessageTypeRequestSignatureRep.Equals(recvEnvelope.Header.Type) {
+		return nil, errors.New("the received request signature response is incorrect")
+	}
+	resp = new(p2ppb.SignatureResponse)
+	err = proto.Unmarshal(recvEnvelope.Body, resp)
+	if err != nil {
+		return nil, err
+	}
+	header = recvEnvelope.Header
 
 	err = validateSignatureResp(collaborator, header, resp)
 	if err != nil {
