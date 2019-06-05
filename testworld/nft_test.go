@@ -193,7 +193,7 @@ func TestTransferNFT_successful(t *testing.T) {
 		t.Error(message)
 	}
 
-	// nft owner should be alice
+	// nft owner should be bob
 	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
 	assert.NoError(t, err)
 	resp.Path("$.owner").String().Equal(bob.id.String())
