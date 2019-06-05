@@ -4,7 +4,7 @@ package testworld
 
 import (
 	"github.com/centrifuge/go-centrifuge/config"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 
 	"testing"
 

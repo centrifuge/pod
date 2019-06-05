@@ -5,15 +5,13 @@ package p2p
 import (
 	"context"
 
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	protocolpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -65,7 +63,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 		//select which envelope preparing function to call based on the error type
 		var envelope *protocolpb.P2PEnvelope
 		var envelopeErr error
-		switch errorType{
+		switch errorType {
 		case "incorrectNodeVersion":
 			envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeIncorrectNodeVersion(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 			if envelopeErr != nil {
