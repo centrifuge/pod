@@ -150,7 +150,7 @@ ethereum:
     anchorCommit: 85000
     anchorPreCommit: 100000
     nftMint: 900000
-    nftTransferFrom: 900000
+    nftTransferFrom: 150000
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum
