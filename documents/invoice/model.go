@@ -23,6 +23,8 @@ import (
 const (
 	prefix string = "invoice"
 
+	scheme = prefix
+
 	// ErrInvoiceInvalidData sentinel error when data unmarshal is failed.
 	ErrInvoiceInvalidData = errors.Error("invalid invoice data")
 )
@@ -73,15 +75,15 @@ type Data struct {
 	ShipToZipcode            string                        `json:"ship_to_zipcode"`
 	ShipToState              string                        `json:"ship_to_state"`
 	ShipToCountry            string                        `json:"ship_to_country"`
-	Currency                 string                        `json:"currency"`               // ISO currency code
-	GrossAmount              *documents.Decimal            `json:"gross_amount,omitempty"` // invoice amount including tax
-	NetAmount                *documents.Decimal            `json:"net_amount,omitempty"`   // invoice amount excluding tax
-	TaxAmount                *documents.Decimal            `json:"tax_amount,omitempty"`
-	TaxRate                  *documents.Decimal            `json:"tax_rate,omitempty"`
+	Currency                 string                        `json:"currency"`     // ISO currency code
+	GrossAmount              *documents.Decimal            `json:"gross_amount"` // invoice amount including tax
+	NetAmount                *documents.Decimal            `json:"net_amount"`   // invoice amount excluding tax
+	TaxAmount                *documents.Decimal            `json:"tax_amount"`
+	TaxRate                  *documents.Decimal            `json:"tax_rate"`
 	TaxOnLineLevel           bool                          `json:"tax_on_line_level"`
-	Recipient                *identity.DID                 `json:"recipient,string,omitempty"` // centrifuge ID of the recipient
-	Sender                   *identity.DID                 `json:"sender,string,omitempty"`    // centrifuge ID of the sender
-	Payee                    *identity.DID                 `json:"payee,string,omitempty"`     // centrifuge ID of the payee
+	Recipient                *identity.DID                 `json:"recipient,string"` // centrifuge ID of the recipient
+	Sender                   *identity.DID                 `json:"sender,string"`    // centrifuge ID of the sender
+	Payee                    *identity.DID                 `json:"payee,string"`     // centrifuge ID of the payee
 	Comment                  string                        `json:"comment"`
 	ShippingTerms            string                        `json:"shipping_terms"`
 	RequesterEmail           string                        `json:"requester_email"`
@@ -89,11 +91,11 @@ type Data struct {
 	DeliveryNumber           string                        `json:"delivery_number"` // number of the delivery note
 	IsCreditNote             bool                          `json:"is_credit_note"`
 	CreditNoteInvoiceNumber  string                        `json:"credit_note_invoice_number"`
-	CreditForInvoiceDate     *time.Time                    `json:"credit_for_invoice_date,omitempty"`
-	DateDue                  *time.Time                    `json:"date_due,omitempty"`
-	DatePaid                 *time.Time                    `json:"date_paid,omitempty"`
-	DateUpdated              *time.Time                    `json:"date_updated,omitempty"`
-	DateCreated              *time.Time                    `json:"date_created,omitempty"`
+	CreditForInvoiceDate     *time.Time                    `json:"credit_for_invoice_date"`
+	DateDue                  *time.Time                    `json:"date_due"`
+	DatePaid                 *time.Time                    `json:"date_paid"`
+	DateUpdated              *time.Time                    `json:"date_updated"`
+	DateCreated              *time.Time                    `json:"date_created"`
 	Attachments              []*documents.BinaryAttachment `json:"attachments"`
 	LineItems                []*LineItem                   `json:"line_items"`
 	PaymentDetails           []*documents.PaymentDetails   `json:"payment_details"`
@@ -111,14 +113,14 @@ type LineItem struct {
 	ItemNumber              string             `json:"item_number"`
 	Description             string             `json:"description"`
 	SenderPartNo            string             `json:"sender_part_no"`
-	PricePerUnit            *documents.Decimal `json:"price_per_unit,omitempty"`
-	Quantity                *documents.Decimal `json:"quantity,omitempty"`
+	PricePerUnit            *documents.Decimal `json:"price_per_unit"`
+	Quantity                *documents.Decimal `json:"quantity"`
 	UnitOfMeasure           string             `json:"unit_of_measure"`
-	NetWeight               *documents.Decimal `json:"net_weight,omitempty"`
-	TaxAmount               *documents.Decimal `json:"tax_amount,omitempty"`
-	TaxRate                 *documents.Decimal `json:"tax_rate,omitempty"`
-	TaxCode                 *documents.Decimal `json:"tax_code,omitempty"`
-	TotalAmount             *documents.Decimal `json:"total_amount,omitempty"` // the total amount of the line item
+	NetWeight               *documents.Decimal `json:"net_weight"`
+	TaxAmount               *documents.Decimal `json:"tax_amount"`
+	TaxRate                 *documents.Decimal `json:"tax_rate"`
+	TaxCode                 *documents.Decimal `json:"tax_code"`
+	TotalAmount             *documents.Decimal `json:"total_amount"` // the total amount of the line item
 	PurchaseOrderNumber     string             `json:"purchase_order_number"`
 	PurchaseOrderItemNumber string             `json:"purchase_order_item_number"`
 	DeliveryNoteNumber      string             `json:"delivery_note_number"`
@@ -128,10 +130,10 @@ type LineItem struct {
 type TaxItem struct {
 	ItemNumber        string             `json:"item_number"`
 	InvoiceItemNumber string             `json:"invoice_item_number"`
-	TaxAmount         *documents.Decimal `json:"tax_amount,omitempty"`
-	TaxRate           *documents.Decimal `json:"tax_rate,omitempty"`
-	TaxCode           *documents.Decimal `json:"tax_code,omitempty"`
-	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount,omitempty"`
+	TaxAmount         *documents.Decimal `json:"tax_amount"`
+	TaxRate           *documents.Decimal `json:"tax_rate"`
+	TaxCode           *documents.Decimal `json:"tax_code"`
+	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount"`
 }
 
 // getClientData returns the client data from the invoice model
