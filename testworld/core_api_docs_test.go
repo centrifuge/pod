@@ -13,7 +13,7 @@ func TestCoreAPI_DocumentCreate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, invoiceCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

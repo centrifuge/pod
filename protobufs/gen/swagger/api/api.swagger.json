@@ -20,6 +20,69 @@
     "basePath": "/",
     "paths": {
         "/documents": {
+            "put": {
+                "description": "Updates an existing document and anchors it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Updates an existing document and anchors it.",
+                "operationId": "update_document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Document Update request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.UpdateDocumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new document and anchors it.",
                 "consumes": [
@@ -42,7 +105,7 @@
                         "required": true
                     },
                     {
-                        "description": "Document request",
+                        "description": "Document Create request",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -108,6 +171,10 @@
         }
     },
     "definitions": {
+        "byteutils.HexBytes": {
+            "type": "array",
+            "items": {}
+        },
         "coreapi.Attribute": {
             "type": "object",
             "properties": {
@@ -239,6 +306,39 @@
                 },
                 "version": {
                     "type": "string"
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "coreapi.UpdateDocumentRequest": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMap"
+                },
+                "data": {
+                    "type": "object"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "scheme": {
+                    "type": "string",
+                    "enum": [
+                        "invoice"
+                    ]
                 },
                 "write_access": {
                     "type": "array",
