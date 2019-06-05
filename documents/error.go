@@ -64,6 +64,9 @@ const (
 
 	// Coredoc errors
 
+	// ErrDataTree must be used for data tree errors
+	ErrDataTree = errors.Error("getDataTree error")
+
 	// ErrCDCreate must be used for coredoc creation/generation errors
 	ErrCDCreate = errors.Error("error creating core document")
 

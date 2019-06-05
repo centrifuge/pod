@@ -182,7 +182,7 @@ func (e *EntityRelationship) Type() reflect.Type {
 func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 	t, err := e.getDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return t.RootHash(), nil
@@ -191,7 +191,7 @@ func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 func (e *EntityRelationship) getDataLeaves() ([]proofs.LeafNode, error) {
 	t, err := e.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return t.GetLeaves(), nil
 }
@@ -203,11 +203,11 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 	}
 	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	err = t.AddLeavesFromDocument(erProto)
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return t, nil
 }
@@ -216,11 +216,11 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 func (e *EntityRelationship) getDataTree() (*proofs.DocumentTree, error) {
 	tree, err := e.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	err = tree.Generate()
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return tree, nil
@@ -259,7 +259,7 @@ func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Addres
 func (e *EntityRelationship) CalculateDocumentDataRoot() ([]byte, error) {
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return e.CoreDocument.CalculateDocumentDataRoot(e.DocumentType(), dataLeaves)
 }
@@ -268,7 +268,7 @@ func (e *EntityRelationship) CalculateDocumentDataRoot() ([]byte, error) {
 func (e *EntityRelationship) CalculateDocumentRoot() ([]byte, error) {
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dataLeaves)
 }
@@ -277,7 +277,7 @@ func (e *EntityRelationship) CalculateDocumentRoot() ([]byte, error) {
 func (e *EntityRelationship) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dataLeaves)
 }

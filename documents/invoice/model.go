@@ -626,7 +626,7 @@ func (i *Invoice) Type() reflect.Type {
 func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 	t, err := i.getDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return t.RootHash(), nil
@@ -635,7 +635,7 @@ func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 func (i *Invoice) getDataLeaves() ([]proofs.LeafNode, error) {
 	t, err := i.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return t.GetLeaves(), nil
 }
@@ -650,11 +650,11 @@ func (i *Invoice) getRawDataTree() (*proofs.DocumentTree, error) {
 	}
 	t, err := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return t, nil
 }
@@ -663,11 +663,11 @@ func (i *Invoice) getRawDataTree() (*proofs.DocumentTree, error) {
 func (i *Invoice) getDataTree() (*proofs.DocumentTree, error) {
 	tree, err := i.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	err = tree.Generate()
 	if err != nil {
-		return nil, errors.New("getDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return tree, nil
@@ -724,7 +724,7 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 func (i *Invoice) CalculateDocumentDataRoot() ([]byte, error) {
 	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return i.CoreDocument.CalculateDocumentDataRoot(i.DocumentType(), dataLeaves)
 }
@@ -733,7 +733,7 @@ func (i *Invoice) CalculateDocumentDataRoot() ([]byte, error) {
 func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
 	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dataLeaves)
 }
@@ -742,7 +742,7 @@ func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
 func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
 	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dataLeaves)
 }
