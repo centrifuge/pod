@@ -70,7 +70,8 @@ message OwnerOfRequest {
 
 message OwnerOfResponse {
   string token_id = 1;
-  string owner = 2;
+  string registry = 2;
+  string owner = 3;
 }
 
 message NFTMintInvoiceUnpaidRequest {

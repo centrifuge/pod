@@ -206,6 +206,9 @@
         "token_id": {
           "type": "string"
         },
+        "registry": {
+          "type": "string"
+        },
         "owner": {
           "type": "string"
         }
