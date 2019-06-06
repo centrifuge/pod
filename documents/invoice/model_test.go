@@ -295,7 +295,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	i.AppendSignatures(sig)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	_, err = i.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -303,9 +303,9 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
-	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
@@ -318,7 +318,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	// Validate signing_root
+	// Validate document data root
 	valid, err = tree.ValidateProof(proof[5])
 	assert.Nil(t, err)
 	assert.True(t, valid)
@@ -354,7 +354,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	i.Data.Number = "321321"
 	i.Data.NetAmount = na
 	i.Data.GrossAmount = ga
-	tree, err := i.getDocumentDataTree()
+	tree, err := i.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)
@@ -379,7 +379,7 @@ func createInvoice(t *testing.T) *Invoice {
 	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	_, err = i.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -413,7 +413,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 
-	_, err = inv.CalculateSigningRoot()
+	_, err = inv.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 
 	_, err = inv.CalculateDocumentRoot()

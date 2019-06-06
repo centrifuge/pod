@@ -104,10 +104,10 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	addr := dp.config.GetContractAddress(config.AnchorRepo)
 	model.SetUsedAnchorRepoAddress(addr)
 
-	// calculate the signing root
-	sr, err := model.CalculateSigningRoot()
+	// calculate the document data root
+	sr, err := model.CalculateDocumentDataRoot()
 	if err != nil {
-		return errors.New("failed to calculate signing root: %v", err)
+		return errors.New("failed to calculate document data root: %v", err)
 	}
 
 	sig, err := self.SignMsg(sr)
@@ -151,7 +151,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 
 // PreAnchorDocument pre-commits a document
 func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
-	signingRoot, err := model.CalculateSigningRoot()
+	docDataRoot, err := model.CalculateDocumentDataRoot()
 	if err != nil {
 		return err
 	}
@@ -161,12 +161,12 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 		return err
 	}
 
-	sRoot, err := anchors.ToDocumentRoot(signingRoot)
+	sRoot, err := anchors.ToDocumentRoot(docDataRoot)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], docDataRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
 	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 		return errors.New("failed to pre-commit anchor: %v", err)
 	}
 
-	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], docDataRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
 	return nil
 }
 
@@ -204,18 +204,18 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	signingRootProof, err := model.CalculateSignaturesRoot()
+	signaturesRoot, err := model.CalculateSignaturesRoot()
 	if err != nil {
 		return errors.New("failed to get signature root: %v", err)
 	}
 
-	signingRootHash, err := utils.SliceToByte32(signingRootProof)
+	signaturesRootHash, err := utils.SliceToByte32(signaturesRoot)
 	if err != nil {
-		return errors.New("failed to get signing root proof in ethereum format: %v", err)
+		return errors.New("failed to get signatures root proof in ethereum format: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootHash)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}

@@ -261,7 +261,7 @@ func createEntityRelationship(t *testing.T) *EntityRelationship {
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateSigningRoot()
+	_, err = e.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestEntityRelationship_GetDocumentType(t *testing.T) {
 
 func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
 	e := createEntityRelationship(t)
-	tree, err := e.getDocumentDataTree()
+	tree, err := e.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("entity_relationship.owner_identity")
 	assert.NotNil(t, leaf)
@@ -363,7 +363,7 @@ func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, core
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateSigningRoot()
+	_, err = e.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)

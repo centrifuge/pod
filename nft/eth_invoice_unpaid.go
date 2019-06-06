@@ -74,7 +74,7 @@ func newEthInvoiceUnpaid(
 
 func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
 	// Compact properties
-	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
+	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.DocumentDataRootField)...)}
 	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
 	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
 	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
@@ -153,10 +153,10 @@ func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Conte
 		return nil, err
 	}
 
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
 	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	return proofFields, nil
 }
 

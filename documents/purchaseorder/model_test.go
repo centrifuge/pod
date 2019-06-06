@@ -259,7 +259,7 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	poModel := createPurchaseOrder(t)
 	poModel.Number = "123"
 	poModel.TotalAmount = na
-	tree, err := poModel.getDocumentDataTree()
+	tree, err := poModel.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po.number")
 	assert.NotNil(t, leaf)
@@ -294,7 +294,7 @@ func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateSigningRoot()
+	_, err = po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)

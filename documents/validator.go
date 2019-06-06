@@ -140,20 +140,20 @@ func baseValidator() Validator {
 	})
 }
 
-// signingRootValidator checks the existence of signing root
-func signingRootValidator() Validator {
+// documentDataRootValidator checks the existence of document data root
+func documentDataRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		if model == nil {
 			return ErrModelNil
 		}
 
-		sr, err := model.CalculateSigningRoot()
+		sr, err := model.CalculateDocumentDataRoot()
 		if err != nil {
-			return errors.New("failed to get signing root: %v", err)
+			return errors.New("failed to get document data root: %v", err)
 		}
 
 		if len(sr) != idSize {
-			return errors.New("signing root is invalid")
+			return errors.New("document data root is invalid")
 		}
 
 		return nil
@@ -220,7 +220,7 @@ func documentTimestampForSigningValidator() Validator {
 }
 
 // signaturesValidator validates all the signatures in the core document
-// assumes signing root is verified
+// assumes document data root is verified
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
 func signaturesValidator(idService identity.Service) Validator {
@@ -229,9 +229,9 @@ func signaturesValidator(idService identity.Service) Validator {
 			return ErrModelNil
 		}
 
-		sr, err := model.CalculateSigningRoot()
+		sr, err := model.CalculateDocumentDataRoot()
 		if err != nil {
-			return errors.New("failed to get signing root: %v", err)
+			return errors.New("failed to get document data root: %v", err)
 		}
 
 		signatures := model.Signatures()
@@ -458,7 +458,7 @@ func transitionValidator(collaborator identity.DID) Validator {
 
 // PreAnchorValidator is a validator group with following validators
 // base validator
-// signing root validator
+// document data root validator
 // document root validator
 // signatures validator
 // should be called before pre anchoring
@@ -516,13 +516,13 @@ func RequestDocumentSignatureValidator(
 
 // SignatureValidator is a validator group with following validators
 // baseValidator
-// signingRootValidator
+// documentDataRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
 func SignatureValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
-		signingRootValidator(),
+		documentDataRootValidator(),
 		signaturesValidator(idService),
 		attributeValidator(repo, idService),
 	}

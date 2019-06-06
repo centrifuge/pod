@@ -397,44 +397,63 @@ func (p *PurchaseOrder) Type() reflect.Type {
 
 // CalculateDataRoot calculates the data root and sets the root to core document
 func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
-	t, err := p.getDocumentDataTree()
+	t, err := p.getDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return t.RootHash(), nil
 }
 
-// getDocumentDataTree creates precise-proofs data tree for the model
-func (p *PurchaseOrder) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
+func (p *PurchaseOrder) getDataLeaves() ([]proofs.LeafNode, error) {
+	t, err := p.getRawDataTree()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	return t.GetLeaves(), nil
+}
+
+func (p *PurchaseOrder) getRawDataTree() (*proofs.DocumentTree, error) {
 	poProto, err := p.createP2PProtobuf()
 	if err != nil {
 		return nil, err
 	}
+	if p.CoreDocument == nil {
+		return nil, errors.New("getDataTree error CoreDocument not set")
+	}
 	t, err := p.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	err = t.AddLeavesFromDocument(poProto)
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	err = t.Generate()
+	return t, nil
+}
+
+// getDataTree creates precise-proofs data tree for the model
+func (p *PurchaseOrder) getDataTree() (*proofs.DocumentTree, error) {
+	tree, err := p.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
-	return t, nil
+	return tree, nil
 }
 
 // CreateProofs generates proofs for given fields.
 func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := p.getDocumentDataTree()
+	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return p.CoreDocument.CreateProofs(p.DocumentType(), tree, fields)
+	return p.CoreDocument.CreateProofs(p.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the po document type.
@@ -474,32 +493,32 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 	return nil
 }
 
-// CalculateSigningRoot returns the signing root of the document.
+// CalculateDocumentDataRoot returns the document data root of the document.
 // Calculates it if not generated yet.
-func (p *PurchaseOrder) CalculateSigningRoot() ([]byte, error) {
-	dr, err := p.CalculateDataRoot()
+func (p *PurchaseOrder) CalculateDocumentDataRoot() ([]byte, error) {
+	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
-		return dr, err
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return p.CoreDocument.CalculateSigningRoot(p.DocumentType(), dr)
+	return p.CoreDocument.CalculateDocumentDataRoot(p.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (p *PurchaseOrder) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := p.CalculateDataRoot()
+	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
-		return dr, err
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return p.CoreDocument.CalculateDocumentRoot(p.DocumentType(), dr)
+	return p.CoreDocument.CalculateDocumentRoot(p.DocumentType(), dataLeaves)
 }
 
 // DocumentRootTree creates and returns the document root tree
 func (p *PurchaseOrder) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := p.CalculateDataRoot()
+	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return p.CoreDocument.DocumentRootTree(p.DocumentType(), dr)
+	return p.CoreDocument.DocumentRootTree(p.DocumentType(), dataLeaves)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -509,14 +528,14 @@ func (p *PurchaseOrder) CreateNFTProofs(
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
 
-	tree, err := p.getDocumentDataTree()
+	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
 
 	return p.CoreDocument.CreateNFTProofs(
 		p.DocumentType(),
-		tree,
+		dataLeaves,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
@@ -534,12 +553,12 @@ func (p *PurchaseOrder) CollaboratorCanUpdate(updated documents.Model, collabora
 	}
 
 	// check purchase order specific changes
-	oldTree, err := p.getDocumentDataTree()
+	oldTree, err := p.getDataTree()
 	if err != nil {
 		return err
 	}
 
-	newTree, err := newPo.getDocumentDataTree()
+	newTree, err := newPo.getDataTree()
 	if err != nil {
 		return err
 	}

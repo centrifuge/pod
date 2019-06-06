@@ -48,7 +48,7 @@ Validation
 
 Validations should be done depending on the situation. The below table is an example that shows a few examples of validations that should only depending on context of the validation.
 
-	|                           | Verify  SigningRoot | Verify DocumentRoot | Check Invoice State Transition | Node must be in collaborators |
+	|                           | Verify  DocDataRoot | Verify DocumentRoot | Check Invoice State Transition | Node must be in collaborators |
 	|---------------------------|---------------------|---------------------|--------------------------------|-------------------------------|
 	| Client Submission         |                     |                     | yes                            | yes                           |
 	| Signature Request         | yes                 |                     |                                |                               |

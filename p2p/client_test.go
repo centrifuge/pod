@@ -153,7 +153,7 @@ func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, did identity.DID,
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
+	sr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 
 	acc, err := contextutil.Account(ctx)

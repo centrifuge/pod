@@ -146,7 +146,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
+	sr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)

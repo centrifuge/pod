@@ -189,12 +189,12 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	sr, err := model.CalculateSigningRoot()
+	sr, err := model.CalculateDocumentDataRoot()
 	if err != nil {
-		return nil, errors.New("failed to get signing root: %v", err)
+		return nil, errors.New("failed to get document data root: %v", err)
 	}
 
-	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
+	srvLog.Infof("document received %x with document data root %x", model.ID(), sr)
 
 	sig, err := acc.SignMsg(sr)
 	if err != nil {

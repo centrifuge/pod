@@ -10,6 +10,11 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
+// DefaultTree returns a DocumentTree with default opts
+func (cd *CoreDocument) DefaultTree() (*proofs.DocumentTree, error) {
+	return cd.DefaultTreeWithPrefix("", nil)
+}
+
 // DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
 func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
 	var prop proofs.Property

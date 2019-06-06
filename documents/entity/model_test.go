@@ -274,7 +274,7 @@ func createEntity(t *testing.T) *Entity {
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateSigningRoot()
+	_, err = e.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -294,7 +294,7 @@ func TestEntityModel_GetDocumentID(t *testing.T) {
 
 func TestEntityModel_getDocumentDataTree(t *testing.T) {
 	e := createEntity(t)
-	tree, err := e.getDocumentDataTree()
+	tree, err := e.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("entity.legal_name")
 	assert.NotNil(t, leaf)
@@ -393,7 +393,7 @@ func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.C
 	assert.NoError(t, err)
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateSigningRoot()
+	_, err = e.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)

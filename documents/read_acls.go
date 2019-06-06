@@ -220,7 +220,7 @@ func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common
 // CreateNFTProofs generate proofs returns proofs for NFT minting.
 func (cd *CoreDocument) CreateNFTProofs(
 	docType string,
-	dataTree *proofs.DocumentTree,
+	dataLeaves []proofs.LeafNode,
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
@@ -244,7 +244,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 
 		pfKeys = append(pfKeys, pks...)
 	}
-	return cd.CreateProofs(docType, dataTree, pfKeys)
+	return cd.CreateProofs(docType, dataLeaves, pfKeys)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice
