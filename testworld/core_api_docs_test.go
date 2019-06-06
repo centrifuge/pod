@@ -30,10 +30,9 @@ func TestCoreAPI_DocumentCreateAndUpdate(t *testing.T) {
 		"currency":    "EUR",
 	}
 
-	// TODO(ved): move to core apis once the Get is ready
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), "invoice", params, false)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), "invoice", params, false)
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), "invoice", params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
+	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, invoiceCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
@@ -48,9 +47,9 @@ func TestCoreAPI_DocumentCreateAndUpdate(t *testing.T) {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), "invoice", params, false)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), "invoice", params, false)
-	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), "invoice", params, false)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params)
 }
 
 func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {

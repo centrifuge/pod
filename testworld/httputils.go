@@ -355,3 +355,17 @@ func getAccounts(accounts *httpexpect.Array) map[string]string {
 	}
 	return accIDs
 }
+
+func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/documents/"+documentID), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(documentID)
+	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+	return objGet
+}
+
+func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, documentID string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/documents/"+documentID), auth).
+		Expect().Status(404).JSON().NotNull()
+	return objGet
+}
