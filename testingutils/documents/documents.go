@@ -33,13 +33,15 @@ func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version
 }
 
 func (m *MockService) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	args := m.Called(documentID, fields)
-	return args.Get(0).(*documents.DocumentProof), args.Error(1)
+	args := m.Called(ctx, documentID, fields)
+	resp, _ := args.Get(0).(*documents.DocumentProof)
+	return resp, args.Error(1)
 }
 
 func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	args := m.Called(documentID, version, fields)
-	return args.Get(0).(*documents.DocumentProof), args.Error(1)
+	args := m.Called(ctx, documentID, version, fields)
+	resp, _ := args.Get(0).(*documents.DocumentProof)
+	return resp, args.Error(1)
 }
 
 func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {

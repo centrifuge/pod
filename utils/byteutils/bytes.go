@@ -119,12 +119,12 @@ type HexBytes []byte
 
 // MarshalJSON marshall bytes to hex.
 func (h HexBytes) MarshalJSON() ([]byte, error) {
-	var str string
-	if len(h) < 1 {
-		return nil, ErrEmptyHexBytes
+	str := "0x"
+	if len(h) > 0 {
+		str = hexutil.Encode(h)
 	}
 
-	str = "\"" + hexutil.Encode(h) + "\""
+	str = "\"" + str + "\""
 	return []byte(str), nil
 }
 

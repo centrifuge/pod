@@ -38,3 +38,13 @@ func (s Service) GetDocument(ctx context.Context, docID []byte) (documents.Model
 func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
 	return s.docService.GetVersion(ctx, docID, versionID)
 }
+
+// GenerateProofs returns the proofs for the latest version of the document.
+func (s Service) GenerateProofs(ctx context.Context, docID []byte, fields []string) (*documents.DocumentProof, error) {
+	return s.docService.CreateProofs(ctx, docID, fields)
+}
+
+// GenerateProofsForVersion returns the proofs for the specific version of the document.
+func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error) {
+	return s.docService.CreateProofsForVersion(ctx, docID, versionID, fields)
+}
