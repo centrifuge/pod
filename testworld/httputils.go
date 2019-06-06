@@ -277,7 +277,7 @@ func ownerOfNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[s
 }
 
 func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/document/"+documentID+"/proof"), auth).
+	resp := addCommonHeaders(e.POST("/documents/"+documentID+"/proofs"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
