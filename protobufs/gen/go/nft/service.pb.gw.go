@@ -301,7 +301,7 @@ func RegisterNFTServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 var (
 	pattern_NFTService_MintNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"nfts", "mint"}, ""))
 
-	pattern_NFTService_MintInvoiceUnpaidNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3, 2, 4}, []string{"nfts", "identifier", "invoice", "unpaid", "mint"}, ""))
+	pattern_NFTService_MintInvoiceUnpaidNFT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2, 2, 3}, []string{"invoice", "identifier", "mint", "unpaid"}, ""))
 
 	pattern_NFTService_TokenTransfer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"nfts", "token_id", "transfer"}, ""))
 

@@ -244,7 +244,7 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/nfts/"+documentID+"/invoice/unpaid/mint"), auth).
+	resp := addCommonHeaders(e.POST("/invoice/"+documentID+"/mint/unpaid"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
