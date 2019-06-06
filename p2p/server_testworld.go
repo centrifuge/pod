@@ -7,31 +7,19 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
 )
 
 type MessageType string
 
-//allow accessing the messenger, idService and config of the peer
-func (s *peer) GetMessenger() messenger {
-	return s.mes
-}
-
-func (s *peer) GetConfig() config.Service {
-	return s.config
-}
-
-func (s *peer) GetIdService() identity.Service {
-	return s.idService
-}
-
+//allow accessing the peer within a client
 func AccessPeer(client documents.Client) *peer {
 	if p, ok := client.(*peer); ok {
 		return p
@@ -169,4 +157,40 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 	}
 
 	return signatures, signatureCollectionErrors, nil
+}
+
+//send message over the accepted maximum message size
+func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Model, length int) (envelope *protocolpb.P2PEnvelope, err error){
+	nc, err := s.config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cs, err := model.GetSignerCollaborators(selfDID)
+	if err != nil {
+		return nil, err
+	}
+
+	//get the first collaborator only
+	collaborator := cs[0]
+	err = s.idService.Exists(ctx, collaborator)
+	if err != nil {
+		return nil, err
+	}
+	receiverPeer, err := s.getPeerID(ctx, collaborator)
+	if err != nil {
+		return nil, err
+	}
+
+	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(length)})
+	if err != nil {
+		return nil, err
+	}
+	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv,  p2pcommon.ProtocolForDID(&collaborator))
+	return msg, err
 }

@@ -3,12 +3,12 @@
 package testworld
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/p2p/messenger"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -110,4 +110,26 @@ func TestIncorrectProto_InvalidHeader(t *testing.T) {
 	assert.Error(t, signatureErrors[0], "Message failed error")
 	assert.Equal(t, 0, len(signatures))
 
+}
+
+//send a signature request message with a message which is larger than the max allowed size
+func TestIncorrectProto_AboveMaxSize(t *testing.T) {
+	t.Parallel()
+	// Hosts
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	eve := doctorFord.getHostTestSuite(t, "Eve")
+
+	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
+
+	//Get PublicKey and PrivateKey
+	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
+
+	collaborators := [][]byte{bob.id[:]}
+	dm := createCDWithEmbeddedPO(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+
+	p := p2p.AccessPeer(eve.host.p2pClient)
+
+	_, err := p.SendOverSizedMessage(ctxh, dm, messenger.MessageSizeMax+1)
+	assert.Error(t, err)
+	assert.Equal(t, "stream reset", err.Error())
 }
