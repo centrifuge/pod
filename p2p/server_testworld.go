@@ -160,7 +160,7 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 }
 
 //send message over the accepted maximum message size
-func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Model, length int) (envelope *protocolpb.P2PEnvelope, err error){
+func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Model, length int) (envelope *protocolpb.P2PEnvelope, err error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -191,6 +191,6 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Model, 
 	if err != nil {
 		return nil, err
 	}
-	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv,  p2pcommon.ProtocolForDID(&collaborator))
+	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForDID(&collaborator))
 	return msg, err
 }
