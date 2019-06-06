@@ -18,7 +18,10 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 )
 
-const prefix string = "entity"
+const (
+	prefix string = "entity"
+	scheme        = prefix
+)
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
@@ -363,4 +366,9 @@ func (e *Entity) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) 
 // TODO(ved): return actual data post migration.
 func (e *Entity) GetData() interface{} {
 	return nil
+}
+
+// Scheme returns the entity scheme.
+func (e *Entity) Scheme() string {
+	return scheme
 }

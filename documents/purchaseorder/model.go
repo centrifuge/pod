@@ -18,7 +18,10 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-const prefix string = "po"
+const (
+	prefix string = "po"
+	scheme        = "purchaseorder"
+)
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
@@ -572,4 +575,9 @@ func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey, prepareNewVersion
 // TODO(ved): return actual data post migration.
 func (p *PurchaseOrder) GetData() interface{} {
 	return nil
+}
+
+// Scheme returns the purchase order scheme.
+func (p *PurchaseOrder) Scheme() string {
+	return scheme
 }

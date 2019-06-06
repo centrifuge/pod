@@ -147,6 +147,183 @@
                 }
             }
         },
+        "/documents/{document_id}": {
+            "get": {
+                "description": "Returns the latest version of the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Returns the latest version of the document.",
+                "operationId": "get_document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/{document_id}/versions/{version_id}": {
+            "get": {
+                "description": "Returns the specific version of the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Returns the specific version of the document.",
+                "operationId": "get_document_version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Version Identifier",
+                        "name": "version_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs/{job_id}": {
+            "get": {
+                "description": "Returns the status of a given Job.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Returns the status of a given Job.",
+                "operationId": "get_job_status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/jobs.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "description": "returns node version and network",
@@ -257,6 +434,9 @@
                 "header": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
+                },
+                "scheme": {
+                    "type": "string"
                 }
             }
         },
@@ -363,6 +543,23 @@
             "type": "object",
             "properties": {
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "jobs.StatusResponse": {
+            "type": "object",
+            "properties": {
+                "job_id": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

@@ -12,14 +12,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	purchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/go-chi/chi"
@@ -71,16 +69,17 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	// register other api endpoints
-	err = registerAPIs(ctx, invoiceUnpaidService, configService, nodeObjReg, grpcServer, gwmux, addr, dopts)
+	err = registerAPIs(ctx, invoiceUnpaidService, configService, grpcServer, gwmux, addr, dopts)
 	if err != nil {
 		return nil, err
 	}
 
 	cfg := nodeObjReg[bootstrap.BootstrappedConfig].(config.Configuration)
-	return httpapi.Router(cfg, configService, invoiceUnpaidService.(documents.TokenRegistry), docService), nil
+	jobsMan := nodeObjReg[jobs.BootstrappedService].(jobs.Manager)
+	return httpapi.Router(cfg, configService, invoiceUnpaidService.(documents.TokenRegistry), docService, jobsMan), nil
 }
 
-func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
+func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
 
 	// nft api
 	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, InvoiceUnpaidService))
@@ -91,16 +90,7 @@ func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, c
 
 	// account api
 	accountpb.RegisterAccountServiceServer(grpcServer, configstore.GRPCAccountHandler(configService))
-	err = accountpb.RegisterAccountServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-
-	// transactions
-	jobsMan := nodeObjReg[jobs.BootstrappedService].(jobs.Manager)
-	h := jobsv1.GRPCHandler(jobsMan, configService)
-	jobspb.RegisterJobServiceServer(grpcServer, h)
-	return jobspb.RegisterJobServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	return accountpb.RegisterAccountServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }
 
 func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {

@@ -44,6 +44,10 @@ type Model interface {
 	// DocumentType returns the type of the document
 	DocumentType() string
 
+	// Scheme returns the scheme of the document data.
+	// TODO(ved): remove once the DocumentType is not used anymore.
+	Scheme() string
+
 	// CalculateDataRoot calculates the data root of the model.
 	CalculateDataRoot() ([]byte, error)
 

@@ -22,12 +22,14 @@ type MockService struct {
 
 func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	args := m.Called(documentID)
-	return args.Get(0).(documents.Model), args.Error(1)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
 	args := m.Called(documentID, version)
-	return args.Get(0).(documents.Model), args.Error(1)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func (m *MockService) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
@@ -77,6 +79,11 @@ func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdateP
 type MockModel struct {
 	documents.Model
 	mock.Mock
+}
+
+func (m *MockModel) Scheme() string {
+	args := m.Called()
+	return args.String(0)
 }
 
 func (m *MockModel) GetData() interface{} {

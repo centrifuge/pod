@@ -54,13 +54,14 @@ type ResponseHeader struct {
 	CreatedAt   string           `json:"created_at"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
 	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	JobID       string           `json:"job_id"`
+	JobID       string           `json:"job_id,omitempty"`
 	NFTs        []NFT            `json:"nfts"`
 }
 
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
 	Header     ResponseHeader `json:"header"`
+	Scheme     string         `json:"scheme"`
 	Data       interface{}    `json:"data"`
 	Attributes AttributeMap   `json:"attributes"`
 }
@@ -195,6 +196,7 @@ func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 
 func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
+	scheme := model.Scheme()
 	attrMap, err := convertAttributes(model.GetAttributes())
 	if err != nil {
 		return resp, err
@@ -205,5 +207,5 @@ func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenReg
 		return resp, err
 	}
 
-	return DocumentResponse{Header: header, Data: docData, Attributes: attrMap}, nil
+	return DocumentResponse{Header: header, Scheme: scheme, Data: docData, Attributes: attrMap}, nil
 }
