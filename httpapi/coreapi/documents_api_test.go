@@ -16,6 +16,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -405,8 +407,28 @@ func TestHandler_GenerateProofs(t *testing.T) {
 
 	// success
 	buf = bytes.NewReader(d)
+	v1, err := hexutil.Decode("0x76616c756531")
+	assert.NoError(t, err)
+	proof := &documents.DocumentProof{
+		DocumentID: id,
+		VersionID:  id,
+		State:      "state",
+		FieldProofs: []*proofspb.Proof{
+			{
+				Property: proofs.CompactName([]byte{0, 0, 1}...),
+				Value:    v1,
+				Salt:     []byte{1, 2, 3},
+				Hash:     []byte{1, 2, 4},
+				SortedHashes: [][]byte{
+					{1, 2, 5},
+					{1, 2, 6},
+					{1, 2, 7},
+				},
+			},
+		},
+	}
 	docSrv = new(testingdocuments.MockService)
-	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(&documents.DocumentProof{DocumentID: id}, nil)
+	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(proof, nil)
 	h = handler{srv: Service{docService: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
 	h.GenerateProofs(w, r)
@@ -466,7 +488,27 @@ func TestHandler_GenerateProofsForVersion(t *testing.T) {
 	// success
 	buf = bytes.NewReader(d)
 	docSrv = new(testingdocuments.MockService)
-	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(&documents.DocumentProof{DocumentID: id}, nil)
+	v1, err := hexutil.Decode("0x76616c756531")
+	assert.NoError(t, err)
+	proof := &documents.DocumentProof{
+		DocumentID: id,
+		VersionID:  id,
+		State:      "state",
+		FieldProofs: []*proofspb.Proof{
+			{
+				Property: proofs.CompactName([]byte{0, 0, 1}...),
+				Value:    v1,
+				Salt:     []byte{1, 2, 3},
+				Hash:     []byte{1, 2, 4},
+				SortedHashes: [][]byte{
+					{1, 2, 5},
+					{1, 2, 6},
+					{1, 2, 7},
+				},
+			},
+		},
+	}
+	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(proof, nil)
 	h = handler{srv: Service{docService: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
 	h.GenerateProofsForVersion(w, r)
