@@ -23,7 +23,7 @@ service NFTService {
   }
   rpc MintInvoiceUnpaidNFT(NFTMintInvoiceUnpaidRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
-      post: "/nfts/{identifier}/invoice/unpaid/mint"
+      post: "/invoice/{identifier}/mint/unpaid"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

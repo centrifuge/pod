@@ -15,34 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/nfts/mint": {
-      "post": {
-        "description": "Mint an NFT from a Centrifuge Document",
-        "operationId": "MintNFT",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/nftNFTMintResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/nftNFTMintRequest"
-            }
-          }
-        ],
-        "tags": [
-          "NFTService"
-        ]
-      }
-    },
-    "/nfts/{identifier}/invoice/unpaid/mint": {
+    "/invoice/{identifier}/mint/unpaid": {
       "post": {
         "description": "Mints an NFT out of an Unpaid Centrifuge Invoice",
         "operationId": "MintInvoiceUnpaidNFT",
@@ -68,6 +41,33 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/nftNFTMintInvoiceUnpaidRequest"
+            }
+          }
+        ],
+        "tags": [
+          "NFTService"
+        ]
+      }
+    },
+    "/nfts/mint": {
+      "post": {
+        "description": "Mint an NFT from a Centrifuge Document",
+        "operationId": "MintNFT",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/nftNFTMintRequest"
             }
           }
         ],
