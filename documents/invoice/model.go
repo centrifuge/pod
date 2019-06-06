@@ -839,3 +839,8 @@ func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.Update
 	i.CoreDocument = ncd
 	return nil
 }
+
+// Scheme returns the invoice scheme.
+func (i *Invoice) Scheme() string {
+	return scheme
+}

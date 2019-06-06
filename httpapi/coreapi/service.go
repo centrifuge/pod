@@ -28,3 +28,13 @@ func (s Service) UpdateDocument(ctx context.Context, payload documents.UpdatePay
 func (s Service) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error) {
 	return s.jobsService.GetJobStatus(account, id)
 }
+
+// GetDocument returns the latest version of the document.
+func (s Service) GetDocument(ctx context.Context, docID []byte) (documents.Model, error) {
+	return s.docService.GetCurrentVersion(ctx, docID)
+}
+
+// GetDocumentVersion returns the specific version of the document
+func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+	return s.docService.GetVersion(ctx, docID, versionID)
+}

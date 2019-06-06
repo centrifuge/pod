@@ -84,6 +84,10 @@ func NilJobID() JobID {
 
 // String marshals a JobID to its hex string form
 func (t JobID) String() string {
+	if uuid.UUID(t) == uuid.Nil {
+		return ""
+	}
+
 	return hexutil.Encode(t[:])
 }
 
