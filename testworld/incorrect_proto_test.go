@@ -3,9 +3,11 @@
 package testworld
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -40,6 +42,7 @@ func TestIncorrectProto_ValidMessage(t *testing.T) {
 //send a signature request message with an incorrect node version
 func TestIncorrectProto_DifferentVersion(t *testing.T) {
 	t.Parallel()
+	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -58,6 +61,7 @@ func TestIncorrectProto_DifferentVersion(t *testing.T) {
 	signatures, signatureErrors, err := p.GetSignaturesForDocumentIncorrectMessage(ctxh, dm, "incorrectNodeVersion")
 	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Message failed error")
+	assert.Equal(t, true, strings.Contains(signatureErrors[0].Error(), "Incompatible version"))
 	assert.Equal(t, 0, len(signatures))
 
 }
@@ -65,6 +69,7 @@ func TestIncorrectProto_DifferentVersion(t *testing.T) {
 //send a signature request message with an invalid body
 func TestIncorrectProto_InvalidBody(t *testing.T) {
 	t.Parallel()
+	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -83,6 +88,7 @@ func TestIncorrectProto_InvalidBody(t *testing.T) {
 	signatures, signatureErrors, err := p.GetSignaturesForDocumentIncorrectMessage(ctxh, dm, "invalidBody")
 	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Message failed error")
+	assert.Equal(t, true, strings.Contains(signatureErrors[0].Error(), "unknown wire type") || strings.Contains(signatureErrors[0].Error(), "illegal tag"))
 	assert.Equal(t, 0, len(signatures))
 
 }
@@ -90,6 +96,7 @@ func TestIncorrectProto_InvalidBody(t *testing.T) {
 //send a signature request message with an invalid header
 func TestIncorrectProto_InvalidHeader(t *testing.T) {
 	t.Parallel()
+	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -108,6 +115,7 @@ func TestIncorrectProto_InvalidHeader(t *testing.T) {
 	signatures, signatureErrors, err := p.GetSignaturesForDocumentIncorrectMessage(ctxh, dm, "invalidHeader")
 	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Message failed error")
+	assert.Equal(t, true, strings.Contains(signatureErrors[0].Error(), "invalid DID length"))
 	assert.Equal(t, 0, len(signatures))
 
 }
