@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -356,4 +357,120 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	docSrv.AssertExpectations(t)
 	m.AssertExpectations(t)
+}
+
+func TestHandler_GenerateProofs(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, body io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/documents/{document_id}/proofs", body).WithContext(ctx)
+	}
+
+	// empty document_id and invalid
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		w, r := getHTTPReqAndResp(ctx, nil)
+		h.GenerateProofs(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), ErrInvalidDocumentID.Error())
+	}
+
+	// failed json input
+	id := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(id)
+	h = handler{}
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.GenerateProofs(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed to generate proofs
+	request := ProofsRequest{}
+	d, err := json.Marshal(request)
+	assert.NoError(t, err)
+	buf := bytes.NewReader(d)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(nil, errors.New("failed to generate proofs"))
+	h = handler{srv: Service{docService: docSrv}}
+	w, r = getHTTPReqAndResp(ctx, buf)
+	h.GenerateProofs(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to generate proofs")
+	docSrv.AssertExpectations(t)
+
+	// success
+	buf = bytes.NewReader(d)
+	docSrv = new(testingdocuments.MockService)
+	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(&documents.DocumentProof{DocumentID: id}, nil)
+	h = handler{srv: Service{docService: docSrv}}
+	w, r = getHTTPReqAndResp(ctx, buf)
+	h.GenerateProofs(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Contains(t, w.Body.String(), hexutil.Encode(id))
+	docSrv.AssertExpectations(t)
+}
+
+func TestHandler_GenerateProofsForVersion(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, body io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/documents/{document_id}/versions/{version_id}/proofs", body).WithContext(ctx)
+	}
+
+	// empty document_id and invalid
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Keys[1] = "version_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		rctx.URLParams.Values[1] = id
+		w, r := getHTTPReqAndResp(ctx, nil)
+		h.GenerateProofsForVersion(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), ErrInvalidDocumentID.Error())
+	}
+
+	// failed json input
+	id := utils.RandomSlice(32)
+	vid := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(id)
+	rctx.URLParams.Values[1] = hexutil.Encode(vid)
+	h = handler{}
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.GenerateProofsForVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed to generate proofs
+	request := ProofsRequest{}
+	d, err := json.Marshal(request)
+	assert.NoError(t, err)
+	buf := bytes.NewReader(d)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(nil, errors.New("failed to generate proofs"))
+	h = handler{srv: Service{docService: docSrv}}
+	w, r = getHTTPReqAndResp(ctx, buf)
+	h.GenerateProofsForVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to generate proofs")
+	docSrv.AssertExpectations(t)
+
+	// success
+	buf = bytes.NewReader(d)
+	docSrv = new(testingdocuments.MockService)
+	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(&documents.DocumentProof{DocumentID: id}, nil)
+	h = handler{srv: Service{docService: docSrv}}
+	w, r = getHTTPReqAndResp(ctx, buf)
+	h.GenerateProofsForVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Contains(t, w.Body.String(), hexutil.Encode(id))
+	docSrv.AssertExpectations(t)
 }

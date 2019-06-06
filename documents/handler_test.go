@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
@@ -28,7 +29,7 @@ func TestGrpcHandler_CreateDocumentProof(t *testing.T) {
 	}
 	id, _ := hexutil.Decode(req.Identifier)
 	doc := &documents.DocumentProof{}
-	service.On("CreateProofs", id, req.Fields).Return(doc, nil)
+	service.On("CreateProofs", mock.Anything, id, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
 	retDoc, _ := grpcHandler.CreateDocumentProof(testingconfig.HandlerContext(documents.ConfigService), req)
 	service.AssertExpectations(t)
@@ -82,7 +83,7 @@ func TestGrpcHandler_CreateDocumentProofForVersion(t *testing.T) {
 	id, _ := hexutil.Decode(req.Identifier)
 	version, _ := hexutil.Decode(req.Version)
 	doc := &documents.DocumentProof{DocumentID: utils.RandomSlice(32)}
-	service.On("CreateProofsForVersion", id, version, req.Fields).Return(doc, nil)
+	service.On("CreateProofsForVersion", mock.Anything, id, version, req.Fields).Return(doc, nil)
 	grpcHandler := documents.GRPCHandler(documents.ConfigService, registry)
 	retDoc, _ := grpcHandler.CreateDocumentProofForVersion(testingconfig.HandlerContext(documents.ConfigService), req)
 	service.AssertExpectations(t)
