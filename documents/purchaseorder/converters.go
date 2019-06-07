@@ -4,12 +4,23 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/documents"
 	clientpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 )
 
-func toClientLineItems(items []*LineItem) []*clientpb.LineItem {
+func toClientLineItems(items []*LineItem) ([]*clientpb.LineItem, error) {
 	var citems []*clientpb.LineItem
 	for _, i := range items {
 		decs := documents.DecimalsToStrings(i.UnitOfMeasure, i.Quantity, i.PricePerUnit, i.AmountInvoiced, i.AmountTotal, i.ReceivedQuantity)
+		pts, err := timeutils.ToProtoTimestamps(i.DateCreated, i.DateUpdated)
+		if err != nil {
+			return nil, err
+		}
+
+		activities, err := toClientActivities(i.Activities)
+		if err != nil {
+			return nil, err
+		}
+
 		citems = append(citems, &clientpb.LineItem{
 			Status:            i.Status,
 			Description:       i.Description,
@@ -20,36 +31,41 @@ func toClientLineItems(items []*LineItem) []*clientpb.LineItem {
 			AmountInvoiced:    decs[3],
 			AmountTotal:       decs[4],
 			ReceivedQuantity:  decs[5],
-			DateCreated:       i.DateCreated,
-			DateUpdated:       i.DateUpdated,
+			DateCreated:       pts[0],
+			DateUpdated:       pts[1],
 			PartNo:            i.PartNumber,
 			RequisitionItem:   i.RequisitionItem,
 			RequisitionNumber: i.RequisitionNumber,
-			RevisionNumber:    i.RevisionNumber,
-			Activities:        toClientActivities(i.Activities),
+			RevisionNumber:    int64(i.RevisionNumber),
+			Activities:        activities,
 			TaxItems:          toClientTaxItems(i.TaxItems),
 		})
 	}
 
-	return citems
+	return citems, nil
 }
 
-func toClientActivities(activities []*LineItemActivity) []*clientpb.LineItemActivity {
+func toClientActivities(activities []*LineItemActivity) ([]*clientpb.LineItemActivity, error) {
 	var cactivities []*clientpb.LineItemActivity
 	for _, a := range activities {
+		pts, err := timeutils.ToProtoTimestamps(a.Date)
+		if err != nil {
+			return nil, err
+		}
+
 		decs := documents.DecimalsToStrings(a.Quantity, a.Amount)
 		cactivities = append(cactivities, &clientpb.LineItemActivity{
 			Quantity:              decs[0],
 			Amount:                decs[1],
 			ItemNumber:            a.ItemNumber,
 			Status:                a.Status,
-			Date:                  a.Date,
+			Date:                  pts[0],
 			ReferenceDocumentId:   a.ReferenceDocumentID,
 			ReferenceDocumentItem: a.ReferenceDocumentItem,
 		})
 	}
 
-	return cactivities
+	return cactivities, nil
 }
 
 func toClientTaxItems(items []*TaxItem) []*clientpb.TaxItem {
@@ -87,6 +103,11 @@ func toP2PLineItems(items []*LineItem) ([]*purchaseorderpb.LineItem, error) {
 			return nil, err
 		}
 
+		pts, err := timeutils.ToProtoTimestamps(i.DateCreated, i.DateUpdated)
+		if err != nil {
+			return nil, err
+		}
+
 		pitems = append(pitems, &purchaseorderpb.LineItem{
 			Status:            i.Status,
 			Description:       i.Description,
@@ -97,12 +118,12 @@ func toP2PLineItems(items []*LineItem) ([]*purchaseorderpb.LineItem, error) {
 			AmountInvoiced:    decs[3],
 			AmountTotal:       decs[4],
 			ReceivedQuantity:  decs[5],
-			DateCreated:       i.DateCreated,
-			DateUpdated:       i.DateUpdated,
+			DateCreated:       pts[0],
+			DateUpdated:       pts[1],
 			PartNo:            i.PartNumber,
 			RequisitionItem:   i.RequisitionItem,
 			RequisitionNumber: i.RequisitionNumber,
-			RevisionNumber:    i.RevisionNumber,
+			RevisionNumber:    int64(i.RevisionNumber),
 			Activities:        patts,
 			TaxItems:          pti,
 		})
@@ -118,12 +139,18 @@ func toP2PActivities(activities []*LineItemActivity) ([]*purchaseorderpb.LineIte
 		if err != nil {
 			return nil, err
 		}
+
+		pts, err := timeutils.ToProtoTimestamps(a.Date)
+		if err != nil {
+			return nil, err
+		}
+
 		pactivities = append(pactivities, &purchaseorderpb.LineItemActivity{
 			Quantity:              decs[0],
 			Amount:                decs[1],
 			ItemNumber:            a.ItemNumber,
 			Status:                a.Status,
-			Date:                  a.Date,
+			Date:                  pts[0],
 			ReferenceDocumentId:   a.ReferenceDocumentID,
 			ReferenceDocumentItem: a.ReferenceDocumentItem,
 		})
@@ -176,6 +203,11 @@ func fromClientLineItems(citems []*clientpb.LineItem) ([]*LineItem, error) {
 			return nil, err
 		}
 
+		tms, err := timeutils.FromProtoTimestamps(ci.DateCreated, ci.DateUpdated)
+		if err != nil {
+			return nil, err
+		}
+
 		items = append(items, &LineItem{
 			Status:            ci.Status,
 			ItemNumber:        ci.ItemNumber,
@@ -184,13 +216,13 @@ func fromClientLineItems(citems []*clientpb.LineItem) ([]*LineItem, error) {
 			AmountTotal:       decs[1],
 			RequisitionNumber: ci.RequisitionNumber,
 			RequisitionItem:   ci.RequisitionItem,
-			RevisionNumber:    ci.RevisionNumber,
+			RevisionNumber:    int(ci.RevisionNumber),
 			PricePerUnit:      decs[2],
 			UnitOfMeasure:     decs[3],
 			Quantity:          decs[4],
 			ReceivedQuantity:  decs[5],
-			DateCreated:       ci.DateCreated,
-			DateUpdated:       ci.DateUpdated,
+			DateCreated:       tms[0],
+			DateUpdated:       tms[1],
 			PartNumber:        ci.PartNo,
 			TaxItems:          ti,
 			Activities:        la,
@@ -229,12 +261,17 @@ func fromClientLineItemActivities(catts []*clientpb.LineItemActivity) ([]*LineIt
 			return nil, err
 		}
 
+		tms, err := timeutils.FromProtoTimestamps(ca.Date)
+		if err != nil {
+			return nil, err
+		}
+
 		atts = append(atts, &LineItemActivity{
 			ItemNumber:            ca.ItemNumber,
 			Status:                ca.Status,
 			Quantity:              decs[0],
 			Amount:                decs[1],
-			Date:                  ca.Date,
+			Date:                  tms[0],
 			ReferenceDocumentItem: ca.ReferenceDocumentItem,
 			ReferenceDocumentID:   ca.ReferenceDocumentId,
 		})
@@ -251,12 +288,17 @@ func fromP2PLineItemActivities(patts []*purchaseorderpb.LineItemActivity) ([]*Li
 			return nil, err
 		}
 
+		tms, err := timeutils.FromProtoTimestamps(ca.Date)
+		if err != nil {
+			return nil, err
+		}
+
 		atts = append(atts, &LineItemActivity{
 			ItemNumber:            ca.ItemNumber,
 			Status:                ca.Status,
 			Quantity:              decs[0],
 			Amount:                decs[1],
-			Date:                  ca.Date,
+			Date:                  tms[0],
 			ReferenceDocumentItem: ca.ReferenceDocumentItem,
 			ReferenceDocumentID:   ca.ReferenceDocumentId,
 		})
@@ -310,6 +352,11 @@ func fromP2PLineItems(pitems []*purchaseorderpb.LineItem) ([]*LineItem, error) {
 			return nil, err
 		}
 
+		tms, err := timeutils.FromProtoTimestamps(ci.DateCreated, ci.DateUpdated)
+		if err != nil {
+			return nil, err
+		}
+
 		items = append(items, &LineItem{
 			Status:            ci.Status,
 			ItemNumber:        ci.ItemNumber,
@@ -318,13 +365,13 @@ func fromP2PLineItems(pitems []*purchaseorderpb.LineItem) ([]*LineItem, error) {
 			AmountTotal:       decs[1],
 			RequisitionNumber: ci.RequisitionNumber,
 			RequisitionItem:   ci.RequisitionItem,
-			RevisionNumber:    ci.RevisionNumber,
+			RevisionNumber:    int(ci.RevisionNumber),
 			PricePerUnit:      decs[2],
 			UnitOfMeasure:     decs[3],
 			Quantity:          decs[4],
 			ReceivedQuantity:  decs[5],
-			DateCreated:       ci.DateCreated,
-			DateUpdated:       ci.DateUpdated,
+			DateCreated:       tms[0],
+			DateUpdated:       tms[1],
 			PartNumber:        ci.PartNo,
 			TaxItems:          ti,
 			Activities:        la,

@@ -156,7 +156,7 @@ func TestPOModel_getClientData(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, data, "purchase order data should not be nil")
 	assert.Equal(t, data.TotalAmount, data.TotalAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, poModel.Recipient.String(), "recipient should match")
+	assert.Equal(t, data.Recipient, poModel.Data.Recipient.String(), "recipient should match")
 }
 
 func TestPOOrderModel_InitPOInput(t *testing.T) {
@@ -172,12 +172,12 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "malformed address provided")
-	assert.Nil(t, poModel.Recipient)
+	assert.Nil(t, poModel.Data.Recipient)
 
 	data.Recipient = "0xed03fa80291ff5ddc284de6b51e716b130b05e20"
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, poModel.Recipient)
+	assert.NotNil(t, poModel.Data.Recipient)
 
 	collabs := []string{"0x010102040506", "some id"}
 	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
@@ -194,7 +194,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 
 	did, err = identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
 	assert.NoError(t, err)
-	assert.Equal(t, poModel.Recipient[:], did[:])
+	assert.Equal(t, poModel.Data.Recipient[:], did[:])
 }
 
 func TestPOModel_calculateDataRoot(t *testing.T) {
@@ -257,14 +257,14 @@ func TestPOModel_getDocumentDataTree(t *testing.T) {
 	na := new(documents.Decimal)
 	assert.NoError(t, na.SetString("2"))
 	poModel := createPurchaseOrder(t)
-	poModel.Number = "123"
-	poModel.TotalAmount = na
+	poModel.Data.Number = "123"
+	poModel.Data.TotalAmount = na
 	tree, err := poModel.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("po.number")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "po.number", leaf.Property.ReadableName())
-	assert.Equal(t, []byte(poModel.Number), leaf.Value)
+	assert.Equal(t, []byte(poModel.Data.Number), leaf.Value)
 }
 
 func createPurchaseOrder(t *testing.T) *PurchaseOrder {
