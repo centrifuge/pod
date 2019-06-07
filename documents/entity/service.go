@@ -472,3 +472,78 @@ func (s service) Revoke(ctx context.Context, entityRelationship documents.Model)
 func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*cliententitypb.RelationshipResponse, error) {
 	return s.erService.DeriveEntityRelationshipResponse(model)
 }
+
+// CreateModel creates entity from the payload, validates, persists, and returns the entity.
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+	if payload.Data == nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	e := new(Entity)
+	if err := e.unpackFromCreatePayload(did, payload); err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// validate invoice
+	err = CreateValidator(s.factory).Validate(nil, e)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(did[:], e.CurrentVersion(), e)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, e.CurrentVersion())
+	return e, jobID, err
+}
+
+// UpdateModel updates the migrates the current entity to next version with data from the update payload
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+	if payload.Data == nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	oldEntity, ok := old.(*Entity)
+	if !ok {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an Entity", hexutil.Encode(payload.DocumentID)))
+	}
+
+	e := new(Entity)
+	err = e.unpackFromUpdatePayload(oldEntity, payload)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = UpdateValidator(s.factory, s.anchorRepo).Validate(old, e)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = s.repo.Create(did[:], e.CurrentVersion(), e)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, e.CurrentVersion())
+	return e, jobID, err
+}

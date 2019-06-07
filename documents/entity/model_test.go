@@ -43,7 +43,6 @@ import (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var configService config.Service
-var defaultDID = testingidentity.GenerateRandomDID()
 
 var (
 	did       = testingidentity.GenerateRandomDID()
@@ -269,7 +268,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 
 func createEntity(t *testing.T) *Entity {
 	e := new(Entity)
-	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID)
+	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
@@ -303,7 +302,7 @@ func TestEntityModel_getDocumentDataTree(t *testing.T) {
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	entity := createEntity(t)
-	id1 := defaultDID
+	id1 := did
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 

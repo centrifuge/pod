@@ -202,7 +202,6 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
-	// TODO(ved): check for modified
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {

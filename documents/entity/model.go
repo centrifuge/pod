@@ -37,6 +37,11 @@ const (
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
 
+//TODO:
+// 1.tests for converters
+// 2. Doucle check the API
+// 3. Testworld
+// 4. check entityrelationship
 type Address struct {
 	IsMain        bool   `json:"is_main"`
 	IsRemitTo     bool   `json:"is_remit_to"`
