@@ -29,6 +29,9 @@ const (
 
 	// ErrNoPaymentMethodSet is a sentinel error when no payment method is set in a single payment detail.
 	ErrNoPaymentMethodSet = errors.Error("no payment method is set")
+
+	// ErrEntityInvalidData sentinel error when data unmarshal is failed.
+	ErrEntityInvalidData = errors.Error("invalid entity data")
 )
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
@@ -76,39 +79,6 @@ type PaymentDetail struct {
 	BankPaymentMethod   *BankPaymentMethod   `json:"bank_payment_method,omitempty"`
 	CryptoPaymentMethod *CryptoPaymentMethod `json:"crypto_payment_method,omitempty"`
 	OtherPaymentMethod  *OtherPaymentMethod  `json:"other_payment_method,omitempty"`
-}
-
-// UnmarshalJSON unmarshals data into Payment Details.
-// Only one of the payment method has to be set.
-// errors out if multiple payment methods are set or none is set.
-func (pd *PaymentDetail) UnmarshalJSON(data []byte) error {
-	err := json.Unmarshal(data, pd)
-	if err != nil {
-		return err
-	}
-
-	return isOnlyOneSet(pd.BankPaymentMethod, pd.CryptoPaymentMethod, pd.OtherPaymentMethod)
-}
-
-func isOnlyOneSet(methods ...interface{}) error {
-	var isSet bool
-	for _, method := range methods {
-		if method == nil {
-			continue
-		}
-
-		if isSet {
-			return ErrMultiplePaymentMethodsSet
-		}
-
-		isSet = true
-	}
-
-	if !isSet {
-		return ErrNoPaymentMethodSet
-	}
-
-	return nil
 }
 
 type Contact struct {
@@ -463,8 +433,82 @@ func (e *Entity) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) 
 }
 
 // GetData returns entity data
-// TODO(ved): return actual data post migration.
 func (e *Entity) GetData() interface{} {
+	return e.Data
+}
+
+func isOnlyOneSet(methods ...interface{}) error {
+	var isSet bool
+	for _, method := range methods {
+		mv := reflect.ValueOf(method)
+		if mv.IsNil() {
+			continue
+		}
+
+		if isSet {
+			return ErrMultiplePaymentMethodsSet
+		}
+
+		isSet = true
+	}
+
+	if !isSet {
+		return ErrNoPaymentMethodSet
+	}
+
+	return nil
+}
+
+// loadData unmarshals json blob to Data.
+// Only one of the payment method has to be set.
+// errors out if multiple payment methods are set or none is set.
+func (e *Entity) loadData(data []byte) error {
+	var d Data
+	err := json.Unmarshal(data, &d)
+	if err != nil {
+		return err
+	}
+
+	pds := d.PaymentDetails
+	for _, pd := range pds {
+		err = isOnlyOneSet(pd.BankPaymentMethod, pd.CryptoPaymentMethod, pd.OtherPaymentMethod)
+		if err != nil {
+			return err
+		}
+	}
+
+	e.Data = d
+	return nil
+}
+
+// unpackFromCreatePayload unpacks the entity data from the Payload.
+func (e *Entity) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
+	if err := e.loadData(payload.Data); err != nil {
+		return errors.NewTypedError(ErrEntityInvalidData, err)
+	}
+
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDCreate, err)
+	}
+
+	e.CoreDocument = cd
+	return nil
+}
+
+// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
+func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
+	if err := e.loadData(payload.Data); err != nil {
+		return errors.NewTypedError(ErrEntityInvalidData, err)
+	}
+
+	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	e.CoreDocument = ncd
 	return nil
 }
 

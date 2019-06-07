@@ -441,3 +441,203 @@ func TestEntity_DeleteAttribute(t *testing.T) {
 	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
 	assert.False(t, e.AttributeExists(attr.Key))
 }
+
+func TestEntity_GetData(t *testing.T) {
+	e := createEntity(t)
+	data := e.GetData()
+	assert.Equal(t, e.Data, data)
+}
+
+func marshallData(t *testing.T, m map[string]interface{}) []byte {
+	data, err := json.Marshal(m)
+	assert.NoError(t, err)
+	return data
+}
+
+func emptyDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "1acdew123asdefres",
+	}
+
+	return marshallData(t, d)
+}
+
+func emptyPaymentDetail(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"payment_details": []map[string]interface{}{
+			{},
+			{"predefined": true},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func multiPaymentDetail(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+				"crypto_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func validData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"legal_name": "Hello, World!",
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func validDataWithIdentity(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"legal_name": "Hello, World!",
+		"identity":   "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func checkEntityPayloadDataError(t *testing.T, e *Entity, payload documents.CreatePayload) {
+	err := e.loadData(payload.Data)
+	assert.Error(t, err)
+}
+
+func TestEntity_loadData(t *testing.T) {
+	e := new(Entity)
+	payload := documents.CreatePayload{}
+
+	// empty did data
+	payload.Data = emptyDIDData(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// invalid did data
+	payload.Data = invalidDIDData(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// empty payment detail
+	payload.Data = emptyPaymentDetail(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// multiple payment detail
+	payload.Data = multiPaymentDetail(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// valid data
+	payload.Data = validData(t)
+	err := e.loadData(payload.Data)
+	assert.NoError(t, err)
+	data := e.GetData().(Data)
+	assert.Equal(t, data.LegalName, "Hello, World!")
+	assert.Len(t, data.PaymentDetails, 1)
+	assert.NotNil(t, data.PaymentDetails[0].BankPaymentMethod)
+	assert.Nil(t, data.PaymentDetails[0].CryptoPaymentMethod)
+	assert.Nil(t, data.PaymentDetails[0].OtherPaymentMethod)
+	assert.True(t, data.PaymentDetails[0].Predefined)
+	assert.Equal(t, data.PaymentDetails[0].BankPaymentMethod.Identifier.String(), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
+}
+
+func TestEntity_unpackFromCreatePayload(t *testing.T) {
+	payload := documents.CreatePayload{}
+	e := new(Entity)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	err := e.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = e.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = e.unpackFromCreatePayload(did, payload)
+	assert.NoError(t, err)
+}
+
+func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	old := createEntity(t)
+	e := new(Entity)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	err := e.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = e.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = e.unpackFromUpdatePayload(old, payload)
+	assert.NoError(t, err)
+}
