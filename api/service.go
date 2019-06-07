@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -34,12 +33,6 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 		return nil, errors.New("failed to get %s", bootstrap.NodeObjRegistry)
 	}
 
-	// load dependencies
-	registry, ok := nodeObjReg[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	if !ok {
-		return nil, errors.New("failed to get %s", documents.BootstrappedRegistry)
-	}
-
 	configService, ok := nodeObjReg[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
@@ -53,13 +46,6 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	docService, ok := nodeObjReg[documents.BootstrappedDocumentService].(documents.Service)
 	if !ok {
 		return nil, errors.New("failed to get %s", documents.BootstrappedDocumentService)
-	}
-
-	// register documents (common)
-	documentpb.RegisterDocumentServiceServer(grpcServer, documents.GRPCHandler(configService, registry))
-	err = documentpb.RegisterDocumentServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return nil, err
 	}
 
 	// register document types

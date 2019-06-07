@@ -97,7 +97,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 
 	tc, err := d.config.GetAccount(d.accountID[:])
 	if err != nil {
-		apiLog.Error(err)
+		log.Error(err)
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 	jobCtx := contextutil.WithJob(context.Background(), d.JobID)

@@ -16,5 +16,7 @@ func Register(r *chi.Mux,
 	r.Put("/documents", h.UpdateDocument)
 	r.Get("/documents/{document_id}", h.GetDocument)
 	r.Get("/documents/{document_id}/versions/{version_id}", h.GetDocumentVersion)
+	r.Post("/documents/{document_id}/proofs", h.GenerateProofs)
+	r.Post("/documents/{document_id}/versions/{version_id}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{job_id}", h.GetJobStatus)
 }
