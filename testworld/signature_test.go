@@ -4,9 +4,7 @@ package testworld
 
 import (
 	"context"
-	"net/http"
-	"testing"
-
+	"fmt"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -23,6 +21,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"net/http"
+	"testing"
 )
 
 func TestHost_SignKeyNotInCollaboration(t *testing.T) {
@@ -31,39 +31,66 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	mallory := doctorFord.getHostTestSuite(t, "Mallory")
 
 	actxh := testingconfig.CreateAccountContext(t, alice.host.config)
+	mctxh := testingconfig.CreateAccountContext(t, mallory.host.config)
 
-	// Get PublicKey and PrivateKey
 	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
+
 	collaborators := [][]byte{mallory.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
 
-	//Following simulate attack by Mallory with random keys pair
 	sr, err := dm.CalculateSigningRoot()
 	assert.NoError(t, err)
-	// random keys pairs should cause signature verification failure
-	publicKey2, privateKey2, err := secp256k1.GenerateSigningKeyPair()
-	s, err := crypto.SignMessage(privateKey2, sr, crypto.CurveSecp256K1)
+
+	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
+	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
+		SignatureId: append(mallory.id[:], publicKeyValid...),
+		SignerId:    mallory.id[:],
+		PublicKey:   publicKeyValid,
+		Signature:   s,
+	}
+
+	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
+
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+
+	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
+
+	//Signature verification should success
+	signatures, signatureErrors, err := alice.host.p2pClient.GetSignaturesForDocument(actxh, dm)
+
+	assert.NoError(t, err)
+	assert.Nil(t, signatureErrors)
+	fmt.Println(signatureErrors)
+	fmt.Println("-------------------------------")
+	assert.Equal(t, 1, len(signatures))
+
+	//Following simulate attack by Mallory with random keys pair
+	//Random keys pairs should cause signature verification failure
+	publicKey2, privateKey2 := GetRandomSigningKeyPair(t)
+	s, err = crypto.SignMessage(privateKey2, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+
+	sig = &coredocumentpb.Signature{
 		SignatureId: append(mallory.id[:], publicKey2...),
 		SignerId:    mallory.id[:],
 		PublicKey:   publicKey2,
 		Signature:   s,
 	}
-	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
 
-	// so when got request on signature of document, mocking documents.Service of Mallory return a random signature
+	// when got request on signature of document, mocking documents.Service of Mallory return a random signature
 	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
 	//TODO
-	signatures, signatureErrors, err := alice.host.p2pClient.GetSignaturesForDocument(actxh, dm)
+	signatures, signatureErrors, err = alice.host.p2pClient.GetSignaturesForDocument(actxh, dm)
 	//seems to me, following should get signature verification errors but it is not.  Currenly p2p/client.go just do validateSignatureResp verification (very simple DID verification?), is this the right behavior?
 	assert.NoError(t, err)
-	assert.Nil(t, signatureErrors)
-	assert.Equal(t, 1, len(signatures))
+	assert.Error(t, signatureErrors[0], "Signature verification failed error")
+	assert.Equal(t, 0, len(signatures))
 }
 
 func TestHost_ValidSignature(t *testing.T) {
@@ -219,6 +246,16 @@ func GetSigningKeyPair(t *testing.T, idService identity.Service, identityDID ide
 
 	// Add Key
 	AddKey(t, idService, testKey, identityDID, ctx)
+
+	return utils.Byte32ToSlice(address32Bytes), privateKey
+}
+
+func GetRandomSigningKeyPair(t *testing.T) ([]byte, []byte) {
+	// Generate PublicKey and PrivateKey
+	publicKey, privateKey, err := secp256k1.GenerateSigningKeyPair()
+	assert.NoError(t, err)
+
+	address32Bytes := convertKeyTo32Bytes(publicKey)
 
 	return utils.Byte32ToSlice(address32Bytes), privateKey
 }
