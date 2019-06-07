@@ -19,7 +19,7 @@ type AttributeMap map[string]Attribute
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string           `json:"scheme" enums:"invoice"`
+	Scheme      string           `json:"scheme" enums:"invoice,purchaseorder"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
 	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}      `json:"data"`
@@ -61,7 +61,7 @@ type ResponseHeader struct {
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
 	Header     ResponseHeader `json:"header"`
-	Scheme     string         `json:"scheme"`
+	Scheme     string         `json:"scheme" enums:"invoice,purchaseorder"`
 	Data       interface{}    `json:"data"`
 	Attributes AttributeMap   `json:"attributes"`
 }
