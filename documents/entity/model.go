@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,28 +23,121 @@ import (
 const (
 	prefix string = "entity"
 	scheme        = prefix
+
+	// ErrMultiplePaymentMethodsSet is a sentinel error when multiple payment methods are set in a single payment detail.
+	ErrMultiplePaymentMethodsSet = errors.Error("multiple payment methods are set")
+
+	// ErrNoPaymentMethodSet is a sentinel error when no payment method is set in a single payment detail.
+	ErrNoPaymentMethodSet = errors.Error("no payment method is set")
 )
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
 
+type Address struct {
+	IsMain        bool   `json:"is_main"`
+	IsRemitTo     bool   `json:"is_remit_to"`
+	IsShipTo      bool   `json:"is_ship_to"`
+	IsPayTo       bool   `json:"is_pay_to"`
+	Label         string `json:"label"`
+	Zip           string `json:"zip"`
+	State         string `json:"state"`
+	Country       string `json:"country"`
+	AddressLine1  string `json:"address_line_1"`
+	AddressLine2  string `json:"address_line_2"`
+	ContactPerson string `json:"contact_person"`
+}
+
+type BankPaymentMethod struct {
+	Identifier        byteutils.HexBytes `json:"identifier"`
+	Address           Address            `json:"address"`
+	HolderName        string             `json:"holder_name"`
+	BankKey           string             `json:"bank_key"`
+	BankAccountNumber string             `json:"bank_account_number"`
+	SupportedCurrency string             `json:"supported_currency"`
+}
+
+type CryptoPaymentMethod struct {
+	Identifier        byteutils.HexBytes `json:"identifier"`
+	To                string             `json:"to"`
+	ChainUri          string             `json:"chain_uri"`
+	SupportedCurrency string             `json:"supported_currency"`
+}
+
+type OtherPaymentMethod struct {
+	Identifier        byteutils.HexBytes `json:"identifier"`
+	Type              string             `json:"type"`
+	PayTo             string             `json:"pay_to"`
+	SupportedCurrency string             `json:"supported_currency"`
+}
+
+type PaymentDetail struct {
+	Predefined          bool                 `json:"predefined"`
+	BankPaymentMethod   *BankPaymentMethod   `json:"bank_payment_method,omitempty"`
+	CryptoPaymentMethod *CryptoPaymentMethod `json:"crypto_payment_method,omitempty"`
+	OtherPaymentMethod  *OtherPaymentMethod  `json:"other_payment_method,omitempty"`
+}
+
+// UnmarshalJSON unmarshals data into Payment Details.
+// Only one of the payment method has to be set.
+// errors out if multiple payment methods are set or none is set.
+func (pd *PaymentDetail) UnmarshalJSON(data []byte) error {
+	err := json.Unmarshal(data, pd)
+	if err != nil {
+		return err
+	}
+
+	return isOnlyOneSet(pd.BankPaymentMethod, pd.CryptoPaymentMethod, pd.OtherPaymentMethod)
+}
+
+func isOnlyOneSet(methods ...interface{}) error {
+	var isSet bool
+	for _, method := range methods {
+		if method == nil {
+			continue
+		}
+
+		if isSet {
+			return ErrMultiplePaymentMethodsSet
+		}
+
+		isSet = true
+	}
+
+	if !isSet {
+		return ErrNoPaymentMethodSet
+	}
+
+	return nil
+}
+
+type Contact struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	Email string `json:"email"`
+	Phone string `json:"phone"`
+	Fax   string `json:"fax"`
+}
+
+type Data struct {
+	Identity       *identity.DID   `json:"identity"`
+	LegalName      string          `json:"legal_name"`
+	Addresses      []Address       `json:"addresses"`
+	PaymentDetails []PaymentDetail `json:"payment_details"`
+	Contacts       []Contact       `json:"contacts"`
+}
+
 // Entity implements the documents.Model keeps track of entity related fields and state
 type Entity struct {
 	*documents.CoreDocument
 
-	Identity  *identity.DID
-	LegalName string
-	// address
-	Addresses []*entitypb.Address
-	// tax information
-	PaymentDetails []*entitypb.PaymentDetail
-	// Entity contact list
-	Contacts []*entitypb.Contact
+	Data Data
 }
 
 // getClientData returns the client data from the entity model
 func (e *Entity) getClientData() (*cliententitypb.EntityData, error) {
-	dids := identity.DIDsToStrings(e.Identity)
+	d := e.Data
+	dids := identity.DIDsToStrings(d.Identity)
 	attrs, err := documents.ToClientAttributes(e.Attributes)
 	if err != nil {
 		return nil, err
@@ -50,23 +145,24 @@ func (e *Entity) getClientData() (*cliententitypb.EntityData, error) {
 
 	return &cliententitypb.EntityData{
 		Identity:       dids[0],
-		LegalName:      e.LegalName,
-		Addresses:      e.Addresses,
-		PaymentDetails: e.PaymentDetails,
-		Contacts:       e.Contacts,
+		LegalName:      d.LegalName,
+		Addresses:      toProtoAddresses(d.Addresses),
+		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
+		Contacts:       toProtoContacts(d.Contacts),
 		Attributes:     attrs,
 	}, nil
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
-	dids := identity.DIDsToBytes(e.Identity)
+	d := e.Data
+	dids := identity.DIDsToBytes(d.Identity)
 	return &entitypb.Entity{
 		Identity:       dids[0],
-		LegalName:      e.LegalName,
-		Addresses:      e.Addresses,
-		PaymentDetails: e.PaymentDetails,
-		Contacts:       e.Contacts,
+		LegalName:      d.LegalName,
+		Addresses:      toProtoAddresses(d.Addresses),
+		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
+		Contacts:       toProtoContacts(d.Contacts),
 	}
 }
 
@@ -109,11 +205,13 @@ func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
 		return errors.NewTypedError(identity.ErrMalformedAddress, err)
 	}
 
-	e.Identity = dids[0]
-	e.LegalName = data.LegalName
-	e.Addresses = data.Addresses
-	e.PaymentDetails = data.PaymentDetails
-	e.Contacts = data.Contacts
+	var d Data
+	d.Identity = dids[0]
+	d.LegalName = data.LegalName
+	d.Addresses = fromProtoAddresses(data.Addresses)
+	d.PaymentDetails = fromProtoPaymentDetails(data.PaymentDetails)
+	d.Contacts = fromProtoContacts(data.Contacts)
+	e.Data = d
 	return nil
 }
 
@@ -124,11 +222,13 @@ func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
 		return err
 	}
 
-	e.Identity = dids[0]
-	e.LegalName = data.LegalName
-	e.Addresses = data.Addresses
-	e.PaymentDetails = data.PaymentDetails
-	e.Contacts = data.Contacts
+	var d Data
+	d.Identity = dids[0]
+	d.LegalName = data.LegalName
+	d.Addresses = fromProtoAddresses(data.Addresses)
+	d.PaymentDetails = fromProtoPaymentDetails(data.PaymentDetails)
+	d.Contacts = fromProtoContacts(data.Contacts)
+	e.Data = d
 	return nil
 }
 

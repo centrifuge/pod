@@ -288,7 +288,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	entity := m.(*Entity)
-	assert.Equal(t, entity.LegalName, payload.Data.LegalName)
+	assert.Equal(t, entity.Data.LegalName, payload.Data.LegalName)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -299,8 +299,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	entity, ok := m.(*Entity)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, entity.LegalName, "Company Test")
-	assert.Equal(t, entity.Contacts[0].Name, "Satoshi Nakamoto")
+	assert.Equal(t, entity.Data.LegalName, "Company Test")
+	assert.Equal(t, entity.Data.Contacts[0].Name, "Satoshi Nakamoto")
 }
 
 func TestService_Create(t *testing.T) {
@@ -438,7 +438,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	doc3Entity := doc3.(*Entity)
 
 	assert.NoError(t, err)
-	assert.Equal(t, doc2.LegalName, doc3Entity.LegalName)
+	assert.Equal(t, doc2.Data.LegalName, doc3Entity.Data.LegalName)
 }
 
 func TestService_GetVersion(t *testing.T) {
