@@ -168,7 +168,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, "document_id"))
+	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -215,7 +215,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 	defer httputils.RespondIfError(&code, &err, w, r)
 
 	ids := make([][]byte, 2, 2)
-	for i, idStr := range []string{chi.URLParam(r, "document_id"), chi.URLParam(r, "version_id")} {
+	for i, idStr := range []string{chi.URLParam(r, documentIDParam), chi.URLParam(r, versionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)
 		if err != nil {
@@ -265,7 +265,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, "document_id"))
+	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -319,7 +319,7 @@ func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request
 	defer httputils.RespondIfError(&code, &err, w, r)
 
 	ids := make([][]byte, 2, 2)
-	for i, idStr := range []string{chi.URLParam(r, "document_id"), chi.URLParam(r, "version_id")} {
+	for i, idStr := range []string{chi.URLParam(r, documentIDParam), chi.URLParam(r, versionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)
 		if err != nil {

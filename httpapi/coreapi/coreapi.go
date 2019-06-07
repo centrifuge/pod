@@ -6,6 +6,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
+const (
+	documentIDParam = "document_id"
+	versionIDParam  = "version_id"
+	jobIDParam      = "job_id"
+)
+
 // Register registers the core apis to the router.
 func Register(r *chi.Mux,
 	registry documents.TokenRegistry,
@@ -14,9 +20,9 @@ func Register(r *chi.Mux,
 	h := handler{srv: Service{docService: docSrv, jobsService: jobsSrv}, tokenRegistry: registry}
 	r.Post("/documents", h.CreateDocument)
 	r.Put("/documents", h.UpdateDocument)
-	r.Get("/documents/{document_id}", h.GetDocument)
-	r.Get("/documents/{document_id}/versions/{version_id}", h.GetDocumentVersion)
-	r.Post("/documents/{document_id}/proofs", h.GenerateProofs)
-	r.Post("/documents/{document_id}/versions/{version_id}/proofs", h.GenerateProofsForVersion)
-	r.Get("/jobs/{job_id}", h.GetJobStatus)
+	r.Get("/documents/{"+documentIDParam+"}", h.GetDocument)
+	r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}", h.GetDocumentVersion)
+	r.Post("/documents/{"+documentIDParam+"}/proofs", h.GenerateProofs)
+	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
+	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
 }

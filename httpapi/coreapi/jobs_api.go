@@ -36,7 +36,7 @@ func (h handler) GetJobStatus(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	jobID, err := jobs.FromString(chi.URLParam(r, "job_id"))
+	jobID, err := jobs.FromString(chi.URLParam(r, jobIDParam))
 	if err != nil {
 		err = errors.NewTypedError(ErrInvalidJobID, err)
 		code = http.StatusBadRequest
