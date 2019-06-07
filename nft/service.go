@@ -3,7 +3,6 @@ package nft
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -119,13 +118,6 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	if err != nil {
 		return mreq, err
 	}
-
-	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
-	if err != nil {
-		return mreq, err
-	}
-
-	log.Debug(json.MarshalIndent(proof, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {

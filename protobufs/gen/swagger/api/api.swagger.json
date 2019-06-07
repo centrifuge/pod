@@ -206,6 +206,68 @@
                 }
             }
         },
+        "/documents/{document_id}/proofs": {
+            "post": {
+                "description": "Generates proofs for the fields from latest version of the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Generates proofs for the fields from latest version of the document.",
+                "operationId": "generate_document_proofs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Document proof request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.ProofsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.ProofsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/documents/{document_id}/versions/{version_id}": {
             "get": {
                 "description": "Returns the specific version of the document.",
@@ -257,6 +319,75 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/{document_id}/versions/{version_id}/proofs": {
+            "post": {
+                "description": "Generates proofs for the fields from a specific document version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Generates proofs for the fields from a specific document version.",
+                "operationId": "generate_document_version_proofs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Version Identifier",
+                        "name": "version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Document proof request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.ProofsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.ProofsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
@@ -454,6 +585,69 @@
                 },
                 "token_index": {
                     "type": "string"
+                }
+            }
+        },
+        "coreapi.Proof": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "property": {
+                    "type": "string"
+                },
+                "salt": {
+                    "type": "string"
+                },
+                "sorted_hashes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.ProofResponseHeader": {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "version_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.ProofsRequest": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "coreapi.ProofsResponse": {
+            "type": "object",
+            "properties": {
+                "field_proofs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/coreapi.Proof"
+                    }
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.ProofResponseHeader"
                 }
             }
         },

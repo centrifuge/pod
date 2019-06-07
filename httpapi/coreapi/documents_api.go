@@ -246,3 +246,114 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, resp)
 }
+
+// GenerateProofs returns proofs for the fields from latest version of the document.
+// @summary Generates proofs for the fields from latest version of the document.
+// @description Generates proofs for the fields from latest version of the document.
+// @id generate_document_proofs
+// @tags Documents
+// @param authorization header string true "centrifuge identity"
+// @param document_id path string true "Document Identifier"
+// @param body body coreapi.ProofsRequest true "Document proof request"
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.ProofsResponse
+// @router /documents/{document_id}/proofs [post]
+func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, "document_id"))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrInvalidDocumentID
+		return
+	}
+
+	d, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var request ProofsRequest
+	err = json.Unmarshal(d, &request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	proofs, err := h.srv.GenerateProofs(r.Context(), docID, request.Fields)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, convertProofs(proofs))
+}
+
+// GenerateProofsForVersion returns proofs for the fields from a specific document version.
+// @summary Generates proofs for the fields from a specific document version.
+// @description Generates proofs for the fields from a specific document version.
+// @id generate_document_version_proofs
+// @tags Documents
+// @param authorization header string true "centrifuge identity"
+// @param document_id path string true "Document Identifier"
+// @param version_id path string true "Document Version Identifier"
+// @param body body coreapi.ProofsRequest true "Document proof request"
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.ProofsResponse
+// @router /documents/{document_id}/versions/{version_id}/proofs [post]
+func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	ids := make([][]byte, 2, 2)
+	for i, idStr := range []string{chi.URLParam(r, "document_id"), chi.URLParam(r, "version_id")} {
+		var id []byte
+		id, err = hexutil.Decode(idStr)
+		if err != nil {
+			code = http.StatusBadRequest
+			log.Error(err)
+			err = ErrInvalidDocumentID
+			return
+		}
+
+		ids[i] = id
+	}
+
+	d, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var request ProofsRequest
+	err = json.Unmarshal(d, &request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	proofs, err := h.srv.GenerateProofsForVersion(r.Context(), ids[0], ids[1], request.Fields)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, convertProofs(proofs))
+}
