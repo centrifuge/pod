@@ -1,6 +1,7 @@
 package purchaseorder
 
 import (
+	"encoding/json"
 	"reflect"
 	"time"
 
@@ -22,6 +23,9 @@ import (
 const (
 	prefix string = "po"
 	scheme        = "purchaseorder"
+
+	// ErrPOInvalidData sentinel error when data unmarshal is failed.
+	ErrPOInvalidData = errors.Error("invalid purchase order data")
 )
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
@@ -611,6 +615,42 @@ func (p *PurchaseOrder) DeleteAttribute(key documents.AttrKey, prepareNewVersion
 // GetData returns purchase order data
 func (p *PurchaseOrder) GetData() interface{} {
 	return p.Data
+}
+
+// loadData unmarshals json blob to Data.
+func (p *PurchaseOrder) loadData(data []byte) error {
+	return json.Unmarshal(data, &p.Data)
+}
+
+// unpackFromCreatePayload unpacks the invoice data from the Payload.
+func (p *PurchaseOrder) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
+	if err := p.loadData(payload.Data); err != nil {
+		return errors.NewTypedError(ErrPOInvalidData, err)
+	}
+
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDCreate, err)
+	}
+
+	p.CoreDocument = cd
+	return nil
+}
+
+// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
+func (p *PurchaseOrder) unpackFromUpdatePayload(old *PurchaseOrder, payload documents.UpdatePayload) error {
+	if err := p.loadData(payload.Data); err != nil {
+		return errors.NewTypedError(ErrPOInvalidData, err)
+	}
+
+	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	p.CoreDocument = ncd
+	return nil
 }
 
 // Scheme returns the purchase order scheme.

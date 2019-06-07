@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -398,4 +399,230 @@ func TestPurchaseOrder_DeleteAttribute(t *testing.T) {
 	assert.True(t, po.AttributeExists(attr.Key))
 	assert.NoError(t, po.DeleteAttribute(attr.Key, true))
 	assert.False(t, po.AttributeExists(attr.Key))
+}
+
+func TestPurchaseOrder_GetData(t *testing.T) {
+	po := createPurchaseOrder(t)
+	data := po.GetData()
+	assert.Equal(t, po.Data, data)
+}
+
+func marshallData(t *testing.T, m map[string]interface{}) []byte {
+	data, err := json.Marshal(m)
+	assert.NoError(t, err)
+	return data
+}
+
+func emptyDecimalData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"total_amount": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidDecimalData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"total_amount": "10.10.",
+	}
+
+	return marshallData(t, d)
+}
+
+func emptyDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"recipient": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"recipient": "1acdew123asdefres",
+	}
+
+	return marshallData(t, d)
+}
+
+func emptyTimeData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"date_sent": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidTimeData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"date_sent": "1920-12-10",
+	}
+
+	return marshallData(t, d)
+}
+
+func validData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"number":         "12345",
+		"status":         "unpaid",
+		"total_amount":   "12.345",
+		"recipient":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"date_sent":      "2019-05-24T14:48:44.308854Z", // rfc3339nano
+		"date_confirmed": "2019-05-24T14:48:44Z",        // rfc3339
+		"attachments": []map[string]interface{}{
+			{
+				"name":      "test",
+				"file_type": "pdf",
+				"size":      1000202,
+				"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func validDataWithCurrency(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"number":         "12345",
+		"status":         "unpaid",
+		"total_amount":   "12.345",
+		"recipient":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"date_sent":      "2019-05-24T14:48:44.308854Z", // rfc3339nano
+		"date_confirmed": "2019-05-24T14:48:44Z",        // rfc3339
+		"currency":       "EUR",
+		"attachments": []map[string]interface{}{
+			{
+				"name":      "test",
+				"file_type": "pdf",
+				"size":      1000202,
+				"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func checkPOPayloadDataError(t *testing.T, po *PurchaseOrder, payload documents.CreatePayload) {
+	err := po.loadData(payload.Data)
+	assert.Error(t, err)
+}
+
+func TestPurchaseOrder_loadData(t *testing.T) {
+	po := new(PurchaseOrder)
+	payload := documents.CreatePayload{}
+
+	// empty decimal data
+	payload.Data = emptyDecimalData(t)
+	checkPOPayloadDataError(t, po, payload)
+
+	// invalid decimal data
+	payload.Data = invalidDecimalData(t)
+	checkPOPayloadDataError(t, po, payload)
+
+	// empty did data
+	payload.Data = emptyDIDData(t)
+	checkPOPayloadDataError(t, po, payload)
+
+	// invalid did data
+	payload.Data = invalidDIDData(t)
+	checkPOPayloadDataError(t, po, payload)
+
+	// empty time data
+	payload.Data = emptyTimeData(t)
+	checkPOPayloadDataError(t, po, payload)
+
+	// invalid time data
+	payload.Data = invalidTimeData(t)
+	checkPOPayloadDataError(t, po, payload)
+
+	// valid data
+	payload.Data = validData(t)
+	err := po.loadData(payload.Data)
+	assert.NoError(t, err)
+	data := po.GetData().(Data)
+	assert.Equal(t, data.Number, "12345")
+	assert.Equal(t, data.Status, "unpaid")
+	assert.Equal(t, data.TotalAmount.String(), "12.345")
+	assert.Equal(t, data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.Equal(t, data.DateSent.UTC().Format(time.RFC3339Nano), "2019-05-24T14:48:44.308854Z")
+	assert.Equal(t, data.DateConfirmed.UTC().Format(time.RFC3339), "2019-05-24T14:48:44Z")
+	assert.Len(t, data.Attachments, 1)
+	assert.Equal(t, data.Attachments[0].Name, "test")
+	assert.Equal(t, data.Attachments[0].FileType, "pdf")
+	assert.Equal(t, data.Attachments[0].Size, 1000202)
+	assert.Equal(t, hexutil.Encode(data.Attachments[0].Checksum), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf3")
+	assert.Equal(t, hexutil.Encode(data.Attachments[0].Data), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
+}
+
+func TestPurchaseOrder_unpackFromCreatePayload(t *testing.T) {
+	payload := documents.CreatePayload{}
+	po := new(PurchaseOrder)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := po.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrPOInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = po.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = po.unpackFromCreatePayload(did, payload)
+	assert.NoError(t, err)
+}
+
+func TestPurchaseOrder_unpackFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	old := createPurchaseOrder(t)
+	po := new(PurchaseOrder)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := po.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrPOInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = po.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = po.unpackFromUpdatePayload(old, payload)
+	assert.NoError(t, err)
 }
