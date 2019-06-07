@@ -541,7 +541,8 @@
                 "scheme": {
                     "type": "string",
                     "enum": [
-                        "invoice"
+                        "invoice",
+                        "purchaseorder"
                     ]
                 },
                 "write_access": {
@@ -567,7 +568,11 @@
                     "$ref": "#/definitions/coreapi.ResponseHeader"
                 },
                 "scheme": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "invoice",
+                        "purchaseorder"
+                    ]
                 }
             }
         },
@@ -711,7 +716,8 @@
                 "scheme": {
                     "type": "string",
                     "enum": [
-                        "invoice"
+                        "invoice",
+                        "purchaseorder"
                     ]
                 },
                 "write_access": {
