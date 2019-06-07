@@ -31,6 +31,7 @@ const (
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 2, 0, 0} }
 
+// Data represents Purchase Order Data.
 type Data struct {
 	Status                  string                        `json:"status"`
 	Number                  string                        `json:"number"`
