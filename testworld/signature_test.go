@@ -5,6 +5,9 @@ package testworld
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -21,8 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"net/http"
-	"testing"
 )
 
 func TestHost_SignKeyNotInCollaboration(t *testing.T) {
