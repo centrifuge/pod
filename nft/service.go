@@ -323,7 +323,7 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 			return
 		}
 		log.Infof("sent off ethTX to transferFrom [registry: %s tokenID: %s, from: %s, to: %s].",
-			tokenID.String(), registry.String(), from.String(), to.String())
+			registry.String(), tokenID.String(), from.String(), to.String())
 
 		isDone := <-done
 		if !isDone {
@@ -343,7 +343,7 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 			return
 		}
 
-		log.Infof("token successfully transferred to %s with transaction %s ", from.Hex(), txID)
+		log.Infof("token %s successfully transferred from %s to %s with transaction %s ", tokenID.String(), from.Hex(), to.Hex(), txID)
 
 		errOut <- nil
 		return

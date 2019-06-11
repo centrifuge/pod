@@ -230,3 +230,12 @@ func RandomBigInt(max string) (*big.Int, error) {
 
 	return n, nil
 }
+
+// InRange returns a boolean if the given number is in between a specified range.
+func InRange(i, min, max int) bool {
+	if (i >= min) && (i <= max) {
+		return true
+	}
+
+	return false
+}
