@@ -75,9 +75,9 @@ func newEthInvoiceUnpaid(
 func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
 	// Compact properties
 	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.DocumentDataRootField)...)}
-	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
+	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)]
 	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
-	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
+	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})", hex.EncodeToString(m0))}
 
 	for i, p := range docProof.FieldProofs {
 		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
@@ -120,11 +120,10 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, err
 	}
 
-	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
+	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: docProofs.DocumentID, VersionID: docProofs.VersionID, FieldProofs: docProofs.FieldProofs})
 	if err != nil {
 		return mreq, err
 	}
-
 	log.Debug(json.MarshalIndent(proof, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)

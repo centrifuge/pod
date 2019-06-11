@@ -174,7 +174,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorRaw) Transact(opts 
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address owner) constant returns(uint256)
+// Solidity: function balanceOf(owner address) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) BalanceOf(opts *bind.CallOpts, owner common.Address) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -186,21 +186,21 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) BalanceOf(opts *bind.
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address owner) constant returns(uint256)
+// Solidity: function balanceOf(owner address) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) BalanceOf(owner common.Address) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.BalanceOf(&_InvoiceUnpaidContract.CallOpts, owner)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address owner) constant returns(uint256)
+// Solidity: function balanceOf(owner address) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) BalanceOf(owner common.Address) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.BalanceOf(&_InvoiceUnpaidContract.CallOpts, owner)
 }
 
 // CurrentIndexOfToken is a free data retrieval call binding the contract method 0x0ee77b1a.
 //
-// Solidity: function currentIndexOfToken(uint256 tokenId) constant returns(uint256 index)
+// Solidity: function currentIndexOfToken(tokenId uint256) constant returns(index uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) CurrentIndexOfToken(opts *bind.CallOpts, tokenId *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -212,14 +212,14 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) CurrentIndexOfToken(o
 
 // CurrentIndexOfToken is a free data retrieval call binding the contract method 0x0ee77b1a.
 //
-// Solidity: function currentIndexOfToken(uint256 tokenId) constant returns(uint256 index)
+// Solidity: function currentIndexOfToken(tokenId uint256) constant returns(index uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) CurrentIndexOfToken(tokenId *big.Int) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.CurrentIndexOfToken(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
 
 // CurrentIndexOfToken is a free data retrieval call binding the contract method 0x0ee77b1a.
 //
-// Solidity: function currentIndexOfToken(uint256 tokenId) constant returns(uint256 index)
+// Solidity: function currentIndexOfToken(tokenId uint256) constant returns(index uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) CurrentIndexOfToken(tokenId *big.Int) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.CurrentIndexOfToken(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
@@ -252,7 +252,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) GetAnchorRegis
 
 // GetApproved is a free data retrieval call binding the contract method 0x081812fc.
 //
-// Solidity: function getApproved(uint256 tokenId) constant returns(address)
+// Solidity: function getApproved(tokenId uint256) constant returns(address)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) GetApproved(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
@@ -264,14 +264,14 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) GetApproved(opts *bin
 
 // GetApproved is a free data retrieval call binding the contract method 0x081812fc.
 //
-// Solidity: function getApproved(uint256 tokenId) constant returns(address)
+// Solidity: function getApproved(tokenId uint256) constant returns(address)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) GetApproved(tokenId *big.Int) (common.Address, error) {
 	return _InvoiceUnpaidContract.Contract.GetApproved(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
 
 // GetApproved is a free data retrieval call binding the contract method 0x081812fc.
 //
-// Solidity: function getApproved(uint256 tokenId) constant returns(address)
+// Solidity: function getApproved(tokenId uint256) constant returns(address)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) GetApproved(tokenId *big.Int) (common.Address, error) {
 	return _InvoiceUnpaidContract.Contract.GetApproved(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
@@ -304,7 +304,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) GetIdentityFac
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, uint256 nextAnchorId, bytes32 documentRoot)
+// Solidity: function getTokenDetails(tokenId uint256) constant returns(invoiceSender address, grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, nextAnchorId uint256, documentRoot bytes32)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) GetTokenDetails(opts *bind.CallOpts, tokenId *big.Int) (struct {
 	InvoiceSender common.Address
 	GrossAmount   []byte
@@ -330,7 +330,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) GetTokenDetails(opts 
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, uint256 nextAnchorId, bytes32 documentRoot)
+// Solidity: function getTokenDetails(tokenId uint256) constant returns(invoiceSender address, grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, nextAnchorId uint256, documentRoot bytes32)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) GetTokenDetails(tokenId *big.Int) (struct {
 	InvoiceSender common.Address
 	GrossAmount   []byte
@@ -345,7 +345,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) GetTokenDetails(toke
 
 // GetTokenDetails is a free data retrieval call binding the contract method 0xc1e03728.
 //
-// Solidity: function getTokenDetails(uint256 tokenId) constant returns(address invoiceSender, bytes grossAmount, bytes currency, bytes dueDate, uint256 anchorId, uint256 nextAnchorId, bytes32 documentRoot)
+// Solidity: function getTokenDetails(tokenId uint256) constant returns(invoiceSender address, grossAmount bytes, currency bytes, dueDate bytes, anchorId uint256, nextAnchorId uint256, documentRoot bytes32)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) GetTokenDetails(tokenId *big.Int) (struct {
 	InvoiceSender common.Address
 	GrossAmount   []byte
@@ -360,7 +360,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) GetTokenDetail
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
 //
-// Solidity: function isApprovedForAll(address owner, address operator) constant returns(bool)
+// Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) IsApprovedForAll(opts *bind.CallOpts, owner common.Address, operator common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -372,21 +372,21 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) IsApprovedForAll(opts
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
 //
-// Solidity: function isApprovedForAll(address owner, address operator) constant returns(bool)
+// Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error) {
 	return _InvoiceUnpaidContract.Contract.IsApprovedForAll(&_InvoiceUnpaidContract.CallOpts, owner, operator)
 }
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
 //
-// Solidity: function isApprovedForAll(address owner, address operator) constant returns(bool)
+// Solidity: function isApprovedForAll(owner address, operator address) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error) {
 	return _InvoiceUnpaidContract.Contract.IsApprovedForAll(&_InvoiceUnpaidContract.CallOpts, owner, operator)
 }
 
 // IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
 //
-// Solidity: function isTokenLatestDocument(uint256 tokenId) constant returns(bool)
+// Solidity: function isTokenLatestDocument(tokenId uint256) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) IsTokenLatestDocument(opts *bind.CallOpts, tokenId *big.Int) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -398,14 +398,14 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) IsTokenLatestDocument
 
 // IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
 //
-// Solidity: function isTokenLatestDocument(uint256 tokenId) constant returns(bool)
+// Solidity: function isTokenLatestDocument(tokenId uint256) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) IsTokenLatestDocument(tokenId *big.Int) (bool, error) {
 	return _InvoiceUnpaidContract.Contract.IsTokenLatestDocument(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
 
 // IsTokenLatestDocument is a free data retrieval call binding the contract method 0x8c504b67.
 //
-// Solidity: function isTokenLatestDocument(uint256 tokenId) constant returns(bool)
+// Solidity: function isTokenLatestDocument(tokenId uint256) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) IsTokenLatestDocument(tokenId *big.Int) (bool, error) {
 	return _InvoiceUnpaidContract.Contract.IsTokenLatestDocument(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
@@ -438,7 +438,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) Name() (string
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 //
-// Solidity: function ownerOf(uint256 tokenId) constant returns(address)
+// Solidity: function ownerOf(tokenId uint256) constant returns(address)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) OwnerOf(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error) {
 	var (
 		ret0 = new(common.Address)
@@ -450,21 +450,21 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) OwnerOf(opts *bind.Ca
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 //
-// Solidity: function ownerOf(uint256 tokenId) constant returns(address)
+// Solidity: function ownerOf(tokenId uint256) constant returns(address)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) OwnerOf(tokenId *big.Int) (common.Address, error) {
 	return _InvoiceUnpaidContract.Contract.OwnerOf(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 //
-// Solidity: function ownerOf(uint256 tokenId) constant returns(address)
+// Solidity: function ownerOf(tokenId uint256) constant returns(address)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) OwnerOf(tokenId *big.Int) (common.Address, error) {
 	return _InvoiceUnpaidContract.Contract.OwnerOf(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(bytes4 interfaceId) constant returns(bool)
+// Solidity: function supportsInterface(interfaceId bytes4) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -476,14 +476,14 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) SupportsInterface(opt
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(bytes4 interfaceId) constant returns(bool)
+// Solidity: function supportsInterface(interfaceId bytes4) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
 	return _InvoiceUnpaidContract.Contract.SupportsInterface(&_InvoiceUnpaidContract.CallOpts, interfaceId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(bytes4 interfaceId) constant returns(bool)
+// Solidity: function supportsInterface(interfaceId bytes4) constant returns(bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
 	return _InvoiceUnpaidContract.Contract.SupportsInterface(&_InvoiceUnpaidContract.CallOpts, interfaceId)
 }
@@ -516,7 +516,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) Symbol() (stri
 
 // TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
 //
-// Solidity: function tokenByIndex(uint256 index) constant returns(uint256)
+// Solidity: function tokenByIndex(index uint256) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) TokenByIndex(opts *bind.CallOpts, index *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -528,21 +528,21 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) TokenByIndex(opts *bi
 
 // TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
 //
-// Solidity: function tokenByIndex(uint256 index) constant returns(uint256)
+// Solidity: function tokenByIndex(index uint256) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) TokenByIndex(index *big.Int) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.TokenByIndex(&_InvoiceUnpaidContract.CallOpts, index)
 }
 
 // TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
 //
-// Solidity: function tokenByIndex(uint256 index) constant returns(uint256)
+// Solidity: function tokenByIndex(index uint256) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) TokenByIndex(index *big.Int) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.TokenByIndex(&_InvoiceUnpaidContract.CallOpts, index)
 }
 
 // TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
 //
-// Solidity: function tokenOfOwnerByIndex(address owner, uint256 index) constant returns(uint256)
+// Solidity: function tokenOfOwnerByIndex(owner address, index uint256) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) TokenOfOwnerByIndex(opts *bind.CallOpts, owner common.Address, index *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -554,21 +554,21 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) TokenOfOwnerByIndex(o
 
 // TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
 //
-// Solidity: function tokenOfOwnerByIndex(address owner, uint256 index) constant returns(uint256)
+// Solidity: function tokenOfOwnerByIndex(owner address, index uint256) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) TokenOfOwnerByIndex(owner common.Address, index *big.Int) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.TokenOfOwnerByIndex(&_InvoiceUnpaidContract.CallOpts, owner, index)
 }
 
 // TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
 //
-// Solidity: function tokenOfOwnerByIndex(address owner, uint256 index) constant returns(uint256)
+// Solidity: function tokenOfOwnerByIndex(owner address, index uint256) constant returns(uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) TokenOfOwnerByIndex(owner common.Address, index *big.Int) (*big.Int, error) {
 	return _InvoiceUnpaidContract.Contract.TokenOfOwnerByIndex(&_InvoiceUnpaidContract.CallOpts, owner, index)
 }
 
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 //
-// Solidity: function tokenURI(uint256 tokenId) constant returns(string)
+// Solidity: function tokenURI(tokenId uint256) constant returns(string)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) TokenURI(opts *bind.CallOpts, tokenId *big.Int) (string, error) {
 	var (
 		ret0 = new(string)
@@ -580,14 +580,14 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCaller) TokenURI(opts *bind.C
 
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 //
-// Solidity: function tokenURI(uint256 tokenId) constant returns(string)
+// Solidity: function tokenURI(tokenId uint256) constant returns(string)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) TokenURI(tokenId *big.Int) (string, error) {
 	return _InvoiceUnpaidContract.Contract.TokenURI(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
 
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 //
-// Solidity: function tokenURI(uint256 tokenId) constant returns(string)
+// Solidity: function tokenURI(tokenId uint256) constant returns(string)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) TokenURI(tokenId *big.Int) (string, error) {
 	return _InvoiceUnpaidContract.Contract.TokenURI(&_InvoiceUnpaidContract.CallOpts, tokenId)
 }
@@ -620,126 +620,126 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractCallerSession) TotalSupply() 
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address to, uint256 tokenId) returns()
+// Solidity: function approve(to address, tokenId uint256) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactor) Approve(opts *bind.TransactOpts, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.contract.Transact(opts, "approve", to, tokenId)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address to, uint256 tokenId) returns()
+// Solidity: function approve(to address, tokenId uint256) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) Approve(to common.Address, tokenId *big.Int) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.Approve(&_InvoiceUnpaidContract.TransactOpts, to, tokenId)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 //
-// Solidity: function approve(address to, uint256 tokenId) returns()
+// Solidity: function approve(to address, tokenId uint256) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorSession) Approve(to common.Address, tokenId *big.Int) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.Approve(&_InvoiceUnpaidContract.TransactOpts, to, tokenId)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xd6d0faee.
 //
-// Solidity: function initialize(string name, string symbol, string tokenUriBase, address anchorRegistry, address identityFactory) returns()
+// Solidity: function initialize(name string, symbol string, tokenUriBase string, anchorRegistry address, identityFactory address) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactor) Initialize(opts *bind.TransactOpts, name string, symbol string, tokenUriBase string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.contract.Transact(opts, "initialize", name, symbol, tokenUriBase, anchorRegistry, identityFactory)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xd6d0faee.
 //
-// Solidity: function initialize(string name, string symbol, string tokenUriBase, address anchorRegistry, address identityFactory) returns()
+// Solidity: function initialize(name string, symbol string, tokenUriBase string, anchorRegistry address, identityFactory address) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) Initialize(name string, symbol string, tokenUriBase string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.Initialize(&_InvoiceUnpaidContract.TransactOpts, name, symbol, tokenUriBase, anchorRegistry, identityFactory)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xd6d0faee.
 //
-// Solidity: function initialize(string name, string symbol, string tokenUriBase, address anchorRegistry, address identityFactory) returns()
+// Solidity: function initialize(name string, symbol string, tokenUriBase string, anchorRegistry address, identityFactory address) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorSession) Initialize(name string, symbol string, tokenUriBase string, anchorRegistry common.Address, identityFactory common.Address) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.Initialize(&_InvoiceUnpaidContract.TransactOpts, name, symbol, tokenUriBase, anchorRegistry, identityFactory)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0xc15778db.
 //
-// Solidity: function mint(address to, uint256 tokenId, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
+// Solidity: function mint(to address, tokenId uint256, anchorId uint256, properties bytes[], values bytes[], salts bytes32[], proofs bytes32[][]) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactor) Mint(opts *bind.TransactOpts, to common.Address, tokenId *big.Int, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.contract.Transact(opts, "mint", to, tokenId, anchorId, properties, values, salts, proofs)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0xc15778db.
 //
-// Solidity: function mint(address to, uint256 tokenId, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
+// Solidity: function mint(to address, tokenId uint256, anchorId uint256, properties bytes[], values bytes[], salts bytes32[], proofs bytes32[][]) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) Mint(to common.Address, tokenId *big.Int, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.Mint(&_InvoiceUnpaidContract.TransactOpts, to, tokenId, anchorId, properties, values, salts, proofs)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0xc15778db.
 //
-// Solidity: function mint(address to, uint256 tokenId, uint256 anchorId, bytes[] properties, bytes[] values, bytes32[] salts, bytes32[][] proofs) returns()
+// Solidity: function mint(to address, tokenId uint256, anchorId uint256, properties bytes[], values bytes[], salts bytes32[], proofs bytes32[][]) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorSession) Mint(to common.Address, tokenId *big.Int, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.Mint(&_InvoiceUnpaidContract.TransactOpts, to, tokenId, anchorId, properties, values, salts, proofs)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
 //
-// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data) returns()
+// Solidity: function safeTransferFrom(from address, to address, tokenId uint256, _data bytes) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactor) SafeTransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.contract.Transact(opts, "safeTransferFrom", from, to, tokenId, _data)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
 //
-// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data) returns()
+// Solidity: function safeTransferFrom(from address, to address, tokenId uint256, _data bytes) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) SafeTransferFrom(from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.SafeTransferFrom(&_InvoiceUnpaidContract.TransactOpts, from, to, tokenId, _data)
 }
 
 // SafeTransferFrom is a paid mutator transaction binding the contract method 0xb88d4fde.
 //
-// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data) returns()
+// Solidity: function safeTransferFrom(from address, to address, tokenId uint256, _data bytes) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorSession) SafeTransferFrom(from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.SafeTransferFrom(&_InvoiceUnpaidContract.TransactOpts, from, to, tokenId, _data)
 }
 
 // SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 //
-// Solidity: function setApprovalForAll(address to, bool approved) returns()
+// Solidity: function setApprovalForAll(to address, approved bool) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactor) SetApprovalForAll(opts *bind.TransactOpts, to common.Address, approved bool) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.contract.Transact(opts, "setApprovalForAll", to, approved)
 }
 
 // SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 //
-// Solidity: function setApprovalForAll(address to, bool approved) returns()
+// Solidity: function setApprovalForAll(to address, approved bool) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) SetApprovalForAll(to common.Address, approved bool) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.SetApprovalForAll(&_InvoiceUnpaidContract.TransactOpts, to, approved)
 }
 
 // SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 //
-// Solidity: function setApprovalForAll(address to, bool approved) returns()
+// Solidity: function setApprovalForAll(to address, approved bool) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorSession) SetApprovalForAll(to common.Address, approved bool) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.SetApprovalForAll(&_InvoiceUnpaidContract.TransactOpts, to, approved)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address from, address to, uint256 tokenId) returns()
+// Solidity: function transferFrom(from address, to address, tokenId uint256) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactor) TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.contract.Transact(opts, "transferFrom", from, to, tokenId)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address from, address to, uint256 tokenId) returns()
+// Solidity: function transferFrom(from address, to address, tokenId uint256) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractSession) TransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.TransferFrom(&_InvoiceUnpaidContract.TransactOpts, from, to, tokenId)
 }
 
 // TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 //
-// Solidity: function transferFrom(address from, address to, uint256 tokenId) returns()
+// Solidity: function transferFrom(from address, to address, tokenId uint256) returns()
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractTransactorSession) TransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error) {
 	return _InvoiceUnpaidContract.Contract.TransferFrom(&_InvoiceUnpaidContract.TransactOpts, from, to, tokenId)
 }
@@ -821,7 +821,7 @@ type InvoiceUnpaidContractApproval struct {
 
 // FilterApproval is a free log retrieval operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)
+// Solidity: e Approval(owner indexed address, approved indexed address, tokenId indexed uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, approved []common.Address, tokenId []*big.Int) (*InvoiceUnpaidContractApprovalIterator, error) {
 
 	var ownerRule []interface{}
@@ -846,7 +846,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterApproval(opts
 
 // WatchApproval is a free log subscription operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 //
-// Solidity: event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)
+// Solidity: e Approval(owner indexed address, approved indexed address, tokenId indexed uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *InvoiceUnpaidContractApproval, owner []common.Address, approved []common.Address, tokenId []*big.Int) (event.Subscription, error) {
 
 	var ownerRule []interface{}
@@ -971,7 +971,7 @@ type InvoiceUnpaidContractApprovalForAll struct {
 
 // FilterApprovalForAll is a free log retrieval operation binding the contract event 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31.
 //
-// Solidity: event ApprovalForAll(address indexed owner, address indexed operator, bool approved)
+// Solidity: e ApprovalForAll(owner indexed address, operator indexed address, approved bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterApprovalForAll(opts *bind.FilterOpts, owner []common.Address, operator []common.Address) (*InvoiceUnpaidContractApprovalForAllIterator, error) {
 
 	var ownerRule []interface{}
@@ -992,7 +992,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterApprovalForAl
 
 // WatchApprovalForAll is a free log subscription operation binding the contract event 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31.
 //
-// Solidity: event ApprovalForAll(address indexed owner, address indexed operator, bool approved)
+// Solidity: e ApprovalForAll(owner indexed address, operator indexed address, approved bool)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) WatchApprovalForAll(opts *bind.WatchOpts, sink chan<- *InvoiceUnpaidContractApprovalForAll, owner []common.Address, operator []common.Address) (event.Subscription, error) {
 
 	var ownerRule []interface{}
@@ -1113,7 +1113,7 @@ type InvoiceUnpaidContractInvoiceUnpaidMinted struct {
 
 // FilterInvoiceUnpaidMinted is a free log retrieval operation binding the contract event 0x5a336d012a393ced99cb7c5ae8ca7d664290e1673401a403e6c2363823eb5bdc.
 //
-// Solidity: event InvoiceUnpaidMinted(address to, uint256 tokenId, uint256 tokenIndex)
+// Solidity: e InvoiceUnpaidMinted(to address, tokenId uint256, tokenIndex uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterInvoiceUnpaidMinted(opts *bind.FilterOpts) (*InvoiceUnpaidContractInvoiceUnpaidMintedIterator, error) {
 
 	logs, sub, err := _InvoiceUnpaidContract.contract.FilterLogs(opts, "InvoiceUnpaidMinted")
@@ -1125,7 +1125,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterInvoiceUnpaid
 
 // WatchInvoiceUnpaidMinted is a free log subscription operation binding the contract event 0x5a336d012a393ced99cb7c5ae8ca7d664290e1673401a403e6c2363823eb5bdc.
 //
-// Solidity: event InvoiceUnpaidMinted(address to, uint256 tokenId, uint256 tokenIndex)
+// Solidity: e InvoiceUnpaidMinted(to address, tokenId uint256, tokenIndex uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) WatchInvoiceUnpaidMinted(opts *bind.WatchOpts, sink chan<- *InvoiceUnpaidContractInvoiceUnpaidMinted) (event.Subscription, error) {
 
 	logs, sub, err := _InvoiceUnpaidContract.contract.WatchLogs(opts, "InvoiceUnpaidMinted")
@@ -1237,7 +1237,7 @@ type InvoiceUnpaidContractTransfer struct {
 
 // FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+// Solidity: e Transfer(from indexed address, to indexed address, tokenId indexed uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address, tokenId []*big.Int) (*InvoiceUnpaidContractTransferIterator, error) {
 
 	var fromRule []interface{}
@@ -1262,7 +1262,7 @@ func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) FilterTransfer(opts
 
 // WatchTransfer is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 //
-// Solidity: event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+// Solidity: e Transfer(from indexed address, to indexed address, tokenId indexed uint256)
 func (_InvoiceUnpaidContract *InvoiceUnpaidContractFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *InvoiceUnpaidContractTransfer, from []common.Address, to []common.Address, tokenId []*big.Int) (event.Subscription, error) {
 
 	var fromRule []interface{}

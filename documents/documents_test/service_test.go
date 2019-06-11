@@ -290,8 +290,28 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition
-	_, err = srv.RequestDocumentSignature(ctxh, doc, did)
+	sig, err = srv.RequestDocumentSignature(ctxh, doc, did)
 	assert.NoError(t, err)
+	assert.True(t, sig.TransitionValidated)
+}
+
+func TestService_RequestDocumentSignature_TransitionNotValidated(t *testing.T) {
+	srv, _ := getServiceWithMockedLayers()
+	mockAnchor.On("GetAnchorData", mock.Anything).Return(nil, nil, errors.New("missing"))
+	tc, err := configstore.NewAccount("main", cfg)
+	assert.NoError(t, err)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = did[:]
+	ctxh, err := contextutil.New(context.Background(), acc)
+	assert.NoError(t, err)
+	id := testingidentity.GenerateRandomDID()
+	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, true)
+	idSrv := new(testingcommons.MockIdentityService)
+	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
+	sig, err := srv.RequestDocumentSignature(ctxh, doc, did)
+	assert.NoError(t, err)
+	assert.False(t, sig.TransitionValidated)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {

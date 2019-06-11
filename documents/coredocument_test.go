@@ -4,8 +4,10 @@ package documents
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
@@ -444,23 +447,44 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
+	sig := &coredocumentpb.Signature{
+		SignerId:    utils.RandomSlice(identity.DIDLength),
+		PublicKey:   utils.RandomSlice(32),
+		SignatureId: utils.RandomSlice(52),
+		Signature:   utils.RandomSlice(65),
+	}
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
 	docDataTree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	assert.NoError(t, err)
+	_, err = cd.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 
-	tests := []string{"prefix.sample_field", CDTreePrefix + ".document_identifier", "prefix.sample_field2", CDTreePrefix + ".next_version"}
-	for _, test := range tests {
-		t.Run(test, func(t *testing.T) {
-			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{test})
+	signerKey := hexutil.Encode(sig.SignatureId)
+	signProp := fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey)
+
+	tests := []string{"prefix.sample_field", CDTreePrefix + ".document_identifier", "prefix.sample_field2", CDTreePrefix + ".next_version", signProp}
+	pfs, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), tests)
+	assert.NoError(t, err)
+	assert.Len(t, pfs, 5)
+
+	for idx, test := range tests {
+		if strings.Contains(test, SignaturesTreePrefix) {
+			signTree, err := cd.getSignatureDataTree()
 			assert.NoError(t, err)
-			assert.Equal(t, 6, len(p[0].SortedHashes))
-			_, l := docDataTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, docRoot, h)
+			_, l := signTree.GetLeafByProperty(test)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes[:1], signTree.RootHash(), h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
-		})
+		} else {
+			assert.Len(t, pfs[idx].SortedHashes, 6)
+			_, l := docDataTree.GetLeafByProperty(test)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes, docRoot, h)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+		}
 	}
 }
 
@@ -837,4 +861,247 @@ func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, upattrs, 0)
 	assert.Len(t, uattrs, 0)
+}
+
+func TestValidateFullNFTProof(t *testing.T) {
+	payload := `{
+  "header": {
+    "document_id": "0xeb8e023d7e68f012d0d20265b95a4fd6965c0a225eec08a71cfd449def7ed384",
+    "version_id": "0x1f5d8246e58f56326caa4d57a0d9e73ddaa286b17dde0588562136ec05375a4f",
+		"document_root": "0xf15441df88f11a38e01806579b0c10fe90db7e0c8c6e78e90606a569cc967e3d"
+  },
+  "field_proofs": [
+    {
+      "property": "0x000100000000000e",
+      "value": "0x0006aaf7c8516d0c000000000000000000000000000000000000000000000000",
+      "salt": "0x03ad6dc0291471f29cf439acd446090b74433d19dd0ba1f3d8597a468031659b",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0xe045afed673da7262e803b39c27feedf09824c9c8c1f8858694b8da32c338c84",
+        "0x7eb570b329e6511f00222727eefb1ff30aa5171fa4889ae2a969fad1d686ebef",
+        "0x838822fcd4d58e06e8ffe61d41379d2618c5b2f7cf42bdd98e9f943e8717e79c",
+        "0x1c19e26fe82343282eab0331aa48ef4429113471cf775cea873906f72abe2c09",
+        "0x18b16a9b0e833f10f998a72a1bb50e2726fe29856714c36c81c8f203d57c98b9",
+        "0xac4abb4b3b8df91e9551a047ea5223e18beee6c4a8efcad45cca6fa4c2693306",
+        "0xb6bf7839a75590bee871573b4fad0bb688f5c6a29c992214272c82199e7d86dd",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x000100000000000d",
+      "value": "0x455552",
+      "salt": "0x4caa54d2dd4a49458a9f4647dca1b6605028b90629b1e60d15109e3c1eb0ffa6",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0xafff7542a9c76020daf37e528260b8e57f17f04621952792c59aefe5ffde5b09",
+        "0x7eb570b329e6511f00222727eefb1ff30aa5171fa4889ae2a969fad1d686ebef",
+        "0x838822fcd4d58e06e8ffe61d41379d2618c5b2f7cf42bdd98e9f943e8717e79c",
+        "0x1c19e26fe82343282eab0331aa48ef4429113471cf775cea873906f72abe2c09",
+        "0x18b16a9b0e833f10f998a72a1bb50e2726fe29856714c36c81c8f203d57c98b9",
+        "0xac4abb4b3b8df91e9551a047ea5223e18beee6c4a8efcad45cca6fa4c2693306",
+        "0xb6bf7839a75590bee871573b4fad0bb688f5c6a29c992214272c82199e7d86dd",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x0001000000000016",
+      "value": "0x000000005cffba11",
+      "salt": "0xaabd761207469b15cdeaa8bf41a0db621a2d50dde83d2b563d15727dd3e595f9",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x9f859096730418e38bfdf1c610e27f42a015e323dd33085c9b6da903a9c5d274",
+        "0x8634559cc0738a62f81443624d7134fc1b3c8cb5395cf68b7922057632568d9e",
+        "0x6919b0a98f5b657708af9a6145198efc1abebcb3522b9504fad31b21c4d108ee",
+        "0xbf4178a54a6ff56cb31b6c96e0e4e76b09936f79d91ec37c989b0d2ff4bba00b",
+        "0xf77331d7cf79d218150f72490579b6c16a65f3f2c14a86b7b1913d321b16497b",
+        "0xac4abb4b3b8df91e9551a047ea5223e18beee6c4a8efcad45cca6fa4c2693306",
+        "0xb6bf7839a75590bee871573b4fad0bb688f5c6a29c992214272c82199e7d86dd",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x0001000000000013",
+      "value": "0x359679e690c685f88ad16265deb28001f43c0ac5",
+      "salt": "0x1c7c7dd52966804acfbef10707ceb06455b609ca566cf039e4a64d6cdd3d9145",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x8f081964af6741a547ac75a246604e96d0887acb4789e3863bd09331729f30e3",
+        "0x0d5d44a8a511e0bc27527131236a1da4373bac40717c11660f078ed26672d44d",
+        "0xb0911d74d8ea9bc7c770c039621121cf6511993df401f61db4e93673fdec87d2",
+        "0xbf4178a54a6ff56cb31b6c96e0e4e76b09936f79d91ec37c989b0d2ff4bba00b",
+        "0xf77331d7cf79d218150f72490579b6c16a65f3f2c14a86b7b1913d321b16497b",
+        "0xac4abb4b3b8df91e9551a047ea5223e18beee6c4a8efcad45cca6fa4c2693306",
+        "0xb6bf7839a75590bee871573b4fad0bb688f5c6a29c992214272c82199e7d86dd",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x0001000000000002",
+      "value": "0x756e706169640000000000000000000000000000000000000000000000000000",
+      "salt": "0xe0cb986cff7c394a3027a33c526450b81a39df6fe9493fff490256b17ff03ea5",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x05ff8535ec7c547b7bc7df19f3b10d74a7adfa9a382ed92c8fc3211b6b89e83d",
+        "0xe826b2883ff3643572c815f51dfcc710b3ce8bb8fa5ab5dc32188e84c7894906",
+        "0xe4507eba11dfcd79c7e85ce73254e0d7f4865dfd3b708e36e698487a21af72fe",
+        "0x2eca620cd4c13bc3e545dec20dfd57465a1ce59cfecdb53e202e9b5442eb4fba",
+        "0x18b16a9b0e833f10f998a72a1bb50e2726fe29856714c36c81c8f203d57c98b9",
+        "0xac4abb4b3b8df91e9551a047ea5223e18beee6c4a8efcad45cca6fa4c2693306",
+        "0xb6bf7839a75590bee871573b4fad0bb688f5c6a29c992214272c82199e7d86dd",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x040000000000000a",
+      "value": "0x",
+      "salt": "0x",
+      "hash": "0x8191e5e563ed8b25dd46fd383df6a933cdebd6cbcf0f79f8f70e33510adceb88",
+      "sorted_hashes": [
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x0300000000000001359679e690c685f88ad16265deb28001f43c0ac5000000000000000000000000746c4d8464ad40caadc76c2c0b31393c6ae0d6c5",
+      "value": "0x44acda5d9f2c27549b168859be8cb0cf5a100931a52b2fc54c50ee080a5a7d590068200a00bead4c119ade7d0dd2ab6382138d8e0a5566cfbd285cc6439ea5100000",
+      "salt": "0x71fd192a8a0853e6988e9633fca89dacdae87fbd1051f4537c98922a8e86c356",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x425bd50a1f4165b03b001a3cf14588d5f44e1f5cdc205679edc0788034355ea7",
+        "0x8191e5e563ed8b25dd46fd383df6a933cdebd6cbcf0f79f8f70e33510adceb88"
+      ]
+    },
+    {
+      "property": "0x0100000000000004",
+      "value": "0x6033db92acfd319cbc57660b8f40874033976a188b311542f8468be3be086760",
+      "salt": "0x7c4d38cc36790588c2435e1d8fc6945caa1abdedcc65c48997be5a317fe31e69",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0xe66d7cfb613d1815f192af9f0df3b1792b0c2e09548d72b7fe5880e8a66997e8",
+        "0xf9f0707c87cea783a63d78349578eae81548d2e832b4d33fe4dd904a506c51cb",
+        "0x9789dcad2d98b708ea28ee3419e258281aafbdef0352c24b57775a6dc59559b9",
+        "0x5c54b8fb4258a6afaefbb0fdb92a4b22da30574eb0f772bab0398c8a7a3529e4",
+        "0xc0da6473d496864bb719539dd216b412f62a8272155bfddb53635a472fd20857",
+        "0xce5ec833bb5cddc439a22b9f6922ec230eae6d2d3dc0c9ac2b81237523ba0b36",
+        "0x02d0f508c95d861e998344585d9d44c36c993afc43376d1b38123ad7a28f0f0b",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x01000000000000144e498bd371833d6b910513a6e15f1bd8e97fbeda000000000000000000000000",
+      "value": "0x67d7734bed88b7555fdd2e2121c80ed57bac7951fc6b0a322a3014079b668a4d",
+      "salt": "0xffbc8554e0f239329b67edff515b069c95cf6ae55aa435b08b47c1d8352f1f35",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x527128e18d942c764096d605906650ecb4aa7273aa7cbcbc5b4281fbf05d9fa0",
+        "0x264c2e7829da8196a7ec00529ed6f9124079dbffe41184824f30a091fa56d097",
+        "0x6582cd7861bb428e920a2c82a2919c5a1307a5e7f746e6e5dbfdfd73ebc7d519",
+        "0x7f4b9794449efd3f078b91baad67cb1d8467b061e9605a0481fa83ef23a1bbc0",
+        "0xd420d40ac599ff816fa8f1f1b50be6843224b36e6f12ca5a76ef5d0080328263",
+        "0xce5ec833bb5cddc439a22b9f6922ec230eae6d2d3dc0c9ac2b81237523ba0b36",
+        "0x02d0f508c95d861e998344585d9d44c36c993afc43376d1b38123ad7a28f0f0b",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x01000000000000130000000000000001000000020000000000000000",
+      "value": "0x8a963e5d9dda1a9ab943ac92d528a229e06393e3f619de0b45a0a2f76f749ffc",
+      "salt": "0x782ad260b8695c598a546ab756afc127312b8028aa0c8e0e970cfc954179f5a4",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x101a8b4e71bbf529b9081129bab31055942d1d8f028545304688cfaf3c3c3033",
+        "0x67cb8534b9856c945d762ff432bb62e32413bdd66b4a29dfc8f9b6d6675f686c",
+        "0xe3474af96936523e6e1f79fd1344baef83ff1eaa2f987ff15f2e121dc8ae2760",
+        "0x6396647dc7be668b703aadaab64847f3f3c07405dcdd0a9ddac90637254f3f03",
+        "0xd420d40ac599ff816fa8f1f1b50be6843224b36e6f12ca5a76ef5d0080328263",
+        "0xce5ec833bb5cddc439a22b9f6922ec230eae6d2d3dc0c9ac2b81237523ba0b36",
+        "0x02d0f508c95d861e998344585d9d44c36c993afc43376d1b38123ad7a28f0f0b",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x0100000000000013000000000000000100000004",
+      "value": "0x0000000000000002",
+      "salt": "0x460289923e56900a0fe1632e660d48728b489fcd8ed4d36bc0465a01213858b5",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x8c50e4247a724a840d1942195657b520c216259e32b7691a28cf89bc90c1cdf4",
+        "0xbcbaf915a261331264d489daedd86199914a6feed11c81389bee3aa055dc4061",
+        "0xe3474af96936523e6e1f79fd1344baef83ff1eaa2f987ff15f2e121dc8ae2760",
+        "0x6396647dc7be668b703aadaab64847f3f3c07405dcdd0a9ddac90637254f3f03",
+        "0xd420d40ac599ff816fa8f1f1b50be6843224b36e6f12ca5a76ef5d0080328263",
+        "0xce5ec833bb5cddc439a22b9f6922ec230eae6d2d3dc0c9ac2b81237523ba0b36",
+        "0x02d0f508c95d861e998344585d9d44c36c993afc43376d1b38123ad7a28f0f0b",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    },
+    {
+      "property": "0x01000000000000018a963e5d9dda1a9ab943ac92d528a229e06393e3f619de0b45a0a2f76f749ffc000000040000000000000000",
+      "value": "0x4e498bd371833d6b910513a6e15f1bd8e97fbeda67d7734bed88b7555fdd2e2121c80ed57bac7951fc6b0a322a3014079b668a4d",
+      "salt": "0x786093ef34d80ff3d1a68c68f8d2cb90b928925d59c49a90f0e7ef7582e4f1c3",
+      "hash": "0x",
+      "sorted_hashes": [
+        "0x3073b29bc0b8dd7f189a29318c38f55ea3ed9958b577417dcaeb76e0c5eae74a",
+        "0x33e89ba2b64cd55fa20002879289110c6b78e7dfdbfd22c7c011e793707ea631",
+        "0x5c5601997e2eb798dd827d6ee12992b52b3d283f46f08e9a531e94d30ea29e06",
+        "0x5c54b8fb4258a6afaefbb0fdb92a4b22da30574eb0f772bab0398c8a7a3529e4",
+        "0xc0da6473d496864bb719539dd216b412f62a8272155bfddb53635a472fd20857",
+        "0xce5ec833bb5cddc439a22b9f6922ec230eae6d2d3dc0c9ac2b81237523ba0b36",
+        "0x02d0f508c95d861e998344585d9d44c36c993afc43376d1b38123ad7a28f0f0b",
+        "0xf6609fda813892406e3b8a676caa2a3b633edaee6fa0ee2fc2591c4280811a56"
+      ]
+    }
+  ]
+}`
+
+	type Header struct {
+		DocumentId   string `json:"document_id"`
+		VersionId    string `json:"version_id"`
+		DocumentRoot string `json:"document_root"`
+	}
+
+	type FieldProof struct {
+		Property     string   `json:"property"`
+		Value        string   `json:"value"`
+		Salt         string   `json:"salt"`
+		Hash         string   `json:"hash"`
+		SortedHashes []string `json:"sorted_hashes"`
+	}
+
+	type Payload struct {
+		Header      Header       `json:"header"`
+		FieldProofs []FieldProof `json:"field_proofs"`
+	}
+
+	var obj Payload
+	err := json.Unmarshal([]byte(payload), &obj)
+	assert.NoError(t, err)
+
+	for i := 0; i < len(obj.FieldProofs); i++ {
+		var lh []byte
+		if obj.FieldProofs[i].Hash == "0x" {
+			prop, err := hexutil.Decode(obj.FieldProofs[i].Property)
+			assert.NoError(t, err)
+			val, err := hexutil.Decode(obj.FieldProofs[i].Value)
+			assert.NoError(t, err)
+			salt, err := hexutil.Decode(obj.FieldProofs[i].Salt)
+			assert.NoError(t, err)
+			lh, err = crypto.Sha256Hash(append(prop, append(val, salt...)...))
+			assert.NoError(t, err)
+		} else {
+			lh, err = hexutil.Decode(obj.FieldProofs[i].Hash)
+			assert.NoError(t, err)
+		}
+		var sh [][]byte
+		for j := 0; j < len(obj.FieldProofs[i].SortedHashes); j++ {
+			shi, err := hexutil.Decode(obj.FieldProofs[i].SortedHashes[j])
+			assert.NoError(t, err)
+			sh = append(sh, shi)
+		}
+		rh, err := hexutil.Decode(obj.Header.DocumentRoot)
+		assert.NoError(t, err)
+		valid, err := proofs.ValidateProofSortedHashes(lh, sh, rh, sha256.New())
+		assert.NoError(t, err)
+		assert.True(t, valid, fmt.Sprintf("Failed for proof %d", i))
+	}
+
 }

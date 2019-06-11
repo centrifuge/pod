@@ -29,6 +29,7 @@ func CreateInvoicePayload() *clientinvoicepb.InvoiceCreatePayload {
 			Payee:       "0x087D8ca6A16E6ce8d9fF55672E551A2828Ab8e8C",
 			GrossAmount: "42",
 			Currency:    "EUR",
+			Status:      "unpaid",
 		},
 		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{testingidentity.GenerateRandomDID().String()}},
 	}

@@ -105,12 +105,12 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	model.SetUsedAnchorRepoAddress(addr)
 
 	// calculate the document data root
-	sr, err := model.CalculateDocumentDataRoot()
+	ddr, err := model.CalculateDocumentDataRoot()
 	if err != nil {
 		return errors.New("failed to calculate document data root: %v", err)
 	}
 
-	sig, err := self.SignMsg(sr)
+	sig, err := self.SignMsg(append(ddr, []byte{0}...))
 	if err != nil {
 		return err
 	}

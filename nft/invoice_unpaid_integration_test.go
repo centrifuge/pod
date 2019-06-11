@@ -124,7 +124,6 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
-	t.SkipNow()
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
@@ -183,7 +182,6 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 }
 
 func TestEthereumInvoiceUnpaid_MintNFT_no_grant_access(t *testing.T) {
-	t.SkipNow()
 	failMintNFT(t, false, true)
 }
 
@@ -220,7 +218,6 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 }
 
 func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
-	t.SkipNow()
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{
