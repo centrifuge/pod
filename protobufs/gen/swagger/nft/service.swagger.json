@@ -48,37 +48,6 @@
           "NFTService"
         ]
       }
-    },
-    "/nfts/{token_id}/registry/{registry_address}/owner": {
-      "get": {
-        "description": "Get the owner of an NFT",
-        "operationId": "OwnerOf",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/nftOwnerOfResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "registry_address",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "NFTService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -100,20 +69,6 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/nftResponseHeader"
-        }
-      }
-    },
-    "nftOwnerOfResponse": {
-      "type": "object",
-      "properties": {
-        "token_id": {
-          "type": "string"
-        },
-        "registry_address": {
-          "type": "string"
-        },
-        "owner": {
-          "type": "string"
         }
       }
     },

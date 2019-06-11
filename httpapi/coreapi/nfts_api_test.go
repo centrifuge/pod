@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -144,5 +146,70 @@ func TestHandler_TransferNFT(t *testing.T) {
 	h.TransferNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 	assert.Contains(t, w.Body.String(), tokenID)
+	srv.AssertExpectations(t)
+}
+
+func TestHandler_OwnerOfNFT(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/nfts/{token_id}/registry/{registry_address}/owner", nil).WithContext(ctx)
+	}
+
+	// empty token
+	h := handler{}
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = tokenIDParam
+	rctx.URLParams.Values[0] = ""
+	rctx.URLParams.Keys[1] = registryAddressParam
+	rctx.URLParams.Values[1] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx)
+	h.OwnerOfNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
+
+	// invalid token id
+	rctx.URLParams.Values[0] = "some value"
+	w, r = getHTTPReqAndResp(ctx)
+	h.OwnerOfNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
+
+	// empty registry address
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(32))
+	w, r = getHTTPReqAndResp(ctx)
+	h.OwnerOfNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+
+	// invalid registry address
+	rctx.URLParams.Values[1] = "some value"
+	w, r = getHTTPReqAndResp(ctx)
+	h.OwnerOfNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+
+	// owner failed
+	registry := common.BytesToAddress(utils.RandomSlice(20))
+	rctx.URLParams.Values[1] = registry.String()
+	srv := new(testingnfts.MockNFTService)
+	srv.On("OwnerOf", mock.Anything, mock.Anything).Return(nil, errors.New("failed to get owner")).Once()
+	h.srv.nftService = srv
+	w, r = getHTTPReqAndResp(ctx)
+	h.OwnerOfNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "failed to get owner")
+	srv.AssertExpectations(t)
+
+	// success
+	owner := common.BytesToAddress(utils.RandomSlice(20))
+	srv = new(testingnfts.MockNFTService)
+	srv.On("OwnerOf", mock.Anything, mock.Anything).Return(owner, nil).Once()
+	h.srv.nftService = srv
+	w, r = getHTTPReqAndResp(ctx)
+	h.OwnerOfNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Contains(t, w.Body.String(), strings.ToLower(owner.String()))
 	srv.AssertExpectations(t)
 }

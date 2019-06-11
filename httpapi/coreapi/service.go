@@ -63,3 +63,8 @@ func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, t
 	resp, _, err := s.nftService.TransferFrom(ctx, registry, to, tokenID)
 	return resp, err
 }
+
+// OwnerOfNFT returns the owner of the NFT.
+func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
+	return s.nftService.OwnerOf(registry, tokenID[:])
+}

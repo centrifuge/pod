@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	documentIDParam = "document_id"
-	versionIDParam  = "version_id"
-	jobIDParam      = "job_id"
-	tokenIDParam    = "token_id"
+	documentIDParam      = "document_id"
+	versionIDParam       = "version_id"
+	jobIDParam           = "job_id"
+	tokenIDParam         = "token_id"
+	registryAddressParam = "registry_address"
 )
 
 // Register registers the core apis to the router.
@@ -32,4 +33,5 @@ func Register(r *chi.Mux,
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
 	r.Post("/nfts/mint", h.MintNFT)
 	r.Post("/nfts/{"+tokenIDParam+"}/transfer", h.TransferNFT)
+	r.Get("/nfts/{"+tokenIDParam+"}/registry/{"+registryAddressParam+"}/owner", h.OwnerOfNFT)
 }

@@ -320,3 +320,10 @@ type TransferNFTResponse struct {
 	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
 	To              common.Address    `json:"to" swaggertype:"primitive,string"`
 }
+
+// NFTOwnerResponse is the response for NFT owner request.
+type NFTOwnerResponse struct {
+	TokenID         string         `json:"token_id"`
+	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
+	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
+}

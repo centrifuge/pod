@@ -21,29 +21,10 @@ service NFTService {
       description: "Mints an NFT out of an Unpaid Centrifuge Invoice"
     };
   }
-  rpc OwnerOf(OwnerOfRequest) returns (OwnerOfResponse) {
-    option (google.api.http) = {
-      get: "/nfts/{token_id}/registry/{registry_address}/owner"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the owner of an NFT"
-    };
-  }
 }
 
 message ResponseHeader {
   string job_id = 5;
-}
-
-message OwnerOfRequest {
-  string token_id = 1;
-  string registry_address = 2;
-}
-
-message OwnerOfResponse {
-  string token_id = 1;
-  string registry_address = 2;
-  string owner = 3;
 }
 
 message NFTMintInvoiceUnpaidRequest {

@@ -12,9 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -96,26 +94,4 @@ func mockmockConfigStore() *configstore.MockService {
 	mockConfigStore.On("GetAccount", mock.Anything).Return(&configstore.Account{}, nil)
 	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{}}, nil)
 	return mockConfigStore
-}
-
-func TestPaymentObligationNFTOwnerOf_success(t *testing.T) {
-	mockService := &mockInvoiceUnpaid{}
-	mockConfigStore := mockmockConfigStore()
-
-	tokenID := hexutil.Encode(utils.RandomSlice(32))
-
-	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-	ownerReq := &nftpb.OwnerOfRequest{
-		TokenId:         tokenID,
-		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-	}
-
-	mockService.On("OwnerOf", mock.Anything, mock.Anything).Return(owner, nil).Once()
-	handler := grpcHandler{mockConfigStore, mockService}
-
-	response, err := handler.OwnerOf(testingconfig.HandlerContext(mockConfigStore), ownerReq)
-	assert.NoError(t, err)
-	assert.Equal(t, response.Owner, owner.String())
-	assert.Equal(t, response.RegistryAddress, ownerReq.RegistryAddress)
-	assert.Equal(t, response.TokenId, ownerReq.TokenId)
 }
