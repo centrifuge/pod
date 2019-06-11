@@ -76,6 +76,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 }
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
+	// Random DID cause signature verification failure
 	tc, _, err := createLocalCollaborator(t, true)
 	assert.NoError(t, err)
 	acc, err := configstore.NewAccount("main", cfg)
@@ -85,9 +86,10 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	ctxh, err := contextutil.New(context.Background(), acci)
 	assert.NoError(t, err)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
+	signs, signatureErrors, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(signs))
+	assert.Error(t, signatureErrors[0], "[5]signature invalid with err: no contract code at given address")
+	assert.Equal(t, 0, len(signs))
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {

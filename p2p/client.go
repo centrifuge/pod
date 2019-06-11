@@ -360,17 +360,13 @@ func (s *peer) validateSignatureResp(
 		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
 
-	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
-	}
-	signingRoot, err := model.CalculateSignaturesRoot()
-	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
-	}
-
 	tm, err := model.Timestamp()
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("cannot get model timestamp : %s", err.Error()))
+	}
+	signingRoot, err := model.CalculateSigningRoot()
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
 	}
 
 	err = s.idService.ValidateSignature(receiver, resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
