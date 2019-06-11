@@ -18,3 +18,11 @@ func TestJobID_String(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, JobIDEqual(id, idConv))
 }
+
+func TestNilJobID(t *testing.T) {
+	id := NewJobID()
+	assert.NotEmpty(t, id.String())
+
+	id = NilJobID()
+	assert.Empty(t, id.String())
+}

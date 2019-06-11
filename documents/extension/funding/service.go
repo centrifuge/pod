@@ -44,7 +44,7 @@ const (
 	fundingLabel              = "funding_agreement"
 	fundingFieldKey           = "funding_agreement[{IDX}]."
 	idxKey                    = "{IDX}"
-	fundingIDLabel            = "funding_id"
+	agreementIDLabel          = "agreement_id"
 	fundingSignatures         = "signatures"
 	fundingSignaturesFieldKey = "signatures[{IDX}]"
 )
@@ -60,7 +60,7 @@ func DefaultService(
 	}
 }
 
-func newFundingID() string {
+func newAgreementID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
@@ -171,6 +171,21 @@ func createAttributesList(current documents.Model, data Data) ([]documents.Attri
 	return attributes, nil
 }
 
+func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
+	var c []identity.DID
+	for _, id := range []string{data.BorrowerId, data.FunderId} {
+		if id != "" {
+			did, err := identity.NewDIDFromString(id)
+			if err != nil {
+				return nil, err
+			}
+			c = append(c, did)
+		}
+	}
+
+	return c, nil
+}
+
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
 	var fd Data
 	fd.initFundingFromData(req.Data)
@@ -180,18 +195,23 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
-
-	ca, err := documents.FromClientCollaboratorAccess(req.ReadAccess, req.WriteAccess)
-	if err != nil {
-		return nil, err
-	}
-
 	attributes, err := createAttributesList(model, fd)
 	if err != nil {
 		return nil, err
 	}
 
-	err = model.AddAttributes(ca, true, attributes...)
+	c, err := deriveDIDs(req.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	err = model.AddAttributes(
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: c,
+		},
+		true,
+		attributes...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -237,13 +257,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	fd.FundingId = req.FundingId
-	idx, err := s.findFundingIDX(model, fd.FundingId)
+	fd.AgreementId = req.AgreementId
+	idx, err := s.findFundingIDX(model, fd.AgreementId)
 	if err != nil {
 		return nil, err
 	}
 
-	ca, err := documents.FromClientCollaboratorAccess(req.ReadAccess, req.WriteAccess)
+	c, err := deriveDIDs(req.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +280,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, err
 	}
 
-	err = model.AddAttributes(ca, true, attributes...)
+	err = model.AddAttributes(
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: c,
+		},
+		true,
+		attributes...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +308,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (*Data, er
 	return s.deriveFundingData(model, idx)
 }
 
-func (s service) findFundingIDX(model documents.Model, fundingID string) (idx string, err error) {
+func (s service) findFundingIDX(model documents.Model, agreementID string) (idx string, err error) {
 	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return idx, err
@@ -294,7 +320,7 @@ func (s service) findFundingIDX(model documents.Model, fundingID string) (idx st
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		label := generateLabel(fundingFieldKey, i.String(), fundingIDLabel)
+		label := generateLabel(fundingFieldKey, i.String(), agreementIDLabel)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
@@ -309,7 +335,7 @@ func (s service) findFundingIDX(model documents.Model, fundingID string) (idx st
 		if err != nil {
 			return idx, err
 		}
-		if attrFundingID == fundingID {
+		if attrFundingID == agreementID {
 			return i.String(), nil
 		}
 		i, err = i.Inc()

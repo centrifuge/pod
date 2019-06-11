@@ -128,12 +128,12 @@ func TestGRPCHandler_Sign(t *testing.T) {
 	srv.On("Sign", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil).Once()
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
 
-	response, err := h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 
 	// fail
-	response, err = h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err = h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{AgreementId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.Error(t, err)
 }
 
@@ -144,7 +144,7 @@ func TestGRPCHandler_Get(t *testing.T) {
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfunpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfunpb.Request{Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
@@ -156,7 +156,7 @@ func TestGRPCHandler_GetVersion(t *testing.T) {
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfunpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), FundingId: hexutil.Encode(utils.RandomSlice(32))})
+	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfunpb.GetVersionRequest{Identifier: hexutil.Encode(utils.RandomSlice(32)), Version: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }

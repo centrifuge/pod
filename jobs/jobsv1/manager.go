@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -202,10 +201,10 @@ func (s *manager) WaitForJob(accountID identity.DID, txID jobs.JobID) error {
 }
 
 // GetJobStatus returns the job status associated with identity and id.
-func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (*jobspb.JobStatusResponse, error) {
+func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (resp jobs.StatusResponse, err error) {
 	job, err := s.GetJob(accountID, id)
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
 
 	var msg string
@@ -216,15 +215,10 @@ func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (*jobspb.J
 		lastUpdated = log.CreatedAt.UTC()
 	}
 
-	tm, err := utils.ToTimestamp(lastUpdated)
-	if err != nil {
-		return nil, err
-	}
-
-	return &jobspb.JobStatusResponse{
-		JobId:       job.ID.String(),
+	return jobs.StatusResponse{
+		JobID:       job.ID.String(),
 		Status:      string(job.Status),
 		Message:     msg,
-		LastUpdated: tm,
+		LastUpdated: lastUpdated,
 	}, nil
 }

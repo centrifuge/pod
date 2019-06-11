@@ -34,7 +34,7 @@ func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
 }
 */
 
-func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) {
+func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
@@ -62,6 +62,8 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	var response *httpexpect.Object
 	var err error
 
+	depositAddress := alice.id.String()
+
 	if !poWrapper {
 		proofPrefix := documentType
 		if proofPrefix == typePO {
@@ -83,7 +85,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		payload := map[string]interface{}{
 			"identifier":                docIdentifier,
 			"registryAddress":           registry.String(),
-			"depositAddress":            "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+			"depositAddress":            depositAddress, // Centrifuge address
 			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 			"submitTokenProof":          tokenProof,
 			"submitNftOwnerAccessProof": nftReadAccessProof,
@@ -95,7 +97,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		// mint a PO NFT
 		payload := map[string]interface{}{
 			"identifier":     docIdentifier,
-			"depositAddress": "0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb", // Centrifuge address
+			"depositAddress": depositAddress, // Centrifuge address
 		}
 		response, err = alice.host.mintUnpaidInvoiceNFT(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, payload)
 	}
@@ -117,8 +119,9 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	assert.NoError(t, err, "token ID should be correct")
 	owner, err := alice.host.tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower("0x44a0579754d6c94e7bb2c26bfa7394311cc50ccb"), strings.ToLower(owner.Hex()))
+	assert.Equal(t, strings.ToLower(depositAddress), strings.ToLower(owner.Hex()))
 	assert.Equal(t, strings.ToLower(respOwner), strings.ToLower(owner.Hex()))
+	return tokenID
 }
 
 func TestInvoiceUnpaidMint_errors(t *testing.T) {
@@ -156,4 +159,42 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			response.Value("error").String().Contains(test.errorMsg)
 		})
 	}
+}
+
+func TestTransferNFT_successful(t *testing.T) {
+	t.Parallel()
+	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, true)
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
+
+	ownerOfPayload := map[string]interface{}{
+		"tokenId":         tokenID.String(),
+		"registryAddress": registry.String(),
+	}
+
+	transferPayload := map[string]interface{}{
+		"tokenId":         tokenID.String(),
+		"registryAddress": registry.String(),
+		"to":              bob.id.String(),
+	}
+
+	// nft owner should be alice
+	resp, err := alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	assert.NoError(t, err)
+	resp.Path("$.owner").String().Equal(alice.id.String())
+
+	// transfer nft from alice to bob
+	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
+	assert.NoError(t, err)
+	txID := getTransactionID(t, response)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	// nft owner should be bob
+	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	assert.NoError(t, err)
+	resp.Path("$.owner").String().Equal(bob.id.String())
 }

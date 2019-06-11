@@ -3,7 +3,6 @@ package nft
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -38,8 +37,8 @@ type Config interface {
 	GetLowEntropyNFTTokenEnabled() bool
 }
 
-// ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
-type ethInvoiceUnpaid struct {
+// service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
+type service struct {
 	cfg             Config
 	identityService identity.Service
 	ethClient       ethereum.Client
@@ -50,8 +49,8 @@ type ethInvoiceUnpaid struct {
 	blockHeightFunc func() (height uint64, err error)
 }
 
-// newEthInvoiceUnpaid creates InvoiceUnpaid given the parameters
-func newEthInvoiceUnpaid(
+// newService creates InvoiceUnpaid given the parameters
+func newService(
 	cfg Config,
 	identityService identity.Service,
 	ethClient ethereum.Client,
@@ -59,8 +58,8 @@ func newEthInvoiceUnpaid(
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
 	jobsMan jobs.Manager,
-	blockHeightFunc func() (uint64, error)) *ethInvoiceUnpaid {
-	return &ethInvoiceUnpaid{
+	blockHeightFunc func() (uint64, error)) *service {
+	return &service{
 		cfg:             cfg,
 		identityService: identityService,
 		ethClient:       ethClient,
@@ -72,7 +71,7 @@ func newEthInvoiceUnpaid(
 	}
 }
 
-func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
+func (s *service) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
 	// Compact properties
 	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
 	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
@@ -87,7 +86,7 @@ func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *
 	return docProof
 }
 
-func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
+func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
@@ -120,13 +119,6 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, err
 	}
 
-	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: model.ID(), VersionID: anchorID[:], FieldProofs: docProofs.FieldProofs})
-	if err != nil {
-		return mreq, err
-	}
-
-	log.Debug(json.MarshalIndent(proof, "", "  "))
-
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
 		return mreq, err
@@ -137,7 +129,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 }
 
 // GetRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
-func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+func (s *service) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
 	var proofFields []string
 
 	acc, err := contextutil.Account(ctx)
@@ -161,7 +153,7 @@ func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Conte
 }
 
 // MintNFT mints an NFT
-func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*MintNFTResponse, chan bool, error) {
+func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenResponse, chan bool, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -199,19 +191,49 @@ func (s *ethInvoiceUnpaid) MintNFT(ctx context.Context, req MintNFTRequest) (*Mi
 	if err != nil {
 		return nil, nil, err
 	}
-	jobID, done, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Minting NFT",
-		s.minter(ctx, tokenID, model, req))
+
+	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Minting NFT",
+		s.minterJob(ctx, tokenID, model, req))
+
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &MintNFTResponse{
+	return &TokenResponse{
 		JobID:   jobID.String(),
 		TokenID: tokenID.String(),
 	}, done, nil
 }
 
-func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+// TransferFrom transfers an NFT to another address
+func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan bool, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	didBytes, err := tc.GetIdentityID()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	did, err := identity.NewDIDFromBytes(didBytes)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Transfer From NFT",
+		s.transferFromJob(ctx, registry, did.ToAddress(), to, tokenID))
+	if err != nil {
+		return nil, nil, err
+	}
+	return &TokenResponse{
+		JobID:   jobID.String(),
+		TokenID: tokenID.String(),
+	}, done, nil
+}
+
+func (s *service) minterJob(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
 		if err != nil {
@@ -282,8 +304,53 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 	}
 }
 
+func (s *service) transferFromJob(ctx context.Context, registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+		owner, err := s.OwnerOf(registry, tokenID[:])
+		if err != nil {
+			errOut <- errors.New("error while checking new NFT owner %v", err)
+			return
+		}
+		if owner.Hex() != from.Hex() {
+			errOut <- errors.New("from address is not the owner of tokenID %s from should be %s, instead got %s", tokenID.String(), from.Hex(), owner.Hex())
+			return
+		}
+
+		txID, done, err := s.identityService.Execute(ctx, registry, InvoiceUnpaidContractABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
+		if err != nil {
+			errOut <- err
+			return
+		}
+		log.Infof("sent off ethTX to transferFrom [registry: %s tokenID: %s, from: %s, to: %s].",
+			registry.String(), tokenID.String(), from.String(), to.String())
+
+		isDone := <-done
+		if !isDone {
+			// some problem occurred in a child task
+			errOut <- errors.New("failed to transfer token with transaction:  %s", txID)
+			return
+		}
+
+		// Check if tokenID is new owner is to address
+		owner, err = s.OwnerOf(registry, tokenID[:])
+		if err != nil {
+			errOut <- errors.New("error while checking new NFT owner %v", err)
+			return
+		}
+		if owner.Hex() != to.Hex() {
+			errOut <- errors.New("new owner for tokenID %s should be %s, instead got %s", tokenID.String(), registry.Hex(), owner.Hex())
+			return
+		}
+
+		log.Infof("token %s successfully transferred from %s to %s with transaction %s ", tokenID.String(), from.Hex(), to.Hex(), txID)
+
+		errOut <- nil
+		return
+	}
+}
+
 // OwnerOf returns the owner of the NFT token on ethereum chain
-func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
+func (s *service) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
 	contract, err := s.bindContract(registry, s.ethClient)
 	if err != nil {
 		return owner, errors.New("failed to bind the registry contract: %v", err)
@@ -296,7 +363,7 @@ func (s *ethInvoiceUnpaid) OwnerOf(registry common.Address, tokenID []byte) (own
 }
 
 // CurrentIndexOfToken returns the current index of the token in the given registry
-func (s *ethInvoiceUnpaid) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
+func (s *service) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
 	contract, err := s.bindContract(registry, s.ethClient)
 	if err != nil {
 		return nil, errors.New("failed to bind the registry contract: %v", err)

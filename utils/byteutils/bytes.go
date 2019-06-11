@@ -11,9 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// ErrEmptyHexBytes is a sentinel error when hex bytes are empty
-const ErrEmptyHexBytes = errors.Error("empty bytes")
-
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
 func AddZeroBytesSuffix(data []byte, required int) []byte {
 	if len(data) >= required {
@@ -119,12 +116,12 @@ type HexBytes []byte
 
 // MarshalJSON marshall bytes to hex.
 func (h HexBytes) MarshalJSON() ([]byte, error) {
-	var str string
-	if len(h) < 1 {
-		return nil, ErrEmptyHexBytes
+	str := "0x"
+	if len(h) > 0 {
+		str = hexutil.Encode(h)
 	}
 
-	str = "\"" + hexutil.Encode(h) + "\""
+	str = "\"" + str + "\""
 	return []byte(str), nil
 }
 

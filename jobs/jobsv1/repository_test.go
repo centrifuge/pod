@@ -46,6 +46,7 @@ func Test_getKey(t *testing.T) {
 	// empty id
 	key, err := getKey(did, id)
 	assert.Nil(t, key)
+	assert.Error(t, err)
 	assert.Equal(t, "job ID is not valid", err.Error())
 
 	id = jobs.NewJobID()

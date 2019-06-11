@@ -22,6 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -55,7 +56,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, string, documents.Service, identity.DID) {
+func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
 	// create identity
 	log.Debug("Create Identity for Testing")
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
@@ -101,10 +102,9 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	id := modelUpdated.ID()
 	// call mint
 	// assert no error
-	depositAddr := "0xf72855759a39fb75fc7341139f5d7a3974d4da08"
 	registry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
-	return ctx, id, registry, depositAddr, invSrv, cid
+	return ctx, id, registry, invSrv, cid
 }
 
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
@@ -124,7 +124,7 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
-	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+	ctx, id, registry, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
 	acc, err := contextutil.Account(ctx)
@@ -139,7 +139,7 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
-		DepositAddress:           common.HexToAddress(depositAddr),
+		DepositAddress:           cid.ToAddress(),
 		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
@@ -164,11 +164,11 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 }
 
 func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
-	ctx, id, registry, depositAddr, _, _ := prepareForNFTMinting(t)
+	ctx, id, registry, _, cid := prepareForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
-		DepositAddress:           common.HexToAddress(depositAddr),
+		DepositAddress:           cid.ToAddress(),
 		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due"},
 		GrantNFTReadAccess:       grantNFT,
 		SubmitNFTReadAccessProof: nftReadAccess,
@@ -185,8 +185,8 @@ func TestEthereumInvoiceUnpaid_MintNFT_no_grant_access(t *testing.T) {
 	failMintNFT(t, false, true)
 }
 
-func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) {
-	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
+func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) (context.Context, nft.TokenID, identity.DID) {
+	ctx, id, registry, invSrv, cid := prepareForNFTMinting(t)
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 	accDIDBytes, err := acc.GetIdentityID()
@@ -199,13 +199,13 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
-		DepositAddress:           common.HexToAddress(depositAddr),
+		DepositAddress:           cid.ToAddress(),
 		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,
 	}
-	mintNFT(t, ctx, req, cid, registry)
+	tokenID := mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
@@ -215,6 +215,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 		roleCount++
 	}
 	assert.Len(t, cd.Roles, roleCount)
+	return ctx, tokenID, cid
 }
 
 func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
@@ -231,4 +232,38 @@ func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
 	for _, c := range tests {
 		mintNFTWithProofs(t, c.grantAccess, c.tokenProof, c.readAccessProof)
 	}
+}
+
+func TestTransferNFT(t *testing.T) {
+	addresses := testingutils.GetSmartContractAddresses()
+	registry := common.HexToAddress(addresses.InvoiceUnpaidAddr)
+	ctx, tokenID, did := mintNFTWithProofs(t, true, true, true)
+	to := common.HexToAddress("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe")
+	owner, err := invoiceUnpaid.OwnerOf(registry, tokenID[:])
+	assert.NoError(t, err)
+	assert.Equal(t, owner, did.ToAddress())
+
+	// successful
+	resp, done, err := invoiceUnpaid.TransferFrom(ctx, registry, to, tokenID)
+	assert.NoError(t, err)
+	<-done
+	jobID, err := jobs.FromString(resp.JobID)
+	assert.NoError(t, err)
+	assert.NoError(t, jobManager.WaitForJob(did, jobID))
+
+	owner, err = invoiceUnpaid.OwnerOf(registry, tokenID[:])
+	assert.NoError(t, err)
+	assert.Equal(t, owner, to)
+
+	// should fail not owner anymore
+	secondTo := common.HexToAddress("0xFBb1b73C4f0BDa4f67dcA266ce6Ef42f520fBB98")
+	resp, done, err = invoiceUnpaid.TransferFrom(ctx, registry, secondTo, tokenID)
+	assert.NoError(t, err)
+	<-done
+	jobID, err = jobs.FromString(resp.JobID)
+	assert.NoError(t, err)
+
+	err = jobManager.WaitForJob(did, jobID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "from address is not the owner of tokenID")
 }

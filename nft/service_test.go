@@ -202,7 +202,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
-			service := newEthInvoiceUnpaid(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
+			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
 				return &InvoiceUnpaidContract{}, nil
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
@@ -226,7 +226,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 }
 
 func TestEthereumInvoiceUnpaid_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
-	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
+	service := newService(nil, nil, nil, nil, nil, nil, nil, nil)
 
 	//missing account in context
 	ctxh := context.Background()
@@ -265,7 +265,7 @@ func TestEthereumInvoiceUnpaid_GetRequiredInvoiceUnpaidProofFields(t *testing.T)
 }
 
 func TestFilterMintProofs(t *testing.T) {
-	service := newEthInvoiceUnpaid(nil, nil, nil, nil, nil, nil, nil, nil)
+	service := newService(nil, nil, nil, nil, nil, nil, nil, nil)
 	indexKey := utils.RandomSlice(52)
 	docProof := &documents.DocumentProof{
 		FieldProofs: []*proofspb.Proof{
@@ -309,6 +309,38 @@ func TestFilterMintProofs(t *testing.T) {
 	assert.Len(t, docProofAux.FieldProofs[0].SortedHashes, 2)
 	assert.Len(t, docProofAux.FieldProofs[1].SortedHashes, 3)
 	assert.Len(t, docProofAux.FieldProofs[2].SortedHashes, 3)
+}
+
+func TestTokenTransfer(t *testing.T) {
+	configMock := &testingconfig.MockConfig{}
+	configMock.On("GetEthereumDefaultAccountName").Return("ethacc")
+	cid := testingidentity.GenerateRandomDID()
+	configMock.On("GetIdentityID").Return(cid[:], nil)
+	configMock.On("GetEthereumAccount").Return(&config.AccountConfig{}, nil)
+	configMock.On("GetEthereumContextWaitTimeout").Return(time.Second)
+	configMock.On("GetReceiveEventNotificationEndpoint").Return("")
+	configMock.On("GetP2PKeyPair").Return("", "")
+	configMock.On("GetSigningKeyPair").Return("", "")
+	configMock.On("GetPrecommitEnabled").Return(false)
+	configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
+
+	jobID := jobs.NewJobID()
+	jobMan := new(testingjobs.MockJobManager)
+	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return(jobID, make(chan bool), nil)
+
+	idServiceMock := &testingcommons.MockIdentityService{}
+
+	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil)
+	ctxh := testingconfig.CreateAccountContext(t, configMock)
+
+	registryAddress := common.HexToAddress("0x111855759a39fb75fc7341139f5d7a3974d4da08")
+	to := common.HexToAddress("0x222855759a39fb75fc7341139f5d7a3974d4da08")
+
+	tokenID := NewTokenID()
+	resp, _, err := service.TransferFrom(ctxh, registryAddress, to, tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, jobID.String(), resp.JobID)
 }
 
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {

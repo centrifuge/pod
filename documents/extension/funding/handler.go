@@ -44,10 +44,10 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 	}
 
 	// create new funding id
-	if req.Data.FundingId == "" {
-		req.Data.FundingId = newFundingID()
+	if req.Data.AgreementId == "" {
+		req.Data.AgreementId = newAgreementID()
 	} else {
-		_, err := hexutil.Decode(req.Data.FundingId)
+		_, err := hexutil.Decode(req.Data.AgreementId)
 		if err != nil {
 			apiLog.Error(err)
 			return nil, ErrFundingID
@@ -66,7 +66,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, errors.NewTypedError(ErrFundingAttr, err)
@@ -97,7 +97,7 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clien
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -121,7 +121,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 	}
 
 	// returns model with a signature
-	model, err := h.service.Sign(ctxHeader, req.FundingId, identifier)
+	model, err := h.service.Sign(ctxHeader, req.AgreementId, identifier)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrPayload, err)
 	}
@@ -132,7 +132,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, errors.NewTypedError(ErrFundingAttr, err)
@@ -169,7 +169,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfunpb.GetVersio
 		return nil, documents.ErrDocumentVersionNotFound
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, ErrFundingAttr
@@ -268,7 +268,7 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 		return nil, err
 	}
 
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.FundingId)
+	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, errors.NewTypedError(ErrFundingAttr, err)

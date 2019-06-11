@@ -40,6 +40,7 @@ func TestService_ExecuteWithinTX_happy(t *testing.T) {
 	jobID, done, err := srv.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- nil
 	})
+	assert.NoError(t, err)
 	<-done
 	assert.NoError(t, err)
 	assert.NotNil(t, jobID)
@@ -60,6 +61,7 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 	jobID, done, err := omgr.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- errors.New(errStr)
 	})
+	assert.NoError(t, err)
 	<-done
 	ntf := <-sendChan
 	assert.Equal(t, uint32(notification.JobCompleted), ntf.EventType)
@@ -84,6 +86,7 @@ func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
 		// doing nothing
 	})
 	canc()
+	assert.NoError(t, err)
 	<-done
 	assert.NoError(t, err)
 	assert.NotNil(t, tid)
@@ -104,7 +107,6 @@ func TestService_GetTransaction(t *testing.T) {
 
 	// no transaction
 	jobStatus, err := srv.GetJobStatus(did, job.ID)
-	assert.Nil(t, jobStatus)
 	assert.NotNil(t, err)
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
@@ -115,12 +117,10 @@ func TestService_GetTransaction(t *testing.T) {
 	jobStatus, err = srv.GetJobStatus(did, job.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, jobStatus)
-	assert.Equal(t, jobStatus.JobId, job.ID.String())
+	assert.Equal(t, jobStatus.JobID, job.ID.String())
 	assert.Equal(t, string(jobs.Pending), jobStatus.Status)
 	assert.Empty(t, jobStatus.Message)
-	tm, err := utils.ToTimestamp(job.CreatedAt)
-	assert.NoError(t, err)
-	assert.Equal(t, tm, jobStatus.LastUpdated)
+	assert.Equal(t, job.CreatedAt, jobStatus.LastUpdated)
 
 	log := jobs.NewLog("action", "some message")
 	job.Logs = append(job.Logs, log)
@@ -131,12 +131,10 @@ func TestService_GetTransaction(t *testing.T) {
 	jobStatus, err = srv.GetJobStatus(did, job.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, jobStatus)
-	assert.Equal(t, jobStatus.JobId, job.ID.String())
+	assert.Equal(t, jobStatus.JobID, job.ID.String())
 	assert.Equal(t, string(jobs.Success), jobStatus.Status)
 	assert.Equal(t, log.Message, jobStatus.Message)
-	tm, err = utils.ToTimestamp(log.CreatedAt)
-	assert.NoError(t, err)
-	assert.Equal(t, tm, jobStatus.LastUpdated)
+	assert.Equal(t, log.CreatedAt, jobStatus.LastUpdated)
 }
 
 func TestService_CreateTransaction(t *testing.T) {

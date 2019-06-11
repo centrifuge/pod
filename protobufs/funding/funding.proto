@@ -24,7 +24,7 @@ service FundingService {
   }
   rpc Update(FundingUpdatePayload) returns (FundingResponse) {
     option (google.api.http) = {
-      put: "/documents/{identifier}/fundings/{funding_id}"
+      put: "/documents/{identifier}/fundings/{agreement_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -33,7 +33,7 @@ service FundingService {
   }
   rpc Sign(Request) returns (FundingResponse) {
     option (google.api.http) = {
-      post: "/documents/{identifier}/fundings/{funding_id}/sign"
+      post: "/documents/{identifier}/fundings/{agreement_id}/sign"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -42,7 +42,7 @@ service FundingService {
   }
   rpc Get(Request) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/fundings/{funding_id}"
+      get: "/documents/{identifier}/fundings/{agreement_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a latest document"
@@ -50,7 +50,7 @@ service FundingService {
   }
   rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
     option (google.api.http) = {
-      get: "/documents/{identifier}/{version}/fundings/{funding_id}"
+      get: "/documents/{identifier}/{version}/fundings/{agreement_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a funding agreement of a document version"
@@ -76,17 +76,13 @@ service FundingService {
 
 message FundingCreatePayload {
   string identifier = 1;
-  document.ReadAccess read_access = 2;
-  document.WriteAccess write_access = 3;
-  FundingData data = 4;
+  FundingData data = 2;
 }
 
 message FundingUpdatePayload {
   string identifier = 1;
-  string funding_id = 2;
-  document.ReadAccess read_access = 3;
-  document.WriteAccess write_access = 4;
-  FundingData data = 5;
+  string agreement_id = 2;
+  FundingData data = 3;
 }
 
 message FundingResponse {
@@ -101,13 +97,13 @@ message FundingListResponse {
 
 message Request {
   string identifier = 1;
-  string funding_id = 2;
+  string agreement_id = 2;
 }
 
 message GetVersionRequest {
   string identifier = 1;
   string version = 2;
-  string funding_id = 3;
+  string agreement_id = 3;
 }
 
 message GetListRequest {
@@ -121,7 +117,7 @@ message GetListVersionRequest {
 
 // FundingData is the default funding extension schema
 message FundingData {
-  string funding_id = 1;
+  string agreement_id = 1;
   string amount = 2;
   string apr = 3;
   string days = 4;
@@ -132,6 +128,8 @@ message FundingData {
   string currency = 10; // optional if not set currency of payment details will be used
   string nft_address = 11;
   string payment_details_id = 12;
+  string funder_id = 13;
+  string borrower_id = 14;
 }
 
 message FundingResponseData {

@@ -21,7 +21,8 @@ func TestLineItemActivities(t *testing.T) {
 		},
 	}
 
-	citems := toClientActivities(items)
+	citems, err := toClientActivities(items)
+	assert.NoError(t, err)
 	pitems, err := toP2PActivities(items)
 	assert.NoError(t, err)
 
@@ -96,7 +97,8 @@ func TestLineItems(t *testing.T) {
 		},
 	}
 
-	citems := toClientLineItems(items)
+	citems, err := toClientLineItems(items)
+	assert.NoError(t, err)
 	pitems, err := toP2PLineItems(items)
 	assert.NoError(t, err)
 
