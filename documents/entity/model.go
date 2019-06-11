@@ -37,10 +37,7 @@ const (
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
 
-//TODO:
-// 2. Doucle check the API
-// 3. Testworld
-// 4. check entityrelationship
+// Address holds the address details of the entity.
 type Address struct {
 	IsMain        bool   `json:"is_main"`
 	IsRemitTo     bool   `json:"is_remit_to"`
@@ -55,6 +52,7 @@ type Address struct {
 	ContactPerson string `json:"contact_person"`
 }
 
+// BankPaymentMethod holds the bank details of the entity.
 type BankPaymentMethod struct {
 	Identifier        byteutils.HexBytes `json:"identifier"`
 	Address           Address            `json:"address"`
@@ -64,6 +62,7 @@ type BankPaymentMethod struct {
 	SupportedCurrency string             `json:"supported_currency"`
 }
 
+// CryptoPaymentMethod holds the crypto details of the entity.
 type CryptoPaymentMethod struct {
 	Identifier        byteutils.HexBytes `json:"identifier"`
 	To                string             `json:"to"`
@@ -71,6 +70,7 @@ type CryptoPaymentMethod struct {
 	SupportedCurrency string             `json:"supported_currency"`
 }
 
+// OtherPaymentMethod represents any other payment methods entity accepts.
 type OtherPaymentMethod struct {
 	Identifier        byteutils.HexBytes `json:"identifier"`
 	Type              string             `json:"type"`
@@ -78,6 +78,8 @@ type OtherPaymentMethod struct {
 	SupportedCurrency string             `json:"supported_currency"`
 }
 
+// PaymentDetail contains the payments receiving details of the entity.
+// Note: only one of the payment methods has to be set for a given payment detail.
 type PaymentDetail struct {
 	Predefined          bool                 `json:"predefined"`
 	BankPaymentMethod   *BankPaymentMethod   `json:"bank_payment_method,omitempty"`
@@ -85,6 +87,7 @@ type PaymentDetail struct {
 	OtherPaymentMethod  *OtherPaymentMethod  `json:"other_payment_method,omitempty"`
 }
 
+// Contact holds the entity contact details.
 type Contact struct {
 	Name  string `json:"name"`
 	Title string `json:"title"`
@@ -93,6 +96,7 @@ type Contact struct {
 	Fax   string `json:"fax"`
 }
 
+// Data represents the entity data.
 type Data struct {
 	Identity       *identity.DID   `json:"identity"`
 	LegalName      string          `json:"legal_name"`
