@@ -38,7 +38,6 @@ const (
 func compactPrefix() []byte { return []byte{0, 3, 0, 0} }
 
 //TODO:
-// 1.tests for converters
 // 2. Doucle check the API
 // 3. Testworld
 // 4. check entityrelationship
