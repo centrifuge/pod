@@ -620,7 +620,14 @@ func (p *PurchaseOrder) GetData() interface{} {
 
 // loadData unmarshals json blob to Data.
 func (p *PurchaseOrder) loadData(data []byte) error {
-	return json.Unmarshal(data, &p.Data)
+	var d Data
+	err := json.Unmarshal(data, &d)
+	if err != nil {
+		return err
+	}
+
+	p.Data = d
+	return nil
 }
 
 // unpackFromCreatePayload unpacks the invoice data from the Payload.

@@ -542,7 +542,8 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder"
+                        "purchaseorder",
+                        "entity"
                     ]
                 },
                 "write_access": {
@@ -571,7 +572,8 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder"
+                        "purchaseorder",
+                        "entity"
                     ]
                 }
             }
@@ -717,7 +719,8 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder"
+                        "purchaseorder",
+                        "entity"
                     ]
                 },
                 "write_access": {

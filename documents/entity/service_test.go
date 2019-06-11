@@ -26,6 +26,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -288,7 +289,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	entity := m.(*Entity)
-	assert.Equal(t, entity.LegalName, payload.Data.LegalName)
+	assert.Equal(t, entity.Data.LegalName, payload.Data.LegalName)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -299,8 +300,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	entity, ok := m.(*Entity)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, entity.LegalName, "Company Test")
-	assert.Equal(t, entity.Contacts[0].Name, "Satoshi Nakamoto")
+	assert.Equal(t, entity.Data.LegalName, "Company Test")
+	assert.Equal(t, entity.Data.Contacts[0].Name, "Satoshi Nakamoto")
 }
 
 func TestService_Create(t *testing.T) {
@@ -438,7 +439,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	doc3Entity := doc3.(*Entity)
 
 	assert.NoError(t, err)
-	assert.Equal(t, doc2.LegalName, doc3Entity.LegalName)
+	assert.Equal(t, doc2.Data.LegalName, doc3Entity.Data.LegalName)
 }
 
 func TestService_GetVersion(t *testing.T) {
@@ -698,5 +699,108 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)
 	assert.NoError(t, err)
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
+}
 
+func TestService_CreateModel(t *testing.T) {
+	payload := documents.CreatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// invalid data
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	fact := new(testingcommons.MockIdentityFactory)
+	fact.On("IdentityExists", mock.Anything).Return(false, nil)
+	srv.factory = fact
+	payload.Data = validData(t)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	fact.AssertExpectations(t)
+
+	// success
+	payload.Data = validDataWithIdentity(t)
+	srv.repo = testRepo()
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	fact = new(testingcommons.MockIdentityFactory)
+	fact.On("IdentityExists", mock.Anything).Return(true, nil)
+	srv.factory = fact
+	m, _, err := srv.CreateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
+	fact.AssertExpectations(t)
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// missing id
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, fact, srvr := getServiceWithMockedLayers()
+	srv = srvr.(service)
+	payload.DocumentID = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// payload invalid
+	e := createEntity(t)
+	err = testRepo().Create(did[:], e.ID(), e)
+	assert.NoError(t, err)
+	payload.DocumentID = e.ID()
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	payload.Data = validData(t)
+	fact.On("IdentityExists", mock.Anything).Return(false, nil)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	fact.AssertExpectations(t)
+
+	// Success
+	fact = new(testingcommons.MockIdentityFactory)
+	fact.On("IdentityExists", mock.Anything).Return(true, nil)
+	srv.factory = fact
+	payload.Data = validDataWithIdentity(t)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.UpdateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m.ID(), e.ID())
+	assert.Equal(t, m.CurrentVersion(), e.NextVersion())
+	jm.AssertExpectations(t)
+	fact.AssertExpectations(t)
 }

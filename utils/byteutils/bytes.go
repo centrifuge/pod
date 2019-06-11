@@ -138,6 +138,11 @@ func (h *HexBytes) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// String returns HexBytes in string format.
+func (h HexBytes) String() string {
+	return hexutil.Encode(h)
+}
+
 // Bytes returns a copy of the HexBytes.
 func (h HexBytes) Bytes() []byte {
 	if len(h) < 1 {

@@ -224,7 +224,7 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 	}, nil
 }
 
-// CreateModel creates purchase order from the payload, validates, persists, and returns the invoice.
+// CreateModel creates purchase order from the payload, validates, persists, and returns the purchase order.
 func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
 	if payload.Data == nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentNil
