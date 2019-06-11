@@ -806,7 +806,14 @@ func (i *Invoice) GetData() interface{} {
 
 // loadData unmarshals json blob to Data.
 func (i *Invoice) loadData(data []byte) error {
-	return json.Unmarshal(data, &i.Data)
+	var d Data
+	err := json.Unmarshal(data, &d)
+	if err != nil {
+		return err
+	}
+
+	i.Data = d
+	return nil
 }
 
 // unpackFromCreatePayload unpacks the invoice data from the Payload.

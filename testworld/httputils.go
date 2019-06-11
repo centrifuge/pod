@@ -360,7 +360,9 @@ func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string,
 	objGet := addCommonHeaders(e.GET("/documents/"+documentID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(documentID)
-	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+	for k, v := range params {
+		objGet.Path("$.data." + k).String().Equal(v.(string))
+	}
 	return objGet
 }
 
