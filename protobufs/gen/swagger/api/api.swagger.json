@@ -53,8 +53,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
@@ -116,8 +116,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
@@ -489,11 +489,76 @@
                     }
                 ],
                 "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.MintNFTResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/nfts/{token_id}/transfer": {
+            "post": {
+                "description": "Transfers given NFT to provide address.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFT"
+                ],
+                "summary": "Transfers given NFT to provide address.",
+                "operationId": "transfer_nft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT token ID in hex",
+                        "name": "token_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Mint NFT request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.TransferNFTRequest"
+                        }
+                    }
+                ],
+                "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/coreapi.MintNFTResponse"
+                            "$ref": "#/definitions/coreapi.TransferNFTResponse"
                         }
                     },
                     "400": {
@@ -809,6 +874,35 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "coreapi.TransferNFTRequest": {
+            "type": "object",
+            "properties": {
+                "registry_address": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.TransferNFTResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.NFTResponseHeader"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
                 }
             }
         },

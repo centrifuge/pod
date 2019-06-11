@@ -306,3 +306,17 @@ func toNFTMintRequest(req MintNFTRequest) nft.MintNFTRequest {
 		SubmitTokenProof:         req.SubmitTokenProof,
 	}
 }
+
+// TransferNFTRequest holds Registry Address and To address for NFT transfer
+type TransferNFTRequest struct {
+	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
+	To              common.Address `json:"to" swaggertype:"primitive,string"`
+}
+
+// TransferNFTResponse is the response for NFT transfer.
+type TransferNFTResponse struct {
+	Header          NFTResponseHeader `json:"header"`
+	TokenID         string            `json:"token_id"`
+	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
+	To              common.Address    `json:"to" swaggertype:"primitive,string"`
+}

@@ -11,6 +11,7 @@ const (
 	documentIDParam = "document_id"
 	versionIDParam  = "version_id"
 	jobIDParam      = "job_id"
+	tokenIDParam    = "token_id"
 )
 
 // Register registers the core apis to the router.
@@ -30,4 +31,5 @@ func Register(r *chi.Mux,
 	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
 	r.Post("/nfts/mint", h.MintNFT)
+	r.Post("/nfts/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 }

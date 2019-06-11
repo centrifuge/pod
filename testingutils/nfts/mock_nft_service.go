@@ -32,7 +32,8 @@ func (m *MockNFTService) GetRequiredInvoiceUnpaidProofFields(ctx context.Context
 func (m *MockNFTService) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID nft.TokenID) (*nft.TokenResponse, chan bool, error) {
 	args := m.Called(ctx)
 	resp, _ := args.Get(0).(*nft.TokenResponse)
-	return resp, nil, args.Error(1)
+	done, _ := args.Get(1).(chan bool)
+	return resp, done, args.Error(2)
 }
 
 func (m *MockNFTService) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {

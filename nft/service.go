@@ -218,15 +218,16 @@ func (s *service) TransferFrom(ctx context.Context, registry common.Address, to 
 	}
 
 	did, err := identity.NewDIDFromBytes(didBytes)
-
 	if err != nil {
 		return nil, nil, err
 	}
+
 	jobID, done, err := s.jobsManager.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "Transfer From NFT",
 		s.transferFromJob(ctx, registry, did.ToAddress(), to, tokenID))
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return &TokenResponse{
 		JobID:   jobID.String(),
 		TokenID: tokenID.String(),

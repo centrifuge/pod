@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Service provides functionality for Core APIs.
@@ -54,5 +55,11 @@ func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID 
 // MintNFT mints an NFT.
 func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
 	resp, _, err := s.nftService.MintNFT(ctx, request)
+	return resp, err
+}
+
+// TransferNFT transfers NFT with tokenID in a given registry to `to` address.
+func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
+	resp, _, err := s.nftService.TransferFrom(ctx, registry, to, tokenID)
 	return resp, err
 }

@@ -72,44 +72,6 @@ func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NF
 	}, nil
 }
 
-// TokenTransfer will be called to transfer a token owned by the identity contract
-func (g grpcHandler) TokenTransfer(ctx context.Context, request *nftpb.TokenTransferRequest) (*nftpb.TokenTransferResponse, error) {
-	ctxHeader, err := contextutil.Context(ctx, g.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	tokenID, err := TokenIDFromString(request.TokenId)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrInvalidParameter, err)
-	}
-
-	if !common.IsHexAddress(request.RegistryAddress) {
-		return nil, ErrInvalidAddress
-	}
-	registry := common.HexToAddress(request.RegistryAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	if !common.IsHexAddress(request.To) {
-		return nil, ErrInvalidAddress
-	}
-	to := common.HexToAddress(request.To)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, _, err := g.service.TransferFrom(ctxHeader, registry, to, tokenID)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrTokenTransfer, err)
-	}
-	return &nftpb.TokenTransferResponse{
-		Header: &nftpb.ResponseHeader{JobId: resp.JobID},
-	}, nil
-}
-
 // OwnerOf returns the owner of an NFT
 func (g grpcHandler) OwnerOf(ctx context.Context, request *nftpb.OwnerOfRequest) (*nftpb.OwnerOfResponse, error) {
 	tokenID, err := TokenIDFromString(request.TokenId)

@@ -98,26 +98,6 @@ func mockmockConfigStore() *configstore.MockService {
 	return mockConfigStore
 }
 
-func TestPaymentObligationNFTTransferFrom_success(t *testing.T) {
-	mockService := &mockInvoiceUnpaid{}
-	mockConfigStore := mockmockConfigStore()
-
-	tokenID := hexutil.Encode(utils.RandomSlice(32))
-	nftResponse := &TokenResponse{TokenID: tokenID, JobID: "0x123"}
-	nftReq := &nftpb.TokenTransferRequest{
-		TokenId:         tokenID,
-		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-		To:              "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-	}
-
-	mockService.On("TransferFrom", mock.Anything).Return(nftResponse, nil, nil).Once()
-	handler := grpcHandler{mockConfigStore, mockService}
-
-	response, err := handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)
-	assert.NoError(t, err)
-	assert.Equal(t, response.Header.JobId, nftResponse.JobID)
-}
-
 func TestPaymentObligationNFTOwnerOf_success(t *testing.T) {
 	mockService := &mockInvoiceUnpaid{}
 	mockConfigStore := mockmockConfigStore()
@@ -138,38 +118,4 @@ func TestPaymentObligationNFTOwnerOf_success(t *testing.T) {
 	assert.Equal(t, response.Owner, owner.String())
 	assert.Equal(t, response.RegistryAddress, ownerReq.RegistryAddress)
 	assert.Equal(t, response.TokenId, ownerReq.TokenId)
-}
-
-func TestPaymentObligationNFTTransferFrom_fail(t *testing.T) {
-	mockService := &mockInvoiceUnpaid{}
-	mockConfigStore := mockmockConfigStore()
-
-	// invalid token length
-	tokenID := hexutil.Encode(utils.RandomSlice(10))
-	nftResponse := &TokenResponse{TokenID: tokenID, JobID: "0x123"}
-	nftReq := &nftpb.TokenTransferRequest{
-		TokenId:         tokenID,
-		RegistryAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-		To:              "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
-	}
-
-	mockService.On("TransferFrom", mock.Anything).Return(nftResponse, nil, nil).Once()
-	handler := grpcHandler{mockConfigStore, mockService}
-
-	response, err := handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)
-	assert.Nil(t, response)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), ErrInvalidParameter)
-
-	tokenID = hexutil.Encode(utils.RandomSlice(32))
-	nftReq.TokenId = tokenID
-
-	// invalid address
-	nftReq.To = "0x123"
-	mockService.On("TransferFrom", mock.Anything).Return(nftResponse, nil, nil).Once()
-	handler = grpcHandler{mockConfigStore, mockService}
-	response, err = handler.TokenTransfer(testingconfig.HandlerContext(mockConfigStore), nftReq)
-	assert.Nil(t, response)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), ErrInvalidAddress)
 }

@@ -42,7 +42,7 @@ type handler struct {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 200 {object} coreapi.DocumentResponse
+// @success 201 {object} coreapi.DocumentResponse
 // @router /documents [post]
 func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -102,7 +102,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 200 {object} coreapi.DocumentResponse
+// @success 201 {object} coreapi.DocumentResponse
 // @router /documents [put]
 func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error

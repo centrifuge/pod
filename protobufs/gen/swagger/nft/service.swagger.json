@@ -79,39 +79,6 @@
           "NFTService"
         ]
       }
-    },
-    "/nfts/{token_id}/transfer": {
-      "post": {
-        "description": "Transfer an NFT owned by the identity contract",
-        "operationId": "TokenTransfer",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/nftTokenTransferResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/nftTokenTransferRequest"
-            }
-          }
-        ],
-        "tags": [
-          "NFTService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -155,28 +122,6 @@
       "properties": {
         "job_id": {
           "type": "string"
-        }
-      }
-    },
-    "nftTokenTransferRequest": {
-      "type": "object",
-      "properties": {
-        "token_id": {
-          "type": "string"
-        },
-        "registry_address": {
-          "type": "string"
-        },
-        "to": {
-          "type": "string"
-        }
-      }
-    },
-    "nftTokenTransferResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/nftResponseHeader"
         }
       }
     }
