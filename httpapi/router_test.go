@@ -68,5 +68,5 @@ func TestRouter_auth(t *testing.T) {
 func TestRouter(t *testing.T) {
 	r := Router(nil, nil, new(testingnfts.MockNFTService), nil, nil)
 	assert.Len(t, r.Middlewares(), 3)
-	assert.Len(t, r.Routes(), 9)
+	assert.Len(t, r.Routes(), 10)
 }
