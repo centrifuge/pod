@@ -153,7 +153,6 @@ func TestHost_ValidSignature(t *testing.T) {
 	eve := doctorFord.getHostTestSuite(t, "Eve")
 
 	ctxh := testingconfig.CreateAccountContext(t, eve.host.config)
-
 	// Get PublicKey and PrivateKey
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
