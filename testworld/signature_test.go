@@ -25,6 +25,64 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestHost_GetSignatureFromCollaboratorBasedOnWrongSignature(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	mallory := doctorFord.getHostTestSuite(t, "Mallory")
+
+	mctxh := testingconfig.CreateAccountContext(t, mallory.host.config)
+
+	publicKey, privateKey := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
+
+	collaborators := [][]byte{alice.id[:]}
+	dm := createCDWithEmbeddedPOWithWrongSignature(t, collaborators, alice.id, publicKey, privateKey, mallory.host.config.GetContractAddress(config.AnchorRepo))
+
+	signatures, signatureErrors, err := mallory.host.p2pClient.GetSignaturesForDocument(mctxh, dm)
+	assert.NoError(t, err)
+	assert.Error(t, signatureErrors[0], "Signature verification failed error")
+	assert.Equal(t, 0, len(signatures))
+}
+
+func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
+	// Hosts
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	mallory := doctorFord.getHostTestSuite(t, "Mallory")
+
+	actxh := testingconfig.CreateAccountContext(t, alice.host.config)
+	mctxh := testingconfig.CreateAccountContext(t, mallory.host.config)
+
+	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
+
+	collaborators := [][]byte{mallory.id[:]}
+	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
+
+	dm2 := createCDWithEmbeddedPO(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
+
+	sr, err := dm2.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
+	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+
+	sig := &coredocumentpb.Signature{
+		SignatureId: append(mallory.id[:], publicKeyValid...),
+		SignerId:    mallory.id[:],
+		PublicKey:   publicKeyValid,
+		Signature:   s,
+	}
+
+	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
+
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+
+	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
+
+	signatures, signatureErrors, err := alice.host.p2pClient.GetSignaturesForDocument(actxh, dm)
+	assert.NoError(t, err)
+	assert.Error(t, signatureErrors[0], "Signature verification failed error")
+	assert.Equal(t, 0, len(signatures))
+}
+
 func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
@@ -193,6 +251,48 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	assert.NoError(t, err)
 
 	sr, err := po.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
+	assert.NoError(t, err)
+
+	sig := &coredocumentpb.Signature{
+		SignatureId: append(identityDID[:], publicKey...),
+		SignerId:    identityDID[:],
+		PublicKey:   publicKey,
+		Signature:   s,
+	}
+	po.AppendSignatures(sig)
+
+	_, err = po.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
+	return po
+}
+
+func createCDWithEmbeddedPOWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+	payload := testingdocuments.CreatePOPayload()
+	var cs []string
+	for _, c := range collaborators {
+		cs = append(cs, hexutil.Encode(c))
+	}
+	payload.WriteAccess = &documentpb.WriteAccess{
+		Collaborators: cs,
+	}
+
+	po := new(purchaseorder.PurchaseOrder)
+	err := po.InitPurchaseOrderInput(payload, identityDID)
+	assert.NoError(t, err)
+
+	po.SetUsedAnchorRepoAddress(anchorRepo)
+	err = po.AddUpdateLog(identityDID)
+	assert.NoError(t, err)
+
+	_, err = po.CalculateDataRoot()
+	assert.NoError(t, err)
+
+	//Wrong Signing Root will cause wrong signature
+	sr, err := po.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 
 	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
