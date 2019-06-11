@@ -29,8 +29,7 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	}
 
 	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "EUR",
+		"currency": "EUR",
 	}
 
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
@@ -74,8 +73,7 @@ func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
 	}
 
 	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "EUR",
+		"currency": "EUR",
 	}
 
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
@@ -119,9 +117,8 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 	}
 
 	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"identity":    alice.id.String(),
-		"legal_name":  "test company",
+		"identity":   alice.id.String(),
+		"legal_name": "test company",
 	}
 
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
@@ -245,16 +242,4 @@ func entityCoreAPICreate(identity string, collaborators []string) map[string]int
 			},
 		},
 	}
-}
-
-func entityCoreAPIUpdate(docID, identity string, collaborators []string) map[string]interface{} {
-	payload := entityCoreAPICreate(identity, collaborators)
-	payload["document_id"] = docID
-	payload["attributes"] = map[string]map[string]string{
-		"decimal_test": {
-			"type":  "decimal",
-			"value": "100.001",
-		},
-	}
-	return payload
 }

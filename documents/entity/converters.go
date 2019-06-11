@@ -108,7 +108,7 @@ func toProtoCryptoPaymentMethod(cpm *CryptoPaymentMethod) *entitypb.CryptoPaymen
 	return &entitypb.CryptoPaymentMethod{
 		Identifier:        cpm.Identifier,
 		SupportedCurrency: cpm.SupportedCurrency,
-		ChainUri:          cpm.ChainUri,
+		ChainUri:          cpm.ChainURI,
 		To:                cpm.To,
 	}
 }
@@ -121,7 +121,7 @@ func fromProtoCryptoPaymentMethod(pcpm *entitypb.CryptoPaymentMethod) *CryptoPay
 	return &CryptoPaymentMethod{
 		Identifier:        pcpm.Identifier,
 		SupportedCurrency: pcpm.SupportedCurrency,
-		ChainUri:          pcpm.ChainUri,
+		ChainURI:          pcpm.ChainUri,
 		To:                pcpm.To,
 	}
 }

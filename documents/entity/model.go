@@ -66,7 +66,7 @@ type BankPaymentMethod struct {
 type CryptoPaymentMethod struct {
 	Identifier        byteutils.HexBytes `json:"identifier"`
 	To                string             `json:"to"`
-	ChainUri          string             `json:"chain_uri"`
+	ChainURI          string             `json:"chain_uri"`
 	SupportedCurrency string             `json:"supported_currency"`
 }
 
