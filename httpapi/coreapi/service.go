@@ -6,12 +6,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/nft"
 )
 
 // Service provides functionality for Core APIs.
 type Service struct {
 	docService  documents.Service
 	jobsService jobs.Manager
+	nftService  nft.Service
 }
 
 // CreateDocument creates the document from the payload and anchors it.
@@ -47,4 +49,10 @@ func (s Service) GenerateProofs(ctx context.Context, docID []byte, fields []stri
 // GenerateProofsForVersion returns the proofs for the specific version of the document.
 func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error) {
 	return s.docService.CreateProofsForVersion(ctx, docID, versionID, fields)
+}
+
+// MintNFT mints an NFT.
+func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
+	resp, _, err := s.nftService.MintNFT(ctx, request)
+	return resp, err
 }

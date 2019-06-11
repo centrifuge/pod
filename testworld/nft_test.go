@@ -91,7 +91,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			"submitNftOwnerAccessProof": nftReadAccessProof,
 			"grantNftAccess":            grantNFTAccess,
 		}
-		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
+		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusCreated, payload)
 
 	} else {
 		// mint a PO NFT

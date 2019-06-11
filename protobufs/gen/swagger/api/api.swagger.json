@@ -455,6 +455,64 @@
                 }
             }
         },
+        "/nfts/mint": {
+            "post": {
+                "description": "Mints an NFT against a document.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFT"
+                ],
+                "summary": "Mints an NFT against a document.",
+                "operationId": "mint_nft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Mint NFT request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.MintNFTRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.MintNFTResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "description": "returns node version and network",
@@ -578,6 +636,56 @@
                 }
             }
         },
+        "coreapi.MintNFTRequest": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "grant_nft_read_access": {
+                    "type": "boolean"
+                },
+                "proof_fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "submit_nft_read_access_proof": {
+                    "type": "boolean"
+                },
+                "submit_token_proof": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "coreapi.MintNFTResponse": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.NFTResponseHeader"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.NFT": {
             "type": "object",
             "properties": {
@@ -591,6 +699,14 @@
                     "type": "string"
                 },
                 "token_index": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.NFTResponseHeader": {
+            "type": "object",
+            "properties": {
+                "job_id": {
                     "type": "string"
                 }
             }
