@@ -235,7 +235,7 @@ func RandomBigInt(max string) (*big.Int, error) {
 func InRange(i, min, max int) bool {
 	if (i >= min) && (i <= max) {
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
