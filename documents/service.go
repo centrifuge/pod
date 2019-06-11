@@ -196,17 +196,17 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 
 	srvLog.Infof("document received %x with document data root %x", model.ID(), sr)
 
-	var transitionFlag int8
+	transitionFlag := []byte{0}
 	// If there is a previous version and we have successfully validated the transition then set the signature flag
 	if old != nil {
-		transitionFlag = 1
+		transitionFlag = []byte{1}
 	}
 
-	sig, err := acc.SignMsg(append(sr, []byte{byte(transitionFlag)}...))
+	sig, err := acc.SignMsg(append(sr, transitionFlag...))
 	if err != nil {
 		return nil, err
 	}
-	sig.TransitionValidated = (transitionFlag != 0)
+	sig.TransitionValidated = (transitionFlag[0] != byte(0))
 	model.AppendSignatures(sig)
 
 	// Logic for receiving version n (n > 1) of the document for the first time
