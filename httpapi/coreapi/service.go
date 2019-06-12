@@ -3,6 +3,8 @@ package coreapi
 import (
 	"context"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -10,8 +12,9 @@ import (
 
 // Service provides functionality for Core APIs.
 type Service struct {
-	docService  documents.Service
-	jobsService jobs.Manager
+	docService      documents.Service
+	jobsService     jobs.Manager
+	accountsService config.Service
 }
 
 // CreateDocument creates the document from the payload and anchors it.
@@ -47,4 +50,9 @@ func (s Service) GenerateProofs(ctx context.Context, docID []byte, fields []stri
 // GenerateProofsForVersion returns the proofs for the specific version of the document.
 func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error) {
 	return s.docService.CreateProofsForVersion(ctx, docID, versionID, fields)
+}
+
+// SignPayload uses the accountID's secret key to sign the payload and returns the signature
+func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	return s.accountsService.Sign(accountID, payload)
 }

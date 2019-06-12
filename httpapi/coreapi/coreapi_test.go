@@ -11,7 +11,7 @@ import (
 
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
-	Register(r, nil, nil, nil)
+	Register(r, nil, nil, nil, nil)
 	assert.Len(t, r.Routes(), 6)
 	assert.Equal(t, r.Routes()[0].Pattern, "/documents")
 	assert.Len(t, r.Routes()[0].Handlers, 2)

@@ -33,7 +33,7 @@ func Router(
 	config Config,
 	configSrv config.Service,
 	registry documents.TokenRegistry,
-	service documents.Service,
+	docsSrv documents.Service,
 	jobsSrv jobs.Manager) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -46,7 +46,7 @@ func Router(
 	health.Register(r, config)
 
 	// core apis
-	coreapi.Register(r, registry, service, jobsSrv)
+	coreapi.Register(r, registry, configSrv, docsSrv, jobsSrv)
 	return r
 }
 

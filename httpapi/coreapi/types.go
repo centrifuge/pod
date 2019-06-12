@@ -268,3 +268,16 @@ func convertProofs(proof *documents.DocumentProof) ProofsResponse {
 	resp.FieldProofs = proofs
 	return resp
 }
+
+// SignRequest holds the payload to be signed.
+type SignRequest struct {
+	Payload byteutils.HexBytes `json:"payload" swaggertype:"primitive,string"`
+}
+
+// SignResponse holds the signature, pk and Payload for the Sign request.
+type SignResponse struct {
+	Payload   byteutils.HexBytes `json:"payload" swaggertype:"primitive,string"`
+	Signature byteutils.HexBytes `json:"signature" swaggertype:"primitive,string"`
+	PublicKey byteutils.HexBytes `json:"public_key" swaggertype:"primitive,string"`
+	SignerID  byteutils.HexBytes `json:"signer_id" swaggertype:"primitive,string"`
+}

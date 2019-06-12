@@ -19,6 +19,61 @@
     "host": "localhost:8082",
     "basePath": "/",
     "paths": {
+        "/accounts/{account_id}/sign": {
+            "post": {
+                "description": "Signs and returns the signature of the Payload.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Signs and returns the signature of the Payload.",
+                "operationId": "account_sign",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Sign request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.SignRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.SignResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/documents": {
             "put": {
                 "description": "Updates an existing document and anchors it.",
@@ -693,6 +748,31 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "coreapi.SignRequest": {
+            "type": "object",
+            "properties": {
+                "payload": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.SignResponse": {
+            "type": "object",
+            "properties": {
+                "payload": {
+                    "type": "string"
+                },
+                "public_key": {
+                    "type": "string"
+                },
+                "signature": {
+                    "type": "string"
+                },
+                "signer_id": {
+                    "type": "string"
                 }
             }
         },

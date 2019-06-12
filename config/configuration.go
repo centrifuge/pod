@@ -179,6 +179,7 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
 }
 
 // IDKey represents a key pair
