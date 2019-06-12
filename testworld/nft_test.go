@@ -83,7 +83,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 
 		// mint an NFT
 		payload := map[string]interface{}{
-			"identifier":                    docIdentifier,
+			"document_id":                   docIdentifier,
 			"registry_address":              registry.String(),
 			"deposit_address":               depositAddress, // Centrifuge address
 			"proof_fields":                  []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},

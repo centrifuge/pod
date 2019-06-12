@@ -762,7 +762,7 @@
                 "document_id": {
                     "type": "string"
                 },
-                "grant_nft_read_access": {
+                "grant_nft_access": {
                     "type": "boolean"
                 },
                 "proof_fields": {
@@ -774,7 +774,7 @@
                 "registry_address": {
                     "type": "string"
                 },
-                "submit_nft_read_access_proof": {
+                "submit_nft_owner_access_proof": {
                     "type": "boolean"
                 },
                 "submit_token_proof": {

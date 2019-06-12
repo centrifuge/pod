@@ -276,9 +276,9 @@ type MintNFTRequest struct {
 	RegistryAddress          common.Address     `json:"registry_address" swaggertype:"primitive,string"`
 	DepositAddress           common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
 	ProofFields              []string           `json:"proof_fields"`
-	GrantNFTReadAccess       bool               `json:"grant_nft_read_access"`
+	GrantNFTReadAccess       bool               `json:"grant_nft_access"`
 	SubmitTokenProof         bool               `json:"submit_token_proof"`
-	SubmitNFTReadAccessProof bool               `json:"submit_nft_read_access_proof"`
+	SubmitNFTReadAccessProof bool               `json:"submit_nft_owner_access_proof"`
 }
 
 // NFTResponseHeader holds the NFT mint job ID.
