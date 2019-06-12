@@ -1,4 +1,4 @@
-// +build unit
+// +build pedersenunit
 
 package pedersen
 
@@ -10,7 +10,6 @@ import (
 )
 
 func TestHashPayload(t *testing.T) {
-	t.SkipNow() //Skipping until travis is configured properly
 	ph := NewPedersenHash()
 
 	_, err := ph.Write(utils.RandomSlice(64))
