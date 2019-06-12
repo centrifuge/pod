@@ -430,10 +430,10 @@ func TestValidator_signatureValidator(t *testing.T) {
 	model.AssertExpectations(t)
 
 	// signature length mismatch
-	sr := utils.RandomSlice(32)
-	msg := append(sr, []byte{0}...)
+	ddr := utils.RandomSlice(32)
+	msg := ConsensusSignaturePayload(ddr, byte(0))
 	model = new(mockModel)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil).Once()
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil).Once()
 	model.On("Signatures").Return().Once()
 	err = ssv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -450,7 +450,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	did, err := identity.NewDIDFromBytes(s.SignerId)
 	assert.NoError(t, err)
 	model = new(mockModel)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil).Once()
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.On("Author").Return(did, nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did, testingidentity.GenerateRandomDID()}, nil)
@@ -469,7 +469,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 
 	// success
 	model = new(mockModel)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil).Once()
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil).Once()
 	model.On("Signatures").Return().Once()
 	model.On("Author").Return(did, nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did, testingidentity.GenerateRandomDID()}, nil)
