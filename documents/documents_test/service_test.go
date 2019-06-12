@@ -123,9 +123,9 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = doc.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := doc.CalculateDocumentDataRoot()
+	ddr, err := doc.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
-	sig, err := acc.SignMsg(sr)
+	sig, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
 	doc.AppendSignatures(sig)
@@ -573,13 +573,13 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := i.CalculateDocumentDataRoot()
+	ddr, err := i.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	sig, err := acc.SignMsg(sr)
+	sig, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
 	i.AppendSignatures(sig)
