@@ -12,15 +12,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // NFTService contains all common interactions for NFTs
 service NFTService {
-  rpc MintNFT(NFTMintRequest) returns (NFTMintResponse) {
-    option (google.api.http) = {
-      post: "/nfts/mint"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Mint an NFT from a Centrifuge Document"
-    };
-  }
   rpc MintInvoiceUnpaidNFT(NFTMintInvoiceUnpaidRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
       post: "/invoice/{identifier}/mint/unpaid"
@@ -30,48 +21,10 @@ service NFTService {
       description: "Mints an NFT out of an Unpaid Centrifuge Invoice"
     };
   }
-  rpc TokenTransfer(TokenTransferRequest) returns (TokenTransferResponse) {
-    option (google.api.http) = {
-      post: "/nfts/{token_id}/transfer"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Transfer an NFT owned by the identity contract"
-    };
-  }
-  rpc OwnerOf(OwnerOfRequest) returns (OwnerOfResponse) {
-    option (google.api.http) = {
-      get: "/nfts/{token_id}/registry/{registry_address}/owner"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the owner of an NFT"
-    };
-  }
 }
 
 message ResponseHeader {
   string job_id = 5;
-}
-
-message TokenTransferRequest {
-  string token_id = 1;
-  string registry_address = 2;
-  string to = 3;
-}
-
-message TokenTransferResponse {
-  ResponseHeader header = 1;
-}
-
-message OwnerOfRequest {
-  string token_id = 1;
-  string registry_address = 2;
-}
-
-message OwnerOfResponse {
-  string token_id = 1;
-  string registry_address = 2;
-  string owner = 3;
 }
 
 message NFTMintInvoiceUnpaidRequest {
@@ -79,21 +32,6 @@ message NFTMintInvoiceUnpaidRequest {
   string identifier = 1;
   // Deposit address for NFT Token created
   string deposit_address = 2;
-}
-
-message NFTMintRequest {
-  // Document identifier
-  string identifier = 1;
-  // The contract address of the registry where the token should be minted
-  string registry_address = 2;
-  string deposit_address = 3;
-  repeated string proof_fields = 4;
-  // proof that nft is part of document
-  bool submit_token_proof = 5;
-  // proof that nft owner can access the document if nft_grant_access is true
-  bool submit_nft_owner_access_proof = 7;
-  // grant nft read access to the document
-  bool grant_nft_access = 8;
 }
 
 message NFTMintResponse {
