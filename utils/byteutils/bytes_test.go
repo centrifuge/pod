@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -385,5 +386,6 @@ func TestHexBytes_UnmarshalJSON(t *testing.T) {
 		}
 
 		assert.Equal(t, c.d, th.Hex.Bytes())
+		assert.Equal(t, hexutil.Encode(c.d), th.Hex.String())
 	}
 }
