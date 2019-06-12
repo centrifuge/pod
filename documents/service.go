@@ -189,17 +189,24 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	sr, err := model.CalculateDocumentDataRoot()
+	ddr, err := model.CalculateDocumentDataRoot()
 	if err != nil {
 		return nil, errors.New("failed to get document data root: %v", err)
 	}
 
-	srvLog.Infof("document received %x with document data root %x", model.ID(), sr)
+	srvLog.Infof("document received %x with document data root %x", model.ID(), ddr)
 
-	sig, err := acc.SignMsg(sr)
+	transitionFlag := byte(0)
+	// If there is a previous version and we have successfully validated the transition then set the signature flag
+	if old != nil {
+		transitionFlag = byte(1)
+	}
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(ddr, transitionFlag))
 	if err != nil {
 		return nil, err
 	}
+	sig.TransitionValidated = (transitionFlag != byte(0))
 	model.AppendSignatures(sig)
 
 	// Logic for receiving version n (n > 1) of the document for the first time

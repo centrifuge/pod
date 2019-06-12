@@ -197,6 +197,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 	// success
 	sr := utils.RandomSlice(32)
+	msg := append(sr, []byte{0}...)
 	model = new(mockModel)
 	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
 	model.On("CalculateDocumentDataRoot").Return(sr, nil).Once()
@@ -213,7 +214,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NoError(t, err)
 	keys, err := self.GetKeys()
 	assert.NoError(t, err)
-	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
+	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, msg, sig.Signature, crypto.CurveSecp256K1))
 }
 
 type p2pClient struct {
@@ -242,8 +243,8 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	assert.NoError(t, err)
 	did, err := self.GetIdentityID()
 	assert.NoError(t, err)
-	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	ddr := utils.RandomSlice(32)
+	sig, err := self.SignMsg(ddr)
 	assert.NoError(t, err)
 
 	did1, err := identity.NewDIDFromBytes(did)
@@ -268,7 +269,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("Author").Return(did1, nil)
 	model.On("Timestamp").Return(time.Now(), nil)
@@ -288,7 +289,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("Author").Return(did1, nil)
 	model.On("Timestamp").Return(time.Now(), nil)
@@ -310,7 +311,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("AppendSignatures", []*coredocumentpb.Signature{sig}).Return().Once()
 	model.On("Author").Return(did1, nil)
@@ -336,8 +337,9 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.NoError(t, err)
 	did, err := self.GetIdentityID()
 	assert.NoError(t, err)
-	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	ddr := utils.RandomSlice(32)
+	msg := ConsensusSignaturePayload(ddr, byte(0))
+	sig, err := self.SignMsg(msg)
 	assert.NoError(t, err)
 	did1, err := identity.NewDIDFromBytes(did)
 	assert.NoError(t, err)
@@ -349,7 +351,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("Author").Return(did1, nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
@@ -359,7 +361,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
 	cid, _ := identity.NewDIDFromBytes(did)
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(errors.New("validation failed")).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(errors.New("validation failed")).Once()
 	dp.identityService = srv
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
@@ -371,7 +373,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("Author").Return(did1, nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
@@ -379,7 +381,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	err = dp.PrepareForAnchoring(model)
 	model.AssertExpectations(t)
@@ -413,8 +415,9 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	assert.NoError(t, err)
 	did, err := self.GetIdentityID()
 	assert.NoError(t, err)
-	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	ddr := utils.RandomSlice(32)
+	msg := ConsensusSignaturePayload(ddr, byte(0))
+	sig, err := self.SignMsg(msg)
 	assert.NoError(t, err)
 	did1, err := identity.NewDIDFromBytes(did)
 	assert.NoError(t, err)
@@ -426,7 +429,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(nil, errors.New("error"))
 	model.On("Author").Return(did1, nil)
@@ -438,7 +441,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	cid, err := identity.NewDIDFromBytes(did)
 	assert.NoError(t, err)
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -453,7 +456,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("CurrentVersion").Return(id)
 	model.On("CurrentVersionPreimage").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.On("Author").Return(did1, nil)
@@ -463,7 +466,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", did1, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", did1, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -477,7 +480,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("CurrentVersion").Return(id)
 	model.On("CurrentVersionPreimage").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("CalculateSignaturesRoot").Return(utils.RandomSlice(32), nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
@@ -487,7 +490,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
 	ch := make(chan bool, 1)
@@ -512,9 +515,11 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.NoError(t, err)
 	did1, err := identity.NewDIDFromBytes(didb)
 	assert.NoError(t, err)
-	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
+	ddr := utils.RandomSlice(32)
+	msg := ConsensusSignaturePayload(ddr, byte(1))
+	sig, err := self.SignMsg(msg)
 	assert.NoError(t, err)
+	sig.TransitionValidated = true
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 
@@ -529,7 +534,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
 	model.On("Author").Return(did1, nil)
@@ -541,7 +546,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	cid, err := identity.NewDIDFromBytes(didb)
 	assert.NoError(t, err)
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
 
@@ -564,7 +569,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
@@ -589,7 +594,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil)
@@ -599,7 +604,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
 	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
@@ -618,7 +623,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
@@ -628,7 +633,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
 	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil)
@@ -649,7 +654,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("ID").Return(id)
 	model.On("CurrentVersion").Return(id)
 	model.On("NextVersion").Return(next)
-	model.On("CalculateDocumentDataRoot").Return(sr, nil)
+	model.On("CalculateDocumentDataRoot").Return(ddr, nil)
 	model.On("Signatures").Return()
 	model.On("CalculateDocumentRoot").Return(dr[:], nil)
 	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
@@ -659,7 +664,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.On("GetAttributes").Return(nil)
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
+	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, msg, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo = mockRepo{}
 	repo.On("GetAnchorData", aid).Return(dr, time.Now(), nil)
@@ -674,4 +679,11 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	repo.AssertExpectations(t)
 	client.AssertExpectations(t)
 	assert.NoError(t, err)
+}
+
+func TestConsensusSignaturePayload(t *testing.T) {
+	ddr := utils.RandomSlice(32)
+	vf := byte(1)
+	result := ConsensusSignaturePayload(ddr, vf)
+	assert.Equal(t, append(ddr, []byte{vf}...), result)
 }

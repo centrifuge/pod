@@ -102,9 +102,14 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	resp := resolveSignatureResponse(t, p2pResp)
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	signingRoot, err := po.CalculateDocumentDataRoot()
+	ddr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
+	assert.True(t,
+		secp256k1.VerifySignatureWithAddress(
+			common.BytesToAddress(sig.PublicKey).String(),
+			hexutil.Encode(sig.Signature),
+			documents.ConsensusSignaturePayload(ddr, byte(0)),
+		), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
@@ -143,9 +148,14 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
 	sig := resp.Signature
-	signingRoot, err := po.CalculateDocumentDataRoot()
+	ddr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
+	assert.True(t,
+		secp256k1.VerifySignatureWithAddress(
+			common.BytesToAddress(sig.PublicKey).String(),
+			hexutil.Encode(sig.Signature),
+			documents.ConsensusSignaturePayload(ddr, byte(1)),
+		), "signature must be valid")
 
 	// document already exists
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
@@ -316,9 +326,9 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.CalculateDocumentDataRoot()
+	ddr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(ddr, byte(0)), crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
 		SignatureId: append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),

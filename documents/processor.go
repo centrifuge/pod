@@ -105,12 +105,12 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	model.SetUsedAnchorRepoAddress(addr)
 
 	// calculate the document data root
-	sr, err := model.CalculateDocumentDataRoot()
+	ddr, err := model.CalculateDocumentDataRoot()
 	if err != nil {
 		return errors.New("failed to calculate document data root: %v", err)
 	}
 
-	sig, err := self.SignMsg(sr)
+	sig, err := self.SignMsg(ConsensusSignaturePayload(ddr, byte(0)))
 	if err != nil {
 		return err
 	}
@@ -277,4 +277,9 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 	}
 
 	return err
+}
+
+// ConsensusSignaturePayload forms the payload needed to be signed during the document consensus flow
+func ConsensusSignaturePayload(docDataRoot []byte, validationFlag byte) []byte {
+	return append(docDataRoot, []byte{validationFlag}...)
 }
