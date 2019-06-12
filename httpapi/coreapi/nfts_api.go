@@ -125,8 +125,8 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, TransferNFTResponse{
-		RegistryAddress: req.RegistryAddress,
-		To:              req.To,
+		RegistryAddress: req.RegistryAddress.String(),
+		To:              req.To.String(),
 		TokenID:         resp.TokenID,
 		Header:          NFTResponseHeader{JobID: resp.JobID},
 	})
@@ -175,7 +175,7 @@ func (h handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, NFTOwnerResponse{
 		TokenID:         tokenID.String(),
-		RegistryAddress: registry,
-		Owner:           owner,
+		RegistryAddress: registry.String(),
+		Owner:           owner.String(),
 	})
 }

@@ -317,13 +317,13 @@ type TransferNFTRequest struct {
 type TransferNFTResponse struct {
 	Header          NFTResponseHeader `json:"header"`
 	TokenID         string            `json:"token_id"`
-	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
-	To              common.Address    `json:"to" swaggertype:"primitive,string"`
+	RegistryAddress string            `json:"registry_address"`
+	To              string            `json:"to"`
 }
 
 // NFTOwnerResponse is the response for NFT owner request.
 type NFTOwnerResponse struct {
-	TokenID         string         `json:"token_id"`
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
+	TokenID         string `json:"token_id"`
+	RegistryAddress string `json:"registry_address"`
+	Owner           string `json:"owner"`
 }
