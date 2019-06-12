@@ -64,202 +64,6 @@ func (m *ResponseHeader) GetJobId() string {
 	return ""
 }
 
-type TokenTransferRequest struct {
-	TokenId              string   `protobuf:"bytes,1,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
-	RegistryAddress      string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress,proto3" json:"registry_address,omitempty"`
-	To                   string   `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TokenTransferRequest) Reset()         { *m = TokenTransferRequest{} }
-func (m *TokenTransferRequest) String() string { return proto.CompactTextString(m) }
-func (*TokenTransferRequest) ProtoMessage()    {}
-func (*TokenTransferRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{1}
-}
-
-func (m *TokenTransferRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TokenTransferRequest.Unmarshal(m, b)
-}
-func (m *TokenTransferRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TokenTransferRequest.Marshal(b, m, deterministic)
-}
-func (m *TokenTransferRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TokenTransferRequest.Merge(m, src)
-}
-func (m *TokenTransferRequest) XXX_Size() int {
-	return xxx_messageInfo_TokenTransferRequest.Size(m)
-}
-func (m *TokenTransferRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_TokenTransferRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TokenTransferRequest proto.InternalMessageInfo
-
-func (m *TokenTransferRequest) GetTokenId() string {
-	if m != nil {
-		return m.TokenId
-	}
-	return ""
-}
-
-func (m *TokenTransferRequest) GetRegistryAddress() string {
-	if m != nil {
-		return m.RegistryAddress
-	}
-	return ""
-}
-
-func (m *TokenTransferRequest) GetTo() string {
-	if m != nil {
-		return m.To
-	}
-	return ""
-}
-
-type TokenTransferResponse struct {
-	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *TokenTransferResponse) Reset()         { *m = TokenTransferResponse{} }
-func (m *TokenTransferResponse) String() string { return proto.CompactTextString(m) }
-func (*TokenTransferResponse) ProtoMessage()    {}
-func (*TokenTransferResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{2}
-}
-
-func (m *TokenTransferResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TokenTransferResponse.Unmarshal(m, b)
-}
-func (m *TokenTransferResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TokenTransferResponse.Marshal(b, m, deterministic)
-}
-func (m *TokenTransferResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TokenTransferResponse.Merge(m, src)
-}
-func (m *TokenTransferResponse) XXX_Size() int {
-	return xxx_messageInfo_TokenTransferResponse.Size(m)
-}
-func (m *TokenTransferResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_TokenTransferResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TokenTransferResponse proto.InternalMessageInfo
-
-func (m *TokenTransferResponse) GetHeader() *ResponseHeader {
-	if m != nil {
-		return m.Header
-	}
-	return nil
-}
-
-type OwnerOfRequest struct {
-	TokenId              string   `protobuf:"bytes,1,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
-	RegistryAddress      string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress,proto3" json:"registry_address,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *OwnerOfRequest) Reset()         { *m = OwnerOfRequest{} }
-func (m *OwnerOfRequest) String() string { return proto.CompactTextString(m) }
-func (*OwnerOfRequest) ProtoMessage()    {}
-func (*OwnerOfRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{3}
-}
-
-func (m *OwnerOfRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_OwnerOfRequest.Unmarshal(m, b)
-}
-func (m *OwnerOfRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_OwnerOfRequest.Marshal(b, m, deterministic)
-}
-func (m *OwnerOfRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OwnerOfRequest.Merge(m, src)
-}
-func (m *OwnerOfRequest) XXX_Size() int {
-	return xxx_messageInfo_OwnerOfRequest.Size(m)
-}
-func (m *OwnerOfRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_OwnerOfRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OwnerOfRequest proto.InternalMessageInfo
-
-func (m *OwnerOfRequest) GetTokenId() string {
-	if m != nil {
-		return m.TokenId
-	}
-	return ""
-}
-
-func (m *OwnerOfRequest) GetRegistryAddress() string {
-	if m != nil {
-		return m.RegistryAddress
-	}
-	return ""
-}
-
-type OwnerOfResponse struct {
-	TokenId              string   `protobuf:"bytes,1,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
-	RegistryAddress      string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress,proto3" json:"registry_address,omitempty"`
-	Owner                string   `protobuf:"bytes,3,opt,name=owner,proto3" json:"owner,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *OwnerOfResponse) Reset()         { *m = OwnerOfResponse{} }
-func (m *OwnerOfResponse) String() string { return proto.CompactTextString(m) }
-func (*OwnerOfResponse) ProtoMessage()    {}
-func (*OwnerOfResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{4}
-}
-
-func (m *OwnerOfResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_OwnerOfResponse.Unmarshal(m, b)
-}
-func (m *OwnerOfResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_OwnerOfResponse.Marshal(b, m, deterministic)
-}
-func (m *OwnerOfResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OwnerOfResponse.Merge(m, src)
-}
-func (m *OwnerOfResponse) XXX_Size() int {
-	return xxx_messageInfo_OwnerOfResponse.Size(m)
-}
-func (m *OwnerOfResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_OwnerOfResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_OwnerOfResponse proto.InternalMessageInfo
-
-func (m *OwnerOfResponse) GetTokenId() string {
-	if m != nil {
-		return m.TokenId
-	}
-	return ""
-}
-
-func (m *OwnerOfResponse) GetRegistryAddress() string {
-	if m != nil {
-		return m.RegistryAddress
-	}
-	return ""
-}
-
-func (m *OwnerOfResponse) GetOwner() string {
-	if m != nil {
-		return m.Owner
-	}
-	return ""
-}
-
 type NFTMintInvoiceUnpaidRequest struct {
 	// Invoice Document identifier
 	Identifier string `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
@@ -274,7 +78,7 @@ func (m *NFTMintInvoiceUnpaidRequest) Reset()         { *m = NFTMintInvoiceUnpai
 func (m *NFTMintInvoiceUnpaidRequest) String() string { return proto.CompactTextString(m) }
 func (*NFTMintInvoiceUnpaidRequest) ProtoMessage()    {}
 func (*NFTMintInvoiceUnpaidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{5}
+	return fileDescriptor_a63c52875f346f52, []int{1}
 }
 
 func (m *NFTMintInvoiceUnpaidRequest) XXX_Unmarshal(b []byte) error {
@@ -309,98 +113,6 @@ func (m *NFTMintInvoiceUnpaidRequest) GetDepositAddress() string {
 	return ""
 }
 
-type NFTMintRequest struct {
-	// Document identifier
-	Identifier string `protobuf:"bytes,1,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	// The contract address of the registry where the token should be minted
-	RegistryAddress string   `protobuf:"bytes,2,opt,name=registry_address,json=registryAddress,proto3" json:"registry_address,omitempty"`
-	DepositAddress  string   `protobuf:"bytes,3,opt,name=deposit_address,json=depositAddress,proto3" json:"deposit_address,omitempty"`
-	ProofFields     []string `protobuf:"bytes,4,rep,name=proof_fields,json=proofFields,proto3" json:"proof_fields,omitempty"`
-	// proof that nft is part of document
-	SubmitTokenProof bool `protobuf:"varint,5,opt,name=submit_token_proof,json=submitTokenProof,proto3" json:"submit_token_proof,omitempty"`
-	// proof that nft owner can access the document if nft_grant_access is true
-	SubmitNftOwnerAccessProof bool `protobuf:"varint,7,opt,name=submit_nft_owner_access_proof,json=submitNftOwnerAccessProof,proto3" json:"submit_nft_owner_access_proof,omitempty"`
-	// grant nft read access to the document
-	GrantNftAccess       bool     `protobuf:"varint,8,opt,name=grant_nft_access,json=grantNftAccess,proto3" json:"grant_nft_access,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *NFTMintRequest) Reset()         { *m = NFTMintRequest{} }
-func (m *NFTMintRequest) String() string { return proto.CompactTextString(m) }
-func (*NFTMintRequest) ProtoMessage()    {}
-func (*NFTMintRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{6}
-}
-
-func (m *NFTMintRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_NFTMintRequest.Unmarshal(m, b)
-}
-func (m *NFTMintRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_NFTMintRequest.Marshal(b, m, deterministic)
-}
-func (m *NFTMintRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NFTMintRequest.Merge(m, src)
-}
-func (m *NFTMintRequest) XXX_Size() int {
-	return xxx_messageInfo_NFTMintRequest.Size(m)
-}
-func (m *NFTMintRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_NFTMintRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_NFTMintRequest proto.InternalMessageInfo
-
-func (m *NFTMintRequest) GetIdentifier() string {
-	if m != nil {
-		return m.Identifier
-	}
-	return ""
-}
-
-func (m *NFTMintRequest) GetRegistryAddress() string {
-	if m != nil {
-		return m.RegistryAddress
-	}
-	return ""
-}
-
-func (m *NFTMintRequest) GetDepositAddress() string {
-	if m != nil {
-		return m.DepositAddress
-	}
-	return ""
-}
-
-func (m *NFTMintRequest) GetProofFields() []string {
-	if m != nil {
-		return m.ProofFields
-	}
-	return nil
-}
-
-func (m *NFTMintRequest) GetSubmitTokenProof() bool {
-	if m != nil {
-		return m.SubmitTokenProof
-	}
-	return false
-}
-
-func (m *NFTMintRequest) GetSubmitNftOwnerAccessProof() bool {
-	if m != nil {
-		return m.SubmitNftOwnerAccessProof
-	}
-	return false
-}
-
-func (m *NFTMintRequest) GetGrantNftAccess() bool {
-	if m != nil {
-		return m.GrantNftAccess
-	}
-	return false
-}
-
 type NFTMintResponse struct {
 	Header               *ResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
@@ -412,7 +124,7 @@ func (m *NFTMintResponse) Reset()         { *m = NFTMintResponse{} }
 func (m *NFTMintResponse) String() string { return proto.CompactTextString(m) }
 func (*NFTMintResponse) ProtoMessage()    {}
 func (*NFTMintResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a63c52875f346f52, []int{7}
+	return fileDescriptor_a63c52875f346f52, []int{2}
 }
 
 func (m *NFTMintResponse) XXX_Unmarshal(b []byte) error {
@@ -442,67 +154,38 @@ func (m *NFTMintResponse) GetHeader() *ResponseHeader {
 
 func init() {
 	proto.RegisterType((*ResponseHeader)(nil), "nft.ResponseHeader")
-	proto.RegisterType((*TokenTransferRequest)(nil), "nft.TokenTransferRequest")
-	proto.RegisterType((*TokenTransferResponse)(nil), "nft.TokenTransferResponse")
-	proto.RegisterType((*OwnerOfRequest)(nil), "nft.OwnerOfRequest")
-	proto.RegisterType((*OwnerOfResponse)(nil), "nft.OwnerOfResponse")
 	proto.RegisterType((*NFTMintInvoiceUnpaidRequest)(nil), "nft.NFTMintInvoiceUnpaidRequest")
-	proto.RegisterType((*NFTMintRequest)(nil), "nft.NFTMintRequest")
 	proto.RegisterType((*NFTMintResponse)(nil), "nft.NFTMintResponse")
 }
 
 func init() { proto.RegisterFile("nft/service.proto", fileDescriptor_a63c52875f346f52) }
 
 var fileDescriptor_a63c52875f346f52 = []byte{
-	// 754 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xc1, 0x4e, 0x1b, 0x39,
-	0x18, 0x56, 0x12, 0x42, 0xe0, 0x87, 0x4d, 0x58, 0x6f, 0xd0, 0x26, 0xb3, 0xbb, 0x68, 0x98, 0x03,
-	0x64, 0x77, 0x21, 0x83, 0xb2, 0x7b, 0xda, 0xc3, 0x8a, 0x50, 0x94, 0x96, 0x43, 0x03, 0x4a, 0x53,
-	0x2a, 0xf5, 0x12, 0x4d, 0x66, 0xec, 0xc1, 0x94, 0xd8, 0x53, 0xdb, 0x01, 0x21, 0xc4, 0xa5, 0xe7,
-	0x9e, 0xd2, 0x07, 0xe8, 0x33, 0xf4, 0x11, 0xfa, 0x0c, 0x7d, 0x85, 0x5e, 0xfa, 0x16, 0xd5, 0xd8,
-	0x0e, 0x25, 0x21, 0x95, 0xda, 0x8a, 0xd3, 0xc8, 0x9f, 0xff, 0xff, 0xfb, 0x3f, 0x7f, 0xfe, 0xfd,
-	0x0f, 0xfc, 0xcc, 0x88, 0xf2, 0x25, 0x16, 0xe7, 0x34, 0xc4, 0xf5, 0x44, 0x70, 0xc5, 0x51, 0x8e,
-	0x11, 0xe5, 0xfc, 0x1e, 0x73, 0x1e, 0x9f, 0x61, 0x3f, 0x48, 0xa8, 0x1f, 0x30, 0xc6, 0x55, 0xa0,
-	0x28, 0x67, 0xd2, 0x84, 0x38, 0x5b, 0xfa, 0x13, 0x6e, 0xc7, 0x98, 0x6d, 0xcb, 0x8b, 0x20, 0x8e,
-	0xb1, 0xf0, 0x79, 0xa2, 0x23, 0xee, 0x46, 0x7b, 0x9b, 0x50, 0xec, 0x60, 0x99, 0x70, 0x26, 0xf1,
-	0x23, 0x1c, 0x44, 0x58, 0xa0, 0x55, 0x98, 0x3f, 0xe5, 0xfd, 0x1e, 0x8d, 0x2a, 0x79, 0x37, 0x53,
-	0x5b, 0xec, 0xe4, 0x4f, 0x79, 0xff, 0x20, 0xf2, 0xce, 0xa0, 0xdc, 0xe5, 0x2f, 0x30, 0xeb, 0x8a,
-	0x80, 0x49, 0x82, 0x45, 0x07, 0xbf, 0x1c, 0x62, 0xa9, 0x50, 0x15, 0x16, 0x54, 0x8a, 0xa7, 0x09,
-	0x19, 0x9d, 0x50, 0xd0, 0xeb, 0x83, 0x08, 0xfd, 0x09, 0x2b, 0x02, 0xc7, 0x54, 0x2a, 0x71, 0xd9,
-	0x0b, 0xa2, 0x48, 0x60, 0x29, 0x2b, 0x59, 0x1d, 0x52, 0x1a, 0xe3, 0x4d, 0x03, 0xa3, 0x22, 0x64,
-	0x15, 0xaf, 0xe4, 0xf4, 0x66, 0x56, 0x71, 0x6f, 0x1f, 0x56, 0xa7, 0xaa, 0x19, 0x8d, 0xe8, 0x6f,
-	0x98, 0x3f, 0xd1, 0x3a, 0x75, 0xb1, 0xa5, 0xc6, 0x2f, 0x75, 0x46, 0x54, 0x7d, 0xf2, 0x08, 0x1d,
-	0x1b, 0xe2, 0x1d, 0x43, 0xf1, 0xf0, 0x82, 0x61, 0x71, 0x48, 0xee, 0x55, 0xad, 0x37, 0x80, 0xd2,
-	0x0d, 0xaf, 0xd5, 0x75, 0x3f, 0x36, 0x94, 0x21, 0xcf, 0x53, 0x62, 0xeb, 0x84, 0x59, 0x78, 0x04,
-	0x7e, 0x6b, 0xb7, 0xba, 0x8f, 0x29, 0x53, 0x07, 0xec, 0x9c, 0xd3, 0x10, 0x3f, 0x65, 0x49, 0x40,
-	0xa3, 0xf1, 0x99, 0xd6, 0x00, 0x68, 0x84, 0x99, 0xa2, 0x84, 0x5a, 0x5b, 0x16, 0x3b, 0xb7, 0x10,
-	0xb4, 0x09, 0xa5, 0x08, 0x27, 0x5c, 0x52, 0x35, 0x55, 0xbe, 0x68, 0xe1, 0xf1, 0xb1, 0xde, 0x67,
-	0xa1, 0x68, 0x0b, 0x7d, 0x2b, 0xf7, 0x77, 0x9c, 0x6d, 0x86, 0x8c, 0xdc, 0x2c, 0x19, 0x68, 0x1d,
-	0x96, 0x13, 0xc1, 0x39, 0xe9, 0x11, 0x8a, 0xcf, 0x22, 0x59, 0x99, 0x73, 0x73, 0xb5, 0xc5, 0xce,
-	0x92, 0xc6, 0x5a, 0x1a, 0x42, 0x5b, 0x80, 0xe4, 0xb0, 0x3f, 0xa0, 0xaa, 0x67, 0x4c, 0xd7, 0x7b,
-	0xba, 0x5f, 0x17, 0x3a, 0x2b, 0x66, 0x47, 0xb7, 0xcf, 0x51, 0x8a, 0xa3, 0x5d, 0xf8, 0xc3, 0x46,
-	0x33, 0xa2, 0x7a, 0xda, 0xd3, 0x5e, 0x10, 0x86, 0x58, 0x4a, 0x9b, 0x58, 0xd0, 0x89, 0x55, 0x13,
-	0xd4, 0x26, 0x4a, 0x5f, 0x6e, 0x53, 0x47, 0x18, 0x86, 0x1a, 0xac, 0xc4, 0x22, 0x60, 0x86, 0xc0,
-	0xa4, 0x56, 0x16, 0x74, 0x52, 0x51, 0xe3, 0x6d, 0xa2, 0x4c, 0xb8, 0xf7, 0x3f, 0x94, 0x6e, 0x2c,
-	0xfc, 0x81, 0x96, 0x6d, 0x7c, 0x9a, 0x03, 0x68, 0xb7, 0xba, 0x4f, 0xcc, 0xab, 0x47, 0xe7, 0x50,
-	0x48, 0xb9, 0xda, 0xad, 0x2e, 0x32, 0x69, 0x93, 0xf7, 0xe3, 0x94, 0x27, 0x41, 0x43, 0xe9, 0xed,
-	0x8e, 0x9a, 0x35, 0x67, 0x23, 0x85, 0xdc, 0x80, 0xb9, 0xed, 0x56, 0xd7, 0x25, 0x82, 0x0f, 0xdc,
-	0xc0, 0x7d, 0x80, 0x99, 0x12, 0x94, 0x0c, 0x63, 0xec, 0xee, 0xf3, 0x70, 0x38, 0xc0, 0x4c, 0xbd,
-	0xfa, 0xf0, 0xf1, 0x4d, 0xb6, 0xe4, 0x81, 0xcf, 0x88, 0x92, 0xfe, 0x80, 0x32, 0xf5, 0x5f, 0xe6,
-	0x2f, 0xf4, 0x2e, 0x03, 0xe5, 0x3b, 0x0d, 0x97, 0xaa, 0x70, 0x6f, 0x17, 0x9c, 0xd5, 0x8e, 0x5f,
-	0x91, 0x14, 0x8c, 0x9a, 0x0d, 0x67, 0x27, 0x85, 0xe4, 0x58, 0x13, 0x1f, 0x2a, 0x97, 0x93, 0x74,
-	0x65, 0x08, 0x6e, 0xab, 0xb3, 0xcc, 0x5a, 0xdc, 0x86, 0xb7, 0xee, 0x53, 0xb3, 0xf6, 0xaf, 0xbe,
-	0xf4, 0xde, 0xb5, 0x16, 0xeb, 0x0f, 0x75, 0x6e, 0xaa, 0xf9, 0x6d, 0x06, 0x7e, 0x9a, 0x18, 0x1a,
-	0xa8, 0xaa, 0xa5, 0xcc, 0x1a, 0x5b, 0x8e, 0x33, 0x6b, 0xcb, 0x6a, 0x7d, 0x36, 0x6a, 0xee, 0x38,
-	0xf5, 0x31, 0x7c, 0x23, 0xf7, 0x82, 0xe1, 0xc8, 0xed, 0x5f, 0xba, 0xea, 0x04, 0xbb, 0x46, 0x86,
-	0xba, 0x74, 0x43, 0xce, 0x94, 0x08, 0x42, 0x63, 0xe3, 0x9a, 0x57, 0x35, 0x36, 0x5e, 0x8d, 0x67,
-	0xc1, 0xb5, 0xaf, 0x2c, 0x4d, 0xaa, 0xf0, 0x75, 0x06, 0x0a, 0x76, 0x70, 0xd8, 0xeb, 0x9c, 0x1c,
-	0x4f, 0xd6, 0xbb, 0xa9, 0xd9, 0xe2, 0x1d, 0x8f, 0x9a, 0x55, 0xe7, 0xd7, 0x87, 0x58, 0xe9, 0xd2,
-	0xba, 0x7f, 0xad, 0x71, 0xed, 0x56, 0x57, 0x17, 0xfe, 0x17, 0x35, 0xee, 0x14, 0x1e, 0xbf, 0x3f,
-	0xff, 0x6a, 0xfa, 0x85, 0x5e, 0xfb, 0x9a, 0x63, 0xcf, 0x85, 0x42, 0xc8, 0x07, 0x69, 0xc9, 0xbd,
-	0x65, 0xdb, 0x70, 0x47, 0xe9, 0x4f, 0xe1, 0x28, 0xf3, 0x3c, 0xcf, 0x88, 0x4a, 0xfa, 0xfd, 0x79,
-	0xfd, 0x93, 0xf8, 0xe7, 0x73, 0x00, 0x00, 0x00, 0xff, 0xff, 0x71, 0x6e, 0x59, 0x81, 0x8a, 0x06,
-	0x00, 0x00,
+	// 374 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x91, 0xc1, 0xaa, 0xd3, 0x40,
+	0x14, 0x86, 0x49, 0xa5, 0x15, 0x47, 0x69, 0x31, 0x56, 0x28, 0x51, 0x64, 0xcc, 0xc2, 0x8a, 0xda,
+	0x8e, 0xd4, 0x9d, 0x0b, 0xa1, 0x15, 0x82, 0x5d, 0x18, 0x4a, 0x8c, 0x1b, 0x37, 0x65, 0x92, 0x39,
+	0x13, 0xa7, 0xd8, 0x33, 0x31, 0x33, 0xa9, 0x0b, 0x71, 0xe3, 0x23, 0xe8, 0x93, 0xf8, 0x06, 0xbe,
+	0x83, 0xaf, 0xe0, 0x83, 0x5c, 0x32, 0x49, 0xb9, 0xbd, 0x14, 0xee, 0x6a, 0x98, 0x9f, 0xef, 0xfc,
+	0xe7, 0x3f, 0xe7, 0x90, 0xbb, 0x28, 0x2d, 0x33, 0x50, 0x1d, 0x54, 0x0e, 0xf3, 0xb2, 0xd2, 0x56,
+	0xfb, 0x37, 0x50, 0xda, 0xe0, 0x61, 0xa1, 0x75, 0xf1, 0x05, 0x18, 0x2f, 0x15, 0xe3, 0x88, 0xda,
+	0x72, 0xab, 0x34, 0x9a, 0x16, 0x09, 0x5e, 0xb8, 0x27, 0x9f, 0x15, 0x80, 0x33, 0xf3, 0x8d, 0x17,
+	0x05, 0x54, 0x4c, 0x97, 0x8e, 0x38, 0xa7, 0xc3, 0x29, 0x19, 0x26, 0x60, 0x4a, 0x8d, 0x06, 0xde,
+	0x01, 0x17, 0x50, 0xf9, 0xf7, 0xc9, 0x60, 0xa7, 0xb3, 0xad, 0x12, 0x93, 0x3e, 0xf5, 0x9e, 0xde,
+	0x4a, 0xfa, 0x3b, 0x9d, 0xad, 0x45, 0x28, 0xc9, 0x83, 0x38, 0x4a, 0xdf, 0x2b, 0xb4, 0x6b, 0x3c,
+	0x68, 0x95, 0xc3, 0x47, 0x2c, 0xb9, 0x12, 0x09, 0x7c, 0xad, 0xc1, 0x58, 0xff, 0x11, 0x21, 0x4a,
+	0x00, 0x5a, 0x25, 0x15, 0x54, 0x13, 0xcf, 0x55, 0x9e, 0x28, 0xfe, 0x94, 0x8c, 0x04, 0x94, 0xda,
+	0x28, 0xbb, 0xe5, 0x42, 0x54, 0x60, 0xcc, 0xa4, 0xe7, 0xa0, 0x61, 0x27, 0x2f, 0x5b, 0x35, 0x7c,
+	0x43, 0x46, 0x5d, 0x9f, 0x63, 0x2e, 0xff, 0x39, 0x19, 0x7c, 0x76, 0xd9, 0x9c, 0xef, 0xed, 0xc5,
+	0xbd, 0x39, 0x4a, 0x3b, 0xbf, 0x1a, 0x3b, 0xe9, 0x90, 0xc5, 0x5f, 0x8f, 0x90, 0x38, 0x4a, 0x3f,
+	0xb4, 0x6b, 0xf3, 0xff, 0x78, 0x64, 0x7c, 0x16, 0x3a, 0x8e, 0x52, 0x9f, 0x3a, 0x93, 0x6b, 0x46,
+	0x0a, 0xc6, 0xa7, 0xc4, 0xb1, 0x5b, 0xc8, 0x7f, 0x2d, 0x17, 0xc1, 0xcb, 0x46, 0x32, 0x94, 0x23,
+	0x8d, 0xa3, 0x94, 0xea, 0xda, 0x52, 0x2d, 0x9b, 0x5f, 0x6b, 0x40, 0xdf, 0x02, 0xda, 0x4a, 0xc9,
+	0xba, 0x00, 0xda, 0x39, 0xff, 0xfc, 0xf7, 0xff, 0x77, 0xef, 0x49, 0xf8, 0x98, 0xa9, 0xf6, 0xcf,
+	0xbe, 0x5f, 0xee, 0xe6, 0x07, 0xdb, 0x2b, 0xb4, 0xac, 0x76, 0xb5, 0xaf, 0xbd, 0x67, 0x2b, 0x4a,
+	0x6e, 0xe6, 0x7a, 0xdf, 0x74, 0x5f, 0xdd, 0xe9, 0xe6, 0xd8, 0x34, 0xc7, 0xda, 0x78, 0x9f, 0xfa,
+	0x28, 0x6d, 0x99, 0x65, 0x03, 0x77, 0xbc, 0x57, 0x17, 0x01, 0x00, 0x00, 0xff, 0xff, 0x4e, 0x22,
+	0x06, 0xd6, 0x22, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -517,10 +200,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type NFTServiceClient interface {
-	MintNFT(ctx context.Context, in *NFTMintRequest, opts ...grpc.CallOption) (*NFTMintResponse, error)
 	MintInvoiceUnpaidNFT(ctx context.Context, in *NFTMintInvoiceUnpaidRequest, opts ...grpc.CallOption) (*NFTMintResponse, error)
-	TokenTransfer(ctx context.Context, in *TokenTransferRequest, opts ...grpc.CallOption) (*TokenTransferResponse, error)
-	OwnerOf(ctx context.Context, in *OwnerOfRequest, opts ...grpc.CallOption) (*OwnerOfResponse, error)
 }
 
 type nFTServiceClient struct {
@@ -529,15 +209,6 @@ type nFTServiceClient struct {
 
 func NewNFTServiceClient(cc *grpc.ClientConn) NFTServiceClient {
 	return &nFTServiceClient{cc}
-}
-
-func (c *nFTServiceClient) MintNFT(ctx context.Context, in *NFTMintRequest, opts ...grpc.CallOption) (*NFTMintResponse, error) {
-	out := new(NFTMintResponse)
-	err := c.cc.Invoke(ctx, "/nft.NFTService/MintNFT", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *nFTServiceClient) MintInvoiceUnpaidNFT(ctx context.Context, in *NFTMintInvoiceUnpaidRequest, opts ...grpc.CallOption) (*NFTMintResponse, error) {
@@ -549,52 +220,13 @@ func (c *nFTServiceClient) MintInvoiceUnpaidNFT(ctx context.Context, in *NFTMint
 	return out, nil
 }
 
-func (c *nFTServiceClient) TokenTransfer(ctx context.Context, in *TokenTransferRequest, opts ...grpc.CallOption) (*TokenTransferResponse, error) {
-	out := new(TokenTransferResponse)
-	err := c.cc.Invoke(ctx, "/nft.NFTService/TokenTransfer", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nFTServiceClient) OwnerOf(ctx context.Context, in *OwnerOfRequest, opts ...grpc.CallOption) (*OwnerOfResponse, error) {
-	out := new(OwnerOfResponse)
-	err := c.cc.Invoke(ctx, "/nft.NFTService/OwnerOf", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // NFTServiceServer is the server API for NFTService service.
 type NFTServiceServer interface {
-	MintNFT(context.Context, *NFTMintRequest) (*NFTMintResponse, error)
 	MintInvoiceUnpaidNFT(context.Context, *NFTMintInvoiceUnpaidRequest) (*NFTMintResponse, error)
-	TokenTransfer(context.Context, *TokenTransferRequest) (*TokenTransferResponse, error)
-	OwnerOf(context.Context, *OwnerOfRequest) (*OwnerOfResponse, error)
 }
 
 func RegisterNFTServiceServer(s *grpc.Server, srv NFTServiceServer) {
 	s.RegisterService(&_NFTService_serviceDesc, srv)
-}
-
-func _NFTService_MintNFT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NFTMintRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NFTServiceServer).MintNFT(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/nft.NFTService/MintNFT",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NFTServiceServer).MintNFT(ctx, req.(*NFTMintRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _NFTService_MintInvoiceUnpaidNFT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -615,61 +247,13 @@ func _NFTService_MintInvoiceUnpaidNFT_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NFTService_TokenTransfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TokenTransferRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NFTServiceServer).TokenTransfer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/nft.NFTService/TokenTransfer",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NFTServiceServer).TokenTransfer(ctx, req.(*TokenTransferRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _NFTService_OwnerOf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OwnerOfRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NFTServiceServer).OwnerOf(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/nft.NFTService/OwnerOf",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NFTServiceServer).OwnerOf(ctx, req.(*OwnerOfRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _NFTService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "nft.NFTService",
 	HandlerType: (*NFTServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "MintNFT",
-			Handler:    _NFTService_MintNFT_Handler,
-		},
-		{
 			MethodName: "MintInvoiceUnpaidNFT",
 			Handler:    _NFTService_MintInvoiceUnpaidNFT_Handler,
-		},
-		{
-			MethodName: "TokenTransfer",
-			Handler:    _NFTService_TokenTransfer_Handler,
-		},
-		{
-			MethodName: "OwnerOf",
-			Handler:    _NFTService_OwnerOf_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

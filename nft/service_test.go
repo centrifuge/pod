@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -151,7 +150,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name    string
 		mocker  func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager)
-		request *nftpb.NFTMintRequest
+		request MintNFTRequest
 		err     error
 		result  string
 	}{
@@ -190,7 +189,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 					mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
 				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, jobMan
 			},
-			&nftpb.NFTMintRequest{Identifier: "0x1212", ProofFields: []string{"collaborators[0]"}, DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08"},
+			MintNFTRequest{DocumentID: decodeHex("0x1212"), ProofFields: []string{"collaborators[0]"}, DepositAddress: common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")},
 			nil,
 			"",
 		},
@@ -207,9 +206,9 @@ func TestInvoiceUnpaid(t *testing.T) {
 			}, txMan, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
-				DocumentID:      decodeHex(test.request.Identifier),
-				RegistryAddress: common.HexToAddress(test.request.RegistryAddress),
-				DepositAddress:  common.HexToAddress(test.request.DepositAddress),
+				DocumentID:      test.request.DocumentID,
+				RegistryAddress: test.request.RegistryAddress,
+				DepositAddress:  test.request.DepositAddress,
 				ProofFields:     test.request.ProofFields,
 			}
 			_, _, err := service.MintNFT(ctxh, req)

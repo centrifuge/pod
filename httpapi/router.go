@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,7 +33,7 @@ import (
 func Router(
 	config Config,
 	configSrv config.Service,
-	registry documents.TokenRegistry,
+	nftSrv nft.Service,
 	docsSrv documents.Service,
 	jobsSrv jobs.Manager) *chi.Mux {
 	r := chi.NewRouter()
@@ -46,7 +47,7 @@ func Router(
 	health.Register(r, config)
 
 	// core apis
-	coreapi.Register(r, registry, configSrv, docsSrv, jobsSrv)
+	coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
 	return r
 }
 

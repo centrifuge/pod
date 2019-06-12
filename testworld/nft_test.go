@@ -83,15 +83,15 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 
 		// mint an NFT
 		payload := map[string]interface{}{
-			"identifier":                docIdentifier,
-			"registryAddress":           registry.String(),
-			"depositAddress":            depositAddress, // Centrifuge address
-			"proofFields":               []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
-			"submitTokenProof":          tokenProof,
-			"submitNftOwnerAccessProof": nftReadAccessProof,
-			"grantNftAccess":            grantNFTAccess,
+			"document_id":                   docIdentifier,
+			"registry_address":              registry.String(),
+			"deposit_address":               depositAddress, // Centrifuge address
+			"proof_fields":                  []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+			"submit_token_proof":            tokenProof,
+			"submit_nft_owner_access_proof": nftReadAccessProof,
+			"grant_nft_access":              grantNFTAccess,
 		}
-		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
+		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusCreated, payload)
 
 	} else {
 		// mint a PO NFT
@@ -135,19 +135,19 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 		{
 
 			"RegistryAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
+			http.StatusBadRequest,
 			map[string]interface{}{
 
-				"registryAddress": "0x123",
+				"registry_address": "0x123",
 			},
 		},
 		{
-			"DepositAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
+			"cannot unmarshal hex string without 0x prefix",
+			http.StatusBadRequest,
 			map[string]interface{}{
 
-				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-				"depositAddress":  "abc",
+				"registry_address": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
+				"deposit_address":  "abc",
 			},
 		},
 	}
@@ -156,7 +156,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			t.Parallel()
 			response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
 			assert.Nil(t, err, "it should be possible to call the API endpoint")
-			response.Value("error").String().Contains(test.errorMsg)
+			response.Value("message").String().Contains(test.errorMsg)
 		})
 	}
 }
@@ -174,9 +174,9 @@ func TestTransferNFT_successful(t *testing.T) {
 	}
 
 	transferPayload := map[string]interface{}{
-		"tokenId":         tokenID.String(),
-		"registryAddress": registry.String(),
-		"to":              bob.id.String(),
+		"token_id":         tokenID.String(),
+		"registry_address": registry.String(),
+		"to":               bob.id.String(),
 	}
 
 	// nft owner should be alice

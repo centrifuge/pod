@@ -79,16 +79,21 @@ type MintNFTRequest struct {
 	SubmitNFTReadAccessProof bool
 }
 
-// InvoiceUnpaid handles transactions related to minting of NFTs for unpaid invoices
-type InvoiceUnpaid interface {
+// Service defines the NFT service to mint and transfer NFTs.
+type Service interface {
 	// MintNFT mints an NFT
 	MintNFT(ctx context.Context, request MintNFTRequest) (*TokenResponse, chan bool, error)
-	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
-	GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error)
 	// TransferFrom transfers an NFT to another address
 	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan bool, error)
 	// OwnerOf returns the owner of an NFT
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
+}
+
+// InvoiceUnpaid handles transactions related to minting of NFTs for unpaid invoices
+type InvoiceUnpaid interface {
+	Service
+	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
+	GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error)
 }
 
 // TokenResponse holds tokenID and transaction ID.
