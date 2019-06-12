@@ -3,9 +3,10 @@
 package pedersen
 
 import (
+	"testing"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestHashPayload(t *testing.T) {

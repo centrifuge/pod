@@ -32,8 +32,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
-  source = "github.com/mikiquantum/centrifuge-ethereum-contracts"
-  revision = "2bbe4278c6a73af8f6f6d967a109e435ffe21be7"
+  revision = "05ea88324367e29eb2b5bd872b2d9819cd3c9cbc"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"

@@ -10,18 +10,20 @@ import (
 
 // Requires to follow instructions to install pycrypto: https://github.com/stefandeml/zokrates-pycrypto
 // And either set CENT_PED_BIN with cli.py location or store the repo in $HOME/zksnarks/pycrypto
+
+// NewPedersenHash returns a pedersen hash function
 func NewPedersenHash() hash.Hash {
 	// Resolve python binary location
 	pedBin := os.Getenv("CENT_PED_BIN")
 	if pedBin == "" {
-		pedBin = fmt.Sprintf("%s/zksnarks/pycrypto/cli.py",os.Getenv("HOME"))
+		pedBin = fmt.Sprintf("%s/zksnarks/pycrypto/cli.py", os.Getenv("HOME"))
 	}
 	return &pedersen{binLocation: pedBin}
 }
 
 type pedersen struct {
-	binLocation  string
-	hashed       []byte
+	binLocation string
+	hashed      []byte
 }
 
 func (pd *pedersen) Reset() {

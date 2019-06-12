@@ -229,7 +229,7 @@ func signaturesValidator(idService identity.Service) Validator {
 			return ErrModelNil
 		}
 
-		sr, err := model.CalculateDocumentDataRoot()
+		ddr, err := model.CalculateDocumentDataRoot()
 		if err != nil {
 			return errors.New("failed to get document data root: %v", err)
 		}
@@ -278,12 +278,12 @@ func signaturesValidator(idService identity.Service) Validator {
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), terr))
 				continue
 			}
-			var transitionValidatedFlag int8
+			transitionValidatedFlag := byte(0)
 			if sig.TransitionValidated {
-				transitionValidatedFlag = 1
+				transitionValidatedFlag = byte(1)
 			}
 
-			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, append(sr, []byte{byte(transitionValidatedFlag)}...), tm); erri != nil {
+			if erri := idService.ValidateSignature(sigDID, sig.PublicKey, sig.Signature, ConsensusSignaturePayload(ddr, transitionValidatedFlag), tm); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
