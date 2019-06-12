@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -210,6 +209,6 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	w, r = getHTTPReqAndResp(ctx)
 	h.OwnerOfNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), strings.ToLower(owner.String()))
+	assert.Contains(t, w.Body.String(), owner.String())
 	srv.AssertExpectations(t)
 }

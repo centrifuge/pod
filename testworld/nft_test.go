@@ -135,15 +135,15 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 		{
 
 			"RegistryAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
+			http.StatusBadRequest,
 			map[string]interface{}{
 
 				"registry_address": "0x123",
 			},
 		},
 		{
-			"DepositAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
+			"cannot unmarshal hex string without 0x prefix",
+			http.StatusBadRequest,
 			map[string]interface{}{
 
 				"registry_address": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
@@ -156,7 +156,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			t.Parallel()
 			response, err := alice.host.mintNFT(alice.httpExpect, alice.id.String(), test.httpStatus, test.payload)
 			assert.Nil(t, err, "it should be possible to call the API endpoint")
-			response.Value("error").String().Contains(test.errorMsg)
+			response.Value("message").String().Contains(test.errorMsg)
 		})
 	}
 }
