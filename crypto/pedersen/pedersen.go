@@ -44,7 +44,7 @@ func (pd *pedersen) Write(p []byte) (n int, err error) {
 }
 
 func (pd *pedersen) Sum(b []byte) []byte {
-	return pd.hashed
+	return append(pd.hashed, b...)
 }
 
 func (pd *pedersen) Size() int {
