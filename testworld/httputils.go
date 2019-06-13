@@ -284,19 +284,19 @@ func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID stri
 }
 
 func getAccount(e *httpexpect.Expect, auth string, httpStatus int, identifier string) *httpexpect.Object {
-	resp := addCommonHeaders(e.GET("/accounts/"+identifier), auth).
+	resp := addCommonHeaders(e.GET("/v1/accounts/"+identifier), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
 func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
-	resp := addCommonHeaders(e.GET("/accounts"), auth).
+	resp := addCommonHeaders(e.GET("/v1/accounts"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
 func generateAccount(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/accounts/generate"), auth).
+	resp := addCommonHeaders(e.POST("/v1/accounts/generate"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
