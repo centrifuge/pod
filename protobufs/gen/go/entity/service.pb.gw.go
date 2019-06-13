@@ -56,15 +56,15 @@ func request_EntityService_Update_0(ctx context.Context, marshaler runtime.Marsh
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Update(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -83,15 +83,15 @@ func request_EntityService_Get_0(ctx context.Context, marshaler runtime.Marshale
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Get(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -110,15 +110,15 @@ func request_EntityService_GetEntityByRelationship_0(ctx context.Context, marsha
 		_   = err
 	)
 
-	val, ok = pathParams["relationship_identifier"]
+	val, ok = pathParams["relationship_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "relationship_identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "relationship_id")
 	}
 
-	protoReq.RelationshipIdentifier, err = runtime.String(val)
+	protoReq.RelationshipId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "relationship_identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "relationship_id", err)
 	}
 
 	msg, err := client.GetEntityByRelationship(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -141,15 +141,15 @@ func request_EntityService_Share_0(ctx context.Context, marshaler runtime.Marsha
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Share(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -172,15 +172,15 @@ func request_EntityService_Revoke_0(ctx context.Context, marshaler runtime.Marsh
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Revoke(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -404,17 +404,17 @@ func RegisterEntityServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 }
 
 var (
-	pattern_EntityService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"entity"}, ""))
+	pattern_EntityService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "entities"}, ""))
 
-	pattern_EntityService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+	pattern_EntityService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "entities", "document_id"}, ""))
 
-	pattern_EntityService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"entity", "identifier"}, ""))
+	pattern_EntityService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "entities", "document_id"}, ""))
 
-	pattern_EntityService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"relationship", "relationship_identifier", "entity"}, ""))
+	pattern_EntityService_GetEntityByRelationship_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "relationships", "relationship_id", "entity"}, ""))
 
-	pattern_EntityService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "share"}, ""))
+	pattern_EntityService_Share_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "entities", "document_id", "share"}, ""))
 
-	pattern_EntityService_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 2, 2}, []string{"entity", "identifier", "revoke"}, ""))
+	pattern_EntityService_Revoke_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "entities", "document_id", "revoke"}, ""))
 )
 
 var (

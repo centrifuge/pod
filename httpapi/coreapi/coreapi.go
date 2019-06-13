@@ -18,7 +18,7 @@ const (
 )
 
 // Register registers the core apis to the router.
-func Register(r *chi.Mux,
+func Register(r chi.Router,
 	nftSrv nft.Service,
 	accountSrv config.Service,
 	docSrv documents.Service,
@@ -34,6 +34,7 @@ func Register(r *chi.Mux,
 	r.Post("/documents/{"+documentIDParam+"}/proofs", h.GenerateProofs)
 	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
+	// TODO change these paths
 	r.Post("/nfts/mint", h.MintNFT)
 	r.Post("/nfts/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 	r.Get("/nfts/{"+tokenIDParam+"}/registry/{"+registryAddressParam+"}/owner", h.OwnerOfNFT)

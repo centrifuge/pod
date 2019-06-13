@@ -432,7 +432,7 @@ func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb
 	rcs, wcs := ToClientCollaboratorAccess(cs)
 	return &documentpb.ResponseHeader{
 		DocumentId:  hexutil.Encode(model.ID()),
-		Version:     hexutil.Encode(model.CurrentVersion()),
+		VersionId:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author,
 		CreatedAt:   time,
 		ReadAccess:  rcs,

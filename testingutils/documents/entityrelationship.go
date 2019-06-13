@@ -24,6 +24,6 @@ func CreateRelationshipPayload() *entitypb2.RelationshipPayload {
 
 	return &entitypb2.RelationshipPayload{
 		TargetIdentity: did2,
-		Identifier:     entityID,
+		DocumentId:     entityID,
 	}
 }

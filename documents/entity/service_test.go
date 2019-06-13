@@ -158,7 +158,7 @@ func TestService_Update(t *testing.T) {
 	data.Contacts = []*entitypb.Contact{{Name: "Mr. Test"}}
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := eSrv.DeriveFromUpdatePayload(ctxh, &cliententitypb.EntityUpdatePayload{
-		Identifier:  hexutil.Encode(model.ID()),
+		DocumentId:  hexutil.Encode(model.ID()),
 		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
 		Data:        data,
 	})
@@ -196,7 +196,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &cliententitypb.EntityUpdatePayload{Identifier: "some identifier", Data: &cliententitypb.EntityData{}}
+	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "some identifier", Data: &cliententitypb.EntityData{}}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
@@ -205,7 +205,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -220,7 +220,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Contacts:  []*entitypb.Contact{{Name: "Mr. Test"}},
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 
 	assert.Error(t, err, "should fail because Identity is missing")
@@ -245,7 +245,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())

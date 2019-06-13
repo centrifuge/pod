@@ -188,22 +188,21 @@ func TestDeriveFundingListResponse(t *testing.T) {
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
-	inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
-	var err error
-
 	p := createTestPayload()
 	model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
 	assert.NoError(t, err)
 
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
-	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: p.Data.AgreementId}
+	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: p.Data.AgreementId}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 
@@ -219,7 +218,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotEqual(t, p.Data.Fee, response.Data[0].Funding.Fee)
 
 	// non existing funding id
-	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
+	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
 	assert.Contains(t, err, ErrFundingNotFound)

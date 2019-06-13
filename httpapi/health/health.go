@@ -42,7 +42,7 @@ func (h handler) Ping(w http.ResponseWriter, r *http.Request) {
 }
 
 // Register registers the health APIs to the router
-func Register(r *chi.Mux, config config) {
+func Register(r chi.Router, config config) {
 	h := handler{c: config}
 	r.Get("/ping", h.Ping)
 }

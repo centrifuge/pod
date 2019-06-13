@@ -94,7 +94,7 @@ message AccessToken {
 
 message ResponseHeader {
   string document_id = 1;
-  string version = 2;
+  string version_id = 2;
   string author = 3;
   string created_at = 4;
   ReadAccess read_access = 5;

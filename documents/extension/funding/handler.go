@@ -37,7 +37,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier
@@ -85,7 +85,7 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clien
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier
@@ -114,7 +114,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier
@@ -151,13 +151,13 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfunpb.GetVersio
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier
 	}
 
-	version, err := hexutil.Decode(req.Version)
+	version, err := hexutil.Decode(req.VersionId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentVersion
@@ -186,7 +186,7 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfunpb.GetListReque
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier
@@ -215,13 +215,13 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfunpb.GetLi
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier
 	}
 
-	version, err := hexutil.Decode(req.Version)
+	version, err := hexutil.Decode(req.VersionId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentVersion
@@ -250,7 +250,7 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.Identifier)
+	identifier, err := hexutil.Decode(req.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentIdentifier

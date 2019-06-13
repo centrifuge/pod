@@ -154,7 +154,7 @@ func TestDeriveResponseHeader(t *testing.T) {
 	resp, err := DeriveResponseHeader(nil, model)
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentId)
-	assert.Equal(t, hexutil.Encode(id), resp.Version)
+	assert.Equal(t, hexutil.Encode(id), resp.VersionId)
 	assert.Len(t, resp.ReadAccess.Collaborators, 1)
 	assert.Equal(t, resp.ReadAccess.Collaborators[0], did1.String())
 	assert.Len(t, resp.WriteAccess.Collaborators, 1)

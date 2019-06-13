@@ -50,7 +50,7 @@ type NFT struct {
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
 	DocumentID  string           `json:"document_id"`
-	Version     string           `json:"version"`
+	VersionID   string           `json:"version_id"`
 	Author      string           `json:"author"`
 	CreatedAt   string           `json:"created_at"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
@@ -185,7 +185,7 @@ func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 
 	return ResponseHeader{
 		DocumentID:  hexutil.Encode(model.ID()),
-		Version:     hexutil.Encode(model.CurrentVersion()),
+		VersionID:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author.String(),
 		CreatedAt:   ts,
 		ReadAccess:  identity.DIDsToAddress(cs.ReadCollaborators...),

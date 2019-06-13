@@ -26,7 +26,7 @@ import (
 // @contact.name Centrifuge
 // @contact.url https://github.com/centrifuge/go-centrifuge
 // @contact.email hello@centrifuge.io
-// @BasePath /
+// @BasePath /v1
 // @license.name MIT
 // @host localhost:8082
 // @schemes http
@@ -43,11 +43,13 @@ func Router(
 	r.Use(middleware.DefaultLogger)
 	r.Use(auth(configSrv))
 
-	// health check
-	health.Register(r, config)
+	r.Route("/v1", func(r chi.Router) {
+		// health check
+		health.Register(r, config)
 
-	// core apis
-	coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+		// core apis
+		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+	})
 	return r
 }
 

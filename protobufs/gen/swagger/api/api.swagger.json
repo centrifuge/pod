@@ -17,7 +17,7 @@
         "version": "0.0.5"
     },
     "host": "localhost:8082",
-    "basePath": "/",
+    "basePath": "/v1",
     "paths": {
         "/accounts/{account_id}/sign": {
             "post": {
@@ -987,7 +987,7 @@
                         "type": "string"
                     }
                 },
-                "version": {
+                "version_id": {
                     "type": "string"
                 },
                 "write_access": {

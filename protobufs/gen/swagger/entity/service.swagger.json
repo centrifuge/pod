@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/entity": {
+    "/v1/entities": {
       "post": {
         "description": "Creates an entity",
         "operationId": "Create",
@@ -42,7 +42,7 @@
         ]
       }
     },
-    "/entity/{identifier}": {
+    "/v1/entities/{document_id}": {
       "get": {
         "description": "Get the current entity",
         "operationId": "Get",
@@ -56,7 +56,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -79,7 +79,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -98,7 +98,7 @@
         ]
       }
     },
-    "/entity/{identifier}/revoke": {
+    "/v1/entities/{document_id}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
         "description": "revoke an entity document share",
@@ -113,7 +113,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "description": "entity identifier",
             "in": "path",
             "required": true,
@@ -133,7 +133,7 @@
         ]
       }
     },
-    "/entity/{identifier}/share": {
+    "/v1/entities/{document_id}/share": {
       "post": {
         "summary": "Entity Relation Share",
         "description": "Share the entity document with others",
@@ -148,7 +148,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "description": "entity identifier",
             "in": "path",
             "required": true,
@@ -168,7 +168,7 @@
         ]
       }
     },
-    "/relationship/{relationship_identifier}/entity": {
+    "/v1/relationships/{relationship_id}/entity": {
       "get": {
         "summary": "Entity Relation Get",
         "description": "Get entity from business partner",
@@ -183,7 +183,7 @@
         },
         "parameters": [
           {
-            "name": "relationship_identifier",
+            "name": "relationship_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -248,7 +248,7 @@
         "document_id": {
           "type": "string"
         },
-        "version": {
+        "version_id": {
           "type": "string"
         },
         "author": {
@@ -472,7 +472,7 @@
     "entityEntityUpdatePayload": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string"
         },
         "read_access": {
@@ -555,7 +555,7 @@
     "entityRelationshipPayload": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string",
           "title": "entity identifier"
         },

@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/documents/{identifier}/fundings": {
+    "/v1/documents/{document_id}/funding_agreements": {
       "get": {
         "description": "Get all funding agreements of a latest document",
         "operationId": "GetList",
@@ -29,7 +29,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -52,7 +52,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -71,7 +71,7 @@
         ]
       }
     },
-    "/documents/{identifier}/fundings/{agreement_id}": {
+    "/v1/documents/{document_id}/funding_agreements/{agreement_id}": {
       "get": {
         "description": "Get a funding agreement of a latest document",
         "operationId": "Get",
@@ -85,7 +85,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -114,7 +114,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -139,7 +139,7 @@
         ]
       }
     },
-    "/documents/{identifier}/fundings/{agreement_id}/sign": {
+    "/v1/documents/{document_id}/funding_agreements/{agreement_id}/sign": {
       "post": {
         "description": "Signs funding agreement in a document",
         "operationId": "Sign",
@@ -153,7 +153,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -178,7 +178,7 @@
         ]
       }
     },
-    "/documents/{identifier}/{version}/fundings": {
+    "/v1/documents/{document_id}/versions/{version_id}/funding_agreements": {
       "get": {
         "description": "Get all funding agreements of a document version",
         "operationId": "GetListVersion",
@@ -192,13 +192,13 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "version",
+            "name": "version_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -209,7 +209,7 @@
         ]
       }
     },
-    "/documents/{identifier}/{version}/fundings/{agreement_id}": {
+    "/v1/documents/{document_id}/versions/{version_id}/funding_agreements/{agreement_id}": {
       "get": {
         "description": "Get a funding agreement of a document version",
         "operationId": "GetVersion",
@@ -223,13 +223,13 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "version",
+            "name": "version_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -284,7 +284,7 @@
         "document_id": {
           "type": "string"
         },
-        "version": {
+        "version_id": {
           "type": "string"
         },
         "author": {
@@ -324,7 +324,7 @@
     "funFundingCreatePayload": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string"
         },
         "data": {
@@ -436,7 +436,7 @@
     "funFundingUpdatePayload": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string"
         },
         "agreement_id": {
@@ -450,7 +450,7 @@
     "funRequest": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string"
         },
         "agreement_id": {

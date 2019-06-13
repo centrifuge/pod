@@ -275,7 +275,7 @@
         "document_id": {
           "type": "string"
         },
-        "version": {
+        "version_id": {
           "type": "string"
         },
         "author": {
