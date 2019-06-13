@@ -80,7 +80,7 @@ func TestService_Update(t *testing.T) {
 	data.GrossAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
-		Identifier:  hexutil.Encode(model.ID()),
+		DocumentId:  hexutil.Encode(model.ID()),
 		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
 		Data:        data,
 	})
@@ -117,7 +117,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
+	payload := &clientinvoicepb.InvoiceUpdatePayload{DocumentId: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
@@ -126,7 +126,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -144,7 +144,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Currency:    "EUR",
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Nil(t, doc)
@@ -167,7 +167,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())

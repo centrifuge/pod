@@ -16,7 +16,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service InvoiceService {
   rpc Create(InvoiceCreatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
-      post: "/invoice"
+      post: "/v1/invoices"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -25,7 +25,7 @@ service InvoiceService {
   }
   rpc Update(InvoiceUpdatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
-      put: "/invoice/{identifier}"
+      put: "/v1/invoices/{document_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -34,7 +34,7 @@ service InvoiceService {
   }
   rpc GetVersion(GetVersionRequest) returns (InvoiceResponse) {
     option (google.api.http) = {
-      get: "/invoice/{identifier}/{version}"
+      get: "/v1/invoices/{document_id}/versions/{version_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a specific version of an invoice"
@@ -42,7 +42,7 @@ service InvoiceService {
   }
   rpc Get(GetRequest) returns (InvoiceResponse) {
     option (google.api.http) = {
-      get: "/invoice/{identifier}"
+      get: "/v1/invoices/{document_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get the current invoice"
@@ -51,12 +51,12 @@ service InvoiceService {
 }
 
 message GetRequest {
-  string identifier = 1;
+  string document_id = 1;
 }
 
 message GetVersionRequest {
-  string identifier = 1;
-  string version = 2;
+  string document_id = 1;
+  string version_id = 2;
 }
 
 message InvoiceCreatePayload {
@@ -66,7 +66,7 @@ message InvoiceCreatePayload {
 }
 
 message InvoiceUpdatePayload {
-  string identifier = 1;
+  string document_id = 1;
   document.ReadAccess read_access = 2;
   document.WriteAccess write_access = 3;
   InvoiceData data = 4;

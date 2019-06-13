@@ -28,13 +28,14 @@ func Register(r chi.Router,
 		tokenRegistry: nftSrv.(documents.TokenRegistry),
 	}
 	r.Post("/documents", h.CreateDocument)
+	// todo this should contain doc id in the path
 	r.Put("/documents", h.UpdateDocument)
 	r.Get("/documents/{"+documentIDParam+"}", h.GetDocument)
 	r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}", h.GetDocumentVersion)
 	r.Post("/documents/{"+documentIDParam+"}/proofs", h.GenerateProofs)
 	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
-	// TODO change these paths
+	// TODO change these paths and registry should be in the path
 	r.Post("/nfts/mint", h.MintNFT)
 	r.Post("/nfts/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 	r.Get("/nfts/{"+tokenIDParam+"}/registry/{"+registryAddressParam+"}/owner", h.OwnerOfNFT)
