@@ -1,6 +1,7 @@
 package coreapi
 
 import (
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -13,15 +14,17 @@ const (
 	jobIDParam           = "job_id"
 	tokenIDParam         = "token_id"
 	registryAddressParam = "registry_address"
+	accountIDParam       = "account_id"
 )
 
 // Register registers the core apis to the router.
 func Register(r *chi.Mux,
 	nftSrv nft.Service,
+	accountSrv config.Service,
 	docSrv documents.Service,
 	jobsSrv jobs.Manager) {
 	h := handler{
-		srv:           Service{docService: docSrv, jobsService: jobsSrv, nftService: nftSrv},
+		srv:           Service{docService: docSrv, jobsService: jobsSrv, nftService: nftSrv, accountsService: accountSrv},
 		tokenRegistry: nftSrv.(documents.TokenRegistry),
 	}
 	r.Post("/documents", h.CreateDocument)
@@ -34,4 +37,5 @@ func Register(r *chi.Mux,
 	r.Post("/nfts/mint", h.MintNFT)
 	r.Post("/nfts/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 	r.Get("/nfts/{"+tokenIDParam+"}/registry/{"+registryAddressParam+"}/owner", h.OwnerOfNFT)
+	r.Post("/accounts/{"+accountIDParam+"}/sign", h.SignPayload)
 }

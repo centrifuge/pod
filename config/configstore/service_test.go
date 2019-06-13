@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
-
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -165,4 +165,31 @@ func TestGenerateaccountKeys(t *testing.T) {
 	assert.False(t, os.IsNotExist(err))
 	_, err = os.Stat(tc.SigningKeyPair.Priv)
 	assert.False(t, os.IsNotExist(err))
+}
+
+func TestService_Sign(t *testing.T) {
+	idService := &testingcommons.MockIdentityService{}
+	repo, _, err := getRandomStorage()
+	assert.Nil(t, err)
+	repo.RegisterAccount(&Account{})
+	svc := DefaultService(repo, idService)
+
+	payload := utils.RandomSlice(32)
+	accountID := utils.RandomSlice(20)
+
+	// missing account
+	_, err = svc.Sign(accountID, payload)
+	assert.Error(t, err)
+
+	// success
+	accountCfg, err := NewAccount("main", cfg)
+	assert.Nil(t, err)
+	acc, err := svc.CreateAccount(accountCfg)
+	assert.NoError(t, err)
+	accountID, err = acc.GetIdentityID()
+	assert.NoError(t, err)
+	sig, err := svc.Sign(accountID, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, sig.SignerId, accountID)
+	assert.True(t, crypto.VerifyMessage(sig.PublicKey, payload, sig.Signature, crypto.CurveSecp256K1))
 }

@@ -3,6 +3,8 @@ package coreapi
 import (
 	"context"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -12,9 +14,10 @@ import (
 
 // Service provides functionality for Core APIs.
 type Service struct {
-	docService  documents.Service
-	jobsService jobs.Manager
-	nftService  nft.Service
+	docService      documents.Service
+	jobsService     jobs.Manager
+	nftService      nft.Service
+	accountsService config.Service
 }
 
 // CreateDocument creates the document from the payload and anchors it.
@@ -67,4 +70,9 @@ func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, t
 // OwnerOfNFT returns the owner of the NFT.
 func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
 	return s.nftService.OwnerOf(registry, tokenID[:])
+}
+
+// SignPayload uses the accountID's secret key to sign the payload and returns the signature
+func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	return s.accountsService.Sign(accountID, payload)
 }
