@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const typeInvoice string = "invoice"
-const typeEntity string = "entity"
-const typePO string = "purchaseorder"
+const typeInvoice string = "invoices"
+const typeEntity string = "entities"
+const typePO string = "purchase_orders"
 const poPrefix string = "po"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
@@ -43,7 +43,7 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 }
 
 func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/documents/"+identifier+"/fundings/"+fundingID), auth).
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/funding_agreements/"+fundingID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(identifier)
 	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
@@ -53,7 +53,7 @@ func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string
 }
 
 func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen int, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/documents/"+identifier+"/fundings"), auth).
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/funding_agreements"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	objGet.Path("$.header.document_id").String().Equal(identifier)
@@ -69,7 +69,7 @@ func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen 
 }
 
 func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, agreementID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/documents/"+identifier+"/fundings/"+agreementID), auth).
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/funding_agreements/"+agreementID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	objGet.Path("$.header.document_id").String().Equal(identifier)
@@ -85,7 +85,7 @@ func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, agr
 func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}, checkattrs bool) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
-	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
@@ -112,7 +112,7 @@ func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, docume
 func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
-	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.entity.legal_name").String().Equal(params["legal_name"].(string))
@@ -122,7 +122,7 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 
 func getEntity(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
 
-	objGet := addCommonHeaders(e.GET("/entity/"+docIdentifier), auth).
+	objGet := addCommonHeaders(e.GET("/v1/entities/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	return objGet
@@ -131,7 +131,7 @@ func getEntity(e *httpexpect.Expect, auth string, docIdentifier string) *httpexp
 func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	relationshipIdentifier := params["r_identifier"].(string)
 
-	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+	objGet := addCommonHeaders(e.GET("/v1/relationships/"+relationshipIdentifier+"/entity"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	return objGet
@@ -140,14 +140,14 @@ func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType strin
 func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	relationshipIdentifier := params["r_identifier"].(string)
 
-	objGet := addCommonHeaders(e.GET("/relationship/"+relationshipIdentifier+"/"+documentType), auth).
+	objGet := addCommonHeaders(e.GET("/v1/relationships/"+relationshipIdentifier+"/entity"), auth).
 		Expect().Status(500).JSON().NotNull()
 
 	return objGet
 }
 
 func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/revoke"), auth).
+	obj := addCommonHeaders(e.POST("/v1/entities/"+entityID+"/revoke"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
@@ -156,54 +156,54 @@ func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, paylo
 func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
-	objGet := addCommonHeaders(e.GET("/"+documentType+"/"+docIdentifier), auth).
+	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
 		Expect().Status(500).JSON().NotNull()
 	return objGet
 }
 
 func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/"+documentType), auth).
+	obj := addCommonHeaders(e.POST("/v1/"+documentType), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/"+documentType), auth).
+	obj := addCommonHeaders(e.PUT("/v1/"+documentType), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func createFunding(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/documents/"+identifier+"/fundings"), auth).
+	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/funding_agreements"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func updateFunding(e *httpexpect.Expect, auth string, agreementId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/documents/"+docIdentifier+"/fundings/"+agreementId), auth).
+	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/funding_agreements/"+agreementId), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func signFunding(e *httpexpect.Expect, auth, identifier, agreementId string, status int) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/documents/"+identifier+"/fundings/"+agreementId+"/sign"), auth).
+	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/funding_agreements/"+agreementId+"/sign"), auth).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/entity/"+entityID+"/share"), auth).
+	obj := addCommonHeaders(e.POST("/v1/entities/"+entityID+"/share"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func updateDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/"+documentType+"/"+docIdentifier), auth).
+	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docIdentifier), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
@@ -244,7 +244,7 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/invoice/"+documentID+"/mint/unpaid"), auth).
+	resp := addCommonHeaders(e.POST("/v1/invoices/"+documentID+"/mint/unpaid"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -253,7 +253,7 @@ func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, doc
 }
 
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/nfts/mint"), auth).
+	resp := addCommonHeaders(e.POST("/v1/nfts/mint"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -262,7 +262,7 @@ func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[stri
 }
 
 func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/nfts/"+payload["token_id"].(string)+"/transfer"), auth).
+	resp := addCommonHeaders(e.POST("/v1/nfts/"+payload["token_id"].(string)+"/transfer"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -271,13 +271,13 @@ func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[
 }
 
 func ownerOfNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/nfts/"+payload["tokenId"].(string)+"/registry/"+payload["registryAddress"].(string)+"/owner"), auth).
+	objGet := addCommonHeaders(e.GET("/v1/nfts/"+payload["token_id"].(string)+"/registry/"+payload["registry_address"].(string)+"/owner"), auth).
 		Expect().Status(httpStatus).JSON().NotNull()
 	return objGet
 }
 
 func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/documents/"+documentID+"/proofs"), auth).
+	resp := addCommonHeaders(e.POST("/v1/documents/"+documentID+"/proofs"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
@@ -314,7 +314,7 @@ func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID stri
 	emptyResponseTolerance := 5
 	emptyResponsesEncountered := 0
 	for {
-		resp := addCommonHeaders(e.GET("/jobs/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
+		resp := addCommonHeaders(e.GET("/v1/jobs/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
 		status, ok := resp["status"].(string)
 		if !ok {
 			emptyResponsesEncountered++
@@ -357,7 +357,7 @@ func getAccounts(accounts *httpexpect.Array) map[string]string {
 }
 
 func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/documents/"+documentID), auth).
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(documentID)
 	for k, v := range params {
@@ -367,7 +367,7 @@ func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string,
 }
 
 func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, documentID string) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/documents/"+documentID), auth).
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(404).JSON().NotNull()
 	return objGet
 }

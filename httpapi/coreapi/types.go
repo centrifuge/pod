@@ -19,6 +19,7 @@ import (
 type AttributeMap map[string]Attribute
 
 // CreateDocumentRequest defines the payload for creating documents.
+// TODO change po scheme
 type CreateDocumentRequest struct {
 	Scheme      string           `json:"scheme" enums:"invoice,purchaseorder,entity"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
