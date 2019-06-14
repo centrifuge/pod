@@ -2,6 +2,7 @@ package funding
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/documents/extension"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -45,19 +46,19 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 
 	// create new funding id
 	if req.Data.AgreementId == "" {
-		req.Data.AgreementId = newAgreementID()
+		req.Data.AgreementId = extension.NewAttributeSetID()
 	} else {
 		_, err := hexutil.Decode(req.Data.AgreementId)
 		if err != nil {
 			apiLog.Error(err)
-			return nil, ErrFundingID
+			return nil, extension.ErrAttributeSetID
 		}
 	}
 
 	// returns model with added funding custom fields
 	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrPayload, err)
+		return nil, errors.NewTypedError(extension.ErrPayload, err)
 	}
 
 	model, jobID, _, err := h.service.Update(ctxHeader, model)
@@ -69,7 +70,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, errors.NewTypedError(ErrFundingAttr, err)
+		return nil, errors.NewTypedError(extension.ErrDeriveAttr, err)
 	}
 
 	resp.Header.JobId = jobID.String()
@@ -100,7 +101,7 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clien
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extension.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -123,7 +124,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 	// returns model with a signature
 	model, err := h.service.Sign(ctxHeader, req.AgreementId, identifier)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrPayload, err)
+		return nil, errors.NewTypedError(extension.ErrPayload, err)
 	}
 
 	model, jobID, _, err := h.service.Update(ctxHeader, model)
@@ -135,7 +136,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, errors.NewTypedError(ErrFundingAttr, err)
+		return nil, errors.NewTypedError(extension.ErrDeriveAttr, err)
 	}
 
 	resp.Header.JobId = jobID.String()
@@ -172,7 +173,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfunpb.GetVersio
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extension.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -201,7 +202,7 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfunpb.GetListReque
 	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extension.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -236,7 +237,7 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfunpb.GetLi
 	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extension.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -259,7 +260,7 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 	// returns model with updated funding custom fields
 	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req, identifier)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrPayload, err)
+		return nil, errors.NewTypedError(extension.ErrPayload, err)
 	}
 
 	model, jobID, _, err := h.service.Update(ctxHeader, model)
@@ -271,7 +272,7 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, errors.NewTypedError(ErrFundingAttr, err)
+		return nil, errors.NewTypedError(extension.ErrDeriveAttr, err)
 	}
 
 	resp.Header.JobId = jobID.String()

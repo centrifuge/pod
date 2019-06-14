@@ -63,7 +63,6 @@ func AttrKeyFromLabel(label string) (attrKey AttrKey, err error) {
 	if err != nil {
 		return attrKey, err
 	}
-
 	return AttrKeyFromBytes(hashedKey)
 }
 

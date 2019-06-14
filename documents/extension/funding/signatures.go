@@ -3,6 +3,8 @@ package funding
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/centrifuge/go-centrifuge/documents/extension"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -23,19 +25,19 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 
 	signMsg, err := json.Marshal(data)
 	if err != nil {
-		return nil, ErrJSON
+		return nil, extension.ErrJSON
 	}
 
 	// example "funding_agreement[2].signatures"
-	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
-	attrIdx, err := incrementArrayAttrIDX(model, sLabel)
+	sLabel := extension.GenerateLabel(fundingFieldKey, idxFunding, fundingSignatures)
+	attrIdx, err := extension.IncrementArrayAttrIDX(model, sLabel)
 	if err != nil {
 		return nil, err
 	}
 	attributes = append(attributes, attrIdx)
 
 	// example: "funding_agreement[2].signatures[4]"
-	sFieldLabel := generateLabel(generateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, attrIdx.Value.Int256.String(), "")
+	sFieldLabel := extension.GenerateLabel(extension.GenerateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, attrIdx.Value.Int256.String(), "")
 
 	attrSign, err := documents.NewSignedAttribute(sFieldLabel, selfDID, account, model, signMsg)
 	if err != nil {
@@ -63,9 +65,10 @@ func (s service) Sign(ctx context.Context, agreementID string, identifier []byte
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	idxFunding, err := s.findFundingIDX(model, agreementID)
+	idxFunding, err := extension.FindAttributeSetIDX(model, agreementID, fundingLabel, agreementIDLabel, fundingLabel)
+	fmt.Println("idx", idxFunding)
 	if err != nil {
-		return nil, ErrFundingNotFound
+		return nil, extension.ErrAttributeSetNotFound
 	}
 
 	attributes, err := s.createSignAttrs(model, idxFunding, selfDID, account)
@@ -84,7 +87,7 @@ func (s service) Sign(ctx context.Context, agreementID string, identifier []byte
 func (s service) validateValueOfSignAttr(funding *Data, signAttr documents.Attribute) (bool, error) {
 	value, err := json.Marshal(funding)
 	if err != nil {
-		return false, ErrJSON
+		return false, extension.ErrJSON
 	}
 	return utils.IsSameByteSlice(value, signAttr.Value.Signed.Value), nil
 }
@@ -98,7 +101,7 @@ func (s service) validateSignedFundingVersion(ctx context.Context, identifier []
 
 	signedFunding, err := s.findFunding(signedDocVersion, fundingID)
 	if err != nil {
-		return nil, ErrFundingNotFound
+		return nil, extension.ErrAttributeSetNotFound
 	}
 
 	valid, err := s.validateValueOfSignAttr(signedFunding, signAttr)
@@ -116,7 +119,7 @@ func (s service) validateSignedFundingVersion(ctx context.Context, identifier []
 
 func (s service) signAttrToClientData(ctx context.Context, current documents.Model, funding *Data, signAttr documents.Attribute) (*clientfunpb.FundingSignature, error) {
 	if signAttr.Value.Type != documents.AttrSigned {
-		return nil, ErrFundingSignature
+		return nil, extension.ErrAttributeSetNotFound
 	}
 
 	did := signAttr.Value.Signed.Identity
@@ -135,7 +138,7 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 
 func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, funding *Data, idxFunding string) ([]*clientfunpb.FundingSignature, error) {
 	var signatures []*clientfunpb.FundingSignature
-	sLabel := generateLabel(fundingFieldKey, idxFunding, fundingSignatures)
+	sLabel := extension.GenerateLabel(fundingFieldKey, idxFunding, fundingSignatures)
 	key, err := documents.AttrKeyFromLabel(sLabel)
 	if err != nil {
 		return nil, err
@@ -145,7 +148,7 @@ func (s service) deriveFundingSignatures(ctx context.Context, model documents.Mo
 		return signatures, nil
 	}
 
-	lastIdx, err := getArrayLatestIDX(model, sLabel)
+	lastIdx, err := extension.GetArrayLatestIDX(model, sLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +159,7 @@ func (s service) deriveFundingSignatures(ctx context.Context, model documents.Mo
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		sFieldLabel := generateLabel(generateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, i.String(), "")
+		sFieldLabel := extension.GenerateLabel(extension.GenerateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, i.String(), "")
 		key, err := documents.AttrKeyFromLabel(sFieldLabel)
 		if err != nil {
 			return nil, err

@@ -1,4 +1,4 @@
-package funding
+package transferdetails
 
 import (
 	"github.com/centrifuge/go-centrifuge/documents"

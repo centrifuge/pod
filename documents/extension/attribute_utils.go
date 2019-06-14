@@ -1,8 +1,8 @@
 package extension
 
 import (
+	"fmt"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/extension/funding"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"reflect"
@@ -10,28 +10,26 @@ import (
 )
 
 const (
-	fundingLabel              = "funding_agreement"
-	fundingFieldKey           = "funding_agreement[{IDX}]."
 	idxKey                    = "{IDX}"
 )
 
-func newAgreementID() string {
+func NewAttributeSetID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
-func generateLabel(field, idx, fieldName string) string {
+func GenerateLabel(field, idx, fieldName string) string {
 	return strings.Replace(field, idxKey, idx, -1) + fieldName
 }
 
-func labelFromJSONTag(idx, jsonTag string, fieldKey string) string {
+func LabelFromJSONTag(idx, jsonTag string, fieldKey string) string {
 	jsonKeyIdx := 0
 	// example `json:"days,omitempty"`
 	jsonParts := strings.Split(jsonTag, ",")
-	return generateLabel(fieldKey, idx, jsonParts[jsonKeyIdx])
+	return GenerateLabel(fieldKey, idx, jsonParts[jsonKeyIdx])
 }
 
-func getArrayLatestIDX(model documents.Model, arrayLabel string) (idx *documents.Int256, err error) {
-	key, err := documents.AttrKeyFromLabel(arrayLabel)
+func GetArrayLatestIDX(model documents.Model, typeLabel string) (idx *documents.Int256, err error) {
+	key, err := documents.AttrKeyFromLabel(typeLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +40,6 @@ func getArrayLatestIDX(model documents.Model, arrayLabel string) (idx *documents
 	}
 
 	idx = attr.Value.Int256
-
 	z, err := documents.NewInt256("0")
 	if err != nil {
 		return nil, err
@@ -50,24 +47,24 @@ func getArrayLatestIDX(model documents.Model, arrayLabel string) (idx *documents
 
 	// idx < 0
 	if idx.Cmp(z) == -1 {
-		return nil, funding.ErrFundingIndex
+		return nil, ErrArrayIndex
 	}
 
 	return idx, nil
 
 }
 
-func incrementArrayAttrIDX(model documents.Model, arrayLabel string) (attr documents.Attribute, err error) {
-	key, err := documents.AttrKeyFromLabel(arrayLabel)
+func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr documents.Attribute, err error) {
+	key, err := documents.AttrKeyFromLabel(typeLabel)
 	if err != nil {
 		return attr, err
 	}
 
 	if !model.AttributeExists(key) {
-		return documents.NewAttribute(arrayLabel, documents.AttrInt256, "0")
+		return documents.NewAttribute(typeLabel, documents.AttrInt256, "0")
 	}
 
-	idx, err := getArrayLatestIDX(model, arrayLabel)
+	idx, err := GetArrayLatestIDX(model, typeLabel)
 	if err != nil {
 		return attr, err
 	}
@@ -79,10 +76,10 @@ func incrementArrayAttrIDX(model documents.Model, arrayLabel string) (attr docum
 		return attr, err
 	}
 
-	return documents.NewAttribute(arrayLabel, documents.AttrInt256, newIdx.String())
+	return documents.NewAttribute(typeLabel, documents.AttrInt256, newIdx.String())
 }
 
-func fillAttributeList(data interface{}, idx string, fieldKey string) ([]documents.Attribute, error) {
+func FillAttributeList(data interface{}, idx, fieldKey string) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
 	types := reflect.TypeOf(data)
@@ -92,7 +89,7 @@ func fillAttributeList(data interface{}, idx string, fieldKey string) ([]documen
 		value := values.Field(i).Interface().(string)
 		if value != "" {
 			jsonKey := types.Field(i).Tag.Get("json")
-			label := labelFromJSONTag(idx, jsonKey, fieldKey)
+			label := LabelFromJSONTag(idx, jsonKey, fieldKey)
 
 			attrType := types.Field(i).Tag.Get("attr")
 			attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
@@ -107,15 +104,15 @@ func fillAttributeList(data interface{}, idx string, fieldKey string) ([]documen
 	return attributes, nil
 }
 
-func createAttributesList(current documents.Model, data interface{}, fieldKey string) ([]documents.Attribute, error) {
+func CreateAttributesList(current documents.Model, data interface{}, fieldKey, typeLabel string) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
-	idx, err := incrementArrayAttrIDX(current, fundingLabel)
+	idx, err := IncrementArrayAttrIDX(current, typeLabel)
 	if err != nil {
 		return nil, err
 	}
 
-	attributes, err = fillAttributeList(data, idx.Value.Int256.String(), fieldKey)
+	attributes, err = FillAttributeList(data, idx.Value.Int256.String(), fieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -126,3 +123,68 @@ func createAttributesList(current documents.Model, data interface{}, fieldKey st
 	return attributes, nil
 
 }
+
+func DeleteAttributesSet(model documents.Model, data interface{}, idx, fieldKey string) (documents.Model, error) {
+	types := reflect.TypeOf(data)
+	for i := 0; i < types.NumField(); i++ {
+		jsonKey := types.Field(i).Tag.Get("json")
+		key, err := documents.AttrKeyFromLabel(LabelFromJSONTag(idx, jsonKey, fieldKey))
+		if err != nil {
+			continue
+		}
+
+		if model.AttributeExists(key) {
+			err := model.DeleteAttribute(key, false)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+	}
+	return model, nil
+}
+
+func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLabel, fieldKey string) (idx string, err error) {
+	lastIdx, err := GetArrayLatestIDX(model, typeLabel)
+	if err != nil {
+		return idx, err
+	}
+
+	i, err := documents.NewInt256("0")
+	if err != nil {
+		return idx, err
+	}
+
+	for i.Cmp(lastIdx) != 1 {
+		label := GenerateLabel(fieldKey, i.String(), idLabel)
+		fmt.Println("label", label)
+		k, err := documents.AttrKeyFromLabel(label)
+		if err != nil {
+			return idx, err
+		}
+
+		attr, err := model.GetAttribute(k)
+		fmt.Println("asdfsdfsdf", attr)
+		if err != nil {
+			return idx, err
+		}
+
+		attrFundingID, err := attr.Value.String()
+		fmt.Println("funding ID", attrFundingID)
+		if err != nil {
+			return idx, err
+		}
+		if attrFundingID == attributeSetID {
+			return i.String(), nil
+		}
+		i, err = i.Inc()
+
+		if err != nil {
+			return idx, err
+		}
+
+	}
+
+	return idx, ErrAttributeSetNotFound
+}
+

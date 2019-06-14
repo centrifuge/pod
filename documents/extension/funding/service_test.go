@@ -5,6 +5,7 @@ package funding
 import (
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/documents/extension"
 	"os"
 	"testing"
 	"time"
@@ -73,8 +74,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	assert.Equal(t, "funding_agreement[1].days", generateLabel(fundingFieldKey, "1", "days"))
-	assert.Equal(t, "funding_agreement[0].", generateLabel(fundingFieldKey, "0", ""))
+	assert.Equal(t, "funding_agreement[1].days", extension.GenerateLabel(fundingFieldKey, "1", "days"))
+	assert.Equal(t, "funding_agreement[0].", extension.GenerateLabel(fundingFieldKey, "0", ""))
 
 }
 
@@ -86,7 +87,7 @@ func TestCreateAttributesList(t *testing.T) {
 
 	data := createTestData()
 
-	attributes, err := createAttributesList(inv, data)
+	attributes, err := extension.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 13, len(attributes))
@@ -222,11 +223,11 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
-	assert.Contains(t, err, ErrFundingNotFound)
+	assert.Contains(t, err, extension.ErrAttributeSetNotFound)
 }
 
 func createTestClientData() *clientfunpb.FundingData {
-	fundingId := newAgreementID()
+	fundingId := extension.NewAttributeSetID()
 	return &clientfunpb.FundingData{
 		AgreementId:           fundingId,
 		Currency:              "eur",
@@ -244,7 +245,7 @@ func createTestClientData() *clientfunpb.FundingData {
 }
 
 func createTestData() Data {
-	fundingId := newAgreementID()
+	fundingId := extension.NewAttributeSetID()
 	return Data{
 		AgreementId:           fundingId,
 		Currency:              "eur",

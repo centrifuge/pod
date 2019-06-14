@@ -1,4 +1,4 @@
-package funding
+package transferdetails
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	// BootstrappedFundingAPIHandler is the key for the api handler in Context
-	BootstrappedFundingAPIHandler = "Funding API Handler"
+	// BootstrappedTransferDetailAPIHandler is the key for the api handler in Context
+	BootstrappedTransferDetailAPIHandler = "TransferDetail API Handler"
 )
 
 // Bootstrapper implements Bootstrapper Interface
@@ -19,7 +19,7 @@ type Bootstrapper struct{}
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 	defer func() {
 		if err != nil {
-			err = errors.New("funding bootstrapper: %v", err)
+			err = errors.New("transferdetail bootstrapper: %v", err)
 		}
 	}()
 
@@ -40,6 +40,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 
 	srv := DefaultService(docSrv, tokenRegistry)
 	handler := GRPCHandler(cfgSrv, srv)
-	ctx[BootstrappedFundingAPIHandler] = handler
+	ctx[BootstrappedTransferDetailAPIHandler] = handler
 	return nil
 }

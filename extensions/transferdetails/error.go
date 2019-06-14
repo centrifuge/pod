@@ -1,9 +1,8 @@
-package funding
+package transferdetails
 
 import "github.com/centrifuge/go-centrifuge/errors"
 
 const (
-
 	// ErrFundingIndex must be used for invalid funding array indexes
 	ErrFundingIndex = errors.Error("invalid funding array index")
 
