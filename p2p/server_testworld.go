@@ -31,7 +31,7 @@ func AccessPeer(client documents.Client) *peer {
 //client actions for malicious host
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd coredocumentpb.CoreDocument, collaborator, sender identity.DID, errorType string) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, model documents.Model, collaborator, sender identity.DID, errorType string) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -48,6 +48,12 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 	if err != nil {
 		return nil, err
 	}
+
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, errors.New("failed to pack core document: %v", err)
+	}
+
 	//select which envelope preparing function to call based on the error type
 	var envelope *protocolpb.P2PEnvelope
 	var envelopeErr error
@@ -91,7 +97,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 	}
 	header = recvEnvelope.Header
 
-	err = validateSignatureResp(collaborator, header, resp)
+	err = s.validateSignatureResp(model, collaborator, header, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +106,8 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, cd c
 	return resp, nil
 }
 
-func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, cd coredocumentpb.CoreDocument, collaborator, sender identity.DID, out chan<- signatureResponseWrap, errorType string) {
-	resp, err := s.getSignatureForDocumentIncorrectMessage(ctx, cd, collaborator, sender, errorType)
+func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, model documents.Model, collaborator, sender identity.DID, out chan<- signatureResponseWrap, errorType string) {
+	resp, err := s.getSignatureForDocumentIncorrectMessage(ctx, model, collaborator, sender, errorType)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -128,17 +134,12 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 		return nil, nil, errors.New("failed to get external collaborators")
 	}
 
-	cd, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, nil, errors.New("failed to pack core document: %v", err)
-	}
-
 	var count int
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 	for _, c := range cs {
 		count++
-		go s.getSignatureAsyncIncorrectMessage(peerCtx, cd, c, selfDID, in, errorType)
+		go s.getSignatureAsyncIncorrectMessage(peerCtx, model, c, selfDID, in, errorType)
 	}
 
 	var responses []signatureResponseWrap
