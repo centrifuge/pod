@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/crypto/pedersen"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -375,23 +377,23 @@ func TestGetDocumentDocumentDataTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// no data root
-	_, err = cd.docDataTree(documenttypes.InvoiceDataTypeUrl, nil)
+	_, _, err = cd.docDataTrees(documenttypes.InvoiceDataTypeUrl, nil)
 	assert.Error(t, err)
 
 	// successful tree generation
 	dtree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
-	tree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, dtree.GetLeaves())
+	trees, _, err := cd.docDataTrees(documenttypes.InvoiceDataTypeUrl, dtree.GetLeaves())
 	assert.Nil(t, err)
-	assert.NotNil(t, tree)
-
-	_, leaf := tree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
-	for _, l := range tree.GetLeaves() {
+	assert.NotNil(t, trees)
+	eDataTree := trees[0]
+	_, leaf := eDataTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
+	for _, l := range eDataTree.GetLeaves() {
 		fmt.Printf("P: %s V: %v", l.Property.ReadableName(), l.Value)
 	}
 	assert.NotNil(t, leaf)
 
-	_, leaf = tree.GetLeafByProperty(CDTreePrefix + ".current_version")
+	_, leaf = eDataTree.GetLeafByProperty(CDTreePrefix + ".current_version")
 	assert.NotNil(t, leaf)
 }
 
@@ -429,6 +431,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
+	ph := pedersen.NewPedersenHash()
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{29, 0, 0, 0})
@@ -455,18 +458,18 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	docDataTree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	cdLeaves, err := cd.coredocLeaves(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
-	_, err = cd.CalculateSignaturesRoot()
+	zDocDataTree, err := cd.zDocDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
 	assert.NoError(t, err)
-	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	docRootTree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 
 	signerKey := hexutil.Encode(sig.SignatureId)
 	signProp := fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey)
 
 	tests := []string{"prefix.sample_field", CDTreePrefix + ".document_identifier", "prefix.sample_field2", CDTreePrefix + ".next_version", signProp}
-	pfs, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), tests)
+	pfs, err := cd.CreateZProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), tests)
 	assert.NoError(t, err)
 	assert.Len(t, pfs, 5)
 
@@ -479,9 +482,14 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		} else {
-			assert.Len(t, pfs[idx].SortedHashes, 6)
-			_, l := docDataTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes, docRoot, h)
+			assert.Len(t, pfs[idx].Hashes, 7)
+			_, l := zDocDataTree.GetLeafByProperty(test)
+			// Validate from leaf to zDocDataRoot as it uses pedersen hash
+			valid, err := proofs.ValidateProofHashes(l.Hash, pfs[idx].Hashes[:len(pfs[idx].Hashes)-2], zDocDataTree.RootHash(), ph)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+			// Validate from zDocDataRoot to docRoot as it uses sha hash
+			valid, err = proofs.ValidateProofHashes(zDocDataTree.RootHash(), pfs[idx].Hashes[len(pfs[idx].Hashes)-2:], docRootTree.RootHash(), h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

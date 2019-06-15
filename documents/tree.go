@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 
+	"github.com/centrifuge/go-centrifuge/crypto/pedersen"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -13,6 +15,18 @@ import (
 // DefaultTree returns a DocumentTree with default opts
 func (cd *CoreDocument) DefaultTree() (*proofs.DocumentTree, error) {
 	return cd.DefaultTreeWithPrefix("", nil)
+}
+
+// DefaultZTree returns a DocumentTree with support for skSnarks calculations
+func (cd *CoreDocument) DefaultZTree() (*proofs.DocumentTree, error) {
+	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
+		CompactProperties: true,
+		Hash:              pedersen.NewPedersenHash(),
+		LeafHash:          sha256.New(),
+		Salts:             cd.DocumentSaltsFunc(),
+		//TreeDepth:         20,
+	})
+	return &t, err
 }
 
 // DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves

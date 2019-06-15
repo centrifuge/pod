@@ -6,6 +6,8 @@ import (
 	"hash"
 	"os"
 	"os/exec"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 // Requires to follow instructions to install pycrypto: https://github.com/stefandeml/zokrates-pycrypto
@@ -32,9 +34,9 @@ func (pd *pedersen) Reset() {
 
 func (pd *pedersen) Write(p []byte) (n int, err error) {
 	args := []string{pd.binLocation, "hash", hex.EncodeToString(p)}
-	o, err := exec.Command("python3", args...).Output()
+	o, err := exec.Command("python3", args...).CombinedOutput()
 	if err != nil {
-		return 0, err
+		return 0, errors.New("%s: %s", err, string(o))
 	}
 	pd.hashed, err = hex.DecodeString(string(o[:len(o)-1])) // removing newline
 	if err != nil {
