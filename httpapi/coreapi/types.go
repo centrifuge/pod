@@ -19,19 +19,12 @@ import (
 type AttributeMap map[string]Attribute
 
 // CreateDocumentRequest defines the payload for creating documents.
-// TODO change po scheme
 type CreateDocumentRequest struct {
-	Scheme      string           `json:"scheme" enums:"invoice,purchaseorder,entity"`
+	Scheme      string           `json:"scheme" enums:"invoice,purchase_order,entity"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
 	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}      `json:"data"`
 	Attributes  AttributeMap     `json:"attributes"`
-}
-
-// UpdateDocumentRequest defines the payload for updating documents.
-type UpdateDocumentRequest struct {
-	CreateDocumentRequest
-	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
 }
 
 // Attribute defines a single attribute.
@@ -63,7 +56,7 @@ type ResponseHeader struct {
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
 	Header     ResponseHeader `json:"header"`
-	Scheme     string         `json:"scheme" enums:"invoice,purchaseorder,entity"`
+	Scheme     string         `json:"scheme" enums:"invoice,purchase_order,entity"`
 	Data       interface{}    `json:"data"`
 	Attributes AttributeMap   `json:"attributes"`
 }
@@ -104,19 +97,6 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	payload.Attributes = attrs
 
 	return payload, nil
-}
-
-// toDocumentsUpdatePayload converts the update request to UpdatePayload.
-func toDocumentsUpdatePayload(request UpdateDocumentRequest) (payload documents.UpdatePayload, err error) {
-	createPayload, err := toDocumentsCreatePayload(request.CreateDocumentRequest)
-	if err != nil {
-		return payload, err
-	}
-
-	return documents.UpdatePayload{
-		CreatePayload: createPayload,
-		DocumentID:    request.DocumentID,
-	}, nil
 }
 
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {

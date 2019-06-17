@@ -301,7 +301,6 @@ func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVe
 }
 
 // GetData returns entity relationship data
-// TODO(ved): return actual data post migration.
 func (e *EntityRelationship) GetData() interface{} {
 	return nil
 }

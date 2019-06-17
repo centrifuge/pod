@@ -37,7 +37,7 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, invoiceCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, invoiceCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -81,7 +81,7 @@ func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, poCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, poCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -157,9 +157,8 @@ func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
 	}
 }
 
-func invoiceCoreAPIUpdate(docID string, collaborators []string) map[string]interface{} {
+func invoiceCoreAPIUpdate(collaborators []string) map[string]interface{} {
 	payload := invoiceCoreAPICreate(collaborators)
-	payload["document_id"] = docID
 	payload["attributes"] = map[string]map[string]string{
 		"decimal_test": {
 			"type":  "decimal",
@@ -171,7 +170,7 @@ func invoiceCoreAPIUpdate(docID string, collaborators []string) map[string]inter
 
 func poCoreAPICreate(collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
-		"scheme":       "purchaseorder",
+		"scheme":       "purchase_order",
 		"write_access": collaborators,
 		"data": map[string]interface{}{
 			"number":         "12345",
@@ -200,9 +199,8 @@ func poCoreAPICreate(collaborators []string) map[string]interface{} {
 	}
 }
 
-func poCoreAPIUpdate(docID string, collaborators []string) map[string]interface{} {
+func poCoreAPIUpdate(collaborators []string) map[string]interface{} {
 	payload := poCoreAPICreate(collaborators)
-	payload["document_id"] = docID
 	payload["attributes"] = map[string]map[string]string{
 		"decimal_test": {
 			"type":  "decimal",

@@ -22,7 +22,7 @@ import (
 
 const (
 	prefix string = "po"
-	scheme        = "purchaseorder"
+	scheme        = "purchase_order"
 
 	// ErrPOInvalidData sentinel error when data unmarshal is failed.
 	ErrPOInvalidData = errors.Error("invalid purchase order data")

@@ -158,12 +158,10 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	entity, cd := createCDWithEmbeddedEntity(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	// TODO: need to change the entity model to not use protobufs but instead use converters
-	//d, err := model.getClientData()
-	//assert.NoError(t, err)
-	//d1, err := entity.(*Entity).getClientData()
-	//assert.NoError(t, err)
-	//assert.Equal(t, d.Addresses[0], d1.Addresses[0])
+
+	d := model.getClientData()
+	d1 := entity.(*Entity).getClientData()
+	assert.Equal(t, d.Addresses[0], d1.Addresses[0])
 	assert.Equal(t, model.ID(), entity.ID())
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())

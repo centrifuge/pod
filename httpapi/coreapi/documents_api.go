@@ -97,17 +97,26 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @tags Documents
 // @accept json
 // @param authorization header string true "centrifuge identity"
+// @param document_id path string true "Document Identifier"
 // @param body body coreapi.UpdateDocumentRequest true "Document Update request"
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} coreapi.DocumentResponse
-// @router /documents [put]
+// @router /documents/{document_id} [put]
 func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrInvalidDocumentID
+		return
+	}
 
 	ctx := r.Context()
 	data, err := ioutil.ReadAll(r.Body)
@@ -117,7 +126,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request UpdateDocumentRequest
+	var request CreateDocumentRequest
 	err = json.Unmarshal(data, &request)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -125,14 +134,14 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsUpdatePayload(request)
+	payload, err := toDocumentsCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	model, jobID, err := h.srv.UpdateDocument(ctx, payload)
+	model, jobID, err := h.srv.UpdateDocument(ctx, documents.UpdatePayload{DocumentID: docID, CreatePayload: payload})
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
