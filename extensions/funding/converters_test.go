@@ -10,7 +10,7 @@ import (
 )
 
 func TestInitFundingFromData(t *testing.T) {
-	fdc := &clientfunpb.FundingData{Currency: "EUR"}
+	fdc := &clientfunpb.FundingData{Currency: "eur"}
 	fd := new(Data)
 	fd.initFundingFromData(fdc)
 	assert.Equal(t, fdc.Currency, fd.Currency)
