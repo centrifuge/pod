@@ -24,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -205,7 +204,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.NotNil(t, inv.Data.Payee)
 
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
@@ -214,7 +213,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Data.Sender[:], senderDID[:])
 	assert.Equal(t, inv.Data.Payee[:], payeeDID[:])
@@ -287,7 +286,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	invPayload := testingdocuments.CreateInvoicePayload()
 	invPayload.Data.DateDue = &timestamp.Timestamp{Seconds: time.Now().Unix()}
 	invPayload.Data.Status = "unpaid"
-	invPayload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{defaultDID.String()}}
+	invPayload.WriteAccess = []string{defaultDID.String()}
 	err = i.InitInvoiceInput(invPayload, defaultDID)
 	assert.NoError(t, err)
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})

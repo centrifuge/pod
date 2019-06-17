@@ -300,11 +300,11 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 }
 
 // FromClientCollaboratorAccess converts client collaborator access to CollaboratorsAccess
-func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *documentpb.WriteAccess) (ca CollaboratorsAccess, err error) {
+func FromClientCollaboratorAccess(racess, waccess []string) (ca CollaboratorsAccess, err error) {
 	wmap, rmap := make(map[string]struct{}), make(map[string]struct{})
 	var wcs, rcs []string
 	if waccess != nil {
-		for _, c := range waccess.Collaborators {
+		for _, c := range waccess {
 			c = strings.TrimSpace(strings.ToLower(c))
 			if c == "" {
 				continue
@@ -320,7 +320,7 @@ func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *docume
 	}
 
 	if racess != nil {
-		for _, c := range racess.Collaborators {
+		for _, c := range racess {
 			c = strings.TrimSpace(strings.ToLower(c))
 			if c == "" {
 				continue
@@ -356,10 +356,10 @@ func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *docume
 }
 
 // ToClientCollaboratorAccess converts CollaboratorAccess to client collaborator access
-func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess, *documentpb.WriteAccess) {
+func ToClientCollaboratorAccess(ca CollaboratorsAccess) (readAccess, writeAccess []string) {
 	rcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadCollaborators...)...)
 	wcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadWriteCollaborators...)...)
-	return &documentpb.ReadAccess{Collaborators: rcs}, &documentpb.WriteAccess{Collaborators: wcs}
+	return rcs, wcs
 }
 
 // ToClientAttributes converts attribute map to the client api format

@@ -43,10 +43,10 @@ func Router(
 	r.Use(middleware.DefaultLogger)
 	r.Use(auth(configSrv))
 
-	r.Route("/v1", func(r chi.Router) {
-		// health check
-		health.Register(r, config)
+	// health check
+	health.Register(r, config)
 
+	r.Route("/v1", func(r chi.Router) {
 		// core apis
 		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
 	})

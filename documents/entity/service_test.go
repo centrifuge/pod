@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -159,7 +158,7 @@ func TestService_Update(t *testing.T) {
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := eSrv.DeriveFromUpdatePayload(ctxh, &cliententitypb.EntityUpdatePayload{
 		DocumentId:  hexutil.Encode(model.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.NoError(t, err)
@@ -228,7 +227,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// invalid collaborator identity
 	payload.Data.LegalName = "new company name"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -236,7 +235,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
@@ -400,7 +399,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	payload := testingdocuments.CreateEntityPayload()
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.Entity.LegalName)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 
 	// entity is not collaborator on document
 	e := new(Entity)

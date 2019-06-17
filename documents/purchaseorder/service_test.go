@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -66,7 +65,7 @@ func TestService_Update(t *testing.T) {
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
 		DocumentId:  hexutil.Encode(po.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.Nil(t, err)
@@ -134,14 +133,14 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// failed core document new version
 	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
@@ -268,7 +267,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {

@@ -231,17 +231,6 @@
         }
       }
     },
-    "documentReadAccess": {
-      "type": "object",
-      "properties": {
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "documentResponseHeader": {
       "type": "object",
       "properties": {
@@ -258,10 +247,16 @@
           "type": "string"
         },
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "job_id": {
           "type": "string"
@@ -270,17 +265,6 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/documentNFT"
-          }
-        }
-      }
-    },
-    "documentWriteAccess": {
-      "type": "object",
-      "properties": {
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
           }
         }
       }
@@ -393,10 +377,16 @@
       "type": "object",
       "properties": {
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "data": {
           "$ref": "#/definitions/entityEntityData"
@@ -476,10 +466,16 @@
           "type": "string"
         },
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "data": {
           "$ref": "#/definitions/entityEntityData"

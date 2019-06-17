@@ -132,7 +132,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	txID := jobs.NewJobID()
 	payload := &clientinvoicepb.InvoiceCreatePayload{
 		Data:        &clientinvoicepb.InvoiceData{GrossAmount: "300"},
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{"0x010203040506"}}}
+		WriteAccess: []string{"0x010203040506"}}
 	response := &clientinvoicepb.InvoiceResponse{Header: new(documentpb.ResponseHeader)}
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
 	srv.On("Create", mock.Anything, mock.Anything).Return(model, txID.String(), nil).Once()

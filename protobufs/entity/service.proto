@@ -85,15 +85,15 @@ message GetVersionRequest {
 }
 
 message EntityCreatePayload {
-  document.ReadAccess read_access = 1;
-  document.WriteAccess write_access = 2;
+  repeated string read_access = 1;
+  repeated string write_access = 2;
   EntityData data = 3;
 }
 
 message EntityUpdatePayload {
   string document_id = 1;
-  document.ReadAccess read_access = 2;
-  document.WriteAccess write_access = 3;
+  repeated string read_access = 2;
+  repeated string write_access = 3;
   EntityData data = 4;
 }
 

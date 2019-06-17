@@ -149,7 +149,7 @@ func TestGrpcHandler_Create(t *testing.T) {
 	jobID := jobs.NewJobID()
 	payload := &cliententitypb.EntityCreatePayload{
 		Data:        &cliententitypb.EntityData{LegalName: "test company"},
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{"0x010203040506"}},
+		WriteAccess: []string{"0x010203040506"},
 	}
 	response := &cliententitypb.EntityResponse{Header: &documentpb.ResponseHeader{}}
 	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()

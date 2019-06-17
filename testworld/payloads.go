@@ -26,9 +26,7 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 			"currency":     "USD",
 			"attributes":   defaultAttributePayload(),
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 }
 
@@ -43,9 +41,7 @@ func defaultEntityPayload(identity string, collaborators []string) map[string]in
 				},
 			},
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 }
 
@@ -74,9 +70,7 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 			},
 			"attributes": defaultAttributePayload(),
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 }
 
@@ -129,9 +123,7 @@ func wrongInvoicePayload(collaborators []string) map[string]interface{} {
 			},
 			"attributes": wrongAttributePayload(),
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 }
 
@@ -147,9 +139,7 @@ func invoiceNFTPayload(collaborators []string, sender string) map[string]interfa
 			"sender":        sender,
 			"status":        "unpaid",
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 }
 
@@ -162,9 +152,7 @@ func poNFTPayload(collaborators []string) map[string]interface{} {
 			"total_amount":  "40",
 			"document_type": "po",
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 }
 
@@ -199,9 +187,7 @@ func updatedPOPayload(collaborators []string) map[string]interface{} {
 			"currency":     "EUR",
 			"total_amount": "42",
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 
 }
@@ -215,9 +201,7 @@ func updatedInvoicePayload(collaborators []string) map[string]interface{} {
 			"currency":     "EUR",
 			"net_amount":   "42",
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": collaborators,
 	}
 
 }
@@ -233,9 +217,7 @@ func updatedEntityPayload(identity string, collaborators []string) map[string]in
 				},
 			},
 		},
-		"write_access": map[string]interface{}{
-			"collaborators": collaborators,
-		},
+		"write_access": []string{"0x010203040506"},
 	}
 }
 
