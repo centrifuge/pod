@@ -32,8 +32,8 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 		"currency": "EUR",
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well
@@ -49,9 +49,9 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
 }
 
 func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
@@ -76,8 +76,8 @@ func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
 		"currency": "EUR",
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates purchase order and shares with Charlie as well
@@ -93,9 +93,49 @@ func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
+}
+
+func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+
+	// Alice shares document with Bob first
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, genericCoreAPICreate([]string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier := getDocumentIdentifier(t, res)
+	if docIdentifier == "" {
+		t.Error("docIdentifier empty")
+	}
+
+	params := map[string]interface{}{}
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
+	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
+
+	// Bob updates purchase order and shares with Charlie as well
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, genericCoreAPIUpdate(docIdentifier, []string{alice.id.String(), charlie.id.String()}))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier = getDocumentIdentifier(t, res)
+	if docIdentifier == "" {
+		t.Error("docIdentifier empty")
+	}
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
 }
 
 func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
@@ -121,9 +161,9 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 		"legal_name": "test company",
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params)
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, createAttributes())
 }
 
 func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
@@ -148,24 +188,14 @@ func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
 				},
 			},
 		},
-		"attributes": map[string]map[string]string{
-			"string_test": {
-				"type":  "string",
-				"value": "hello, world",
-			},
-		},
+		"attributes": createAttributes(),
 	}
 }
 
 func invoiceCoreAPIUpdate(docID string, collaborators []string) map[string]interface{} {
 	payload := invoiceCoreAPICreate(collaborators)
 	payload["document_id"] = docID
-	payload["attributes"] = map[string]map[string]string{
-		"decimal_test": {
-			"type":  "decimal",
-			"value": "100.001",
-		},
-	}
+	payload["attributes"] = updateAttributes()
 	return payload
 }
 
@@ -191,24 +221,14 @@ func poCoreAPICreate(collaborators []string) map[string]interface{} {
 				},
 			},
 		},
-		"attributes": map[string]map[string]string{
-			"string_test": {
-				"type":  "string",
-				"value": "hello, world",
-			},
-		},
+		"attributes": createAttributes(),
 	}
 }
 
 func poCoreAPIUpdate(docID string, collaborators []string) map[string]interface{} {
 	payload := poCoreAPICreate(collaborators)
 	payload["document_id"] = docID
-	payload["attributes"] = map[string]map[string]string{
-		"decimal_test": {
-			"type":  "decimal",
-			"value": "100.001",
-		},
-	}
+	payload["attributes"] = updateAttributes()
 	return payload
 }
 
@@ -235,11 +255,49 @@ func entityCoreAPICreate(identity string, collaborators []string) map[string]int
 				},
 			},
 		},
-		"attributes": map[string]map[string]string{
-			"string_test": {
-				"type":  "string",
-				"value": "hello, world",
-			},
+		"attributes": createAttributes(),
+	}
+}
+
+func genericCoreAPICreate(collaborators []string) map[string]interface{} {
+	return map[string]interface{}{
+		"scheme":       "generic",
+		"write_access": collaborators,
+		"data":         map[string]interface{}{},
+		"attributes":   createAttributes(),
+	}
+}
+
+func genericCoreAPIUpdate(docID string, collaborators []string) map[string]interface{} {
+	payload := genericCoreAPICreate(collaborators)
+	payload["document_id"] = docID
+	payload["attributes"] = updateAttributes()
+	return payload
+}
+
+func createAttributes() map[string]map[string]string {
+	return map[string]map[string]string{
+		"string_test": {
+			"type":  "string",
+			"value": "hello, world",
 		},
 	}
+}
+
+func updateAttributes() map[string]map[string]string {
+	return map[string]map[string]string{
+		"decimal_test": {
+			"type":  "decimal",
+			"value": "100.001",
+		},
+	}
+}
+
+func allAttributes() map[string]map[string]string {
+	attrs := createAttributes()
+	for k, v := range updateAttributes() {
+		attrs[k] = v
+	}
+
+	return attrs
 }

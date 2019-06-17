@@ -771,6 +771,7 @@
                 "scheme": {
                     "type": "string",
                     "enum": [
+                        "generic",
                         "invoice",
                         "purchaseorder",
                         "entity"
@@ -801,6 +802,7 @@
                 "scheme": {
                     "type": "string",
                     "enum": [
+                        "generic",
                         "invoice",
                         "purchaseorder",
                         "entity"
@@ -1074,6 +1076,7 @@
                 "scheme": {
                     "type": "string",
                     "enum": [
+                        "generic",
                         "invoice",
                         "purchaseorder",
                         "entity"
