@@ -5,7 +5,6 @@ package funding
 import (
 	"context"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/documents/extension"
 	"os"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -74,8 +74,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	assert.Equal(t, "funding_agreement[1].days", extension.GenerateLabel(fundingFieldKey, "1", "days"))
-	assert.Equal(t, "funding_agreement[0].", extension.GenerateLabel(fundingFieldKey, "0", ""))
+	assert.Equal(t, "funding_agreement[1].days", extensions.GenerateLabel(fundingFieldKey, "1", "days"))
+	assert.Equal(t, "funding_agreement[0].", extensions.GenerateLabel(fundingFieldKey, "0", ""))
 
 }
 
@@ -87,7 +87,7 @@ func TestCreateAttributesList(t *testing.T) {
 
 	data := createTestData()
 
-	attributes, err := extension.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
+	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 13, len(attributes))
@@ -223,11 +223,11 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
 	assert.Error(t, err)
-	assert.Contains(t, err, extension.ErrAttributeSetNotFound)
+	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }
 
 func createTestClientData() *clientfunpb.FundingData {
-	fundingId := extension.NewAttributeSetID()
+	fundingId := extensions.NewAttributeSetID()
 	return &clientfunpb.FundingData{
 		AgreementId:           fundingId,
 		Currency:              "eur",
@@ -245,20 +245,20 @@ func createTestClientData() *clientfunpb.FundingData {
 }
 
 func createTestData() Data {
-	fundingId := extension.NewAttributeSetID()
+	fundingId := extensions.NewAttributeSetID()
 	return Data{
-		AgreementId:           fundingId,
+		AgreementID:           fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
-		BorrowerId:            testingidentity.GenerateRandomDID().String(),
-		FunderId:              testingidentity.GenerateRandomDID().String(),
+		BorrowerID:            testingidentity.GenerateRandomDID().String(),
+		FunderID:              testingidentity.GenerateRandomDID().String(),
 		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
-		PaymentDetailsId:      hexutil.Encode(utils.RandomSlice(32)),
+		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
 	}
 }
 

@@ -2,12 +2,13 @@ package funding
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/extension"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
-	"reflect"
 )
 
 // Service defines specific functions for extension funding
@@ -56,110 +57,6 @@ func DefaultService(
 	}
 }
 
-//func newAgreementID() string {
-//	return hexutil.Encode(utils.RandomSlice(32))
-//}
-//
-//func generateLabel(field, idx, fieldName string) string {
-//	return strings.Replace(field, idxKey, idx, -1) + fieldName
-//}
-//
-//func getArrayLatestIDX(model documents.Model, arrayLabel string) (idx *documents.Int256, err error) {
-//	key, err := documents.AttrKeyFromLabel(arrayLabel)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	attr, err := model.GetAttribute(key)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	idx = attr.Value.Int256
-//
-//	z, err := documents.NewInt256("0")
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	// idx < 0
-//	if idx.Cmp(z) == -1 {
-//		return nil, extension.ErrArrayIndex
-//	}
-//
-//	return idx, nil
-//
-//}
-//
-//func incrementArrayAttrIDX(model documents.Model, arrayLabel string) (attr documents.Attribute, err error) {
-//	key, err := documents.AttrKeyFromLabel(arrayLabel)
-//	if err != nil {
-//		return attr, err
-//	}
-//
-//	if !model.AttributeExists(key) {
-//		return documents.NewAttribute(arrayLabel, documents.AttrInt256, "0")
-//	}
-//
-//	idx, err := getArrayLatestIDX(model, arrayLabel)
-//	if err != nil {
-//		return attr, err
-//	}
-//
-//	// increment idx
-//	newIdx, err := idx.Inc()
-//
-//	if err != nil {
-//		return attr, err
-//	}
-//
-//	return documents.NewAttribute(arrayLabel, documents.AttrInt256, newIdx.String())
-//}
-//
-//func fillAttributeList(data Data, idx, fieldKey string) ([]documents.Attribute, error) {
-//	var attributes []documents.Attribute
-//
-//	types := reflect.TypeOf(data)
-//	values := reflect.ValueOf(data)
-//	for i := 0; i < types.NumField(); i++ {
-//
-//		value := values.Field(i).Interface().(string)
-//		if value != "" {
-//			jsonKey := types.Field(i).Tag.Get("json")
-//			label := extension.LabelFromJSONTag(idx, jsonKey, fieldKey)
-//
-//			attrType := types.Field(i).Tag.Get("attr")
-//			attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
-//			if err != nil {
-//				return nil, err
-//			}
-//
-//			attributes = append(attributes, attr)
-//		}
-//
-//	}
-//	return attributes, nil
-//}
-//
-//func createAttributesList(current documents.Model, data Data, fieldKey) ([]documents.Attribute, error) {
-//	var attributes []documents.Attribute
-//
-//	idx, err := incrementArrayAttrIDX(current, fundingLabel)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	attributes, err = fillAttributeList(data, idx.Value.Int256.String())
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	// add updated idx
-//	attributes = append(attributes, idx)
-//
-//	return attributes, nil
-//}
-
 func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.BorrowerId, data.FunderId} {
@@ -184,13 +81,16 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
-	attributes, err := extension.CreateAttributesList(model, fd, fundingFieldKey, fundingLabel)
+	attributes, err := extensions.CreateAttributesList(model, fd, fundingFieldKey, fundingLabel)
 	if err != nil {
 		return nil, err
 	}
 
 	// use StringsToDIDs here
 	c, err := deriveDIDs(req.Data)
+	if err != nil {
+		return nil, err
+	}
 
 	err = model.AddAttributes(
 		documents.CollaboratorsAccess{
@@ -212,27 +112,6 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 	return model, nil
 }
 
-//func (s service) deleteFunding(model documents.Model, idx, fieldKey string) (documents.Model, error) {
-//	var data Data
-//	types := reflect.TypeOf(data)
-//	for i := 0; i < types.NumField(); i++ {
-//		jsonKey := types.Field(i).Tag.Get("json")
-//		key, err := documents.AttrKeyFromLabel(extension.LabelFromJSONTag(idx, jsonKey, fieldKey))
-//		if err != nil {
-//			continue
-//		}
-//
-//		if model.AttributeExists(key) {
-//			err := model.DeleteAttribute(key, false)
-//			if err != nil {
-//				return nil, err
-//			}
-//		}
-//
-//	}
-//	return model, nil
-//}
-
 // DeriveFromUpdatePayload derives Funding from clientUpdatePayload
 func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
 	var fd Data
@@ -244,8 +123,8 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	fd.AgreementId = req.AgreementId
-	idx, err := extension.FindAttributeSetIDX(model, fd.AgreementId, fundingLabel, agreementIDLabel, fundingFieldKey)
+	fd.AgreementID = req.AgreementId
+	idx, err := extensions.FindAttributeSetIDX(model, fd.AgreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -257,12 +136,12 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 
 	// overwriting is not enough because it is not required that
 	// the funding payload contains all funding attributes
-	model, err = extension.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
 
-	attributes, err := extension.FillAttributeList(fd, idx, fundingFieldKey)
+	attributes, err := extensions.FillAttributeList(fd, idx, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -288,53 +167,12 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 }
 
 func (s service) findFunding(model documents.Model, fundingID string) (*Data, error) {
-	idx, err := extension.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
 	return s.deriveFundingData(model, idx)
 }
-
-//func (s service) findAttributeSetIDX(model documents.Model, agreementID, typeLabel, idLabel, fieldKey string) (idx string, err error) {
-//	lastIdx, err := extension.GetArrayLatestIDX(model, typeLabel)
-//	if err != nil {
-//		return idx, err
-//	}
-//
-//	i, err := documents.NewInt256("0")
-//	if err != nil {
-//		return idx, err
-//	}
-//
-//	for i.Cmp(lastIdx) != 1 {
-//		label := extension.GenerateLabel(fieldKey, i.String(), idLabel)
-//		k, err := documents.AttrKeyFromLabel(label)
-//		if err != nil {
-//			return idx, err
-//		}
-//
-//		attr, err := model.GetAttribute(k)
-//		if err != nil {
-//			return idx, err
-//		}
-//
-//		attrFundingID, err := attr.Value.String()
-//		if err != nil {
-//			return idx, err
-//		}
-//		if attrFundingID == agreementID {
-//			return i.String(), nil
-//		}
-//		i, err = i.Inc()
-//
-//		if err != nil {
-//			return idx, err
-//		}
-//
-//	}
-//
-//	return idx, extension.ErrAttributeSetNotFound
-//}
 
 func (s service) deriveFundingData(model documents.Model, idx string) (*Data, error) {
 	data := new(Data)
@@ -343,7 +181,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*Data, er
 	for i := 0; i < types.NumField(); i++ {
 		// generate attr key
 		jsonKey := types.Field(i).Tag.Get("json")
-		label := extension.LabelFromJSONTag(idx, jsonKey, fundingFieldKey)
+		label := extensions.LabelFromJSONTag(idx, jsonKey, fundingFieldKey)
 		attrKey, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return nil, err
@@ -373,7 +211,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*Data, er
 
 // DeriveFundingResponse returns create response from the added funding
 func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error) {
-	idx, err := extension.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +227,7 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 
 	signatures, err := s.deriveFundingSignatures(ctx, model, data, idx)
 	if err != nil {
-		return nil, errors.NewTypedError(extension.ErrFundingSignature, err)
+		return nil, errors.NewTypedError(extensions.ErrFundingSignature, err)
 	}
 
 	return &clientfunpb.FundingResponse{
@@ -418,7 +256,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 		return response, nil
 	}
 
-	lastIdx, err := extension.GetArrayLatestIDX(model, fundingLabel)
+	lastIdx, err := extensions.GetArrayLatestIDX(model, fundingLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +274,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 
 		signatures, err := s.deriveFundingSignatures(ctx, model, funding, i.String())
 		if err != nil {
-			return nil, errors.NewTypedError(extension.ErrFundingSignature, err)
+			return nil, errors.NewTypedError(extensions.ErrFundingSignature, err)
 		}
 
 		response.Data = append(response.Data, &clientfunpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})

@@ -1,25 +1,29 @@
-package extension
+package extensions
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"reflect"
-	"strings"
 )
 
 const (
-	idxKey                    = "{IDX}"
+	idxKey = "{IDX}"
 )
 
+// NewAttributeSetID generates an identifier for a new attribute set
 func NewAttributeSetID() string {
 	return hexutil.Encode(utils.RandomSlice(32))
 }
 
+// GenerateLabel generates a field label
 func GenerateLabel(field, idx, fieldName string) string {
 	return strings.Replace(field, idxKey, idx, -1) + fieldName
 }
 
+// LabelFromJSONTag converts a JSON tag to a label
 func LabelFromJSONTag(idx, jsonTag string, fieldKey string) string {
 	jsonKeyIdx := 0
 	// example `json:"days,omitempty"`
@@ -27,6 +31,7 @@ func LabelFromJSONTag(idx, jsonTag string, fieldKey string) string {
 	return GenerateLabel(fieldKey, idx, jsonParts[jsonKeyIdx])
 }
 
+// GetArrayLatestIDX gets the last index from an array of attributes
 func GetArrayLatestIDX(model documents.Model, typeLabel string) (idx *documents.Int256, err error) {
 	key, err := documents.AttrKeyFromLabel(typeLabel)
 	if err != nil {
@@ -53,6 +58,7 @@ func GetArrayLatestIDX(model documents.Model, typeLabel string) (idx *documents.
 
 }
 
+// IncrementArrayAttrIDX increments the index of an array for a new attribute
 func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr documents.Attribute, err error) {
 	key, err := documents.AttrKeyFromLabel(typeLabel)
 	if err != nil {
@@ -78,6 +84,7 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 	return documents.NewAttribute(typeLabel, documents.AttrInt256, newIdx.String())
 }
 
+// FillAttributeList fills an attributes list from the JSON object
 func FillAttributeList(data interface{}, idx, fieldKey string) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
@@ -103,6 +110,7 @@ func FillAttributeList(data interface{}, idx, fieldKey string) ([]documents.Attr
 	return attributes, nil
 }
 
+// CreateAttributesList creates an attributes list on a passed in document
 func CreateAttributesList(current documents.Model, data interface{}, fieldKey, typeLabel string) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
 
@@ -123,6 +131,7 @@ func CreateAttributesList(current documents.Model, data interface{}, fieldKey, t
 
 }
 
+// DeleteAttributesSet deletes attributes that already exist on a given model for the addition of new attributes to the set
 func DeleteAttributesSet(model documents.Model, data interface{}, idx, fieldKey string) (documents.Model, error) {
 	types := reflect.TypeOf(data)
 	for i := 0; i < types.NumField(); i++ {
@@ -143,6 +152,7 @@ func DeleteAttributesSet(model documents.Model, data interface{}, idx, fieldKey 
 	return model, nil
 }
 
+// FindAttributeSetIDX returns the index of an attribute set given given its descriptive label
 func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLabel, fieldKey string) (idx string, err error) {
 	lastIdx, err := GetArrayLatestIDX(model, typeLabel)
 	if err != nil {
@@ -183,4 +193,3 @@ func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLab
 
 	return idx, ErrAttributeSetNotFound
 }
-
