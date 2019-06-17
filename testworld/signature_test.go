@@ -269,9 +269,7 @@ func createCDWithEmbeddedPOWithWrongSignature(t *testing.T, collaborators [][]by
 	for _, c := range collaborators {
 		cs = append(cs, hexutil.Encode(c))
 	}
-	payload.WriteAccess = &documentpb.WriteAccess{
-		Collaborators: cs,
-	}
+	payload.WriteAccess = cs
 
 	po := new(purchaseorder.PurchaseOrder)
 	err := po.InitPurchaseOrderInput(payload, identityDID)

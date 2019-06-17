@@ -54,7 +54,6 @@ jobs:
     - stage: "Tests"
       name: "Test world tests"
       script:
-        -  cat ./testworld/signature_test.go
         - ./build/scripts/test_wrapper.sh testworld
       after_success:
         - bash <(curl -s https://codecov.io/bash)
