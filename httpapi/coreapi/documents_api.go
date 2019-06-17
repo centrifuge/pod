@@ -43,7 +43,7 @@ type handler struct {
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} coreapi.DocumentResponse
-// @router /documents [post]
+// @router /v1/documents [post]
 func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -104,7 +104,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} coreapi.DocumentResponse
-// @router /documents/{document_id} [put]
+// @router /v1/documents/{document_id} [put]
 func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -171,7 +171,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.DocumentResponse
-// @router /documents/{document_id} [get]
+// @router /v1/documents/{document_id} [get]
 func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -217,7 +217,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.DocumentResponse
-// @router /documents/{document_id}/versions/{version_id} [get]
+// @router /v1/documents/{document_id}/versions/{version_id} [get]
 func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -268,7 +268,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
-// @router /documents/{document_id}/proofs [post]
+// @router /v1/documents/{document_id}/proofs [post]
 func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -321,7 +321,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
-// @router /documents/{document_id}/versions/{version_id}/proofs [post]
+// @router /v1/documents/{document_id}/versions/{version_id}/proofs [post]
 func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int

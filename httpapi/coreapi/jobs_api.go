@@ -30,7 +30,7 @@ const (
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @success 200 {object} jobs.StatusResponse
-// @router /jobs/{job_id} [get]
+// @router /v1/jobs/{job_id} [get]
 func (h handler) GetJobStatus(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int

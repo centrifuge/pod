@@ -26,7 +26,7 @@ import (
 // @contact.name Centrifuge
 // @contact.url https://github.com/centrifuge/go-centrifuge
 // @contact.email hello@centrifuge.io
-// @BasePath /v1
+// @BasePath /
 // @license.name MIT
 // @host localhost:8082
 // @schemes http

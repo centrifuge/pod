@@ -34,7 +34,7 @@ const (
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 201 {object} coreapi.MintNFTResponse
-// @router /nfts/registries/{registry_address}/mint [post]
+// @router /v1/nfts/registries/{registry_address}/mint [post]
 func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -96,7 +96,7 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 200 {object} coreapi.TransferNFTResponse
-// @router /nfts/registries/{registry_address}/tokens/{token_id}/transfer [post]
+// @router /v1/nfts/registries/{registry_address}/tokens/{token_id}/transfer [post]
 func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -161,7 +161,7 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
 // @success 200 {object} coreapi.NFTOwnerResponse
-// @router /nfts/registries/{registry_address}/tokens/{token_id}/owner [get]
+// @router /v1/nfts/registries/{registry_address}/tokens/{token_id}/owner [get]
 func (h handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
