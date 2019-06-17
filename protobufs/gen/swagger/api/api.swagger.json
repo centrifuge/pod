@@ -75,69 +75,6 @@
             }
         },
         "/documents": {
-            "put": {
-                "description": "Updates an existing document and anchors it.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Documents"
-                ],
-                "summary": "Updates an existing document and anchors it.",
-                "operationId": "update_document",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "centrifuge identity",
-                        "name": "authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Document Update request",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/coreapi.UpdateDocumentRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/coreapi.DocumentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "Creates a new document and anchors it.",
                 "consumes": [
@@ -246,6 +183,76 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates an existing document and anchors it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Updates an existing document and anchors it.",
+                "operationId": "update_document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Document Update request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.CreateDocumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
@@ -510,7 +517,7 @@
                 }
             }
         },
-        "/nfts/mint": {
+        "/nfts/registries/{registry_address}/mint": {
             "post": {
                 "description": "Mints an NFT against a document.",
                 "consumes": [
@@ -530,6 +537,13 @@
                         "description": "centrifuge identity",
                         "name": "authorization",
                         "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -568,7 +582,7 @@
                 }
             }
         },
-        "/nfts/{token_id}/registry/{registry_address}/owner": {
+        "/nfts/registries/{registry_address}/tokens/{token_id}/owner": {
             "get": {
                 "description": "Returns the Owner of the given NFT.",
                 "produces": [
@@ -620,7 +634,7 @@
                 }
             }
         },
-        "/nfts/{token_id}/transfer": {
+        "/nfts/registries/{registry_address}/tokens/{token_id}/transfer": {
             "post": {
                 "description": "Transfers given NFT to provide address.",
                 "consumes": [
@@ -640,6 +654,13 @@
                         "description": "centrifuge identity",
                         "name": "authorization",
                         "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -772,7 +793,7 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder",
+                        "purchase_order",
                         "entity"
                     ]
                 },
@@ -802,7 +823,7 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder",
+                        "purchase_order",
                         "entity"
                     ]
                 }
@@ -825,9 +846,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "registry_address": {
-                    "type": "string"
                 },
                 "submit_nft_owner_access_proof": {
                     "type": "boolean"
@@ -1026,9 +1044,6 @@
         "coreapi.TransferNFTRequest": {
             "type": "object",
             "properties": {
-                "registry_address": {
-                    "type": "string"
-                },
                 "to": {
                     "type": "string"
                 }
@@ -1049,41 +1064,6 @@
                 },
                 "token_id": {
                     "type": "string"
-                }
-            }
-        },
-        "coreapi.UpdateDocumentRequest": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMap"
-                },
-                "data": {
-                    "type": "object"
-                },
-                "document_id": {
-                    "type": "string"
-                },
-                "read_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "scheme": {
-                    "type": "string",
-                    "enum": [
-                        "invoice",
-                        "purchaseorder",
-                        "entity"
-                    ]
-                },
-                "write_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

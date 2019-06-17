@@ -30,10 +30,10 @@ func TestRegister(t *testing.T) {
 	assert.NotNil(t, r.Routes()[5].Handlers["POST"])
 	assert.Equal(t, r.Routes()[6].Pattern, "/jobs/{job_id}")
 	assert.NotNil(t, r.Routes()[6].Handlers["GET"])
-	assert.Equal(t, r.Routes()[7].Pattern, "/nfts/mint")
+	assert.Equal(t, r.Routes()[7].Pattern, "/nfts/registries/{registry_address}/mint")
 	assert.NotNil(t, r.Routes()[7].Handlers["POST"])
-	assert.Equal(t, r.Routes()[8].Pattern, "/nfts/{token_id}/registry/{registry_address}/owner")
+	assert.Equal(t, r.Routes()[8].Pattern, "/nfts/registries/{registry_address}/tokens/{token_id}/owner")
 	assert.NotNil(t, r.Routes()[8].Handlers["GET"])
-	assert.Equal(t, r.Routes()[9].Pattern, "/nfts/{token_id}/transfer")
+	assert.Equal(t, r.Routes()[9].Pattern, "/nfts/registries/{registry_address}/tokens/{token_id}/transfer")
 	assert.NotNil(t, r.Routes()[9].Handlers["POST"])
 }

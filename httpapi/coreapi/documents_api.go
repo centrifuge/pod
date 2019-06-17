@@ -98,7 +98,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @accept json
 // @param authorization header string true "centrifuge identity"
 // @param document_id path string true "Document Identifier"
-// @param body body coreapi.UpdateDocumentRequest true "Document Update request"
+// @param body body coreapi.CreateDocumentRequest true "Document Update request"
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError

@@ -254,7 +254,6 @@ func convertProofs(proof *documents.DocumentProof) ProofsResponse {
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
 	DocumentID               byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	RegistryAddress          common.Address     `json:"registry_address" swaggertype:"primitive,string"`
 	DepositAddress           common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
 	ProofFields              []string           `json:"proof_fields"`
 	GrantNFTReadAccess       bool               `json:"grant_nft_access"`
@@ -276,13 +275,13 @@ type MintNFTResponse struct {
 	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
 }
 
-func toNFTMintRequest(req MintNFTRequest) nft.MintNFTRequest {
+func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
 	return nft.MintNFTRequest{
 		DocumentID:               req.DocumentID,
 		DepositAddress:           req.DepositAddress,
 		GrantNFTReadAccess:       req.GrantNFTReadAccess,
 		ProofFields:              req.ProofFields,
-		RegistryAddress:          req.RegistryAddress,
+		RegistryAddress:          registryAddress,
 		SubmitNFTReadAccessProof: req.SubmitNFTReadAccessProof,
 		SubmitTokenProof:         req.SubmitTokenProof,
 	}
@@ -290,23 +289,22 @@ func toNFTMintRequest(req MintNFTRequest) nft.MintNFTRequest {
 
 // TransferNFTRequest holds Registry Address and To address for NFT transfer
 type TransferNFTRequest struct {
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	To              common.Address `json:"to" swaggertype:"primitive,string"`
+	To common.Address `json:"to" swaggertype:"primitive,string"`
 }
 
 // TransferNFTResponse is the response for NFT transfer.
 type TransferNFTResponse struct {
 	Header          NFTResponseHeader `json:"header"`
 	TokenID         string            `json:"token_id"`
-	RegistryAddress string            `json:"registry_address"`
-	To              string            `json:"to"`
+	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
+	To              common.Address    `json:"to" swaggertype:"primitive,string"`
 }
 
 // NFTOwnerResponse is the response for NFT owner request.
 type NFTOwnerResponse struct {
-	TokenID         string `json:"token_id"`
-	RegistryAddress string `json:"registry_address"`
-	Owner           string `json:"owner"`
+	TokenID         string         `json:"token_id"`
+	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
+	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
 }
 
 // SignRequest holds the payload to be signed.
