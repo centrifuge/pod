@@ -406,7 +406,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	data.GrossAmount = "50"
 	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
-	})
+	}, oldInv.Attributes)
 	assert.NoError(t, err)
 
 	_, err = inv.CalculateDataRoot()
@@ -437,7 +437,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	data.GrossAmount = "55"
 	data.Currency = "INR"
-	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{})
+	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{}, oldInv.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission

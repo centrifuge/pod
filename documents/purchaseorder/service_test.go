@@ -282,7 +282,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	assert.NoError(t, err)
 	data.Currency = "INR"
 	doc2 := new(PurchaseOrder)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*PurchaseOrder).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := poSrv.GetCurrentVersion(ctxh, doc.ID())

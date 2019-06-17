@@ -24,9 +24,9 @@ func defaultPOPayload(collaborators []string) map[string]interface{} {
 			"date_created": "2018-09-26T23:12:37.902198664Z",
 			"total_amount": "40",
 			"currency":     "USD",
-			"attributes":   defaultAttributePayload(),
 		},
 		"write_access": collaborators,
+		"attributes":   defaultAttributePayload(),
 	}
 }
 
@@ -68,9 +68,9 @@ func defaultInvoicePayload(collaborators []string) map[string]interface{} {
 					"description":  "line item description",
 				},
 			},
-			"attributes": defaultAttributePayload(),
 		},
 		"write_access": collaborators,
+		"attributes":   defaultAttributePayload(),
 	}
 }
 
@@ -121,9 +121,9 @@ func wrongInvoicePayload(collaborators []string) map[string]interface{} {
 					"description":  "line item description",
 				},
 			},
-			"attributes": wrongAttributePayload(),
 		},
 		"write_access": collaborators,
+		"attributes":   wrongAttributePayload(),
 	}
 }
 

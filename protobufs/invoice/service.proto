@@ -63,6 +63,8 @@ message InvoiceCreatePayload {
   repeated string read_access = 1;
   repeated string write_access = 2;
   InvoiceData data = 3;
+  // custom attributes
+  map<string, document.Attribute> attributes = 4;
 }
 
 message InvoiceUpdatePayload {
@@ -70,11 +72,15 @@ message InvoiceUpdatePayload {
   repeated string read_access = 2;
   repeated string write_access = 3;
   InvoiceData data = 4;
+  // custom attributes
+  map<string, document.Attribute> attributes = 5;
 }
 
 message InvoiceResponse {
   document.ResponseHeader header = 1;
   InvoiceData data = 2;
+  // custom attributes
+  map<string, document.Attribute> attributes = 3;
 }
 
 // InvoiceData is the default invoice schema
@@ -156,8 +162,6 @@ message InvoiceData {
   repeated LineItem line_items = 65;
   repeated document.PaymentDetails payment_details = 66;
   repeated TaxItem tax_items = 67;
-  // custom attributes
-  map<string, document.Attribute> attributes = 68;
 }
 
 message TaxItem {

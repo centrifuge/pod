@@ -88,6 +88,8 @@ message EntityCreatePayload {
   repeated string read_access = 1;
   repeated string write_access = 2;
   EntityData data = 3;
+  // custom attributes
+  map<string, document.Attribute> attributes = 4;
 }
 
 message EntityUpdatePayload {
@@ -95,11 +97,15 @@ message EntityUpdatePayload {
   repeated string read_access = 2;
   repeated string write_access = 3;
   EntityData data = 4;
+  // custom attributes
+  map<string, document.Attribute> attributes = 5;
 }
 
 message EntityResponse {
   document.ResponseHeader header = 1;
   EntityDataResponse data = 2;
+  // custom attributes
+  map<string, document.Attribute> attributes = 3;
 }
 
 message Relationship {
@@ -117,8 +123,6 @@ message EntityData {
   repeated PaymentDetail payment_details = 4;
   // Entity contact list
   repeated Contact contacts = 5;
-  // custom attributes
-  map<string, document.Attribute> attributes = 6;
 }
 
 // Entity Relationships

@@ -248,8 +248,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
-	data, err := doc.(*Entity).getClientData()
-	assert.NoError(t, err)
+	data := doc.(*Entity).getClientData()
 	assert.Equal(t, payload.Data, data)
 }
 
@@ -426,11 +425,10 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
 
-	data, err := doc.(*Entity).getClientData()
-	assert.NoError(t, err)
+	data := doc.(*Entity).getClientData()
 	data.LegalName = "test company"
 	doc2 := new(Entity)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*Entity).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := eSrv.GetCurrentVersion(ctxh, doc.ID())

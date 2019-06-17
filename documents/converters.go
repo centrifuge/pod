@@ -363,20 +363,20 @@ func ToClientCollaboratorAccess(ca CollaboratorsAccess) (readAccess, writeAccess
 }
 
 // ToClientAttributes converts attribute map to the client api format
-func ToClientAttributes(attributes map[AttrKey]Attribute) (map[string]*documentpb.Attribute, error) {
+func ToClientAttributes(attributes []Attribute) (map[string]*documentpb.Attribute, error) {
 	if len(attributes) < 1 {
 		return nil, nil
 	}
 
 	m := make(map[string]*documentpb.Attribute)
-	for k, v := range attributes {
+	for _, v := range attributes {
 		val, err := v.Value.String()
 		if err != nil {
 			return nil, errors.NewTypedError(ErrCDAttribute, err)
 		}
 
 		m[v.KeyLabel] = &documentpb.Attribute{
-			Key:   k.String(),
+			Key:   v.Key.String(),
 			Type:  v.Value.Type.String(),
 			Value: val,
 		}

@@ -408,6 +408,13 @@
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -513,13 +520,6 @@
           "items": {
             "$ref": "#/definitions/documentPaymentDetails"
           }
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
         }
       }
     },
@@ -531,6 +531,13 @@
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -554,6 +561,13 @@
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },

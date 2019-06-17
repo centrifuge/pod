@@ -322,7 +322,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	data.TotalAmount = "50"
 	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
-	})
+	}, oldPO.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -344,7 +344,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	data.TotalAmount = "55"
 	data.Currency = "INR"
-	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{})
+	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{}, oldPO.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission

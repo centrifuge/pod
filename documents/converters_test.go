@@ -395,6 +395,15 @@ func TestConvertNFTs(t *testing.T) {
 	}
 }
 
+func attrsToList(attrs map[AttrKey]Attribute) []Attribute {
+	var attrsList []Attribute
+	for _, v := range attrs {
+		attrsList = append(attrsList, v)
+	}
+
+	return attrsList
+}
+
 func TestAttributes(t *testing.T) {
 	attrs := map[string]*documentpb.Attribute{
 		"time_test": {
@@ -426,7 +435,7 @@ func TestAttributes(t *testing.T) {
 	attrMap, err := FromClientAttributes(attrs)
 	assert.NoError(t, err)
 
-	cattrs, err := ToClientAttributes(attrMap)
+	cattrs, err := ToClientAttributes(attrsToList(attrMap))
 	assert.NoError(t, err)
 	for k := range cattrs {
 		cattrs[k].Key = ""
@@ -444,7 +453,7 @@ func TestAttributes(t *testing.T) {
 
 	attr.Value.Type = AttributeType("some type")
 	attrMap[key] = attr
-	cattrs, err = ToClientAttributes(attrMap)
+	cattrs, err = ToClientAttributes(attrsToList(attrMap))
 	assert.Error(t, err)
 
 	// failed FromClient

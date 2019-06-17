@@ -116,10 +116,6 @@ func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderDat
 	data := p.Data
 	decs := documents.DecimalsToStrings(data.TotalAmount)
 	dids := identity.DIDsToStrings(data.Recipient, data.Sender)
-	attr, err := documents.ToClientAttributes(p.Attributes)
-	if err != nil {
-		return nil, err
-	}
 
 	pd, err := documents.ToClientPaymentDetails(data.PaymentDetails)
 	if err != nil {
@@ -165,7 +161,6 @@ func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderDat
 		PaymentDetails:          pd,
 		Attachments:             documents.ToClientAttachments(data.Attachments),
 		LineItems:               lis,
-		Attributes:              attr,
 	}, nil
 }
 
@@ -239,7 +234,7 @@ func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.Pu
 	}
 	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
 
-	attrs, err := documents.FromClientAttributes(payload.Data.Attributes)
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
 	if err != nil {
 		return err
 	}
@@ -485,13 +480,8 @@ func (*PurchaseOrder) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old invoice.
-func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurchaseorderpb.PurchaseOrderData, collaborators documents.CollaboratorsAccess) error {
+func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurchaseorderpb.PurchaseOrderData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
 	err := p.initPurchaseOrderFromData(data)
-	if err != nil {
-		return err
-	}
-
-	attrs, err := documents.FromClientAttributes(data.Attributes)
 	if err != nil {
 		return err
 	}

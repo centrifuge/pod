@@ -186,9 +186,14 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 		return nil, err
 	}
 
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	// load purchase order data
 	po := new(PurchaseOrder)
-	err = po.PrepareNewVersion(old, payload.Data, cs)
+	err = po.PrepareNewVersion(old, payload.Data, cs, attrs)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
 	}
@@ -218,9 +223,15 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		return nil, err
 	}
 
+	attrs, err := documents.ToClientAttributes(doc.GetAttributes())
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientpopb.PurchaseOrderResponse{
-		Header: h,
-		Data:   data,
+		Header:     h,
+		Data:       data,
+		Attributes: attrs,
 	}, nil
 }
 

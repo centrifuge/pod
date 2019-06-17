@@ -176,8 +176,7 @@ func TestEntityModel_getClientData(t *testing.T) {
 	err := entity.loadFromP2PProtobuf(&entityData)
 	assert.NoError(t, err)
 
-	data, err := entity.getClientData()
-	assert.NoError(t, err)
+	data := entity.getClientData()
 	assert.NotNil(t, data, "entity data should not be nil")
 	assert.Equal(t, data.Addresses, entityData.Addresses, "addresses should match")
 	assert.Equal(t, data.Contacts, entityData.Contacts, "contacts should match")
@@ -315,10 +314,9 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity := model.(*Entity)
-	data, err := oldEntity.getClientData()
-	assert.NoError(t, err)
+	data := oldEntity.getClientData()
 	data.LegalName = "new legal name"
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}}, oldEntity.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -336,11 +334,10 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity = model.(*Entity)
-	data, err = oldEntity.getClientData()
-	assert.NoError(t, err)
+	data = oldEntity.getClientData()
 	data.LegalName = "second new legal name"
 	data.Contacts = nil
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{}, oldEntity.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission

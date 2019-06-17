@@ -390,6 +390,13 @@
         },
         "data": {
           "$ref": "#/definitions/entityEntityData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -422,13 +429,6 @@
             "$ref": "#/definitions/entityContact"
           },
           "title": "Entity contact list"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
         }
       },
       "title": "EntityData is the default entity schema"
@@ -456,6 +456,13 @@
         },
         "data": {
           "$ref": "#/definitions/entityEntityDataResponse"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -479,6 +486,13 @@
         },
         "data": {
           "$ref": "#/definitions/entityEntityData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },

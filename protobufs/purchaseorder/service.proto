@@ -63,6 +63,8 @@ message PurchaseOrderCreatePayload {
   repeated string read_access = 1;
   repeated string write_access = 2;
   PurchaseOrderData data = 3;
+  // custom attributes
+  map<string, document.Attribute> attributes = 4;
 }
 
 message PurchaseOrderUpdatePayload {
@@ -70,11 +72,15 @@ message PurchaseOrderUpdatePayload {
   repeated string read_access = 2;
   repeated string write_access = 3;
   PurchaseOrderData data = 4;
+  // custom attributes
+  map<string, document.Attribute> attributes = 5;
 }
 
 message PurchaseOrderResponse {
   document.ResponseHeader header = 1;
   PurchaseOrderData data = 2;
+  // custom attributes
+  map<string, document.Attribute> attributes = 3;
 }
 
 message PurchaseOrderData {
@@ -109,8 +115,6 @@ message PurchaseOrderData {
   repeated document.BinaryAttachment attachments = 26;
   repeated LineItem line_items = 27;
   repeated document.PaymentDetails payment_details = 28;
-  // custom attributes
-  map<string, document.Attribute> attributes = 29;
 }
 
 message LineItem {

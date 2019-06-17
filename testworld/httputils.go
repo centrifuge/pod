@@ -90,7 +90,7 @@ func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, docume
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
 	if checkattrs {
-		attrs := objGet.Path("$.data.attributes").Object().Raw()
+		attrs := objGet.Path("$.attributes").Object().Raw()
 		eattrs := defaultAttributePayload()
 		cattrs := make(map[string]map[string]string)
 		for k, v := range attrs {

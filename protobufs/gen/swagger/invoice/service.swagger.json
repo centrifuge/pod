@@ -313,6 +313,13 @@
         },
         "data": {
           "$ref": "#/definitions/invInvoiceData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -546,13 +553,6 @@
           "items": {
             "$ref": "#/definitions/invTaxItem"
           }
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
         }
       },
       "title": "InvoiceData is the default invoice schema"
@@ -565,6 +565,13 @@
         },
         "data": {
           "$ref": "#/definitions/invInvoiceData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -588,6 +595,13 @@
         },
         "data": {
           "$ref": "#/definitions/invInvoiceData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
