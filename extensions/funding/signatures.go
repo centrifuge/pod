@@ -131,7 +131,7 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 		return &clientfunpb.FundingSignature{Valid: "true", SignedVersion: hexutil.Encode(current.ID()), Identity: did.String(), OutdatedSignature: "false"}, nil
 	}
 
-	return s.validateSignedFundingVersion(ctx, current.ID(), funding.AgreementID, signAttr)
+	return s.validateSignedFundingVersion(ctx, current.ID(), funding.AgreementId, signAttr)
 }
 
 func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, funding *Data, idxFunding string) ([]*clientfunpb.FundingSignature, error) {

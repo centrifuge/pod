@@ -247,18 +247,18 @@ func createTestClientData() *clientfunpb.FundingData {
 func createTestData() Data {
 	fundingId := extensions.NewAttributeSetID()
 	return Data{
-		AgreementID:           fundingId,
+		AgreementId:           fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
-		BorrowerID:            testingidentity.GenerateRandomDID().String(),
-		FunderID:              testingidentity.GenerateRandomDID().String(),
+		BorrowerId:            testingidentity.GenerateRandomDID().String(),
+		FunderId:              testingidentity.GenerateRandomDID().String(),
 		NftAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
-		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
+		PaymentDetailsId:      hexutil.Encode(utils.RandomSlice(32)),
 	}
 }
 

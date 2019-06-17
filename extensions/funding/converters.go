@@ -1,8 +1,9 @@
 package funding
 
 import (
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"reflect"
+
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 )
 
 func (f *Data) initFundingFromData(data *funpb.FundingData) {
@@ -30,4 +31,3 @@ func (f *Data) getClientData() *funpb.FundingData {
 	}
 	return clientData
 }
-

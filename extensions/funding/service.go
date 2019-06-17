@@ -123,8 +123,8 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	fd.AgreementID = req.AgreementId
-	idx, err := extensions.FindAttributeSetIDX(model, fd.AgreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	fd.AgreementId = req.AgreementId
+	idx, err := extensions.FindAttributeSetIDX(model, fd.AgreementId, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}

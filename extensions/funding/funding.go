@@ -2,9 +2,9 @@ package funding
 
 // Data is the default funding extension schema
 type Data struct {
-	AgreementID           string `json:"agreement_id,omitempty" attr:"bytes"`
-	BorrowerID            string `json:"borrower_id,omitempty" attr:"bytes"`
-	FunderID              string `json:"funder_id,omitempty" attr:"bytes"`
+	AgreementId           string `json:"agreement_id,omitempty" attr:"bytes"`
+	BorrowerId            string `json:"borrower_id,omitempty" attr:"bytes"`
+	FunderId              string `json:"funder_id,omitempty" attr:"bytes"`
 	Amount                string `json:"amount,omitempty" attr:"decimal"`
 	Apr                   string `json:"apr,omitempty" attr:"string"`
 	Days                  string `json:"days,omitempty" attr:"integer"`
@@ -14,6 +14,5 @@ type Data struct {
 	RepaymentAmount       string `json:"repayment_amount,omitempty" attr:"decimal"`
 	Currency              string `json:"currency,omitempty" attr:"string"`
 	NftAddress            string `json:"nft_address,omitempty" attr:"bytes"`
-	PaymentDetailsID      string `json:"payment_details_id,omitempty" attr:"bytes"`
+	PaymentDetailsId      string `json:"payment_details_id,omitempty" attr:"bytes"`
 }
-
