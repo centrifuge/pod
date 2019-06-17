@@ -1,7 +1,6 @@
 package extension
 
 import (
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -157,20 +156,17 @@ func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLab
 
 	for i.Cmp(lastIdx) != 1 {
 		label := GenerateLabel(fieldKey, i.String(), idLabel)
-		fmt.Println("label", label)
 		k, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
 			return idx, err
 		}
 
 		attr, err := model.GetAttribute(k)
-		fmt.Println("asdfsdfsdf", attr)
 		if err != nil {
 			return idx, err
 		}
 
 		attrFundingID, err := attr.Value.String()
-		fmt.Println("funding ID", attrFundingID)
 		if err != nil {
 			return idx, err
 		}

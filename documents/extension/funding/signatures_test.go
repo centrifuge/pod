@@ -58,7 +58,6 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 		p := createTestPayload()
 		payloads = append(payloads, p)
 		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
-		fmt.Println("***", model)
 		assert.NoError(t, err)
 		lastFundingId = p.Data.AgreementId
 	}
@@ -86,7 +85,6 @@ func TestService_Sign(t *testing.T) {
 		label := fmt.Sprintf("funding_agreement[%d].signatures[%d]", fundingAmount-1, i)
 		key, err := documents.AttrKeyFromLabel(label)
 		assert.NoError(t, err)
-		fmt.Println("&&&&&&3456897&&&&&", key)
 		attr, err := model.GetAttribute(key)
 		assert.NoError(t, err)
 		assert.Equal(t, documents.AttrSigned, attr.Value.Type)

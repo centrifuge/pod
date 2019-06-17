@@ -3,7 +3,6 @@ package funding
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/centrifuge/go-centrifuge/documents/extension"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -65,8 +64,7 @@ func (s service) Sign(ctx context.Context, agreementID string, identifier []byte
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	idxFunding, err := extension.FindAttributeSetIDX(model, agreementID, fundingLabel, agreementIDLabel, fundingLabel)
-	fmt.Println("idx", idxFunding)
+	idxFunding, err := extension.FindAttributeSetIDX(model, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, extension.ErrAttributeSetNotFound
 	}
