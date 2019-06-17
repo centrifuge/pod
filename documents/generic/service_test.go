@@ -1,0 +1,106 @@
+// +build unit
+
+package generic
+
+import (
+	"context"
+	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	testinganchors "github.com/centrifuge/go-centrifuge/testingutils/anchors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+func TestService_CreateModel(t *testing.T) {
+	payload := documents.CreatePayload{}
+	srv := service{}
+
+	// empty context
+	_, _, err := srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// invalid data
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected end of JSON input")
+
+	// success
+	payload.Data = validData(t)
+	srv.repo = testRepo()
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.CreateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
+}
+
+func getServiceWithMockedLayers() (testingcommons.MockIdentityService, documents.Service) {
+	c := &testingconfig.MockConfig{}
+	c.On("GetIdentityID").Return(did.ToAddress().Bytes(), nil)
+	idService := testingcommons.MockIdentityService{}
+	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
+	queueSrv := new(testingutils.MockQueue)
+	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
+
+	repo := testRepo()
+	anchorRepo := &testinganchors.MockAnchorRepo{}
+	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), &idService)
+	return idService, DefaultService(
+		docSrv,
+		repo,
+		queueSrv,
+		ctx[jobs.BootstrappedService].(jobs.Manager))
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	srv := service{}
+
+	// empty context
+	_, _, err := srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// missing id
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, srvr := getServiceWithMockedLayers()
+	srv = srvr.(service)
+	payload.DocumentID = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// payload invalid
+	g, _ := createCDWithEmbeddedGeneric(t)
+	err = testRepo().Create(did[:], g.ID(), g)
+	assert.NoError(t, err)
+	payload.DocumentID = g.ID()
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// Success
+	payload.Data = validData(t)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.UpdateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m.ID(), g.ID())
+	assert.Equal(t, m.CurrentVersion(), g.NextVersion())
+	jm.AssertExpectations(t)
+}
