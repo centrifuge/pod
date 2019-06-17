@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -110,9 +109,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	for _, c := range collaborators {
 		cs = append(cs, hexutil.Encode(c))
 	}
-	payload.WriteAccess = &documentpb.WriteAccess{
-		Collaborators: cs,
-	}
+	payload.WriteAccess = cs
 
 	po := new(purchaseorder.PurchaseOrder)
 	err := po.InitPurchaseOrderInput(payload, identityDID)
