@@ -14,7 +14,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service NFTService {
   rpc MintInvoiceUnpaidNFT(NFTMintInvoiceUnpaidRequest) returns (NFTMintResponse) {
     option (google.api.http) = {
-      post: "/invoice/{identifier}/mint/unpaid"
+      post: "/v1/invoices/{document_id}/mint/unpaid"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -29,7 +29,7 @@ message ResponseHeader {
 
 message NFTMintInvoiceUnpaidRequest {
   // Invoice Document identifier
-  string identifier = 1;
+  string document_id = 1;
   // Deposit address for NFT Token created
   string deposit_address = 2;
 }

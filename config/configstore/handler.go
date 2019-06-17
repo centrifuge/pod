@@ -45,7 +45,7 @@ func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb
 }
 
 func (h grpcHandler) GetAccount(ctx context.Context, req *accountpb.GetAccountRequest) (*accountpb.AccountData, error) {
-	id, err := hexutil.Decode(req.Identifier)
+	id, err := hexutil.Decode(req.AccountId)
 	if err != nil {
 		return nil, err
 	}

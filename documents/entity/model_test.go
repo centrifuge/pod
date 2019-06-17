@@ -25,7 +25,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -159,12 +158,10 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	entity, cd := createCDWithEmbeddedEntity(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	// TODO: need to change the entity model to not use protobufs but instead use converters
-	//d, err := model.getClientData()
-	//assert.NoError(t, err)
-	//d1, err := entity.(*Entity).getClientData()
-	//assert.NoError(t, err)
-	//assert.Equal(t, d.Addresses[0], d1.Addresses[0])
+
+	d := model.getClientData()
+	d1 := entity.(*Entity).getClientData()
+	assert.Equal(t, d.Addresses[0], d1.Addresses[0])
 	assert.Equal(t, model.ID(), entity.ID())
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
@@ -177,8 +174,7 @@ func TestEntityModel_getClientData(t *testing.T) {
 	err := entity.loadFromP2PProtobuf(&entityData)
 	assert.NoError(t, err)
 
-	data, err := entity.getClientData()
-	assert.NoError(t, err)
+	data := entity.getClientData()
 	assert.NotNil(t, data, "entity data should not be nil")
 	assert.Equal(t, data.Addresses, entityData.Addresses, "addresses should match")
 	assert.Equal(t, data.Contacts, entityData.Contacts, "contacts should match")
@@ -207,7 +203,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 
 	e = new(Entity)
 	collabs := []string{"0x010102040506", "some id"}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
@@ -216,7 +212,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Nil(t, err, "must be nil")
 
 }
@@ -316,10 +312,9 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity := model.(*Entity)
-	data, err := oldEntity.getClientData()
-	assert.NoError(t, err)
+	data := oldEntity.getClientData()
 	data.LegalName = "new legal name"
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}}, oldEntity.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -337,11 +332,10 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity = model.(*Entity)
-	data, err = oldEntity.getClientData()
-	assert.NoError(t, err)
+	data = oldEntity.getClientData()
 	data.LegalName = "second new legal name"
 	data.Contacts = nil
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{}, oldEntity.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission

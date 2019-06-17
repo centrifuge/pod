@@ -141,10 +141,6 @@ func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
 	d := i.Data
 	decs := documents.DecimalsToStrings(d.GrossAmount, d.NetAmount, d.TaxAmount, d.TaxRate)
 	dids := identity.DIDsToStrings(d.Recipient, d.Sender, d.Payee)
-	attrs, err := documents.ToClientAttributes(i.Attributes)
-	if err != nil {
-		return nil, err
-	}
 
 	pd, err := documents.ToClientPaymentDetails(d.PaymentDetails)
 	if err != nil {
@@ -223,7 +219,6 @@ func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
 		LineItems:                toClientLineItems(d.LineItems),
 		PaymentDetails:           pd,
 		TaxItems:                 toClientTaxItems(d.TaxItems),
-		Attributes:               attrs,
 	}, nil
 }
 
@@ -340,7 +335,7 @@ func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload
 	}
 	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
 
-	attrs, err := documents.FromClientAttributes(payload.Data.Attributes)
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
 	if err != nil {
 		return err
 	}
@@ -672,13 +667,8 @@ func (*Invoice) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old invoice.
-func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess) error {
+func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
 	err := i.initInvoiceFromData(data)
-	if err != nil {
-		return err
-	}
-
-	attrs, err := documents.FromClientAttributes(data.Attributes)
 	if err != nil {
 		return err
 	}

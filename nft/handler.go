@@ -27,7 +27,7 @@ func GRPCHandler(config config.Service, InvoiceUnpaid InvoiceUnpaid) nftpb.NFTSe
 
 // MintInvoiceUnpaidNFT will be called from the client API to mint an NFT out of an unpaid invoice
 func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NFTMintInvoiceUnpaidRequest) (*nftpb.NFTMintResponse, error) {
-	apiLog.Infof("Received request to Mint an Invoice Unpaid NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
+	apiLog.Infof("Received request to Mint an Invoice Unpaid NFT for invoice %s and deposit address %s", request.DocumentId, request.DepositAddress)
 	ctxHeader, err := contextutil.Context(ctx, g.config)
 	if err != nil {
 		apiLog.Error(err)
@@ -46,7 +46,7 @@ func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NF
 	}
 	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
-	identifier, err := hexutil.Decode(request.Identifier)
+	identifier, err := hexutil.Decode(request.DocumentId)
 	if err != nil {
 		return nil, err
 	}

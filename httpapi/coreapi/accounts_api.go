@@ -26,7 +26,7 @@ const ErrAccountIDInvalid = errors.Error("account ID is invalid")
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.SignResponse
-// @router /accounts/{account_id}/sign [post]
+// @router /v1/accounts/{account_id}/sign [post]
 func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int

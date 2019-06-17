@@ -51,7 +51,7 @@ func TestPaymentObligationNFTMint_success(t *testing.T) {
 	tokID := big.NewInt(1)
 	nftResponse := &TokenResponse{TokenID: tokID.String()}
 	nftReq := &nftpb.NFTMintInvoiceUnpaidRequest{
-		Identifier:     "0x1234567890",
+		DocumentId:     "0x1234567890",
 		DepositAddress: "0xf72855759a39fb75fc7341139f5d7a3974d4da08",
 	}
 

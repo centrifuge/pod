@@ -92,9 +92,9 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 	rd := &entitypb.RelationshipData{
 		OwnerIdentity:    owner,
 		TargetIdentity:   payload.TargetIdentity,
-		EntityIdentifier: payload.Identifier,
+		EntityIdentifier: payload.DocumentId,
 	}
-	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd); err != nil {
+	if err = er.InitEntityRelationshipInput(ctx, payload.DocumentId, rd); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
@@ -184,7 +184,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 
 	h := &documentpb.ResponseHeader{
 		DocumentId: hexutil.Encode(model.ID()),
-		Version:    hexutil.Encode(model.CurrentVersion()),
+		VersionId:  hexutil.Encode(model.CurrentVersion()),
 	}
 
 	return &entitypb.RelationshipResponse{
@@ -210,7 +210,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, documents.ErrPayloadNil
 	}
 
-	eID, err := hexutil.Decode(payload.Identifier)
+	eID, err := hexutil.Decode(payload.DocumentId)
 	if err != nil {
 		return nil, err
 	}

@@ -56,15 +56,15 @@ func request_InvoiceService_Update_0(ctx context.Context, marshaler runtime.Mars
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Update(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -83,26 +83,26 @@ func request_InvoiceService_GetVersion_0(ctx context.Context, marshaler runtime.
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
-	val, ok = pathParams["version"]
+	val, ok = pathParams["version_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "version")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "version_id")
 	}
 
-	protoReq.Version, err = runtime.String(val)
+	protoReq.VersionId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "version", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "version_id", err)
 	}
 
 	msg, err := client.GetVersion(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -121,15 +121,15 @@ func request_InvoiceService_Get_0(ctx context.Context, marshaler runtime.Marshal
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Get(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -295,13 +295,13 @@ func RegisterInvoiceServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 }
 
 var (
-	pattern_InvoiceService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"invoice"}, ""))
+	pattern_InvoiceService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "invoices"}, ""))
 
-	pattern_InvoiceService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"invoice", "identifier"}, ""))
+	pattern_InvoiceService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "invoices", "document_id"}, ""))
 
-	pattern_InvoiceService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"invoice", "identifier", "version"}, ""))
+	pattern_InvoiceService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "invoices", "document_id", "versions", "version_id"}, ""))
 
-	pattern_InvoiceService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"invoice", "identifier"}, ""))
+	pattern_InvoiceService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "invoices", "document_id"}, ""))
 )
 
 var (
