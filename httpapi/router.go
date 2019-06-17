@@ -34,7 +34,7 @@ func Router(
 	config Config,
 	configSrv config.Service,
 	nftSrv nft.Service,
-	service documents.Service,
+	docsSrv documents.Service,
 	jobsSrv jobs.Manager) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -47,7 +47,7 @@ func Router(
 	health.Register(r, config)
 
 	// core apis
-	coreapi.Register(r, nftSrv, service, jobsSrv)
+	coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
 	return r
 }
 

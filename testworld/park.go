@@ -21,6 +21,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/p2p"
+	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )
@@ -37,6 +39,8 @@ var hostConfig = []struct {
 	{"Charlie", 8086, 38206, true},
 	{"Kenny", 8087, 38207, false},
 	{"Eve", 8088, 38208, false},
+	// Mallory has a mock document.Serivce to facilitate some Byzantine test
+	{"Mallory", 8089, 38209, false},
 }
 
 const defaultP2PTimeout = "10s"
@@ -293,6 +297,14 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
+
+	if h.name == "Mallory" {
+		malloryDocMockSrv := new(mockdoc.MockService)
+		h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
+		p2pBoot := p2p.Bootstrapper{}
+		p2pBoot.Bootstrap(h.bootstrappedCtx)
+	}
+
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
