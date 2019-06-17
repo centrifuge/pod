@@ -138,7 +138,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			},
 		},
 		{
-			"cannot unmarshal hex string without 0x prefix",
+			"cannot unmarshal hex string without 0x",
 			http.StatusBadRequest,
 			map[string]interface{}{
 
@@ -178,7 +178,7 @@ func TestTransferNFT_successful(t *testing.T) {
 	// nft owner should be alice
 	resp, err := alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
 	assert.NoError(t, err)
-	resp.Path("$.owner").String().Equal(alice.id.String())
+	resp.Path("$.owner").String().Equal(strings.ToLower(alice.id.String()))
 
 	// transfer nft from alice to bob
 	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
@@ -192,5 +192,5 @@ func TestTransferNFT_successful(t *testing.T) {
 	// nft owner should be bob
 	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
 	assert.NoError(t, err)
-	resp.Path("$.owner").String().Equal(bob.id.String())
+	resp.Path("$.owner").String().Equal(strings.ToLower(bob.id.String()))
 }

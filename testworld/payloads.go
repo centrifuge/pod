@@ -217,7 +217,7 @@ func updatedEntityPayload(identity string, collaborators []string) map[string]in
 				},
 			},
 		},
-		"write_access": []string{"0x010203040506"},
+		"write_access": collaborators,
 	}
 }
 
