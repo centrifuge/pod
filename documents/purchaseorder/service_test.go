@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -65,8 +64,8 @@ func TestService_Update(t *testing.T) {
 	data.TotalAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
-		Identifier:  hexutil.Encode(po.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		DocumentId:  hexutil.Encode(po.ID()),
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.Nil(t, err)
@@ -103,7 +102,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
+	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{DocumentId: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")
@@ -111,7 +110,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -126,7 +125,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Currency:  "EUR",
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load purchase order from data")
@@ -134,14 +133,14 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// failed core document new version
 	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
@@ -150,7 +149,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
@@ -268,7 +267,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -283,7 +282,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	assert.NoError(t, err)
 	data.Currency = "INR"
 	doc2 := new(PurchaseOrder)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*PurchaseOrder).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := poSrv.GetCurrentVersion(ctxh, doc.ID())

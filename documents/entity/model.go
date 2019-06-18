@@ -113,22 +113,16 @@ type Entity struct {
 }
 
 // getClientData returns the client data from the entity model
-func (e *Entity) getClientData() (*cliententitypb.EntityData, error) {
+func (e *Entity) getClientData() *cliententitypb.EntityData {
 	d := e.Data
 	dids := identity.DIDsToStrings(d.Identity)
-	attrs, err := documents.ToClientAttributes(e.Attributes)
-	if err != nil {
-		return nil, err
-	}
-
 	return &cliententitypb.EntityData{
 		Identity:       dids[0],
 		LegalName:      d.LegalName,
 		Addresses:      toProtoAddresses(d.Addresses),
 		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
 		Contacts:       toProtoContacts(d.Contacts),
-		Attributes:     attrs,
-	}, nil
+	}
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific entityData
@@ -157,7 +151,7 @@ func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, se
 	}
 
 	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)
-	attrs, err := documents.FromClientAttributes(payload.Data.Attributes)
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
 	if err != nil {
 		return err
 	}
@@ -331,13 +325,8 @@ func (*Entity) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old entity.
-func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators documents.CollaboratorsAccess) error {
+func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
 	err := e.initEntityFromData(data)
-	if err != nil {
-		return err
-	}
-
-	attrs, err := documents.FromClientAttributes(data.Attributes)
 	if err != nil {
 		return err
 	}

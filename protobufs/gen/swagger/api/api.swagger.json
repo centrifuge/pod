@@ -19,7 +19,29 @@
     "host": "localhost:8082",
     "basePath": "/",
     "paths": {
-        "/accounts/{account_id}/sign": {
+        "/ping": {
+            "get": {
+                "description": "returns node version and network",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check for Node",
+                "operationId": "ping",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/health.Pong"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/accounts/{account_id}/sign": {
             "post": {
                 "description": "Signs and returns the signature of the Payload.",
                 "produces": [
@@ -74,70 +96,7 @@
                 }
             }
         },
-        "/documents": {
-            "put": {
-                "description": "Updates an existing document and anchors it.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Documents"
-                ],
-                "summary": "Updates an existing document and anchors it.",
-                "operationId": "update_document",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "centrifuge identity",
-                        "name": "authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Document Update request",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/coreapi.UpdateDocumentRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/coreapi.DocumentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    }
-                }
-            },
+        "/v1/documents": {
             "post": {
                 "description": "Creates a new document and anchors it.",
                 "consumes": [
@@ -202,7 +161,7 @@
                 }
             }
         },
-        "/documents/{document_id}": {
+        "/v1/documents/{document_id}": {
             "get": {
                 "description": "Returns the latest version of the document.",
                 "produces": [
@@ -259,9 +218,79 @@
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Updates an existing document and anchors it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Updates an existing document and anchors it.",
+                "operationId": "update_document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "centrifuge identity",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Document Update request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.CreateDocumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
             }
         },
-        "/documents/{document_id}/proofs": {
+        "/v1/documents/{document_id}/proofs": {
             "post": {
                 "description": "Generates proofs for the fields from latest version of the document.",
                 "produces": [
@@ -323,7 +352,7 @@
                 }
             }
         },
-        "/documents/{document_id}/versions/{version_id}": {
+        "/v1/documents/{document_id}/versions/{version_id}": {
             "get": {
                 "description": "Returns the specific version of the document.",
                 "produces": [
@@ -389,7 +418,7 @@
                 }
             }
         },
-        "/documents/{document_id}/versions/{version_id}/proofs": {
+        "/v1/documents/{document_id}/versions/{version_id}/proofs": {
             "post": {
                 "description": "Generates proofs for the fields from a specific document version.",
                 "produces": [
@@ -458,7 +487,7 @@
                 }
             }
         },
-        "/jobs/{job_id}": {
+        "/v1/jobs/{job_id}": {
             "get": {
                 "description": "Returns the status of a given Job.",
                 "produces": [
@@ -510,7 +539,7 @@
                 }
             }
         },
-        "/nfts/mint": {
+        "/v1/nfts/registries/{registry_address}/mint": {
             "post": {
                 "description": "Mints an NFT against a document.",
                 "consumes": [
@@ -530,6 +559,13 @@
                         "description": "centrifuge identity",
                         "name": "authorization",
                         "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -568,7 +604,7 @@
                 }
             }
         },
-        "/nfts/{token_id}/registry/{registry_address}/owner": {
+        "/v1/nfts/registries/{registry_address}/tokens/{token_id}/owner": {
             "get": {
                 "description": "Returns the Owner of the given NFT.",
                 "produces": [
@@ -620,7 +656,7 @@
                 }
             }
         },
-        "/nfts/{token_id}/transfer": {
+        "/v1/nfts/registries/{registry_address}/tokens/{token_id}/transfer": {
             "post": {
                 "description": "Transfers given NFT to provide address.",
                 "consumes": [
@@ -640,6 +676,13 @@
                         "description": "centrifuge identity",
                         "name": "authorization",
                         "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -680,28 +723,6 @@
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/ping": {
-            "get": {
-                "description": "returns node version and network",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Health"
-                ],
-                "summary": "Health check for Node",
-                "operationId": "ping",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/health.Pong"
                         }
                     }
                 }
@@ -772,7 +793,7 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder",
+                        "purchase_order",
                         "entity"
                     ]
                 },
@@ -802,7 +823,7 @@
                     "type": "string",
                     "enum": [
                         "invoice",
-                        "purchaseorder",
+                        "purchase_order",
                         "entity"
                     ]
                 }
@@ -825,9 +846,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "registry_address": {
-                    "type": "string"
                 },
                 "submit_nft_owner_access_proof": {
                     "type": "boolean"
@@ -987,7 +1005,7 @@
                         "type": "string"
                     }
                 },
-                "version": {
+                "version_id": {
                     "type": "string"
                 },
                 "write_access": {
@@ -1026,9 +1044,6 @@
         "coreapi.TransferNFTRequest": {
             "type": "object",
             "properties": {
-                "registry_address": {
-                    "type": "string"
-                },
                 "to": {
                     "type": "string"
                 }
@@ -1049,41 +1064,6 @@
                 },
                 "token_id": {
                     "type": "string"
-                }
-            }
-        },
-        "coreapi.UpdateDocumentRequest": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMap"
-                },
-                "data": {
-                    "type": "object"
-                },
-                "document_id": {
-                    "type": "string"
-                },
-                "read_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "scheme": {
-                    "type": "string",
-                    "enum": [
-                        "invoice",
-                        "purchaseorder",
-                        "entity"
-                    ]
-                },
-                "write_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

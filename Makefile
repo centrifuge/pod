@@ -54,6 +54,7 @@ proto-gen-go: ## generates the go bindings
 
 proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all protobufs
+	@goimports -w ./protobufs/gen/
 
 gen-swagger: ## generates the swagger documentation
 	swag init -g ./httpapi/router.go -o ./protobufs/gen/swagger/api

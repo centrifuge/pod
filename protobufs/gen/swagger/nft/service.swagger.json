@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/invoice/{identifier}/mint/unpaid": {
+    "/v1/invoices/{document_id}/mint/unpaid": {
       "post": {
         "description": "Mints an NFT out of an Unpaid Centrifuge Invoice",
         "operationId": "MintInvoiceUnpaidNFT",
@@ -29,7 +29,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "description": "Invoice Document identifier",
             "in": "path",
             "required": true,
@@ -54,7 +54,7 @@
     "nftNFTMintInvoiceUnpaidRequest": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string",
           "title": "Invoice Document identifier"
         },

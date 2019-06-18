@@ -24,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -181,7 +180,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	assert.NotNil(t, poModel.Data.Recipient)
 
 	collabs := []string{"0x010102040506", "some id"}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
@@ -190,7 +189,7 @@ func TestPOOrderModel_InitPOInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = poModel.InitPurchaseOrderInput(&clientpurchaseorderpb.PurchaseOrderCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Nil(t, err, "must be nil")
 
 	did, err = identity.NewDIDFromString("0xed03fa80291ff5ddc284de6b51e716b130b05e20")
@@ -323,7 +322,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	data.TotalAmount = "50"
 	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
-	})
+	}, oldPO.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -345,7 +344,7 @@ func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	data.TotalAmount = "55"
 	data.Currency = "INR"
-	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{})
+	err = po.PrepareNewVersion(po, data, documents.CollaboratorsAccess{}, oldPO.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission

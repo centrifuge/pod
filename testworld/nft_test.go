@@ -19,12 +19,12 @@ import (
 
 func TestInvoiceUnpaidMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	invoiceUnpaidMint(t, typeInvoice, true, true, true, false)
+	invoiceUnpaidMint(t, typeInvoice, true, true, true, false, "invoice")
 }
 
 func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	invoiceUnpaidMint(t, typeInvoice, false, false, false, true)
+	invoiceUnpaidMint(t, typeInvoice, false, false, false, true, "invoice")
 }
 
 /* TODO: testcase not stable
@@ -34,7 +34,7 @@ func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
 }
 */
 
-func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool) nft.TokenID {
+func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool, proofPrefix string) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
@@ -65,10 +65,6 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	depositAddress := alice.id.String()
 
 	if !poWrapper {
-		proofPrefix := documentType
-		if proofPrefix == typePO {
-			proofPrefix = poPrefix
-		}
 		acc, err := alice.host.configService.GetAccount(alice.id[:])
 		if err != nil {
 			t.Error(err)
@@ -96,8 +92,8 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	} else {
 		// mint a PO NFT
 		payload := map[string]interface{}{
-			"identifier":     docIdentifier,
-			"depositAddress": depositAddress, // Centrifuge address
+			"document_id":     docIdentifier,
+			"deposit_address": depositAddress, // Centrifuge address
 		}
 		response, err = alice.host.mintUnpaidInvoiceNFT(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, payload)
 	}
@@ -142,7 +138,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			},
 		},
 		{
-			"cannot unmarshal hex string without 0x prefix",
+			"cannot unmarshal hex string without 0x",
 			http.StatusBadRequest,
 			map[string]interface{}{
 
@@ -163,14 +159,14 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 
 func TestTransferNFT_successful(t *testing.T) {
 	t.Parallel()
-	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, true)
+	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, true, "invoice")
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
 
 	ownerOfPayload := map[string]interface{}{
-		"tokenId":         tokenID.String(),
-		"registryAddress": registry.String(),
+		"token_id":         tokenID.String(),
+		"registry_address": registry.String(),
 	}
 
 	transferPayload := map[string]interface{}{
@@ -182,7 +178,7 @@ func TestTransferNFT_successful(t *testing.T) {
 	// nft owner should be alice
 	resp, err := alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
 	assert.NoError(t, err)
-	resp.Path("$.owner").String().Equal(alice.id.String())
+	resp.Path("$.owner").String().Equal(strings.ToLower(alice.id.String()))
 
 	// transfer nft from alice to bob
 	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
@@ -196,5 +192,5 @@ func TestTransferNFT_successful(t *testing.T) {
 	// nft owner should be bob
 	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
 	assert.NoError(t, err)
-	resp.Path("$.owner").String().Equal(bob.id.String())
+	resp.Path("$.owner").String().Equal(strings.ToLower(bob.id.String()))
 }

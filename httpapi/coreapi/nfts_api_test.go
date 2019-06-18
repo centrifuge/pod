@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -23,23 +24,71 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func testTokenIDAndRegistryAddress(t *testing.T, rctx *chi.Context, getRequestFunc func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request), route http.HandlerFunc) {
+	// empty registry
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getRequestFunc(ctx)
+	route(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+
+	// invalid registry address
+	rctx.URLParams.Values[1] = "some value"
+	w, r = getRequestFunc(ctx)
+	route(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+
+	// empty token id
+	rctx.URLParams.Values[1] = hexutil.Encode(utils.RandomSlice(20))
+	w, r = getRequestFunc(ctx)
+	route(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
+
+	// invalid token ID
+	rctx.URLParams.Values[0] = "some invalid token id"
+	w, r = getRequestFunc(ctx)
+	route(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(32))
+}
+
 func TestHandler_MintNFT(t *testing.T) {
 	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("POST", "/nfts/mint", b).WithContext(ctx)
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/nfts/registries/{registry_address}/mint", b).WithContext(ctx)
 	}
 
-	// empty data
+	// empty registry tests
 	h := handler{}
-	ctx := context.Background()
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = registryAddressParam
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	w, r := getHTTPReqAndResp(ctx, nil)
+	h.MintNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+
+	//  invalid registry
+	rctx.URLParams.Values[0] = "some invalid"
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.MintNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+
+	// empty data
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(20))
+	w, r = getHTTPReqAndResp(ctx, nil)
 	h.MintNFT(w, r)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
-
 	data := map[string]interface{}{
-		"document_id":      hexutil.Encode(utils.RandomSlice(32)),
-		"registry_address": hexutil.Encode(utils.RandomSlice(20)),
-		"deposit_address":  hexutil.Encode(utils.RandomSlice(20)),
+		"document_id":     hexutil.Encode(utils.RandomSlice(32)),
+		"deposit_address": hexutil.Encode(utils.RandomSlice(20)),
 	}
 
 	d, err := json.Marshal(data)
@@ -70,90 +119,12 @@ func TestHandler_MintNFT(t *testing.T) {
 }
 
 func TestHandler_TransferNFT(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("POST", "/nfts/{token_id}/transfer", b).WithContext(ctx)
-	}
-
-	// empty token
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1, 1)
-	rctx.URLParams.Values = make([]string, 1, 1)
-	rctx.URLParams.Keys[0] = "token_id"
-	rctx.URLParams.Values[0] = ""
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx, nil)
-	h := handler{}
-	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
-
-	// invalid token
-	rctx.URLParams.Values[0] = "somevvalue"
-	w, r = getHTTPReqAndResp(ctx, nil)
-	h = handler{}
-	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
-
-	// empty body
-	tokenID := hexutil.Encode(utils.RandomSlice(32))
-	rctx.URLParams.Values[0] = tokenID
-	w, r = getHTTPReqAndResp(ctx, nil)
-	h = handler{}
-	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
-
-	// invalid registry
-	body := map[string]interface{}{
-		"registry_address": "some registry",
-	}
-	d, err := json.Marshal(body)
-	assert.NoError(t, err)
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h = handler{}
-	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "cannot unmarshal hex string")
-
-	// service fail
-	reg := hexutil.Encode(utils.RandomSlice(20))
-	to := hexutil.Encode(utils.RandomSlice(20))
-	body = map[string]interface{}{
-		"registry_address": reg,
-		"to":               to,
-	}
-	d, err = json.Marshal(body)
-	assert.NoError(t, err)
-	srv := new(testingnfts.MockNFTService)
-	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil, errors.New("failed to transfer")).Once()
-	h.srv.nftService = srv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "failed to transfer")
-	srv.AssertExpectations(t)
-
-	// success
-	srv = new(testingnfts.MockNFTService)
-	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(&nft.TokenResponse{
-		TokenID: tokenID,
-		JobID:   jobs.NewJobID().String(),
-	}, nil, nil).Once()
-	h.srv.nftService = srv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), tokenID)
-	srv.AssertExpectations(t)
-}
-
-func TestHandler_OwnerOfNFT(t *testing.T) {
+	var b io.Reader
 	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("GET", "/nfts/{token_id}/registry/{registry_address}/owner", nil).WithContext(ctx)
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/nfts/registries/{registry_address}/tokens/{token_id}/transfer", b).WithContext(ctx)
 	}
 
-	// empty token
+	// empty token and registry tests
 	h := handler{}
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Keys = make([]string, 2, 2)
@@ -163,39 +134,71 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	rctx.URLParams.Keys[1] = registryAddressParam
 	rctx.URLParams.Values[1] = ""
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	testTokenIDAndRegistryAddress(t, rctx, getHTTPReqAndResp, h.TransferNFT)
+
+	// empty body
+	tokenID, err := nft.TokenIDFromString(rctx.URLParams.Values[0])
+	assert.NoError(t, err)
 	w, r := getHTTPReqAndResp(ctx)
-	h.OwnerOfNFT(w, r)
+	h = handler{}
+	h.TransferNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
 
-	// invalid token id
-	rctx.URLParams.Values[0] = "some value"
+	// service fail
+	to := hexutil.Encode(utils.RandomSlice(20))
+	body := map[string]interface{}{
+		"to": to,
+	}
+	d, err := json.Marshal(body)
+	assert.NoError(t, err)
+	srv := new(testingnfts.MockNFTService)
+	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil, errors.New("failed to transfer")).Once()
+	h.srv.nftService = srv
+	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)
-	h.OwnerOfNFT(w, r)
+	h.TransferNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidTokenID.Error())
+	assert.Contains(t, w.Body.String(), "failed to transfer")
+	srv.AssertExpectations(t)
 
-	// empty registry address
-	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(32))
+	// success
+	srv = new(testingnfts.MockNFTService)
+	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(&nft.TokenResponse{
+		TokenID: tokenID.String(),
+		JobID:   jobs.NewJobID().String(),
+	}, nil, nil).Once()
+	h.srv.nftService = srv
+	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)
-	h.OwnerOfNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+	h.TransferNFT(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Contains(t, w.Body.String(), tokenID.String())
+	srv.AssertExpectations(t)
+}
 
-	// invalid registry address
-	rctx.URLParams.Values[1] = "some value"
-	w, r = getHTTPReqAndResp(ctx)
-	h.OwnerOfNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidRegistryAddress.Error())
+func TestHandler_OwnerOfNFT(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/nfts/registries/{registry_address}/tokens/{token_id}/owner", nil).WithContext(ctx)
+	}
+
+	// empty token and registry tests
+	h := handler{}
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = tokenIDParam
+	rctx.URLParams.Values[0] = ""
+	rctx.URLParams.Keys[1] = registryAddressParam
+	rctx.URLParams.Values[1] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	testTokenIDAndRegistryAddress(t, rctx, getHTTPReqAndResp, h.OwnerOfNFT)
 
 	// owner failed
-	registry := common.BytesToAddress(utils.RandomSlice(20))
-	rctx.URLParams.Values[1] = registry.String()
 	srv := new(testingnfts.MockNFTService)
 	srv.On("OwnerOf", mock.Anything, mock.Anything).Return(nil, errors.New("failed to get owner")).Once()
 	h.srv.nftService = srv
-	w, r = getHTTPReqAndResp(ctx)
+	w, r := getHTTPReqAndResp(ctx)
 	h.OwnerOfNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "failed to get owner")
@@ -209,6 +212,6 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	w, r = getHTTPReqAndResp(ctx)
 	h.OwnerOfNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), owner.String())
+	assert.Contains(t, w.Body.String(), strings.ToLower(owner.String()))
 	srv.AssertExpectations(t)
 }

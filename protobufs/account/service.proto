@@ -15,7 +15,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service AccountService {
   rpc GetAccount(GetAccountRequest) returns (AccountData) {
     option (google.api.http) = {
-      get: "/accounts/{identifier}"
+      get: "/v1/accounts/{account_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get Account"
@@ -23,7 +23,7 @@ service AccountService {
   }
   rpc GetAllAccounts(google.protobuf.Empty) returns (GetAllAccountResponse) {
     option (google.api.http) = {
-      get: "/accounts"
+      get: "/v1/accounts"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get All Accounts"
@@ -31,7 +31,7 @@ service AccountService {
   }
   rpc CreateAccount(AccountData) returns (AccountData) {
     option (google.api.http) = {
-      post: "/accounts"
+      post: "/v1/accounts"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -40,7 +40,7 @@ service AccountService {
   }
   rpc GenerateAccount(google.protobuf.Empty) returns (AccountData) {
     option (google.api.http) = {
-      post: "/accounts/generate"
+      post: "/v1/accounts/generate"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Generates an Account taking defaults based on the main account"
@@ -48,7 +48,7 @@ service AccountService {
   }
   rpc UpdateAccount(UpdateAccountRequest) returns (AccountData) {
     option (google.api.http) = {
-      put: "/accounts/{identifier}"
+      put: "/v1/accounts/{account_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -58,7 +58,7 @@ service AccountService {
 }
 
 message GetAccountRequest {
-  string identifier = 1;
+  string account_id = 1;
 }
 
 message GetAllAccountResponse {
@@ -66,7 +66,7 @@ message GetAllAccountResponse {
 }
 
 message UpdateAccountRequest {
-  string identifier = 1;
+  string account_id = 1;
   AccountData data = 2;
 }
 

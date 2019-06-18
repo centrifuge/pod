@@ -135,7 +135,7 @@ func TestService_SignVerify(t *testing.T) {
 	err = oldInv.UnpackCoreDocument(oldCD)
 	assert.NoError(t, err)
 
-	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), Identifier: hexutil.Encode(utils.RandomSlice(32)), AgreementId: fundingID}
+	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: fundingID}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 	updatedModel, err := srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))

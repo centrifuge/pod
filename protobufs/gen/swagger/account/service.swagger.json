@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/accounts": {
+    "/v1/accounts": {
       "get": {
         "description": "Get All Accounts",
         "operationId": "GetAllAccounts",
@@ -57,7 +57,7 @@
         ]
       }
     },
-    "/accounts/generate": {
+    "/v1/accounts/generate": {
       "post": {
         "description": "Generates an Account taking defaults based on the main account",
         "operationId": "GenerateAccount",
@@ -74,7 +74,7 @@
         ]
       }
     },
-    "/accounts/{identifier}": {
+    "/v1/accounts/{account_id}": {
       "get": {
         "description": "Get Account",
         "operationId": "GetAccount",
@@ -88,7 +88,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "account_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -111,7 +111,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "account_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -194,7 +194,7 @@
     "accountUpdateAccountRequest": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "account_id": {
           "type": "string"
         },
         "data": {

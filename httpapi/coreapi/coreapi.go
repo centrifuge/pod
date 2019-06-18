@@ -18,7 +18,7 @@ const (
 )
 
 // Register registers the core apis to the router.
-func Register(r *chi.Mux,
+func Register(r chi.Router,
 	nftSrv nft.Service,
 	accountSrv config.Service,
 	docSrv documents.Service,
@@ -28,14 +28,14 @@ func Register(r *chi.Mux,
 		tokenRegistry: nftSrv.(documents.TokenRegistry),
 	}
 	r.Post("/documents", h.CreateDocument)
-	r.Put("/documents", h.UpdateDocument)
+	r.Put("/documents/{"+documentIDParam+"}", h.UpdateDocument)
 	r.Get("/documents/{"+documentIDParam+"}", h.GetDocument)
 	r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}", h.GetDocumentVersion)
 	r.Post("/documents/{"+documentIDParam+"}/proofs", h.GenerateProofs)
 	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
-	r.Post("/nfts/mint", h.MintNFT)
-	r.Post("/nfts/{"+tokenIDParam+"}/transfer", h.TransferNFT)
-	r.Get("/nfts/{"+tokenIDParam+"}/registry/{"+registryAddressParam+"}/owner", h.OwnerOfNFT)
+	r.Post("/nfts/registries/{"+registryAddressParam+"}/mint", h.MintNFT)
+	r.Post("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/transfer", h.TransferNFT)
+	r.Get("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/owner", h.OwnerOfNFT)
 	r.Post("/accounts/{"+accountIDParam+"}/sign", h.SignPayload)
 }
