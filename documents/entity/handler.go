@@ -135,7 +135,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetReq
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(getRequest.Identifier)
+	identifier, err := hexutil.Decode(getRequest.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
@@ -165,7 +165,7 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 		return nil, err
 	}
 
-	relationshipIdentifier, err := hexutil.Decode(getRequest.RelationshipIdentifier)
+	relationshipIdentifier, err := hexutil.Decode(getRequest.RelationshipId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")

@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -147,7 +146,7 @@ func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, did identity.DID,
 			cs = append(cs, c.String())
 		}
 
-		data.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
+		data.WriteAccess = cs
 	}
 	err := po.InitPurchaseOrderInput(data, did)
 	assert.NoError(t, err)

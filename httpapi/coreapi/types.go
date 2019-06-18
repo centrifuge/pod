@@ -20,17 +20,11 @@ type AttributeMap map[string]Attribute
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string           `json:"scheme" enums:"invoice,purchaseorder,entity"`
+	Scheme      string           `json:"scheme" enums:"invoice,purchase_order,entity"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
 	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}      `json:"data"`
 	Attributes  AttributeMap     `json:"attributes"`
-}
-
-// UpdateDocumentRequest defines the payload for updating documents.
-type UpdateDocumentRequest struct {
-	CreateDocumentRequest
-	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
 }
 
 // Attribute defines a single attribute.
@@ -50,7 +44,7 @@ type NFT struct {
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
 	DocumentID  string           `json:"document_id"`
-	Version     string           `json:"version"`
+	VersionID   string           `json:"version_id"`
 	Author      string           `json:"author"`
 	CreatedAt   string           `json:"created_at"`
 	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
@@ -62,7 +56,7 @@ type ResponseHeader struct {
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
 	Header     ResponseHeader `json:"header"`
-	Scheme     string         `json:"scheme" enums:"invoice,purchaseorder,entity"`
+	Scheme     string         `json:"scheme" enums:"invoice,purchase_order,entity"`
 	Data       interface{}    `json:"data"`
 	Attributes AttributeMap   `json:"attributes"`
 }
@@ -103,19 +97,6 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	payload.Attributes = attrs
 
 	return payload, nil
-}
-
-// toDocumentsUpdatePayload converts the update request to UpdatePayload.
-func toDocumentsUpdatePayload(request UpdateDocumentRequest) (payload documents.UpdatePayload, err error) {
-	createPayload, err := toDocumentsCreatePayload(request.CreateDocumentRequest)
-	if err != nil {
-		return payload, err
-	}
-
-	return documents.UpdatePayload{
-		CreatePayload: createPayload,
-		DocumentID:    request.DocumentID,
-	}, nil
 }
 
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
@@ -185,7 +166,7 @@ func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 
 	return ResponseHeader{
 		DocumentID:  hexutil.Encode(model.ID()),
-		Version:     hexutil.Encode(model.CurrentVersion()),
+		VersionID:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author.String(),
 		CreatedAt:   ts,
 		ReadAccess:  identity.DIDsToAddress(cs.ReadCollaborators...),
@@ -273,7 +254,6 @@ func convertProofs(proof *documents.DocumentProof) ProofsResponse {
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
 	DocumentID               byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	RegistryAddress          common.Address     `json:"registry_address" swaggertype:"primitive,string"`
 	DepositAddress           common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
 	ProofFields              []string           `json:"proof_fields"`
 	GrantNFTReadAccess       bool               `json:"grant_nft_access"`
@@ -295,13 +275,13 @@ type MintNFTResponse struct {
 	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
 }
 
-func toNFTMintRequest(req MintNFTRequest) nft.MintNFTRequest {
+func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
 	return nft.MintNFTRequest{
 		DocumentID:               req.DocumentID,
 		DepositAddress:           req.DepositAddress,
 		GrantNFTReadAccess:       req.GrantNFTReadAccess,
 		ProofFields:              req.ProofFields,
-		RegistryAddress:          req.RegistryAddress,
+		RegistryAddress:          registryAddress,
 		SubmitNFTReadAccessProof: req.SubmitNFTReadAccessProof,
 		SubmitTokenProof:         req.SubmitTokenProof,
 	}
@@ -309,23 +289,22 @@ func toNFTMintRequest(req MintNFTRequest) nft.MintNFTRequest {
 
 // TransferNFTRequest holds Registry Address and To address for NFT transfer
 type TransferNFTRequest struct {
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	To              common.Address `json:"to" swaggertype:"primitive,string"`
+	To common.Address `json:"to" swaggertype:"primitive,string"`
 }
 
 // TransferNFTResponse is the response for NFT transfer.
 type TransferNFTResponse struct {
 	Header          NFTResponseHeader `json:"header"`
 	TokenID         string            `json:"token_id"`
-	RegistryAddress string            `json:"registry_address"`
-	To              string            `json:"to"`
+	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
+	To              common.Address    `json:"to" swaggertype:"primitive,string"`
 }
 
 // NFTOwnerResponse is the response for NFT owner request.
 type NFTOwnerResponse struct {
-	TokenID         string `json:"token_id"`
-	RegistryAddress string `json:"registry_address"`
-	Owner           string `json:"owner"`
+	TokenID         string         `json:"token_id"`
+	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
+	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
 }
 
 // SignRequest holds the payload to be signed.

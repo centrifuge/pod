@@ -46,8 +46,10 @@ func Router(
 	// health check
 	health.Register(r, config)
 
-	// core apis
-	coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+	r.Route("/v1", func(r chi.Router) {
+		// core apis
+		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+	})
 	return r
 }
 

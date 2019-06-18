@@ -256,12 +256,18 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 		}
 	}
 
+	attrs, err := documents.ToClientAttributes(model.GetAttributes())
+	if err != nil {
+		return nil, err
+	}
+
 	return &cliententitypb.EntityResponse{
 		Header: h,
 		Data: &cliententitypb.EntityDataResponse{
 			Entity:        data,
 			Relationships: relationships,
 		},
+		Attributes: attrs,
 	}, nil
 }
 
@@ -277,7 +283,7 @@ func (s service) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityDa
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return entity.getClientData()
+	return entity.getClientData(), nil
 }
 
 // DeriveFromUpdatePayload returns a new version of the old entity identified by identifier in payload
@@ -287,7 +293,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 	}
 
 	// get latest old version of the document
-	id, err := hexutil.Decode(payload.Identifier)
+	id, err := hexutil.Decode(payload.DocumentId)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
 	}
@@ -302,8 +308,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientent
 		return nil, err
 	}
 
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	entity := new(Entity)
-	err = entity.PrepareNewVersion(old, payload.Data, cs)
+	err = entity.PrepareNewVersion(old, payload.Data, cs, attrs)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load entity from data: %v", err))
 	}

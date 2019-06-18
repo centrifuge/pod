@@ -101,13 +101,8 @@ func TestCollaboratorAccess(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
-	rcs := &documentpb.ReadAccess{
-		Collaborators: []string{id1.String(), id2.String(), ""},
-	}
-
-	wcs := &documentpb.WriteAccess{
-		Collaborators: []string{id2.String(), id3.String(), ""},
-	}
+	rcs := []string{id1.String(), id2.String(), ""}
+	wcs := []string{id2.String(), id3.String(), ""}
 
 	ca, err := FromClientCollaboratorAccess(rcs, wcs)
 	assert.NoError(t, err)
@@ -115,16 +110,16 @@ func TestCollaboratorAccess(t *testing.T) {
 	assert.Len(t, ca.ReadWriteCollaborators, 2)
 
 	grcs, gwcs := ToClientCollaboratorAccess(ca)
-	assert.Len(t, grcs.Collaborators, 1)
-	assert.Equal(t, grcs.Collaborators[0], id1.String())
-	assert.Len(t, gwcs.Collaborators, 2)
-	assert.Contains(t, gwcs.Collaborators, id2.String(), id3.String())
+	assert.Len(t, grcs, 1)
+	assert.Equal(t, grcs[0], id1.String())
+	assert.Len(t, gwcs, 2)
+	assert.Contains(t, gwcs, id2.String(), id3.String())
 
-	wcs.Collaborators[0] = "wrg id"
+	wcs[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
 
-	rcs.Collaborators[0] = "wrg id"
+	rcs[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
 }
@@ -154,11 +149,11 @@ func TestDeriveResponseHeader(t *testing.T) {
 	resp, err := DeriveResponseHeader(nil, model)
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentId)
-	assert.Equal(t, hexutil.Encode(id), resp.Version)
-	assert.Len(t, resp.ReadAccess.Collaborators, 1)
-	assert.Equal(t, resp.ReadAccess.Collaborators[0], did1.String())
-	assert.Len(t, resp.WriteAccess.Collaborators, 1)
-	assert.Equal(t, resp.WriteAccess.Collaborators[0], did2.String())
+	assert.Equal(t, hexutil.Encode(id), resp.VersionId)
+	assert.Len(t, resp.ReadAccess, 1)
+	assert.Equal(t, resp.ReadAccess[0], did1.String())
+	assert.Len(t, resp.WriteAccess, 1)
+	assert.Equal(t, resp.WriteAccess[0], did2.String())
 	model.AssertExpectations(t)
 }
 
@@ -400,6 +395,15 @@ func TestConvertNFTs(t *testing.T) {
 	}
 }
 
+func attrsToList(attrs map[AttrKey]Attribute) []Attribute {
+	var attrsList []Attribute
+	for _, v := range attrs {
+		attrsList = append(attrsList, v)
+	}
+
+	return attrsList
+}
+
 func TestAttributes(t *testing.T) {
 	attrs := map[string]*documentpb.Attribute{
 		"time_test": {
@@ -431,7 +435,7 @@ func TestAttributes(t *testing.T) {
 	attrMap, err := FromClientAttributes(attrs)
 	assert.NoError(t, err)
 
-	cattrs, err := ToClientAttributes(attrMap)
+	cattrs, err := ToClientAttributes(attrsToList(attrMap))
 	assert.NoError(t, err)
 	for k := range cattrs {
 		cattrs[k].Key = ""
@@ -449,7 +453,7 @@ func TestAttributes(t *testing.T) {
 
 	attr.Value.Type = AttributeType("some type")
 	attrMap[key] = attr
-	cattrs, err = ToClientAttributes(attrMap)
+	cattrs, err = ToClientAttributes(attrsToList(attrMap))
 	assert.Error(t, err)
 
 	// failed FromClient

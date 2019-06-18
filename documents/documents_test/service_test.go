@@ -22,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -544,7 +543,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 		for _, c := range collaborators {
 			cs = append(cs, c.String())
 		}
-		data.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
+		data.WriteAccess = cs
 	}
 
 	err := i.InitInvoiceInput(data, did)

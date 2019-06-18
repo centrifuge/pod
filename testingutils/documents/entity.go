@@ -5,7 +5,6 @@ package testingdocuments
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 )
@@ -43,6 +42,6 @@ func CreateEntityPayload() *cliententitypb.EntityCreatePayload {
 				},
 			},
 		},
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{testingidentity.GenerateRandomDID().String()}},
+		WriteAccess: []string{testingidentity.GenerateRandomDID().String()},
 	}
 }

@@ -81,7 +81,7 @@ func TestTypes_deriveResponseHeader(t *testing.T) {
 	resp, err := deriveResponseHeader(nil, model, jobs.NewJobID())
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentID)
-	assert.Equal(t, hexutil.Encode(id), resp.Version)
+	assert.Equal(t, hexutil.Encode(id), resp.VersionID)
 	assert.Len(t, resp.ReadAccess, 1)
 	assert.Equal(t, resp.ReadAccess[0].String(), did1.String())
 	assert.Len(t, resp.WriteAccess, 1)
