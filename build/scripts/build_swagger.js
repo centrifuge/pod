@@ -52,7 +52,16 @@ let addAuthHeader = function(obj) {
         obj.parameters = []
     }
 
-    obj.parameters.push(authHeader);
+    let foundAuth = false;
+    obj.parameters.forEach(function (p) {
+       if (p.name === "authorization") {
+           foundAuth = true;
+       }
+    });
+
+    if (!foundAuth){
+        obj.parameters.push(authHeader);
+    }
 };
 
 let files = getSwaggerFiles(swaggerFilesPath);

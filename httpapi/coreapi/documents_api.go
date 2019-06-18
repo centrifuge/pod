@@ -36,7 +36,7 @@ type handler struct {
 // @id create_document
 // @tags Documents
 // @accept json
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body coreapi.CreateDocumentRequest true "Document Create request"
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
@@ -96,7 +96,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @id update_document
 // @tags Documents
 // @accept json
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param body body coreapi.CreateDocumentRequest true "Document Update request"
 // @produce json
@@ -164,7 +164,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 // @description Returns the latest version of the document.
 // @id get_document
 // @tags Documents
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
@@ -209,7 +209,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 // @description Returns the specific version of the document.
 // @id get_document_version
 // @tags Documents
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param version_id path string true "Document Version Identifier"
 // @produce json
@@ -261,7 +261,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 // @description Generates proofs for the fields from latest version of the document.
 // @id generate_document_proofs
 // @tags Documents
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param body body coreapi.ProofsRequest true "Document proof request"
 // @produce json
@@ -313,7 +313,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 // @description Generates proofs for the fields from a specific document version.
 // @id generate_document_version_proofs
 // @tags Documents
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param version_id path string true "Document Version Identifier"
 // @param body body coreapi.ProofsRequest true "Document proof request"
