@@ -164,6 +164,8 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	cfg.Set("keys.p2p.privateKey", fmt.Sprintf("%s/build/resources/p2pKey.key.pem", projDir))
 	cfg.Set("keys.signing.publicKey", fmt.Sprintf("%s/build/resources/signingKey.pub.pem", projDir))
 	cfg.Set("keys.signing.privateKey", fmt.Sprintf("%s/build/resources/signingKey.key.pem", projDir))
+	//cfg.Set("keys.zsigning.publicKey", fmt.Sprintf("%s/build/resources/zsigningKey.pub.pem", projDir))
+	//cfg.Set("keys.zsigning.privateKey", fmt.Sprintf("%s/build/resources/zsigningKey.key.pem", projDir))
 	SetupSmartContractAddresses(cfg, addresses)
 	cm := make(map[string]interface{})
 	cm[bootstrap.BootstrappedConfig] = cfg

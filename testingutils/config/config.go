@@ -164,6 +164,11 @@ func (m *MockConfig) GetSigningKeyPair() (pub, priv string) {
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
+func (m *MockConfig) GetZSigningKeyPair() (pub, priv string) {
+	args := m.Called()
+	return args.Get(0).(string), args.Get(1).(string)
+}
+
 func (m *MockConfig) GetPrecommitEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)

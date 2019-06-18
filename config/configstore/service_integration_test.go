@@ -52,6 +52,8 @@ func TestService_GenerateAccountHappy(t *testing.T) {
 	assert.True(t, tc.GetEthereumDefaultAccountName() != "")
 	pb, pv := tc.GetSigningKeyPair()
 	err = checkKeyPair(t, pb, pv)
+	zpb, zpv := tc.GetZSigningKeyPair()
+	err = checkKeyPair(t, zpb, zpv)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	err = identityService.Exists(ctxh, did)
 	assert.NoError(t, err)

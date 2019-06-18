@@ -150,6 +150,9 @@
         "signing_key_pair": {
           "$ref": "#/definitions/accountKeyPair"
         },
+        "z_signing_key_pair": {
+          "$ref": "#/definitions/accountKeyPair"
+        },
         "p2p_key_pair": {
           "$ref": "#/definitions/accountKeyPair"
         }

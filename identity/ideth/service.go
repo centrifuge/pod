@@ -446,6 +446,11 @@ func (i service) AddKeysForAccount(acc config.Account) error {
 		return err
 	}
 
+	err = i.AddKey(tctx, keys[id.KeyPurposeZSigning.Name])
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

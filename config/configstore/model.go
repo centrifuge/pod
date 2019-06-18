@@ -264,6 +264,11 @@ func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
 	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Priv
 }
 
+// GetSigningKeyPair refer the interface
+func (nc *NodeConfig) GetZSigningKeyPair() (pub, priv string) {
+	return nc.MainIdentity.ZSigningKeyPair.Pub, nc.MainIdentity.ZSigningKeyPair.Priv
+}
+
 // GetPrecommitEnabled refer the interface
 func (nc *NodeConfig) GetPrecommitEnabled() bool {
 	return nc.MainIdentity.PrecommitEnabled
@@ -310,6 +315,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 	mainIdentity, _ := c.GetIdentityID()
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	signPub, signPriv := c.GetSigningKeyPair()
+	signZPub, signZPriv := c.GetZSigningKeyPair()
 
 	return &NodeConfig{
 		MainIdentity: Account{
@@ -328,6 +334,10 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 			SigningKeyPair: KeyPair{
 				Pub:  signPub,
 				Priv: signPriv,
+			},
+			ZSigningKeyPair: KeyPair{
+				Pub: signZPub,
+				Priv:signZPriv,
 			},
 		},
 		StoragePath:                    c.GetStoragePath(),
@@ -383,6 +393,7 @@ type Account struct {
 	ReceiveEventNotificationEndpoint string
 	IdentityID                       []byte
 	SigningKeyPair                   KeyPair
+	ZSigningKeyPair									 KeyPair
 	P2PKeyPair                       KeyPair
 	keys                             map[string]config.IDKey
 	PrecommitEnabled                 bool
@@ -423,13 +434,18 @@ func (acc *Account) GetSigningKeyPair() (pub, priv string) {
 	return acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv
 }
 
+// GetZSigningKeyPair gets SigningKeyPair
+func (acc *Account) GetZSigningKeyPair() (pub, priv string) {
+	return acc.ZSigningKeyPair.Pub, acc.ZSigningKeyPair.Priv
+}
+
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
 func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 	return acc.EthereumContextWaitTimeout
 }
 
 // SignMsg signs a message with the signing key
-func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+func (acc *Account) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
 	keys, err := acc.GetKeys()
 	if err != nil {
 		return nil, err
@@ -440,17 +456,32 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		return nil, err
 	}
 
+	zSigningKeyPair := keys[identity.KeyPurposeZSigning.Name]
+	sSignature, err := crypto.SignMessage(zSigningKeyPair.PrivateKey, msg, crypto.CurveJubJub)
+	if err != nil {
+		return nil, err
+	}
+
 	did, err := acc.GetIdentityID()
 	if err != nil {
 		return nil, err
 	}
 
-	return &coredocumentpb.Signature{
+	sigs := make([]*coredocumentpb.Signature, 2)
+	sigs[0] = &coredocumentpb.Signature{
 		SignatureId: append(did, signingKeyPair.PublicKey...),
 		SignerId:    did,
 		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
-	}, nil
+	}
+	sigs[1] = &coredocumentpb.Signature{
+		SignatureId: append(did, zSigningKeyPair.PublicKey...),
+		SignerId:    did,
+		PublicKey:   zSigningKeyPair.PublicKey,
+		Signature:   sSignature,
+	}
+
+	return sigs, nil
 }
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
@@ -511,6 +542,18 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 			PrivateKey: sk}
 	}
 
+	if _, ok := acc.keys[identity.KeyPurposeZSigning.Name]; !ok {
+		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetZSigningKeyPair())
+		if err != nil {
+			return idKeys, err
+		}
+
+		acc.keys[identity.KeyPurposeZSigning.Name] = config.IDKey{
+			PublicKey:  pk,
+			PrivateKey: sk,
+		}
+	}
+
 	id, err := acc.GetIdentityID()
 	if err != nil {
 		return idKeys, err
@@ -563,6 +606,10 @@ func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 			Pub: acc.SigningKeyPair.Pub,
 			Pvt: acc.SigningKeyPair.Priv,
 		},
+		ZSigningKeyPair: &accountpb.KeyPair{
+			Pub: acc.ZSigningKeyPair.Pub,
+			Pvt: acc.ZSigningKeyPair.Priv,
+		},
 	}, nil
 }
 
@@ -595,6 +642,10 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 		Pub:  data.SigningKeyPair.Pub,
 		Priv: data.SigningKeyPair.Pvt,
 	}
+	acc.ZSigningKeyPair = KeyPair{
+		Pub:  data.ZSigningKeyPair.Pub,
+		Priv: data.ZSigningKeyPair.Pvt,
+	}
 
 	return nil
 }
@@ -620,6 +671,7 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
+		ZSigningKeyPair:                  NewKeyPair(c.GetZSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
 	}, nil
 }
@@ -640,6 +692,7 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
+		ZSigningKeyPair:                  NewKeyPair(c.GetZSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
 	}, nil
 }

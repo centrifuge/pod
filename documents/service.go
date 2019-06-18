@@ -50,7 +50,7 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
@@ -159,7 +159,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -202,12 +202,13 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		transitionFlag = byte(1)
 	}
 
-	sig, err := acc.SignMsg(ConsensusSignaturePayload(ddr, transitionFlag))
+	sigs, err := acc.SignMsg(ConsensusSignaturePayload(ddr, transitionFlag))
 	if err != nil {
 		return nil, err
 	}
-	sig.TransitionValidated = (transitionFlag != byte(0))
-	model.AppendSignatures(sig)
+	sigs[0].TransitionValidated = (transitionFlag != byte(0))
+	sigs[1].TransitionValidated = (transitionFlag != byte(0))
+	model.AppendSignatures(sigs...)
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
@@ -224,7 +225,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 
 	srvLog.Infof("signed document %x with version %x", model.ID(), model.CurrentVersion())
-	return sig, nil
+	return sigs, nil
 }
 
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error {

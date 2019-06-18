@@ -255,6 +255,11 @@ func (m *mockConfig) GetSigningKeyPair() (pub, priv string) {
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
+func (m *mockConfig) GetZSigningKeyPair() (pub, priv string) {
+	args := m.Called()
+	return args.Get(0).(string), args.Get(1).(string)
+}
+
 func TestNewNodeConfig(t *testing.T) {
 	c := createMockConfig()
 	NewNodeConfig(c)

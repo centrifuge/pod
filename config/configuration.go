@@ -133,6 +133,7 @@ type Configuration interface {
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
+	GetZSigningKeyPair() (pub, priv string)
 	GetPrecommitEnabled() bool
 
 	// GetLowEntropyNFTTokenEnabled enables low entropy token IDs.
@@ -152,13 +153,14 @@ type Configuration interface {
 type Account interface {
 	storage.Model
 	GetKeys() (map[string]IDKey, error)
-	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
+	SignMsg(msg []byte) ([]*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
 	GetIdentityID() ([]byte, error)
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
+	GetZSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
 	GetPrecommitEnabled() bool
 
@@ -438,6 +440,11 @@ func (c *configuration) GetP2PKeyPair() (pub, priv string) {
 // GetSigningKeyPair returns the signing key pair.
 func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
+}
+
+// GetZSigningKeyPair returns the signing key pair.
+func (c *configuration) GetZSigningKeyPair() (pub, priv string) {
+	return c.GetString("keys.zsigning.publicKey"), c.GetString("keys.zsigning.privateKey")
 }
 
 // IsPProfEnabled returns true if the pprof is enabled

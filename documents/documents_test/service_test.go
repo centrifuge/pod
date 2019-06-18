@@ -125,10 +125,10 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ddr, err := doc.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
-	sig, err := acc.SignMsg(ddr)
+	sigs, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
-	doc.AppendSignatures(sig)
+	doc.AppendSignatures(sigs...)
 	ndr, err := doc.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	err = testRepo().Create(did[:], doc.CurrentVersion(), doc)
@@ -275,10 +275,10 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.NoError(t, err)
 	sr, err := doc.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
-	sig, err := acc.SignMsg(sr)
+	sigs, err := acc.SignMsg(sr)
 	assert.NoError(t, err)
 
-	doc.AppendSignatures(sig)
+	doc.AppendSignatures(sigs...)
 	_, err = doc.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
@@ -290,9 +290,9 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition
-	sig, err = srv.RequestDocumentSignature(ctxh, doc, did)
+	sigs, err = srv.RequestDocumentSignature(ctxh, doc, did)
 	assert.NoError(t, err)
-	assert.True(t, sig.TransitionValidated)
+	assert.True(t, sigs[0].TransitionValidated)
 }
 
 func TestService_RequestDocumentSignature_TransitionNotValidated(t *testing.T) {
@@ -309,9 +309,9 @@ func TestService_RequestDocumentSignature_TransitionNotValidated(t *testing.T) {
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
-	sig, err := srv.RequestDocumentSignature(ctxh, doc, did)
+	sigs, err := srv.RequestDocumentSignature(ctxh, doc, did)
 	assert.NoError(t, err)
-	assert.False(t, sig.TransitionValidated)
+	assert.False(t, sigs[0].TransitionValidated)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
@@ -579,10 +579,10 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	sig, err := acc.SignMsg(ddr)
+	sigs, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
-	i.AppendSignatures(sig)
+	i.AppendSignatures(sigs...)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := i.PackCoreDocument()

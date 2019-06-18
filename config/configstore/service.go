@@ -16,7 +16,9 @@ import (
 
 const (
 	signingPubKeyName  = "signingKey.pub.pem"
+	zSigningPubKeyName  = "zsigningKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
+	zSigningPrivKeyName = "zsigningKey.key.pem"
 )
 
 // ProtocolSetter sets the protocol on host for the centID
@@ -116,11 +118,27 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 	if err != nil {
 		return nil, err
 	}
+	zsPub, err := createKeyPath(keystore, DID, zSigningPubKeyName)
+	if err != nil {
+		return nil, err
+	}
+	zsPriv, err := createKeyPath(keystore, DID, zSigningPrivKeyName)
+	if err != nil {
+		return nil, err
+	}
 	acc.SigningKeyPair = KeyPair{
 		Pub:  sPub,
 		Priv: sPriv,
 	}
+	acc.ZSigningKeyPair = KeyPair{
+		Pub:  zsPub,
+		Priv: zsPriv,
+	}
 	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
+	if err != nil {
+		return nil, err
+	}
+	err = crypto.GenerateSigningKeyPair(acc.ZSigningKeyPair.Pub, acc.ZSigningKeyPair.Priv, crypto.CurveJubJub)
 	if err != nil {
 		return nil, err
 	}

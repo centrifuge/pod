@@ -32,6 +32,7 @@ const (
 	keyPurposeAction       = "ACTION"
 	keyPurposeP2PDiscovery = "P2P_DISCOVERY"
 	keyPurposeSigning      = "SIGNING"
+	keyPurposeZSigning      = "ZSIGNING"
 )
 
 var (
@@ -43,6 +44,8 @@ var (
 	KeyPurposeP2PDiscovery Purpose
 	// KeyPurposeSigning purpose stores the action key to interact with the ERC725 identity contract
 	KeyPurposeSigning Purpose
+	// KeyPurposeZSigning purpose stores the action key to interact with the ERC725 identity contract
+	KeyPurposeZSigning Purpose
 )
 
 func init() {
@@ -50,6 +53,7 @@ func init() {
 	KeyPurposeAction = getKeyPurposeAction()
 	KeyPurposeP2PDiscovery = getKeyPurposeP2PDiscovery()
 	KeyPurposeSigning = getKeyPurposeSigning()
+	KeyPurposeZSigning = getKeyPurposeZSigning()
 }
 
 // getKeyPurposeManagement is calculated out of Hex(leftPadding(1,32))
@@ -80,6 +84,13 @@ func getKeyPurposeSigning() Purpose {
 	return Purpose{Name: keyPurposeSigning, HexValue: hashed, Value: *v}
 }
 
+// getKeyPurposeZSigning is calculated out of Hex(sha256("CENTRIFUGE@SIGNING"))
+func getKeyPurposeZSigning() Purpose {
+	p := getKeyPurposeSigning()
+	p.Name = keyPurposeZSigning
+	return p
+}
+
 // Purpose contains the different representation of purpose along the code
 type Purpose struct {
 	Name     string
@@ -97,6 +108,8 @@ func GetPurposeByName(name string) Purpose {
 	case keyPurposeP2PDiscovery:
 		return getKeyPurposeP2PDiscovery()
 	case keyPurposeSigning:
+		return getKeyPurposeSigning()
+	case keyPurposeZSigning:
 		return getKeyPurposeSigning()
 	default:
 		return Purpose{}

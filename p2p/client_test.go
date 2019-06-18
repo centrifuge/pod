@@ -159,10 +159,10 @@ func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, did identity.DID,
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	sig, err := acc.SignMsg(ddr)
+	sigs, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
-	po.AppendSignatures(sig)
+	po.AppendSignatures(sigs...)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := po.PackCoreDocument()
