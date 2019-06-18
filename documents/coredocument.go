@@ -197,6 +197,7 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 		cd.Document.SignatureData = new(coredocumentpb.SignatureData)
 	}
 	cd.Document.SignatureData.Signatures = append(cd.Document.SignatureData.Signatures, signs...)
+	cd.Modified = true
 }
 
 // PrepareNewVersion prepares the next version of the CoreDocument
