@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -63,7 +64,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, documents
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[jobs.BootstrappedService].(jobs.Manager))
+		ctx[jobs.BootstrappedService].(jobs.Manager), anchorRepo)
 }
 
 func TestService_UpdateModel(t *testing.T) {
@@ -93,12 +94,67 @@ func TestService_UpdateModel(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
-	// Success
+	// failed validations
 	payload.Data = validData(t)
+	dr := anchors.RandomDocumentRoot()
+	anchorRepo := new(testinganchors.MockAnchorRepo)
+	anchorRepo.On("GetAnchorData", mock.Anything).Return(dr, nil)
+	oldRepo := srv.anchorRepo
+	srv.anchorRepo = anchorRepo
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), documents.ErrDocumentIDReused.Error())
+	anchorRepo.AssertExpectations(t)
+
+	// Success
 	jm := testingjobs.MockJobManager{}
 	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
 	srv.jobManager = jm
+	srv.anchorRepo = oldRepo
 	m, _, err := srv.UpdateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m.ID(), g.ID())
+	assert.Equal(t, m.CurrentVersion(), g.NextVersion())
+	jm.AssertExpectations(t)
+}
+
+func TestService_Update(t *testing.T) {
+	_, srv := getServiceWithMockedLayers()
+	gsrv := srv.(service)
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+
+	// empty context
+	_, _, _, err := srv.Update(context.Background(), nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// missing last version
+	g, _ := createCDWithEmbeddedGeneric(t)
+	_, _, _, err = gsrv.Update(ctxh, g)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+	assert.NoError(t, testRepo().Create(did[:], g.CurrentVersion(), g))
+
+	// validations failed
+	err = g.(*Generic).PrepareNewVersion(g, documents.CollaboratorsAccess{}, nil)
+	dr := anchors.RandomDocumentRoot()
+	anchorRepo := new(testinganchors.MockAnchorRepo)
+	anchorRepo.On("GetAnchorData", mock.Anything).Return(dr, nil)
+	oldRepo := gsrv.anchorRepo
+	gsrv.anchorRepo = anchorRepo
+	_, _, _, err = gsrv.Update(ctxh, g)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), documents.ErrDocumentIDReused.Error())
+	anchorRepo.AssertExpectations(t)
+	gsrv.anchorRepo = oldRepo
+
+	// success
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	gsrv.jobManager = jm
+	m, _, _, err := gsrv.Update(ctxh, g)
+	assert.NoError(t, err)
+	g, err = testRepo().Get(did[:], m.PreviousVersion())
 	assert.NoError(t, err)
 	assert.Equal(t, m.ID(), g.ID())
 	assert.Equal(t, m.CurrentVersion(), g.NextVersion())

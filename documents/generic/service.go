@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -19,6 +20,7 @@ type service struct {
 	repo       documents.Repository
 	queueSrv   queue.TaskQueuer
 	jobManager jobs.Manager
+	anchorRepo anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service.
@@ -27,12 +29,14 @@ func DefaultService(
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
+	anchorRepo anchors.AnchorRepository,
 ) documents.Service {
 	return service{
 		repo:       repo,
 		queueSrv:   queueSrv,
 		jobManager: jobManager,
 		Service:    srv,
+		anchorRepo: anchorRepo,
 	}
 }
 
@@ -45,6 +49,38 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 	}
 
 	return g, nil
+}
+
+// Update finds the old document, validates the new version and persists the updated document
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+	}
+
+	old, err := s.GetCurrentVersion(ctx, new.ID())
+	if err != nil {
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
+	}
+
+	// validate the document
+	err = UpdateValidator(s.anchorRepo).Validate(old, new)
+	if err != nil {
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(selfDID[:], new.CurrentVersion(), new)
+	if err != nil {
+		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
+	if err != nil {
+		return nil, jobs.NilJobID(), nil, err
+	}
+	return new, jobID, done, nil
 }
 
 // CreateModel creates generic from the payload, validates, persists, and returns the generic.
@@ -89,6 +125,12 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 
 	g := new(Generic)
 	err = g.unpackFromUpdatePayload(oldGeneric, payload)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// validate the generic document
+	err = UpdateValidator(s.anchorRepo).Validate(old, g)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
