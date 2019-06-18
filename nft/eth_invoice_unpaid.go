@@ -120,15 +120,15 @@ func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *
 	return docProof
 }
 
-func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
+func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, zkPayload ZKJSON, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
 	pfs, err := model.CreateNFTProofs(cid,
@@ -137,7 +137,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		req.SubmitTokenProof,
 		req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof)
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
@@ -145,23 +145,23 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
 	nextAnchorID, err := anchors.ToAnchorID(model.NextVersion())
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
 	docRootHash, err := model.CalculateDocumentRoot()
 	if err != nil {
-		return mreq, errors.New("failed to calculate docRootHash: %v", err)
+		return mreq, zkPayload, errors.New("failed to calculate docRootHash: %v", err)
 
 	}
 
 	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: docProofs.DocumentID, VersionID: docProofs.VersionID, FieldProofs: docProofs.FieldProofs})
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
 	//log.Debug(json.MarshalIndent(proof, "", "  "))
@@ -176,11 +176,11 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		}
 	}
 	if len(buyerPubKey) < 1 {
-		return mreq, errors.New("Buyer Signature not found in list")
+		return mreq, zkPayload, errors.New("Buyer Signature not found in list")
 	}
 
 	// Form the ZK JSON payload for prover
-	zkJson := &ZKJSON{
+	zkPayload = ZKJSON{
 		Public:  PublicFields{
 			NFTAmount: strings.Replace(proof.FieldProofs[0].Value, "0x", "", -1),
 			CreditRatingRootHash: "058653f1572ef609a6576b89be3271f0f3e2d80669953c6f9cd2172a63bd5bac",
@@ -211,14 +211,14 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 			},
 		},
 	}
-	log.Debug(json.MarshalIndent(zkJson, "", "  "))
+	log.Debug(json.MarshalIndent(zkPayload, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {
-		return mreq, err
+		return mreq, zkPayload, err
 	}
 
-	return requestData, nil
+	return requestData, zkPayload, nil
 
 }
 
@@ -319,7 +319,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 			return
 		}
 
-		requestData, err := s.prepareMintRequest(jobCtx, tokenID, accountID, req)
+		requestData, _, err := s.prepareMintRequest(jobCtx, tokenID, accountID, req)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
