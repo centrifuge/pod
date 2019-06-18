@@ -68,7 +68,7 @@
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[projects]]
-  digest = "1:d67f80e5ae73dc039d9714b2837df70e38b7908b58d7f5c76f335c542556a515"
+  digest = "1:9a7966c6c967e522d698557690ea1d0a62b75e78d0bf738c137410df9468dcd6"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,13 +76,14 @@
     "gen/go/coredocument",
     "gen/go/entity",
     "gen/go/errors",
+    "gen/go/generic",
     "gen/go/invoice",
     "gen/go/notification",
     "gen/go/p2p",
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "de35fe8efb6790782f9626a45e6680f73f65c5dc"
+  revision = "7d846bc3247e93446882acde5edc23767cb12824"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -1616,6 +1617,7 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/entity",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
+    "github.com/centrifuge/centrifuge-protobufs/gen/go/generic",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/notification",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",

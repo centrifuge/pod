@@ -355,12 +355,29 @@ func getAccounts(accounts *httpexpect.Array) map[string]string {
 	return accIDs
 }
 
-func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}) *httpexpect.Value {
+func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}, attrs map[string]map[string]string) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(documentID)
 	for k, v := range params {
 		objGet.Path("$.data." + k).String().Equal(v.(string))
+	}
+
+	if len(attrs) > 0 {
+		gattrs := objGet.Path("$.attributes").Object().Raw()
+		cattrs := make(map[string]map[string]string)
+		for k, v := range gattrs {
+			atr := v.(map[string]interface{})
+			delete(atr, "key")
+			atri := make(map[string]string)
+			for k1, v1 := range atr {
+				atri[k1] = v1.(string)
+			}
+
+			cattrs[k] = atri
+		}
+
+		assert.Equal(t, attrs, cattrs)
 	}
 	return objGet
 }

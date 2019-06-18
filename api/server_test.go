@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/extension/funding"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -54,6 +55,7 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		generic.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
