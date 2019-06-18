@@ -22,7 +22,7 @@ func (cd *CoreDocument) DefaultZTree() (*proofs.DocumentTree, error) {
 		Hash:              sha256.New(),
 		//LeafHash:          sha256.New(),
 		Salts:             cd.DocumentSaltsFunc(),
-		//TreeDepth:         10,
+		TreeDepth:         10,
 	})
 	return &t, err
 }

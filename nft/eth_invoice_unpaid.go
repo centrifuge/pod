@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -31,6 +32,33 @@ const (
 	// ErrNFTMinted error for NFT already minted for registry
 	ErrNFTMinted = errors.Error("NFT already minted")
 )
+
+// structs for zk JSON
+type Proof struct {
+	Hashes []string `json:"hashes"`
+	Right []bool `json:"right"`
+	Value string `json:"value"`
+	Salt string  `json:"salt,omitempty"`
+	Property string `json:"property,omitempty"`
+}
+type PublicFields struct {
+	NFTAmount string `json:"nft_amount"`
+	CreditRatingRootHash string `json:"credit_rating_roothash"`
+	Rating string `json:"rating"`
+	DocumentRootHash string `json:"document_roothash"`
+}
+type PrivateFields struct {
+	BuyerPubKey string `json:"buyer_pubkey"`
+	BuyerSignature string `json:"buyer_signature"`
+	BuyerRatingProof Proof `json:"buyer_rating_proof"`
+	DocumentInvoiceAmountProof Proof `json:"document_invoice_amount_proof"`
+	DocumentInvoiceBuyerProof Proof `json:"document_invoice_buyer_proof"`
+}
+type ZKJSON struct {
+	Public PublicFields `json:"public"`
+	Private PrivateFields `json:"private"`
+}
+
 
 // Config is the config interface for nft package
 type Config interface {
@@ -125,11 +153,65 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, err
 	}
 
+	docRootHash, err := model.CalculateDocumentRoot()
+	if err != nil {
+		return mreq, errors.New("failed to calculate docRootHash: %v", err)
+
+	}
+
 	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: docProofs.DocumentID, VersionID: docProofs.VersionID, FieldProofs: docProofs.FieldProofs})
 	if err != nil {
 		return mreq, err
 	}
-	log.Debug(json.MarshalIndent(proof, "", "  "))
+
+	//log.Debug(json.MarshalIndent(proof, "", "  "))
+
+	var buyerPubKey []byte
+	var buyerSignature []byte
+	signs := model.Signatures()
+	for _, v := range signs {
+		if utils.IsSameByteSlice(v.SignerId,docProofs.FieldProofs[1].Value) {
+			buyerPubKey = v.PublicKey
+			buyerSignature = v.Signature
+		}
+	}
+	if len(buyerPubKey) < 1 {
+		return mreq, errors.New("Buyer Signature not found in list")
+	}
+
+	// Form the ZK JSON payload for prover
+	zkJson := &ZKJSON{
+		Public:  PublicFields{
+			NFTAmount: strings.Replace(proof.FieldProofs[0].Value, "0x", "", -1),
+			CreditRatingRootHash: "058653f1572ef609a6576b89be3271f0f3e2d80669953c6f9cd2172a63bd5bac",
+			Rating: "64",
+			DocumentRootHash: hex.EncodeToString(docRootHash),
+		},
+		Private: PrivateFields{
+			BuyerPubKey: hex.EncodeToString(buyerPubKey),
+			BuyerSignature: hex.EncodeToString(buyerSignature),
+			BuyerRatingProof: Proof{
+				Hashes: []string{"f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b", "800aff4892fe1e2156ab2feb20388ba86d6bed741f07512f87a12b48756120cd"},
+				Right: []bool{false, false},
+				Value: "000000000000000000000000000000000000000112761387b6debb7362f6f7f4feb2a0f79e6c6a5683b1678ad1b272841eaaefca64",
+			},
+			DocumentInvoiceAmountProof: Proof{
+				Hashes: stringutils.RemoveStringInList(proof.FieldProofs[0].Hashes, "0x"),
+				Right: proof.FieldProofs[0].Right,
+				Value: strings.Replace(proof.FieldProofs[0].Value, "0x", "", -1),
+				Salt: strings.Replace(proof.FieldProofs[0].Salt, "0x", "", -1),
+				Property: strings.Replace(proof.FieldProofs[0].Property, "0x", "", -1),
+			},
+			DocumentInvoiceBuyerProof: Proof{
+				Hashes: stringutils.RemoveStringInList(proof.FieldProofs[1].Hashes, "0x"),
+				Right: proof.FieldProofs[1].Right,
+				Value: strings.Replace(proof.FieldProofs[1].Value, "0x", "", -1),
+				Salt: strings.Replace(proof.FieldProofs[1].Salt, "0x", "", -1),
+				Property: strings.Replace(proof.FieldProofs[1].Property, "0x", "", -1),
+			},
+		},
+	}
+	log.Debug(json.MarshalIndent(zkJson, "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
 	if err != nil {

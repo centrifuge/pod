@@ -66,6 +66,20 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 		}
 	}
 
+	// Add ZSigning key if it doesn't exist
+	keys, err = idService.GetKeysByPurpose(*did, &(identity.KeyPurposeZSigning.Value))
+	ctx, cancel3 := defaultWaitForTransactionMiningContext(contextTimeout)
+	ctxh, _ = contextutil.New(ctx, acc)
+	defer cancel3()
+	if err != nil || len(keys) == 1 { // As there is stored another signing key
+		pk, _ := utils.SliceToByte32(idKeys[identity.KeyPurposeZSigning.Name].PublicKey)
+		keyDID := identity.NewKey(pk, &(identity.KeyPurposeZSigning.Value), big.NewInt(identity.KeyTypeECDSA), 0)
+		err = idService.AddKey(ctxh, keyDID)
+		if err != nil {
+			return identity.DID{}, nil
+		}
+	}
+
 	return *did, nil
 }
 

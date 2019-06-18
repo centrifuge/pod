@@ -58,3 +58,11 @@ func ContainsBytesMatchInSlice(slice []string, val []byte) bool {
 
 	return false
 }
+// RemoveStringInList does remove the occurrence of val in every element of list
+func RemoveStringInList(input []string, val string) []string {
+	out := make([]string, len(input))
+	for i, v := range input {
+		out[i] = strings.Replace(v, val, "", -1)
+	}
+	return out
+}
