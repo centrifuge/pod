@@ -23,12 +23,20 @@ var log = logging.Logger("centrifuge-cmd")
 func generateKeys(config config.Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
 	signPub, signPvt := config.GetSigningKeyPair()
+	zSignPub, zSignPvt := config.GetZSigningKeyPair()
 	err := crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519)
 	if err != nil {
 		return err
 	}
-
-	return crypto.GenerateSigningKeyPair(signPub, signPvt, crypto.CurveSecp256K1)
+	err = crypto.GenerateSigningKeyPair(signPub, signPvt, crypto.CurveSecp256K1)
+	if err != nil {
+		return err
+	}
+	err = crypto.GenerateSigningKeyPair(zSignPub, zSignPvt, crypto.CurveJubJub)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateConfig creates a config file using provide parameters and the default config

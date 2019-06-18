@@ -461,7 +461,7 @@ func (i service) ValidateSignature(did id.DID, pubKey []byte, signature []byte, 
 		return err
 	}
 
-	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveSecp256K1) {
+	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveSecp256K1) && !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveJubJub) {
 		return ErrSignature
 	}
 

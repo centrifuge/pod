@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"context"
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"time"
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
@@ -144,12 +143,12 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
+	signatures, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.SignatureResponse{Signatures: []*coredocumentpb.Signature{signature}}, nil
+	return &p2ppb.SignatureResponse{Signatures: signatures}, nil
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message

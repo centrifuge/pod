@@ -597,6 +597,8 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
+	v.Set("keys.zsigning.privateKey", targetDataDir+"/zsigning.key.pem")
+	v.Set("keys.zsigning.publicKey", targetDataDir+"/zsigning.pub.pem")
 
 	if bootstraps != nil {
 		v.Set("networks."+network+".bootstrapPeers", bootstraps)
