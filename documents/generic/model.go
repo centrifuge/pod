@@ -37,7 +37,7 @@ type Generic struct {
 
 func getProtoGenericData() *genericpb.GenericData {
 	return &genericpb.GenericData{
-		Scheme: scheme,
+		Scheme: []byte(scheme),
 	}
 }
 
