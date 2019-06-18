@@ -245,6 +245,8 @@ func TestInvoice_CreateProofs(t *testing.T) {
 		return
 	}
 
+	fmt.Println("Doesnt count")
+
 	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 

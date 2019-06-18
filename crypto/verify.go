@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/crypto/jubjub"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -16,6 +17,8 @@ func VerifyMessage(publicKey, message []byte, signature []byte, curveType string
 		return secp256k1.VerifySignatureWithAddress(common.BytesToAddress(publicKey).String(), hexutil.Encode(signature), message)
 	case CurveEd25519:
 		return ed25519.VerifySignature(publicKey, message, signature)
+	case CurveJubJub:
+		return jubjub.Verify(publicKey, message, signature)
 	default:
 		return false
 	}

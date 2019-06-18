@@ -66,6 +66,8 @@ message Proof {
   // hash is filled if value & salt are not available
   string hash = 4;
   repeated string sorted_hashes = 5;
+  repeated string hashes = 6;
+  repeated bool right = 7;
 }
 
 message CreateDocumentProofForVersionRequest {

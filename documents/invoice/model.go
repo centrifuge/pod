@@ -680,7 +680,7 @@ func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err e
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return i.CoreDocument.CreateProofs(i.DocumentType(), dataLeaves, fields)
+	return i.CoreDocument.CreateZProofs(i.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the invoice document type.

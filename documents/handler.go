@@ -103,11 +103,30 @@ func ConvertProofsToClientFormat(proofs []*proofspb.Proof) []*documentpb.Proof {
 
 // ConvertProofToClientFormat converts a proof in precise proof format in to a client protobuf proof
 func ConvertProofToClientFormat(proof *proofspb.Proof) *documentpb.Proof {
-	return &documentpb.Proof{
+	pf := &documentpb.Proof{
 		Property:     hexutil.Encode(proof.GetCompactName()),
 		Value:        hexutil.Encode(proof.Value),
 		Salt:         hexutil.Encode(proof.Salt),
 		Hash:         hexutil.Encode(proof.Hash),
-		SortedHashes: utils.SliceOfByteSlicesToHexStringSlice(proof.SortedHashes),
 	}
+
+	hashes := make([][]byte, len(proof.Hashes))
+	right := make([]bool, len(proof.Hashes))
+
+	// Flatten Hashes, gather branch and convert to string
+	for i, hsh := range proof.Hashes {
+		oHsh := hsh.Left
+		bRight := false
+		if len(hsh.Right) > 0 {
+			oHsh = hsh.Right
+			bRight = true
+		}
+		hashes[i] = oHsh
+		right[i] = bRight
+	}
+
+	pf.Hashes = utils.SliceOfByteSlicesToHexStringSlice(hashes)
+	pf.Right = right
+
+	return pf
 }

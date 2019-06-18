@@ -1,13 +1,15 @@
 package pedersen
 
 import (
+	"bufio"
 	"encoding/hex"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"hash"
+	"io"
 	"os"
 	"os/exec"
-
-	"github.com/centrifuge/go-centrifuge/errors"
+	"strings"
 )
 
 // Requires to follow instructions to install pycrypto: https://github.com/stefandeml/zokrates-pycrypto
@@ -18,13 +20,37 @@ func NewPedersenHash() hash.Hash {
 	// Resolve python binary location
 	pedBin := os.Getenv("CENT_PED_BIN")
 	if pedBin == "" {
-		pedBin = fmt.Sprintf("%s/zksnarks/pycrypto/cli.py", os.Getenv("HOME"))
+		pedBin = fmt.Sprintf("%s/zksnarks/zokrates-pycrypto/cli.py", os.Getenv("HOME"))
 	}
-	return &pedersen{binLocation: pedBin}
+
+	args := []string{pedBin, "run_hash"}
+	cmd := exec.Command("python3", args...)
+
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
+	errp, err := cmd.StderrPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+	return &pedersen{in: in, out: out, err: errp, hasher: cmd}
 }
 
 type pedersen struct {
-	binLocation string
+	in io.WriteCloser
+	out io.ReadCloser
+	err io.ReadCloser
+	hasher *exec.Cmd
 	hashed      []byte
 }
 
@@ -33,15 +59,38 @@ func (pd *pedersen) Reset() {
 }
 
 func (pd *pedersen) Write(p []byte) (n int, err error) {
-	args := []string{pd.binLocation, "hash", hex.EncodeToString(p)}
-	o, err := exec.Command("python3", args...).CombinedOutput()
-	if err != nil {
-		return 0, errors.New("%s: %s", err, string(o))
+	if len(p) != 64 {
+		return 0, errors.New("invalid payload length")
 	}
-	pd.hashed, err = hex.DecodeString(string(o[:len(o)-1])) // removing newline
+
+	shex := hex.EncodeToString(p)+"\n"
+	_, err = pd.in.Write([]byte(shex))
 	if err != nil {
 		return 0, err
 	}
+
+	reader := bufio.NewReader(pd.out)
+	scanner := bufio.NewScanner(reader)
+	var hTxt string
+	for scanner.Scan() {
+		hTxt = scanner.Text()
+		hTxt = strings.Replace(hTxt, "?", "", -1)
+		hTxt = strings.Replace(hTxt, "\n", "", -1)
+		if hTxt != "" {
+			break
+		}
+	}
+
+	if hTxt == "" {
+		return 0, errors.New("Error reading subprocess output")
+	}
+
+
+	pd.hashed, err = hex.DecodeString(hTxt)
+	if err != nil {
+		return 0, err
+	}
+
 	return len(p), nil
 }
 

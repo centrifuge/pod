@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-
-	"github.com/centrifuge/go-centrifuge/crypto/pedersen"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -21,10 +18,11 @@ func (cd *CoreDocument) DefaultTree() (*proofs.DocumentTree, error) {
 func (cd *CoreDocument) DefaultZTree() (*proofs.DocumentTree, error) {
 	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		CompactProperties: true,
-		Hash:              pedersen.NewPedersenHash(),
-		LeafHash:          sha256.New(),
+		//Hash:              pedersen.NewPedersenHash(),
+		Hash:              sha256.New(),
+		//LeafHash:          sha256.New(),
 		Salts:             cd.DocumentSaltsFunc(),
-		//TreeDepth:         20,
+		//TreeDepth:         10,
 	})
 	return &t, err
 }

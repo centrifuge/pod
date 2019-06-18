@@ -100,14 +100,14 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, p2pResp, "must be non nil")
 	resp := resolveSignatureResponse(t, p2pResp)
-	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-	sig := resp.Signature
+	assert.NotNil(t, resp.Signatures[0].Signature, "must be non nil")
+	sigs := resp.Signatures
 	ddr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	assert.True(t,
 		secp256k1.VerifySignatureWithAddress(
-			common.BytesToAddress(sig.PublicKey).String(),
-			hexutil.Encode(sig.Signature),
+			common.BytesToAddress(sigs[0].PublicKey).String(),
+			hexutil.Encode(sigs[0].Signature),
 			documents.ConsensusSignaturePayload(ddr, byte(0)),
 		), "signature must be valid")
 }
@@ -146,14 +146,14 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	fmt.Println(ncd.PreviousVersion, ncd.CurrentVersion)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp, "must be non nil")
-	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-	sig := resp.Signature
+	assert.NotNil(t, resp.Signatures[0].Signature, "must be non nil")
+	sigs := resp.Signatures
 	ddr, err := po.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	assert.True(t,
 		secp256k1.VerifySignatureWithAddress(
-			common.BytesToAddress(sig.PublicKey).String(),
-			hexutil.Encode(sig.Signature),
+			common.BytesToAddress(sigs[0].PublicKey).String(),
+			hexutil.Encode(sigs[0].Signature),
 			documents.ConsensusSignaturePayload(ddr, byte(1)),
 		), "signature must be valid")
 
@@ -214,7 +214,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Add signature received
-	po.AppendSignatures(resp.Signature)
+	po.AppendSignatures(resp.Signatures...)
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
 	tree, err := po.DocumentRootTree()
@@ -246,7 +246,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Add signature received
-	npo.AppendSignatures(resp.Signature)
+	npo.AppendSignatures(resp.Signatures...)
 	tree, err = npo.DocumentRootTree()
 
 	// Anchor document

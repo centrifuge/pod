@@ -244,7 +244,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 
 		pfKeys = append(pfKeys, pks...)
 	}
-	return cd.CreateProofs(docType, dataLeaves, pfKeys)
+	return cd.CreateZProofs(docType, dataLeaves, pfKeys)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice

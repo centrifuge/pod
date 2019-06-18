@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"context"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"time"
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
@@ -148,7 +149,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.SignatureResponse{Signature: signature}, nil
+	return &p2ppb.SignatureResponse{Signatures: []*coredocumentpb.Signature{signature}}, nil
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message

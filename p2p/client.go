@@ -340,7 +340,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 			continue
 		}
 
-		signatures = append(signatures, resp.resp.Signature)
+		signatures = append(signatures, resp.resp.Signatures...)
 	}
 
 	return signatures, signatureCollectionErrors, nil
@@ -356,7 +356,7 @@ func validateSignatureResp(
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
+	err := identity.ValidateDIDBytes(resp.Signatures[0].SignerId, receiver)
 	if err != nil {
 		return centerrors.New(code.AuthenticationFailed, err.Error())
 	}

@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"github.com/centrifuge/go-centrifuge/crypto/jubjub"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
@@ -17,6 +18,8 @@ func SignMessage(privateKey, message []byte, curveType string) ([]byte, error) {
 		return secp256k1.SignEthereum(message, privateKey)
 	case CurveEd25519:
 		return ed25519.Sign(privateKey, message), nil
+	case CurveJubJub:
+		return jubjub.Sign(privateKey, message)
 	default:
 		return nil, errors.New("curve %s not supported", curveType)
 	}

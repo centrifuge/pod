@@ -13,6 +13,7 @@ var log = logging.Logger("keytools")
 const (
 	CurveEd25519   string = "ed25519"
 	CurveSecp256K1 string = "secp256k1"
+	CurveJubJub		 string = "jubjub"
 )
 
 // ObtainP2PKeypair obtains a key pair from given file paths

@@ -161,6 +161,19 @@
           "items": {
             "type": "string"
           }
+        },
+        "hashes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "right": {
+          "type": "array",
+          "items": {
+            "type": "boolean",
+            "format": "boolean"
+          }
         }
       }
     },

@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto/sha256"
+	"github.com/centrifuge/go-centrifuge/crypto/jubjub"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -17,6 +18,8 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (
 		publicKey, privateKey, err = secp256k1.GenerateSigningKeyPair()
 	case CurveEd25519:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
+	case CurveJubJub:
+		publicKey, privateKey, err = jubjub.GenerateSigningKeyPair()
 	default:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
 	}

@@ -117,7 +117,7 @@ func getIDMocks(ctx context.Context, did identity.DID) *testingcommons.MockIdent
 }
 
 func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb.Signature) *protocolpb.P2PEnvelope {
-	req, err := proto.Marshal(&p2ppb.SignatureResponse{Signature: signature})
+	req, err := proto.Marshal(&p2ppb.SignatureResponse{Signatures: []*coredocumentpb.Signature{signature}})
 	if err != nil {
 		return nil
 	}

@@ -82,6 +82,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
 		Data: &invoicepb.InvoiceData{
 			Sender:      did.String(),
+			Recipient:   did.String(),
 			Number:      "2132131",
 			Status:      "unpaid",
 			GrossAmount: "123",
@@ -124,24 +125,24 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
-	t.SkipNow()
+	//t.SkipNow()
 	ctx, id, registry, depositAddr, invSrv, cid := prepareForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
-	acc, err := contextutil.Account(ctx)
-	assert.NoError(t, err)
-	accDIDBytes, err := acc.GetIdentityID()
-	assert.NoError(t, err)
-	keys, err := acc.GetKeys()
-	assert.NoError(t, err)
-	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
-	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
+	//acc, err := contextutil.Account(ctx)
+	//assert.NoError(t, err)
+	//accDIDBytes, err := acc.GetIdentityID()
+	//assert.NoError(t, err)
+	//keys, err := acc.GetKeys()
+	//assert.NoError(t, err)
+	//signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	//docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	//signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           common.HexToAddress(depositAddr),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.recipient"},
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
 		SubmitTokenProof:         true,

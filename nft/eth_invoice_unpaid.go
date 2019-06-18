@@ -81,7 +81,12 @@ func (s *ethInvoiceUnpaid) filterMintProofs(docProof *documents.DocumentProof) *
 
 	for i, p := range docProof.FieldProofs {
 		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
-			docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
+			if len(docProof.FieldProofs[i].Hashes) > 0 {
+				docProof.FieldProofs[i].Hashes = docProof.FieldProofs[i].Hashes[:len(docProof.FieldProofs[i].Hashes)-1]
+			} else {
+				docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
+			}
+
 		}
 	}
 	return docProof

@@ -167,4 +167,4 @@ debug:
   pprof: false
 
 anchoring:
-  precommit: true
+  precommit: "false"
