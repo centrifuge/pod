@@ -1,9 +1,14 @@
 package userapi
 
+import (
+	logging "github.com/ipfs/go-log"
+)
 
-Create
-Get
-GetVersion
-GetList
-GetListVersion
-Update
+var transfersLog = logging.Logger("tranfers-api")
+
+//Create
+//Get
+//GetVersion
+//GetList
+//GetListVersion
+//Update

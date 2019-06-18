@@ -1,3 +1,4 @@
+// nolint
 package funding
 
 // Data is the default funding extension schema

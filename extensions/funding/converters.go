@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 )
 
+// TODO: generic? Create something like ServiceRegistry for Custom Attributes...
 func (f *Data) initFundingFromData(data *funpb.FundingData) {
 	types := reflect.TypeOf(*f)
 	values := reflect.ValueOf(*data)
@@ -18,6 +19,7 @@ func (f *Data) initFundingFromData(data *funpb.FundingData) {
 	}
 }
 
+// TODO: generic?
 func (f *Data) getClientData() *funpb.FundingData {
 	clientData := new(funpb.FundingData)
 	types := reflect.TypeOf(*f)

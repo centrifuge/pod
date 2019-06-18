@@ -1,33 +1,31 @@
 package transferdetails
 
 import (
+	"context"
+	"reflect"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"reflect"
-	"strings"
+	logging "github.com/ipfs/go-log"
 )
 
 // Service defines specific functions for extension funding
 type Service interface {
 	documents.Service
 
-	// Sign adds a signature to an existing document
-	Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error)
-
 	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
-	DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest, identifier []byte) (documents.Model, error)
 
 	// DeriveFromPayload derives Funding from clientPayload
-	DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
+	DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest, identifier []byte) (documents.Model, error)
 
 	// DeriveFundingResponse returns a funding in client format
-	DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error)
+	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetailResponse, error)
 
 	// DeriveFundingListResponse returns a funding list in client format
-	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error)
+	DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailListResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -38,12 +36,10 @@ type service struct {
 }
 
 const (
-	fundingLabel              = "funding_agreement"
-	fundingFieldKey           = "funding_agreement[{IDX}]."
-	idxKey                    = "{IDX}"
-	agreementIDLabel          = "agreement_id"
-	fundingSignatures         = "signatures"
-	fundingSignaturesFieldKey = "signatures[{IDX}]"
+	transfersLabel    = "transfer_details"
+	transfersFieldKey = "transfer_details[{IDX}]."
+	idxKey            = "{IDX}"
+	transferIDLabel   = "transfer_id"
 )
 
 // DefaultService returns the default implementation of the service.
@@ -57,9 +53,11 @@ func DefaultService(
 	}
 }
 
-func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
+var transfersLog = logging.Logger("tranfers-api")
+
+func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
 	var c []identity.DID
-	for _, id := range []string{data.BorrowerId, data.FunderId} {
+	for _, id := range []string{data.SenderId, data.RecipientId} {
 		if id != "" {
 			did, err := identity.NewDIDFromString(id)
 			if err != nil {
@@ -72,16 +70,13 @@ func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
 	return c, nil
 }
 
-func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
-	var fd Data
-	fd.initFundingFromData(req.Data)
-
+func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest, identifier []byte) (documents.Model, error) {
 	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
-		apiLog.Error(err)
+		transfersLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
-	attributes, err := createAttributesList(model, fd)
+	attributes, err := extensions.CreateAttributesList(model, *req.Data, transfersFieldKey, transfersLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -112,18 +107,14 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 }
 
 // DeriveFromUpdatePayload derives Funding from clientUpdatePayload
-func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
-	var fd Data
-	fd.initFundingFromData(req.Data)
-
+func (s service) DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest, identifier []byte) (documents.Model, error) {
 	model, err := s.GetCurrentVersion(ctx, identifier)
 	if err != nil {
-		apiLog.Error(err)
+		transfersLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	fd.AgreementId = req.AgreementId
-	idx, err := s.findFundingIDX(model, fd.AgreementId)
+	idx, err := extensions.FindAttributeSetIDX(model, req.TransferId, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -135,12 +126,12 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 
 	// overwriting is not enough because it is not required that
 	// the funding payload contains all funding attributes
-	model, err = s.deleteFunding(model, idx)
+	model, err = extensions.DeleteAttributesSet(model, TransferDetailData{}, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
 
-	attributes, err := fillAttributeList(fd, idx)
+	attributes, err := extensions.FillAttributeList(*req.Data, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -165,22 +156,24 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 	return model, nil
 }
 
-func (s service) findFunding(model documents.Model, fundingID string) (*Data, error) {
-	idx, err := s.findFundingIDX(model, fundingID)
+// TODO: generic?
+func (s service) findTransfer(model documents.Model, transferID string) (*TransferDetailData, error) {
+	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
-	return s.deriveFundingData(model, idx)
+	return s.deriveTransferData(model, idx)
 }
 
-func (s service) deriveFundingData(model documents.Model, idx string) (*Data, error) {
-	data := new(Data)
+// TODO: generic?
+func (s service) deriveTransferData(model documents.Model, idx string) (*TransferDetailData, error) {
+	data := new(TransferDetailData)
 
 	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {
 		// generate attr key
 		jsonKey := types.Field(i).Tag.Get("json")
-		label := labelFromJSONTag(idx, jsonKey)
+		label := extensions.LabelFromJSONTag(idx, jsonKey, transfersFieldKey)
 
 		attrKey, err := documents.AttrKeyFromLabel(label)
 		if err != nil {
@@ -209,9 +202,9 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*Data, er
 	return data, nil
 }
 
-// DeriveFundingResponse returns create response from the added funding
-func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error) {
-	idx, err := s.findFundingIDX(model, fundingID)
+// DeriveTransferResponse returns create response from the added transfer detail
+func (s service) DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetailResponse, error) {
+	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -220,26 +213,21 @@ func (s service) DeriveFundingResponse(ctx context.Context, model documents.Mode
 	if err != nil {
 		return nil, errors.New("failed to derive response: %v", err)
 	}
-	data, err := s.deriveFundingData(model, idx)
+	data, err := s.deriveTransferData(model, idx)
 	if err != nil {
 		return nil, err
 	}
 
-	signatures, err := s.deriveFundingSignatures(ctx, model, data, idx)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrFundingSignature, err)
-	}
-
-	return &clientfunpb.FundingResponse{
+	return &TransferDetailResponse{
 		Header: h,
-		Data:   &clientfunpb.FundingResponseData{Funding: data.getClientData(), Signatures: signatures},
+		Data:   data,
 	}, nil
 
 }
 
-// DeriveFundingListResponse returns a funding list in client format
-func (s service) DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error) {
-	response := new(clientfunpb.FundingListResponse)
+// DeriveTransfersListResponse returns a transfers list
+func (s service) DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailListResponse, error) {
+	response := new(TransferDetailListResponse)
 
 	h, err := documents.DeriveResponseHeader(s.tokenRegistry, model)
 	if err != nil {
@@ -247,7 +235,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 	}
 	response.Header = h
 
-	fl, err := documents.AttrKeyFromLabel(fundingLabel)
+	fl, err := documents.AttrKeyFromLabel(transfersLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +244,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 		return response, nil
 	}
 
-	lastIdx, err := getArrayLatestIDX(model, fundingLabel)
+	lastIdx, err := extensions.GetArrayLatestIDX(model, transfersLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -267,17 +255,12 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		funding, err := s.deriveFundingData(model, i.String())
+		transfer, err := s.deriveTransferData(model, i.String())
 		if err != nil {
 			continue
 		}
 
-		signatures, err := s.deriveFundingSignatures(ctx, model, funding, i.String())
-		if err != nil {
-			return nil, errors.NewTypedError(ErrFundingSignature, err)
-		}
-
-		response.Data = append(response.Data, &clientfunpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
+		response.Data = append(response.Data, transfer)
 		i, err = i.Inc()
 
 		if err != nil {

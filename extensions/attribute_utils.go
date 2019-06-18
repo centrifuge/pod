@@ -87,11 +87,9 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 // FillAttributeList fills an attributes list from the JSON object
 func FillAttributeList(data interface{}, idx, fieldKey string) ([]documents.Attribute, error) {
 	var attributes []documents.Attribute
-
 	types := reflect.TypeOf(data)
 	values := reflect.ValueOf(data)
 	for i := 0; i < types.NumField(); i++ {
-
 		value := values.Field(i).Interface().(string)
 		if value != "" {
 			jsonKey := types.Field(i).Tag.Get("json")
@@ -193,3 +191,47 @@ func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLab
 
 	return idx, ErrAttributeSetNotFound
 }
+
+// TODO: placeholder below for generic finding and deriving data from attribute sets
+//func FindAttributeSet(model documents.Model, attributeSetDataType *interface{}, attributeSetID, attributeSetLabel, attributeSetIDLabel, fieldKey string) (*interface{}, error) {
+//	idx, err := FindAttributeSetIDX(model, attributeSetID, attributeSetLabel, attributeSetIDLabel, fieldKey)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return DeriveAttributeSetData(model, idx, fieldKey, attributeSetDataType)
+//}
+//
+//func DeriveAttributeSetData(model documents.Model, idx, fieldKey string, data *interface{}, ) (*interface{}, error) {
+//
+//	types := reflect.TypeOf(*data)
+//	for i := 0; i < types.NumField(); i++ {
+//		// generate attr key
+//		jsonKey := types.Field(i).Tag.Get("json")
+//		label := LabelFromJSONTag(idx, jsonKey, fieldKey)
+//		attrKey, err := documents.AttrKeyFromLabel(label)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		if model.AttributeExists(attrKey) {
+//			attr, err := model.GetAttribute(attrKey)
+//			if err != nil {
+//				return nil, err
+//			}
+//
+//			// set field in data
+//			n := types.Field(i).Name
+//
+//			v, err := attr.Value.String()
+//			if err != nil {
+//				return nil, err
+//			}
+//
+//			reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
+//
+//		}
+//
+//	}
+//
+//	return data, nil
+//}

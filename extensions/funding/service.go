@@ -166,6 +166,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 	return model, nil
 }
 
+// TODO: generic?
 func (s service) findFunding(model documents.Model, fundingID string) (*Data, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
@@ -174,6 +175,7 @@ func (s service) findFunding(model documents.Model, fundingID string) (*Data, er
 	return s.deriveFundingData(model, idx)
 }
 
+// TODO: generic?
 func (s service) deriveFundingData(model documents.Model, idx string) (*Data, error) {
 	data := new(Data)
 
