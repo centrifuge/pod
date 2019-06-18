@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -158,8 +157,8 @@ func TestService_Update(t *testing.T) {
 	data.Contacts = []*entitypb.Contact{{Name: "Mr. Test"}}
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := eSrv.DeriveFromUpdatePayload(ctxh, &cliententitypb.EntityUpdatePayload{
-		Identifier:  hexutil.Encode(model.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		DocumentId:  hexutil.Encode(model.ID()),
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.NoError(t, err)
@@ -196,7 +195,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &cliententitypb.EntityUpdatePayload{Identifier: "some identifier", Data: &cliententitypb.EntityData{}}
+	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "some identifier", Data: &cliententitypb.EntityData{}}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
@@ -205,7 +204,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -220,7 +219,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Contacts:  []*entitypb.Contact{{Name: "Mr. Test"}},
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 
 	assert.Error(t, err, "should fail because Identity is missing")
@@ -228,7 +227,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// invalid collaborator identity
 	payload.Data.LegalName = "new company name"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -236,7 +235,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
@@ -245,12 +244,11 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
-	data, err := doc.(*Entity).getClientData()
-	assert.NoError(t, err)
+	data := doc.(*Entity).getClientData()
 	assert.Equal(t, payload.Data, data)
 }
 
@@ -400,7 +398,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	payload := testingdocuments.CreateEntityPayload()
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.Entity.LegalName)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 
 	// entity is not collaborator on document
 	e := new(Entity)
@@ -427,11 +425,10 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
 
-	data, err := doc.(*Entity).getClientData()
-	assert.NoError(t, err)
+	data := doc.(*Entity).getClientData()
 	data.LegalName = "test company"
 	doc2 := new(Entity)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*Entity).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := eSrv.GetCurrentVersion(ctxh, doc.ID())

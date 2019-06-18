@@ -109,11 +109,33 @@ func TestHandler_CreateDocument(t *testing.T) {
 }
 
 func TestHandler_UpdateDocument(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("PUT", "/documents/{document_id}", b).WithContext(ctx)
+	}
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.UpdateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidDocumentID.Error())
+
+	// invalid id
+	rctx.URLParams.Values[0] = "some invalid id"
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.UpdateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidDocumentID.Error())
+
 	id := hexutil.Encode(utils.RandomSlice(32))
 	data := map[string]interface{}{
-		"scheme":      "invoice",
-		"document_id": id,
-		"data":        invoiceData(),
+		"scheme": "invoice",
+		"data":   invoiceData(),
 		"attributes": map[string]map[string]string{
 			"string_test": {
 				"type":  "invalid",
@@ -124,18 +146,15 @@ func TestHandler_UpdateDocument(t *testing.T) {
 
 	d, err := json.Marshal(data)
 	assert.NoError(t, err)
-	r := httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
-	w := httptest.NewRecorder()
-
-	h := handler{}
+	rctx.URLParams.Values[0] = id
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "not a valid attribute")
 
 	data = map[string]interface{}{
-		"scheme":      "invoice",
-		"data":        invoiceData(),
-		"document_id": id,
+		"scheme": "invoice",
+		"data":   invoiceData(),
 		"attributes": map[string]map[string]string{
 			"string_test": {
 				"type":  "string",
@@ -149,8 +168,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	srv := Service{docService: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("failed to update model"))
-	r = httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
-	w = httptest.NewRecorder()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "failed to update model")
@@ -165,8 +183,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	srv = Service{docService: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
-	r = httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
-	w = httptest.NewRecorder()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
 	assert.Contains(t, w.Body.String(), "failed to get collaborators")
@@ -187,8 +204,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	srv = Service{docService: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
-	r = httptest.NewRequest("PUT", "/documents", bytes.NewReader(d))
-	w = httptest.NewRecorder()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusCreated)
 	m.AssertExpectations(t)

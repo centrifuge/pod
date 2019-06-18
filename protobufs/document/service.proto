@@ -58,16 +58,8 @@ message PaymentDetails {
 }
 
 message RequestHeader {
-  ReadAccess read_access = 1;
-  WriteAccess write_access = 2;
-}
-
-message ReadAccess {
-  repeated string collaborators = 1;
-}
-
-message WriteAccess {
-  repeated string collaborators = 1;
+  repeated string read_access = 1;
+  repeated string write_access = 2;
 }
 
 message Signature {
@@ -94,11 +86,11 @@ message AccessToken {
 
 message ResponseHeader {
   string document_id = 1;
-  string version = 2;
+  string version_id = 2;
   string author = 3;
   string created_at = 4;
-  ReadAccess read_access = 5;
-  WriteAccess write_access = 6;
+  repeated string read_access = 5;
+  repeated string write_access = 6;
   string job_id = 7;
   repeated NFT nfts = 8;
 }

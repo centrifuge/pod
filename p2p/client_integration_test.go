@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -139,7 +138,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	for _, c := range collaborators {
 		cs = append(cs, hexutil.Encode(c))
 	}
-	payalod.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
+	payalod.WriteAccess = cs
 	po := new(purchaseorder.PurchaseOrder)
 	err = po.InitPurchaseOrderInput(payalod, defaultDID)
 	assert.NoError(t, err)
