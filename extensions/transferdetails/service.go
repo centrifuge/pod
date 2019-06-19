@@ -39,7 +39,6 @@ type service struct {
 const (
 	transfersLabel    = "transfer_details"
 	transfersFieldKey = "transfer_details[{IDX}]."
-	idxKey            = "{IDX}"
 	transferIDLabel   = "transfer_id"
 )
 
@@ -54,7 +53,7 @@ func DefaultService(
 	}
 }
 
-var log = logging.Logger("user-api")
+var log = logging.Logger("transferdetail-api")
 
 // TODO: get rid of this or make generic
 func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
