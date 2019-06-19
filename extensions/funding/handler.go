@@ -13,7 +13,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-var apiLog = logging.Logger("funding-api")
+var apiLog = logging.Logger("user-api")
 
 // grpcHandler handles all the funding extension related actions
 type grpcHandler struct {
