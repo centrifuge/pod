@@ -113,7 +113,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -175,7 +175,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -235,7 +235,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -304,7 +304,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -366,7 +366,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -432,7 +432,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -501,7 +501,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -556,7 +556,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -618,7 +618,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -673,7 +673,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "centrifuge identity",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
                         "name": "authorization",
                         "in": "header",
                         "required": true

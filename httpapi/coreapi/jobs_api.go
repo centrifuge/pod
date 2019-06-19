@@ -24,7 +24,7 @@ const (
 // @description Returns the status of a given Job.
 // @id get_job_status
 // @tags Jobs
-// @param authorization header string true "centrifuge identity"
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param job_id path string true "Job ID"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
