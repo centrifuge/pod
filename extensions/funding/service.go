@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service defines specific functions for extension funding
@@ -19,10 +20,10 @@ type Service interface {
 	Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error)
 
 	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
-	DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload) (documents.Model, error)
 
 	// DeriveFromPayload derives Funding from clientPayload
-	DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error)
+	DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload) (documents.Model, error)
 
 	// DeriveFundingResponse returns a funding in client format
 	DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error)
@@ -72,11 +73,21 @@ func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
 	return c, nil
 }
 
-func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
+func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload) (model documents.Model, err error) {
 	var fd Data
 	fd.initFundingFromData(req.Data)
 
-	model, err := s.GetCurrentVersion(ctx, identifier)
+	var docID []byte
+	if req.DocumentId != "" {
+		docID, err = hexutil.Decode(req.DocumentId)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+	model, err = s.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -113,11 +124,21 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 }
 
 // DeriveFromUpdatePayload derives Funding from clientUpdatePayload
-func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
+func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload) (model documents.Model, err error) {
 	var fd Data
 	fd.initFundingFromData(req.Data)
 
-	model, err := s.GetCurrentVersion(ctx, identifier)
+	var docID []byte
+	if req.DocumentId != "" {
+		docID, err = hexutil.Decode(req.DocumentId)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, documents.ErrDocumentIdentifier
+	}
+
+	model, err = s.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound

@@ -38,12 +38,6 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
 	// create new funding id
 	if req.Data.AgreementId == "" {
 		req.Data.AgreementId = extensions.NewAttributeSetID()
@@ -56,7 +50,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 	}
 
 	// returns model with added funding custom fields
-	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
+	model, err := h.service.DeriveFromPayload(ctxHeader, req)
 	if err != nil {
 		return nil, errors.NewTypedError(extensions.ErrPayload, err)
 	}
@@ -251,14 +245,8 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
 	// returns model with updated funding custom fields
-	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req, identifier)
+	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req)
 	if err != nil {
 		return nil, errors.NewTypedError(extensions.ErrPayload, err)
 	}

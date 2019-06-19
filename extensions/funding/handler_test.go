@@ -27,13 +27,13 @@ type mockService struct {
 
 var configService config.Service
 
-func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload, identifier []byte) (documents.Model, error) {
+func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload) (documents.Model, error) {
 	args := m.Called(ctx, req)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
 
-func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload, identifier []byte) (documents.Model, error) {
+func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload) (documents.Model, error) {
 	args := m.Called(ctx, req)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
@@ -81,17 +81,11 @@ func TestGRPCHandler_Create(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 	jobID := jobs.NewJobID()
 
-	// no identifier
-	response, err := h.Create(testingconfig.HandlerContext(configService), &clientfunpb.FundingCreatePayload{Data: &clientfunpb.FundingData{Currency: "eur"}})
-	assert.Nil(t, response)
-	assert.Error(t, err, "must be non nil")
-
 	// successful
-	srv.On("DeriveFromPayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("DeriveFromPayload", mock.Anything, mock.Anything).Return(documents.ErrDocumentIdentifier, nil)
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
-
-	response, err = h.Create(testingconfig.HandlerContext(configService), &clientfunpb.FundingCreatePayload{DocumentId: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
+	response, err := h.Create(testingconfig.HandlerContext(configService), &clientfunpb.FundingCreatePayload{DocumentId: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }
@@ -102,17 +96,12 @@ func TestGRPCHandler_Update(t *testing.T) {
 	h := &grpcHandler{service: srv, config: configService}
 	jobID := jobs.NewJobID()
 
-	// no identifier
-	response, err := h.Update(testingconfig.HandlerContext(configService), &clientfunpb.FundingUpdatePayload{Data: &clientfunpb.FundingData{Currency: "eur"}})
-	assert.Nil(t, response)
-	assert.Error(t, err, "must be non nil")
-
 	// successful
-	srv.On("DeriveFromUpdatePayload", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
+	srv.On("DeriveFromUpdatePayload", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
 	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
 	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
 
-	response, err = h.Update(testingconfig.HandlerContext(configService), &clientfunpb.FundingUpdatePayload{DocumentId: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
+	response, err := h.Update(testingconfig.HandlerContext(configService), &clientfunpb.FundingUpdatePayload{DocumentId: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 }

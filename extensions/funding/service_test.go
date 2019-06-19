@@ -97,6 +97,7 @@ func TestCreateAttributesList(t *testing.T) {
 	}
 }
 
+// TODO: test for no docID here
 func TestDeriveFromPayload(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	testingdocuments.CreateInvoicePayload()
@@ -109,9 +110,10 @@ func TestDeriveFromPayload(t *testing.T) {
 	srv := DefaultService(docSrv, nil)
 
 	payload := createTestPayload()
+	payload.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
 
 	for i := 0; i < 10; i++ {
-		model, err := srv.DeriveFromPayload(ctxh, payload, utils.RandomSlice(32))
+		model, err := srv.DeriveFromPayload(ctxh, payload)
 		assert.NoError(t, err)
 		label := fmt.Sprintf("funding_agreement[%d].currency", i)
 		key, err := documents.AttrKeyFromLabel(label)
@@ -139,7 +141,8 @@ func TestDeriveFundingResponse(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
-		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
+		payload.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
+		model, err := srv.DeriveFromPayload(context.Background(), payload)
 		assert.NoError(t, err)
 
 		response, err := srv.DeriveFundingResponse(ctxh, model, payload.Data.AgreementId)
@@ -163,8 +166,9 @@ func TestDeriveFundingListResponse(t *testing.T) {
 	var payloads []*clientfunpb.FundingCreatePayload
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
+		p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
 		payloads = append(payloads, p)
-		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
+		model, err = srv.DeriveFromPayload(context.Background(), p)
 		assert.NoError(t, err)
 
 	}
@@ -192,7 +196,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	var model documents.Model
 	p := createTestPayload()
-	model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
+	p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
+	model, err = srv.DeriveFromPayload(context.Background(), p)
 	assert.NoError(t, err)
 
 	// update
@@ -201,7 +206,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 
-	model, err = srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))
+	model, err = srv.DeriveFromUpdatePayload(context.Background(), p2)
 	assert.NoError(t, err)
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
@@ -214,7 +219,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// non existing funding id
 	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
-	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
+	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3)
 	assert.Error(t, err)
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }
