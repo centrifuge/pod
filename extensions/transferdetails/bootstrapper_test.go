@@ -36,5 +36,5 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	err = b.Bootstrap(ctx)
 	assert.NoError(t, err)
-	assert.NotNil(t, ctx[BootstrappedTransferDetailsService])
+	assert.NotNil(t, ctx[BootstrappedTransferDetailService])
 }

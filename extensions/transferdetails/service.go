@@ -39,7 +39,6 @@ type service struct {
 const (
 	transfersLabel    = "transfer_details"
 	transfersFieldKey = "transfer_details[{IDX}]."
-	idxKey            = "{IDX}"
 	transferIDLabel   = "transfer_id"
 )
 
