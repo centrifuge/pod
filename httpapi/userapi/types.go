@@ -26,28 +26,34 @@ type TransferDetailData struct {
 
 //CreateTransferDetailRequest
 type CreateTransferDetailRequest struct {
-	Identifier string                              `json:"identifier" swaggertype:"primitive,string"`
-	Data       *transferdetails.TransferDetailData `json:"data"`
+	DocumentID string                              `json:"document_id" swaggertype:"primitive,string"`
+	Data        *transferdetails.TransferDetailData      `json:"data"`
 }
 
 // UpdateTransferDetailRequest
 type UpdateTransferDetailRequest struct {
-	Identifier string                              `json:"identifier" swaggertype:"primitive,string"`
-	TransferId string                              `json:"transfer_id" swaggertype:"primitive,string"`
-	Data       *transferdetails.TransferDetailData `json:"data"`
+	DocumentID string                              `json:"document_id" swaggertype:"primitive,string"`
+	TransferID string                              `json:"transfer_id" swaggertype:"primitive,string"`
+	Data        *TransferDetailData      `json:"data"`
 }
 
 // TransferDetailResponse
 type TransferDetailResponse struct {
 	Header *coreapi.ResponseHeader          `json:"header"`
-	Data   *transferdetails.TransferDetailData `json:"data"`
+	Data        *TransferDetailData      `json:"data"`
 }
 
 // TransferDetailListResponse
 type TransferDetailListResponse struct {
 	Header *coreapi.ResponseHeader            `json:"header"`
-	Data   []*transferdetails.TransferDetailData `json:"data"`
+	Data        *TransferDetailData      `json:"data"`
 }
 
-//GetRequest
-//GetVersionRequest
+
+func toTransferDetailCreatePayload(request CreateTransferDetailRequest) (*transferdetails.CreateTransferDetailRequest, error) {
+	payload := new(transferdetails.CreateTransferDetailRequest)
+	payload.Data = request.Data
+	payload.DocumentID = request.DocumentID
+
+	return payload, nil
+}

@@ -32,11 +32,11 @@ type UpdateTransferDetailRequest struct {
 }
 
 // TransferDetailResponse holds a TransferDetail response
-type TransferDetailResponse struct {
+type TransferDetail struct {
 	Data *TransferDetailData
 }
 
 // TransferDetailListResponse holds a list of TransferDetails
-type TransferDetailListResponse struct {
+type TransferDetailList struct {
 	Data []*TransferDetailData
 }

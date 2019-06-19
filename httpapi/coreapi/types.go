@@ -141,7 +141,7 @@ func convertAttributes(attrs []documents.Attribute) (AttributeMap, error) {
 	return m, nil
 }
 
-func deriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Model, id jobs.JobID) (response ResponseHeader, err error) {
+func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Model, id jobs.JobID) (response ResponseHeader, err error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {
 		return response, err
@@ -184,7 +184,7 @@ func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenReg
 		return resp, err
 	}
 
-	header, err := deriveResponseHeader(tokenRegistry, model, jobID)
+	header, err := DeriveResponseHeader(tokenRegistry, model, jobID)
 	if err != nil {
 		return resp, err
 	}
