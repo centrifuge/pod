@@ -4,7 +4,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-var transfersLog = logging.Logger("tranfers-api")
+var transfersLog = logging.Logger("-api")
 
 //Create
 //Get
