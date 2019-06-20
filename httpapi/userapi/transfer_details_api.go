@@ -117,7 +117,6 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, resp)
 }
 
-//Create
 //Get
 //GetVersion
 //GetList

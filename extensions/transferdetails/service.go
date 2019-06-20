@@ -2,6 +2,7 @@ package transferdetails
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -15,11 +16,11 @@ import (
 // Service defines specific functions for extension funding
 type Service interface {
 
-	// DeriveFromUpdatePayload derives TransferDetail from clientUpdatePayload
-	DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error)
+	// UpdateTransferDetail updates a TransferDetail
+	UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error)
 
-	// DeriveFromPayload derives TransferDetail from clientPayload
-	DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error)
+	// CreateTransferDetail derives a TransferDetail from a request payload
+	CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error)
 
 	// DeriveFundingResponse returns a TransferDetail in client format
 	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error)
@@ -69,8 +70,21 @@ func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
 	return c, nil
 }
 
+func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error) {
+	model, err := s.deriveFromPayload(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(model)
+	updated, _, _, err := s.srv.Update(ctx, model)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
+}
+
 // DeriveFromPayload derives a new TransferDetail from a CreateTransferDetailRequest
-func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (model documents.Model, err error) {
+func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
 
 	if req.DocumentID == "" {
@@ -118,8 +132,20 @@ func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetail
 	return model, nil
 }
 
+func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error) {
+	model, err := s.deriveFromUpdatePayload(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	updated, _, _, err := s.srv.Update(ctx, model)
+	if err != nil {
+		return nil, err
+	}
+	return updated, nil
+}
+
 // DeriveFromUpdatePayload derives an updated TransferDetail from an UpdateTransferDetailRequest
-func (s service) DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (model documents.Model, err error) {
+func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
 	if req.DocumentID == "" {
 		return nil, documents.ErrDocumentIdentifier

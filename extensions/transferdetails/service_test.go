@@ -88,7 +88,7 @@ func TestDeriveFromPayload(t *testing.T) {
 	payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
 
 	for i := 0; i < 10; i++ {
-		model, err := srv.DeriveFromPayload(ctxh, payload)
+		model, err := srv.CreateTransferDetail(ctxh, payload)
 		assert.NoError(t, err)
 		label := fmt.Sprintf("transfer_details[%d].status", i)
 		key, err := documents.AttrKeyFromLabel(label)
@@ -115,7 +115,7 @@ func TestDeriveFundingResponse(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
 		payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
-		model, err := srv.DeriveFromPayload(context.Background(), payload)
+		model, err := srv.CreateTransferDetail(context.Background(), payload)
 		assert.NoError(t, err)
 
 		response, err := srv.DeriveTransferResponse(ctxh, model, payload.Data.TransferID)
@@ -141,7 +141,7 @@ func TestDeriveTransferListResponse(t *testing.T) {
 		p := createTestPayload()
 		p.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
 		payloads = append(payloads, p)
-		model, err = srv.DeriveFromPayload(context.Background(), p)
+		model, err = srv.CreateTransferDetail(context.Background(), p)
 		assert.NoError(t, err)
 	}
 
@@ -163,21 +163,23 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	docSrv.On("Update", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 	var model documents.Model
 
 	p := createTestPayload()
 	p.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
-	model, err = srv.DeriveFromPayload(context.Background(), p)
+	model, err = srv.CreateTransferDetail(context.Background(), p)
 	assert.NoError(t, err)
 
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
+	docSrv.On("Update", mock.Anything, mock.Anything).Return(model, nil)
 	p2 := &UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: p.Data.TransferID}
 	p2.Data.Currency = "USD"
 	p2.Data.Amount = "1200"
 
-	model, err = srv.DeriveFromUpdatePayload(context.Background(), *p2)
+	model, err = srv.UpdateTransferDetail(context.Background(), *p2)
 	assert.NoError(t, err)
 
 	response, err := srv.DeriveTransferListResponse(context.Background(), model)
@@ -190,7 +192,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// attempted update of non-existent transfer details
 	p3 := &UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: hexutil.Encode(utils.RandomSlice(32))}
-	model, err = srv.DeriveFromUpdatePayload(context.Background(), *p3)
+	model, err = srv.UpdateTransferDetail(context.Background(), *p3)
 	assert.Error(t, err)
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }

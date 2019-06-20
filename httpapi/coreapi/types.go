@@ -141,6 +141,7 @@ func convertAttributes(attrs []documents.Attribute) (AttributeMap, error) {
 	return m, nil
 }
 
+// DeriveResponseHeader derives an appropriate response header
 func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Model, id jobs.JobID) (response ResponseHeader, err error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {

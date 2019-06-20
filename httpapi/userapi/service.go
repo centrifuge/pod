@@ -14,16 +14,20 @@ type Service struct {
 	transferDetailsService transferdetails.Service
 }
 
+// TODO: this can be refactored into a generic Service which handles all kinds of custom attributes
+
+// CreateTransferDetailsModel
 func (s Service) CreateTransferDetailsModel(ctx context.Context, req transferdetails.CreateTransferDetailRequest) (documents.Model, error) {
-	model, err := s.transferDetailsService.DeriveFromPayload(ctx, req)
+	model, err := s.transferDetailsService.CreateTransferDetail(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	return model, nil
 }
 
+// UpdateTransferDetailsModel
 func (s Service) UpdateTransferDetailsModel(ctx context.Context, req transferdetails.UpdateTransferDetailRequest) (documents.Model, error) {
-	model, err := s.transferDetailsService.DeriveFromUpdatePayload(ctx, req)
+	model, err := s.transferDetailsService.UpdateTransferDetail(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -31,6 +35,7 @@ func (s Service) UpdateTransferDetailsModel(ctx context.Context, req transferdet
 	return model, nil
 }
 
+// GetCurrentTransferDetails
 func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID string) (*transferdetails.TransferDetail, error) {
 	identifier, err := hexutil.Decode(docID)
 	if err != nil {
@@ -45,6 +50,7 @@ func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID
 	return s.transferDetailsService.DeriveTransferResponse(ctx, model, transferID)
 }
 
+// GetCurrentTransferDetailsList
 func (s Service) GetCurrentTransferDetailsList(ctx context.Context, docID string) (*transferdetails.TransferDetailList, error) {
 	identifier, err := hexutil.Decode(docID)
 	if err != nil {
@@ -59,6 +65,7 @@ func (s Service) GetCurrentTransferDetailsList(ctx context.Context, docID string
 	return s.transferDetailsService.DeriveTransferListResponse(ctx, model)
 }
 
+// GetVersionTransferDetail
 func (s Service) GetVersionTransferDetail(ctx context.Context, docID, versionID, transferID string) (*transferdetails.TransferDetail, error) {
 	identifier, err := hexutil.Decode(docID)
 	if err != nil {
@@ -78,6 +85,7 @@ func (s Service) GetVersionTransferDetail(ctx context.Context, docID, versionID,
 	return s.transferDetailsService.DeriveTransferResponse(ctx, model, transferID)
 }
 
+// GetVersionTransferDetailsList
 func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versionID string) (*transferdetails.TransferDetailList, error) {
 	identifier, err := hexutil.Decode(docID)
 	if err != nil {
