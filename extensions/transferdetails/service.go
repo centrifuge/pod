@@ -220,10 +220,9 @@ func (s service) deriveTransferData(model documents.Model, idx string) (*Transfe
 			}
 
 			reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
-
 		}
-
 	}
+
 	return data, nil
 }
 
@@ -243,7 +242,6 @@ func (s service) DeriveTransferResponse(ctx context.Context, model documents.Mod
 	return &TransferDetailResponse{
 		Data: data,
 	}, nil
-
 }
 
 // DeriveTransfersListResponse returns a transfers list
@@ -280,9 +278,7 @@ func (s service) DeriveTransferListResponse(ctx context.Context, model documents
 		if err != nil {
 			return nil, err
 		}
-
 	}
-
 	// TODO: derive response header in userapi
 	return response, nil
 }
