@@ -56,10 +56,10 @@ func TestTypes_convertAttributes(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestTypes_deriveResponseHeader(t *testing.T) {
+func TestTypes_DeriveResponseHeader(t *testing.T) {
 	model := new(testingdocuments.MockModel)
 	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
-	_, err := deriveResponseHeader(nil, model, jobs.NewJobID())
+	_, err := DeriveResponseHeader(nil, model, jobs.NewJobID())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error fetching collaborators")
 	model.AssertExpectations(t)
@@ -78,7 +78,7 @@ func TestTypes_deriveResponseHeader(t *testing.T) {
 	model.On("Author").Return(nil, errors.New("somerror"))
 	model.On("Timestamp").Return(nil, errors.New("somerror"))
 	model.On("NFTs").Return(nil)
-	resp, err := deriveResponseHeader(nil, model, jobs.NewJobID())
+	resp, err := DeriveResponseHeader(nil, model, jobs.NewJobID())
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentID)
 	assert.Equal(t, hexutil.Encode(id), resp.VersionID)
