@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -60,7 +61,6 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		// &Bootstrapper{}, // todo add own bootstrapper
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
@@ -72,24 +72,27 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestGenerateKey(t *testing.T) {
-	assert.Equal(t, "funding_agreement[1].days", generateLabel(fundingFieldKey, "1", "days"))
-	assert.Equal(t, "funding_agreement[0].", generateLabel(fundingFieldKey, "0", ""))
-
-}
-
-func TestCreateAttributesList(t *testing.T) {
+func TestAttributesUtils(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	srv := DefaultService(docSrv, nil)
 
 	data := createTestData()
 
-	attributes, err := createAttributesList(inv, data)
+	// Fill attributes list
+	a, err := extensions.FillAttributeList(data, "0", fundingFieldKey)
 	assert.NoError(t, err)
+	// fill attribute list does not add the idx of attribute set as an attribute
+	assert.Len(t, a, 12)
 
-	assert.Equal(t, 13, len(attributes))
+	// Creating an attributes list generates the correct attributes and adds an idx as an attribute
+	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
+	assert.NoError(t, err)
+	assert.Len(t, attributes, 13)
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "funding_agreement[0].currency" {
@@ -100,6 +103,98 @@ func TestCreateAttributesList(t *testing.T) {
 		// apr was not set
 		assert.NotEqual(t, "funding_agreement[0].apr", attribute.KeyLabel)
 	}
+
+	// add attributes to Document
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attributes...)
+	assert.NoError(t, err)
+
+	var agreementID string
+	for _, attribute := range attributes {
+		if attribute.KeyLabel == "funding_agreement[0].agreement_id" {
+			agreementID, err = attribute.Value.String()
+			assert.NoError(t, err)
+			break
+		}
+	}
+
+	// wrong attributeSetID
+	idx, err := extensions.FindAttributeSetIDX(inv, "randomID", fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Error(t, err)
+
+	// correct
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Equal(t, "0", idx)
+	assert.NoError(t, err)
+
+	// add second attributeSet
+	data.AgreementId = extensions.NewAttributeSetID()
+	a2, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
+	assert.NoError(t, err)
+
+	var aID string
+	for _, attribute := range a2 {
+		if attribute.KeyLabel == "funding_agreement[1].agreement_id" {
+			aID, err = attribute.Value.String()
+			assert.NoError(t, err)
+			//break
+		}
+	}
+
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, a2...)
+	assert.NoError(t, err)
+
+	// latest idx
+	model, err := srv.GetCurrentVersion(context.Background(), inv.Document.DocumentIdentifier)
+	assert.NoError(t, err)
+
+	lastIdx, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	assert.NoError(t, err)
+
+	n, err := documents.NewInt256("1")
+	assert.NoError(t, err)
+	assert.Equal(t, lastIdx, n)
+
+	// index should be 1
+	idx, err = extensions.FindAttributeSetIDX(inv, aID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Equal(t, "1", idx)
+	assert.NoError(t, err)
+
+	// delete the first attribute set
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.NoError(t, err)
+
+	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
+	assert.NoError(t, err)
+	assert.Len(t, model.GetAttributes(), 13)
+
+	// error when trying to delete non existing attribute set
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Error(t, err)
+
+	// check that latest idx is still 1 even though the first set of attributes have been deleted ?
+	latest, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	assert.NoError(t, err)
+	assert.Equal(t, latest, n)
+
+	// non existent typeLabel for attribute set
+	_, err = extensions.GetArrayLatestIDX(model, "randomLabel")
+	assert.Error(t, err)
+
+	// check that we can no longer find the attributes from the first set
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Error(t, err)
+
+	// test increment array attr idx
+	n, err = documents.NewInt256("2")
+	assert.NoError(t, err)
+
+	newIdx, err := extensions.IncrementArrayAttrIDX(model, fundingLabel)
+	assert.NoError(t, err)
+
+	v, err := newIdx.Value.String()
+	assert.NoError(t, err)
+	assert.Equal(t, "2", v)
+	assert.Equal(t, fundingLabel, newIdx.KeyLabel)
 }
 
 func TestDeriveFromPayload(t *testing.T) {
@@ -114,9 +209,10 @@ func TestDeriveFromPayload(t *testing.T) {
 	srv := DefaultService(docSrv, nil)
 
 	payload := createTestPayload()
+	payload.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
 
 	for i := 0; i < 10; i++ {
-		model, err := srv.DeriveFromPayload(ctxh, payload, utils.RandomSlice(32))
+		model, err := srv.DeriveFromPayload(ctxh, payload)
 		assert.NoError(t, err)
 		label := fmt.Sprintf("funding_agreement[%d].currency", i)
 		key, err := documents.AttrKeyFromLabel(label)
@@ -125,9 +221,11 @@ func TestDeriveFromPayload(t *testing.T) {
 		attr, err := model.GetAttribute(key)
 		assert.NoError(t, err)
 		assert.Equal(t, "eur", attr.Value.Str)
-
 	}
 
+	payload.DocumentId = ""
+	_, err = srv.DeriveFromPayload(ctxh, payload)
+	assert.Error(t, err)
 }
 
 func TestDeriveFundingResponse(t *testing.T) {
@@ -144,7 +242,8 @@ func TestDeriveFundingResponse(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
-		model, err := srv.DeriveFromPayload(context.Background(), payload, utils.RandomSlice(32))
+		payload.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
+		model, err := srv.DeriveFromPayload(context.Background(), payload)
 		assert.NoError(t, err)
 
 		response, err := srv.DeriveFundingResponse(ctxh, model, payload.Data.AgreementId)
@@ -168,10 +267,10 @@ func TestDeriveFundingListResponse(t *testing.T) {
 	var payloads []*clientfunpb.FundingCreatePayload
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
+		p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
 		payloads = append(payloads, p)
-		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
+		model, err = srv.DeriveFromPayload(context.Background(), p)
 		assert.NoError(t, err)
-
 	}
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
@@ -180,9 +279,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		checkResponse(t, payloads[i], response.Data[i].Funding)
-
 	}
-
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
@@ -197,7 +294,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	var model documents.Model
 	p := createTestPayload()
-	model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
+	p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
+	model, err = srv.DeriveFromPayload(context.Background(), p)
 	assert.NoError(t, err)
 
 	// update
@@ -206,7 +304,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
 
-	model, err = srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))
+	model, err = srv.DeriveFromUpdatePayload(context.Background(), p2)
 	assert.NoError(t, err)
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
@@ -219,13 +317,17 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// non existing funding id
 	p3 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))}
-	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3, utils.RandomSlice(32))
+	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3)
 	assert.Error(t, err)
-	assert.Contains(t, err, ErrFundingNotFound)
+	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
+
+	p2.DocumentId = ""
+	_, err = srv.DeriveFromUpdatePayload(context.Background(), p2)
+	assert.Error(t, err)
 }
 
 func createTestClientData() *clientfunpb.FundingData {
-	fundingId := newAgreementID()
+	fundingId := extensions.NewAttributeSetID()
 	return &clientfunpb.FundingData{
 		AgreementId:           fundingId,
 		Currency:              "eur",
@@ -243,7 +345,7 @@ func createTestClientData() *clientfunpb.FundingData {
 }
 
 func createTestData() Data {
-	fundingId := newAgreementID()
+	fundingId := extensions.NewAttributeSetID()
 	return Data{
 		AgreementId:           fundingId,
 		Currency:              "eur",

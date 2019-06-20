@@ -38,7 +38,7 @@ func (m *mockAccount) GetIdentityID() ([]byte, error) {
 	return sig, args.Error(1)
 }
 
-func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
+func setupFundingForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
 	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
@@ -56,8 +56,9 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 	// create a list of fundings
 	for i := 0; i < fundingAmount; i++ {
 		p := createTestPayload()
+		p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
 		payloads = append(payloads, p)
-		model, err = srv.DeriveFromPayload(context.Background(), p, utils.RandomSlice(32))
+		model, err = srv.DeriveFromPayload(context.Background(), p)
 		assert.NoError(t, err)
 		lastFundingId = p.Data.AgreementId
 	}
@@ -67,7 +68,7 @@ func setupFundingsForTesting(t *testing.T, fundingAmount int) (Service, *testing
 
 func TestService_Sign(t *testing.T) {
 	fundingAmount := 5
-	srv, _, model, lastFundingId := setupFundingsForTesting(t, fundingAmount)
+	srv, _, model, lastFundingId := setupFundingForTesting(t, fundingAmount)
 
 	// add signature
 	acc := new(mockAccount)
@@ -107,7 +108,7 @@ func TestService_Sign(t *testing.T) {
 
 func TestService_SignVerify(t *testing.T) {
 	fundingAmount := 5
-	srv, docSrv, model, fundingID := setupFundingsForTesting(t, fundingAmount)
+	srv, docSrv, model, fundingID := setupFundingForTesting(t, fundingAmount)
 
 	// add signature
 	acc := new(mockAccount)
@@ -138,7 +139,7 @@ func TestService_SignVerify(t *testing.T) {
 	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: fundingID}
 	p2.Data.Currency = ""
 	p2.Data.Fee = "13.37"
-	updatedModel, err := srv.DeriveFromUpdatePayload(context.Background(), p2, utils.RandomSlice(32))
+	updatedModel, err := srv.DeriveFromUpdatePayload(context.Background(), p2)
 	assert.NoError(t, err)
 
 	// older funding version signed: valid

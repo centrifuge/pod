@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -37,27 +38,21 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
 	// create new funding id
 	if req.Data.AgreementId == "" {
-		req.Data.AgreementId = newAgreementID()
+		req.Data.AgreementId = extensions.NewAttributeSetID()
 	} else {
 		_, err := hexutil.Decode(req.Data.AgreementId)
 		if err != nil {
 			apiLog.Error(err)
-			return nil, ErrFundingID
+			return nil, extensions.ErrAttributeSetID
 		}
 	}
 
 	// returns model with added funding custom fields
-	model, err := h.service.DeriveFromPayload(ctxHeader, req, identifier)
+	model, err := h.service.DeriveFromPayload(ctxHeader, req)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrPayload, err)
+		return nil, errors.NewTypedError(extensions.ErrPayload, err)
 	}
 
 	model, jobID, _, err := h.service.Update(ctxHeader, model)
@@ -69,7 +64,7 @@ func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreate
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, errors.NewTypedError(ErrFundingAttr, err)
+		return nil, errors.NewTypedError(extensions.ErrDeriveAttr, err)
 	}
 
 	resp.Header.JobId = jobID.String()
@@ -100,7 +95,7 @@ func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clien
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extensions.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -123,7 +118,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 	// returns model with a signature
 	model, err := h.service.Sign(ctxHeader, req.AgreementId, identifier)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrPayload, err)
+		return nil, errors.NewTypedError(extensions.ErrPayload, err)
 	}
 
 	model, jobID, _, err := h.service.Update(ctxHeader, model)
@@ -135,7 +130,7 @@ func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clie
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, errors.NewTypedError(ErrFundingAttr, err)
+		return nil, errors.NewTypedError(extensions.ErrDeriveAttr, err)
 	}
 
 	resp.Header.JobId = jobID.String()
@@ -172,7 +167,7 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfunpb.GetVersio
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extensions.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -201,7 +196,7 @@ func (h *grpcHandler) GetList(ctx context.Context, req *clientfunpb.GetListReque
 	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extensions.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -236,7 +231,7 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfunpb.GetLi
 	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, ErrFundingAttr
+		return nil, extensions.ErrDeriveAttr
 	}
 	return resp, nil
 }
@@ -250,16 +245,10 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
 	// returns model with updated funding custom fields
-	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req, identifier)
+	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrPayload, err)
+		return nil, errors.NewTypedError(extensions.ErrPayload, err)
 	}
 
 	model, jobID, _, err := h.service.Update(ctxHeader, model)
@@ -271,7 +260,7 @@ func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdate
 	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
 	if err != nil {
 		apiLog.Error(err)
-		return nil, errors.NewTypedError(ErrFundingAttr, err)
+		return nil, errors.NewTypedError(extensions.ErrPayload, err)
 	}
 
 	resp.Header.JobId = jobID.String()
