@@ -74,13 +74,14 @@ func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
 // DeriveFromPayload derives a new TransferDetail from a CreateTransferDetailRequest
 func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
-	if req.DocumentID != "" {
-		docID, err = hexutil.Decode(req.DocumentID)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+
+	if req.DocumentID == "" {
 		return nil, documents.ErrDocumentIdentifier
+	}
+
+	docID, err = hexutil.Decode(req.DocumentID)
+	if err != nil {
+		return nil, err
 	}
 
 	model, err = s.GetCurrentVersion(ctx, docID)
@@ -122,13 +123,13 @@ func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetail
 // DeriveFromUpdatePayload derives an updated TransferDetail from an UpdateTransferDetailRequest
 func (s service) DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
-	if req.DocumentID != "" {
-		docID, err = hexutil.Decode(req.DocumentID)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	if req.DocumentID == "" {
 		return nil, documents.ErrDocumentIdentifier
+	}
+
+	docID, err = hexutil.Decode(req.DocumentID)
+	if err != nil {
+		return nil, err
 	}
 
 	model, err = s.GetCurrentVersion(ctx, docID)
