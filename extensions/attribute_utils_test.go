@@ -22,5 +22,5 @@ func TestGenerateLabel(t *testing.T) {
 
 func TestLabelFromJSONTag(t *testing.T) {
 	assert.Equal(t, "testing_test", LabelFromJSONTag(idxKey, "test", "testing_"))
-	assert.Equal(t, "test_agreement[{IDX}].test", LabelFromJSONTag(idxKey, testJSONKey, testFieldKey))
+	assert.Equal(t, "test_agreement[{IDX}].json", LabelFromJSONTag(idxKey, testJSONKey, testFieldKey))
 }
