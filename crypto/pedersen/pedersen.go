@@ -15,15 +15,15 @@ import (
 // Requires to follow instructions to install pycrypto: https://github.com/stefandeml/zokrates-pycrypto
 // And either set CENT_PED_BIN with cli.py location or store the repo in $HOME/zksnarks/pycrypto
 
-// NewPedersenHash returns a pedersen hash function
-func NewPedersenHash() hash.Hash {
+// New returns a pedersen hash function
+func New() hash.Hash {
 	// Resolve python binary location
 	pedBin := os.Getenv("CENT_PED_BIN")
 	if pedBin == "" {
 		pedBin = fmt.Sprintf("%s/zksnarks/zokrates-pycrypto/cli.py", os.Getenv("HOME"))
 	}
 
-	args := []string{pedBin, "run_hash"}
+	args := []string{pedBin, "batch_hasher"}
 	cmd := exec.Command("python3", args...)
 
 	in, err := cmd.StdinPipe()

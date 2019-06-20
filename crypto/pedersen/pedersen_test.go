@@ -11,7 +11,7 @@ import (
 )
 
 func TestHashPayload(t *testing.T) {
-	ph := NewPedersenHash()
+	ph := New()
 
 	//_, err := ph.Write(utils.RandomSlice(64))
 	//assert.NoError(t, err)
@@ -31,17 +31,24 @@ func TestHashPayload(t *testing.T) {
 
 	st := time.Now()
 	_, err = ph.Write(pwb)
-	et := time.Now().Sub(st)
-	fmt.Println(et)
+
 	assert.NoError(t, err)
 	res := ph.Sum(nil)
-	assert.Equal(t, "cdde1eda231566cf3d59e81967227f1d775cdbf0c1ee2c0df30ef32050fd2913", hex.EncodeToString(res))
+	assert.Equal(t, "1329fd5020f30ef30d2ceec1f0db5c771d7f226719e8593dcf661523da1edecd", hex.EncodeToString(res))
 	ph.Reset()
-	//_, err = ph.Write(pwb)
-	//assert.NoError(t, err)
-	//res = ph.Sum(nil)
-	//assert.Equal(t, "cdde1eda231566cf3d59e81967227f1d775cdbf0c1ee2c0df30ef32050fd2913", hex.EncodeToString(res))
-	//ph.Reset()
+
+	for i := 0; i < 128; i++ {
+		//st = time.Now()
+		_, err = ph.Write(pwb)
+		//fmt.Println(time.Now().Sub(st))
+		//assert.NoError(t, err)
+		_ = ph.Sum(nil)
+		//assert.Equal(t, "1329fd5020f30ef30d2ceec1f0db5c771d7f226719e8593dcf661523da1edecd", hex.EncodeToString(res))
+		ph.Reset()
+	}
+	et := time.Now().Sub(st)
+	fmt.Println(et)
+	//
 	//_, err = ph.Write(pwb)
 	//assert.NoError(t, err)
 	//res = ph.Sum(nil)

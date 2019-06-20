@@ -4,8 +4,10 @@ package documents
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"os"
 	"strings"
 	"testing"
@@ -431,7 +433,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
-	ph := pedersen.NewPedersenHash()
+	ph := pedersen.New()
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{29, 0, 0, 0})
@@ -482,7 +484,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		} else {
-			assert.Len(t, pfs[idx].Hashes, 7)
+			assert.Len(t, pfs[idx].Hashes, 9)
 			_, l := zDocDataTree.GetLeafByProperty(test)
 			// Validate from leaf to zDocDataRoot as it uses pedersen hash
 			valid, err := proofs.ValidateProofHashes(l.Hash, pfs[idx].Hashes[:len(pfs[idx].Hashes)-2], zDocDataTree.RootHash(), ph)
@@ -1112,4 +1114,135 @@ func TestValidateFullNFTProof(t *testing.T) {
 		assert.True(t, valid, fmt.Sprintf("Failed for proof %d", i))
 	}
 
+}
+
+func TestValidateZKProof(t *testing.T) {
+	type Header struct {
+		DocumentRoot string `json:"document_root"`
+	}
+
+	type FieldProof struct {
+		Property     string   `json:"property"`
+		Value        string   `json:"value"`
+		Salt         string   `json:"salt"`
+		Right        []bool   `json:"right"`
+		Hashes       []string `json:"hashes"`
+	}
+
+	type Payload struct {
+		Header      Header       `json:"header"`
+		FieldProofs []FieldProof `json:"field_proofs"`
+	}
+	//EDocRoot fd54540b7b7d38266f1481ae7b9c9aa289322367b57e236384d82cc16e1a2c02
+	//ZDocRoot 10de123a587a03e7675a3b0d028099b6b47d2a4f862cb9c1d51c9b2585ea66a2
+	//DocDataRoot c727cb3a59edcff5ab05ab8ab84fbf553c13d03ee99119aa4d1005cf4a4bcf6d
+	//RootHash fddd8220fe1fba6ebb4a78bf36eff8fe239b1a6c15263ae662366fd89feef4a4
+	payload := `
+{
+  "header": {
+		"document_root": "10de123a587a03e7675a3b0d028099b6b47d2a4f862cb9c1d51c9b2585ea66a2"
+  },
+  "field_proofs": [
+    {
+      "hashes": [
+          "5e6fed822bc942baac83280c9c92a32709dcfc27cea38b999114af9f3c8ab614",
+          "25604b9beb2f1ea51d1b71f95351af9d1fb809b0c713d54bb90525e0fe909df0",
+          "882c2223d08ab1d87a55c37f93f6631243b7c5226fc8ee2d31fe84af43b28108",
+          "24fe7661a222b95b02cf1d367cd9cd5b8744acb9335726c4917178f779fafca0",
+          "8ae82cb56a172c5762de4d462005d1c984dd98abd785c9c61b5acf9546090b68",
+          "20c2b346512ee7eb1c7de6b44ffb2e759c3e00e6541a3a82d607ef9afa001cb0",
+          "255dfa4d81d98c27dd23d66e08f398b7b577c354ae8df9fa993aa7660c20c6c2",
+          "fd54540b7b7d38266f1481ae7b9c9aa289322367b57e236384d82cc16e1a2c02",
+          "410aa852c830076a0ad374efbb464f1cfa5e2867f7c0647a3151e5217df04d63"
+        ],
+        "right": [
+          false,
+          true,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "value": "0006aaf7c8516d0c000000000000000000000000000000000000000000000000",
+        "salt": "0bd02864a859ef0a7bf0bf3b5ff45a221f07c201e436e33e2ab5b0fd27b0acef",
+        "property": "000100000000000e"
+    },
+		{
+			"hashes": [
+          "85e7cdf9769d8663aab3821ffae5c1fd3d1132c9dbcde3ca6cc91fd9eb719b6c",
+          "048d0deaa99a5fa61a8c5f89eb1e88907318cedd580075c3b8177bc49ed564c0",
+          "90f633ddd781e5055a38f735df3a9ec21f85258585130643b69bf90f4fbc0efd",
+          "a4c628599d7b224483648b5316a4477a53c5243b53a58932fb4fb66fbdce0333",
+          "a4e2ce608e74ede852fff2a357690598db5096e2745c4df032db8a4d61435567",
+          "95de89baac05ab6910d4888cdb09c721874d85f2ec0cf052506d37448e588096",
+          "255dfa4d81d98c27dd23d66e08f398b7b577c354ae8df9fa993aa7660c20c6c2",
+          "fd54540b7b7d38266f1481ae7b9c9aa289322367b57e236384d82cc16e1a2c02",
+          "410aa852c830076a0ad374efbb464f1cfa5e2867f7c0647a3151e5217df04d63"
+        ],
+        "right": [
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          true,
+          true,
+          false
+        ],
+        "value": "359679e690c685f88ad16265deb28001f43c0ac5",
+        "salt": "a4424cb1bc8aabc0cd07adc29676d8deae71c4e76074d9010065f7ab277d56c5",
+        "property": "0001000000000031"
+		}
+	]
+}`
+	var obj Payload
+	err := json.Unmarshal([]byte(payload), &obj)
+	assert.NoError(t, err)
+
+	for i := 0; i < len(obj.FieldProofs); i++ {
+		var lh []byte
+		prop, err := hex.DecodeString(obj.FieldProofs[i].Property)
+		assert.NoError(t, err)
+		val, err := hex.DecodeString(obj.FieldProofs[i].Value)
+		assert.NoError(t, err)
+		salt, err := hex.DecodeString(obj.FieldProofs[i].Salt)
+		assert.NoError(t, err)
+		lh, err = crypto.Sha256Hash(append(prop, append(val, salt...)...))
+		assert.NoError(t, err)
+
+		fmt.Printf("%x\n", lh)
+
+		//fmt.Println("Start")
+		//for x := 0; x < len(lh); x++ {
+		//	fmt.Printf("%08b", lh[x])
+		//}
+		//fmt.Println("END")
+		var sh []*proofspb.MerkleHash
+		for j := 0; j < len(obj.FieldProofs[i].Hashes); j++ {
+			shi, err := hex.DecodeString(obj.FieldProofs[i].Hashes[j])
+			assert.NoError(t, err)
+			mh := &proofspb.MerkleHash{}
+			if obj.FieldProofs[i].Right[j] {
+				mh.Right = shi
+			} else {
+				mh.Left = shi
+			}
+			sh = append(sh, mh)
+		}
+		rh, err := hex.DecodeString(obj.Header.DocumentRoot)
+		assert.NoError(t, err)
+		trh, err := hex.DecodeString("fddd8220fe1fba6ebb4a78bf36eff8fe239b1a6c15263ae662366fd89feef4a4")
+		assert.NoError(t, err)
+		valid, err := proofs.ValidateProofHashes(lh, sh[:len(sh)-2], rh, pedersen.New())
+		assert.NoError(t, err)
+		fmt.Println("Done")
+		assert.True(t, valid, fmt.Sprintf("Failed for proof %d", i))
+		valid, err = proofs.ValidateProofHashes(rh, sh[len(sh)-2:], trh, sha256.New())
+		assert.NoError(t, err)
+		assert.True(t, valid, fmt.Sprintf("Failed for proof %d", i))
+	}
 }

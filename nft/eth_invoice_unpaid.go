@@ -141,7 +141,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
-	docProofs = s.filterMintProofs(docProofs)
+	//docProofs = s.filterMintProofs(docProofs)
 
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
@@ -153,7 +153,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, zkPayload, err
 	}
 
-	docRootHash, err := model.CalculateDocumentRoot()
+	docDataRootHash, err := model.CalculateDocumentDataRoot()
 	if err != nil {
 		return mreq, zkPayload, errors.New("failed to calculate docRootHash: %v", err)
 
@@ -171,6 +171,9 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 	signs := model.Signatures()
 	for _, v := range signs {
 		if utils.IsSameByteSlice(v.SignerId,docProofs.FieldProofs[1].Value) {
+			fmt.Printf("%x\n", v.SignerId)
+			fmt.Printf("%x\n", v.PublicKey)
+			fmt.Printf("%v\n", v.TransitionValidated)
 			buyerPubKey = v.PublicKey
 			buyerSignature = v.Signature
 		}
@@ -185,7 +188,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 			NFTAmount: strings.Replace(proof.FieldProofs[0].Value, "0x", "", -1),
 			CreditRatingRootHash: "058653f1572ef609a6576b89be3271f0f3e2d80669953c6f9cd2172a63bd5bac",
 			Rating: "64",
-			DocumentRootHash: hex.EncodeToString(docRootHash),
+			DocumentRootHash: hex.EncodeToString(docDataRootHash),
 		},
 		Private: PrivateFields{
 			BuyerPubKey: hex.EncodeToString(buyerPubKey),

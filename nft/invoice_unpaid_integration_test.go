@@ -91,13 +91,14 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 			DateDue:     tm,
 		},
 	})
+	fmt.Println("Creating invoice")
 	assert.NoError(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, done, err := invSrv.Create(ctx, model)
 	assert.NoError(t, err)
 	d := <-done
 	assert.True(t, d)
 	assert.NoError(t, jobManager.WaitForJob(cid, txID))
-
+	fmt.Println("invoice created")
 	// get ID
 	id := modelUpdated.ID()
 	// call mint
@@ -147,7 +148,9 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 		SubmitNFTReadAccessProof: true,
 		SubmitTokenProof:         true,
 	}
+	fmt.Println("Minting now")
 	tokenID := mintNFT(t, ctx, req, cid, registry)
+	fmt.Println("Minting done")
 	doc, err := invSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
 	cd, err := doc.PackCoreDocument()
