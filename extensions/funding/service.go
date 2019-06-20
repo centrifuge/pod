@@ -78,7 +78,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 	fd.initFundingFromData(req.Data)
 
 	var docID []byte
-	if req.DocumentId != "" {
+	if req.DocumentId == "" {
 		return nil, documents.ErrDocumentIdentifier
 	}
 
@@ -129,7 +129,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 	fd.initFundingFromData(req.Data)
 
 	var docID []byte
-	if req.DocumentId != "" {
+	if req.DocumentId == "" {
 		return nil, documents.ErrDocumentIdentifier
 	}
 

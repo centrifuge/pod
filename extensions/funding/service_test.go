@@ -197,7 +197,6 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Equal(t, fundingLabel, newIdx.KeyLabel)
 }
 
-// TODO: test for no docID here
 func TestDeriveFromPayload(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	testingdocuments.CreateInvoicePayload()
@@ -222,9 +221,11 @@ func TestDeriveFromPayload(t *testing.T) {
 		attr, err := model.GetAttribute(key)
 		assert.NoError(t, err)
 		assert.Equal(t, "eur", attr.Value.Str)
-
 	}
 
+	payload.DocumentId = ""
+	_, err = srv.DeriveFromPayload(ctxh, payload)
+	assert.Error(t, err)
 }
 
 func TestDeriveFundingResponse(t *testing.T) {
@@ -319,6 +320,10 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	model, err = srv.DeriveFromUpdatePayload(context.Background(), p3)
 	assert.Error(t, err)
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
+
+	p2.DocumentId = ""
+	_, err = srv.DeriveFromUpdatePayload(context.Background(), p2)
+	assert.Error(t, err)
 }
 
 func createTestClientData() *clientfunpb.FundingData {
