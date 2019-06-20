@@ -6,8 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
 	"io/ioutil"
@@ -56,13 +54,13 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toTransferDetailCreatePayload(r)
+	payload, err := toTransferDetailCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
-	model, err := h.srv.CreateTransferDetails(ctx, request)
+	model, err := h.srv.CreateTransferDetails(ctx, *payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -71,16 +69,14 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 
 	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, model, jobs.NilJobID())
 	if err != nil {
+		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
 
-
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
+	resp := TransferDetailResponse{
+		Header: &header,
+		Data: payload.Data,
 	}
 
 	render.Status(r, http.StatusCreated)

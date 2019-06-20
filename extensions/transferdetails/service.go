@@ -16,13 +16,13 @@ import (
 type Service interface {
 	documents.Service
 
-	// DeriveFromUpdatePayload derives Funding from clientUpdatePayload
+	// DeriveFromUpdatePayload derives TransferDetails from clientUpdatePayload
 	DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error)
 
-	// DeriveFromPayload derives Funding from clientPayload
+	// DeriveFromPayload derives TransferDetails from clientPayload
 	DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error)
 
-	// DeriveFundingResponse returns a funding in client format
+	// DeriveFunResponse returns a TransferDetail in client format
 	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error)
 
 	// DeriveFundingListResponse returns a funding list in client format
