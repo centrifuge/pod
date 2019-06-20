@@ -30,7 +30,7 @@ type Service interface {
 
 // service implements Service and handles all funding related persistence and validations
 type service struct {
-	srv documents.Service
+	srv           documents.Service
 	tokenRegistry documents.TokenRegistry
 }
 
@@ -46,7 +46,7 @@ func DefaultService(
 	tokenRegistry documents.TokenRegistry,
 ) Service {
 	return service{
-		srv:       srv,
+		srv:           srv,
 		tokenRegistry: tokenRegistry,
 	}
 }
