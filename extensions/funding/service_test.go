@@ -61,7 +61,6 @@ func TestMain(m *testing.M) {
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		// &Bootstrapper{}, // todo add own bootstrapper
 		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
@@ -73,18 +72,27 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestCreateAttributesList(t *testing.T) {
+func TestAttributesUtils(t *testing.T) {
 	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	srv := DefaultService(docSrv, nil)
 
 	data := createTestData()
 
+	// Fill attributes list
+	a, err := extensions.FillAttributeList(data, "0", fundingFieldKey)
+	assert.NoError(t, err)
+	// fill attribute list does not add the idx of attribute set as an attribute
+	assert.Len(t, a, 12)
+
+	// Creating an attributes list generates the correct attributes and adds an idx as an attribute
 	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
 	assert.NoError(t, err)
-
-	assert.Equal(t, 13, len(attributes))
+	assert.Len(t, attributes, 13)
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "funding_agreement[0].currency" {
@@ -95,6 +103,102 @@ func TestCreateAttributesList(t *testing.T) {
 		// apr was not set
 		assert.NotEqual(t, "funding_agreement[0].apr", attribute.KeyLabel)
 	}
+
+	// add attributes to Document
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attributes...)
+	assert.NoError(t, err)
+
+	var agreementID string
+	for _, attribute := range attributes {
+		if attribute.KeyLabel == "funding_agreement[0].agreement_id" {
+			agreementID, err = attribute.Value.String()
+			assert.NoError(t, err)
+			break
+		}
+	}
+
+	// wrong attributeSetID
+	idx, err := extensions.FindAttributeSetIDX(inv, "randomID", fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Error(t, err)
+
+	// correct
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Equal(t, "0", idx)
+	assert.NoError(t, err)
+
+	// add second attributeSet
+	data.AgreementId = extensions.NewAttributeSetID()
+	a2, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
+	assert.NoError(t, err)
+
+	var aID string
+	for _, attribute := range a2 {
+		if attribute.KeyLabel == "funding_agreement[1].agreement_id" {
+			aID, err = attribute.Value.String()
+			assert.NoError(t, err)
+			//break
+		}
+	}
+
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, a2...)
+	assert.NoError(t, err)
+
+	// latest idx
+	model, err := srv.GetCurrentVersion(context.Background(), inv.Document.DocumentIdentifier)
+	assert.NoError(t, err)
+
+	lastIdx, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	assert.NoError(t, err)
+
+	n, err := documents.NewInt256("1")
+	assert.NoError(t, err)
+	assert.Equal(t, lastIdx, n)
+
+	// index should be 1
+	idx, err = extensions.FindAttributeSetIDX(inv, aID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Equal(t, "1", idx)
+	assert.NoError(t, err)
+
+	// delete the first attribute set
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.NoError(t, err)
+
+	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
+	assert.NoError(t, err)
+	assert.Len(t, model.GetAttributes(), 13)
+
+	// error when trying to delete non existing attribute set
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Error(t, err)
+
+	// check that latest idx is still 1 even though the first set of attributes have been deleted ?
+	latest, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	assert.NoError(t, err)
+	assert.Equal(t, latest, n)
+
+	// non existent typeLabel for attribute set
+	_, err = extensions.GetArrayLatestIDX(model, "randomLabel")
+	assert.Error(t, err)
+
+	// check that we can no longer find the attributes from the first set
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	assert.Error(t, err)
+
+	// test increment array attr idx
+	n, err = documents.NewInt256("2")
+	assert.NoError(t, err)
+
+	newIdx, err := extensions.IncrementArrayAttrIDX(model, fundingLabel)
+	assert.NoError(t, err)
+
+	v, err := newIdx.Value.String()
+	assert.NoError(t, err)
+	assert.Equal(t, "2", v)
+	assert.Equal(t, fundingLabel, newIdx.KeyLabel)
+}
+
+func TestIncrementArrayAttrIDX(t *testing.T) {
+
 }
 
 // TODO: test for no docID here
@@ -170,7 +274,6 @@ func TestDeriveFundingListResponse(t *testing.T) {
 		payloads = append(payloads, p)
 		model, err = srv.DeriveFromPayload(context.Background(), p)
 		assert.NoError(t, err)
-
 	}
 
 	response, err := srv.DeriveFundingListResponse(context.Background(), model)
@@ -179,9 +282,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		checkResponse(t, payloads[i], response.Data[i].Funding)
-
 	}
-
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
