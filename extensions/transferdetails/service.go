@@ -22,10 +22,10 @@ type Service interface {
 	DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error)
 
 	// DeriveFundingResponse returns a TransferDetail in client format
-	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetailResponse, error)
+	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error)
 
 	// DeriveFundingListResponse returns a TransferDetail list in client format
-	DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailListResponse, error)
+	DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailList, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -225,7 +225,7 @@ func (s service) deriveTransferData(model documents.Model, idx string) (*Transfe
 }
 
 // DeriveTransferResponse returns create response from the added TransferDetail
-func (s service) DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetailResponse, error) {
+func (s service) DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
@@ -237,14 +237,14 @@ func (s service) DeriveTransferResponse(ctx context.Context, model documents.Mod
 	}
 
 	// TODO: derive response header in userapi
-	return &TransferDetailResponse{
+	return &TransferDetail{
 		Data: data,
 	}, nil
 }
 
 // DeriveTransfersListResponse returns a transfers list
-func (s service) DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailListResponse, error) {
-	response := new(TransferDetailListResponse)
+func (s service) DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailList, error) {
+	response := new(TransferDetailList)
 	fl, err := documents.AttrKeyFromLabel(transfersLabel)
 	if err != nil {
 		return nil, err

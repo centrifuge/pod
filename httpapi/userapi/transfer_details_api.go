@@ -2,14 +2,14 @@ package userapi
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
-	"io/ioutil"
-	"net/http"
 )
 
 type handler struct {
@@ -60,14 +60,38 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		return
 	}
-	model, err := h.srv.CreateTransferDetails(ctx, *payload)
+	model, err := h.srv.CreateTransferDetailsModel(ctx, *payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, model, jobs.NilJobID())
+	cs, err := model.GetCollaborators()
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	a := model.GetAttributes()
+	attr, err := toClientAttributes(a)
+
+	d := model.GetData().([]byte)
+
+	update := documents.UpdatePayload{
+		DocumentID: model.ID(),
+		CreatePayload: documents.CreatePayload{
+			Scheme:        model.Scheme(),
+			Collaborators: cs,
+			Attributes:    attr,
+			Data:          d,
+		},
+	}
+
+	updated, jobID, err := h.srv.srv.UpdateModel(ctx, update)
+
+	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, updated, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -76,13 +100,12 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 
 	resp := TransferDetailResponse{
 		Header: &header,
-		Data: payload.Data,
+		Data:   payload.Data,
 	}
 
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, resp)
 }
-
 
 //Create
 //Get
