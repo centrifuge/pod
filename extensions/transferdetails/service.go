@@ -14,7 +14,6 @@ import (
 
 // Service defines specific functions for extension funding
 type Service interface {
-	documents.Service
 
 	// DeriveFromUpdatePayload derives TransferDetail from clientUpdatePayload
 	DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error)
@@ -31,9 +30,8 @@ type Service interface {
 
 // service implements Service and handles all funding related persistence and validations
 type service struct {
-	documents.Service
+	srv documents.Service
 	tokenRegistry documents.TokenRegistry
-	idSrv         identity.Service
 }
 
 const (
@@ -48,7 +46,7 @@ func DefaultService(
 	tokenRegistry documents.TokenRegistry,
 ) Service {
 	return service{
-		Service:       srv,
+		srv:       srv,
 		tokenRegistry: tokenRegistry,
 	}
 }
@@ -84,7 +82,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetail
 		return nil, err
 	}
 
-	model, err = s.GetCurrentVersion(ctx, docID)
+	model, err = s.srv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -132,7 +130,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 		return nil, err
 	}
 
-	model, err = s.GetCurrentVersion(ctx, docID)
+	model, err = s.srv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
