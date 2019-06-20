@@ -14,26 +14,24 @@ import (
 
 // Service defines specific functions for extension funding
 type Service interface {
-	documents.Service
 
-	// DeriveFromUpdatePayload derives TransferDetails from clientUpdatePayload
+	// DeriveFromUpdatePayload derives TransferDetail from clientUpdatePayload
 	DeriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error)
 
-	// DeriveFromPayload derives TransferDetails from clientPayload
+	// DeriveFromPayload derives TransferDetail from clientPayload
 	DeriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error)
 
-	// DeriveFunResponse returns a TransferDetail in client format
-	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error)
+	// DeriveFundingResponse returns a TransferDetail in client format
+	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetailResponse, error)
 
-	// DeriveFundingListResponse returns a funding list in client format
-	DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailList, error)
+	// DeriveFundingListResponse returns a TransferDetail list in client format
+	DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailListResponse, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
 type service struct {
-	documents.Service
+	srv documents.Service
 	tokenRegistry documents.TokenRegistry
-	idSrv         identity.Service
 }
 
 const (
@@ -48,7 +46,7 @@ func DefaultService(
 	tokenRegistry documents.TokenRegistry,
 ) Service {
 	return service{
-		Service:       srv,
+		srv:       srv,
 		tokenRegistry: tokenRegistry,
 	}
 }
@@ -84,7 +82,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req CreateTransferDetail
 		return nil, err
 	}
 
-	model, err = s.GetCurrentVersion(ctx, docID)
+	model, err = s.srv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -132,7 +130,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 		return nil, err
 	}
 
-	model, err = s.GetCurrentVersion(ctx, docID)
+	model, err = s.srv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -220,15 +218,14 @@ func (s service) deriveTransferData(model documents.Model, idx string) (*Transfe
 			}
 
 			reflect.ValueOf(data).Elem().FieldByName(n).SetString(v)
-
 		}
-
 	}
+
 	return data, nil
 }
 
 // DeriveTransferResponse returns create response from the added TransferDetail
-func (s service) DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error) {
+func (s service) DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetailResponse, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
@@ -239,15 +236,15 @@ func (s service) DeriveTransferResponse(ctx context.Context, model documents.Mod
 		return nil, err
 	}
 
-	return &TransferDetail{
+	// TODO: derive response header in userapi
+	return &TransferDetailResponse{
 		Data: data,
 	}, nil
-
 }
 
 // DeriveTransfersListResponse returns a transfers list
-func (s service) DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailList, error) {
-	response := new(TransferDetailList)
+func (s service) DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailListResponse, error) {
+	response := new(TransferDetailListResponse)
 	fl, err := documents.AttrKeyFromLabel(transfersLabel)
 	if err != nil {
 		return nil, err
@@ -280,6 +277,6 @@ func (s service) DeriveTransferListResponse(ctx context.Context, model documents
 			return nil, err
 		}
 	}
-
+	// TODO: derive response header in userapi
 	return response, nil
 }

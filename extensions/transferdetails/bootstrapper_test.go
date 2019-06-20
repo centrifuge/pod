@@ -9,13 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-type mockService struct {
-	Service
-	mock.Mock
-}
 
 func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx := make(map[string]interface{})
@@ -27,7 +21,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Contains(t, err.Error(), "document service not initialised")
 
 	// missing token registry
-	ctx[documents.BootstrappedDocumentService] = new(mockService)
+	ctx[documents.BootstrappedDocumentService] = new(testingdocuments.MockService)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "token registry not initialisation")
