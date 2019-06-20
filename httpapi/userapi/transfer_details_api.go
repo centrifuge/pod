@@ -76,6 +76,11 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 
 	a := model.GetAttributes()
 	attr, err := toClientAttributes(a)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
 
 	d := model.GetData().([]byte)
 
@@ -90,6 +95,11 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, jobID, err := h.srv.srv.UpdateModel(ctx, update)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
 
 	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, updated, jobID)
 	if err != nil {
