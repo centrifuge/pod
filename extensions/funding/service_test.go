@@ -197,10 +197,6 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Equal(t, fundingLabel, newIdx.KeyLabel)
 }
 
-func TestIncrementArrayAttrIDX(t *testing.T) {
-
-}
-
 // TODO: test for no docID here
 func TestDeriveFromPayload(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
