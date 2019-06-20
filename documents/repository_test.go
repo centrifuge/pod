@@ -22,6 +22,22 @@ type doc struct {
 	SomeString string `json:"some_string"`
 }
 
+type unknownDoc struct {
+	SomeString string `json:"some_string"`
+}
+
+func (unknownDoc) Type() reflect.Type {
+	return reflect.TypeOf(unknownDoc{})
+}
+
+func (u *unknownDoc) JSON() ([]byte, error) {
+	return json.Marshal(u)
+}
+
+func (u *unknownDoc) FromJSON(j []byte) error {
+	return json.Unmarshal(j, u)
+}
+
 func (m *doc) JSON() ([]byte, error) {
 	return json.Marshal(m)
 }
@@ -67,34 +83,46 @@ func TestLevelDBRepo_Update_Exists(t *testing.T) {
 }
 
 func TestLevelDBRepo_Get_Create_Update(t *testing.T) {
-	repo := getRepository(ctx)
+	repor := getRepository(ctx)
 
 	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
-	m, err := repo.Get(accountID, id)
+	m, err := repor.Get(accountID, id)
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, m)
 
 	d := &doc{SomeString: "Hello, Repo!"}
-	err = repo.Create(accountID, id, d)
+	err = repor.Create(accountID, id, d)
 	assert.Nil(t, err, "Create: unknown error")
 
-	m, err = repo.Get(accountID, id)
+	m, err = repor.Get(accountID, id)
 	assert.Error(t, err, "doc is not registered yet")
 	assert.Nil(t, m)
 
-	repo.Register(&doc{})
-	m, err = repo.Get(accountID, id)
+	repor.Register(&doc{})
+	m, err = repor.Get(accountID, id)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 	nd := m.(*doc)
 	assert.Equal(t, d, nd, "must be equal")
 
 	d.SomeString = "Hello, World!"
-	err = repo.Update(accountID, id, d)
+	err = repor.Update(accountID, id, d)
 	assert.Nil(t, err, "Update: unknown error")
 
-	m, err = repo.Get(accountID, id)
+	m, err = repor.Get(accountID, id)
 	assert.Nil(t, err, "Get: unknown error")
 	nd = m.(*doc)
 	assert.Equal(t, d, nd, "must be equal")
+
+	// a document id sent which is not a model
+	repor.(*repo).db.Register(&unknownDoc{})
+	unid := utils.RandomSlice(32)
+	u := unknownDoc{SomeString: "unknown"}
+	//hexKey := hexutil.Encode(append(accountID, unid...))
+	err = repor.(*repo).db.Create(repor.(*repo).getKey(accountID, unid), &u)
+	assert.NoError(t, err)
+	m, err = repor.Get(accountID, unid)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "is not a model object")
+	}
 }

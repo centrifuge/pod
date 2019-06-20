@@ -78,13 +78,13 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 	fd.initFundingFromData(req.Data)
 
 	var docID []byte
-	if req.DocumentId != "" {
-		docID, err = hexutil.Decode(req.DocumentId)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	if req.DocumentId == "" {
 		return nil, documents.ErrDocumentIdentifier
+	}
+
+	docID, err = hexutil.Decode(req.DocumentId)
+	if err != nil {
+		return nil, err
 	}
 
 	model, err = s.GetCurrentVersion(ctx, docID)
@@ -129,13 +129,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 	fd.initFundingFromData(req.Data)
 
 	var docID []byte
-	if req.DocumentId != "" {
-		docID, err = hexutil.Decode(req.DocumentId)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	if req.DocumentId == "" {
 		return nil, documents.ErrDocumentIdentifier
+	}
+
+	docID, err = hexutil.Decode(req.DocumentId)
+	if err != nil {
+		return nil, err
 	}
 
 	model, err = s.GetCurrentVersion(ctx, docID)

@@ -143,7 +143,6 @@ func TestDeriveTransferListResponse(t *testing.T) {
 		payloads = append(payloads, p)
 		model, err = srv.DeriveFromPayload(context.Background(), p)
 		assert.NoError(t, err)
-
 	}
 
 	response, err := srv.DeriveTransferListResponse(context.Background(), model)
@@ -152,7 +151,6 @@ func TestDeriveTransferListResponse(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		checkResponse(t, payloads[i], response.Data[i])
-
 	}
 
 }
