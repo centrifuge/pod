@@ -5,6 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-chi/chi"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
@@ -26,13 +30,14 @@ var log = logging.Logger("user-api")
 // @tags TransferDetail
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
-// @param body body coreapi.CreateTransferDetailRequest true "Transfer Detail Create Request"
+// @param body body userapi.CreateTransferDetailRequest true "Transfer Detail Create Request"
+// @param document_id path string true "Document Identifier"
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} coreapi.TransferDetailResponse
-// @router /v1/documents [post]
+// @success 201 {object} userapi.TransferDetailResponse
+// @router /v1/documents/extensions/transfer_details [post]
 func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -60,48 +65,14 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		return
 	}
-	model, err := h.srv.CreateTransferDetailsModel(ctx, *payload)
+	model, jobID, err := h.srv.CreateTransferDetail(ctx, *payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	cs, err := model.GetCollaborators()
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	a := model.GetAttributes()
-	attr, err := toClientAttributes(a)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	d := model.GetData().([]byte)
-
-	update := documents.UpdatePayload{
-		DocumentID: model.ID(),
-		CreatePayload: documents.CreatePayload{
-			Scheme:        model.Scheme(),
-			Collaborators: cs,
-			Attributes:    attr,
-			Data:          d,
-		},
-	}
-
-	updated, jobID, err := h.srv.srv.UpdateModel(ctx, update)
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, updated, jobID)
+	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, model, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -117,8 +88,181 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, resp)
 }
 
-//Get
+// UpdateTransferDetail updates a transfer detail extension.
+// @summary Updates a new transfer detail extension on a document and anchors it.
+// @description Updates a new transfer detail extension on a document and anchors it.
+// @id update_transfer_detail
+// @tags TransferDetail
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param body body userapi.UpdateTransferDetailRequest true "Transfer Detail Update Request"
+// @param document_id path string true "Document Identifier"
+// @param transfer_id path string true "Transfer Detail Identifier"
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 201 {object} userapi.TransferDetailResponse
+// @router /v1/documents/{document_id}/extensions/transfer_details/{transfer_id} [post]
+func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	ctx := r.Context()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var request UpdateTransferDetailRequest
+	err = json.Unmarshal(data, &request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	payload, err := toTransferDetailUpdatePayload(request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+	model, jobID, err := h.srv.UpdateTransferDetail(ctx, *payload)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, model, jobID)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	resp := TransferDetailResponse{
+		Header: &header,
+		Data:   payload.Data,
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, resp)
+}
+
+// GetTransferDetail returns the latest version of transfer detail.
+// @summary Returns the latest version of the transfer detail.
+// @description Returns the latest version of the transfer detail.
+// @id get_transfer
+// @tags Documents
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param transfer_id path string true "Transfer Detail Identifier"
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} userapi.TransferDetailResponse
+// @router /v1/documents/{document_id}/extensions/transfer_details/{transfer_id} [get]
+func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	transferID, err := hexutil.Decode(chi.URLParam(r, transferIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	td, model, err := h.srv.GetCurrentTransferDetail(r.Context(), docID, transferID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = coreapi.ErrDocumentNotFound
+		return
+	}
+
+	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, model, jobs.NilJobID())
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	resp := TransferDetailResponse{
+		Header: &header,
+		Data:   td.Data,
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, resp)
+}
+
+// GetTransferDetailList returns a list of the latest versions all transfer details on the document.
+// @summary Returns a list of the latest versions of all transfer details on the document..
+// @description Returns a list of the latest versions of all transfer details on the document..
+// @id get_transfer
+// @tags Documents
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param transfer_id path string true "Transfer Detail Identifier"
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} userapi.TransferDetailListResponse
+// @router /v1/documents/{document_id}/extensions/transfer_details [get]
+func (h handler) GetTransferDetailList(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	td, model, err := h.srv.GetCurrentTransferDetailsList(r.Context(), docID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = coreapi.ErrDocumentNotFound
+		return
+	}
+
+	header, err := coreapi.DeriveResponseHeader(h.tokenRegistry, model, jobs.NilJobID())
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	resp := TransferDetailListResponse{
+		Header: &header,
+		Data:   td.Data,
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, resp)
+}
+
 //GetVersion
-//GetList
 //GetListVersion
-//Update

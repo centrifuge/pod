@@ -7,6 +7,11 @@ import (
 	"github.com/go-chi/chi"
 )
 
+const (
+	documentIDParam = "document_id"
+	transferIDParam = "transfer_id"
+)
+
 // Register registers the core apis to the router.
 func Register(r chi.Router,
 	nftSrv nft.Service,
@@ -15,5 +20,10 @@ func Register(r chi.Router,
 		tokenRegistry: nftSrv.(documents.TokenRegistry),
 		srv:           Service{transferDetailsService: transferSrv},
 	}
-	r.Post("/extensions/", h.CreateTransferDetail)
+	r.Post("/documents/{"+documentIDParam+"}/extensions/transfer_details", h.CreateTransferDetail)
+	r.Post("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
+	r.Get("/documents/{"+documentIDParam+"}/extensions/transfer_details", h.GetTransferDetailList)
+	r.Get("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
+	//r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/extensions/transfer_details", h.GetVersionTransferDetailList)
+	//r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.GetVersionTransferDetail)
 }

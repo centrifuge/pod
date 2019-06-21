@@ -5,7 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/go-centrifuge/jobs"
 )
 
 // Service provides functionality for User APIs.
@@ -16,91 +16,81 @@ type Service struct {
 
 // TODO: this can be refactored into a generic Service which handles all kinds of custom attributes
 
-// CreateTransferDetailsModel
-func (s Service) CreateTransferDetailsModel(ctx context.Context, req transferdetails.CreateTransferDetailRequest) (documents.Model, error) {
-	model, err := s.transferDetailsService.CreateTransferDetail(ctx, req)
+// CreateTransferDetail creates and anchors a Transfer Detail
+func (s Service) CreateTransferDetail(ctx context.Context, req transferdetails.CreateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
+	model, jobID, err := s.transferDetailsService.CreateTransferDetail(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, jobs.NilJobID(), err
 	}
-	return model, nil
+	return model, jobID, nil
 }
 
-// UpdateTransferDetailsModel
-func (s Service) UpdateTransferDetailsModel(ctx context.Context, req transferdetails.UpdateTransferDetailRequest) (documents.Model, error) {
-	model, err := s.transferDetailsService.UpdateTransferDetail(ctx, req)
+// UpdateTransferDetail updates and anchors a Transfer Detail
+func (s Service) UpdateTransferDetail(ctx context.Context, req transferdetails.UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
+	model, jobID, err := s.transferDetailsService.UpdateTransferDetail(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, jobs.NilJobID(), err
 	}
 
-	return model, nil
+	return model, jobID, nil
 }
 
-// GetCurrentTransferDetails
-func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID string) (*transferdetails.TransferDetail, error) {
-	identifier, err := hexutil.Decode(docID)
+// GetCurrentTransferDetail returns the current version on a Transfer Detail
+func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID []byte) (*transferdetails.TransferDetail, documents.Model, error) {
+	model, err := s.srv.GetCurrentVersion(ctx, docID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	model, err := s.srv.GetCurrentVersion(ctx, identifier)
+	data, model, err := s.transferDetailsService.DeriveTransferDetail(ctx, model, transferID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return s.transferDetailsService.DeriveTransferResponse(ctx, model, transferID)
+	return data, model, nil
 }
 
-// GetCurrentTransferDetailsList
-func (s Service) GetCurrentTransferDetailsList(ctx context.Context, docID string) (*transferdetails.TransferDetailList, error) {
-	identifier, err := hexutil.Decode(docID)
+// GetCurrentTransferDetailsList returns a list of Transfer Details on the current version of a document
+func (s Service) GetCurrentTransferDetailsList(ctx context.Context, docID []byte) (*transferdetails.TransferDetailList, documents.Model, error) {
+	model, err := s.srv.GetCurrentVersion(ctx, docID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	model, err := s.srv.GetCurrentVersion(ctx, identifier)
+	data, model, err := s.transferDetailsService.DeriveTransferList(ctx, model)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return s.transferDetailsService.DeriveTransferListResponse(ctx, model)
+	return data, model, nil
 }
 
-// GetVersionTransferDetail
-func (s Service) GetVersionTransferDetail(ctx context.Context, docID, versionID, transferID string) (*transferdetails.TransferDetail, error) {
-	identifier, err := hexutil.Decode(docID)
+// GetVersionTransferDetail returns a Transfer Detail on a particular version of a Document
+func (s Service) GetVersionTransferDetail(ctx context.Context, docID, versionID, transferID []byte) (*transferdetails.TransferDetail, documents.Model, error) {
+	model, err := s.srv.GetVersion(ctx, docID, versionID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	version, err := hexutil.Decode(versionID)
+	data, model, err := s.transferDetailsService.DeriveTransferDetail(ctx, model, transferID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	model, err := s.srv.GetVersion(ctx, identifier, version)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.transferDetailsService.DeriveTransferResponse(ctx, model, transferID)
+	return data, model, nil
 }
 
-// GetVersionTransferDetailsList
-func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versionID string) (*transferdetails.TransferDetailList, error) {
-	identifier, err := hexutil.Decode(docID)
+// GetVersionTransferDetailsList returns a list of Transfer Details on a particular version of a Document
+func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versionID []byte) (*transferdetails.TransferDetailList, documents.Model, error) {
+	model, err := s.srv.GetVersion(ctx, docID, versionID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	version, err := hexutil.Decode(versionID)
+	data, model, err := s.transferDetailsService.DeriveTransferList(ctx, model)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	model, err := s.srv.GetVersion(ctx, identifier, version)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.transferDetailsService.DeriveTransferListResponse(ctx, model)
+	return data, model, nil
 }

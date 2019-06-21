@@ -2,7 +2,6 @@
 package userapi
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 )
@@ -25,29 +24,29 @@ import (
 
 // TODO: think: generic custom attribute set creation?
 
-//CreateTransferDetailRequest
+//CreateTransferDetailRequest is the request body for creating a Transfer Detail
 type CreateTransferDetailRequest struct {
 	DocumentID string                              `json:"document_id" swaggertype:"primitive,string"`
 	Data       *transferdetails.TransferDetailData `json:"data"`
 }
 
-// UpdateTransferDetailRequest
+// UpdateTransferDetailRequest is the request body for updating a Transfer Detail
 type UpdateTransferDetailRequest struct {
 	DocumentID string                              `json:"document_id" swaggertype:"primitive,string"`
 	TransferID string                              `json:"transfer_id" swaggertype:"primitive,string"`
 	Data       *transferdetails.TransferDetailData `json:"data"`
 }
 
-// TransferDetailResponse
+// TransferDetailResponse is the response body when fetching a Transfer Detail
 type TransferDetailResponse struct {
 	Header *coreapi.ResponseHeader             `json:"header"`
 	Data   *transferdetails.TransferDetailData `json:"data"`
 }
 
-// TransferDetailListResponse
+// TransferDetailListResponse is the response body when fetching a list of Transfer Details
 type TransferDetailListResponse struct {
-	Header *coreapi.ResponseHeader             `json:"header"`
-	Data   *transferdetails.TransferDetailData `json:"data"`
+	Header *coreapi.ResponseHeader               `json:"header"`
+	Data   []*transferdetails.TransferDetailData `json:"data"`
 }
 
 func toTransferDetailCreatePayload(request CreateTransferDetailRequest) (*transferdetails.CreateTransferDetailRequest, error) {
@@ -58,19 +57,10 @@ func toTransferDetailCreatePayload(request CreateTransferDetailRequest) (*transf
 	return payload, nil
 }
 
-func toClientAttributes(attrs []documents.Attribute) (map[documents.AttrKey]documents.Attribute, error) {
-	if len(attrs) < 1 {
-		return nil, nil
-	}
+func toTransferDetailUpdatePayload(request UpdateTransferDetailRequest) (*transferdetails.UpdateTransferDetailRequest, error) {
+	payload := new(transferdetails.UpdateTransferDetailRequest)
+	payload.Data = request.Data
+	payload.DocumentID = request.DocumentID
 
-	m := make(map[documents.AttrKey]documents.Attribute)
-	for _, v := range attrs {
-		m[v.Key] = documents.Attribute{
-			KeyLabel: v.Key.String(),
-			Key:      v.Key,
-			Value:    v.Value,
-		}
-	}
-
-	return m, nil
+	return payload, nil
 }

@@ -2,8 +2,9 @@ package transferdetails
 
 import (
 	"context"
-	"fmt"
 	"reflect"
+
+	"github.com/centrifuge/go-centrifuge/jobs"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -17,16 +18,16 @@ import (
 type Service interface {
 
 	// UpdateTransferDetail updates a TransferDetail
-	UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error)
+	UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error)
 
 	// CreateTransferDetail derives a TransferDetail from a request payload
-	CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error)
+	CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, jobs.JobID, error)
 
 	// DeriveFundingResponse returns a TransferDetail in client format
-	DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error)
+	DeriveTransferDetail(ctx context.Context, model documents.Model, transferID []byte) (*TransferDetail, documents.Model, error)
 
 	// DeriveFundingListResponse returns a TransferDetail list in client format
-	DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailList, error)
+	DeriveTransferList(ctx context.Context, model documents.Model) (*TransferDetailList, documents.Model, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -70,20 +71,54 @@ func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
 	return c, nil
 }
 
-func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, error) {
-	model, err := s.deriveFromPayload(ctx, req)
+func (s service) updateModel(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, error) {
+	cs, err := model.GetCollaborators()
 	if err != nil {
-		return nil, err
+		return nil, jobs.NilJobID(), err
 	}
-	fmt.Println(model)
-	updated, _, _, err := s.srv.Update(ctx, model)
+
+	a := model.GetAttributes()
+	attr, err := extensions.ToClientAttributes(a)
 	if err != nil {
-		return nil, err
+		return nil, jobs.NilJobID(), err
 	}
-	return updated, nil
+
+	d := model.GetData().([]byte)
+
+	payload := documents.UpdatePayload{
+		DocumentID: model.ID(),
+		CreatePayload: documents.CreatePayload{
+			Scheme:        model.Scheme(),
+			Collaborators: cs,
+			Attributes:    attr,
+			Data:          d,
+		},
+	}
+
+	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return updated, jobID, err
 }
 
-// DeriveFromPayload derives a new TransferDetail from a CreateTransferDetailRequest
+// CreateTransferDetail creates and anchors a TransferDetail
+func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
+	model, err := s.deriveFromPayload(ctx, req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	updated, jobID, err := s.updateModel(ctx, model)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return updated, jobID, nil
+}
+
+// deriveFromPayload derives a new TransferDetail from a CreateTransferDetailRequest
 func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
 
@@ -132,19 +167,22 @@ func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetail
 	return model, nil
 }
 
-func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, error) {
+// UpdateTransferDetail updates and anchors a TransferDetail
+func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
 	model, err := s.deriveFromUpdatePayload(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, jobs.NilJobID(), err
 	}
-	updated, _, _, err := s.srv.Update(ctx, model)
+
+	updated, jobID, err := s.updateModel(ctx, model)
 	if err != nil {
-		return nil, err
+		return nil, jobs.NilJobID(), err
 	}
-	return updated, nil
+
+	return updated, jobID, nil
 }
 
-// DeriveFromUpdatePayload derives an updated TransferDetail from an UpdateTransferDetailRequest
+// deriveFromUpdatePayload derives an updated TransferDetail from an UpdateTransferDetailRequest
 func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
 	if req.DocumentID == "" {
@@ -251,43 +289,45 @@ func (s service) deriveTransferData(model documents.Model, idx string) (*Transfe
 }
 
 // DeriveTransferResponse returns create response from the added TransferDetail
-func (s service) DeriveTransferResponse(ctx context.Context, model documents.Model, transferID string) (*TransferDetail, error) {
-	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
+func (s service) DeriveTransferDetail(ctx context.Context, model documents.Model, transferID []byte) (*TransferDetail, documents.Model, error) {
+	tID := hexutil.Encode(transferID)
+	idx, err := extensions.FindAttributeSetIDX(model, tID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	data, err := s.deriveTransferData(model, idx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// TODO: derive response header in userapi
 	return &TransferDetail{
 		Data: data,
-	}, nil
+	}, model, nil
 }
 
 // DeriveTransfersListResponse returns a transfers list
-func (s service) DeriveTransferListResponse(ctx context.Context, model documents.Model) (*TransferDetailList, error) {
-	response := new(TransferDetailList)
+func (s service) DeriveTransferList(ctx context.Context, model documents.Model) (*TransferDetailList, documents.Model, error) {
+	list := new(TransferDetailList)
 	fl, err := documents.AttrKeyFromLabel(transfersLabel)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if !model.AttributeExists(fl) {
-		return response, nil
+		return &TransferDetailList{
+			Data: nil,
+		}, nil, nil
 	}
 
 	lastIdx, err := extensions.GetArrayLatestIDX(model, transfersLabel)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	i, err := documents.NewInt256("0")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for i.Cmp(lastIdx) != 1 {
@@ -296,13 +336,15 @@ func (s service) DeriveTransferListResponse(ctx context.Context, model documents
 			continue
 		}
 
-		response.Data = append(response.Data, transfer)
+		list.Data = append(list.Data, transfer)
 		i, err = i.Inc()
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	// TODO: derive response header in userapi
-	return response, nil
+
+	return &TransferDetailList{
+		Data: list.Data,
+	}, model, nil
 }

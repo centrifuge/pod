@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -35,6 +38,7 @@ func Router(
 	configSrv config.Service,
 	nftSrv nft.Service,
 	docsSrv documents.Service,
+	transferSrv transferdetails.Service,
 	jobsSrv jobs.Manager) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -49,6 +53,8 @@ func Router(
 	r.Route("/v1", func(r chi.Router) {
 		// core apis
 		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+		// user apis
+		userapi.Register(r, nftSrv, transferSrv)
 	})
 	return r
 }
