@@ -12,7 +12,7 @@ import (
 
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
-	Register(r, new(testingnfts.MockNFTService), nil)
+	Register(r, nil, new(testingnfts.MockNFTService), nil)
 	assert.Len(t, r.Routes(), 2)
 	assert.Equal(t, r.Routes()[0].Pattern, "/documents/{document_id}/extensions/transfer_details")
 	assert.Len(t, r.Routes()[0].Handlers, 2)

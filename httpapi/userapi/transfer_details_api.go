@@ -5,9 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/extensions"
-
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
