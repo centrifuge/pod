@@ -4,14 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
-	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
