@@ -2,6 +2,7 @@ package userapi
 
 import (
 	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/jobs"

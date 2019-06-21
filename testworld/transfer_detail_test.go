@@ -45,8 +45,8 @@ func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfer
 
 	transferId = getTransferId(t, res)
 	params = map[string]interface{}{
-		"document_id": docIdentifier,
-		"amount":      "300",
+		"document_id":    docIdentifier,
+		"amount":         "300",
 		"status":         "open",
 		"scheduled_date": "2018-09-26T23:12:37Z",
 	}

@@ -2,9 +2,10 @@ package userapi
 
 import (
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/extensions"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/centrifuge/go-centrifuge/extensions"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
