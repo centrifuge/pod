@@ -98,6 +98,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		},
 	}
 
+	// TODO: use coreapi.CreateDocument
 	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -123,13 +124,11 @@ func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDet
 
 // deriveFromPayload derives a new TransferDetail from a CreateTransferDetailRequest
 func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (model documents.Model, err error) {
-	var docID []byte
-
 	if req.DocumentID == "" {
 		return nil, documents.ErrDocumentIdentifier
 	}
 
-	docID, err = hexutil.Decode(req.DocumentID)
+	docID, err := hexutil.Decode(req.DocumentID)
 	if err != nil {
 		return nil, err
 	}
@@ -177,6 +176,7 @@ func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDet
 		return nil, jobs.NilJobID(), err
 	}
 
+	// TODO: use coreapi.CreateDocument
 	updated, jobID, err := s.updateModel(ctx, model)
 	if err != nil {
 		return nil, jobs.NilJobID(), err

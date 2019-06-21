@@ -24,6 +24,7 @@ func Register(r chi.Router,
 	r.Post("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
 	r.Get("/documents/{"+documentIDParam+"}/extensions/transfer_details", h.GetTransferDetailList)
 	r.Get("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
+	// TODO: future GET methods for specific versions
 	//r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/extensions/transfer_details", h.GetVersionTransferDetailList)
 	//r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.GetVersionTransferDetail)
 }
