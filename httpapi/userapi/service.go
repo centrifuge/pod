@@ -10,7 +10,7 @@ import (
 
 // Service provides functionality for User APIs.
 type Service struct {
-	srv                    documents.Service
+	docSrv                 documents.Service
 	transferDetailsService transferdetails.Service
 }
 
@@ -37,7 +37,7 @@ func (s Service) UpdateTransferDetail(ctx context.Context, req transferdetails.U
 
 // GetCurrentTransferDetail returns the current version on a Transfer Detail
 func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID []byte) (*transferdetails.TransferDetail, documents.Model, error) {
-	model, err := s.srv.GetCurrentVersion(ctx, docID)
+	model, err := s.docSrv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -52,7 +52,7 @@ func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID
 
 // GetCurrentTransferDetailsList returns a list of Transfer Details on the current version of a document
 func (s Service) GetCurrentTransferDetailsList(ctx context.Context, docID []byte) (*transferdetails.TransferDetailList, documents.Model, error) {
-	model, err := s.srv.GetCurrentVersion(ctx, docID)
+	model, err := s.docSrv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -67,7 +67,7 @@ func (s Service) GetCurrentTransferDetailsList(ctx context.Context, docID []byte
 
 // GetVersionTransferDetail returns a Transfer Detail on a particular version of a Document
 func (s Service) GetVersionTransferDetail(ctx context.Context, docID, versionID, transferID []byte) (*transferdetails.TransferDetail, documents.Model, error) {
-	model, err := s.srv.GetVersion(ctx, docID, versionID)
+	model, err := s.docSrv.GetVersion(ctx, docID, versionID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,7 +82,7 @@ func (s Service) GetVersionTransferDetail(ctx context.Context, docID, versionID,
 
 // GetVersionTransferDetailsList returns a list of Transfer Details on a particular version of a Document
 func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versionID []byte) (*transferdetails.TransferDetailList, documents.Model, error) {
-	model, err := s.srv.GetVersion(ctx, docID, versionID)
+	model, err := s.docSrv.GetVersion(ctx, docID, versionID)
 	if err != nil {
 		return nil, nil, err
 	}

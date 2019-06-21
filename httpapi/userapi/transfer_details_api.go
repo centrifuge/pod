@@ -5,13 +5,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-chi/chi"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
 )
@@ -37,7 +36,7 @@ var log = logging.Logger("user-api")
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} userapi.TransferDetailResponse
-// @router /v1/documents/extensions/transfer_details [post]
+// @router /v1/documents/{document_id}/extensions/transfer_details [post]
 func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int

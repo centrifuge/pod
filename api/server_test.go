@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
+	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -63,6 +64,7 @@ func TestMain(m *testing.M) {
 		documents.PostBootstrapper{},
 		&entity.Bootstrapper{},
 		funding.Bootstrapper{},
+		transferdetails.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 

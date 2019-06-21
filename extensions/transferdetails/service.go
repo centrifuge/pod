@@ -2,14 +2,14 @@ package transferdetails
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
-
-	"github.com/centrifuge/go-centrifuge/jobs"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
@@ -83,7 +83,10 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		return nil, jobs.NilJobID(), err
 	}
 
-	d := model.GetData().([]byte)
+	d, err := json.Marshal(model.GetData())
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
 
 	payload := documents.UpdatePayload{
 		DocumentID: model.ID(),

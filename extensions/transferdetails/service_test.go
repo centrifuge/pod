@@ -83,6 +83,7 @@ func TestDeriveFromPayload(t *testing.T) {
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
 	srv := DefaultService(docSrv, nil)
 	payload := createTestPayload()
 	payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
@@ -108,6 +109,7 @@ func TestDeriveTransferResponse(t *testing.T) {
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
 	srv := DefaultService(docSrv, nil)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
@@ -135,6 +137,7 @@ func TestDeriveTransferListResponse(t *testing.T) {
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
@@ -165,7 +168,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-	docSrv.On("Update", mock.Anything, mock.Anything).Return(inv, nil)
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
 	srv := DefaultService(docSrv, nil)
 	var model documents.Model
 
@@ -176,7 +179,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
-	docSrv.On("Update", mock.Anything, mock.Anything).Return(model, nil)
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
 	p2 := &UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: p.Data.TransferID}
 	p2.Data.Currency = "USD"
 	p2.Data.Amount = "1200"
