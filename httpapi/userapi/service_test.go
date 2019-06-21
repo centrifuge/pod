@@ -112,7 +112,7 @@ func TestService_GetVersionTransferDetail(t *testing.T) {
 	td := new(transferdetails.TransferDetail)
 	docSrv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(m, nil)
 	transferSrv.On("DeriveTransferDetail", mock.Anything, mock.Anything, mock.Anything).Return(td, m, nil)
-	ntd, nm, err := service.GetCurrentTransferDetail(context.Background(), nil, nil)
+	ntd, nm, err := service.GetVersionTransferDetail(context.Background(), nil, nil, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, td, ntd)
 	assert.Equal(t, m, nm)
