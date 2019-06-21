@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/snarks"
 	"math/big"
+	"os"
 	"strings"
 	"time"
 
@@ -141,7 +143,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
-	//docProofs = s.filterMintProofs(docProofs)
+	docProofs = s.filterMintProofs(docProofs)
 
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
@@ -182,11 +184,17 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, zkPayload, errors.New("Buyer Signature not found in list")
 	}
 
+	// Call to get buyer tree proofs
+	buyerProof, err := snarks.GenerateDefaultBuyerRatingProof(hex.EncodeToString(docProofs.FieldProofs[1].Value), hex.EncodeToString(buyerPubKey))
+	if err != nil {
+		return mreq, zkPayload, err
+	}
+
 	// Form the ZK JSON payload for prover
 	zkPayload = ZKJSON{
 		Public:  PublicFields{
-			NFTAmount: strings.Replace(proof.FieldProofs[0].Value, "0x", "", -1),
-			CreditRatingRootHash: "058653f1572ef609a6576b89be3271f0f3e2d80669953c6f9cd2172a63bd5bac",
+			NFTAmount: "0000000000000000000000000000000000000000000000000000000000000320",
+			CreditRatingRootHash: buyerProof.RootHash,
 			Rating: "64",
 			DocumentRootHash: hex.EncodeToString(docDataRootHash),
 		},
@@ -194,9 +202,9 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 			BuyerPubKey: hex.EncodeToString(buyerPubKey),
 			BuyerSignature: hex.EncodeToString(buyerSignature),
 			BuyerRatingProof: Proof{
-				Hashes: []string{"f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b", "800aff4892fe1e2156ab2feb20388ba86d6bed741f07512f87a12b48756120cd"},
-				Right: []bool{false, false},
-				Value: "000000000000000000000000000000000000000112761387b6debb7362f6f7f4feb2a0f79e6c6a5683b1678ad1b272841eaaefca64",
+				Hashes: buyerProof.Hashes,
+				Right: buyerProof.Right,
+				Value: buyerProof.Value,
 			},
 			DocumentInvoiceAmountProof: Proof{
 				Hashes: stringutils.RemoveStringInList(proof.FieldProofs[0].Hashes, "0x"),
@@ -229,23 +237,24 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 func (s *ethInvoiceUnpaid) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
 	var proofFields []string
 
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return nil, err
-	}
-	accDIDBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-	keys, err := acc.GetKeys()
-	if err != nil {
-		return nil, err
-	}
+	//acc, err := contextutil.Account(ctx)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//accDIDBytes, err := acc.GetIdentityID()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//keys, err := acc.GetKeys()
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
-	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	//docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	//signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	//signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerID)
+	//proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields = []string{"invoice.gross_amount", "invoice.recipient"}
 	return proofFields, nil
 }
 
@@ -322,13 +331,30 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 			return
 		}
 
-		requestData, _, err := s.prepareMintRequest(jobCtx, tokenID, accountID, req)
+		requestData, zkPayload, err := s.prepareMintRequest(jobCtx, tokenID, accountID, req)
 		if err != nil {
 			errOut <- errors.New("failed to prepare mint request: %v", err)
 			return
 		}
 
-		// Call zk prover with zkPayload from `prepareMintRequest`
+		zkPayloadB, err := json.MarshalIndent(zkPayload, "", "  ")
+		if err != nil {
+			errOut <- err
+		}
+		dir, err := os.Getwd()
+		if err != nil {
+			errOut <- err
+		}
+		fmt.Println("Running NFT Crypto")
+		err = snarks.CallNFTCrypto(zkPayloadB, dir+"/out")
+		if err != nil {
+			errOut <- errors.New("failed to call nft.py script: %v", err)
+		}
+		fmt.Println("Running ZoKrates")
+		err = snarks.CallZokrates()
+		if err != nil {
+			errOut <- errors.New("failed to call ZoKrates script: %v", err)
+		}
 
 		// Call mint method on zkNFT contract
 

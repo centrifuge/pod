@@ -1116,6 +1116,77 @@ func TestValidateFullNFTProof(t *testing.T) {
 
 }
 
+
+func TestValidateBuyerRatingProof(t *testing.T) {
+	type Header struct {
+		DocumentRoot string `json:"document_root"`
+	}
+
+	type FieldProof struct {
+		Property     string   `json:"property"`
+		Value        string   `json:"value"`
+		Salt         string   `json:"salt"`
+		Right        []bool   `json:"right"`
+		Hashes       []string `json:"hashes"`
+	}
+
+	type Payload struct {
+		Header      Header       `json:"header"`
+		FieldProofs []FieldProof `json:"field_proofs"`
+	}
+
+	payload := `
+{
+  "header": {
+		"document_root": "a6c954d244df76d2cc14dcf0e9105b0ab8a376d4ba70ef6f6858c2b20663f3f3"
+  },
+  "field_proofs": [
+    {
+      "hashes": [
+          "f04b1560e371b05a4c376e43d06a32461d56a499c64a2d72276ce9ef8ea55ced",
+        	"a27d1f0aa321ffb182718392b5ed3ea26e961895b8a85e050f5e26758951c632"
+        ],
+        "right": [
+          true,
+          true
+        ],
+        "value": "1cb9f0a084874a2eb3cfc96a9a53bb77f577f6b28e2ec3dd46fe76cd1bb90262095842563968a1531b52e4339eac3b65e2bb428d64"
+    }
+	]
+}`
+
+	var obj Payload
+	err := json.Unmarshal([]byte(payload), &obj)
+	assert.NoError(t, err)
+
+	for i := 0; i < len(obj.FieldProofs); i++ {
+		ds, err := hex.DecodeString(obj.FieldProofs[i].Value)
+		assert.NoError(t, err)
+		lh, err := crypto.Sha256Hash(ds)
+		assert.NoError(t, err)
+
+		var sh []*proofspb.MerkleHash
+		for j := 0; j < len(obj.FieldProofs[i].Hashes); j++ {
+			shi, err := hex.DecodeString(obj.FieldProofs[i].Hashes[j])
+			assert.NoError(t, err)
+			mh := &proofspb.MerkleHash{}
+			if obj.FieldProofs[i].Right[j] {
+				mh.Right = shi
+			} else {
+				mh.Left = shi
+			}
+			sh = append(sh, mh)
+		}
+
+		rh, err := hex.DecodeString(obj.Header.DocumentRoot)
+		assert.NoError(t, err)
+		valid, err := proofs.ValidateProofHashes(lh, sh, rh, pedersen.New())
+		assert.NoError(t, err)
+		assert.True(t, valid, fmt.Sprintf("Failed for proof %d", i))
+
+	}
+}
+
 func TestValidateZKProof(t *testing.T) {
 	type Header struct {
 		DocumentRoot string `json:"document_root"`
