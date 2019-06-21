@@ -14,14 +14,15 @@ const (
 
 // Register registers the core apis to the router.
 func Register(r chi.Router,
+	docSrv documents.Service,
 	nftSrv nft.Service,
 	transferSrv transferdetails.Service) {
 	h := handler{
 		tokenRegistry: nftSrv.(documents.TokenRegistry),
-		srv:           Service{transferDetailsService: transferSrv},
+		srv:           Service{docSrv: docSrv, transferDetailsService: transferSrv},
 	}
 	r.Post("/documents/{"+documentIDParam+"}/extensions/transfer_details", h.CreateTransferDetail)
-	r.Post("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
+	r.Put("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
 	r.Get("/documents/{"+documentIDParam+"}/extensions/transfer_details", h.GetTransferDetailList)
 	r.Get("/documents/{"+documentIDParam+"}/extensions/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
 	// TODO: future GET methods for specific versions

@@ -2,8 +2,6 @@ package userapi
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -19,7 +17,6 @@ type Service struct {
 
 // CreateTransferDetail creates and anchors a Transfer Detail
 func (s Service) CreateTransferDetail(ctx context.Context, req transferdetails.CreateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
-	fmt.Println(ctx, req)
 	model, jobID, err := s.transferDetailsService.CreateTransferDetail(ctx, req)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -43,7 +40,6 @@ func (s Service) GetCurrentTransferDetail(ctx context.Context, docID, transferID
 	if err != nil {
 		return nil, nil, err
 	}
-
 	data, model, err := s.transferDetailsService.DeriveTransferDetail(ctx, model, transferID)
 	if err != nil {
 		return nil, nil, err

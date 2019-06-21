@@ -54,7 +54,7 @@ func Router(
 		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
 		//TODO: rethink placement of userapi under this path
 		// user apis
-		userapi.Register(r, nftSrv, transferSrv)
+		userapi.Register(r, docsSrv, nftSrv, transferSrv)
 	})
 	return r
 }

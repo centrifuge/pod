@@ -4,6 +4,7 @@ package testworld
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -48,6 +49,16 @@ func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string
 	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
 	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
 	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
+	return objGet
+}
+
+func getTransferAndCheck(e *httpexpect.Expect, auth, identifier, transferID string, params map[string]interface{}) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/extensions/transfer_details/"+transferID), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(identifier)
+	objGet.Path("$.data.status").String().Equal(params["status"].(string))
+	objGet.Path("$.data.amount").String().Equal(params["amount"].(string))
+	objGet.Path("$.data.scheduled_date").String().Equal(params["scheduled_date"].(string))
 	return objGet
 }
 
@@ -188,6 +199,20 @@ func updateFunding(e *httpexpect.Expect, auth string, agreementId string, status
 	return obj
 }
 
+func createTransfer(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/extensions/transfer_details"), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func updateTransfer(e *httpexpect.Expect, auth string, transferId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/extensions/transfer_details/"+transferId), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func signFunding(e *httpexpect.Expect, auth, identifier, agreementId string, status int) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/funding_agreements/"+agreementId+"/sign"), auth).
 		Expect().Status(status).JSON().Object()
@@ -222,6 +247,15 @@ func getAgreementId(t *testing.T, response *httpexpect.Object) string {
 		t.Error("fundingId empty")
 	}
 	return agreementID
+}
+
+func getTransferId(t *testing.T, response *httpexpect.Object) string {
+	fmt.Println(response)
+	transferID := response.Value("data").Path("$.transfer_id").String().NotEmpty().Raw()
+	if transferID == "" {
+		t.Error("TransferId empty")
+	}
+	return transferID
 }
 
 func getTransactionID(t *testing.T, resp *httpexpect.Object) string {

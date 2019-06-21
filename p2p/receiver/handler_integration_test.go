@@ -5,7 +5,6 @@ package receiver_test
 import (
 	"context"
 	"flag"
-	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -138,7 +137,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 
 	// valid transition for collaborator id
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd}, defaultDID)
-	fmt.Println(ncd.PreviousVersion, ncd.CurrentVersion)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")

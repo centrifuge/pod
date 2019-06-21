@@ -2,6 +2,7 @@ package userapi
 
 import (
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"io/ioutil"
 	"net/http"
 
@@ -22,7 +23,7 @@ type handler struct {
 
 var log = logging.Logger("user-api")
 
-// CreateTransferDetail creates a document.
+// CreateTransferDetail creates a transfer detail extension on a document.
 // @summary Creates a new transfer detail extension on a document and anchors it.
 // @description Creates a new transfer detail extension on a document and anchors it.
 // @id create_transfer_detail
@@ -58,12 +59,18 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if request.Data.TransferID == "" {
+		request.Data.TransferID = extensions.NewAttributeSetID()
+	}
+	request.DocumentID = chi.URLParam(r, documentIDParam)
+
 	payload, err := toTransferDetailCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
+
 	model, jobID, err := h.srv.CreateTransferDetail(ctx, *payload)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -130,6 +137,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		return
 	}
+
 	model, jobID, err := h.srv.UpdateTransferDetail(ctx, *payload)
 	if err != nil {
 		code = http.StatusBadRequest

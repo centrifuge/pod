@@ -1,3 +1,87 @@
 // +build unit
 
 package userapi
+
+//func TestHandler_CreateDocument(t *testing.T) {
+//	data := map[string]interface{}{
+//		"scheme": "invoice",
+//		"data":   invoiceData(),
+//		"attributes": map[string]map[string]string{
+//			"string_test": {
+//				"type":  "invalid",
+//				"value": "hello, world",
+//			},
+//		},
+//	}
+//
+//	d, err := json.Marshal(data)
+//	assert.NoError(t, err)
+//	r := httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
+//	w := httptest.NewRecorder()
+//
+//	h := handler{}
+//	h.CreateDocument(w, r)
+//	assert.Equal(t, w.Code, http.StatusBadRequest)
+//	assert.Contains(t, w.Body.String(), "not a valid attribute")
+//
+//	data = map[string]interface{}{
+//		"scheme": "invoice",
+//		"data":   invoiceData(),
+//		"attributes": map[string]map[string]string{
+//			"string_test": {
+//				"type":  "string",
+//				"value": "hello, world",
+//			},
+//		},
+//	}
+//	d, err = json.Marshal(data)
+//	assert.NoError(t, err)
+//	docSrv := new(testingdocuments.MockService)
+//	srv := Service{docService: docSrv}
+//	h = handler{srv: srv}
+//	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("failed to create model"))
+//	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
+//	w = httptest.NewRecorder()
+//	h.CreateDocument(w, r)
+//	assert.Equal(t, w.Code, http.StatusBadRequest)
+//	assert.Contains(t, w.Body.String(), "failed to create model")
+//	docSrv.AssertExpectations(t)
+//
+//	m := new(testingdocuments.MockModel)
+//	m.On("GetData").Return(data)
+//	m.On("Scheme").Return("invoice")
+//	m.On("GetAttributes").Return(nil)
+//	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
+//	docSrv = new(testingdocuments.MockService)
+//	srv = Service{docService: docSrv}
+//	h = handler{srv: srv}
+//	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
+//	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
+//	w = httptest.NewRecorder()
+//	h.CreateDocument(w, r)
+//	assert.Equal(t, w.Code, http.StatusInternalServerError)
+//	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+//	m.AssertExpectations(t)
+//	docSrv.AssertExpectations(t)
+//
+//	m = new(testingdocuments.MockModel)
+//	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+//	m.On("GetData").Return(data)
+//	m.On("Scheme").Return("invoice")
+//	m.On("ID").Return(utils.RandomSlice(32)).Once()
+//	m.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+//	m.On("Author").Return(nil, errors.New("somerror"))
+//	m.On("Timestamp").Return(nil, errors.New("somerror"))
+//	m.On("NFTs").Return(nil)
+//	m.On("GetAttributes").Return(nil)
+//	docSrv = new(testingdocuments.MockService)
+//	srv = Service{docService: docSrv}
+//	h = handler{srv: srv}
+//	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
+//	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
+//	w = httptest.NewRecorder()
+//	h.CreateDocument(w, r)
+//	assert.Equal(t, w.Code, http.StatusCreated)
+//	m.AssertExpectations(t)
+//	docSrv.AssertExpectations(t)
+//}

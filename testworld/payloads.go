@@ -89,6 +89,19 @@ func defaultFundingPayload(borrowerId, funderId string) map[string]interface{} {
 	}
 }
 
+func defaultTransferPayload(senderId, recipientId string) map[string]interface{} {
+	return map[string]interface{}{
+		"data": map[string]interface{}{
+			"status":               "open",
+			"currency":           "EUR",
+			"amount":                "300",
+			"scheduled_date": "2018-09-26T23:12:37Z",
+			"sender_id":        senderId,
+			"recipient_id":          recipientId,
+		},
+	}
+}
+
 func updateFundingPayload(agreementId, borrowerId, funderId string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{

@@ -35,17 +35,38 @@ type TransferDetailListResponse struct {
 
 func toTransferDetailCreatePayload(request CreateTransferDetailRequest) (*transferdetails.CreateTransferDetailRequest, error) {
 	payload := new(transferdetails.CreateTransferDetailRequest)
-	payload.Data = request.Data
 	payload.DocumentID = request.DocumentID
+	payload.Data = request.Data
 
 	return payload, nil
 }
 
 func toTransferDetailUpdatePayload(request UpdateTransferDetailRequest) (*transferdetails.UpdateTransferDetailRequest, error) {
 	payload := new(transferdetails.UpdateTransferDetailRequest)
-	payload.Data = request.Data
 	payload.DocumentID = request.DocumentID
+	payload.Data = request.Data
 	payload.TransferID = request.TransferID
 
 	return payload, nil
+}
+
+func invoiceData() map[string]interface{} {
+	return map[string]interface{}{
+		"number":       "12345",
+		"status":       "unpaid",
+		"gross_amount": "12.345",
+		"recipient":    "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"date_due":     "2019-05-24T14:48:44.308854Z", // rfc3339nano
+		"date_paid":    "2019-05-24T14:48:44Z",        // rfc3339
+		"currency":     "EUR",
+		"attachments": []map[string]interface{}{
+			{
+				"name":      "test",
+				"file_type": "pdf",
+				"size":      1000202,
+				"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
+			},
+		},
+	}
 }
