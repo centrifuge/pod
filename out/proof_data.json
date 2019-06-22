@@ -1,0 +1,74 @@
+{
+  "public": {
+    "nft_amount": "0000000000000000000000000000000000000000000000000000000000000320",
+    "credit_rating_roothash": "aba3f2af3c5c97f5aa54b81af14eb156e1c66790472354804009125b56773228",
+    "rating": "64",
+    "document_roothash": "081f9c1063a7fd231bbb4d623fabf8b29013c1dafeedfe18e01a73438b33e03d",
+    "signatures_roothash": "8c5bae1868d8a4adb1770ea700f10da84a2762d9fd2dee27e03383a2ef439e6d"
+  },
+  "private": {
+    "buyer_pubkey": "a8091f39d4177af5dc899cd0306602722bcf922290ca56244493941966042adf",
+    "buyer_signature": "1ee903f93cd75e35354595bd0cb4f3ddfd3af981036b63ef8f4b4f2729fd6e2f1bf6f998114caf344c8871facc2a8c096d01dd7ec69f09989cc44b3ad8e7e703",
+    "buyer_rating_proof": {
+      "hashes": [
+        "4720d399dca27f9088ad9a7561608b5007d5588ef844a71004cfd2fa7f4b712a",
+        "98bfbd6d706e08c5b386aed76fc545cca735eb7afe180d39d323bb0634217268"
+      ],
+      "right": [
+        true,
+        true
+      ],
+      "value": "b122da885bb2296f76177718d049ccb88f700073a8091f39d4177af5dc899cd0306602722bcf922290ca56244493941966042adf64"
+    },
+    "document_invoice_amount_proof": {
+      "hashes": [
+        "c935bfb287f468857909f12217ed1146531a7141b7cc674dfdb528c7b9edc901",
+        "afcf66e7bfd64bf004116330309591684c100dae3336192880e6937a5f1d77ca",
+        "924818c8a0fa034aa883ccab2d0c0274094fd03489164aa60c626f8459b74cf8",
+        "9564d316d46cd1003c72f3aca5f65a5a896dacc13f2b1f75f505211b0a53a47e",
+        "8466703f7e2a7bff608818b7512a7f8ecaa5761938b6ade340a7abcd85a7e752",
+        "297b29f087eb68f2d0d753877654d9a4cfd963c4f4d9eff9ed90c626466bf62d",
+        "a03c64118e901606839e5bc95336889235059d3139fd065e4f55c37d016fb9d4",
+        "cc86e0984d6d2209c016b6c4b01fa94d4e625fb7dfa2cb0e73db6b3974615c5f"
+      ],
+      "right": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true
+      ],
+      "value": "003635c9adc5dea0000000000000000000000000000000000000000000000000",
+      "salt": "3036b7c56bc6c6b89740bf537a98416d72fc27118f08266620896eff65d4d291",
+      "property": "000100000000000e"
+    },
+    "document_invoice_buyer_proof": {
+      "hashes": [
+        "710ce00eedb7f9d85e9429deddd8651260eb2e7ef57813b25ad3a90d93761ae6",
+        "2cfe18d1f20cf7a2500c3072c0530806b85fe6d52c21cee4cfbf2b8939137ae6",
+        "9606455161a0ac0425ea710e5df190198e8b37a9a2d7f7c37b37165754e4e39c",
+        "208d03f3d7091877655bf2f70bbcb520203b4ea2ccd86f7dbd38d872c4dab313",
+        "988e7a1b509e2fe67801379d6d5885ec8f1e33425a1004eda5b09b802dd3d91e",
+        "129af479199989422b4f5d1dd8064956a606b8cfa5f847f78a62a309f769abb7",
+        "a03c64118e901606839e5bc95336889235059d3139fd065e4f55c37d016fb9d4",
+        "cc86e0984d6d2209c016b6c4b01fa94d4e625fb7dfa2cb0e73db6b3974615c5f"
+      ],
+      "right": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true
+      ],
+      "value": "b122da885bb2296f76177718d049ccb88f700073",
+      "salt": "9b7a10bcff94507d312ce78e952a85ea40015989b22a76f41d927cc88c18b93e",
+      "property": "0001000000000031"
+    }
+  }
+}

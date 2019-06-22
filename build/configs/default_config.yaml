@@ -28,7 +28,7 @@ networks:
     contractAddresses: 
       identityFactory: "0xf880b860103bd45a523574AeeC07C492031f4781"
       anchorRepository: "0x92AD44BB8F23D5d129eB82a50d3868bB4b1ceF1F"
-      invoiceUnpaid: "0xc4A8eB27fB3Ea2C0955F8a5B1615B26d85FCBe8e"
+      invoiceUnpaid: "0xe1e70a83cdf8217b22950b08b78d815a1fb02a75"
 
   # Kovan test network
   bernalheights:
@@ -149,7 +149,7 @@ ethereum:
     idRevokeKey: 55000
     anchorCommit: 85000
     anchorPreCommit: 100000
-    nftMint: 900000
+    nftMint: 2000000
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum

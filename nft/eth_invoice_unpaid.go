@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/snarks"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"os"
 	"strings"
@@ -33,6 +35,8 @@ var log = logging.Logger("nft")
 const (
 	// ErrNFTMinted error for NFT already minted for registry
 	ErrNFTMinted = errors.Error("NFT already minted")
+
+	ABIZKNFT = "[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"uri_prefix\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"what\",\"type\":\"bytes32\"},{\"name\":\"data_\",\"type\":\"string\"}],\"name\":\"file\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"ratings\",\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"a\",\"type\":\"uint256[2]\"},{\"name\":\"b\",\"type\":\"uint256[2][2]\"},{\"name\":\"c\",\"type\":\"uint256[2]\"},{\"name\":\"input\",\"type\":\"uint256[7]\"}],\"name\":\"verifyTx\",\"outputs\":[{\"name\":\"r\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"x\",\"type\":\"bytes32\"}],\"name\":\"unpack\",\"outputs\":[{\"name\":\"y\",\"type\":\"uint256\"},{\"name\":\"z\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"anchors\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"usr\",\"type\":\"address\"},{\"name\":\"tkn\",\"type\":\"uint256\"},{\"name\":\"anchor\",\"type\":\"uint256\"},{\"name\":\"data_root\",\"type\":\"bytes32\"},{\"name\":\"signatures_root\",\"type\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\"},{\"name\":\"rating\",\"type\":\"uint256\"},{\"name\":\"points\",\"type\":\"uint256[8]\"}],\"name\":\"mint\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"data_root\",\"type\":\"bytes32\"},{\"name\":\"nft_amount\",\"type\":\"uint256\"},{\"name\":\"rating\",\"type\":\"uint256\"},{\"name\":\"points\",\"type\":\"uint256[8]\"}],\"name\":\"verify\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"what\",\"type\":\"bytes32\"},{\"name\":\"data_\",\"type\":\"bytes32\"}],\"name\":\"file\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"uri\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"data\",\"outputs\":[{\"name\":\"amount\",\"type\":\"uint256\"},{\"name\":\"anchor\",\"type\":\"uint256\"},{\"name\":\"rating\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"anchor\",\"type\":\"uint256\"},{\"name\":\"droot\",\"type\":\"bytes32\"},{\"name\":\"sigs\",\"type\":\"bytes32\"}],\"name\":\"checkAnchor\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"symbol\",\"type\":\"string\"},{\"name\":\"anchors_\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"s\",\"type\":\"string\"}],\"name\":\"Verified\",\"type\":\"event\"}]"
 )
 
 // structs for zk JSON
@@ -48,6 +52,7 @@ type PublicFields struct {
 	CreditRatingRootHash string `json:"credit_rating_roothash"`
 	Rating string `json:"rating"`
 	DocumentRootHash string `json:"document_roothash"`
+	SignaturesRootHash string `json:"signatures_roothash"`
 }
 type PrivateFields struct {
 	BuyerPubKey string `json:"buyer_pubkey"`
@@ -66,6 +71,8 @@ type ZKJSON struct {
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetLowEntropyNFTTokenEnabled() bool
+	GetEthereumGasLimit(op config.ContractOp) uint64
+	GetContractAddress(contractName config.ContractName) common.Address
 }
 
 // ethInvoiceUnpaid handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
@@ -99,6 +106,30 @@ func newEthInvoiceUnpaid(
 		docSrv:          docSrv,
 		jobsManager:     jobsMan,
 		blockHeightFunc: blockHeightFunc,
+	}
+}
+
+// ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
+func (s *ethInvoiceUnpaid) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
+		ethTX, err := s.ethClient.SubmitTransactionWithRetries(contractMethod, opts, params...)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		res, err := ethereum.QueueEthTXStatusTask(accountID, jobID, ethTX.Hash(), s.queue)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(jobMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
 	}
 }
 
@@ -155,10 +186,14 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 		return mreq, zkPayload, err
 	}
 
+	sigRoot, err := model.CalculateSignaturesRoot()
+	if err != nil {
+		return mreq, zkPayload, errors.New("failed to calculate sigRoot: %v", err)
+	}
+
 	docDataRootHash, err := model.CalculateDocumentDataRoot()
 	if err != nil {
 		return mreq, zkPayload, errors.New("failed to calculate docRootHash: %v", err)
-
 	}
 
 	proof, err := documents.ConvertDocProofToClientFormat(&documents.DocumentProof{DocumentID: docProofs.DocumentID, VersionID: docProofs.VersionID, FieldProofs: docProofs.FieldProofs})
@@ -197,6 +232,7 @@ func (s *ethInvoiceUnpaid) prepareMintRequest(ctx context.Context, tokenID Token
 			CreditRatingRootHash: buyerProof.RootHash,
 			Rating: "64",
 			DocumentRootHash: hex.EncodeToString(docDataRootHash),
+			SignaturesRootHash: hex.EncodeToString(sigRoot),
 		},
 		Private: PrivateFields{
 			BuyerPubKey: hex.EncodeToString(buyerPubKey),
@@ -340,26 +376,66 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 		zkPayloadB, err := json.MarshalIndent(zkPayload, "", "  ")
 		if err != nil {
 			errOut <- err
+			return
 		}
 		dir, err := os.Getwd()
 		if err != nil {
 			errOut <- err
+			return
 		}
 		fmt.Println("Running NFT Crypto")
 		err = snarks.CallNFTCrypto(zkPayloadB, dir+"/out")
 		if err != nil {
 			errOut <- errors.New("failed to call nft.py script: %v", err)
+			return
 		}
 		fmt.Println("Running ZoKrates")
-		err = snarks.CallZokrates()
+		points, err := snarks.GetZokratesProofs()
 		if err != nil {
 			errOut <- errors.New("failed to call ZoKrates script: %v", err)
+			return
 		}
 
-		// Call mint method on zkNFT contract
+		dataRootB, err := hex.DecodeString(zkPayload.Public.DocumentRootHash)
+		sigRootB, err := hex.DecodeString(zkPayload.Public.SignaturesRootHash)
+		nftAmountB, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000140")
+		buyerRatingB, err := hex.DecodeString(zkPayload.Public.Rating)
 
+		dataRoot, err := utils.SliceToByte32(dataRootB)
+		sigRoot, err := utils.SliceToByte32(sigRootB)
+		nftAmount := utils.ByteSliceToBigInt(nftAmountB)
+		buyerRating := utils.ByteSliceToBigInt(buyerRatingB)
+
+		did, err := contextutil.AccountDID(ctx)
+		if err != nil {
+			errOut <- errors.New("failed to get DID: %v", err)
+			return
+		}
+
+		tc, err := contextutil.Account(ctx)
+		if err != nil {
+			errOut <- errors.New("failed to get Account: %v", err)
+			return
+		}
+
+		conn := s.ethClient
+		opts, err := conn.GetTxOpts(ctx, tc.GetEthereumDefaultAccountName())
+		if err != nil {
+			errOut <- errors.New("failed to get opts: %v", err)
+			return
+		}
+
+		opts.GasLimit = s.cfg.GetEthereumGasLimit(config.NftMint)
+		zkContract, err := NewZkNFTContract(s.cfg.GetContractAddress(config.InvoiceUnpaidNFT), s.ethClient.GetEthClient())
+		_, done, err = s.jobsManager.ExecuteWithinJob(ctx, did, jobID, "Check Job for zMint",
+			s.ethereumTX(opts, zkContract.Mint, requestData.To, requestData.TokenID, requestData.AnchorID, dataRoot, sigRoot, nftAmount, buyerRating, points))
+
+		// Call mint method on zkNFT contract
+		//txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, ABIZKNFT, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, dataRoot, sigRoot, nftAmount, buyerRating, points)
+
+		// $NFT_REGISTRY ‘mint(address,uint,uint,bytes32,bytes32,uint,uint,uint[8] memory)(uint)’ $ETH_FROM $TKN_ID $ANCHOR_ID $DATA_ROOT $SIG_ROOT $AMOUNT $RATING $POINTS
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, InvoiceUnpaidContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		//txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, InvoiceUnpaidContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 		if err != nil {
 			errOut <- err
 			return
@@ -379,7 +455,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 		isDone = <-done
 		if !isDone {
 			// some problem occurred in a child task
-			errOut <- errors.New("mint nft failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
+			errOut <- errors.New("mint nft failed for document %s and transaction", hexutil.Encode(req.DocumentID))
 			return
 		}
 
@@ -394,7 +470,7 @@ func (s *ethInvoiceUnpaid) minter(ctx context.Context, tokenID TokenID, model do
 			return
 		}
 
-		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), txID)
+		log.Infof("Document %s minted successfully within transaction", hexutil.Encode(req.DocumentID))
 
 		errOut <- nil
 		return
