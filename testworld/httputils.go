@@ -219,7 +219,7 @@ func createTransfer(e *httpexpect.Expect, auth string, identifier string, status
 	return obj
 }
 
-func updateTransfer(e *httpexpect.Expect, auth string, transferId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
+func updateTransfer(e *httpexpect.Expect, auth string, status int, docIdentifier, transferId string, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/transfer_details/"+transferId), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()

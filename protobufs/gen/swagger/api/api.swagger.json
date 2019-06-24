@@ -1384,7 +1384,6 @@
                     "type": "string"
                 },
                 "currency": {
-                    "description": "the currency and amount will be combined once we have standardised multiformats",
                     "type": "string"
                 },
                 "data": {

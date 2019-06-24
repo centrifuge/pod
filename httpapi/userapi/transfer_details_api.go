@@ -131,6 +131,8 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	request.TransferID = chi.URLParam(r, transferIDParam)
+	request.DocumentID = chi.URLParam(r, documentIDParam)
 	payload, err := toTransferDetailUpdatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
