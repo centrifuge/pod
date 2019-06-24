@@ -37,7 +37,7 @@ var log = logging.Logger("user-api")
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} userapi.TransferDetailResponse
-// @router /v1/documents/{document_id}/extensions/transfer_details [post]
+// @router /v1/documents/{document_id}/transfer_details [post]
 func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -109,7 +109,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} userapi.TransferDetailResponse
-// @router /v1/documents/{document_id}/extensions/transfer_details/{transfer_id} [put]
+// @router /v1/documents/{document_id}/transfer_details/{transfer_id} [put]
 func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -174,7 +174,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} userapi.TransferDetailResponse
-// @router /v1/documents/{document_id}/extensions/transfer_details/{transfer_id} [get]
+// @router /v1/documents/{document_id}/transfer_details/{transfer_id} [get]
 func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -232,7 +232,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} userapi.TransferDetailListResponse
-// @router /v1/documents/{document_id}/extensions/transfer_details [get]
+// @router /v1/documents/{document_id}/transfer_details [get]
 func (h handler) GetTransferDetailList(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int

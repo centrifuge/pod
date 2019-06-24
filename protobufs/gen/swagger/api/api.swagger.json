@@ -290,16 +290,78 @@
                 }
             }
         },
-        "/v1/documents/{document_id}/extensions/transfer_details": {
-            "get": {
-                "description": "Returns a list of the latest versions of all transfer details on the document..",
+        "/v1/documents/{document_id}/proofs": {
+            "post": {
+                "description": "Generates proofs for the fields from latest version of the document.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Documents"
                 ],
-                "summary": "Returns a list of the latest versions of all transfer details on the document..",
+                "summary": "Generates proofs for the fields from latest version of the document.",
+                "operationId": "generate_document_proofs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Document proof request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.ProofsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.ProofsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/documents/{document_id}/transfer_details": {
+            "get": {
+                "description": "Returns a list of the latest versions of all transfer details on the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Returns a list of the latest versions of all transfer details on the document.",
                 "operationId": "get_transfer",
                 "parameters": [
                     {
@@ -419,7 +481,7 @@
                 }
             }
         },
-        "/v1/documents/{document_id}/extensions/transfer_details/{transfer_id}": {
+        "/v1/documents/{document_id}/transfer_details/{transfer_id}": {
             "get": {
                 "description": "Returns the latest version of the transfer detail.",
                 "produces": [
@@ -484,7 +546,7 @@
                     }
                 }
             },
-            "post": {
+            "put": {
                 "description": "Updates a new transfer detail extension on a document and anchors it.",
                 "consumes": [
                     "application/json"
@@ -547,68 +609,6 @@
                     },
                     "403": {
                         "description": "Forbidden",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/documents/{document_id}/proofs": {
-            "post": {
-                "description": "Generates proofs for the fields from latest version of the document.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Documents"
-                ],
-                "summary": "Generates proofs for the fields from latest version of the document.",
-                "operationId": "generate_document_proofs",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
-                        "name": "authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Document Identifier",
-                        "name": "document_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Document proof request",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/coreapi.ProofsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/coreapi.ProofsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
