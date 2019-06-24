@@ -124,7 +124,7 @@ func TestDeriveTransferResponse(t *testing.T) {
 		assert.NoError(t, err)
 		response, _, err := srv.DeriveTransferDetail(ctxh, model, tID)
 		assert.NoError(t, err)
-		checkResponse(t, payload, response.Data)
+		checkResponse(t, payload, &response.Data)
 	}
 
 }
@@ -155,7 +155,7 @@ func TestDeriveTransferListResponse(t *testing.T) {
 	assert.Equal(t, 10, len(response.Data))
 
 	for i := 0; i < 10; i++ {
-		checkResponse(t, payloads[i], response.Data[i])
+		checkResponse(t, payloads[i], &response.Data[i])
 	}
 
 }
@@ -202,9 +202,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }
 
-func createTestData() *TransferDetailData {
+func createTestData() TransferDetailData {
 	transferID := extensions.NewAttributeSetID()
-	return &TransferDetailData{
+	return TransferDetailData{
 		TransferID:          transferID,
 		SenderID:            testingidentity.GenerateRandomDID().String(),
 		RecipientID:         testingidentity.GenerateRandomDID().String(),

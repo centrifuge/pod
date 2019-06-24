@@ -99,9 +99,10 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 	}
 
 	// TODO: use coreapi.CreateDocument
+	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, ctx, payload)
 	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, jobID, err
 	}
 
 	return updated, jobID, err
@@ -138,13 +139,13 @@ func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetail
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
-	attributes, err := extensions.CreateAttributesList(model, *req.Data, transfersFieldKey, transfersLabel)
+	attributes, err := extensions.CreateAttributesList(model, req.Data, transfersFieldKey, transfersLabel)
 	if err != nil {
 		return nil, err
 	}
 
 	//TODO: StringsToDIDS
-	c, err := deriveDIDs(req.Data)
+	c, err := deriveDIDs(&req.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -176,10 +177,9 @@ func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDet
 		return nil, jobs.NilJobID(), err
 	}
 
-	// TODO: use coreapi.CreateDocument
 	updated, jobID, err := s.updateModel(ctx, model)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, jobID, err
 	}
 
 	return updated, jobID, nil
@@ -209,7 +209,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 	}
 
 	//TODO: StringsToDIDS
-	c, err := deriveDIDs(req.Data)
+	c, err := deriveDIDs(&req.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 		return nil, err
 	}
 
-	attributes, err := extensions.FillAttributeList(*req.Data, idx, transfersFieldKey)
+	attributes, err := extensions.FillAttributeList(req.Data, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ func (s service) DeriveTransferDetail(ctx context.Context, model documents.Model
 	}
 
 	return &TransferDetail{
-		Data: data,
+		Data: *data,
 	}, model, nil
 }
 
@@ -339,7 +339,7 @@ func (s service) DeriveTransferList(ctx context.Context, model documents.Model) 
 			continue
 		}
 
-		list.Data = append(list.Data, transfer)
+		list.Data = append(list.Data, *transfer)
 		i, err = i.Inc()
 
 		if err != nil {

@@ -86,7 +86,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := TransferDetailResponse{
-		Header: &header,
+		Header: header,
 		Data:   payload.Data,
 	}
 
@@ -109,7 +109,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} userapi.TransferDetailResponse
-// @router /v1/documents/{document_id}/extensions/transfer_details/{transfer_id} [post]
+// @router /v1/documents/{document_id}/extensions/transfer_details/{transfer_id} [put]
 func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -153,7 +153,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := TransferDetailResponse{
-		Header: &header,
+		Header: header,
 		Data:   payload.Data,
 	}
 
@@ -212,7 +212,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := TransferDetailResponse{
-		Header: &header,
+		Header: header,
 		Data:   td.Data,
 	}
 
@@ -221,13 +221,12 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetTransferDetailList returns a list of the latest versions all transfer details on the document.
-// @summary Returns a list of the latest versions of all transfer details on the document..
-// @description Returns a list of the latest versions of all transfer details on the document..
+// @summary Returns a list of the latest versions of all transfer details on the document.
+// @description Returns a list of the latest versions of all transfer details on the document.
 // @id get_transfer
 // @tags Documents
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
-// @param transfer_id path string true "Transfer Detail Identifier"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
@@ -263,7 +262,7 @@ func (h handler) GetTransferDetailList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := TransferDetailListResponse{
-		Header: &header,
+		Header: header,
 		Data:   td.Data,
 	}
 

@@ -21,22 +21,22 @@ type TransferDetailData struct {
 // CreateTransferDetailRequest holds the required fields to create a new transfer agreement
 type CreateTransferDetailRequest struct {
 	DocumentID string
-	Data       *TransferDetailData
+	Data       TransferDetailData
 }
 
 // UpdateTransferDetailRequest holds the required fields to update a transfer agreement
 type UpdateTransferDetailRequest struct {
 	DocumentID string
 	TransferID string
-	Data       *TransferDetailData
+	Data       TransferDetailData
 }
 
 // TransferDetail holds a TransferDetail response
 type TransferDetail struct {
-	Data *TransferDetailData
+	Data TransferDetailData
 }
 
 // TransferDetailList holds a list of TransferDetails
 type TransferDetailList struct {
-	Data []*TransferDetailData
+	Data []TransferDetailData
 }

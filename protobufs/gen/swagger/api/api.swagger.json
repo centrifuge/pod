@@ -315,13 +315,6 @@
                         "name": "document_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Transfer Detail Identifier",
-                        "name": "transfer_id",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
