@@ -28,7 +28,7 @@ networks:
     contractAddresses: 
       identityFactory: "0xf880b860103bd45a523574AeeC07C492031f4781"
       anchorRepository: "0x92AD44BB8F23D5d129eB82a50d3868bB4b1ceF1F"
-      invoiceUnpaid: "0xe1e70a83cdf8217b22950b08b78d815a1fb02a75"
+      invoiceUnpaid: "0xf5b299d17D6b5e1dC0366134cd58B9B4EA190184"
 
   # Kovan test network
   bernalheights:
