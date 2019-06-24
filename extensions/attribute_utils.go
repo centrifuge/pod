@@ -192,8 +192,8 @@ func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLab
 	return idx, ErrAttributeSetNotFound
 }
 
-// ToClientAttributes converts an array of documents.Attributes to a map
-func ToClientAttributes(attrs []documents.Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+// ToMapAttributes converts an array of documents.Attributes to a map
+func ToMapAttributes(attrs []documents.Attribute) (map[documents.AttrKey]documents.Attribute, error) {
 	if len(attrs) < 1 {
 		return nil, nil
 	}

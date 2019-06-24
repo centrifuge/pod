@@ -52,7 +52,6 @@ func Router(
 	r.Route("/v1", func(r chi.Router) {
 		// core apis
 		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
-		//TODO: rethink placement of userapi under this path
 		// user apis
 		userapi.Register(r, docsSrv, nftSrv, transferSrv)
 	})

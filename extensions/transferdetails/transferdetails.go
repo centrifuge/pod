@@ -9,11 +9,10 @@ type TransferDetailData struct {
 	SettlementDate      string `json:"settlement_date,omitempty" attr:"timestamp"`
 	SettlementReference string `json:"settlement_reference,omitempty" attr:"bytes"`
 	Amount              string `json:"amount,omitempty" attr:"decimal"`
-	// the currency and amount will be combined once we have standardised multiformats
-	Currency     string `json:"currency,omitempty" attr:"string"`
-	Status       string `json:"status,omitempty" attr:"string"`
-	TransferType string `json:"transfer_type,omitempty" attr:"string"`
-	Data         string `json:"data,omitempty" attr:"bytes"`
+	Currency            string `json:"currency,omitempty" attr:"string"`
+	Status              string `json:"status,omitempty" attr:"string"`
+	TransferType        string `json:"transfer_type,omitempty" attr:"string"`
+	Data                string `json:"data,omitempty" attr:"bytes"`
 }
 
 // TODO: make these generic? CreateAttributeSetRequest?

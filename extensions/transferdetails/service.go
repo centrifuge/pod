@@ -78,7 +78,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 	}
 
 	a := model.GetAttributes()
-	attr, err := extensions.ToClientAttributes(a)
+	attr, err := extensions.ToMapAttributes(a)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
@@ -99,7 +99,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 	}
 
 	// TODO: use coreapi.CreateDocument
-	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, ctx, payload)
+	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, payload)
 	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
 	if err != nil {
 		return nil, jobID, err
@@ -117,7 +117,7 @@ func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDet
 
 	updated, jobID, err := s.updateModel(ctx, model)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, jobID, err
 	}
 
 	return updated, jobID, nil

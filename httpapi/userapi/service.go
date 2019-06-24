@@ -18,21 +18,12 @@ type Service struct {
 
 // CreateTransferDetail creates and anchors a Transfer Detail
 func (s Service) CreateTransferDetail(ctx context.Context, req transferdetails.CreateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
-	model, jobID, err := s.transferDetailsService.CreateTransferDetail(ctx, req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-	return model, jobID, nil
+	return s.transferDetailsService.CreateTransferDetail(ctx, req)
 }
 
 // UpdateTransferDetail updates and anchors a Transfer Detail
 func (s Service) UpdateTransferDetail(ctx context.Context, req transferdetails.UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
-	model, jobID, err := s.transferDetailsService.UpdateTransferDetail(ctx, req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return model, jobID, nil
+	return s.transferDetailsService.UpdateTransferDetail(ctx, req)
 }
 
 // GetCurrentTransferDetail returns the current version on a Transfer Detail
