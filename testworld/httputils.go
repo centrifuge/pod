@@ -53,7 +53,7 @@ func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string
 }
 
 func getTransferAndCheck(e *httpexpect.Expect, auth, identifier, transferID string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/extensions/transfer_details/"+transferID), auth).
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/transfer_details/"+transferID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(identifier)
 	objGet.Path("$.data.status").String().Equal(params["status"].(string))
@@ -200,14 +200,14 @@ func updateFunding(e *httpexpect.Expect, auth string, agreementId string, status
 }
 
 func createTransfer(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/extensions/transfer_details"), auth).
+	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/transfer_details"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
 func updateTransfer(e *httpexpect.Expect, auth string, transferId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/extensions/transfer_details/"+transferId), auth).
+	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/transfer_details/"+transferId), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
