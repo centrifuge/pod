@@ -34,7 +34,7 @@ func newDBRepository(db storage.Repository, docRepo documents.Repository) reposi
 
 // FindEntityRelationshipIdentifier returns the identifier of an EntityRelationship based on a entity id and a targetDID
 func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDID, targetDID identity.DID) ([]byte, error) {
-	relationships, err := r.db.GetAllByPrefix(hexutil.Encode(ownerDID[:]))
+	relationships, err := r.db.GetAllByPrefix(documents.DocPrefix + hexutil.Encode(ownerDID[:]))
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDI
 
 // ListAllRelationships returns a list of all entity relationship identifiers in which a given entity is involved
 func (r *repo) ListAllRelationships(entityIdentifier []byte, ownerDID identity.DID) (map[string][]byte, error) {
-	allDocuments, err := r.db.GetAllByPrefix(hexutil.Encode(ownerDID[:]))
+	allDocuments, err := r.db.GetAllByPrefix(documents.DocPrefix + hexutil.Encode(ownerDID[:]))
 	if err != nil {
 		return nil, err
 	}
