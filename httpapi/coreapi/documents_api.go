@@ -6,21 +6,12 @@ import (
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
-)
-
-const (
-	// ErrInvalidDocumentID is a sentinel error for invalid document identifiers.
-	ErrInvalidDocumentID = errors.Error("invalid document identifier")
-
-	// ErrDocumentNotFound is a sentinel error for missing documents.
-	ErrDocumentNotFound = errors.Error("document not found")
 )
 
 var log = logging.Logger("core_api")

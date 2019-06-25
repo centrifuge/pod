@@ -7,8 +7,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -35,6 +37,7 @@ func Router(
 	configSrv config.Service,
 	nftSrv nft.Service,
 	docsSrv documents.Service,
+	transferSrv transferdetails.Service,
 	jobsSrv jobs.Manager) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -49,6 +52,8 @@ func Router(
 	r.Route("/v1", func(r chi.Router) {
 		// core apis
 		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+		// user apis
+		userapi.Register(r, docsSrv, nftSrv, transferSrv)
 	})
 	return r
 }

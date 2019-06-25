@@ -192,4 +192,22 @@ func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLab
 	return idx, ErrAttributeSetNotFound
 }
 
+// ToMapAttributes converts an array of documents.Attributes to a map
+func ToMapAttributes(attrs []documents.Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+	if len(attrs) < 1 {
+		return nil, nil
+	}
+
+	m := make(map[documents.AttrKey]documents.Attribute)
+	for _, v := range attrs {
+		m[v.Key] = documents.Attribute{
+			KeyLabel: v.Key.String(),
+			Key:      v.Key,
+			Value:    v.Value,
+		}
+	}
+
+	return m, nil
+}
+
 // TODO: placeholder below for generic finding and deriving data from attribute sets
