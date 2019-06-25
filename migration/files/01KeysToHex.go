@@ -45,6 +45,8 @@ func isKnownPlainTextKey(key []byte) bool {
 	mf := elem.FindAllString(string(key), 1)
 	elem = regexp.MustCompile("account-(.)*")
 	af := elem.FindAllString(string(key), 1)
+	elem = regexp.MustCompile("document_(.)*")
+	df := elem.FindAllString(string(key), 1)
 
-	return string(key) == "config" || len(mf) > 0 || len(af) > 0
+	return string(key) == "config" || len(mf) > 0 || len(af) > 0 || len(df) > 0
 }

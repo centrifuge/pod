@@ -52,7 +52,7 @@ func Test_getKey(t *testing.T) {
 	id = jobs.NewJobID()
 	key, err = getKey(did, id)
 	assert.Nil(t, err)
-	assert.Equal(t, []byte(hexutil.Encode(append(did[:], id.Bytes()...))), key)
+	assert.Equal(t, append([]byte(jobPrefix), []byte(hexutil.Encode(append(did[:], id.Bytes()...)))...), key)
 }
 
 func TestRepository(t *testing.T) {

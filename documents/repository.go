@@ -6,6 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// DocPrefix holds the generic prefix of a document in DB
+const DocPrefix string = "document_"
+
 // Repository defines the required methods for a document repository.
 // Can be implemented by any type that stores the documents. Ex: levelDB, sql etc...
 type Repository interface {
@@ -36,10 +39,10 @@ type repo struct {
 	db storage.Repository
 }
 
-// getKey returns accountID+id
+// getKey returns document_+accountID+id
 func (r *repo) getKey(accountID, id []byte) []byte {
 	hexKey := hexutil.Encode(append(accountID, id...))
-	return []byte(hexKey)
+	return append([]byte(DocPrefix), []byte(hexKey)...)
 }
 
 // Register registers the model so that the DB can return the document without knowing the type

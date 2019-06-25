@@ -8,6 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+const jobPrefix string = "job_"
+
 // jobRepository implements Repository.
 type jobRepository struct {
 	repo storage.Repository
@@ -27,7 +29,7 @@ func getKey(did identity.DID, id jobs.JobID) ([]byte, error) {
 		return nil, errors.New("job ID is not valid")
 	}
 	hexKey := hexutil.Encode(append(did[:], id.Bytes()...))
-	return []byte(hexKey), nil
+	return append([]byte(jobPrefix), []byte(hexKey)...), nil
 }
 
 // Get returns the job associated with identity and id.
