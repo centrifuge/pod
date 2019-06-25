@@ -98,7 +98,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		},
 	}
 
-	// TODO: use coreapi.CreateDocument
+	// TODO: use coreapi.UpdateDocument
 	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, payload)
 	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
 	if err != nil {
