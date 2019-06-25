@@ -47,6 +47,7 @@ func TestRepo_FindEntityRelationshipIdentifier(t *testing.T) {
 
 	// attempt to get relationships
 	r, err := repo.FindEntityRelationshipIdentifier(id, did, *tID[0])
+	assert.NoError(t, err)
 	assert.Equal(t, r, m.CurrentVersion())
 
 	// throws err if relationship not found in the repo
