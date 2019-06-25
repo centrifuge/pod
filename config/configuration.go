@@ -73,6 +73,9 @@ const (
 
 	// NftMint nft minting operation
 	NftMint ContractOp = "nftMint"
+
+	// NftTransferFrom nft transferFrom operation
+	NftTransferFrom ContractOp = "nftTransferFrom"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
@@ -81,8 +84,8 @@ func ContractNames() [5]ContractName {
 }
 
 // ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
-func ContractOps() [6]ContractOp {
-	return [6]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint}
+func ContractOps() [7]ContractOp {
+	return [7]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -152,7 +155,7 @@ type Configuration interface {
 type Account interface {
 	storage.Model
 	GetKeys() (map[string]IDKey, error)
-	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
+	SignMsg(msg []byte) ([]*coredocumentpb.Signature, error)
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
@@ -176,6 +179,7 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
 }
 
 // IDKey represents a key pair

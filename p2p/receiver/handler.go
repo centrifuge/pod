@@ -99,7 +99,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 
 }
 
-// HandleRequestDocumentSignature handles the RequestDocumentSignature message
+// HandleRequestDocumentSignature handles the RequestDocumentSignatures message
 func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error) {
 	req := new(p2ppb.SignatureRequest)
 	err := proto.Unmarshal(msg.Body, req)
@@ -129,7 +129,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 	return p2pEnv, nil
 }
 
-// RequestDocumentSignature signs the received document and returns the signature of the signingRoot
+// RequestDocumentSignatures signs the received document and returns the signature of the signingRoot
 // document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // document will be stored to the repository for state management
@@ -143,12 +143,12 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
+	signature, err := srv.docSrv.RequestDocumentSignatures(ctx, model, collaborator)
 	if err != nil {
 		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return &p2ppb.SignatureResponse{Signature: signature}, nil
+	return &p2ppb.SignatureResponse{Signatures: signature}, nil
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message

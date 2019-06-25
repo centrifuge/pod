@@ -211,12 +211,15 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.CoreDocument, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Model, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
-
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, errors.New("failed to pack core document: %v", err)
+	}
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
 	tc, err := s.config.GetAccount(collaborator[:])
@@ -273,7 +276,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		header = recvEnvelope.Header
 	}
 
-	err = validateSignatureResp(collaborator, header, resp)
+	err = s.validateSignatureResp(model, collaborator, header, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -287,8 +290,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, cd coredocumentpb.CoreDocument, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, cd, collaborator, sender)
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.Model, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, model, collaborator, sender)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -315,17 +318,12 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 		return nil, nil, errors.New("failed to get external collaborators")
 	}
 
-	cd, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, nil, errors.New("failed to pack core document: %v", err)
-	}
-
 	var count int
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 	for _, c := range cs {
 		count++
-		go s.getSignatureAsync(peerCtx, cd, c, selfDID, in)
+		go s.getSignatureAsync(peerCtx, model, c, selfDID, in)
 	}
 
 	var responses []signatureResponseWrap
@@ -333,20 +331,21 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 		responses = append(responses, <-in)
 	}
 
-	for _, resp := range responses {
-		if resp.err != nil {
-			log.Warning(resp.err)
-			signatureCollectionErrors = append(signatureCollectionErrors, resp.err)
+	for _, r := range responses {
+		if r.err != nil {
+			log.Warning(r.err)
+			signatureCollectionErrors = append(signatureCollectionErrors, r.err)
 			continue
 		}
 
-		signatures = append(signatures, resp.resp.Signature)
+		signatures = append(signatures, r.resp.Signatures...)
 	}
 
 	return signatures, signatureCollectionErrors, nil
 }
 
-func validateSignatureResp(
+func (s *peer) validateSignatureResp(
+	model documents.Model,
 	receiver identity.DID,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {
@@ -356,9 +355,28 @@ func validateSignatureResp(
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
-	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, err.Error())
+	for _, sig := range resp.Signatures {
+		err := identity.ValidateDIDBytes(sig.SignerId, receiver)
+		if err != nil {
+			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
+		}
+
+		tm, err := model.Timestamp()
+		if err != nil {
+			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("cannot get model timestamp : %s", err.Error()))
+		}
+
+		docDataRoot, err := model.CalculateDocumentDataRoot()
+		if err != nil {
+			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
+		}
+
+		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, docDataRoot, tm)
+		if err != nil {
+			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
+		}
+
 	}
+
 	return nil
 }

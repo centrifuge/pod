@@ -3,6 +3,7 @@
 package configstore
 
 import (
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/stretchr/testify/mock"
 )
@@ -23,7 +24,8 @@ func (m MockService) GetConfig() (config.Configuration, error) {
 
 func (m MockService) GetAccount(identifier []byte) (config.Account, error) {
 	args := m.Called(identifier)
-	return args.Get(0).(config.Account), args.Error(1)
+	acc, _ := args.Get(0).(config.Account)
+	return acc, args.Error(1)
 }
 
 func (m MockService) GetAllAccounts() ([]config.Account, error) {
@@ -50,4 +52,10 @@ func (m MockService) UpdateAccount(data config.Account) (config.Account, error) 
 func (m MockService) DeleteAccount(identifier []byte) error {
 	args := m.Called(identifier)
 	return args.Error(0)
+}
+
+func (m MockService) Sign(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	args := m.Called(accountID, payload)
+	sig, _ := args.Get(0).(*coredocumentpb.Signature)
+	return sig, args.Error(1)
 }

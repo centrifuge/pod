@@ -71,7 +71,11 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to register purchase order service")
 	}
 
-	ctx[BootstrappedPOHandler] = GRPCHandler(cfgSrv, srv)
+	err = registry.Register(scheme, srv)
+	if err != nil {
+		return errors.New("failed to register purchase order service: %v", err)
+	}
 
+	ctx[BootstrappedPOHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }

@@ -19,7 +19,7 @@ func fieldValidator() documents.Validator {
 		}
 
 		var err error
-		if !documents.IsCurrencyValid(po.Currency) {
+		if !documents.IsCurrencyValid(po.Data.Currency) {
 			err = errors.AppendError(err, documents.NewError("po_currency", "currency is invalid"))
 		}
 

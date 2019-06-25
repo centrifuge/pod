@@ -56,15 +56,15 @@ func request_PurchaseOrderService_Update_0(ctx context.Context, marshaler runtim
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Update(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -83,26 +83,26 @@ func request_PurchaseOrderService_GetVersion_0(ctx context.Context, marshaler ru
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
-	val, ok = pathParams["version"]
+	val, ok = pathParams["version_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "version")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "version_id")
 	}
 
-	protoReq.Version, err = runtime.String(val)
+	protoReq.VersionId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "version", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "version_id", err)
 	}
 
 	msg, err := client.GetVersion(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -121,15 +121,15 @@ func request_PurchaseOrderService_Get_0(ctx context.Context, marshaler runtime.M
 		_   = err
 	)
 
-	val, ok = pathParams["identifier"]
+	val, ok = pathParams["document_id"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "identifier")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "document_id")
 	}
 
-	protoReq.Identifier, err = runtime.String(val)
+	protoReq.DocumentId, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "identifier", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "document_id", err)
 	}
 
 	msg, err := client.Get(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -295,13 +295,13 @@ func RegisterPurchaseOrderServiceHandlerClient(ctx context.Context, mux *runtime
 }
 
 var (
-	pattern_PurchaseOrderService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"purchaseorder"}, ""))
+	pattern_PurchaseOrderService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "purchase_orders"}, ""))
 
-	pattern_PurchaseOrderService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "identifier"}, ""))
+	pattern_PurchaseOrderService_Update_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "purchase_orders", "document_id"}, ""))
 
-	pattern_PurchaseOrderService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"purchaseorder", "identifier", "version"}, ""))
+	pattern_PurchaseOrderService_GetVersion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "purchase_orders", "document_id", "versions", "version_id"}, ""))
 
-	pattern_PurchaseOrderService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"purchaseorder", "identifier"}, ""))
+	pattern_PurchaseOrderService_Get_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "purchase_orders", "document_id"}, ""))
 )
 
 var (

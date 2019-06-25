@@ -110,12 +110,12 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate document data root: %v", err)
 	}
 
-	sig, err := self.SignMsg(ConsensusSignaturePayload(ddr, byte(0)))
+	sigs, err := self.SignMsg(ConsensusSignaturePayload(ddr, byte(0)))
 	if err != nil {
 		return err
 	}
 
-	model.AppendSignatures(sig)
+	model.AppendSignatures(sigs...)
 	return nil
 }
 

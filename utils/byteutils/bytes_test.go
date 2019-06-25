@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -307,17 +308,13 @@ func TestSortByte32Slice(t *testing.T) {
 
 func TestHexBytes_MarshalJSON(t *testing.T) {
 	tests := []struct {
-		d   []byte
-		err bool
+		d []byte
 	}{
 		// nil
-		{
-			err: true,
-		},
+		{},
 
 		{
-			d:   []byte{},
-			err: true,
+			d: []byte{},
 		},
 
 		{
@@ -334,11 +331,6 @@ func TestHexBytes_MarshalJSON(t *testing.T) {
 		th := testHex{Hex: h}
 
 		d, err := json.Marshal(th)
-		if c.err {
-			assert.Error(t, err)
-			continue
-		}
-
 		assert.NoError(t, err)
 
 		nth := new(testHex)
@@ -369,6 +361,9 @@ func TestHexBytes_UnmarshalJSON(t *testing.T) {
 		{str: `{"hex": "12345dswr"}`, err: true},
 
 		// valid
+		{str: `{"hex": "0x"}`},
+
+		// valid
 		{str: `{"hex": "0xde0a3a82af"}`, d: []byte{222, 10, 58, 130, 175}},
 	}
 
@@ -391,5 +386,6 @@ func TestHexBytes_UnmarshalJSON(t *testing.T) {
 		}
 
 		assert.Equal(t, c.d, th.Hex.Bytes())
+		assert.Equal(t, hexutil.Encode(c.d), th.Hex.String())
 	}
 }

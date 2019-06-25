@@ -20,7 +20,10 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 )
 
-const prefix string = "entity_relationship"
+const (
+	prefix string = "entity_relationship"
+	scheme        = prefix
+)
 
 // tree prefixes for specific documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 4, 0, 0} }
@@ -315,4 +318,14 @@ func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVe
 
 	e.CoreDocument = ncd
 	return nil
+}
+
+// GetData returns entity relationship data
+func (e *EntityRelationship) GetData() interface{} {
+	return nil
+}
+
+// Scheme returns the entity relationship scheme.
+func (e *EntityRelationship) Scheme() string {
+	return scheme
 }

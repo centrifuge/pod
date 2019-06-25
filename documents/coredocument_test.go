@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"os"
 	"strings"
 	"testing"
@@ -322,7 +323,7 @@ func TestGetDocumentDataProofHash(t *testing.T) {
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
 
-	valid, err := proofs.ValidateProofSortedHashes(docDataRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
+	valid, err := proofs.ValidateProofHashes(docDataRoot, []*proofspb.MerkleHash{{Right: signatureTree.RootHash()}}, docRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -375,23 +376,24 @@ func TestGetDocumentDocumentDataTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// no data root
-	_, err = cd.docDataTree(documenttypes.InvoiceDataTypeUrl, nil)
+	_, _, err = cd.docDataTrees(documenttypes.InvoiceDataTypeUrl, nil)
 	assert.Error(t, err)
 
 	// successful tree generation
 	dtree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
-	tree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, dtree.GetLeaves())
+	trees, _, err := cd.docDataTrees(documenttypes.InvoiceDataTypeUrl, dtree.GetLeaves())
 	assert.Nil(t, err)
-	assert.NotNil(t, tree)
+	assert.NotNil(t, trees)
+	eDataTree := trees[0]
 
-	_, leaf := tree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
-	for _, l := range tree.GetLeaves() {
+	_, leaf := eDataTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
+	for _, l := range eDataTree.GetLeaves() {
 		fmt.Printf("P: %s V: %v", l.Property.ReadableName(), l.Value)
 	}
 	assert.NotNil(t, leaf)
 
-	_, leaf = tree.GetLeafByProperty(CDTreePrefix + ".current_version")
+	_, leaf = eDataTree.GetLeafByProperty(CDTreePrefix + ".current_version")
 	assert.NotNil(t, leaf)
 }
 
@@ -455,7 +457,9 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	docDataTree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	cdLeaves, err := cd.coredocLeaves(documenttypes.InvoiceDataTypeUrl)
+	assert.NoError(t, err)
+	eDocDataTree, err := cd.eDocDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
 	assert.NoError(t, err)
 	_, err = cd.CalculateSignaturesRoot()
 	assert.NoError(t, err)
@@ -479,9 +483,14 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		} else {
-			assert.Len(t, pfs[idx].SortedHashes, 6)
-			_, l := docDataTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes, docRoot, h)
+			assert.Len(t, pfs[idx].SortedHashes, 7)
+			_, l := eDocDataTree.GetLeafByProperty(test)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes[:len(pfs[idx].SortedHashes)-2], eDocDataTree.RootHash(), h)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+			zTreeHash := pfs[idx].SortedHashes[len(pfs[idx].SortedHashes)-2]
+			signHash := pfs[idx].SortedHashes[len(pfs[idx].SortedHashes)-1]
+			valid, err = proofs.ValidateProofHashes(eDocDataTree.RootHash(), []*proofspb.MerkleHash{{Right: zTreeHash}, {Right: signHash}}, docRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

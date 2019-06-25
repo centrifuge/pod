@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -59,7 +60,11 @@ func (r *repo) Get(accountID, id []byte) (Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.(Model), nil
+	m, ok := model.(Model)
+	if !ok {
+		return nil, errors.New("docID %s for account %s is not a model object", hexutil.Encode(id), hexutil.Encode(accountID))
+	}
+	return m, nil
 }
 
 // Create creates the model if not present in the DB.

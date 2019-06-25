@@ -4,7 +4,6 @@ package testingdocuments
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 )
@@ -24,6 +23,6 @@ func CreatePOPayload() *clientpurchaseorderpb.PurchaseOrderCreatePayload {
 			TotalAmount: "42",
 			Currency:    "EUR",
 		},
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{testingidentity.GenerateRandomDID().String()}},
+		WriteAccess: []string{testingidentity.GenerateRandomDID().String()},
 	}
 }

@@ -176,9 +176,15 @@ func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.
 		return nil, errors.New("failed to derive response: %v", err)
 	}
 
+	attrs, err := documents.ToClientAttributes(model.GetAttributes())
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientinvoicepb.InvoiceResponse{
-		Header: h,
-		Data:   data,
+		Header:     h,
+		Data:       data,
+		Attributes: attrs,
 	}, nil
 
 }
@@ -200,7 +206,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	// get latest old version of the document
-	id, err := hexutil.Decode(payload.Identifier)
+	id, err := hexutil.Decode(payload.DocumentId)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
 	}
@@ -215,8 +221,13 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 		return nil, err
 	}
 
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	inv := new(Invoice)
-	if err := inv.PrepareNewVersion(old, payload.Data, cs); err != nil {
+	if err := inv.PrepareNewVersion(old, payload.Data, cs, attrs); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load invoice from data: %v", err))
 	}
 

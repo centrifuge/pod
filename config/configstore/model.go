@@ -429,7 +429,7 @@ func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 }
 
 // SignMsg signs a message with the signing key
-func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+func (acc *Account) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
 	keys, err := acc.GetKeys()
 	if err != nil {
 		return nil, err
@@ -445,12 +445,16 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		return nil, err
 	}
 
-	return &coredocumentpb.Signature{
-		SignatureId: append(did, signingKeyPair.PublicKey...),
-		SignerId:    did,
-		PublicKey:   signingKeyPair.PublicKey,
-		Signature:   signature,
-	}, nil
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId: append(did, signingKeyPair.PublicKey...),
+			SignerId:    did,
+			PublicKey:   signingKeyPair.PublicKey,
+			Signature:   signature,
+		},
+	}
+
+	return signatures, nil
 }
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {

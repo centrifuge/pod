@@ -147,9 +147,9 @@ The registry should be thread safe.
 
 A Sample Flow for Handling Document Signature Requests
 
-The following is an example modification of `Handler.RequestDocumentSignature` to show the usage of `Registry`, `Service` and `Model` interactions.
+The following is an example modification of `Handler.RequestDocumentSignatures` to show the usage of `Registry`, `Service` and `Model` interactions.
 
-	func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+	func (srv *Handler) RequestDocumentSignatures(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	service, err := registry.LocateService(sigReq.Document)
 	if err != nil {
 	return nil, err
