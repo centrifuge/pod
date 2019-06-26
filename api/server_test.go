@@ -17,17 +17,19 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
+	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -37,7 +39,7 @@ var ctx = map[string]interface{}{}
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 
@@ -54,12 +56,15 @@ func TestMain(m *testing.M) {
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		generic.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
 		&entity.Bootstrapper{},
+		funding.Bootstrapper{},
+		transferdetails.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 

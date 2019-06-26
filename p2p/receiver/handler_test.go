@@ -50,7 +50,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := make(map[string]interface{})
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	ibootstappers := []bootstrap.TestBootstrapper{
@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	docSrv := documents.DefaultService(nil, nil, registry, mockIDService)
+	docSrv := documents.DefaultService(cfg, nil, nil, registry, mockIDService)
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -79,6 +79,20 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
+}
+
+func TestHandler_HandleInterceptor_noConfig(t *testing.T) {
+	randomPath := leveldb.GetRandomTestStoragePath()
+	defer os.RemoveAll(randomPath)
+	db, err := leveldb.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+	fkRepo := configstore.NewDBRepository(leveldb.NewLevelDBRepository(db))
+	fkCfg := configstore.DefaultService(fkRepo, mockIDService)
+	hndlr := New(fkCfg, nil, nil, nil, nil)
+	resp, err := hndlr.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), &protocolpb.P2PEnvelope{})
+	assert.NoError(t, err)
+	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
+	assert.Error(t, err)
 }
 
 func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
@@ -192,7 +206,7 @@ func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
 
 func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	cd, err := documents.NewCoreDocumentWithCollaborators(nil, documents.CollaboratorsAccess{})
+	cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 	req := &p2ppb.AnchorDocumentRequest{Document: cd.GetTestCoreDocWithReset()}
 	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, req)

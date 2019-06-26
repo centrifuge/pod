@@ -2,6 +2,7 @@ package purchaseorder
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -43,12 +44,17 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
-		return errors.New("transaction service not initialised")
+		return errors.New("job manager service not initialised")
 	}
 
 	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("config service not initialised")
+	}
+
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return anchors.ErrAnchorRepoNotInitialised
 	}
 
 	// register service
@@ -58,14 +64,18 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 			panic("token registry initialisation error")
 		}
 		return tokenRegistry
-	})
+	}, anchorRepo)
 
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")
 	}
 
-	ctx[BootstrappedPOHandler] = GRPCHandler(cfgSrv, srv)
+	err = registry.Register(scheme, srv)
+	if err != nil {
+		return errors.New("failed to register purchase order service: %v", err)
+	}
 
+	ctx[BootstrappedPOHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }

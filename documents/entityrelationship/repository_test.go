@@ -21,7 +21,7 @@ func TestRepo_FindEntityRelationshipIdentifier(t *testing.T) {
 
 	// no relationships in repo
 	rp := testingdocuments.CreateRelationshipPayload()
-	id, err := hexutil.Decode(rp.Identifier)
+	id, err := hexutil.Decode(rp.DocumentId)
 	assert.NoError(t, err)
 
 	tID, err := identity.StringsToDIDs(rp.TargetIdentity)
@@ -47,6 +47,7 @@ func TestRepo_FindEntityRelationshipIdentifier(t *testing.T) {
 
 	// attempt to get relationships
 	r, err := repo.FindEntityRelationshipIdentifier(id, did, *tID[0])
+	assert.NoError(t, err)
 	assert.Equal(t, r, m.CurrentVersion())
 
 	// throws err if relationship not found in the repo
@@ -62,7 +63,7 @@ func TestRepo_ListAllRelationships(t *testing.T) {
 	assert.NotNil(t, repo)
 
 	rp := testingdocuments.CreateRelationshipPayload()
-	id, err := hexutil.Decode(rp.Identifier)
+	id, err := hexutil.Decode(rp.DocumentId)
 	assert.NoError(t, err)
 
 	// no relationships in repo returns a nil map
@@ -91,7 +92,7 @@ func TestRepo_ListAllRelationships(t *testing.T) {
 	assert.NoError(t, err)
 
 	// attempt to get relationships
-	id, err = hexutil.Decode(rp.Identifier)
+	id, err = hexutil.Decode(rp.DocumentId)
 	assert.NoError(t, err)
 
 	r, err = repo.ListAllRelationships(id, did)

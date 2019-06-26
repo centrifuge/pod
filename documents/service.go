@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -59,31 +60,40 @@ type Service interface {
 
 	// Update validates and updates the model and return the updated model
 	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
+
+	// CreateModel creates a new model from the payload and initiates the anchor process.
+	CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error)
+
+	// UpdateModel prepares the next version from the payload and initiates the anchor process.
+	UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error)
 }
 
 // service implements Service
 type service struct {
-	repo             Repository
-	notifier         notification.Sender
-	anchorRepository anchors.AnchorRepository
-	registry         *ServiceRegistry
-	idService        identity.ServiceDID
+	config     Config
+	repo       Repository
+	notifier   notification.Sender
+	anchorRepo anchors.AnchorRepository
+	registry   *ServiceRegistry
+	idService  identity.Service
 }
 
 var srvLog = logging.Logger("document-service")
 
 // DefaultService returns the default implementation of the service
 func DefaultService(
+	config Config,
 	repo Repository,
 	anchorRepo anchors.AnchorRepository,
 	registry *ServiceRegistry,
-	idService identity.ServiceDID) Service {
+	idService identity.Service) Service {
 	return service{
-		repo:             repo,
-		anchorRepository: anchorRepo,
-		notifier:         notification.NewWebhookSender(),
-		registry:         registry,
-		idService:        idService,
+		config:     config,
+		repo:       repo,
+		anchorRepo: anchorRepo,
+		notifier:   notification.NewWebhookSender(),
+		registry:   registry,
+		idService:  idService,
 	}
 }
 
@@ -124,7 +134,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorRepository).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -175,7 +185,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		}
 	}
 
-	if err := RequestDocumentSignatureValidator(s.idService, collaborator).Validate(old, model); err != nil {
+	if err := RequestDocumentSignatureValidator(s.anchorRepo, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -239,7 +249,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		}
 	}
 
-	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepository, collaborator).Validate(old, model); err != nil {
+	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepo, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -335,4 +345,22 @@ func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, ch
 
 func (s service) getService(model Model) (Service, error) {
 	return s.registry.LocateService(model.DocumentType())
+}
+
+func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error) {
+	srv, err := s.registry.LocateService(payload.Scheme)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
+	}
+
+	return srv.CreateModel(ctx, payload)
+}
+
+func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error) {
+	srv, err := s.registry.LocateService(payload.Scheme)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
+	}
+
+	return srv.UpdateModel(ctx, payload)
 }

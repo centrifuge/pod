@@ -27,12 +27,13 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 
 	// config
 	cs := new(configstore.MockService)
-	m[bootstrap.BootstrappedConfig] = new(testingconfig.MockConfig)
+	cfg := new(testingconfig.MockConfig)
+	m[bootstrap.BootstrappedConfig] = cfg
 	m[config.BootstrappedConfigStorage] = cs
 	cs.On("GetConfig").Return(&configstore.NodeConfig{}, nil)
 	ids := new(testingcommons.MockIdentityService)
 	m[identity.BootstrappedDIDService] = ids
-	m[documents.BootstrappedDocumentService] = documents.DefaultService(nil, nil, documents.NewServiceRegistry(), ids)
+	m[documents.BootstrappedDocumentService] = documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), ids)
 	m[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 
 	err = b.Bootstrap(m)

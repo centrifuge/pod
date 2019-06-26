@@ -32,17 +32,7 @@ func generateKeys(config config.Configuration) error {
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
-func CreateConfig(
-	targetDataDir,
-	ethNodeURL,
-	accountKeyPath,
-	accountPassword,
-	network, apiHost string,
-	apiPort, p2pPort int64,
-	bootstraps []string,
-	txPoolAccess, preCommitEnabled bool,
-	p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses) error {
-
+func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses, webhookURL string) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
 		"accountKeyPath":    accountKeyPath,
@@ -56,6 +46,7 @@ func CreateConfig(
 		"p2pConnectTimeout": p2pConnectionTimeout,
 		"txpoolaccess":      txPoolAccess,
 		"preCommitEnabled":  preCommitEnabled,
+		"webhookURL":        webhookURL,
 	}
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs
@@ -69,7 +60,7 @@ func CreateConfig(
 	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("bootstrapped identity service not initialized")
 	}

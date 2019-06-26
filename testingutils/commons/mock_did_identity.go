@@ -20,7 +20,7 @@ type MockIdentityService struct {
 }
 
 // AddKey adds a key to identity contract
-func (i *MockIdentityService) AddKey(ctx context.Context, key identity.KeyDID) error {
+func (i *MockIdentityService) AddKey(ctx context.Context, key identity.Key) error {
 	args := i.Called(ctx, key)
 	return args.Error(0)
 }
@@ -103,9 +103,9 @@ func (i *MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string,
 }
 
 // GetKeysByPurpose returns keys grouped by purpose from the identity contract.
-func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([]identity.KeyDID, error) {
+func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([]identity.Key, error) {
 	args := i.Called(did, purpose)
-	return args.Get(0).([]identity.KeyDID), args.Error(1)
+	return args.Get(0).([]identity.Key), args.Error(1)
 }
 
 // MockIdentityFactory implements Service

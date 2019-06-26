@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
@@ -25,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -46,7 +46,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	jobMan := &testingjobs.MockJobManager{}
@@ -194,6 +194,7 @@ func TestEntityRelationship_InitEntityInput(t *testing.T) {
 	e = new(EntityRelationship)
 	data.TargetIdentity = "some random string"
 	err = e.InitEntityRelationshipInput(ctxh, entityID, data)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 }
 
@@ -310,6 +311,7 @@ func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	oldRelationship := model
 	assert.NoError(t, err)
 	err = er.CollaboratorCanUpdate(oldRelationship, id1)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "identity attempting to update the document does not own this entity relationship")
 
 	// attempted updater is owner of the relationship
@@ -336,18 +338,20 @@ var testRepoGlobal repository
 var testDocRepoGlobal documents.Repository
 
 func testEntityRepo() repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		db := leveldb.NewLevelDBRepository(ldb)
-		if testDocRepoGlobal == nil {
-			testDocRepoGlobal = documents.NewDBRepository(db)
-		}
-		testRepoGlobal = newDBRepository(db, testDocRepoGlobal)
-		testRepoGlobal.Register(&EntityRelationship{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	db := leveldb.NewLevelDBRepository(ldb)
+	if testDocRepoGlobal == nil {
+		testDocRepoGlobal = documents.NewDBRepository(db)
+	}
+	testRepoGlobal = newDBRepository(db, testDocRepoGlobal)
+	testRepoGlobal.Register(&EntityRelationship{})
 	return testRepoGlobal
 }
 
@@ -366,4 +370,44 @@ func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, core
 	cd, err := e.PackCoreDocument()
 	assert.NoError(t, err)
 	return e, cd
+}
+
+func TestEntityRelationship_AddAttributes(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntityRelationship(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.NoError(t, err)
+	assert.True(t, e.AttributeExists(attr.Key))
+	gattr, err := e.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestEntityRelationship_DeleteAttribute(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntityRelationship(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = e.DeleteAttribute(attr.Key, true)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, e.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
+	assert.True(t, e.AttributeExists(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
+	assert.False(t, e.AttributeExists(attr.Key))
 }

@@ -1,5 +1,7 @@
 package utils
 
+import "strings"
+
 // IsStringOfLength returns true if length of the string == n
 func IsStringOfLength(msg string, n int) bool {
 	if len(msg) != n {
@@ -17,7 +19,7 @@ func IsStringEmpty(msg string) bool {
 // ContainsString returns true if the slice contains str.
 func ContainsString(slice []string, str string) bool {
 	for _, s := range slice {
-		if s == str {
+		if strings.Contains(str, s) {
 			return true
 		}
 	}

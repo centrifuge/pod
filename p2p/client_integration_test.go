@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -32,7 +31,7 @@ import (
 var (
 	client     documents.Client
 	cfg        config.Configuration
-	idService  identity.ServiceDID
+	idService  identity.Service
 	idFactory  identity.Factory
 	cfgStore   config.Service
 	defaultDID identity.DID
@@ -43,7 +42,7 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgStore = ctx[config.BootstrappedConfigStorage].(config.Service)
-	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	tc, err := configstore.TempAccount("main", cfg)
@@ -62,6 +61,7 @@ func TestMain(m *testing.M) {
 
 func TestClient_GetSignaturesForDocument(t *testing.T) {
 	tc, _, err := createLocalCollaborator(t, false)
+	assert.NoError(t, err)
 	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
@@ -75,7 +75,9 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 }
 
 func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
+	// Random DID cause signature verification failure
 	tc, _, err := createLocalCollaborator(t, true)
+	assert.NoError(t, err)
 	acc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
@@ -83,20 +85,22 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	ctxh, err := contextutil.New(context.Background(), acci)
 	assert.NoError(t, err)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
-	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
+	signs, signatureErrors, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(signs))
+	assert.Error(t, signatureErrors[0], "[5]signature invalid with err: no contract code at given address")
+	assert.Equal(t, 0, len(signs))
 }
 
 func TestClient_SendAnchoredDocument(t *testing.T) {
 	tc, cid, err := createLocalCollaborator(t, false)
+	assert.NoError(t, err)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	cd, err := dm.PackCoreDocument()
 	assert.NoError(t, err)
 	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: &cd})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "mismatched document roots")
+	assert.Contains(t, err.Error(), "anchor data missing")
 }
 
 func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
@@ -134,10 +138,11 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	for _, c := range collaborators {
 		cs = append(cs, hexutil.Encode(c))
 	}
-	payalod.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
+	payalod.WriteAccess = cs
 	po := new(purchaseorder.PurchaseOrder)
 	err = po.InitPurchaseOrderInput(payalod, defaultDID)
 	assert.NoError(t, err)
+	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()

@@ -10,24 +10,22 @@ import (
 	crypto2 "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
-	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
-	ipfsaddr "github.com/ipfs/go-ipfs-addr"
+	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
-	crypto "github.com/libp2p/go-libp2p-crypto"
-	host "github.com/libp2p/go-libp2p-host"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-kad-dht"
 	libp2pPeer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
-	pstoremem "github.com/libp2p/go-libp2p-peerstore/pstoremem"
-	protocol "github.com/libp2p/go-libp2p-protocol"
+	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
+	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
-	mh "github.com/multiformats/go-multihash"
 )
 
 var log = logging.Logger("p2p-server")
@@ -46,10 +44,11 @@ type messenger interface {
 type peer struct {
 	disablePeerStore bool
 	config           config.Service
-	idService        identity.ServiceDID
+	idService        identity.Service
 	host             host.Host
 	handlerCreator   func() *receiver.Handler
 	mes              messenger
+	dht              *dht.IpfsDHT
 }
 
 // Name returns the P2PServer
@@ -79,7 +78,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		startupErr <- err
 		return
 	}
-	s.host, err = makeBasicHost(priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
+	s.host, err = makeBasicHost(ctx, priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
@@ -93,7 +92,18 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 
 	// Start DHT and properly ignore errors :)
-	_ = runDHT(ctx, s.host, nc.GetBootstrapPeers())
+	_ = s.runDHT(ctx, nc.GetBootstrapPeers())
+
+	if nc.IsDebugLogEnabled() {
+		go func() {
+			for {
+				num := s.host.Peerstore().Peers()
+				log.Debugf("for host %s the peers in the peerstore are", s.host.ID(), num)
+				time.Sleep(2 * time.Second)
+			}
+		}()
+	}
+
 	<-ctx.Done()
 
 }
@@ -124,8 +134,30 @@ func (s *peer) InitProtocolForDID(DID *identity.DID) {
 	s.mes.Init(p)
 }
 
+func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
+	s.dht = dht.NewDHT(ctx, s.host, ds.NewMapDatastore())
+	log.Infof("Bootstrapping %s\n", bootstrapPeers)
+
+	for _, addr := range bootstrapPeers {
+		iaddr, _ := ipfsaddr.ParseString(addr)
+		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
+		if err := s.host.Connect(ctx, *pinfo); err != nil {
+			log.Info("Bootstrapping to peer failed: ", err)
+		}
+	}
+
+	err := s.dht.Bootstrap(ctx)
+	if err != nil {
+		log.Errorf("Bootstrap Error: %s", err.Error())
+		return err
+	}
+
+	log.Info("Bootstrapping and discovery complete!")
+	return nil
+}
+
 // makeBasicHost creates a LibP2P host with a peer ID listening on the given port
-func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, error) {
+func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, error) {
 	// Obtain Peer ID from public key
 	// We should be using the following method to get the ID, but looks like is not compatible with
 	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
@@ -137,10 +169,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstore.NewPeerstore(
-		pstoremem.NewKeyBook(),
-		pstoremem.NewAddrBook(),
-		pstoremem.NewPeerMetadata())
+	ps := pstoremem.NewPeerstore()
 
 	// Add the keys to the peerstore
 	// for this peer ID.
@@ -175,13 +204,14 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	opts := []libp2p.Option{
+		libp2p.Peerstore(ps),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
 		libp2p.Identity(priv),
 		libp2p.DefaultMuxers,
 		libp2p.AddrsFactory(addressFactory),
 	}
 
-	bhost, err := libp2p.New(context.Background(), opts...)
+	bhost, err := libp2p.New(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -193,59 +223,4 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 
 	log.Infof("P2P Server at: %s %s\n", hostAddr.String(), bhost.Addrs())
 	return bhost, nil
-}
-
-func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
-	// Run it as a Bootstrap Node
-	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
-	log.Infof("Bootstrapping %s\n", bootstrapPeers)
-
-	for _, addr := range bootstrapPeers {
-		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
-		if err := h.Connect(ctx, *pinfo); err != nil {
-			log.Info("Bootstrapping to peer failed: ", err)
-		}
-	}
-
-	// Using the sha256 of our "topic" as our rendezvous value
-	cidPref, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
-
-	// First, announce ourselves as participating in this topic
-	log.Info("Announcing ourselves...")
-	tctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	if err := dhtClient.Provide(tctx, cidPref, true); err != nil {
-		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
-		log.Infof("Error: %s\n", err.Error())
-	}
-	cancel()
-
-	// Now, look for others who have announced
-	log.Info("Searching for other peers ...")
-	tctx, cancel = context.WithTimeout(ctx, time.Second*10)
-	peers, err := dhtClient.FindProviders(tctx, cidPref)
-	if err != nil {
-		log.Error(err)
-	}
-	cancel()
-	log.Infof("Found %d peers!\n", len(peers))
-
-	// Now connect to them, so they are added to the PeerStore
-	for _, pe := range peers {
-		log.Infof("Peer %s %s\n", pe.ID.Pretty(), pe.Addrs)
-
-		if pe.ID == h.ID() {
-			// No sense connecting to ourselves
-			continue
-		}
-
-		tctx, cancel := context.WithTimeout(ctx, time.Second*5)
-		if err := h.Connect(tctx, pe); err != nil {
-			log.Info("Failed to connect to peer: ", err)
-		}
-		cancel()
-	}
-
-	log.Info("Bootstrapping and discovery complete!")
-	return nil
 }

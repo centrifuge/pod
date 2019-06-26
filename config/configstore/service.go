@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -25,14 +26,14 @@ type ProtocolSetter interface {
 }
 
 type service struct {
-	repo                 repository
+	repo                 Repository
 	idFactory            identity.Factory
-	idService            identity.ServiceDID
+	idService            identity.Service
 	protocolSetterFinder func() ProtocolSetter
 }
 
 // DefaultService returns an implementation of the config.Service
-func DefaultService(repository repository, idService identity.ServiceDID) config.Service {
+func DefaultService(repository Repository, idService identity.Service) config.Service {
 	return &service{repo: repository, idService: idService}
 }
 
@@ -150,6 +151,16 @@ func (s service) UpdateAccount(data config.Account) (config.Account, error) {
 
 func (s service) DeleteAccount(identifier []byte) error {
 	return s.repo.DeleteAccount(identifier)
+}
+
+// Sign signs the payload using the account's secret key and returns a signature.
+func (s service) Sign(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	acc, err := s.GetAccount(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	return acc.SignMsg(payload)
 }
 
 // RetrieveConfig retrieves system config giving priority to db stored config

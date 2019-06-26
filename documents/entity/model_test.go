@@ -25,11 +25,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -44,7 +42,6 @@ import (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var configService config.Service
-var defaultDID = testingidentity.GenerateRandomDID()
 
 var (
 	did       = testingidentity.GenerateRandomDID()
@@ -71,7 +68,7 @@ func (m *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot ancho
 }
 
 func TestMain(m *testing.M) {
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	jobMan := &testingjobs.MockJobManager{}
@@ -161,7 +158,10 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	entity, cd := createCDWithEmbeddedEntity(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), model.getClientData(), entity.(*Entity).getClientData())
+
+	d := model.getClientData()
+	d1 := entity.(*Entity).getClientData()
+	assert.Equal(t, d.Addresses[0], d1.Addresses[0])
 	assert.Equal(t, model.ID(), entity.ID())
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
@@ -170,6 +170,7 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 func TestEntityModel_getClientData(t *testing.T) {
 	entityData := testingdocuments.CreateEntityData()
 	entity := new(Entity)
+	entity.CoreDocument = new(documents.CoreDocument)
 	err := entity.loadFromP2PProtobuf(&entityData)
 	assert.NoError(t, err)
 
@@ -202,7 +203,8 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 
 	e = new(Entity)
 	collabs := []string{"0x010102040506", "some id"}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: collabs}, did)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode collaborator")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -210,7 +212,7 @@ func TestEntityModel_InitEntityInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Nil(t, err, "must be nil")
 
 }
@@ -262,7 +264,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 
 func createEntity(t *testing.T) *Entity {
 	e := new(Entity)
-	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), defaultDID)
+	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
 	assert.NoError(t, err)
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
@@ -296,7 +298,7 @@ func TestEntityModel_getDocumentDataTree(t *testing.T) {
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	entity := createEntity(t)
-	id1 := defaultDID
+	id1 := did
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
 
@@ -312,7 +314,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	oldEntity := model.(*Entity)
 	data := oldEntity.getClientData()
 	data.LegalName = "new legal name"
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}}, oldEntity.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -333,7 +335,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	data = oldEntity.getClientData()
 	data.LegalName = "second new legal name"
 	data.Contacts = nil
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{})
+	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{}, oldEntity.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -365,14 +367,16 @@ func (m *mockModel) ID() []byte {
 var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-		testRepoGlobal.Register(&Entity{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+	testRepoGlobal.Register(&Entity{})
 	return testRepoGlobal
 }
 
@@ -389,4 +393,244 @@ func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.C
 	cd, err := e.PackCoreDocument()
 	assert.NoError(t, err)
 	return e, cd
+}
+
+func TestEntity_AddAttributes(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntity(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.NoError(t, err)
+	assert.True(t, e.AttributeExists(attr.Key))
+	gattr, err := e.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestEntity_DeleteAttribute(t *testing.T) {
+	e, _ := createCDWithEmbeddedEntity(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = e.DeleteAttribute(attr.Key, true)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, e.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
+	assert.True(t, e.AttributeExists(attr.Key))
+	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
+	assert.False(t, e.AttributeExists(attr.Key))
+}
+
+func TestEntity_GetData(t *testing.T) {
+	e := createEntity(t)
+	data := e.GetData()
+	assert.Equal(t, e.Data, data)
+}
+
+func marshallData(t *testing.T, m map[string]interface{}) []byte {
+	data, err := json.Marshal(m)
+	assert.NoError(t, err)
+	return data
+}
+
+func emptyDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "1acdew123asdefres",
+	}
+
+	return marshallData(t, d)
+}
+
+func emptyPaymentDetail(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"payment_details": []map[string]interface{}{
+			{},
+			{"predefined": true},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func multiPaymentDetail(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"identity": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+				"crypto_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func validData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"legal_name": "Hello, World!",
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func validDataWithIdentity(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"legal_name": "Hello, World!",
+		"identity":   "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				},
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func checkEntityPayloadDataError(t *testing.T, e *Entity, payload documents.CreatePayload) {
+	err := e.loadData(payload.Data)
+	assert.Error(t, err)
+}
+
+func TestEntity_loadData(t *testing.T) {
+	e := new(Entity)
+	payload := documents.CreatePayload{}
+
+	// empty did data
+	payload.Data = emptyDIDData(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// invalid did data
+	payload.Data = invalidDIDData(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// empty payment detail
+	payload.Data = emptyPaymentDetail(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// multiple payment detail
+	payload.Data = multiPaymentDetail(t)
+	checkEntityPayloadDataError(t, e, payload)
+
+	// valid data
+	payload.Data = validData(t)
+	err := e.loadData(payload.Data)
+	assert.NoError(t, err)
+	data := e.GetData().(Data)
+	assert.Equal(t, data.LegalName, "Hello, World!")
+	assert.Len(t, data.PaymentDetails, 1)
+	assert.NotNil(t, data.PaymentDetails[0].BankPaymentMethod)
+	assert.Nil(t, data.PaymentDetails[0].CryptoPaymentMethod)
+	assert.Nil(t, data.PaymentDetails[0].OtherPaymentMethod)
+	assert.True(t, data.PaymentDetails[0].Predefined)
+	assert.Equal(t, data.PaymentDetails[0].BankPaymentMethod.Identifier.String(), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
+}
+
+func TestEntity_unpackFromCreatePayload(t *testing.T) {
+	payload := documents.CreatePayload{}
+	e := new(Entity)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	err := e.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = e.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = e.unpackFromCreatePayload(did, payload)
+	assert.NoError(t, err)
+}
+
+func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	old := createEntity(t)
+	e := new(Entity)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	err := e.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = e.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = e.unpackFromUpdatePayload(old, payload)
+	assert.NoError(t, err)
 }

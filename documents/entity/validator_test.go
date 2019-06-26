@@ -30,7 +30,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 	// identity not created from the identity factory
 	idFactory := new(testingcommons.MockIdentityFactory)
 	entity := createEntity(t)
-	idFactory.On("IdentityExists", entity.Identity).Return(false, nil).Once()
+	idFactory.On("IdentityExists", entity.Data.Identity).Return(false, nil).Once()
 	fv = fieldValidator(idFactory)
 	err = fv.Validate(nil, entity)
 	assert.Error(t, err)
@@ -38,7 +38,7 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 	// identity created from identity factory
 	idFactory = new(testingcommons.MockIdentityFactory)
-	idFactory.On("IdentityExists", entity.Identity).Return(true, nil).Once()
+	idFactory.On("IdentityExists", entity.Data.Identity).Return(true, nil).Once()
 	fv = fieldValidator(idFactory)
 	err = fv.Validate(nil, entity)
 	assert.NoError(t, err)
@@ -51,6 +51,6 @@ func TestCreateValidator(t *testing.T) {
 }
 
 func TestUpdateValidator(t *testing.T) {
-	uv := UpdateValidator(nil)
+	uv := UpdateValidator(nil, nil)
 	assert.Len(t, uv, 2)
 }

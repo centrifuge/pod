@@ -19,9 +19,12 @@ const (
 	// ErrSelfNotFound must be used when self value is not found in the context
 	ErrSelfNotFound = errors.Error("self value not found in the context")
 
+	// ErrDIDMissingFromContext sentinel error when did is missing from the context.
+	ErrDIDMissingFromContext = errors.Error("failed to extract did from context")
+
 	self = contextKey("self")
 
-	tx = contextKey("tx")
+	job = contextKey("job")
 )
 
 // New creates new instance of the request headers.
@@ -31,16 +34,16 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 
 // WithJob returns a context with Job ID
 func WithJob(ctx context.Context, jobID jobs.JobID) context.Context {
-	return context.WithValue(ctx, tx, jobID)
+	return context.WithValue(ctx, job, jobID)
 }
 
 // Job returns current jobID
 func Job(ctx context.Context) jobs.JobID {
-	tid, ok := ctx.Value(tx).(jobs.JobID)
+	jobID, ok := ctx.Value(job).(jobs.JobID)
 	if !ok {
 		return jobs.NilJobID()
 	}
-	return tid
+	return jobID
 }
 
 // AccountDID extracts the AccountConfig DID from the given context value
@@ -91,4 +94,26 @@ func Context(ctx context.Context, cs config.Service) (context.Context, error) {
 		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
 	}
 	return ctxHeader, nil
+}
+
+// Copy creates a copy of the given context with relevant values
+func Copy(ctx context.Context) context.Context {
+	nctx := context.WithValue(context.Background(), self, ctx.Value(self))
+	nctx = context.WithValue(nctx, job, ctx.Value(job))
+	return nctx
+}
+
+// DIDFromContext returns did from the context.
+func DIDFromContext(ctx context.Context) (did identity.DID, err error) {
+	didStr, ok := ctx.Value(config.AccountHeaderKey).(string)
+	if !ok {
+		return did, ErrDIDMissingFromContext
+	}
+
+	didBytes, err := hexutil.Decode(didStr)
+	if err != nil {
+		return did, err
+	}
+
+	return identity.NewDIDFromBytes(didBytes)
 }

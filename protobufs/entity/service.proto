@@ -16,7 +16,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service EntityService {
   rpc Create(EntityCreatePayload) returns (EntityResponse) {
     option (google.api.http) = {
-      post: "/entity"
+      post: "/v1/entities"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -25,7 +25,7 @@ service EntityService {
   }
   rpc Update(EntityUpdatePayload) returns (EntityResponse) {
     option (google.api.http) = {
-      put: "/entity/{identifier}"
+      put: "/v1/entities/{document_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -34,7 +34,7 @@ service EntityService {
   }
   rpc Get(GetRequest) returns (EntityResponse) {
     option (google.api.http) = {
-      get: "/entity/{identifier}"
+      get: "/v1/entities/{document_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get the current entity"
@@ -43,7 +43,7 @@ service EntityService {
   // Entity Relation Get
   rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
     option (google.api.http) = {
-      get: "/relationship/{relationship_identifier}/entity"
+      get: "/v1/relationships/{relationship_id}/entity"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get entity from business partner"
@@ -52,7 +52,7 @@ service EntityService {
   // Entity Relation Share
   rpc Share(RelationshipPayload) returns (RelationshipResponse) {
     option (google.api.http) = {
-      post: "/entity/{identifier}/share"
+      post: "/v1/entities/{document_id}/share"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -62,7 +62,7 @@ service EntityService {
   // Entity Relation Revoke
   rpc Revoke(RelationshipPayload) returns (RelationshipResponse) {
     option (google.api.http) = {
-      post: "/entity/{identifier}/revoke"
+      post: "/v1/entities/{document_id}/revoke"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -72,11 +72,11 @@ service EntityService {
 }
 
 message GetRequest {
-  string identifier = 1;
+  string document_id = 1;
 }
 
 message GetRequestRelationship {
-  string relationship_identifier = 1;
+  string relationship_id = 1;
 }
 
 message GetVersionRequest {
@@ -85,21 +85,27 @@ message GetVersionRequest {
 }
 
 message EntityCreatePayload {
-  document.ReadAccess read_access = 1;
-  document.WriteAccess write_access = 2;
+  repeated string read_access = 1;
+  repeated string write_access = 2;
   EntityData data = 3;
+  // custom attributes
+  map<string, document.Attribute> attributes = 4;
 }
 
 message EntityUpdatePayload {
-  string identifier = 1;
-  document.ReadAccess read_access = 2;
-  document.WriteAccess write_access = 3;
+  string document_id = 1;
+  repeated string read_access = 2;
+  repeated string write_access = 3;
   EntityData data = 4;
+  // custom attributes
+  map<string, document.Attribute> attributes = 5;
 }
 
 message EntityResponse {
   document.ResponseHeader header = 1;
   EntityDataResponse data = 2;
+  // custom attributes
+  map<string, document.Attribute> attributes = 3;
 }
 
 message Relationship {
@@ -127,7 +133,7 @@ message EntityDataResponse {
 
 message RelationshipPayload {
   // entity identifier
-  string identifier = 1;
+  string document_id = 1;
   string target_identity = 2;
 }
 

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -18,7 +19,7 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 			return documents.ErrDocumentInvalidType
 		}
 
-		valid, err := factory.IdentityExists(entity.Identity)
+		valid, err := factory.IdentityExists(entity.Data.Identity)
 		if err != nil || !valid {
 			return errors.New("identity not created from identity factory")
 		}
@@ -35,9 +36,9 @@ func CreateValidator(factory identity.Factory) documents.ValidatorGroup {
 }
 
 // UpdateValidator returns a validator group that should be run before updating the entity
-func UpdateValidator(factory identity.Factory) documents.ValidatorGroup {
+func UpdateValidator(factory identity.Factory, repo anchors.AnchorRepository) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(factory),
-		documents.UpdateVersionValidator(),
+		documents.UpdateVersionValidator(repo),
 	}
 }

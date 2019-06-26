@@ -50,9 +50,10 @@ type contract interface {
 
 func methodToOp(method string) config.ContractOp {
 	m := map[string]config.ContractOp{
-		"mint":      config.NftMint,
-		"commit":    config.AnchorCommit,
-		"preCommit": config.AnchorPreCommit,
+		"mint":         config.NftMint,
+		"commit":       config.AnchorCommit,
+		"preCommit":    config.AnchorPreCommit,
+		"transferFrom": config.NftTransferFrom,
 	}
 	return m[method]
 }
@@ -108,7 +109,7 @@ func (i service) bindContract(did id.DID) (contract, error) {
 }
 
 // NewService creates a instance of the identity service
-func NewService(client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, conf id.Config) id.ServiceDID {
+func NewService(client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, conf id.Config) id.Service {
 	return service{client: client, jobManager: jobManager, queue: queue, config: conf}
 }
 
@@ -118,20 +119,20 @@ func logTxHash(tx *types.Transaction) {
 }
 
 // AddKey adds a key to identity contract
-func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
-	DID, err := NewDIDFromContext(ctx)
+func (i service) AddKey(ctx context.Context, key id.Key) error {
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return err
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
-	log.Info("Add key to identity contract %s", DID.ToAddress().String())
-	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for add key",
+	log.Info("Add key to identity contract %s", did.ToAddress().String())
+	jobID, done, err := i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Check Job for add key",
 		i.ethereumTX(opts, contract.AddKey, key.GetKey(), key.GetPurpose(), key.GetType()))
 	if err != nil {
 		return err
@@ -140,7 +141,7 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key  Job failed: txID:%s", txID.String())
+		return errors.New("add key  Job failed: jobID:%s", jobID.String())
 
 	}
 	return nil
@@ -149,18 +150,18 @@ func (i service) AddKey(ctx context.Context, key id.KeyDID) error {
 
 // AddMultiPurposeKey adds a key with multiple purposes
 func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
-	DID, err := NewDIDFromContext(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return err
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDAddKey)
-	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for add multi purpose key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Check Job for add multi purpose key",
 		i.ethereumTX(opts, contract.AddMultiPurposeKey, key, purposes, keyType))
 	if err != nil {
 		return err
@@ -169,7 +170,7 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("add key multi purpose  Job failed: txID:%s", txID.String())
+		return errors.New("add key multi purpose  Job failed: jobID:%s", jobID.String())
 
 	}
 	return nil
@@ -177,18 +178,18 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 
 // RevokeKey revokes an existing key in the smart contract
 func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
-	DID, err := NewDIDFromContext(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return err
 	}
 
 	opts.GasLimit = i.config.GetEthereumGasLimit(config.IDRevokeKey)
-	txID, done, err := i.jobManager.ExecuteWithinJob(context.Background(), DID, jobs.NilJobID(), "Check Job for revoke key",
+	jobID, done, err := i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Check Job for revoke key",
 		i.ethereumTX(opts, contract.RevokeKey, key))
 	if err != nil {
 		return err
@@ -197,9 +198,9 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 	isDone := <-done
 	// non async task
 	if !isDone {
-		return errors.New("revoke key Job failed: txID:%s", txID.String())
-
+		return errors.New("revoke key Job failed: jobID:%s", jobID.String())
 	}
+
 	return nil
 }
 
@@ -236,24 +237,22 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 	}
 
 	result, err := contract.GetKey(opts, key)
-
 	if err != nil {
 		return nil, errors.New("Could not call identity contract: %v", err)
 	}
 
-	return &id.KeyResponse{result.Key, result.Purposes, result.RevokedAt}, nil
-
+	return &id.KeyResponse{Key: result.Key, Purposes: result.Purposes, RevokedAt: result.RevokedAt}, nil
 }
 
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
 func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan bool, err error) {
-	utxID := contextutil.Job(ctx)
-	DID, err := NewDIDFromContext(ctx)
+	jobID := contextutil.Job(ctx)
+	did, err := NewDIDFromContext(ctx)
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
-	contract, opts, err := i.prepareTransaction(ctx, DID)
+	contract, opts, err := i.prepareTransaction(ctx, did)
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
@@ -261,7 +260,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte,
 
 	// default: no ether should be send
 	value := big.NewInt(0)
-	return i.jobManager.ExecuteWithinJob(context.Background(), DID, utxID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
+	return i.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for execute", i.ethereumTX(opts, contract.Execute, to, value, data))
 }
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
@@ -280,7 +279,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
-func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, error) {
+func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.Key, error) {
 	contract, opts, _, err := i.prepareCall(did)
 	if err != nil {
 		return nil, err
@@ -291,7 +290,7 @@ func (i service) GetKeysByPurpose(did id.DID, purpose *big.Int) ([]id.KeyDID, er
 		return nil, err
 	}
 
-	var keyResp []id.KeyDID
+	var keyResp []id.Key
 	for i, k := range keyStruct.KeysByPurpose {
 		keyResp = append(keyResp, id.NewKey(k, purpose, keyStruct.KeyTypes[i], keyStruct.KeysRevokedAt[i]))
 	}
@@ -403,8 +402,8 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 	return urls, nil
 }
 
-func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.KeyDID, error) {
-	keys := map[string]id.KeyDID{}
+func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (map[string]id.Key, error) {
+	keys := map[string]id.Key{}
 	for k, v := range accKeys {
 		pk32, err := utils.SliceToByte32(v.PublicKey)
 		if err != nil {
@@ -459,7 +458,7 @@ func (i service) ValidateSignature(did id.DID, pubKey []byte, signature []byte, 
 	}
 
 	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveSecp256K1) {
-		return errors.New("error when validating signature")
+		return ErrSignature
 	}
 
 	return nil

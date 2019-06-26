@@ -9,9 +9,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
+	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -47,10 +50,13 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		&purchaseorder.Bootstrapper{},
+		generic.Bootstrapper{},
 		&nft.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
 		&entity.Bootstrapper{},
+		funding.Bootstrapper{},
+		transferdetails.Bootstrapper{},
 	}
 }
 

@@ -45,12 +45,17 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialized")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(repo, anchorRepo, registry, didService)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	if !ok {
+		return ErrDocumentConfigNotInitialised
+	}
+
+	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorRepo, registry, didService)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -91,7 +96,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("p2p client not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialized")
 	}

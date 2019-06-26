@@ -3,23 +3,23 @@
 package purchaseorder
 
 import (
+	"context"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -32,18 +32,6 @@ var (
 	accountID = did[:]
 )
 
-type mockAnchorRepo struct {
-	mock.Mock
-	anchors.AnchorRepository
-}
-
-func (r *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
-	args := r.Called(anchorID)
-	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
-	anchoredTime, _ = args.Get(1).(time.Time)
-	return docRoot, anchoredTime, args.Error(2)
-}
-
 func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service) {
 	idService := &testingcommons.MockIdentityService{}
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
@@ -51,11 +39,12 @@ func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	repo := testRepo()
-	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), idService)
+	anchorRepo := &testinganchors.MockAnchorRepo{}
+	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), idService)
 	return idService, DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
 		return nil
-	})
+	}, anchorRepo)
 }
 
 func TestService_Update(t *testing.T) {
@@ -75,8 +64,8 @@ func TestService_Update(t *testing.T) {
 	data.TotalAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
-		Identifier:  hexutil.Encode(po.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		DocumentId:  hexutil.Encode(po.ID()),
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.Nil(t, err)
@@ -113,7 +102,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{Identifier: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
+	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{DocumentId: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode identifier")
@@ -121,7 +110,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -136,7 +125,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Currency:  "EUR",
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load purchase order from data")
@@ -144,26 +133,29 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// failed core document new version
 	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
 	cs, err := doc.GetCollaborators()
+	assert.NoError(t, err)
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
-	assert.Equal(t, payload.Data, doc.(*PurchaseOrder).getClientData())
+	data, err := doc.(*PurchaseOrder).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, payload.Data, data)
 }
 
 func TestService_DeriveFromCreatePayload(t *testing.T) {
@@ -209,8 +201,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	po, ok := m.(*PurchaseOrder)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, po.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Equal(t, po.TotalAmount.String(), "42")
+	assert.Equal(t, po.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	assert.Equal(t, po.Data.TotalAmount.String(), "42")
 }
 
 func TestService_Create(t *testing.T) {
@@ -275,7 +267,7 @@ func TestService_DerivePurchaseOrderResponse(t *testing.T) {
 	r, err = poSrv.DerivePurchaseOrderResponse(po)
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -286,10 +278,11 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.Nil(t, err)
 
-	data := doc.(*PurchaseOrder).getClientData()
+	data, err := doc.(*PurchaseOrder).getClientData()
+	assert.NoError(t, err)
 	data.Currency = "INR"
 	doc2 := new(PurchaseOrder)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*PurchaseOrder).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := poSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -367,14 +360,16 @@ func TestService_calculateDataRoot(t *testing.T) {
 var testRepoGlobal documents.Repository
 
 func testRepo() documents.Repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-		testRepoGlobal.Register(&PurchaseOrder{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+	testRepoGlobal.Register(&PurchaseOrder{})
 	return testRepoGlobal
 }
 
@@ -392,4 +387,94 @@ func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreD
 	cd, err := po.PackCoreDocument()
 	assert.NoError(t, err)
 	return po, cd
+}
+
+func TestService_CreateModel(t *testing.T) {
+	payload := documents.CreatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// invalid data
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	payload.Data = validData(t)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// success
+	payload.Data = validDataWithCurrency(t)
+	srv.repo = testRepo()
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.CreateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// missing id
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, srvr := getServiceWithMockedLayers()
+	srv = srvr.(service)
+	payload.DocumentID = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// payload invalid
+	po := createPurchaseOrder(t)
+	err = testRepo().Create(did[:], po.ID(), po)
+	assert.NoError(t, err)
+	payload.DocumentID = po.ID()
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	payload.Data = validData(t)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// Success
+	payload.Data = validDataWithCurrency(t)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.UpdateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m.ID(), po.ID())
+	assert.Equal(t, m.CurrentVersion(), po.NextVersion())
+	jm.AssertExpectations(t)
 }

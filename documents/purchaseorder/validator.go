@@ -1,6 +1,7 @@
 package purchaseorder
 
 import (
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 )
@@ -18,7 +19,7 @@ func fieldValidator() documents.Validator {
 		}
 
 		var err error
-		if !documents.IsCurrencyValid(po.Currency) {
+		if !documents.IsCurrencyValid(po.Data.Currency) {
 			err = errors.AppendError(err, documents.NewError("po_currency", "currency is invalid"))
 		}
 
@@ -34,9 +35,9 @@ func CreateValidator() documents.ValidatorGroup {
 }
 
 // UpdateValidator returns a validator group that should be run before updating the purchase order
-func UpdateValidator() documents.ValidatorGroup {
+func UpdateValidator(repo anchors.AnchorRepository) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(),
-		documents.UpdateVersionValidator(),
+		documents.UpdateVersionValidator(repo),
 	}
 }

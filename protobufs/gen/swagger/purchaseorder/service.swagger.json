@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/purchaseorder": {
+    "/v1/purchase_orders": {
       "post": {
         "description": "Creates a purchase order",
         "operationId": "Create",
@@ -42,7 +42,7 @@
         ]
       }
     },
-    "/purchaseorder/{identifier}": {
+    "/v1/purchase_orders/{document_id}": {
       "get": {
         "description": "Get the current version of a purchase order",
         "operationId": "Get",
@@ -56,7 +56,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -79,7 +79,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -98,7 +98,7 @@
         ]
       }
     },
-    "/purchaseorder/{identifier}/{version}": {
+    "/v1/purchase_orders/{document_id}/versions/{version_id}": {
       "get": {
         "description": "Get a specific version of a purchase order",
         "operationId": "GetVersion",
@@ -112,13 +112,13 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "version",
+            "name": "version_id",
             "in": "path",
             "required": true,
             "type": "string"
@@ -131,6 +131,22 @@
     }
   },
   "definitions": {
+    "documentAttribute": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "this is the sha256 hash of the label of the attribute, is not allowed to be updated by the client"
+        },
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "Attribute represents a custom attribute"
+    },
     "documentBinaryAttachment": {
       "type": "object",
       "properties": {
@@ -242,24 +258,13 @@
         }
       }
     },
-    "documentReadAccess": {
-      "type": "object",
-      "properties": {
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "documentResponseHeader": {
       "type": "object",
       "properties": {
         "document_id": {
           "type": "string"
         },
-        "version": {
+        "version_id": {
           "type": "string"
         },
         "author": {
@@ -269,10 +274,16 @@
           "type": "string"
         },
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "job_id": {
           "type": "string"
@@ -281,17 +292,6 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/documentNFT"
-          }
-        }
-      }
-    },
-    "documentWriteAccess": {
-      "type": "object",
-      "properties": {
-        "collaborators": {
-          "type": "array",
-          "items": {
-            "type": "string"
           }
         }
       }
@@ -395,13 +395,26 @@
       "type": "object",
       "properties": {
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
@@ -518,23 +531,43 @@
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },
     "poPurchaseOrderUpdatePayload": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string"
         },
         "read_access": {
-          "$ref": "#/definitions/documentReadAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "write_access": {
-          "$ref": "#/definitions/documentWriteAccess"
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/documentAttribute"
+          },
+          "title": "custom attributes"
         }
       }
     },

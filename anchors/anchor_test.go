@@ -13,14 +13,12 @@ import (
 )
 
 var ctx = map[string]interface{}{}
-var cfg Config
 
 func TestMain(m *testing.M) {
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&config.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(Config)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

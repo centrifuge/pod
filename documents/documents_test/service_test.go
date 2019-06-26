@@ -21,7 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -42,7 +42,7 @@ var ctx = map[string]interface{}{}
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	ibootstrappers := []bootstrap.TestBootstrapper{
@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	srv := documents.DefaultService(nil, nil, documents.NewServiceRegistry(), nil)
+	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil)
 
 	// self failed
 	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
@@ -87,9 +87,9 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 	assert.NoError(t, err)
 	nextAid, err := anchors.ToAnchorID(doc.NextVersion())
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
@@ -107,9 +107,9 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	nextAid, err = anchors.ToAnchorID(doc.NextVersion())
 	assert.NoError(t, err)
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -147,10 +147,10 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	nextAid, err = anchors.ToAnchorID(doc.NextVersion())
 	assert.NoError(t, err)
-	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -162,7 +162,7 @@ func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentit
 	idService := testingcommons.MockIdentityService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
+	return documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
 }
 
 type mockAnchorRepo struct {
@@ -191,7 +191,7 @@ func mockSignatureCheck(t *testing.T, i *invoice.Invoice, idService testingcommo
 	assert.NoError(t, err)
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
-	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
+	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	return idService
 }
 
@@ -242,6 +242,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 func TestService_RequestDocumentSignature(t *testing.T) {
 	srv, _ := getServiceWithMockedLayers()
 
+	mockAnchor.On("GetAnchorData", mock.Anything).Return(nil, nil, errors.New("missing"))
 	// self failed
 	_, err := srv.RequestDocumentSignature(context.Background(), nil, did)
 	assert.Error(t, err)
@@ -263,13 +264,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	ar := new(mockAnchorRepo)
-	docRoot, err := doc.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	dr, err := anchors.ToDocumentRoot(docRoot)
-	assert.NoError(t, err)
-	ar.On("GetDocumentRootOf", mock.Anything).Return(dr, nil)
-	srv = documents.DefaultService(testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
@@ -294,7 +289,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition
-	_, err = srv.RequestDocumentSignature(ctxh, doc, id)
+	_, err = srv.RequestDocumentSignature(ctxh, doc, did)
 	assert.NoError(t, err)
 }
 
@@ -316,7 +311,6 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	var currentVersion []byte
 
 	nonExistingVersion := utils.RandomSlice(32)
-
 	for i := 0; i < amountVersions; i++ {
 
 		var next []byte
@@ -334,16 +328,17 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 
 		ga := new(documents.Decimal)
 		assert.NoError(t, ga.SetString(fmt.Sprint(i+1)))
+		coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+		assert.NoError(t, err)
 		inv := &invoice.Invoice{
-			GrossAmount:  ga,
-			CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+			Data:         invoice.Data{GrossAmount: ga},
+			CoreDocument: coreDoc,
 		}
 
-		err := testRepo().Create(accountID, version, inv)
+		err = testRepo().Create(accountID, version, inv)
 		currentVersion = version
 		version = next
 		assert.Nil(t, err)
-
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
@@ -364,13 +359,15 @@ func TestService_GetVersion_successful(t *testing.T) {
 	}
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		Data:         invoice.Data{GrossAmount: ga},
+		CoreDocument: coreDoc,
 	}
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	err := testRepo().Create(accountID, currentVersion, inv)
+	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
 
 	mod, err := service.GetVersion(ctxh, documentIdentifier, currentVersion)
@@ -396,9 +393,11 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		Data:         invoice.Data{GrossAmount: ga},
+		CoreDocument: coreDoc,
 	}
 
 	err = testRepo().Create(accountID, documentIdentifier, inv)
@@ -406,7 +405,6 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 
 	_, err = service.GetCurrentVersion(ctxh, documentIdentifier)
 	assert.Nil(t, err)
-
 }
 
 func TestService_GetVersion_error(t *testing.T) {
@@ -426,9 +424,11 @@ func TestService_GetVersion_error(t *testing.T) {
 	}
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		Data:         invoice.Data{GrossAmount: ga},
+		CoreDocument: coreDoc,
 	}
 	err = testRepo().Create(accountID, currentVersion, inv)
 	assert.Nil(t, err)
@@ -443,14 +443,16 @@ func TestService_GetVersion_error(t *testing.T) {
 }
 
 func testRepo() documents.Repository {
-	if testRepoGlobal == nil {
-		ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-		if err != nil {
-			panic(err)
-		}
-		testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-		testRepoGlobal.Register(&invoice.Invoice{})
+	if testRepoGlobal != nil {
+		return testRepoGlobal
 	}
+
+	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+	if err != nil {
+		panic(err)
+	}
+	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
+	testRepoGlobal.Register(&invoice.Invoice{})
 	return testRepoGlobal
 }
 
@@ -469,9 +471,11 @@ func TestService_Exists(t *testing.T) {
 	}
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("60"))
+	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
 	inv := &invoice.Invoice{
-		GrossAmount:  ga,
-		CoreDocument: documents.NewCoreDocumentFromProtobuf(cd),
+		Data:         invoice.Data{GrossAmount: ga},
+		CoreDocument: coreDoc,
 	}
 
 	err = testRepo().Create(accountID, documentIdentifier, inv)
@@ -485,6 +489,52 @@ func TestService_Exists(t *testing.T) {
 
 }
 
+func TestService_CreateModel(t *testing.T) {
+	reg := documents.NewServiceRegistry()
+	invSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	invSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
+	err := reg.Register("invoice", invSrv)
+	assert.NoError(t, err)
+	srv := documents.DefaultService(cfg, nil, nil, reg, nil)
+
+	// unknown scheme
+	payload := documents.CreatePayload{Scheme: "invalid_scheme"}
+	_, _, err = srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentSchemeUnknown, err))
+
+	// success
+	payload.Scheme = "invoice"
+	nm, _, err := srv.CreateModel(context.Background(), payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m, nm)
+	invSrv.AssertExpectations(t)
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	reg := documents.NewServiceRegistry()
+	invSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	invSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
+	err := reg.Register("invoice", invSrv)
+	assert.NoError(t, err)
+	srv := documents.DefaultService(cfg, nil, nil, reg, nil)
+
+	// unknown scheme
+	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Scheme: "unknown_service"}}
+	_, _, err = srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentSchemeUnknown, err))
+
+	// success
+	payload.Scheme = "invoice"
+	nm, _, err := srv.UpdateModel(context.Background(), payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m, nm)
+	invSrv.AssertExpectations(t)
+}
+
 func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborators []identity.DID, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(invoice.Invoice)
 	data := testingdocuments.CreateInvoicePayload()
@@ -493,7 +543,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 		for _, c := range collaborators {
 			cs = append(cs, c.String())
 		}
-		data.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
+		data.WriteAccess = cs
 	}
 
 	err := i.InitInvoiceInput(data, did)

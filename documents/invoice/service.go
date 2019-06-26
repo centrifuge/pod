@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -38,6 +39,7 @@ type service struct {
 	queueSrv       queue.TaskQueuer
 	jobManager     jobs.Manager
 	tokenRegFinder func() documents.TokenRegistry
+	anchorRepo     anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service.
@@ -47,6 +49,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
 	tokenRegFinder func() documents.TokenRegistry,
+	anchorRepo anchors.AnchorRepository,
 ) Service {
 	return service{
 		repo:           repo,
@@ -54,6 +57,7 @@ func DefaultService(
 		jobManager:     jobManager,
 		Service:        srv,
 		tokenRegFinder: tokenRegFinder,
+		anchorRepo:     anchorRepo,
 	}
 }
 
@@ -127,12 +131,12 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, inv.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, inv.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return inv, txID, done, nil
+	return inv, jobID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -147,17 +151,17 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.anchorRepo))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return new, txID, done, nil
+	return new, jobID, done, nil
 }
 
 // DeriveInvoiceResponse returns create response from invoice model
@@ -172,9 +176,15 @@ func (s service) DeriveInvoiceResponse(model documents.Model) (*clientinvoicepb.
 		return nil, errors.New("failed to derive response: %v", err)
 	}
 
+	attrs, err := documents.ToClientAttributes(model.GetAttributes())
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientinvoicepb.InvoiceResponse{
-		Header: h,
-		Data:   data,
+		Header:     h,
+		Data:       data,
+		Attributes: attrs,
 	}, nil
 
 }
@@ -186,7 +196,7 @@ func (s service) DeriveInvoiceData(doc documents.Model) (*clientinvoicepb.Invoic
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return inv.getClientData(), nil
+	return inv.getClientData()
 }
 
 // DeriveFromUpdatePayload returns a new version of the old invoice identified by identifier in payload
@@ -196,7 +206,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 	}
 
 	// get latest old version of the document
-	id, err := hexutil.Decode(payload.Identifier)
+	id, err := hexutil.Decode(payload.DocumentId)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
 	}
@@ -211,10 +221,90 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientinv
 		return nil, err
 	}
 
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	inv := new(Invoice)
-	if err := inv.PrepareNewVersion(old, payload.Data, cs); err != nil {
+	if err := inv.PrepareNewVersion(old, payload.Data, cs, attrs); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentPrepareCoreDocument, errors.New("failed to load invoice from data: %v", err))
 	}
 
 	return inv, nil
+}
+
+// CreateModel creates invoice from the payload, validates, persists, and returns the invoice.
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+	if payload.Data == nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	inv := new(Invoice)
+	if err := inv.unpackFromCreatePayload(did, payload); err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// validate invoice
+	err = CreateValidator().Validate(nil, inv)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(did[:], inv.CurrentVersion(), inv)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, inv.CurrentVersion())
+	return inv, jobID, err
+}
+
+// UpdateModel updates the migrates the current invoice to next version with data from the update payload
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+	if payload.Data == nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	oldInv, ok := old.(*Invoice)
+	if !ok {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.DocumentID)))
+	}
+
+	inv := new(Invoice)
+	err = inv.unpackFromUpdatePayload(oldInv, payload)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = UpdateValidator(s.anchorRepo).Validate(old, inv)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = s.repo.Create(did[:], inv.CurrentVersion(), inv)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, inv.CurrentVersion())
+	return inv, jobID, err
 }

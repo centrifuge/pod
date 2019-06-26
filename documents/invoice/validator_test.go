@@ -35,7 +35,9 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 	// success
 	err = fv.Validate(nil, &Invoice{
-		Currency: "EUR",
+		Data: Data{
+			Currency: "EUR",
+		},
 	})
 	assert.Nil(t, err)
 }
@@ -46,6 +48,6 @@ func TestCreateValidator(t *testing.T) {
 }
 
 func TestUpdateValidator(t *testing.T) {
-	uv := UpdateValidator()
+	uv := UpdateValidator(nil)
 	assert.Len(t, uv, 2)
 }

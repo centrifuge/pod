@@ -77,7 +77,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialized")
 	}
@@ -91,6 +91,11 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		})
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)
+	if err != nil {
+		return errors.New("failed to register entity service: %v", err)
+	}
+
+	err = registry.Register(scheme, srv)
 	if err != nil {
 		return errors.New("failed to register entity service: %v", err)
 	}

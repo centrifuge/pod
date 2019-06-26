@@ -7,72 +7,14 @@ option java_multiple_files = true;
 option java_outer_classname = "ServiceProto";
 option java_package = "com.document";
 
-import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "precise-proofs/proofs/proto/proof.proto";
-import "protoc-gen-swagger/options/annotations.proto";
-
-// DocumentService contains common interactions for all documents
-service DocumentService {
-  rpc CreateDocumentProof(CreateDocumentProofRequest) returns (DocumentProof) {
-    option (google.api.http) = {
-      post: "/document/{identifier}/proof"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates a list of precise proofs for the specified fields of the document given by ID"
-    };
-  }
-  rpc CreateDocumentProofForVersion(CreateDocumentProofForVersionRequest) returns (DocumentProof) {
-    option (google.api.http) = {
-      post: "/document/{identifier}/{version}/proof"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates a list of precise proofs for the specified fields of the given version of the document given by ID"
-    };
-  }
-}
 
 message AccessTokenParams {
   // The identity being granted access to the document
   string grantee = 4;
   // Original identifier of the document
   string document_identifier = 2;
-}
-
-message CreateDocumentProofRequest {
-  string identifier = 1;
-  string type = 2;
-  repeated string fields = 3;
-}
-
-// ResponseHeader contains a set of common fields for most documents
-message ProofResponseHeader {
-  string document_id = 1;
-  string version_id = 2;
-  string state = 3;
-}
-
-message DocumentProof {
-  ProofResponseHeader header = 1;
-  repeated Proof field_proofs = 2;
-}
-
-message Proof {
-  string property = 1;
-  string value = 2;
-  string salt = 3;
-  // hash is filled if value & salt are not available
-  string hash = 4;
-  repeated string sorted_hashes = 5;
-}
-
-message CreateDocumentProofForVersionRequest {
-  string identifier = 1;
-  string type = 2;
-  string version = 3;
-  repeated string fields = 4;
 }
 
 message BinaryAttachment {
@@ -116,16 +58,8 @@ message PaymentDetails {
 }
 
 message RequestHeader {
-  ReadAccess read_access = 1;
-  WriteAccess write_access = 2;
-}
-
-message ReadAccess {
-  repeated string collaborators = 1;
-}
-
-message WriteAccess {
-  repeated string collaborators = 1;
+  repeated string read_access = 1;
+  repeated string write_access = 2;
 }
 
 message Signature {
@@ -152,11 +86,19 @@ message AccessToken {
 
 message ResponseHeader {
   string document_id = 1;
-  string version = 2;
+  string version_id = 2;
   string author = 3;
   string created_at = 4;
-  ReadAccess read_access = 5;
-  WriteAccess write_access = 6;
+  repeated string read_access = 5;
+  repeated string write_access = 6;
   string job_id = 7;
   repeated NFT nfts = 8;
+}
+
+// Attribute represents a custom attribute
+message Attribute {
+  // this is the sha256 hash of the label of the attribute, is not allowed to be updated by the client
+  string key = 1;
+  string type = 2;
+  string value = 3;
 }

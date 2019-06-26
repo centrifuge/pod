@@ -2,6 +2,7 @@ package invoice
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -51,6 +52,11 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
+	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	if !ok {
+		return anchors.ErrAnchorRepoNotInitialised
+	}
+
 	// register service
 	srv := DefaultService(
 		docSrv,
@@ -61,9 +67,14 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 				panic("token registry initialisation error")
 			}
 			return tokenRegistry
-		})
+		}, anchorRepo)
 
 	err := registry.Register(documenttypes.InvoiceDataTypeUrl, srv)
+	if err != nil {
+		return errors.New("failed to register invoice service: %v", err)
+	}
+
+	err = registry.Register(scheme, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
 	}

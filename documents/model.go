@@ -44,6 +44,10 @@ type Model interface {
 	// DocumentType returns the type of the document
 	DocumentType() string
 
+	// Scheme returns the scheme of the document data.
+	// TODO(ved): remove once the DocumentType is not used anymore.
+	Scheme() string
+
 	// CalculateDataRoot calculates the data root of the model.
 	CalculateDataRoot() ([]byte, error)
 
@@ -100,7 +104,7 @@ type Model interface {
 	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
-	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.ServiceDID, tokenID, docID []byte, grantee identity.DID) (err error)
+	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.Service, tokenID, docID []byte, grantee identity.DID) (err error)
 
 	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
 	AddUpdateLog(account identity.DID) error
@@ -117,17 +121,32 @@ type Model interface {
 	// IsDIDCollaborator returns true if the did is a collaborator of the document
 	IsDIDCollaborator(did identity.DID) (bool, error)
 
-	// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-	AddAttribute(name string, attributeType AllowedAttributeType, value string) error
+	// AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
+	AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, attrs ...Attribute) error
 
 	// GetAttribute gets the attribute with the given name from the model, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-	GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error)
+	GetAttribute(key AttrKey) (Attribute, error)
+
+	// GetAttributes returns all the attributes in the current document
+	GetAttributes() []Attribute
 
 	// DeleteAttribute deletes a custom attribute from the model
-	DeleteAttribute(name string) error
+	DeleteAttribute(key AttrKey, prepareNewVersion bool) error
+
+	// AttributeExists checks if the attribute with the key exists
+	AttributeExists(key AttrKey) bool
 
 	// GetAccessTokens returns the access tokens of a core document
 	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
+
+	// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
+	SetUsedAnchorRepoAddress(addr common.Address)
+
+	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
+	AnchorRepoAddress() common.Address
+
+	// GetData returns the document data. Ex: invoice.Data
+	GetData() interface{}
 }
 
 // TokenRegistry defines NFT related functions.
@@ -137,4 +156,18 @@ type TokenRegistry interface {
 
 	// CurrentIndexOfToken get the current index of the token
 	CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error)
+}
+
+// CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.
+type CreatePayload struct {
+	Scheme        string
+	Collaborators CollaboratorsAccess
+	Attributes    map[AttrKey]Attribute
+	Data          []byte
+}
+
+// UpdatePayload holds the scheme, CollaboratorsAccess, Attributes, Data and document identifier.
+type UpdatePayload struct {
+	CreatePayload
+	DocumentID []byte
 }

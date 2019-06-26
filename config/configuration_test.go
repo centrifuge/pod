@@ -50,5 +50,9 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotContains(t, string(bfile), "key: \"{}\"")
 	assert.NotContains(t, string(bfile), "password: \"pwrd\"")
+
+	cfg := c.(*configuration)
+	assert.NotNil(t, cfg.GetP2PResponseDelay())
+
 	assert.NoError(t, os.RemoveAll(targetDir))
 }

@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
-
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/satori/go.uuid"
@@ -34,6 +32,9 @@ const (
 
 	// BootstrappedService is the key to mapped jobs.JobManager
 	BootstrappedService = "BootstrappedService"
+
+	// JobDataTypeURL is the type of the job data
+	JobDataTypeURL = "http://github.com/centrifuge/go-centrifuge/jobs/#Job"
 )
 
 // Log represents a single task in a job.
@@ -83,6 +84,10 @@ func NilJobID() JobID {
 
 // String marshals a JobID to its hex string form
 func (t JobID) String() string {
+	if uuid.UUID(t) == uuid.Nil {
+		return ""
+	}
+
 	return hexutil.Encode(t[:])
 }
 
@@ -153,6 +158,14 @@ type JobValue struct {
 	Value  []byte
 }
 
+// StatusResponse holds the job status details.
+type StatusResponse struct {
+	JobID       string    `json:"job_id"`
+	Status      string    `json:"status"`
+	Message     string    `json:"message"`
+	LastUpdated time.Time `json:"last_updated" swaggertype:"primitive,string"`
+}
+
 // Config is the config interface for jobs package
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
@@ -165,7 +178,7 @@ type Manager interface {
 	GetJob(accountID identity.DID, id JobID) (*Job, error)
 	UpdateJobWithValue(accountID identity.DID, id JobID, key string, value []byte) error
 	UpdateTaskStatus(accountID identity.DID, id JobID, status Status, taskName, message string) error
-	GetJobStatus(accountID identity.DID, id JobID) (*jobspb.JobStatusResponse, error)
+	GetJobStatus(accountID identity.DID, id JobID) (StatusResponse, error)
 	WaitForJob(accountID identity.DID, txID JobID) error
 	GetDefaultTaskTimeout() time.Duration
 }

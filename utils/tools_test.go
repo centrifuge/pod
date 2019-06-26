@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -112,7 +111,7 @@ func TestByte32ToSlice(t *testing.T) {
 func TestSliceToByte32(t *testing.T) {
 	exp := [32]byte{}
 	act := [32]byte{}
-	tst := []byte{}
+	var tst []byte
 
 	tst = []byte("12345678901234567890123456789032")
 	copy(exp[:], tst[:32])
@@ -294,4 +293,13 @@ func TestRandomBigInt(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInRange(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		n := InRange(i, 0, 10)
+		assert.True(t, n)
+	}
+	n := 5
+	assert.False(t, InRange(n, 6, 10))
 }

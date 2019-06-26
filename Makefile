@@ -40,7 +40,7 @@ install-deps: ## Install Dependencies
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
 lint-check: ## runs linters on go code
-	@gometalinter --exclude=anchors/service.go --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
 	--enable=staticcheck --vendor --skip=resources --skip=testingutils --skip=protobufs  --deadline=1m ./...;
 
 format-go: ## formats go code
@@ -54,8 +54,12 @@ proto-gen-go: ## generates the go bindings
 
 proto-all: ## runs prototool all
 	$(PROTOTOOL_BIN) all protobufs
+	@goimports -w ./protobufs/gen/
 
 gen-swagger: ## generates the swagger documentation
+	swag init -g ./httpapi/router.go -o ./protobufs/gen/swagger/api
+	rm -rf ./protobufs/gen/swagger/api/docs.go ./protobufs/gen/swagger/api/swagger.yaml
+	mv ./protobufs/gen/swagger/api/swagger.json ./protobufs/gen/swagger/api/api.swagger.json
 	npm --prefix ./build run build_swagger
 
 generate: ## autogenerate go files for config
@@ -67,6 +71,7 @@ vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
 	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 	go-vendorinstall golang.org/x/tools/cmd/goimports
+	go-vendorinstall github.com/swaggo/swag/cmd/swag
 	go get -u github.com/jteeuwen/go-bindata/...
 
 abigen-install: ## Installs ABIGEN from vendor

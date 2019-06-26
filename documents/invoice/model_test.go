@@ -24,11 +24,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -47,7 +45,7 @@ var configService config.Service
 var defaultDID = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
-	ethClient := &testingcommons.MockEthClient{}
+	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	jobMan := &testingjobs.MockJobManager{}
@@ -71,7 +69,7 @@ func TestMain(m *testing.M) {
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("identityId", cid.String())
+	cfg.Set("identityId", did.String())
 	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
@@ -138,7 +136,11 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	inv, cd := createCDWithEmbeddedInvoice(t)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
-	assert.Equal(t, model.getClientData(), inv.(*Invoice).getClientData())
+	d, err := model.getClientData()
+	assert.NoError(t, err)
+	d1, err := inv.(*Invoice).getClientData()
+	assert.NoError(t, err)
+	assert.Equal(t, d, d1)
 	assert.Equal(t, model.ID(), inv.ID())
 	assert.Equal(t, model.CurrentVersion(), inv.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), inv.PreviousVersion())
@@ -147,15 +149,17 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 func TestInvoiceModel_getClientData(t *testing.T) {
 	invData := testingdocuments.CreateInvoiceData()
 	inv := new(Invoice)
+	inv.CoreDocument = new(documents.CoreDocument)
 	err := inv.loadFromP2PProtobuf(&invData)
 	assert.NoError(t, err)
 
-	data := inv.getClientData()
+	data, err := inv.getClientData()
+	assert.NoError(t, err)
 	assert.NotNil(t, data, "invoice data should not be nil")
 	assert.Equal(t, data.GrossAmount, data.GrossAmount, "gross amount must match")
-	assert.Equal(t, data.Recipient, inv.Recipient.String(), "recipient should match")
-	assert.Equal(t, data.Sender, inv.Sender.String(), "sender should match")
-	assert.Equal(t, data.Payee, inv.Payee.String(), "payee should match")
+	assert.Equal(t, data.Recipient, inv.Data.Recipient.String(), "recipient should match")
+	assert.Equal(t, data.Sender, inv.Data.Sender.String(), "sender should match")
+	assert.Equal(t, data.Payee, inv.Data.Payee.String(), "payee should match")
 }
 
 func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
@@ -171,36 +175,37 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Error(t, err, "must return err")
 	assert.Contains(t, err.Error(), "malformed address provided")
-	assert.Nil(t, inv.Recipient)
-	assert.Nil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.Nil(t, inv.Data.Recipient)
+	assert.Nil(t, inv.Data.Sender)
+	assert.Nil(t, inv.Data.Payee)
 
 	recipientDID := testingidentity.GenerateRandomDID()
 	data.Recipient = recipientDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.Recipient)
-	assert.Nil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.NotNil(t, inv.Data.Recipient)
+	assert.Nil(t, inv.Data.Sender)
+	assert.Nil(t, inv.Data.Payee)
 
 	senderDID := testingidentity.GenerateRandomDID()
 	data.Sender = senderDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.Recipient)
-	assert.NotNil(t, inv.Sender)
-	assert.Nil(t, inv.Payee)
+	assert.NotNil(t, inv.Data.Recipient)
+	assert.NotNil(t, inv.Data.Sender)
+	assert.Nil(t, inv.Data.Payee)
 
 	payeeDID := testingidentity.GenerateRandomDID()
 	data.Payee = payeeDID.String()
 	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data}, did)
 	assert.Nil(t, err)
-	assert.NotNil(t, inv.Recipient)
-	assert.NotNil(t, inv.Sender)
-	assert.NotNil(t, inv.Payee)
+	assert.NotNil(t, inv.Data.Recipient)
+	assert.NotNil(t, inv.Data.Sender)
+	assert.NotNil(t, inv.Data.Payee)
 
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: collabs}, did)
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
 	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
@@ -208,11 +213,11 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Nil(t, err, "must be nil")
-	assert.Equal(t, inv.Sender[:], senderDID[:])
-	assert.Equal(t, inv.Payee[:], payeeDID[:])
-	assert.Equal(t, inv.Recipient[:], recipientDID[:])
+	assert.Equal(t, inv.Data.Sender[:], senderDID[:])
+	assert.Equal(t, inv.Data.Payee[:], payeeDID[:])
+	assert.Equal(t, inv.Data.Recipient[:], recipientDID[:])
 }
 
 func TestInvoiceModel_calculateDataRoot(t *testing.T) {
@@ -281,7 +286,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	invPayload := testingdocuments.CreateInvoicePayload()
 	invPayload.Data.DateDue = &timestamp.Timestamp{Seconds: time.Now().Unix()}
 	invPayload.Data.Status = "unpaid"
-	invPayload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{defaultDID.String()}}
+	invPayload.WriteAccess = []string{defaultDID.String()}
 	err = i.InitInvoiceInput(invPayload, defaultDID)
 	assert.NoError(t, err)
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
@@ -345,15 +350,15 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("2"))
 	i := createInvoice(t)
-	i.Number = "321321"
-	i.NetAmount = na
-	i.GrossAmount = ga
+	i.Data.Number = "321321"
+	i.Data.NetAmount = na
+	i.Data.GrossAmount = ga
 	tree, err := i.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("invoice.number")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "invoice.number", leaf.Property.ReadableName())
-	assert.Equal(t, []byte(i.Number), leaf.Value)
+	assert.Equal(t, []byte(i.Data.Number), leaf.Value)
 }
 
 func createInvoice(t *testing.T) *Invoice {
@@ -396,11 +401,12 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], inv.CurrentVersion())
 	assert.NoError(t, err)
 	oldInv := model.(*Invoice)
-	data := oldInv.getClientData()
+	data, err := oldInv.getClientData()
+	assert.NoError(t, err)
 	data.GrossAmount = "50"
 	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
-	})
+	}, oldInv.Attributes)
 	assert.NoError(t, err)
 
 	_, err = inv.CalculateDataRoot()
@@ -427,10 +433,11 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], inv.CurrentVersion())
 	assert.NoError(t, err)
 	oldInv = model.(*Invoice)
-	data = oldInv.getClientData()
+	data, err = oldInv.getClientData()
+	assert.NoError(t, err)
 	data.GrossAmount = "55"
 	data.Currency = "INR"
-	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{})
+	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{}, oldInv.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -444,4 +451,270 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
 	assert.Contains(t, err.Error(), "invoice.currency")
+}
+
+func TestInvoice_AddAttributes(t *testing.T) {
+	inv, _ := createCDWithEmbeddedInvoice(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// success
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.NoError(t, err)
+	assert.True(t, inv.AttributeExists(attr.Key))
+	gattr, err := inv.GetAttribute(attr.Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, gattr)
+
+	// fail
+	attr.Value.Type = documents.AttributeType("some attr")
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+}
+
+func TestInvoice_DeleteAttribute(t *testing.T) {
+	inv, _ := createCDWithEmbeddedInvoice(t)
+	label := "some key"
+	value := "some value"
+	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	assert.NoError(t, err)
+
+	// failed
+	err = inv.DeleteAttribute(attr.Key, true)
+	assert.Error(t, err)
+
+	// success
+	assert.NoError(t, inv.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
+	assert.True(t, inv.AttributeExists(attr.Key))
+	assert.NoError(t, inv.DeleteAttribute(attr.Key, true))
+	assert.False(t, inv.AttributeExists(attr.Key))
+}
+
+func TestInvoice_GetData(t *testing.T) {
+	inv := createInvoice(t)
+	data := inv.GetData()
+	assert.Equal(t, inv.Data, data)
+}
+
+func marshallData(t *testing.T, m map[string]interface{}) []byte {
+	data, err := json.Marshal(m)
+	assert.NoError(t, err)
+	return data
+}
+
+func emptyDecimalData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"gross_amount": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidDecimalData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"gross_amount": "10.10.",
+	}
+
+	return marshallData(t, d)
+}
+
+func emptyDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"recipient": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidDIDData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"recipient": "1acdew123asdefres",
+	}
+
+	return marshallData(t, d)
+}
+
+func emptyTimeData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"date_due": "",
+	}
+
+	return marshallData(t, d)
+}
+
+func invalidTimeData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"date_due": "1920-12-10",
+	}
+
+	return marshallData(t, d)
+}
+
+func validData(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"number":       "12345",
+		"status":       "unpaid",
+		"gross_amount": "12.345",
+		"recipient":    "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"date_due":     "2019-05-24T14:48:44.308854Z", // rfc3339nano
+		"date_paid":    "2019-05-24T14:48:44Z",        // rfc3339
+		"attachments": []map[string]interface{}{
+			{
+				"name":      "test",
+				"file_type": "pdf",
+				"size":      1000202,
+				"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func validDataWithCurrency(t *testing.T) []byte {
+	d := map[string]interface{}{
+		"number":       "12345",
+		"status":       "unpaid",
+		"gross_amount": "12.345",
+		"recipient":    "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+		"date_due":     "2019-05-24T14:48:44.308854Z", // rfc3339nano
+		"date_paid":    "2019-05-24T14:48:44Z",        // rfc3339
+		"currency":     "EUR",
+		"attachments": []map[string]interface{}{
+			{
+				"name":      "test",
+				"file_type": "pdf",
+				"size":      1000202,
+				"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
+				"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
+			},
+		},
+	}
+
+	return marshallData(t, d)
+}
+
+func checkInvoicePayloadDataError(t *testing.T, inv *Invoice, payload documents.CreatePayload) {
+	err := inv.loadData(payload.Data)
+	assert.Error(t, err)
+}
+
+func TestInvoice_loadData(t *testing.T) {
+	inv := new(Invoice)
+	payload := documents.CreatePayload{}
+
+	// empty decimal data
+	payload.Data = emptyDecimalData(t)
+	checkInvoicePayloadDataError(t, inv, payload)
+
+	// invalid decimal data
+	payload.Data = invalidDecimalData(t)
+	checkInvoicePayloadDataError(t, inv, payload)
+
+	// empty did data
+	payload.Data = emptyDIDData(t)
+	checkInvoicePayloadDataError(t, inv, payload)
+
+	// invalid did data
+	payload.Data = invalidDIDData(t)
+	checkInvoicePayloadDataError(t, inv, payload)
+
+	// empty time data
+	payload.Data = emptyTimeData(t)
+	checkInvoicePayloadDataError(t, inv, payload)
+
+	// invalid time data
+	payload.Data = invalidTimeData(t)
+	checkInvoicePayloadDataError(t, inv, payload)
+
+	// valid data
+	payload.Data = validData(t)
+	err := inv.loadData(payload.Data)
+	assert.NoError(t, err)
+	data := inv.GetData().(Data)
+	assert.Equal(t, data.Number, "12345")
+	assert.Equal(t, data.Status, "unpaid")
+	assert.Equal(t, data.GrossAmount.String(), "12.345")
+	assert.Equal(t, data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.Equal(t, data.DateDue.UTC().Format(time.RFC3339Nano), "2019-05-24T14:48:44.308854Z")
+	assert.Equal(t, data.DatePaid.UTC().Format(time.RFC3339), "2019-05-24T14:48:44Z")
+	assert.Len(t, data.Attachments, 1)
+	assert.Equal(t, data.Attachments[0].Name, "test")
+	assert.Equal(t, data.Attachments[0].FileType, "pdf")
+	assert.Equal(t, data.Attachments[0].Size, 1000202)
+	assert.Equal(t, hexutil.Encode(data.Attachments[0].Checksum), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf3")
+	assert.Equal(t, hexutil.Encode(data.Attachments[0].Data), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
+}
+
+func TestInvoice_unpackFromCreatePayload(t *testing.T) {
+	payload := documents.CreatePayload{}
+	inv := new(Invoice)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := inv.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = inv.unpackFromCreatePayload(did, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = inv.unpackFromCreatePayload(did, payload)
+	assert.NoError(t, err)
+}
+
+func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	old := createInvoice(t)
+	inv := new(Invoice)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := inv.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	err = inv.unpackFromUpdatePayload(old, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = inv.unpackFromUpdatePayload(old, payload)
+	assert.NoError(t, err)
 }

@@ -7,10 +7,12 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Config defines required methods required for the documents package.
@@ -18,11 +20,12 @@ type Config interface {
 	GetNetworkID() uint32
 	GetIdentityID() ([]byte, error)
 	GetP2PConnectionTimeout() time.Duration
+	GetContractAddress(contractName config.ContractName) common.Address
 }
 
 // DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
 type DocumentRequestProcessor interface {
-	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, entityIdentifier, entityRelationIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
+	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
 }
 
 // Client defines methods that can be implemented by any type handling p2p communications.
@@ -40,14 +43,14 @@ type Client interface {
 
 // defaultProcessor implements AnchorProcessor interface
 type defaultProcessor struct {
-	identityService  identity.ServiceDID
+	identityService  identity.Service
 	p2pClient        Client
 	anchorRepository anchors.AnchorRepository
 	config           Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.ServiceDID, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
+func DefaultProcessor(idService identity.Service, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
 	return defaultProcessor{
 		identityService:  idService,
 		p2pClient:        p2pClient,
@@ -92,10 +95,14 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	if err != nil {
 		return err
 	}
+
 	err = model.AddUpdateLog(did)
 	if err != nil {
 		return err
 	}
+
+	addr := dp.config.GetContractAddress(config.AnchorRepo)
+	model.SetUsedAnchorRepoAddress(addr)
 
 	// calculate the signing root
 	sr, err := model.CalculateSigningRoot()
@@ -109,14 +116,13 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	}
 
 	model.AppendSignatures(sig)
-
 	return nil
 }
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
 func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
-	psv := SignatureValidator(dp.identityService)
+	psv := SignatureValidator(dp.identityService, dp.anchorRepository)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)
@@ -134,7 +140,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
-	psv := SignatureValidator(dp.identityService)
+	psv := SignatureValidator(dp.identityService, dp.anchorRepository)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate signatures: %v", err)
@@ -162,9 +168,11 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 
 	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
 	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
+	if err != nil {
+		return err
+	}
 
 	isDone := <-done
-
 	if !isDone {
 		return errors.New("failed to pre-commit anchor: %v", err)
 	}
@@ -175,7 +183,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
-	pav := PreAnchorValidator(dp.identityService)
+	pav := PreAnchorValidator(dp.identityService, dp.anchorRepository)
 	err := pav.Validate(nil, model)
 	if err != nil {
 		return errors.New("pre anchor validation failed: %v", err)

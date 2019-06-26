@@ -32,7 +32,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document service not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}
@@ -48,7 +48,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	InvoiceUnpaid := newEthInvoiceUnpaid(
+	invoiceUnpaid := newService(
 		cfg,
 		idService,
 		client,
@@ -63,6 +63,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = InvoiceUnpaid
+	ctx[bootstrap.BootstrappedInvoiceUnpaid] = invoiceUnpaid
 	return nil
 }

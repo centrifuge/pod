@@ -25,7 +25,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.New("identity factory service not initialised")
 	}
-	idService, ok := context[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService, ok := context[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}

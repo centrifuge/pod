@@ -4,7 +4,12 @@ package testworld
 
 import (
 	"net/http"
+	"strings"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
@@ -73,8 +78,18 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(bob.httpExpect, a, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
+	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
+	// account a completes job with a webhook
+	msg, err := doctorFord.maeve.getReceivedMsg(a, int(notification.JobCompleted), txID)
+	assert.NoError(t, err)
+	assert.Equal(t, string(jobs.Success), msg.Status)
+
+	// account b sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromId))
+	log.Debug("Host test success")
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// b updates invoice and shares with c as well
@@ -90,9 +105,13 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getDocumentAndCheck(bob.httpExpect, a, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, c, documentType, params)
+	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, c, documentType, params, true)
+	// account c sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromId))
 }
 
 func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType string) {
@@ -125,9 +144,18 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
-	getDocumentAndCheck(bob.httpExpect, a, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
+	// alices main account completes job with a webhook
+	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
+	assert.NoError(t, err)
+	assert.Equal(t, string(jobs.Success), msg.Status)
+
+	// bobs account b sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
@@ -143,13 +171,13 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
 	// bobs accounts all have the document now
-	getDocumentAndCheck(bob.httpExpect, a, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, b, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, c, documentType, params)
-	getDocumentAndCheck(charlie.httpExpect, d, documentType, params)
-	getDocumentAndCheck(charlie.httpExpect, e, documentType, params)
+	getDocumentAndCheck(t, bob.httpExpect, a, documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, b, documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, c, documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, d, documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, e, documentType, params, true)
 	nonExistingDocumentCheck(charlie.httpExpect, f, documentType, params)
 }
 
@@ -175,8 +203,8 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
@@ -192,9 +220,9 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 		t.Error("docIdentifier empty")
 	}
 	params["currency"] = "EUR"
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), documentType, params)
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, params)
-	getDocumentAndCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, params, true)
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
@@ -225,8 +253,8 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(kenny.httpExpect, kenny.id.String(), documentType, paramsV1)
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, paramsV1)
+	getDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, paramsV1, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, paramsV1, true)
 
 	// Kenny gets killed
 	kenny.host.kill()
@@ -247,12 +275,22 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 		"document_id": docIdentifier,
 		"currency":    "EUR",
 	}
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), documentType, paramsV2)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, paramsV2, true)
 
 	// bring Kenny back to life
 	doctorFord.reLive(t, kenny.name)
 
 	// Kenny should NOT have latest version
-	getDocumentAndCheck(kenny.httpExpect, kenny.id.String(), documentType, paramsV1)
+	getDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, paramsV1, true)
 
+}
+
+func TestDocument_invalidAttributes(t *testing.T) {
+	kenny := doctorFord.getHostTestSuite(t, "Kenny")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	// Kenny shares a document with Bob
+	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusInternalServerError, wrongInvoicePayload([]string{bob.id.String()}))
+	errMsg := response.Raw()["error"].(string)
+	assert.Contains(t, errMsg, "model attribute error")
 }

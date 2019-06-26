@@ -2,9 +2,9 @@ package receiver
 
 import (
 	"context"
+	"time"
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/code"
@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-peer"
@@ -27,7 +28,7 @@ type Handler struct {
 	handshakeValidator ValidatorGroup
 	docSrv             documents.Service
 	tokenRegistry      documents.TokenRegistry
-	srvDID             identity.ServiceDID
+	srvDID             identity.Service
 }
 
 // New returns an implementation of P2PServiceServer
@@ -36,7 +37,7 @@ func New(
 	handshakeValidator ValidatorGroup,
 	docSrv documents.Service,
 	tokenRegistry documents.TokenRegistry,
-	srvDID identity.ServiceDID) *Handler {
+	srvDID identity.Service) *Handler {
 	return &Handler{
 		config:             config,
 		handshakeValidator: handshakeValidator,
@@ -48,6 +49,12 @@ func New(
 
 // HandleInterceptor acts as main entry point for all message types, routes the request to the correct handler
 func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error) {
+	cfg, err := srv.config.GetConfig()
+	if err != nil {
+		return srv.convertToErrorEnvelop(err)
+	}
+	defer timeutils.EnsureDelayOperation(time.Now(), cfg.GetP2PResponseDelay())
+
 	if msg == nil {
 		return srv.convertToErrorEnvelop(errors.New("nil payload provided"))
 	}
@@ -56,12 +63,12 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	DID, err := p2pcommon.ExtractDID(protoc)
+	did, err := p2pcommon.ExtractDID(protoc)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	tc, err := srv.config.GetAccount(DID[:])
+	tc, err := srv.config.GetAccount(did[:])
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -201,12 +208,12 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	requesterCentID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	requesterDID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	res, err := srv.GetDocument(ctx, m, requesterCentID)
+	res, err := srv.GetDocument(ctx, m, requesterDID)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -43,6 +44,7 @@ type service struct {
 	queueSrv   queue.TaskQueuer
 	jobManager jobs.Manager
 	factory    identity.Factory
+	anchorRepo anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service.
@@ -52,6 +54,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
 	factory identity.Factory,
+	anchorRepo anchors.AnchorRepository,
 ) Service {
 	return service{
 		repo:       repo,
@@ -59,6 +62,7 @@ func DefaultService(
 		jobManager: jobManager,
 		Service:    srv,
 		factory:    factory,
+		anchorRepo: anchorRepo,
 	}
 }
 
@@ -88,9 +92,9 @@ func (s service) DeriveFromCreatePayload(ctx context.Context, payload *entitypb.
 	rd := &entitypb.RelationshipData{
 		OwnerIdentity:    owner,
 		TargetIdentity:   payload.TargetIdentity,
-		EntityIdentifier: payload.Identifier,
+		EntityIdentifier: payload.DocumentId,
 	}
-	if err = er.InitEntityRelationshipInput(ctx, payload.Identifier, rd); err != nil {
+	if err = er.InitEntityRelationshipInput(ctx, payload.DocumentId, rd); err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
@@ -137,12 +141,12 @@ func (s service) Create(ctx context.Context, relationship documents.Model) (docu
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, relationship.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, relationship.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return relationship, txID, done, nil
+	return relationship, jobID, done, nil
 }
 
 // Update finds the old document, validates the new version and persists the updated document
@@ -158,17 +162,17 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory))
+	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory, s.anchorRepo))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, updated.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, updated.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return updated, txID, done, nil
+	return updated, jobID, done, nil
 }
 
 // DeriveEntityRelationshipResponse returns create response from entity relationship model
@@ -180,7 +184,7 @@ func (s service) DeriveEntityRelationshipResponse(model documents.Model) (*entit
 
 	h := &documentpb.ResponseHeader{
 		DocumentId: hexutil.Encode(model.ID()),
-		Version:    hexutil.Encode(model.CurrentVersion()),
+		VersionId:  hexutil.Encode(model.CurrentVersion()),
 	}
 
 	return &entitypb.RelationshipResponse{
@@ -206,7 +210,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, documents.ErrPayloadNil
 	}
 
-	eID, err := hexutil.Decode(payload.Identifier)
+	eID, err := hexutil.Decode(payload.DocumentId)
 	if err != nil {
 		return nil, err
 	}
@@ -236,9 +240,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	r.(*EntityRelationship).Document = cd.Document
-	r.(*EntityRelationship).Modified = cd.Modified
-
+	r.(*EntityRelationship).CoreDocument = cd
 	return r, nil
 }
 

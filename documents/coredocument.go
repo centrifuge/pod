@@ -3,6 +3,7 @@ package documents
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/ptypes/any"
 )
 
@@ -56,20 +58,28 @@ const (
 
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
-	m := map[string][]byte{
-		CDRootField:         {0, 0, 0, 7},
-		DataRootField:       {0, 0, 0, 5},
-		DocumentTypeField:   {0, 0, 0, 100},
-		SignaturesRootField: {0, 0, 0, 6},
-		SigningRootField:    {0, 0, 0, 10},
-
-		// tree prefixes use the first byte of a 4 byte slice by convention
-		CDTreePrefix:         {1, 0, 0, 0},
-		SigningTreePrefix:    {2, 0, 0, 0},
-		SignaturesTreePrefix: {3, 0, 0, 0},
-		DRTreePrefix:         {4, 0, 0, 0},
+	switch key {
+	case CDRootField:
+		return []byte{0, 0, 0, 7}
+	case DataRootField:
+		return []byte{0, 0, 0, 5}
+	case DocumentTypeField:
+		return []byte{0, 0, 0, 100}
+	case SignaturesRootField:
+		return []byte{0, 0, 0, 6}
+	case SigningRootField:
+		return []byte{0, 0, 0, 10}
+	case CDTreePrefix:
+		return []byte{1, 0, 0, 0}
+	case SigningTreePrefix:
+		return []byte{2, 0, 0, 0}
+	case SignaturesTreePrefix:
+		return []byte{3, 0, 0, 0}
+	case DRTreePrefix:
+		return []byte{4, 0, 0, 0}
+	default:
+		return []byte{}
 	}
-	return m[key]
 }
 
 // CoreDocument is a wrapper for CoreDocument Protobuf.
@@ -78,7 +88,7 @@ type CoreDocument struct {
 	Modified bool
 
 	// Attributes are the custom attributes added to the document
-	Attributes map[string]*attribute
+	Attributes map[AttrKey]Attribute
 
 	Document coredocumentpb.CoreDocument
 }
@@ -99,26 +109,32 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{Document: cd, Modified: true}, nil
+	return &CoreDocument{Document: cd, Modified: true, Attributes: make(map[AttrKey]Attribute)}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
-func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) *CoreDocument {
+func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
 	cd.EmbeddedData = nil
-	return &CoreDocument{Document: cd}
+	coreDoc = &CoreDocument{Document: cd}
+	coreDoc.Attributes, err = fromProtocolAttributes(cd.Attributes)
+	return coreDoc, err
 }
 
-// NewCoreDocumentWithCollaborators generates new core document with a document type specified by the prefix: po or invoice.
+// NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
-func NewCoreDocumentWithCollaborators(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
+func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, attributes map[AttrKey]Attribute) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
 	}
 
+	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
+	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
-	return cd, nil
+	cd.Attributes = attributes
+	cd.Document.Attributes, err = toProtocolAttributes(attributes)
+	return cd, err
 }
 
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
@@ -138,7 +154,7 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 		ReadCollaborators:      []identity.DID{*did[0]},
 		ReadWriteCollaborators: []identity.DID{selfDID},
 	}
-	cd, err := NewCoreDocumentWithCollaborators(documentPrefix, collaborators)
+	cd, err := NewCoreDocument(documentPrefix, collaborators, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -181,15 +197,16 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 		cd.Document.SignatureData = new(coredocumentpb.SignatureData)
 	}
 	cd.Document.SignatureData.Signatures = append(cd.Document.SignatureData.Signatures, signs...)
+	cd.Modified = true
 }
 
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
-func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess) (*CoreDocument, error) {
+func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
 	// get all the old collaborators
 	oldCs, err := cd.GetCollaborators()
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
@@ -208,15 +225,36 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 
 	err = populateVersions(&cdp, &cd.Document)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	ncd := &CoreDocument{Document: cdp}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
+	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
+	}
+
+	ncd.Document.Attributes = p2pAttrs
+	ncd.Attributes = attrs
 	ncd.Modified = true
 	return ncd, nil
+}
 
+// updateAttributes updates the p2p attributes with new ones and returns the both the formats
+func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey]Attribute) ([]*coredocumentpb.Attribute, map[AttrKey]Attribute, error) {
+	oldAttrsMap, err := fromProtocolAttributes(oldAttrs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for k, v := range newAttrs {
+		oldAttrsMap[k] = v
+	}
+
+	uattrs, err := toProtocolAttributes(oldAttrsMap)
+	return uattrs, oldAttrsMap, err
 }
 
 // newRole returns a new role with random role key
@@ -622,34 +660,85 @@ func (cd *CoreDocument) Timestamp() (time.Time, error) {
 	return utils.FromTimestamp(cd.Document.Timestamp)
 }
 
-// AddAttribute adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
-func (cd *CoreDocument) AddAttribute(name string, attributeType AllowedAttributeType, value string) error {
-	// TODO convert value from string to correct type
-	// For now its only string that is supported
-	nAttr, err := newAttribute(name, attributeType, value)
-	if err != nil {
-		return err
+// AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
+// Note: The prepareNewVersion flags defines if the returned model should be a new version of the document.
+func (cd *CoreDocument) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, documentPrefix []byte, attrs ...Attribute) (*CoreDocument, error) {
+	if len(attrs) < 1 {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("require at least one attribute"))
 	}
-	if cd.Attributes == nil {
-		cd.Attributes = make(map[string]*attribute)
+
+	var ncd *CoreDocument
+	var err error
+	if prepareNewVersion {
+		ncd, err = cd.PrepareNewVersion(documentPrefix, ca, nil)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+		}
+	} else {
+		ncd = cd
 	}
-	cd.Attributes[name] = nAttr
-	return nil
+
+	if ncd.Attributes == nil {
+		ncd.Attributes = make(map[AttrKey]Attribute)
+	}
+
+	for _, attr := range attrs {
+		if !isAttrTypeAllowed(attr.Value.Type) {
+			return nil, ErrNotValidAttrType
+		}
+
+		ncd.Attributes[attr.Key] = attr
+	}
+	ncd.Document.Attributes, err = toProtocolAttributes(ncd.Attributes)
+	return ncd, err
+}
+
+// AttributeExists checks if an attribute associated with the key exists.
+func (cd *CoreDocument) AttributeExists(key AttrKey) bool {
+	_, ok := cd.Attributes[key]
+	return ok
 }
 
 // GetAttribute gets the attribute with the given name from the model together with its type, it returns a non-nil error if the attribute doesn't exist or can't be retrieved.
-func (cd *CoreDocument) GetAttribute(name string) (hashedKey []byte, attrType string, value interface{}, valueStr string, err error) {
-	if attr, ok := cd.Attributes[name]; ok {
-		// TODO convert value to its string repr
-		return attr.hashedKey, string(attr.attrType), attr.value, "", nil
+func (cd *CoreDocument) GetAttribute(key AttrKey) (attr Attribute, err error) {
+	attr, ok := cd.Attributes[key]
+	if !ok {
+		return attr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
 	}
-	return hashedKey, attrType, value, valueStr, errors.NewTypedError(ErrCDAttribute, errors.New("attribute does not exist"))
+
+	return attr, nil
 }
 
-// DeleteAttribute deletes a custom attribute from the model
-func (cd *CoreDocument) DeleteAttribute(name string) error {
-	delete(cd.Attributes, name)
-	return nil
+// GetAttributes returns all the attributes present in the coredocument.
+func (cd *CoreDocument) GetAttributes() (attrs []Attribute) {
+	for _, attr := range cd.Attributes {
+		attrs = append(attrs, attr)
+	}
+
+	return attrs
+}
+
+// DeleteAttribute deletes a custom attribute from the model.
+// If the attribute is missing, delete returns an error
+func (cd *CoreDocument) DeleteAttribute(key AttrKey, prepareNewVersion bool, documentPrefix []byte) (*CoreDocument, error) {
+	if _, ok := cd.Attributes[key]; !ok {
+		return nil, errors.NewTypedError(ErrCDAttribute, errors.New("missing attribute: %v", key))
+	}
+
+	var ncd *CoreDocument
+	var err error
+	if prepareNewVersion {
+		ncd, err = cd.PrepareNewVersion(documentPrefix, CollaboratorsAccess{}, nil)
+		if err != nil {
+			return nil, errors.NewTypedError(ErrCDAttribute, errors.New("failed to prepare new version: %v", err))
+		}
+	} else {
+		ncd = cd
+	}
+
+	delete(ncd.Attributes, key)
+	ncd.Document.Attributes, err = toProtocolAttributes(ncd.Attributes)
+	return ncd, err
 }
 
 func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.CoreDocument) (err error) {
@@ -665,10 +754,7 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 		}
 	}
 	cd.NextPreimage, cd.NextVersion, err = crypto.GenerateHashPair(idSize)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // IsDIDCollaborator returns true if the did is a collaborator of the document
@@ -694,4 +780,35 @@ func (cd *CoreDocument) IsDIDCollaborator(did identity.DID) (bool, error) {
 // GetAccessTokens returns the access tokens of a core document
 func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
 	return cd.Document.AccessTokens, nil
+}
+
+// SetUsedAnchorRepoAddress sets used anchor repo address.
+func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
+	cd.Document.AnchorRepositoryUsed = addr.Bytes()
+}
+
+// AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
+func (cd *CoreDocument) AnchorRepoAddress() common.Address {
+	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
+}
+
+// MarshalJSON marshals the model and returns the json data.
+func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
+	pattrs := cd.Document.Attributes
+	cd.Document.Attributes = nil
+	d, err := json.Marshal(m)
+	cd.Document.Attributes = pattrs
+	return d, err
+}
+
+// UnmarshalJSON unmarshals the data into model and set the attributes back to the document.
+// Note: Coredocument should not be nil and should be initialised to the Model before passing to this function.
+func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
+	err := json.Unmarshal(data, m)
+	if err != nil {
+		return err
+	}
+
+	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
+	return err
 }

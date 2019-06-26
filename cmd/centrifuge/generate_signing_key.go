@@ -21,8 +21,12 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			if createSigningKeyParam {
-				crypto.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, curveTypeParam)
+				err := crypto.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, curveTypeParam)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
+
 			if createEncryptionKeyParam {
 				panic("Not implemented")
 			}

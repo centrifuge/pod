@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var identityService identity.ServiceDID
+var identityService identity.Service
 var cfgSvc config.Service
 var cfg config.Configuration
 
@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 	cfgSvc = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	ctx[bootstrap.BootstrappedPeer] = &MockProtocolSetter{}
-	identityService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	identityService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -41,7 +41,8 @@ func TestMain(m *testing.M) {
 func TestService_GenerateAccountHappy(t *testing.T) {
 	tct, err := cfgSvc.GenerateAccount()
 	assert.NoError(t, err)
-	i, _ := tct.GetIdentityID()
+	i, err := tct.GetIdentityID()
+	assert.NoError(t, err)
 	tc, err := cfgSvc.GetAccount(i)
 	assert.NoError(t, err)
 	assert.NotNil(t, tc)

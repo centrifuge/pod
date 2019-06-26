@@ -63,11 +63,8 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	opts := []grpc.ServerOption{grpcInterceptor()}
 
 	grpcServer := grpc.NewServer(opts...)
-
-	mux := http.NewServeMux()
 	gwmux := runtime.NewServeMux()
-
-	err = registerServices(ctx, c.config, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
+	mux, err := registerServices(ctx, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
 	if err != nil {
 		startupErr <- err
 		return
@@ -78,7 +75,10 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 		mux.Handle("/debug/", http.DefaultServeMux)
 	}
 
-	mux.Handle("/", gwmux)
+	// if we dont find the route in the mux, we will redirect it to gmux
+	mux.NotFound(func(writer http.ResponseWriter, request *http.Request) {
+		gwmux.ServeHTTP(writer, request)
+	})
 	srv := &http.Server{
 		Addr:    apiAddr,
 		Handler: mux,

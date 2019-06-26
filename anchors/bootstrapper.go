@@ -10,8 +10,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
-// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
-const BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+const (
+	// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
+	BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+
+	// ErrAnchorRepoNotInitialised is a sentinal error when repository is not initialised
+	ErrAnchorRepoNotInitialised = errors.Error("anchor repository not initialised")
+)
 
 // Bootstrapper implements bootstrapper.Bootstrapper for package requirement initialisations.
 type Bootstrapper struct{}
@@ -36,9 +41,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
+	jobsMan, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
-		return errors.New("transactions repository not initialised")
+		return errors.New("jobs repository not initialised")
 	}
 
 	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
@@ -46,7 +51,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	repo := newService(cfg, repositoryContract, queueSrv, client, txManager)
+	repo := newService(cfg, repositoryContract, queueSrv, client, jobsMan)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	return nil

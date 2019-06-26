@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -38,6 +39,7 @@ type service struct {
 	queueSrv       queue.TaskQueuer
 	jobManager     jobs.Manager
 	tokenRegFinder func() documents.TokenRegistry
+	anchorRepo     anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
@@ -47,6 +49,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
 	tokenRegFinder func() documents.TokenRegistry,
+	anchorRepo anchors.AnchorRepository,
 ) Service {
 	return service{
 		repo:           repo,
@@ -54,6 +57,7 @@ func DefaultService(
 		jobManager:     jobManager,
 		Service:        srv,
 		tokenRegFinder: tokenRegFinder,
+		anchorRepo:     anchorRepo,
 	}
 }
 
@@ -107,12 +111,12 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, po.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, po.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, nil
 	}
-	return po, txID, done, nil
+	return po, jobID, done, nil
 }
 
 // Update validates, persists, and anchors a new version of purchase order
@@ -127,17 +131,17 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator())
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.anchorRepo))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
 
-	txID := contextutil.Job(ctx)
-	txID, done, err := documents.CreateAnchorTransaction(s.jobManager, s.queueSrv, selfDID, txID, new.CurrentVersion())
+	jobID := contextutil.Job(ctx)
+	jobID, done, err := documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, selfDID, jobID, new.CurrentVersion())
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
-	return new, txID, done, nil
+	return new, jobID, done, nil
 }
 
 // DeriveFromCreatePayload derives purchase order from create payload
@@ -167,7 +171,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 	}
 
 	// get latest old version of the document
-	id, err := hexutil.Decode(payload.Identifier)
+	id, err := hexutil.Decode(payload.DocumentId)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
 	}
@@ -182,9 +186,14 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpop
 		return nil, err
 	}
 
+	attrs, err := documents.FromClientAttributes(payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
 	// load purchase order data
 	po := new(PurchaseOrder)
-	err = po.PrepareNewVersion(old, payload.Data, cs)
+	err = po.PrepareNewVersion(old, payload.Data, cs, attrs)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
 	}
@@ -199,7 +208,7 @@ func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.Purch
 		return nil, documents.ErrDocumentInvalidType
 	}
 
-	return po.getClientData(), nil
+	return po.getClientData()
 }
 
 // DerivePurchaseOrderResponse returns po response from the model
@@ -214,8 +223,89 @@ func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.P
 		return nil, err
 	}
 
+	attrs, err := documents.ToClientAttributes(doc.GetAttributes())
+	if err != nil {
+		return nil, err
+	}
+
 	return &clientpopb.PurchaseOrderResponse{
-		Header: h,
-		Data:   data,
+		Header:     h,
+		Data:       data,
+		Attributes: attrs,
 	}, nil
+}
+
+// CreateModel creates purchase order from the payload, validates, persists, and returns the purchase order.
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+	if payload.Data == nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	po := new(PurchaseOrder)
+	if err := po.unpackFromCreatePayload(did, payload); err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// validate po
+	err = CreateValidator().Validate(nil, po)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(did[:], po.CurrentVersion(), po)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, po.CurrentVersion())
+	return po, jobID, err
+}
+
+// UpdateModel updates the migrates the current purchase order to next version with data from the update payload
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+	if payload.Data == nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNil
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	oldPO, ok := old.(*PurchaseOrder)
+	if !ok {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not a purchase order", hexutil.Encode(payload.DocumentID)))
+	}
+
+	po := new(PurchaseOrder)
+	err = po.unpackFromUpdatePayload(oldPO, payload)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = UpdateValidator(s.anchorRepo).Validate(old, po)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	err = s.repo.Create(did[:], po.CurrentVersion(), po)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, po.CurrentVersion())
+	return po, jobID, err
 }

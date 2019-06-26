@@ -100,13 +100,13 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *clienti
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(getVersionRequest.Identifier)
+	identifier, err := hexutil.Decode(getVersionRequest.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is invalid")
 	}
 
-	version, err := hexutil.Decode(getVersionRequest.Version)
+	version, err := hexutil.Decode(getVersionRequest.VersionId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "version is invalid")
@@ -136,7 +136,7 @@ func (h *grpcHandler) Get(ctx context.Context, getRequest *clientinvoicepb.GetRe
 		return nil, err
 	}
 
-	identifier, err := hexutil.Decode(getRequest.Identifier)
+	identifier, err := hexutil.Decode(getRequest.DocumentId)
 	if err != nil {
 		apiLog.Error(err)
 		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")

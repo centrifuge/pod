@@ -26,6 +26,11 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		return nil, err
 	}
 
+	selfDID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 
@@ -38,7 +43,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		if err != nil {
 			return nil, err
 		}
-		return h.SendAnchoredDocument(localCtx, in, receiverID)
+		return h.SendAnchoredDocument(localCtx, in, selfDID)
 	}
 
 	err = s.idService.Exists(ctx, receiverID)
@@ -47,7 +52,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	}
 
 	// this is a remote account
-	pid, err := s.getPeerID(receiverID)
+	pid, err := s.getPeerID(ctx, receiverID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +99,11 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		return nil, err
 	}
 
+	sender, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 
@@ -106,7 +116,8 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		if err != nil {
 			return nil, err
 		}
-		return h.GetDocument(localCtx, in, requesterID)
+
+		return h.GetDocument(localCtx, in, sender)
 	}
 
 	err = s.idService.Exists(ctx, requesterID)
@@ -115,7 +126,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	}
 
 	// this is a remote account
-	pid, err := s.getPeerID(requesterID)
+	pid, err := s.getPeerID(ctx, requesterID)
 	if err != nil {
 		return nil, err
 	}
@@ -156,8 +167,8 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	return r, nil
 }
 
-// OpenClient returns P2PServiceClient to contact the remote peer
-func (s *peer) getPeerID(id identity.DID) (libp2pPeer.ID, error) {
+// getPeerID returns peerID to contact the remote peer
+func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, error) {
 	lastB58Key, err := s.idService.CurrentP2PKey(id)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
@@ -180,28 +191,38 @@ func (s *peer) getPeerID(id identity.DID) (libp2pPeer.ID, error) {
 	}
 
 	if !s.disablePeerStore {
-		// Decapsulate the /ipfs/<peerID> part from the target
-		// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-		targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", pid))
-		targetAddr := ipfsAddr.Decapsulate(targetPeerAddr)
+		nc, err := s.config.GetConfig()
+		if err != nil {
+			return peerID, err
+		}
+		c, canc := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
+		defer canc()
+		pinfo, err := s.dht.FindPeer(c, peerID)
+		if err != nil {
+			return peerID, err
+		}
+
 		// We have a peer ID and a targetAddr so we add it to the peer store
-		// so LibP2P knows how to contact it
-		s.host.Peerstore().AddAddr(peerID, targetAddr, pstore.PermanentAddrTTL)
+		// so LibP2P knows how to contact it (this call might be redundant)
+		s.host.Peerstore().AddAddrs(peerID, pinfo.Addrs, pstore.PermanentAddrTTL)
 	}
 
 	return peerID, nil
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Model, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
-
+	cd, err := model.PackCoreDocument()
+	if err != nil {
+		return nil, errors.New("failed to pack core document: %v", err)
+	}
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
-	tc, err := s.config.GetAccount(id[:])
+	tc, err := s.config.GetAccount(collaborator[:])
 	if err == nil {
 		// this is a local account
 		h := s.handlerCreator()
@@ -210,22 +231,20 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		if err != nil {
 			return nil, err
 		}
-		if err != nil {
-			return nil, err
-		}
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, id)
+
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, sender)
 		if err != nil {
 			return nil, err
 		}
 		header = &p2ppb.Header{NodeVersion: version.GetVersion().String()}
 	} else {
 		// this is a remote account
-		err = s.idService.Exists(ctx, id)
+		err = s.idService.Exists(ctx, collaborator)
 		if err != nil {
 			return nil, err
 		}
 
-		receiverPeer, err := s.getPeerID(id)
+		receiverPeer, err := s.getPeerID(ctx, collaborator)
 		if err != nil {
 			return nil, err
 		}
@@ -234,7 +253,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 			return nil, err
 		}
 		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&id))
+		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
 		if err != nil {
 			return nil, err
 		}
@@ -257,12 +276,12 @@ func (s *peer) getSignatureForDocument(ctx context.Context, cd coredocumentpb.Co
 		header = recvEnvelope.Header
 	}
 
-	err = validateSignatureResp(id, header, resp)
+	err = s.validateSignatureResp(model, collaborator, header, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("Signature successfully received from %s\n", id)
+	log.Infof("Signature successfully received from %s\n", collaborator)
 	return resp, nil
 }
 
@@ -271,8 +290,8 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID, out chan<- signatureResponseWrap) {
-	resp, err := s.getSignatureForDocument(ctx, cd, id)
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.Model, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
+	resp, err := s.getSignatureForDocument(ctx, model, collaborator, sender)
 	out <- signatureResponseWrap{
 		resp: resp,
 		err:  err,
@@ -299,17 +318,12 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 		return nil, nil, errors.New("failed to get external collaborators")
 	}
 
-	cd, err := model.PackCoreDocument()
-	if err != nil {
-		return nil, nil, errors.New("failed to pack core document: %v", err)
-	}
-
 	var count int
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 	for _, c := range cs {
 		count++
-		go s.getSignatureAsync(peerCtx, cd, c, in)
+		go s.getSignatureAsync(peerCtx, model, c, selfDID, in)
 	}
 
 	var responses []signatureResponseWrap
@@ -330,7 +344,8 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 	return signatures, signatureCollectionErrors, nil
 }
 
-func validateSignatureResp(
+func (s *peer) validateSignatureResp(
+	model documents.Model,
 	receiver identity.DID,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {
@@ -342,7 +357,23 @@ func validateSignatureResp(
 
 	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, err.Error())
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 	}
+
+	tm, err := model.Timestamp()
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("cannot get model timestamp : %s", err.Error()))
+	}
+
+	signingRoot, err := model.CalculateSigningRoot()
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
+	}
+
+	err = s.idService.ValidateSignature(receiver, resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
+	if err != nil {
+		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
+	}
+
 	return nil
 }

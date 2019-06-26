@@ -16,7 +16,7 @@ import "protoc-gen-swagger/options/annotations.proto";
 service PurchaseOrderService {
   rpc Create(PurchaseOrderCreatePayload) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
-      post: "/purchaseorder"
+      post: "/v1/purchase_orders"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -25,7 +25,7 @@ service PurchaseOrderService {
   }
   rpc Update(PurchaseOrderUpdatePayload) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
-      put: "/purchaseorder/{identifier}"
+      put: "/v1/purchase_orders/{document_id}"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -34,7 +34,7 @@ service PurchaseOrderService {
   }
   rpc GetVersion(GetVersionRequest) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
-      get: "/purchaseorder/{identifier}/{version}"
+      get: "/v1/purchase_orders/{document_id}/versions/{version_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a specific version of a purchase order"
@@ -42,7 +42,7 @@ service PurchaseOrderService {
   }
   rpc Get(GetRequest) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
-      get: "/purchaseorder/{identifier}"
+      get: "/v1/purchase_orders/{document_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get the current version of a purchase order"
@@ -51,30 +51,36 @@ service PurchaseOrderService {
 }
 
 message GetRequest {
-  string identifier = 1;
+  string document_id = 1;
 }
 
 message GetVersionRequest {
-  string identifier = 1;
-  string version = 2;
+  string document_id = 1;
+  string version_id = 2;
 }
 
 message PurchaseOrderCreatePayload {
-  document.ReadAccess read_access = 1;
-  document.WriteAccess write_access = 2;
+  repeated string read_access = 1;
+  repeated string write_access = 2;
   PurchaseOrderData data = 3;
+  // custom attributes
+  map<string, document.Attribute> attributes = 4;
 }
 
 message PurchaseOrderUpdatePayload {
-  string identifier = 1;
-  document.ReadAccess read_access = 2;
-  document.WriteAccess write_access = 3;
+  string document_id = 1;
+  repeated string read_access = 2;
+  repeated string write_access = 3;
   PurchaseOrderData data = 4;
+  // custom attributes
+  map<string, document.Attribute> attributes = 5;
 }
 
 message PurchaseOrderResponse {
   document.ResponseHeader header = 1;
   PurchaseOrderData data = 2;
+  // custom attributes
+  map<string, document.Attribute> attributes = 3;
 }
 
 message PurchaseOrderData {

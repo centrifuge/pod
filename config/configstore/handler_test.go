@@ -20,7 +20,7 @@ func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
 	repo.RegisterAccount(&Account{})
 	svc := DefaultService(repo, idService)
 	h := GRPCAccountHandler(svc)
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: "0x123456789"})
+	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{AccountId: "0x123456789"})
 	assert.NotNil(t, err)
 	assert.Nil(t, readCfg)
 }
@@ -40,7 +40,7 @@ func TestGrpcHandler_GetAccount(t *testing.T) {
 	assert.Nil(t, err)
 	accID, err := accountCfg.GetIdentityID()
 	assert.Nil(t, err)
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(accID)})
+	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{AccountId: hexutil.Encode(accID)})
 	assert.Nil(t, err)
 	assert.NotNil(t, readCfg)
 }
@@ -141,7 +141,7 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	// Config doesn't exist
 	accpb, err := tcfg.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(accID), Data: accpb})
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{AccountId: hexutil.Encode(accID), Data: accpb})
 	assert.NotNil(t, err)
 
 	accpb, err = tcfg.CreateProtobuf()
@@ -151,10 +151,10 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	acc.EthereumDefaultAccountName = "other"
 	tccpb, err := acc.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{Identifier: hexutil.Encode(accID), Data: tccpb})
+	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{AccountId: hexutil.Encode(accID), Data: tccpb})
 	assert.Nil(t, err)
 
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{Identifier: hexutil.Encode(accID)})
+	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{AccountId: hexutil.Encode(accID)})
 	assert.Nil(t, err)
 	assert.Equal(t, acc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
 }

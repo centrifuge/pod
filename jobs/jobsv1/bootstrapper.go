@@ -21,10 +21,10 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return jobs.ErrJobsBootstrap
 	}
 
-	txRepo := NewRepository(repo)
-	ctx[jobs.BootstrappedRepo] = txRepo
+	jobsRepo := NewRepository(repo)
+	ctx[jobs.BootstrappedRepo] = jobsRepo
 
-	txSrv := NewManager(cfg, txRepo)
-	ctx[jobs.BootstrappedService] = txSrv
+	jobsMan := NewManager(cfg, jobsRepo)
+	ctx[jobs.BootstrappedService] = jobsMan
 	return nil
 }

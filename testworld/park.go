@@ -21,6 +21,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/p2p"
+	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )
@@ -37,6 +39,8 @@ var hostConfig = []struct {
 	{"Charlie", 8086, 38206, true},
 	{"Kenny", 8087, 38207, false},
 	{"Eve", 8088, 38208, false},
+	// Mallory has a mock document.Serivce to facilitate some Byzantine test
+	{"Mallory", 8089, 38209, false},
 }
 
 const defaultP2PTimeout = "10s"
@@ -62,6 +66,9 @@ type hostManager struct {
 
 	// bernard is the bootnode for all the hosts
 	bernard *host
+
+	// maeve is the webhook receiver for all hosts
+	maeve *webhookReceiver
 
 	// niceHosts are the happy and nice hosts at the Testworld such as Teddy
 	niceHosts map[string]*host
@@ -112,7 +119,12 @@ func (r *hostManager) startHost(name string) {
 
 func (r *hostManager) init(createConfig bool) error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
-	r.bernard = r.createHost("Bernard", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
+
+	// start listening to webhooks
+	r.maeve = newWebhookReceiver(8083, "/webhook")
+	go r.maeve.start(r.cancCtx)
+
+	r.bernard = r.createHost("Bernard", "", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -132,7 +144,8 @@ func (r *hostManager) init(createConfig bool) error {
 
 	// start hosts
 	for _, h := range hostConfig {
-		r.niceHosts[h.name] = r.createHost(h.name, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
+		m := r.maeve.url()
+		r.niceHosts[h.name] = r.createHost(h.name, m, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -178,7 +191,7 @@ func (r *hostManager) addNiceHost(name string, host *host) {
 }
 
 func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	tempHost := r.createHost(name, twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+	tempHost := r.createHost(name, "", twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
 	r.tempHosts[name] = tempHost
 	return tempHost
 }
@@ -197,22 +210,8 @@ func (r *hostManager) startTempHost(name string) error {
 	return nil
 }
 
-func (r *hostManager) createHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	return newHost(
-		name,
-		r.ethNodeUrl,
-		r.accountKeyPath,
-		r.accountPassword,
-		r.network,
-		"0.0.0.0",
-		twConfigName,
-		p2pTimeout,
-		apiPort, p2pPort, bootstraps,
-		r.txPoolAccess,
-		createConfig,
-		multiAccount,
-		r.contractAddresses,
-	)
+func (r *hostManager) createHost(name, webhookURL string, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	return newHost(name, r.ethNodeUrl, webhookURL, r.accountKeyPath, r.accountPassword, r.network, "0.0.0.0", twConfigName, p2pTimeout, apiPort, p2pPort, bootstraps, r.txPoolAccess, createConfig, multiAccount, r.contractAddresses)
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
@@ -227,7 +226,7 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 }
 
 type host struct {
-	name, dir, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost,
+	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
 	apiPort, p2pPort   int64
 	bootstrapNodes     []string
@@ -237,7 +236,7 @@ type host struct {
 	config             config.Configuration
 	identity           identity.DID
 	idFactory          identity.Factory
-	idService          identity.ServiceDID
+	idService          identity.Service
 	node               *node.Node
 	canc               context.CancelFunc
 	createConfig       bool
@@ -250,16 +249,11 @@ type host struct {
 	entityService      entity.Service
 }
 
-func newHost(
-	name, ethNodeUrl, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string,
-	apiPort, p2pPort int64,
-	bootstraps []string,
-	txPoolAccess, createConfig, multiAccount bool,
-	smartContractAddrs *config.SmartContractAddresses,
-) *host {
+func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, createConfig, multiAccount bool, smartContractAddrs *config.SmartContractAddresses) *host {
 	return &host{
 		name:               name,
 		ethNodeUrl:         ethNodeUrl,
+		webhookURL:         webhookURL,
 		accountKeyPath:     accountKeyPath,
 		accountPassword:    accountPassword,
 		network:            network,
@@ -278,7 +272,7 @@ func newHost(
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
 		if err != nil {
 			return err
 		}
@@ -303,6 +297,14 @@ func (h *host) init() error {
 	if err != nil {
 		return err
 	}
+
+	if h.name == "Mallory" {
+		malloryDocMockSrv := new(mockdoc.MockService)
+		h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
+		p2pBoot := p2p.Bootstrapper{}
+		p2pBoot.Bootstrap(h.bootstrappedCtx)
+	}
+
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
 	idBytes, err := h.config.GetIdentityID()
 	if err != nil {
@@ -313,7 +315,7 @@ func (h *host) init() error {
 		return err
 	}
 	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
-	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.Service)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
@@ -391,6 +393,14 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, auth, status, inv), nil
+}
+
+func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
+	return transferNFT(e, auth, status, params), nil
+}
+
+func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Value, error) {
+	return ownerOfNFT(e, auth, status, params), nil
 }
 
 func (h *host) mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {

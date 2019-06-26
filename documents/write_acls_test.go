@@ -35,7 +35,7 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 
 	cf := GetChangedFields(oldTree, newTree)
 	// cf length should be len(ocd) and len(ncd) = 70 changed field
-	assert.Len(t, cf, 70)
+	assert.Len(t, cf, 71)
 
 }
 
@@ -68,7 +68,7 @@ func testExpectedProps(t *testing.T, cf []ChangedField, eprops map[string]struct
 func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	ndoc, err := doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}})
+	ndoc, err := doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
@@ -128,7 +128,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// current pre image
 	// next pre image
 	doc = ndoc
-	ndoc, err = doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{})
+	ndoc, err = doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -201,7 +201,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// roles (new doc will have 2 new roles different from 2 old roles)
 	// read_rules
 	// transition_rules
-	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}})
+	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -396,7 +396,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	doc, id1, id2, docType := prepareDocument(t)
 
 	// prepare a new version of the document with out collaborators
-	ndoc, err := doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{})
+	ndoc, err := doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	// if this was changed by the id1, everything should be fine
@@ -406,7 +406,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
-	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}})
+	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1

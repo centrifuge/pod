@@ -2,7 +2,6 @@ package entityrelationship
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -21,7 +20,10 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 )
 
-const prefix string = "entity_relationship"
+const (
+	prefix string = "entity_relationship"
+	scheme        = prefix
+)
 
 // tree prefixes for specific documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 4, 0, 0} }
@@ -87,7 +89,7 @@ func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entity
 	}
 
 	oldCD := old.(*EntityRelationship).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{})
+	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{}, nil)
 	if err != nil {
 		return err
 	}
@@ -156,18 +158,22 @@ func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) 
 	if err != nil {
 		return err
 	}
-	e.CoreDocument = documents.NewCoreDocumentFromProtobuf(cd)
-	return nil
+	e.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+	return err
 }
 
 // JSON marshals EntityRelationship into a json bytes
 func (e *EntityRelationship) JSON() ([]byte, error) {
-	return json.Marshal(e)
+	return e.CoreDocument.MarshalJSON(e)
 }
 
 // FromJSON unmarshals the json bytes into EntityRelationship
 func (e *EntityRelationship) FromJSON(jsonData []byte) error {
-	return json.Unmarshal(jsonData, e)
+	if e.CoreDocument == nil {
+		e.CoreDocument = new(documents.CoreDocument)
+	}
+
+	return e.CoreDocument.UnmarshalJSON(jsonData, e)
 }
 
 // Type gives the EntityRelationship type.
@@ -189,9 +195,6 @@ func (e *EntityRelationship) CalculateDataRoot() ([]byte, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	eProto := e.createP2PProtobuf()
-	if err != nil {
-		return nil, err
-	}
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
@@ -273,4 +276,36 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 		return documents.ErrIdentityNotOwner
 	}
 	return nil
+}
+
+// AddAttributes adds attributes to the EntityRelationship model.
+func (e *EntityRelationship) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	ncd, err := e.CoreDocument.AddAttributes(ca, prepareNewVersion, compactPrefix(), attrs...)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	e.CoreDocument = ncd
+	return nil
+}
+
+// DeleteAttribute deletes the attribute from the model.
+func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVersion bool) error {
+	ncd, err := e.CoreDocument.DeleteAttribute(key, prepareNewVersion, compactPrefix())
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDAttribute, err)
+	}
+
+	e.CoreDocument = ncd
+	return nil
+}
+
+// GetData returns entity relationship data
+func (e *EntityRelationship) GetData() interface{} {
+	return nil
+}
+
+// Scheme returns the entity relationship scheme.
+func (e *EntityRelationship) Scheme() string {
+	return scheme
 }

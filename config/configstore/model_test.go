@@ -22,6 +22,11 @@ type mockConfig struct {
 	mock.Mock
 }
 
+func (m *mockConfig) IsDebugLogEnabled() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
 func (m *mockConfig) GetLowEntropyNFTTokenEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
@@ -124,6 +129,11 @@ func (m *mockConfig) GetP2PConnectionTimeout() time.Duration {
 	return args.Get(0).(time.Duration)
 }
 
+func (m *mockConfig) GetP2PResponseDelay() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
 func (m *mockConfig) GetReceiveEventNotificationEndpoint() string {
 	args := m.Called()
 	return args.Get(0).(string)
@@ -198,11 +208,6 @@ func (m *mockConfig) GetEthereumDefaultAccountName() string {
 func (m *mockConfig) GetEthereumAccount(accountName string) (account *config.AccountConfig, err error) {
 	args := m.Called(accountName)
 	return args.Get(0).(*config.AccountConfig), args.Error(1)
-}
-
-func (m *mockConfig) GetTxPoolAccessEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
 }
 
 func (m *mockConfig) GetNetworkString() string {
@@ -364,6 +369,7 @@ func createMockConfig() *mockConfig {
 	c.On("GetP2PPort").Return(30000).Once()
 	c.On("GetP2PExternalIP").Return("ip").Once()
 	c.On("GetP2PConnectionTimeout").Return(time.Second).Once()
+	c.On("GetP2PResponseDelay").Return(time.Millisecond).Once()
 	c.On("GetServerPort").Return(8080).Once()
 	c.On("GetServerAddress").Return("dummyServer").Once()
 	c.On("GetNumWorkers").Return(2).Once()
@@ -381,12 +387,12 @@ func createMockConfig() *mockConfig {
 	c.On("GetEthereumMaxRetries").Return(1).Once()
 	c.On("GetEthereumMaxGasPrice").Return(big.NewInt(1)).Once()
 	c.On("GetEthereumGasLimit", mock.Anything).Return(uint64(100))
-	c.On("GetTxPoolAccessEnabled").Return(true).Once()
 	c.On("GetNetworkString").Return("somehill").Once()
 	c.On("GetBootstrapPeers").Return([]string{"p1", "p2"}).Once()
 	c.On("GetNetworkID").Return(uint32(1)).Once()
 	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
+	c.On("IsDebugLogEnabled", mock.Anything).Return(true)
 	c.On("GetLowEntropyNFTTokenEnabled", mock.Anything).Return(true)
 	return c
 }

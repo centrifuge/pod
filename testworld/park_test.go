@@ -5,9 +5,12 @@ package testworld
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,9 +36,18 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(alice.httpExpect, alice.id.String(), typeInvoice, params)
-	getDocumentAndCheck(bob.httpExpect, bob.id.String(), typeInvoice, params)
-	getDocumentAndCheck(charlie.httpExpect, charlie.id.String(), typeInvoice, params)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), typeInvoice, params, true)
+	// alices job completes with a webhook
+	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
+	assert.NoError(t, err)
+	assert.Equal(t, string(jobs.Success), msg.Status)
+
+	// bobs node sends a webhook for received anchored doc
+	msg, err = doctorFord.maeve.getReceivedMsg(bob.id.String(), int(notification.ReceivedPayload), docIdentifier)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
 	fmt.Println("Host test success")
 }
 

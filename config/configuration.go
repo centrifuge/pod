@@ -73,6 +73,9 @@ const (
 
 	// NftMint nft minting operation
 	NftMint ContractOp = "nftMint"
+
+	// NftTransferFrom nft transferFrom operation
+	NftTransferFrom ContractOp = "nftTransferFrom"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
@@ -81,8 +84,8 @@ func ContractNames() [5]ContractName {
 }
 
 // ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
-func ContractOps() [6]ContractOp {
-	return [6]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint}
+func ContractOps() [7]ContractOp {
+	return [7]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -106,6 +109,7 @@ type Configuration interface {
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
+	GetP2PResponseDelay() time.Duration
 	GetServerPort() int
 	GetServerAddress() string
 	GetNumWorkers() int
@@ -118,7 +122,6 @@ type Configuration interface {
 	GetEthereumMaxRetries() int
 	GetEthereumMaxGasPrice() *big.Int
 	GetEthereumGasLimit(op ContractOp) uint64
-	GetTxPoolAccessEnabled() bool
 	GetNetworkString() string
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
@@ -145,6 +148,7 @@ type Configuration interface {
 
 	// debug specific methods
 	IsPProfEnabled() bool
+	IsDebugLogEnabled() bool
 }
 
 // Account exposes account options
@@ -175,6 +179,7 @@ type Service interface {
 	GenerateAccount() (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
+	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
 }
 
 // IDKey represents a key pair
@@ -291,6 +296,11 @@ func (c *configuration) GetP2PConnectionTimeout() time.Duration {
 	return c.GetDuration("p2p.connectTimeout")
 }
 
+// GetP2PResponseDelay returns P2P Response Delay.
+func (c *configuration) GetP2PResponseDelay() time.Duration {
+	return c.GetDuration("p2p.responseDelay")
+}
+
 // GetReceiveEventNotificationEndpoint returns the webhook endpoint defined in the config.
 func (c *configuration) GetReceiveEventNotificationEndpoint() string {
 	return c.GetString("notifications.endpoint")
@@ -385,12 +395,6 @@ func (c *configuration) GetEthereumAccount(accountName string) (account *Account
 	return account, nil
 }
 
-// GetTxPoolAccessEnabled returns if the node can check the txpool for nonce increment.
-// Note:Important flag for concurrency handling. Disable if Ethereum client doesn't support txpool API (INFURA).
-func (c *configuration) GetTxPoolAccessEnabled() bool {
-	return c.GetBool("ethereum.txPoolAccessEnabled")
-}
-
 // GetNetworkString returns defined network the node is connected to.
 func (c *configuration) GetNetworkString() string {
 	return c.GetString("centrifugeNetwork")
@@ -443,6 +447,11 @@ func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 // IsPProfEnabled returns true if the pprof is enabled
 func (c *configuration) IsPProfEnabled() bool {
 	return c.GetBool("debug.pprof")
+}
+
+// IsDebugLogEnabled returns true if the debug logging is enabled
+func (c *configuration) IsDebugLogEnabled() bool {
+	return c.GetBool("debug.log")
 }
 
 // GetPrecommitEnabled returns true if precommit for anchors is enabled
@@ -527,6 +536,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
+	webhookURL, _ := args["webhookURL"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -572,6 +582,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("nodeHostname", apiHost)
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
+	v.Set("notifications.endpoint", webhookURL)
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}

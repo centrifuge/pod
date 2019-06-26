@@ -17,6 +17,9 @@ const (
 	// ErrDocumentIdentifier must be used for errors caused by document identifier problems
 	ErrDocumentIdentifier = errors.Error("document identifier error")
 
+	// ErrDocumentVersion must be used for errors caused by document version problems
+	ErrDocumentVersion = errors.Error("document version error")
+
 	// ErrDocumentInvalidType must be used when a provided document type is not valid to be processed by the service
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
@@ -25,6 +28,9 @@ const (
 
 	// ErrPayloadNil must be used when a required payload is nil
 	ErrPayloadNil = errors.Error("no(nil) payload provided")
+
+	// ErrDocumentSchemeUnknown is a sentinel error when the scheme provided is missing in the registry.
+	ErrDocumentSchemeUnknown = errors.Error("unknown document scheme provided")
 
 	// ErrDocumentNotification must be used when a notification about a document could not be delivered
 	ErrDocumentNotification = errors.Error("could not notify of the document")
@@ -60,6 +66,9 @@ const (
 
 	// ErrCDCreate must be used for coredoc creation/generation errors
 	ErrCDCreate = errors.Error("error creating core document")
+
+	// ErrCDNewVersion must be used for coredoc creation/generation errors
+	ErrCDNewVersion = errors.Error("error creating new version of core document")
 
 	// ErrCollaborators must be used when collaborators are not valid
 	ErrCollaborators = errors.Error("invalid collaborators")
@@ -99,9 +108,6 @@ const (
 	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
 	ErrInvalidIDLength = errors.Error("invalid identifier length")
 
-	// ErrDocumentAnchor must be used if it is not possible to access an anchor from chain
-	ErrDocumentAnchor = errors.Error("failed to get document anchor from chain")
-
 	// ErrDocumentNotLatest must be used if document is not the latest version
 	ErrDocumentNotLatest = errors.Error("document is not the latest version")
 
@@ -113,11 +119,29 @@ const (
 	// ErrInvalidDecimal must be used when given decimal is invalid
 	ErrInvalidDecimal = errors.Error("invalid decimal")
 
+	// ErrInvalidInt256 must be used when given 256 bit signed integer is invalid
+	ErrInvalidInt256 = errors.Error("invalid 256 bit signed integer")
+
 	// ErrIdentityNotOwner must be used when an identity which does not own the entity relationship attempts to update the document
 	ErrIdentityNotOwner = errors.Error("identity attempting to update the document does not own this entity relationship")
 
 	// ErrNotImplemented must be used when an method has not been implemented
 	ErrNotImplemented = errors.Error("Method not implemented")
+
+	// ErrDocumentConfigNotInitialised is a sentinal error when document config is missing
+	ErrDocumentConfigNotInitialised = errors.Error("document config not initialised")
+
+	// ErrDifferentAnchoredAddress is a sentinal error when anchor address is different from the configured one.
+	ErrDifferentAnchoredAddress = errors.Error("anchor address is not the node configured address")
+
+	// ErrDocumentIDReused is a sentinal error when identifier is re-used
+	ErrDocumentIDReused = errors.Error("document identifier is already used")
+
+	// ErrNotValidAttrType is a sentinal error when an unknown attribute type is given
+	ErrNotValidAttrType = errors.Error("not a valid attribute type")
+
+	// ErrEmptyAttrLabel is a sentinal error when the attribute label is empty
+	ErrEmptyAttrLabel = errors.Error("empty attribute label")
 )
 
 // Error wraps an error with specific key

@@ -24,11 +24,11 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports"]
+required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports", "github.com/swaggo/swag", "github.com/urfave/cli"]
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "ca463c9d7b09f63722524ce3e53f7dee9808f704"
+  revision = "7d846bc3247e93446882acde5edc23767cb12824"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
@@ -304,3 +304,23 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   branch = "master"
   name = "github.com/common-nighthawk/go-figure"
+
+[[constraint]]
+  name = "github.com/go-chi/chi"
+  version = "4.0.2"
+
+[[constraint]]
+  name = "github.com/go-chi/render"
+  version = "1.0.1"
+
+[[constraint]]
+  name = "github.com/swaggo/swag"
+  version = "1.5.0"
+
+[[prune.project]]
+  name = "github.com/swaggo/swag"
+  unused-packages = false
+
+[[constraint]]
+  name = "github.com/urfave/cli"
+  version = "1.20.0"

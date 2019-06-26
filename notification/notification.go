@@ -3,7 +3,6 @@ package notification
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -24,6 +23,7 @@ type Status int
 // Constants defined for notification delivery.
 const (
 	ReceivedPayload EventType = 1
+	JobCompleted    EventType = 2
 	Failure         Status    = 0
 	Success         Status    = 1
 )
@@ -65,7 +65,7 @@ func (wh webhookSender) Send(ctx context.Context, notification *notificationpb.N
 		return Failure, err
 	}
 
-	if statusCode != http.StatusOK {
+	if !utils.InRange(statusCode, 200, 299) {
 		return Failure, errors.New("failed to send webhook: status = %v", statusCode)
 	}
 

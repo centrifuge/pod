@@ -7,10 +7,12 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -32,17 +34,17 @@ type service struct {
 	anchorRepositoryContract anchorRepositoryContract
 	client                   ethereum.Client
 	queue                    *queue.Server
-	txManager                jobs.Manager
+	jobsMan                  jobs.Manager
 }
 
-func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client, txManager jobs.Manager) AnchorRepository {
-	return &service{config: config, anchorRepositoryContract: anchorContract, client: client, queue: queue, txManager: txManager}
+func newService(config Config, anchorContract anchorRepositoryContract, queue *queue.Server, client ethereum.Client, jobsMan jobs.Manager) AnchorRepository {
+	return &service{config: config, anchorRepositoryContract: anchorContract, client: client, queue: queue, jobsMan: jobsMan}
 }
 
 // HasValidPreCommit checks if the given anchorID has a valid pre-commit
 func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
-	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := s.client.GetGethCallOpts(false)
+	opts, cancelF := s.client.GetGethCallOpts(false)
+	defer cancelF()
 	r, err := s.anchorRepositoryContract.HasValidPreCommit(opts, anchorID.BigInt())
 	if err != nil {
 		return false
@@ -51,12 +53,17 @@ func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
 }
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
+// Returns a nil error when the anchor data is found else returns a non nil error
 func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
-	// Ignoring cancelFunc as code will block until response or timeout is triggered
-	opts, _ := s.client.GetGethCallOpts(false)
+	opts, cancelF := s.client.GetGethCallOpts(false)
+	defer cancelF()
 	r, err := s.anchorRepositoryContract.GetAnchorById(opts, anchorID.BigInt())
 	if err != nil {
 		return docRoot, anchoredTime, err
+	}
+
+	if utils.IsEmptyByte32(r.DocumentRoot) {
+		return docRoot, anchoredTime, errors.New("anchor data missing for id: %v", anchorID.String())
 	}
 
 	blk, err := s.client.GetBlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
@@ -64,7 +71,7 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 		return docRoot, anchoredTime, err
 	}
 
-	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), err
+	return r.DocumentRoot, time.Unix(blk.Time().Int64(), 0), nil
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract
@@ -89,12 +96,8 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 
 	opts.GasLimit = s.config.GetEthereumGasLimit(config.AnchorPreCommit)
 	pc := newPreCommitData(anchorID, signingRoot)
-	if err != nil {
-		return confirmations, err
-	}
-
 	log.Infof("Add Anchor to Pre-commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.txManager.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
+	_, done, err := s.jobsMan.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.PreCommit, pc.AnchorID.BigInt(), pc.SigningRoot))
 	if err != nil {
 		return nil, err
@@ -104,8 +107,8 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 }
 
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
@@ -118,7 +121,7 @@ func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{},
 			return
 		}
 
-		_, err = res.Get(txMan.GetDefaultTaskTimeout())
+		_, err = res.Get(jobMan.GetDefaultTaskTimeout())
 		if err != nil {
 			errOut <- err
 			return
@@ -171,7 +174,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, proof)
 
 	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.txManager.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
+	_, done, err := s.jobsMan.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProof))
 	if err != nil {
 		return nil, err

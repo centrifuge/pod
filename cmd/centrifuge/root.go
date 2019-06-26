@@ -36,8 +36,7 @@ func Execute() {
 	gologging.SetBackend(backend)
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Error(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
@@ -46,7 +45,7 @@ func printStartMessage() {
 	fmt.Println()
 	c.Print()
 	fmt.Println()
-	fmt.Println("Centrifuge OS and this client implementation are beta software. For more info refer our disclaimer on https://developer.centrifuge.io !")
+	fmt.Println("Centrifuge OS and this client implementation are beta software. For more information refer to the disclaimer on https://developer.centrifuge.io.")
 }
 
 func init() {

@@ -25,47 +25,9 @@ func GRPCHandler(config config.Service, InvoiceUnpaid InvoiceUnpaid) nftpb.NFTSe
 	return &grpcHandler{config: config, service: InvoiceUnpaid}
 }
 
-// MintNFT will be called from the client API to mint an NFT
-func (g grpcHandler) MintNFT(ctx context.Context, request *nftpb.NFTMintRequest) (*nftpb.NFTMintResponse, error) {
-	apiLog.Infof("Received request to Mint an NFT with  %s with proof fields %s", request.Identifier, request.ProofFields)
-	ctxHeader, err := contextutil.Context(ctx, g.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	err = validateParameters(request)
-	if err != nil {
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(request.Identifier)
-	if err != nil {
-		return nil, err
-	}
-
-	req := MintNFTRequest{
-		DocumentID:               identifier,
-		RegistryAddress:          common.HexToAddress(request.RegistryAddress),
-		DepositAddress:           common.HexToAddress(request.DepositAddress),
-		ProofFields:              request.ProofFields,
-		GrantNFTReadAccess:       request.GrantNftAccess,
-		SubmitNFTReadAccessProof: request.SubmitNftOwnerAccessProof,
-		SubmitTokenProof:         request.SubmitTokenProof,
-	}
-	resp, _, err := g.service.MintNFT(ctxHeader, req)
-	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
-	}
-
-	return &nftpb.NFTMintResponse{
-		Header: &nftpb.ResponseHeader{JobId: resp.JobID},
-	}, nil
-}
-
 // MintInvoiceUnpaidNFT will be called from the client API to mint an NFT out of an unpaid invoice
 func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NFTMintInvoiceUnpaidRequest) (*nftpb.NFTMintResponse, error) {
-	apiLog.Infof("Received request to Mint an Invoice Unpaid NFT for invoice %s and deposit address %s", request.Identifier, request.DepositAddress)
+	apiLog.Infof("Received request to Mint an Invoice Unpaid NFT for invoice %s and deposit address %s", request.DocumentId, request.DepositAddress)
 	ctxHeader, err := contextutil.Context(ctx, g.config)
 	if err != nil {
 		apiLog.Error(err)
@@ -84,27 +46,27 @@ func (g grpcHandler) MintInvoiceUnpaidNFT(ctx context.Context, request *nftpb.NF
 	}
 	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
-	mintReq := &nftpb.NFTMintRequest{
-		Identifier:                request.Identifier,
-		DepositAddress:            request.DepositAddress,
-		RegistryAddress:           poRegistry.Hex(),
-		ProofFields:               proofFields,
-		GrantNftAccess:            true,
-		SubmitNftOwnerAccessProof: true,
-		SubmitTokenProof:          true,
+	identifier, err := hexutil.Decode(request.DocumentId)
+	if err != nil {
+		return nil, err
 	}
 
-	return g.MintNFT(ctx, mintReq)
-}
-
-func validateParameters(request *nftpb.NFTMintRequest) error {
-	if !common.IsHexAddress(request.RegistryAddress) {
-		return centerrors.New(code.Unknown, "registryAddress is not a valid Ethereum address")
+	req := MintNFTRequest{
+		DocumentID:               identifier,
+		RegistryAddress:          poRegistry,
+		DepositAddress:           common.HexToAddress(request.DepositAddress),
+		ProofFields:              proofFields,
+		GrantNFTReadAccess:       true,
+		SubmitNFTReadAccessProof: true,
+		SubmitTokenProof:         true,
 	}
 
-	if !common.IsHexAddress(request.DepositAddress) {
-		return centerrors.New(code.Unknown, "DepositAddress is not a valid Ethereum address")
+	resp, _, err := g.service.MintNFT(ctxHeader, req)
+	if err != nil {
+		return nil, centerrors.New(code.Unknown, err.Error())
 	}
 
-	return nil
+	return &nftpb.NFTMintResponse{
+		Header: &nftpb.ResponseHeader{JobId: resp.JobID},
+	}, nil
 }

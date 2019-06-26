@@ -10,8 +10,8 @@ const (
 	accountPrefix string = "account-"
 )
 
-// repository defines the required methods for the config repository.
-type repository interface {
+// Repository defines the required methods for the config repository.
+type Repository interface {
 	// RegisterAccount registers account in DB
 	RegisterAccount(config config.Account)
 
@@ -64,8 +64,8 @@ func getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
-// newDBRepository creates instance of Config repository
-func newDBRepository(db storage.Repository) repository {
+// NewDBRepository creates instance of Config repository
+func NewDBRepository(db storage.Repository) Repository {
 	return &repo{db: db}
 }
 

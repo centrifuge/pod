@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.ServiceDID, idFactory identity.Factory) (identity.DID, error) {
+func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.Service, idFactory identity.Factory) (identity.DID, error) {
 	ctxh, _ := contextutil.New(context.Background(), acc)
 	idKeys, err := acc.GetKeys()
 	if err != nil {
@@ -38,7 +38,10 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 		return identity.DID{}, err
 	}
 	ctx, cancel1 := defaultWaitForTransactionMiningContext(contextTimeout)
-	ctxh, _ = contextutil.New(ctx, acc)
+	ctxh, err = contextutil.New(ctx, acc)
+	if err != nil {
+		return identity.DID{}, err
+	}
 	defer cancel1()
 	if err != nil || len(keys) == 0 {
 		pk, _ := utils.SliceToByte32(idKeys[identity.KeyPurposeAction.Name].PublicKey)

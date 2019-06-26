@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -39,13 +40,13 @@ func TestBinaryAttachments(t *testing.T) {
 	}
 
 	catts := ToClientAttachments(atts)
-	patts := ToP2PAttachments(atts)
+	patts := ToProtocolAttachments(atts)
 
 	fcatts, err := FromClientAttachments(catts)
 	assert.NoError(t, err)
 	assert.Equal(t, atts, fcatts)
 
-	fpatts := FromP2PAttachments(patts)
+	fpatts := FromProtocolAttachments(patts)
 	assert.Equal(t, atts, fpatts)
 
 	catts[0].Checksum = "some checksum"
@@ -70,13 +71,14 @@ func TestPaymentDetails(t *testing.T) {
 		},
 	}
 
-	cdetails := ToClientPaymentDetails(details)
-	pdetails, err := ToP2PPaymentDetails(details)
+	cdetails, err := ToClientPaymentDetails(details)
+	assert.NoError(t, err)
+	pdetails, err := ToProtocolPaymentDetails(details)
 	assert.NoError(t, err)
 
 	fcdetails, err := FromClientPaymentDetails(cdetails)
 	assert.NoError(t, err)
-	fpdetails, err := FromP2PPaymentDetails(pdetails)
+	fpdetails, err := FromProtocolPaymentDetails(pdetails)
 	assert.NoError(t, err)
 
 	assert.Equal(t, details, fcdetails)
@@ -91,7 +93,7 @@ func TestPaymentDetails(t *testing.T) {
 	assert.Error(t, err)
 
 	pdetails[0].Amount = utils.RandomSlice(40)
-	_, err = FromP2PPaymentDetails(pdetails)
+	_, err = FromProtocolPaymentDetails(pdetails)
 	assert.Error(t, err)
 }
 
@@ -99,13 +101,8 @@ func TestCollaboratorAccess(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
-	rcs := &documentpb.ReadAccess{
-		Collaborators: []string{id1.String(), id2.String()},
-	}
-
-	wcs := &documentpb.WriteAccess{
-		Collaborators: []string{id2.String(), id3.String()},
-	}
+	rcs := []string{id1.String(), id2.String(), ""}
+	wcs := []string{id2.String(), id3.String(), ""}
 
 	ca, err := FromClientCollaboratorAccess(rcs, wcs)
 	assert.NoError(t, err)
@@ -113,16 +110,16 @@ func TestCollaboratorAccess(t *testing.T) {
 	assert.Len(t, ca.ReadWriteCollaborators, 2)
 
 	grcs, gwcs := ToClientCollaboratorAccess(ca)
-	assert.Len(t, grcs.Collaborators, 1)
-	assert.Equal(t, grcs.Collaborators[0], id1.String())
-	assert.Len(t, gwcs.Collaborators, 2)
-	assert.Contains(t, gwcs.Collaborators, id2.String(), id3.String())
+	assert.Len(t, grcs, 1)
+	assert.Equal(t, grcs[0], id1.String())
+	assert.Len(t, gwcs, 2)
+	assert.Contains(t, gwcs, id2.String(), id3.String())
 
-	wcs.Collaborators[0] = "wrg id"
+	wcs[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
 
-	rcs.Collaborators[0] = "wrg id"
+	rcs[0] = "wrg id"
 	_, err = FromClientCollaboratorAccess(rcs, wcs)
 	assert.Error(t, err)
 }
@@ -152,11 +149,11 @@ func TestDeriveResponseHeader(t *testing.T) {
 	resp, err := DeriveResponseHeader(nil, model)
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentId)
-	assert.Equal(t, hexutil.Encode(id), resp.Version)
-	assert.Len(t, resp.ReadAccess.Collaborators, 1)
-	assert.Equal(t, resp.ReadAccess.Collaborators[0], did1.String())
-	assert.Len(t, resp.WriteAccess.Collaborators, 1)
-	assert.Equal(t, resp.WriteAccess.Collaborators[0], did2.String())
+	assert.Equal(t, hexutil.Encode(id), resp.VersionId)
+	assert.Len(t, resp.ReadAccess, 1)
+	assert.Equal(t, resp.ReadAccess[0], did1.String())
+	assert.Len(t, resp.WriteAccess, 1)
+	assert.Equal(t, resp.WriteAccess[0], did2.String())
 	model.AssertExpectations(t)
 }
 
@@ -396,4 +393,200 @@ func TestConvertNFTs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func attrsToList(attrs map[AttrKey]Attribute) []Attribute {
+	var attrsList []Attribute
+	for _, v := range attrs {
+		attrsList = append(attrsList, v)
+	}
+
+	return attrsList
+}
+
+func TestAttributes(t *testing.T) {
+	attrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrMap, err := FromClientAttributes(attrs)
+	assert.NoError(t, err)
+
+	cattrs, err := ToClientAttributes(attrsToList(attrMap))
+	assert.NoError(t, err)
+	for k := range cattrs {
+		cattrs[k].Key = ""
+	}
+	assert.Equal(t, attrs, cattrs)
+
+	// failed ToClient
+	var key AttrKey
+	var attr Attribute
+	for k := range attrMap {
+		key = k
+		attr = attrMap[k]
+		break
+	}
+
+	attr.Value.Type = AttributeType("some type")
+	attrMap[key] = attr
+	cattrs, err = ToClientAttributes(attrsToList(attrMap))
+	assert.Error(t, err)
+
+	// failed FromClient
+	attrs[""] = &documentpb.Attribute{}
+	attrMap, err = FromClientAttributes(attrs)
+	assert.Error(t, err)
+}
+
+func TestP2PAttributes(t *testing.T) {
+	cattrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrs, err := FromClientAttributes(cattrs)
+	assert.NoError(t, err)
+
+	pattrs, err := toProtocolAttributes(attrs)
+	assert.NoError(t, err)
+
+	attrs1, err := fromProtocolAttributes(pattrs)
+	assert.NoError(t, err)
+	assert.Equal(t, attrs, attrs1)
+
+	pattrs1, err := toProtocolAttributes(attrs1)
+	assert.NoError(t, err)
+	assert.Equal(t, pattrs, pattrs1)
+
+	attrKey, err := AttrKeyFromBytes(pattrs1[0].Key)
+	assert.NoError(t, err)
+	val := attrs1[attrKey]
+	val.Value.Type = AttributeType("some type")
+	attrs1[attrKey] = val
+	_, err = toProtocolAttributes(attrs1)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrNotValidAttrType, err))
+
+	pattrs[0].Type = coredocumentpb.AttributeType(0)
+	_, err = fromProtocolAttributes(pattrs)
+	assert.Error(t, err)
+
+	pattrs[0].Key = utils.RandomSlice(31)
+	_, err = fromProtocolAttributes(pattrs)
+	assert.Error(t, err)
+}
+
+func TestAttributes_signed(t *testing.T) {
+	cattrs := map[string]*documentpb.Attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	attrs, err := FromClientAttributes(cattrs)
+	assert.NoError(t, err)
+
+	label := "signed_label"
+	did := testingidentity.GenerateRandomDID()
+	id := utils.RandomSlice(32)
+	version := utils.RandomSlice(32)
+	value := utils.RandomSlice(50)
+
+	var epayload []byte
+	epayload = append(epayload, did[:]...)
+	epayload = append(epayload, id...)
+	epayload = append(epayload, version...)
+	epayload = append(epayload, value...)
+
+	signature := utils.RandomSlice(32)
+	acc := new(mockAccount)
+	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
+	model := new(mockModel)
+	model.On("ID").Return(id).Once()
+	model.On("NextVersion").Return(version).Twice()
+	attr, err := NewSignedAttribute(label, did, acc, model, value)
+	assert.NoError(t, err)
+	acc.AssertExpectations(t)
+	model.AssertExpectations(t)
+	attrs[attr.Key] = attr
+
+	pattrs, err := toProtocolAttributes(attrs)
+	assert.NoError(t, err)
+
+	gattrs, err := fromProtocolAttributes(pattrs)
+	assert.NoError(t, err)
+	assert.Equal(t, attrs, gattrs)
+
+	// wrong id
+	signed := pattrs[len(pattrs)-1].GetSignedVal()
+	signed.Identity = nil
+	_, err = fromProtocolAttributes(pattrs)
+	assert.Error(t, err)
 }

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -31,14 +32,15 @@ type extendedManager interface {
 
 // NewManager returns a JobManager implementation.
 func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
-	return &manager{config: config, repo: repo}
+	return &manager{config: config, repo: repo, notifier: notification.NewWebhookSender()}
 }
 
 // manager implements JobManager.
 // TODO [JobManager] convert this into an implementation of node.Server and start it at node start so that we can bring down transaction go routines cleanly
 type manager struct {
-	config jobs.Config
-	repo   jobs.Repository
+	config   jobs.Config
+	repo     jobs.Repository
+	notifier notification.Sender
 }
 
 func (s *manager) GetDefaultTaskTimeout() time.Duration {
@@ -67,58 +69,93 @@ func (s *manager) UpdateTaskStatus(accountID identity.DID, id jobs.JobID, status
 }
 
 // ExecuteWithinJob executes a task within a Job.
-func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingTxID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
-	t, err := s.repo.Get(accountID, existingTxID)
+func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
+	job, err := s.repo.Get(accountID, existingJobID)
 	if err != nil {
-		t = jobs.NewJob(accountID, desc)
-		err := s.saveJob(t)
+		job = jobs.NewJob(accountID, desc)
+		err := s.saveJob(job)
 		if err != nil {
 			return jobs.NilJobID(), nil, err
 		}
 	}
-	done = make(chan bool)
+	// set capacity to one so that any late listener won't miss updates.
+	done = make(chan bool, 1)
 	go func(ctx context.Context) {
 		err := make(chan error)
-		go work(accountID, t.ID, s, err)
+		go work(accountID, job.ID, s, err)
 
+		var mJob *jobs.Job
 		select {
 		case e := <-err:
-			tempTx, err := s.repo.Get(accountID, t.ID)
+			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(e, err)
 				break
 			}
-			// update tx success status only if this wasn't an existing TX.
+			// update job success status only if this wasn't an existing job.
 			// Otherwise it might update an existing tx pending status to success without actually being a success,
 			// It is assumed that status update is already handled per task in that case.
 			// Checking individual task success is upto the transaction manager users.
-			if e == nil && jobs.JobIDEqual(existingTxID, jobs.NilJobID()) {
-				tempTx.Status = jobs.Success
+			if e == nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
+				tempJob.Status = jobs.Success
 			} else if e != nil {
-				tempTx.Logs = append(tempTx.Logs, jobs.NewLog(fmt.Sprintf("%s[%s]", managerLogPrefix, desc), e.Error()))
-				tempTx.Status = jobs.Failed
+				tempJob.Logs = append(tempJob.Logs, jobs.NewLog(fmt.Sprintf("%s[%s]", managerLogPrefix, desc), e.Error()))
+				tempJob.Status = jobs.Failed
 			}
-			e = s.saveJob(tempTx)
+			e = s.saveJob(tempJob)
 			if e != nil {
 				log.Error(e)
 			}
+			mJob = tempJob
 		case <-ctx.Done():
-			msg := fmt.Sprintf("Job %s for account %s with description \"%s\" is stopped because of context close", t.ID.String(), t.DID, t.Description)
+			msg := fmt.Sprintf("Job %s for account %s with description \"%s\" is stopped because of context close", job.ID.String(), job.DID, job.Description)
 			log.Warningf(msg)
-			tempTx, err := s.repo.Get(accountID, t.ID)
+			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(err)
 				break
 			}
-			tempTx.Logs = append(tempTx.Logs, jobs.NewLog("context closed", msg))
-			e := s.saveJob(tempTx)
+			tempJob.Logs = append(tempJob.Logs, jobs.NewLog("context closed", msg))
+			e := s.saveJob(tempJob)
 			if e != nil {
 				log.Error(e)
 			}
+			mJob = tempJob
 		}
-		done <- true
+
+		// non blocking send
+		select {
+		case done <- true:
+		default:
+			// must not happen
+			log.Error("job done channel capacity breach")
+		}
+
+		if mJob != nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
+			ts, err1 := utils.ToTimestamp(time.Now().UTC())
+			if err1 != nil {
+				log.Error(err1)
+			}
+			notificationMsg := &notificationpb.NotificationMessage{
+				EventType:    uint32(notification.JobCompleted),
+				AccountId:    accountID.String(),
+				Recorded:     ts,
+				DocumentType: jobs.JobDataTypeURL,
+				DocumentId:   mJob.ID.String(),
+				Status:       string(mJob.Status),
+			}
+			if len(mJob.Logs) > 0 {
+				notificationMsg.Message = mJob.Logs[len(mJob.Logs)-1].Message
+			}
+			// Send Job notification webhook
+			_, err1 = s.notifier.Send(ctx, notificationMsg)
+			if err1 != nil {
+				log.Error(err1)
+			}
+		}
+
 	}(ctx)
-	return t.ID, done, nil
+	return job.ID, done, nil
 }
 
 // saveJob saves the transaction.
@@ -137,8 +174,8 @@ func (s *manager) GetJob(accountID identity.DID, id jobs.JobID) (*jobs.Job, erro
 
 // createJob creates a new job and saves it to the DB.
 func (s *manager) createJob(accountID identity.DID, desc string) (*jobs.Job, error) {
-	tx := jobs.NewJob(accountID, desc)
-	return tx, s.saveJob(tx)
+	job := jobs.NewJob(accountID, desc)
+	return job, s.saveJob(job)
 }
 
 // WaitForJob blocks until job status is moved from pending state.
@@ -164,10 +201,10 @@ func (s *manager) WaitForJob(accountID identity.DID, txID jobs.JobID) error {
 }
 
 // GetJobStatus returns the job status associated with identity and id.
-func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (*jobspb.JobStatusResponse, error) {
+func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (resp jobs.StatusResponse, err error) {
 	job, err := s.GetJob(accountID, id)
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
 
 	var msg string
@@ -178,15 +215,10 @@ func (s *manager) GetJobStatus(accountID identity.DID, id jobs.JobID) (*jobspb.J
 		lastUpdated = log.CreatedAt.UTC()
 	}
 
-	tm, err := utils.ToTimestamp(lastUpdated)
-	if err != nil {
-		return nil, err
-	}
-
-	return &jobspb.JobStatusResponse{
-		JobId:       job.ID.String(),
+	return jobs.StatusResponse{
+		JobID:       job.ID.String(),
 		Status:      string(job.Status),
 		Message:     msg,
-		LastUpdated: tm,
+		LastUpdated: lastUpdated,
 	}, nil
 }

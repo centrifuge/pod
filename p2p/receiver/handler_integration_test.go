@@ -5,7 +5,6 @@ package receiver_test
 import (
 	"context"
 	"flag"
-	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -44,7 +43,7 @@ var (
 	handler    *receiver.Handler
 	anchorRepo anchors.AnchorRepository
 	cfg        config.Configuration
-	idService  identity.ServiceDID
+	idService  identity.Service
 	idFactory  identity.Factory
 	cfgService config.Service
 	docSrv     documents.Service
@@ -58,7 +57,7 @@ func TestMain(m *testing.M) {
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
-	idService = ctx[identity.BootstrappedDIDService].(identity.ServiceDID)
+	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
 	defaultDID = createIdentity(&testing.T{})
@@ -138,7 +137,6 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 
 	// valid transition for collaborator id
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd}, defaultDID)
-	fmt.Println(ncd.PreviousVersion, ncd.CurrentVersion)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp, "must be non nil")
 	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
@@ -311,6 +309,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		err = po.InitPurchaseOrderInput(payload, defaultDID)
 		assert.NoError(t, err)
 	}
+	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
 	_, err = po.CalculateDataRoot()
@@ -334,7 +333,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 }
 
 func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{})
+	cd, err := po.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 	po.CoreDocument = cd
 	return prepareDocumentForP2PHandler(t, po)

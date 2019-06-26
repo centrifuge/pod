@@ -36,6 +36,26 @@
 ## Installing pre-requisites
 ### Linux
 ```bash
+# Install Go
+
+sudo apt-get update
+sudo apt-get -y upgrade
+
+#download go using this command
+wget https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz
+
+#extract the archive and move it to /usr/local folder
+sudo tar -xvf go1.11.4.linux-amd64.tar.gz
+sudo mv go /usr/local
+
+#cd to ~/.profile and add the following lines to the end.
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+# execute this command to use go in the current shell. 
+source ~/.profile
+
 # install jq
 sudo apt-get install jq
 
@@ -75,16 +95,15 @@ Make sure you have docker-compose installed, usually comes bundled with Mac OS D
 
 Build & install the Centrifuge OS Node
 ```bash
-cd $GOPATH/src/github.com/centrifuge/go-centrifuge
+mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
+cd $GOPATH/src/github.com/centrifuge/
+git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
+cd go-centrifuge
 make install
 ```
+Check whether everything is fine by running tests
 
-## Install
 ```bash
-mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
-git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
-
-# You can already run unit/integration tests
 go test --tags="unit" ./...
 go test --tags="integration" ./...
 ```

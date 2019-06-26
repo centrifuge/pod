@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,44 +40,45 @@ func TestMain(m *testing.M) {
 }
 
 func Test_getKey(t *testing.T) {
-	cid := testingidentity.GenerateRandomDID()
+	did := testingidentity.GenerateRandomDID()
 	id := jobs.NilJobID()
 
 	// empty id
-	key, err := getKey(cid, id)
+	key, err := getKey(did, id)
 	assert.Nil(t, key)
+	assert.Error(t, err)
 	assert.Equal(t, "job ID is not valid", err.Error())
 
 	id = jobs.NewJobID()
-	key, err = getKey(cid, id)
+	key, err = getKey(did, id)
 	assert.Nil(t, err)
-	assert.Equal(t, append(cid[:], id.Bytes()...), key)
+	assert.Equal(t, append([]byte(jobPrefix), []byte(hexutil.Encode(append(did[:], id.Bytes()...)))...), key)
 }
 
 func TestRepository(t *testing.T) {
-	cid := testingidentity.GenerateRandomDID()
+	did := testingidentity.GenerateRandomDID()
 	bytes := utils.RandomSlice(identity.DIDLength)
-	assert.Equal(t, identity.DIDLength, copy(cid[:], bytes))
+	assert.Equal(t, identity.DIDLength, copy(did[:], bytes))
 
 	repo := ctx[jobs.BootstrappedRepo].(jobs.Repository)
-	tx := jobs.NewJob(cid, "Some transaction")
-	assert.NotNil(t, tx.ID)
-	assert.NotNil(t, tx.DID)
-	assert.Equal(t, jobs.Pending, tx.Status)
+	job := jobs.NewJob(did, "Some transaction")
+	assert.NotNil(t, job.ID)
+	assert.NotNil(t, job.DID)
+	assert.Equal(t, jobs.Pending, job.Status)
 
-	// get tx from repo
-	_, err := repo.Get(cid, tx.ID)
+	// get job from repo
+	_, err := repo.Get(did, job.ID)
 	assert.True(t, errors.IsOfType(jobs.ErrJobsMissing, err))
 
-	// save tx into repo
-	tx.Status = jobs.Success
-	err = repo.Save(tx)
+	// save job into repo
+	job.Status = jobs.Success
+	err = repo.Save(job)
 	assert.Nil(t, err)
 
-	// get tx back
-	tx, err = repo.Get(cid, tx.ID)
+	// get job back
+	job, err = repo.Get(did, job.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, tx)
-	assert.Equal(t, cid, tx.DID)
-	assert.Equal(t, jobs.Success, tx.Status)
+	assert.NotNil(t, job)
+	assert.Equal(t, did, job.DID)
+	assert.Equal(t, jobs.Success, job.Status)
 }

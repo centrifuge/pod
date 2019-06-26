@@ -8,27 +8,24 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
-	txID := jobs.NewJobID().String()
-	cid := testingidentity.GenerateRandomDID()
+	jobID := jobs.NewJobID().String()
+	did := testingidentity.GenerateRandomDID()
 
 	kwargs := map[string]interface{}{
-		jobs.JobIDParam:         txID,
-		TransactionAccountParam: cid.String(),
+		jobs.JobIDParam:         jobID,
+		TransactionAccountParam: did.String(),
 		TransactionTxHashParam:  txHash,
 	}
 
@@ -37,8 +34,8 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
 
-	assert.Equal(t, cid, task.accountID, "accountID should be parsed correctly")
-	assert.Equal(t, txID, task.JobID.String(), "txID should be parsed correctly")
+	assert.Equal(t, did, task.accountID, "accountID should be parsed correctly")
+	assert.Equal(t, jobID, task.JobID.String(), "jobID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
 
 }
@@ -46,14 +43,14 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 func TestMintingConfirmationTask_ParseKwargsWithEvents_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
-	txID := jobs.NewJobID().String()
-	cid := testingidentity.GenerateRandomDID()
+	jobID := jobs.NewJobID().String()
+	did := testingidentity.GenerateRandomDID()
 	eventName := "IdentityCreated(address)"
 	eventIdx := 0
 
 	kwargs := map[string]interface{}{
-		jobs.JobIDParam:          txID,
-		TransactionAccountParam:  cid.String(),
+		jobs.JobIDParam:          jobID,
+		TransactionAccountParam:  did.String(),
 		TransactionTxHashParam:   txHash,
 		TransactionEventName:     eventName,
 		TransactionEventValueIdx: eventIdx,
@@ -64,8 +61,8 @@ func TestMintingConfirmationTask_ParseKwargsWithEvents_success(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
 
-	assert.Equal(t, cid, task.accountID, "accountID should be parsed correctly")
-	assert.Equal(t, txID, task.JobID.String(), "txID should be parsed correctly")
+	assert.Equal(t, did, task.accountID, "accountID should be parsed correctly")
+	assert.Equal(t, jobID, task.JobID.String(), "jobID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
 	assert.Equal(t, eventName, task.eventName, "eventName should be parsed correctly")
 	assert.Equal(t, eventIdx, task.eventValueIdx, "eventValueIdx should be parsed correctly")
@@ -129,7 +126,7 @@ func TestGetEventValueFromTransactionReceipt(t *testing.T) {
 	eventValue := []byte{0, 1, 2, 3, 4}
 	wrongEvent := "WrongEvent(bytes)"
 	eventIdx := 0
-	mockClient := &testingcommons.MockEthClient{}
+	mockClient := &MockEthClient{}
 
 	// Empty event list error
 	mockClient.On("TransactionReceipt", mock.Anything, common.HexToHash("0x1")).Return(&types.Receipt{Status: 1}, nil).Once()

@@ -44,6 +44,11 @@ func (m *MockConfig) GetP2PConnectionTimeout() time.Duration {
 	return args.Get(0).(time.Duration)
 }
 
+func (m *MockConfig) GetP2PResponseDelay() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
 func (m *MockConfig) GetReceiveEventNotificationEndpoint() string {
 	args := m.Called()
 	return args.Get(0).(string)
@@ -114,11 +119,6 @@ func (m *MockConfig) GetEthereumAccount(accountName string) (account *config.Acc
 	return args.Get(0).(*config.AccountConfig), args.Error(1)
 }
 
-func (m *MockConfig) GetTxPoolAccessEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *MockConfig) GetNetworkString() string {
 	args := m.Called()
 	return args.Get(0).(string)
@@ -170,6 +170,11 @@ func (m *MockConfig) GetPrecommitEnabled() bool {
 }
 
 func (m *MockConfig) GetLowEntropyNFTTokenEnabled() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
+func (m *MockConfig) IsDebugLogEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
 }
