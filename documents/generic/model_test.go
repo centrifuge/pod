@@ -3,6 +3,7 @@
 package generic
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -85,7 +86,7 @@ func createCDWithEmbeddedGeneric(t *testing.T) (documents.Model, coredocumentpb.
 	g.GetTestCoreDocWithReset()
 	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = g.CalculateSigningRoot()
+	_, err = g.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -142,7 +143,8 @@ func TestGeneric_calculateDataRoot(t *testing.T) {
 }
 
 func TestGeneric_CreateProofs(t *testing.T) {
-	g, cd := createCDWithEmbeddedGeneric(t)
+	gm, cd := createCDWithEmbeddedGeneric(t)
+	g := gm.(*Generic)
 	rk := cd.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := g.CreateProofs([]string{pf, documents.CDTreePrefix + ".document_type"})
@@ -155,10 +157,13 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	tree, err := g.DocumentRootTree()
 	assert.NoError(t, err)
 
+	h := sha256.New()
+	dataLeaves, err := g.getDataLeaves()
+	assert.NoError(t, err)
+
 	// Validate roles
-	valid, err := tree.ValidateProof(proof[0])
+	err = g.CoreDocument.ValidateDataProof(pf, g.DocumentType(), tree.RootHash(), proof[0], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate []byte value
 	acc, err := identity.NewDIDFromBytes(proof[0].Value)
@@ -166,9 +171,8 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	assert.True(t, g.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[1])
+	err = g.CoreDocument.ValidateDataProof(documents.CDTreePrefix+".document_type", g.DocumentType(), tree.RootHash(), proof[1], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 }
 
 func TestGeneric_CreateNFTProofs(t *testing.T) {
@@ -176,13 +180,14 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = did[:]
 	assert.NoError(t, err)
-	g, _ := createCDWithEmbeddedGeneric(t)
-	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
+	gm, _ := createCDWithEmbeddedGeneric(t)
+	g := gm.(*Generic)
+	sigs, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
-	g.AppendSignatures(sig)
+	g.AppendSignatures(sigs...)
 	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = g.CalculateSigningRoot()
+	_, err = g.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -190,8 +195,8 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	proofFields := []string{signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := g.CreateProofs(proofFields)
 	assert.Nil(t, err)
@@ -200,25 +205,27 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 3)
 
+	h := sha256.New()
+	dataLeaves, err := g.getDataLeaves()
+	assert.NoError(t, err)
+
 	// Validate signing_root
 	valid, err := tree.ValidateProof(proof[0])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate signature
-	valid, err = tree.ValidateProof(proof[1])
+	err = g.ValidateDataProof(proofFields[1], g.DocumentType(), tree.RootHash(), proof[1], nil, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = tree.ValidateProof(proof[2])
+	err = g.ValidateDataProof(proofFields[2], g.DocumentType(), tree.RootHash(), proof[2], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 }
 
 func TestGeneric_getDocumentDataTree(t *testing.T) {
 	g, _ := createCDWithEmbeddedGeneric(t)
-	tree, err := g.(*Generic).getDocumentDataTree()
+	tree, err := g.(*Generic).getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("generic.scheme")
 	assert.NotNil(t, leaf)
@@ -275,7 +282,7 @@ func TestGeneric_CollaboratorCanUpdate(t *testing.T) {
 	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
 
-	_, err = g.CalculateSigningRoot()
+	_, err = g.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 
 	_, err = g.CalculateDocumentRoot()

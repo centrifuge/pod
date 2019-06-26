@@ -129,7 +129,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 	return p2pEnv, nil
 }
 
-// RequestDocumentSignatures signs the received document and returns the signature of the signingRoot
+// RequestDocumentSignature signs the received document and returns the signature of the signingRoot
 // document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // document will be stored to the repository for state management

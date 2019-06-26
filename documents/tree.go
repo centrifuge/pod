@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"hash"
+	"strings"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -104,4 +107,52 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 		cd.Document.Salts = salts
 		return randbytes, nil
 	}
+}
+
+// ValidateDataProof validates proof returning nil on success otherwise error
+func (cd *CoreDocument) ValidateDataProof(field, docType string, docRoot []byte, proof *proofspb.Proof, dataLeaves []proofs.LeafNode, h hash.Hash) error {
+	if strings.Contains(field, SignaturesTreePrefix) {
+		signTree, err := cd.getSignatureDataTree()
+		if err != nil {
+			return err
+		}
+		_, l := signTree.GetLeafByProperty(field)
+		if l == nil {
+			return errors.New("Leaf %s not found", field)
+		}
+		_, err = proofs.ValidateProofSortedHashes(l.Hash, proof.SortedHashes[:1], signTree.RootHash(), h)
+		if err != nil {
+			return err
+		}
+	} else {
+		cdLeaves, err := cd.coredocLeaves(docType)
+		if err != nil {
+			return err
+		}
+		eDocDataTree, err := cd.eDocDataTree(docType, dataLeaves, cdLeaves)
+		if err != nil {
+			return err
+		}
+		_, l := eDocDataTree.GetLeafByProperty(field)
+		if l == nil {
+			return errors.New("Leaf %s not found", field)
+		}
+		if len(l.Hash) == 0 {
+			l.Hash, err = proofs.CalculateHashForProofField(proof, h)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = proofs.ValidateProofSortedHashes(l.Hash, proof.SortedHashes[:len(proof.SortedHashes)-2], eDocDataTree.RootHash(), h)
+		if err != nil {
+			return err
+		}
+		zTreeHash := proof.SortedHashes[len(proof.SortedHashes)-2]
+		signHash := proof.SortedHashes[len(proof.SortedHashes)-1]
+		_, err = proofs.ValidateProofHashes(eDocDataTree.RootHash(), []*proofspb.MerkleHash{{Right: zTreeHash}, {Right: signHash}}, docRoot, h)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -296,7 +296,7 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 
 // TreeProof is a helper structure to pass to create proofs
 type TreeProof struct {
-	tree       *proofs.DocumentTree
+	tree         *proofs.DocumentTree
 	sortedHashes [][]byte
 	hashes       []*proofspb.MerkleHash
 }

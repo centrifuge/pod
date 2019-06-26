@@ -6,10 +6,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"math/big"
 	"testing"
 	"time"
+
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -284,7 +285,6 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	eDocDataTree, err := cd.eDocDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
 	assert.NoError(t, err)
-
 
 	tests := []struct {
 		registry       common.Address

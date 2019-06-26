@@ -3,6 +3,7 @@
 package purchaseorder
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -220,16 +221,17 @@ func TestPOModel_CreateProofs(t *testing.T) {
 	assert.NotNil(t, proof)
 	tree, err := po.DocumentRootTree()
 	assert.NoError(t, err)
+	h := sha256.New()
+	dataLeaves, err := po.getDataLeaves()
+	assert.NoError(t, err)
 
 	// Validate po_number
-	valid, err := tree.ValidateProof(proof[0])
+	err = po.CoreDocument.ValidateDataProof("po.number", po.DocumentType(), tree.RootHash(), proof[0], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate roles collaborators
-	valid, err = tree.ValidateProof(proof[1])
+	err = po.CoreDocument.ValidateDataProof(pf, po.DocumentType(), tree.RootHash(), proof[1], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate []byte value
 	acc, err := identity.NewDIDFromBytes(proof[1].Value)
@@ -237,14 +239,12 @@ func TestPOModel_CreateProofs(t *testing.T) {
 	assert.True(t, po.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
+	err = po.CoreDocument.ValidateDataProof(documents.CDTreePrefix+".document_type", po.DocumentType(), tree.RootHash(), proof[2], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// validate line items
-	valid, err = tree.ValidateProof(proof[3])
+	err = po.CoreDocument.ValidateDataProof("po.line_items[0].status", po.DocumentType(), tree.RootHash(), proof[3], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 }
 
 func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {

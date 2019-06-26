@@ -6,11 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"os"
-	"strings"
 	"testing"
 	"time"
+
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -457,10 +457,6 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	cdLeaves, err := cd.coredocLeaves(documenttypes.InvoiceDataTypeUrl)
-	assert.NoError(t, err)
-	eDocDataTree, err := cd.eDocDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
-	assert.NoError(t, err)
 	_, err = cd.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
@@ -475,25 +471,8 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	assert.Len(t, pfs, 5)
 
 	for idx, test := range tests {
-		if strings.Contains(test, SignaturesTreePrefix) {
-			signTree, err := cd.getSignatureDataTree()
-			assert.NoError(t, err)
-			_, l := signTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes[:1], signTree.RootHash(), h)
-			assert.NoError(t, err)
-			assert.True(t, valid)
-		} else {
-			assert.Len(t, pfs[idx].SortedHashes, 7)
-			_, l := eDocDataTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes[:len(pfs[idx].SortedHashes)-2], eDocDataTree.RootHash(), h)
-			assert.NoError(t, err)
-			assert.True(t, valid)
-			zTreeHash := pfs[idx].SortedHashes[len(pfs[idx].SortedHashes)-2]
-			signHash := pfs[idx].SortedHashes[len(pfs[idx].SortedHashes)-1]
-			valid, err = proofs.ValidateProofHashes(eDocDataTree.RootHash(), []*proofspb.MerkleHash{{Right: zTreeHash}, {Right: signHash}}, docRoot, h)
-			assert.NoError(t, err)
-			assert.True(t, valid)
-		}
+		err = cd.ValidateDataProof(test, documenttypes.InvoiceDataTypeUrl, docRoot, pfs[idx], testTree.GetLeaves(), h)
+		assert.NoError(t, err)
 	}
 }
 

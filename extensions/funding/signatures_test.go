@@ -26,9 +26,9 @@ type mockAccount struct {
 	mock.Mock
 }
 
-func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+func (m *mockAccount) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
 	args := m.Called(msg)
-	sig, _ := args.Get(0).(*coredocumentpb.Signature)
+	sig, _ := args.Get(0).([]*coredocumentpb.Signature)
 	return sig, args.Error(1)
 }
 
@@ -75,7 +75,7 @@ func TestService_Sign(t *testing.T) {
 	acc.On("GetIdentityID").Return(utils.RandomSlice(20), nil)
 	// success
 	signature := utils.RandomSlice(32)
-	acc.On("SignMsg", mock.Anything).Return(&coredocumentpb.Signature{Signature: signature}, nil)
+	acc.On("SignMsg", mock.Anything).Return([]*coredocumentpb.Signature{{Signature: signature}}, nil)
 	ctx, err := contextutil.New(context.Background(), acc)
 	assert.NoError(t, err)
 
@@ -115,7 +115,7 @@ func TestService_SignVerify(t *testing.T) {
 	acc.On("GetIdentityID").Return(utils.RandomSlice(20), nil)
 	// success
 	signature := utils.RandomSlice(32)
-	acc.On("SignMsg", mock.Anything).Return(&coredocumentpb.Signature{Signature: signature, PublicKey: utils.RandomSlice(64)}, nil)
+	acc.On("SignMsg", mock.Anything).Return([]*coredocumentpb.Signature{{Signature: signature, PublicKey: utils.RandomSlice(64)}}, nil)
 	ctx, err := contextutil.New(context.Background(), acc)
 	assert.NoError(t, err)
 

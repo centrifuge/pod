@@ -3,6 +3,7 @@
 package entityrelationship
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -231,16 +232,17 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	assert.NotNil(t, proof)
 	tree, err := e.DocumentRootTree()
 	assert.NoError(t, err)
+	h := sha256.New()
+	dataLeaves, err := e.getDataLeaves()
+	assert.NoError(t, err)
 
-	// Validate entity_number
-	valid, err := tree.ValidateProof(proof[0])
+	// Validate entity relationship owner
+	err = e.CoreDocument.ValidateDataProof("entity_relationship.owner_identity", e.DocumentType(), tree.RootHash(), proof[0], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = tree.ValidateProof(proof[1])
+	err = e.CoreDocument.ValidateDataProof(pf, e.DocumentType(), tree.RootHash(), proof[1], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate []byte value
 	acc, err := identity.NewDIDFromBytes(proof[1].Value)
@@ -248,9 +250,8 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
+	err = e.CoreDocument.ValidateDataProof(documents.CDTreePrefix+".document_type", e.DocumentType(), tree.RootHash(), proof[2], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 }
 
 func createEntityRelationship(t *testing.T) *EntityRelationship {

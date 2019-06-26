@@ -75,7 +75,9 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp("", nil), nil)
+	randomBytes := utils.RandomSlice(identity.DIDLength)
+	signature := &coredocumentpb.Signature{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp("", signature), nil)
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -116,7 +118,7 @@ func getIDMocks(ctx context.Context, did identity.DID) *testingcommons.MockIdent
 }
 
 func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb.Signature) *protocolpb.P2PEnvelope {
-	req, err := proto.Marshal(&p2ppb.SignatureResponse{Signature: signature})
+	req, err := proto.Marshal(&p2ppb.SignatureResponse{Signatures: []*coredocumentpb.Signature{signature}})
 	if err != nil {
 		return nil
 	}
@@ -158,10 +160,10 @@ func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, did identity.DID,
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	sig, err := acc.SignMsg(ddr)
+	sigs, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
-	po.AppendSignatures(sig)
+	po.AppendSignatures(sigs...)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := po.PackCoreDocument()
