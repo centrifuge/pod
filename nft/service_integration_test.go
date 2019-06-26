@@ -134,7 +134,7 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 	keys, err := acc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
@@ -194,7 +194,7 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	keys, err := acc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,

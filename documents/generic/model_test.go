@@ -86,7 +86,7 @@ func createCDWithEmbeddedGeneric(t *testing.T) (documents.Model, coredocumentpb.
 	g.GetTestCoreDocWithReset()
 	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = g.CalculateDocumentDataRoot()
+	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -187,7 +187,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	g.AppendSignatures(sigs...)
 	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = g.CalculateDocumentDataRoot()
+	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -195,7 +195,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	proofFields := []string{signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := g.CreateProofs(proofFields)
@@ -223,7 +223,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestGeneric_getDocumentDataTree(t *testing.T) {
+func TestGeneric_getDataTree(t *testing.T) {
 	g, _ := createCDWithEmbeddedGeneric(t)
 	tree, err := g.(*Generic).getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
@@ -280,9 +280,6 @@ func TestGeneric_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = g.CalculateDataRoot()
-	assert.NoError(t, err)
-
-	_, err = g.CalculateDocumentDataRoot()
 	assert.NoError(t, err)
 
 	_, err = g.CalculateDocumentRoot()

@@ -262,7 +262,7 @@ func createEntityRelationship(t *testing.T) *EntityRelationship {
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateDocumentDataRoot()
+	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -285,7 +285,7 @@ func TestEntityRelationship_GetDocumentType(t *testing.T) {
 	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, e.DocumentType())
 }
 
-func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
+func TestEntityRelationship_getDataTree(t *testing.T) {
 	e := createEntityRelationship(t)
 	tree, err := e.getDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
@@ -364,7 +364,7 @@ func createCDWithEmbeddedEntityRelationship(t *testing.T) (documents.Model, core
 	e.GetTestCoreDocWithReset()
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateDocumentDataRoot()
+	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)

@@ -435,16 +435,6 @@ func (p *PurchaseOrder) Type() reflect.Type {
 	return reflect.TypeOf(p)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document
-func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
-	t, err := p.getDataTree()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDataTree, err)
-	}
-
-	return t.RootHash(), nil
-}
-
 func (p *PurchaseOrder) getDataLeaves() ([]proofs.LeafNode, error) {
 	t, err := p.getRawDataTree()
 	if err != nil {
@@ -528,14 +518,14 @@ func (p *PurchaseOrder) AddNFT(grantReadAccess bool, registry common.Address, to
 	return nil
 }
 
-// CalculateDocumentDataRoot returns the document data root of the document.
+// CalculateDataRoot returns the document data root of the document.
 // Calculates it if not generated yet.
-func (p *PurchaseOrder) CalculateDocumentDataRoot() ([]byte, error) {
+func (p *PurchaseOrder) CalculateDataRoot() ([]byte, error) {
 	dataLeaves, err := p.getDataLeaves()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return p.CoreDocument.CalculateDocumentDataRoot(p.DocumentType(), dataLeaves)
+	return p.CoreDocument.CalculateDataRoot(p.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root

@@ -74,7 +74,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			t.Error(err)
 		}
 		signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-		docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+		docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 		signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 
 		// mint an NFT

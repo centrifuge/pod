@@ -406,7 +406,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateDocumentDataRoot()
+	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)

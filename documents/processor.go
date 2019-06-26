@@ -105,7 +105,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	model.SetUsedAnchorRepoAddress(addr)
 
 	// calculate the document data root
-	ddr, err := model.CalculateDocumentDataRoot()
+	ddr, err := model.CalculateDataRoot()
 	if err != nil {
 		return errors.New("failed to calculate document data root: %v", err)
 	}
@@ -151,7 +151,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 
 // PreAnchorDocument pre-commits a document
 func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
-	docDataRoot, err := model.CalculateDocumentDataRoot()
+	docDataRoot, err := model.CalculateDataRoot()
 	if err != nil {
 		return err
 	}

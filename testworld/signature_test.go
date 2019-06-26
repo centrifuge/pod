@@ -309,7 +309,7 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 
-	ddr, err := po.CalculateDocumentDataRoot()
+	ddr, err := po.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	msg := documents.ConsensusSignaturePayload(ddr, byte(0))

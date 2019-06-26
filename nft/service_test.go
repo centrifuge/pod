@@ -280,7 +280,7 @@ func TestFilterMintProofs(t *testing.T) {
 				},
 			},
 			{
-				Property: proofs.CompactName(append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.DocumentDataRootField)...)...),
+				Property: proofs.CompactName(append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.DataRootField)...)...),
 				Value:    utils.RandomSlice(32),
 				Salt:     utils.RandomSlice(32),
 				Hash:     utils.RandomSlice(32),

@@ -619,16 +619,6 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
-func (i *Invoice) CalculateDataRoot() ([]byte, error) {
-	t, err := i.getDataTree()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDataTree, err)
-	}
-
-	return t.RootHash(), nil
-}
-
 func (i *Invoice) getDataLeaves() ([]proofs.LeafNode, error) {
 	t, err := i.getRawDataTree()
 	if err != nil {
@@ -712,13 +702,13 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 	return nil
 }
 
-// CalculateDocumentDataRoot calculates the document data root of the document.
-func (i *Invoice) CalculateDocumentDataRoot() ([]byte, error) {
+// CalculateDataRoot calculates the document data root of the document.
+func (i *Invoice) CalculateDataRoot() ([]byte, error) {
 	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return i.CoreDocument.CalculateDocumentDataRoot(i.DocumentType(), dataLeaves)
+	return i.CoreDocument.CalculateDataRoot(i.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root

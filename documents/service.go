@@ -189,7 +189,7 @@ func (s service) RequestDocumentSignatures(ctx context.Context, model Model, col
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	ddr, err := model.CalculateDocumentDataRoot()
+	ddr, err := model.CalculateDataRoot()
 	if err != nil {
 		return nil, errors.New("failed to get document data root: %v", err)
 	}

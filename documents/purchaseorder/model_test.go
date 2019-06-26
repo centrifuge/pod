@@ -253,7 +253,7 @@ func TestPOModel_createProofsFieldDoesNotExist(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestPOModel_getDocumentDataTree(t *testing.T) {
+func TestPOModel_getDataTree(t *testing.T) {
 	na := new(documents.Decimal)
 	assert.NoError(t, na.SetString("2"))
 	poModel := createPurchaseOrder(t)
@@ -294,7 +294,7 @@ func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateDocumentDataRoot()
+	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)

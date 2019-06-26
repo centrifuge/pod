@@ -86,16 +86,6 @@ func (g *Generic) Type() reflect.Type {
 	return reflect.TypeOf(g)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
-func (g *Generic) CalculateDataRoot() ([]byte, error) {
-	t, err := g.getDataTree()
-	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
-	}
-
-	return t.RootHash(), nil
-}
-
 func (g *Generic) getDataLeaves() ([]proofs.LeafNode, error) {
 	t, err := g.getRawDataTree()
 	if err != nil {
@@ -170,13 +160,13 @@ func (g *Generic) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 	return nil
 }
 
-// CalculateDocumentDataRoot calculates the document data root of the document.
-func (g *Generic) CalculateDocumentDataRoot() ([]byte, error) {
+// CalculateDataRoot calculates the document data root of the document.
+func (g *Generic) CalculateDataRoot() ([]byte, error) {
 	dataLeaves, err := g.getDataLeaves()
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return g.CoreDocument.CalculateDocumentDataRoot(g.DocumentType(), dataLeaves)
+	return g.CoreDocument.CalculateDataRoot(g.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root

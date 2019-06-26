@@ -48,11 +48,8 @@ type Model interface {
 	// TODO(ved): remove once the DocumentType is not used anymore.
 	Scheme() string
 
-	// CalculateDataRoot calculates the data root of the model.
+	// CalculateDataRoot calculates the document data root of the model.
 	CalculateDataRoot() ([]byte, error)
-
-	// CalculateDocumentDataRoot calculates the document data root of the model.
-	CalculateDocumentDataRoot() ([]byte, error)
 
 	// CalculateDocumentRoot returns the document root of the model.
 	CalculateDocumentRoot() ([]byte, error)

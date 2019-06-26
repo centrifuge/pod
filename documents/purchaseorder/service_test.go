@@ -380,7 +380,7 @@ func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreD
 	po.GetTestCoreDocWithReset()
 	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateDocumentDataRoot()
+	_, err = po.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)

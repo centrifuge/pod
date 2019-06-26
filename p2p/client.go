@@ -366,7 +366,7 @@ func (s *peer) validateSignatureResp(
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("cannot get model timestamp : %s", err.Error()))
 		}
 
-		docDataRoot, err := model.CalculateDocumentDataRoot()
+		docDataRoot, err := model.CalculateDataRoot()
 		if err != nil {
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
 		}

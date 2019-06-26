@@ -275,7 +275,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	_, err = cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	_, err = cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
@@ -283,7 +283,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	cdLeaves, err := cd.coredocLeaves(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
-	eDocDataTree, err := cd.eDocDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
+	eDocDataTree, err := cd.eDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
 	assert.NoError(t, err)
 
 	tests := []struct {

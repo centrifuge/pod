@@ -140,14 +140,14 @@ func baseValidator() Validator {
 	})
 }
 
-// documentDataRootValidator checks the existence of document data root
-func documentDataRootValidator() Validator {
+// dataRootValidator checks the existence of document data root
+func dataRootValidator() Validator {
 	return ValidatorFunc(func(_, model Model) error {
 		if model == nil {
 			return ErrModelNil
 		}
 
-		sr, err := model.CalculateDocumentDataRoot()
+		sr, err := model.CalculateDataRoot()
 		if err != nil {
 			return errors.New("failed to get document data root: %v", err)
 		}
@@ -229,7 +229,7 @@ func signaturesValidator(idService identity.Service) Validator {
 			return ErrModelNil
 		}
 
-		ddr, err := model.CalculateDocumentDataRoot()
+		ddr, err := model.CalculateDataRoot()
 		if err != nil {
 			return errors.New("failed to get document data root: %v", err)
 		}
@@ -520,13 +520,13 @@ func RequestDocumentSignatureValidator(
 
 // SignatureValidator is a validator group with following validators
 // baseValidator
-// documentDataRootValidator
+// dataRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
 func SignatureValidator(idService identity.Service, repo anchors.AnchorRepository) ValidatorGroup {
 	return ValidatorGroup{
 		baseValidator(),
-		documentDataRootValidator(),
+		dataRootValidator(),
 		signaturesValidator(idService),
 		attributeValidator(repo, idService),
 	}

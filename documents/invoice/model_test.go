@@ -294,7 +294,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	i.AppendSignatures(sigs...)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentDataRoot()
+	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -302,7 +302,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
@@ -344,7 +344,7 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 	assert.Equal(t, i.CoreDocument.ID(), i.ID())
 }
 
-func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
+func TestInvoiceModel_getDataTree(t *testing.T) {
 	na := new(documents.Decimal)
 	assert.NoError(t, na.SetString("2"))
 	ga := new(documents.Decimal)
@@ -378,7 +378,7 @@ func createInvoice(t *testing.T) *Invoice {
 	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentDataRoot()
+	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -412,7 +412,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 
-	_, err = inv.CalculateDocumentDataRoot()
+	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	_, err = inv.CalculateDocumentRoot()

@@ -129,7 +129,7 @@ func (cd *CoreDocument) ValidateDataProof(field, docType string, docRoot []byte,
 		if err != nil {
 			return err
 		}
-		eDocDataTree, err := cd.eDocDataTree(docType, dataLeaves, cdLeaves)
+		eDocDataTree, err := cd.eDataTree(docType, dataLeaves, cdLeaves)
 		if err != nil {
 			return err
 		}
