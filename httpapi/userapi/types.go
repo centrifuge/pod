@@ -24,7 +24,7 @@ type UpdateTransferDetailRequest struct {
 // TransferDetailResponse is the response body when fetching a Transfer Detail
 type TransferDetailResponse struct {
 	Header coreapi.ResponseHeader             `json:"header"`
-	Data   transferdetails.Data
+	Data   transferdetails.Data `json:"data"`
 }
 
 // TransferDetailListResponse is the response body when fetching a list of Transfer Details
