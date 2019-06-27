@@ -371,7 +371,11 @@ func (s *peer) validateSignatureResp(
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
 		}
 
-		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, dataRoot, tm)
+		transitionValidatedFlag := byte(0)
+		if sig.TransitionValidated {
+			transitionValidatedFlag = byte(1)
+		}
+		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, documents.ConsensusSignaturePayload(dataRoot, transitionValidatedFlag), tm)
 		if err != nil {
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 		}
