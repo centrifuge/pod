@@ -44,11 +44,12 @@ type Model interface {
 	// DocumentType returns the type of the document
 	DocumentType() string
 
-	// CalculateDataRoot calculates the data root of the model.
-	CalculateDataRoot() ([]byte, error)
+	// Scheme returns the scheme of the document data.
+	// TODO(ved): remove once the DocumentType is not used anymore.
+	Scheme() string
 
-	// CalculateDocumentDataRoot calculates the document data root of the model.
-	CalculateDocumentDataRoot() ([]byte, error)
+	// CalculateDataRoot calculates the document data root of the model.
+	CalculateDataRoot() ([]byte, error)
 
 	// CalculateDocumentRoot returns the document root of the model.
 	CalculateDocumentRoot() ([]byte, error)
@@ -140,6 +141,9 @@ type Model interface {
 
 	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
 	AnchorRepoAddress() common.Address
+
+	// GetData returns the document data. Ex: invoice.Data
+	GetData() interface{}
 }
 
 // TokenRegistry defines NFT related functions.

@@ -111,7 +111,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// invalid identity
 	payload := &entitypb.RelationshipPayload{
 		TargetIdentity: "some random string",
-		Identifier:     rp.Identifier,
+		DocumentId:     rp.DocumentId,
 	}
 
 	m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
@@ -120,13 +120,13 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Contains(t, err.Error(), "malformed address provided")
 
 	// invalid identifier
-	payload.Identifier = "random string"
+	payload.DocumentId = "random string"
 	m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 
 	// other DID in payload
-	payload.Identifier = rp.Identifier
+	payload.DocumentId = rp.DocumentId
 	payload.TargetIdentity = testingidentity.GenerateRandomDID().String()
 	m, err = eSrv.DeriveFromUpdatePayload(ctxh, payload)
 	assert.Nil(t, m)
@@ -162,7 +162,7 @@ func TestService_GetEntityRelationships(t *testing.T) {
 	assert.True(t, testEntityRepo().Exists(did[:], updated.CurrentVersion()))
 
 	// get all relationships
-	entityID, err := hexutil.Decode(rp.Identifier)
+	entityID, err := hexutil.Decode(rp.DocumentId)
 	assert.NoError(t, err)
 	r, err := eSrv.GetEntityRelationships(ctxh, entityID)
 	assert.NoError(t, err)
@@ -208,7 +208,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	docID := hexutil.Encode(utils.RandomSlice(32))
 	payload := &entitypb.RelationshipPayload{
 		TargetIdentity: "some random string",
-		Identifier:     docID,
+		DocumentId:     docID,
 	}
 
 	m, err = eSrv.DeriveFromCreatePayload(ctxh, payload)

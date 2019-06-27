@@ -19,6 +19,9 @@ const (
 	// ErrSelfNotFound must be used when self value is not found in the context
 	ErrSelfNotFound = errors.Error("self value not found in the context")
 
+	// ErrDIDMissingFromContext sentinel error when did is missing from the context.
+	ErrDIDMissingFromContext = errors.Error("failed to extract did from context")
+
 	self = contextKey("self")
 
 	job = contextKey("job")
@@ -98,4 +101,19 @@ func Copy(ctx context.Context) context.Context {
 	nctx := context.WithValue(context.Background(), self, ctx.Value(self))
 	nctx = context.WithValue(nctx, job, ctx.Value(job))
 	return nctx
+}
+
+// DIDFromContext returns did from the context.
+func DIDFromContext(ctx context.Context) (did identity.DID, err error) {
+	didStr, ok := ctx.Value(config.AccountHeaderKey).(string)
+	if !ok {
+		return did, ErrDIDMissingFromContext
+	}
+
+	didBytes, err := hexutil.Decode(didStr)
+	if err != nil {
+		return did, err
+	}
+
+	return identity.NewDIDFromBytes(didBytes)
 }

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -300,7 +299,7 @@ func TestCoreDocument_AddUpdateLog(t *testing.T) {
 	assert.True(t, cd.Modified)
 }
 
-func TestGetDocumentDataProofHash(t *testing.T) {
+func TestGetDataProofHash(t *testing.T) {
 	docAny := &any.Any{
 		TypeUrl: documenttypes.InvoiceDataTypeUrl,
 		Value:   []byte{},
@@ -312,7 +311,7 @@ func TestGetDocumentDataProofHash(t *testing.T) {
 	// Arbitrary tree just to pass it to the calculate function
 	drTree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
-	docDataRoot, err := cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
+	dataRoot, err := cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.Nil(t, err)
 
 	cd.GetTestCoreDocWithReset()
@@ -322,7 +321,7 @@ func TestGetDocumentDataProofHash(t *testing.T) {
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
 
-	valid, err := proofs.ValidateProofSortedHashes(docDataRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
+	valid, err := proofs.ValidateProofSortedHashes(dataRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -370,28 +369,29 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, append(sig.Signature, []byte{0}...), signatureLeaf.Value)
 }
 
-func TestGetDocumentDocumentDataTree(t *testing.T) {
+func TestGetDataTree(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 
 	// no data root
-	_, err = cd.docDataTree(documenttypes.InvoiceDataTypeUrl, nil)
+	_, _, err = cd.dataTrees(documenttypes.InvoiceDataTypeUrl, nil)
 	assert.Error(t, err)
 
 	// successful tree generation
 	dtree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
-	tree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, dtree.GetLeaves())
+	trees, _, err := cd.dataTrees(documenttypes.InvoiceDataTypeUrl, dtree.GetLeaves())
 	assert.Nil(t, err)
-	assert.NotNil(t, tree)
+	assert.NotNil(t, trees)
+	eDataTree := trees[0]
 
-	_, leaf := tree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
-	for _, l := range tree.GetLeaves() {
+	_, leaf := eDataTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
+	for _, l := range eDataTree.GetLeaves() {
 		fmt.Printf("P: %s V: %v", l.Property.ReadableName(), l.Value)
 	}
 	assert.NotNil(t, leaf)
 
-	_, leaf = tree.GetLeafByProperty(CDTreePrefix + ".current_version")
+	_, leaf = eDataTree.GetLeafByProperty(CDTreePrefix + ".current_version")
 	assert.NotNil(t, leaf)
 }
 
@@ -412,13 +412,13 @@ func TestGetDocumentRootTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// successful document root generation
-	docDataRoot, err := cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
+	dataRoot, err := cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.NoError(t, err)
 	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.NoError(t, err)
-	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, DocumentDataRootField))
+	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, DataRootField))
 	assert.NotNil(t, leaf)
-	assert.Equal(t, docDataRoot, leaf.Hash)
+	assert.Equal(t, dataRoot, leaf.Hash)
 
 	// Get signaturesLeaf
 	_, signaturesLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField))
@@ -455,8 +455,6 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
 	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	docDataTree, err := cd.docDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-	assert.NoError(t, err)
 	_, err = cd.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
@@ -471,20 +469,8 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	assert.Len(t, pfs, 5)
 
 	for idx, test := range tests {
-		if strings.Contains(test, SignaturesTreePrefix) {
-			signTree, err := cd.getSignatureDataTree()
-			assert.NoError(t, err)
-			_, l := signTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes[:1], signTree.RootHash(), h)
-			assert.NoError(t, err)
-			assert.True(t, valid)
-		} else {
-			assert.Len(t, pfs[idx].SortedHashes, 6)
-			_, l := docDataTree.GetLeafByProperty(test)
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, pfs[idx].SortedHashes, docRoot, h)
-			assert.NoError(t, err)
-			assert.True(t, valid)
-		}
+		err = cd.ValidateDataProof(test, documenttypes.InvoiceDataTypeUrl, docRoot, pfs[idx], testTree.GetLeaves(), h)
+		assert.NoError(t, err)
 	}
 }
 

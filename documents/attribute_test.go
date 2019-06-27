@@ -212,10 +212,10 @@ type mockAccount struct {
 	mock.Mock
 }
 
-func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+func (m *mockAccount) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
 	args := m.Called(msg)
-	sig, _ := args.Get(0).(*coredocumentpb.Signature)
-	return sig, args.Error(1)
+	sigs, _ := args.Get(0).([]*coredocumentpb.Signature)
+	return sigs, args.Error(1)
 }
 
 func TestNewSignedAttribute(t *testing.T) {
@@ -245,8 +245,9 @@ func TestNewSignedAttribute(t *testing.T) {
 
 	// success
 	signature := utils.RandomSlice(32)
+	pk := utils.RandomSlice(32)
 	acc = new(mockAccount)
-	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
+	acc.On("SignMsg", epayload).Return([]*coredocumentpb.Signature{{Signature: signature, PublicKey: pk}}, nil).Once()
 	model = new(mockModel)
 	model.On("ID").Return(id).Once()
 	model.On("NextVersion").Return(version).Twice()

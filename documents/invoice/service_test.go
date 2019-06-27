@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -80,8 +79,8 @@ func TestService_Update(t *testing.T) {
 	data.GrossAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := invSrv.DeriveFromUpdatePayload(ctxh, &clientinvoicepb.InvoiceUpdatePayload{
-		Identifier:  hexutil.Encode(model.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		DocumentId:  hexutil.Encode(model.ID()),
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.Nil(t, err)
@@ -117,7 +116,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &clientinvoicepb.InvoiceUpdatePayload{Identifier: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
+	payload := &clientinvoicepb.InvoiceUpdatePayload{DocumentId: "some identifier", Data: &clientinvoicepb.InvoiceData{}}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
@@ -126,7 +125,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -144,21 +143,21 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Currency:    "EUR",
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 
 	// failed core document new version
 	payload.Data.Payee = "0x087D8ca6A16E6ce8d9fF55672E551A2828Ab8e8C"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.Nil(t, doc)
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = invSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Nil(t, err)
 	assert.NotNil(t, doc)
@@ -167,7 +166,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
@@ -279,7 +278,7 @@ func TestService_DeriveInvoiceResponse(t *testing.T) {
 	payload := testingdocuments.CreateInvoicePayload()
 	assert.Nil(t, err)
 	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 }
 
 func TestService_GetCurrentVersion(t *testing.T) {
@@ -294,7 +293,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	assert.NoError(t, err)
 	data.Currency = "INR"
 	doc2 := new(Invoice)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*Invoice).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := invSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -392,7 +391,7 @@ func createCDWithEmbeddedInvoice(t *testing.T) (documents.Model, coredocumentpb.
 	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentDataRoot()
+	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)

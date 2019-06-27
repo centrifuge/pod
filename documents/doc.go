@@ -48,7 +48,7 @@ Validation
 
 Validations should be done depending on the situation. The below table is an example that shows a few examples of validations that should only depending on context of the validation.
 
-	|                           | Verify  DocDataRoot | Verify DocumentRoot | Check Invoice State Transition | Node must be in collaborators |
+	|                           | Verify  dataRoot | Verify DocumentRoot | Check Invoice State Transition | Node must be in collaborators |
 	|---------------------------|---------------------|---------------------|--------------------------------|-------------------------------|
 	| Client Submission         |                     |                     | yes                            | yes                           |
 	| Signature Request         | yes                 |                     |                                |                               |
@@ -147,9 +147,9 @@ The registry should be thread safe.
 
 A Sample Flow for Handling Document Signature Requests
 
-The following is an example modification of `Handler.RequestDocumentSignature` to show the usage of `Registry`, `Service` and `Model` interactions.
+The following is an example modification of `Handler.RequestDocumentSignatures` to show the usage of `Registry`, `Service` and `Model` interactions.
 
-	func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
+	func (srv *Handler) RequestDocumentSignatures(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	service, err := registry.LocateService(sigReq.Document)
 	if err != nil {
 	return nil, err

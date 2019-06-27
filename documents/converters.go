@@ -27,10 +27,10 @@ type BinaryAttachment struct {
 // PaymentDetails holds the payment related details for invoice.
 type PaymentDetails struct {
 	ID                    string        `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *time.Time    `json:"date_executed,omitempty"`
-	Payee                 *identity.DID `json:"payee,omitempty"` // centrifuge id of payee
-	Payer                 *identity.DID `json:"payer,omitempty"` // centrifuge id of payer
-	Amount                *Decimal      `json:"amount,omitempty"`
+	DateExecuted          *time.Time    `json:"date_executed"`
+	Payee                 *identity.DID `json:"payee"` // centrifuge id of payee
+	Payer                 *identity.DID `json:"payer"` // centrifuge id of payer
+	Amount                *Decimal      `json:"amount"`
 	Currency              string        `json:"currency"`
 	Reference             string        `json:"reference"` // payment reference (e.g. reference field on bank transfer)
 	BankName              string        `json:"bank_name"`
@@ -300,11 +300,11 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 }
 
 // FromClientCollaboratorAccess converts client collaborator access to CollaboratorsAccess
-func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *documentpb.WriteAccess) (ca CollaboratorsAccess, err error) {
+func FromClientCollaboratorAccess(racess, waccess []string) (ca CollaboratorsAccess, err error) {
 	wmap, rmap := make(map[string]struct{}), make(map[string]struct{})
 	var wcs, rcs []string
 	if waccess != nil {
-		for _, c := range waccess.Collaborators {
+		for _, c := range waccess {
 			c = strings.TrimSpace(strings.ToLower(c))
 			if c == "" {
 				continue
@@ -320,7 +320,7 @@ func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *docume
 	}
 
 	if racess != nil {
-		for _, c := range racess.Collaborators {
+		for _, c := range racess {
 			c = strings.TrimSpace(strings.ToLower(c))
 			if c == "" {
 				continue
@@ -356,27 +356,27 @@ func FromClientCollaboratorAccess(racess *documentpb.ReadAccess, waccess *docume
 }
 
 // ToClientCollaboratorAccess converts CollaboratorAccess to client collaborator access
-func ToClientCollaboratorAccess(ca CollaboratorsAccess) (*documentpb.ReadAccess, *documentpb.WriteAccess) {
+func ToClientCollaboratorAccess(ca CollaboratorsAccess) (readAccess, writeAccess []string) {
 	rcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadCollaborators...)...)
 	wcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadWriteCollaborators...)...)
-	return &documentpb.ReadAccess{Collaborators: rcs}, &documentpb.WriteAccess{Collaborators: wcs}
+	return rcs, wcs
 }
 
 // ToClientAttributes converts attribute map to the client api format
-func ToClientAttributes(attributes map[AttrKey]Attribute) (map[string]*documentpb.Attribute, error) {
+func ToClientAttributes(attributes []Attribute) (map[string]*documentpb.Attribute, error) {
 	if len(attributes) < 1 {
 		return nil, nil
 	}
 
 	m := make(map[string]*documentpb.Attribute)
-	for k, v := range attributes {
+	for _, v := range attributes {
 		val, err := v.Value.String()
 		if err != nil {
 			return nil, errors.NewTypedError(ErrCDAttribute, err)
 		}
 
 		m[v.KeyLabel] = &documentpb.Attribute{
-			Key:   k.String(),
+			Key:   v.Key.String(),
 			Type:  v.Value.Type.String(),
 			Value: val,
 		}
@@ -432,7 +432,7 @@ func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb
 	rcs, wcs := ToClientCollaboratorAccess(cs)
 	return &documentpb.ResponseHeader{
 		DocumentId:  hexutil.Encode(model.ID()),
-		Version:     hexutil.Encode(model.CurrentVersion()),
+		VersionId:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author,
 		CreatedAt:   time,
 		ReadAccess:  rcs,

@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -26,6 +25,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -63,9 +63,9 @@ func (m *MockEntityRelationService) DeriveFromCoreDocument(cd coredocumentpb.Cor
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (m *MockEntityRelationService) RequestDocumentSignatures(ctx context.Context, model documents.Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
-	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
+	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
 func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
@@ -157,8 +157,8 @@ func TestService_Update(t *testing.T) {
 	data.Contacts = []*entitypb.Contact{{Name: "Mr. Test"}}
 	collab := testingidentity.GenerateRandomDID().String()
 	newInv, err := eSrv.DeriveFromUpdatePayload(ctxh, &cliententitypb.EntityUpdatePayload{
-		Identifier:  hexutil.Encode(model.ID()),
-		WriteAccess: &documentpb.WriteAccess{Collaborators: []string{collab}},
+		DocumentId:  hexutil.Encode(model.ID()),
+		WriteAccess: []string{collab},
 		Data:        data,
 	})
 	assert.NoError(t, err)
@@ -195,7 +195,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// messed up identifier
 	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &cliententitypb.EntityUpdatePayload{Identifier: "some identifier", Data: &cliententitypb.EntityData{}}
+	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "some identifier", Data: &cliententitypb.EntityData{}}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentIdentifier, err))
@@ -204,7 +204,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// missing last version
 	id := utils.RandomSlice(32)
-	payload.Identifier = hexutil.Encode(id)
+	payload.DocumentId = hexutil.Encode(id)
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -219,7 +219,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 		Contacts:  []*entitypb.Contact{{Name: "Mr. Test"}},
 	}
 
-	payload.Identifier = hexutil.Encode(old.ID())
+	payload.DocumentId = hexutil.Encode(old.ID())
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 
 	assert.Error(t, err, "should fail because Identity is missing")
@@ -227,7 +227,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// invalid collaborator identity
 	payload.Data.LegalName = "new company name"
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{"some wrong ID"}}
+	payload.WriteAccess = []string{"some wrong ID"}
 	payload.Data.Identity = testingidentity.GenerateRandomDID().String()
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.Error(t, err)
@@ -235,7 +235,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	// success
 	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{wantCollab.String()}}
+	payload.WriteAccess = []string{wantCollab.String()}
 	doc, err = eSrv.DeriveFromUpdatePayload(contextHeader, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, doc)
@@ -244,12 +244,11 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Len(t, cs.ReadWriteCollaborators, 3)
 	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
 	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.Identifier, hexutil.Encode(doc.ID()))
+	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
 	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
 	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
 	assert.NotNil(t, doc.NextVersion())
-	data, err := doc.(*Entity).getClientData()
-	assert.NoError(t, err)
+	data := doc.(*Entity).getClientData()
 	assert.Equal(t, payload.Data, data)
 }
 
@@ -288,7 +287,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	entity := m.(*Entity)
-	assert.Equal(t, entity.LegalName, payload.Data.LegalName)
+	assert.Equal(t, entity.Data.LegalName, payload.Data.LegalName)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -299,8 +298,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	entity, ok := m.(*Entity)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, entity.LegalName, "Company Test")
-	assert.Equal(t, entity.Contacts[0].Name, "Satoshi Nakamoto")
+	assert.Equal(t, entity.Data.LegalName, "Company Test")
+	assert.Equal(t, entity.Data.Contacts[0].Name, "Satoshi Nakamoto")
 }
 
 func TestService_Create(t *testing.T) {
@@ -399,7 +398,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	payload := testingdocuments.CreateEntityPayload()
 	assert.Equal(t, payload.Data.Contacts[0].Name, r.Data.Entity.Contacts[0].Name)
 	assert.Equal(t, payload.Data.LegalName, r.Data.Entity.LegalName)
-	assert.Contains(t, r.Header.WriteAccess.Collaborators, did.String())
+	assert.Contains(t, r.Header.WriteAccess, did.String())
 
 	// entity is not collaborator on document
 	e := new(Entity)
@@ -407,7 +406,7 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = e.CalculateDocumentDataRoot()
+	_, err = e.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = e.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -426,11 +425,10 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
 
-	data, err := doc.(*Entity).getClientData()
-	assert.NoError(t, err)
+	data := doc.(*Entity).getClientData()
 	data.LegalName = "test company"
 	doc2 := new(Entity)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}))
+	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*Entity).Attributes))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := eSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -438,7 +436,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	doc3Entity := doc3.(*Entity)
 
 	assert.NoError(t, err)
-	assert.Equal(t, doc2.LegalName, doc3Entity.LegalName)
+	assert.Equal(t, doc2.Data.LegalName, doc3Entity.Data.LegalName)
 }
 
 func TestService_GetVersion(t *testing.T) {
@@ -698,5 +696,108 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)
 	assert.NoError(t, err)
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
+}
 
+func TestService_CreateModel(t *testing.T) {
+	payload := documents.CreatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.CreateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// invalid data
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	fact := new(testingcommons.MockIdentityFactory)
+	fact.On("IdentityExists", mock.Anything).Return(false, nil)
+	srv.factory = fact
+	payload.Data = validData(t)
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	fact.AssertExpectations(t)
+
+	// success
+	payload.Data = validDataWithIdentity(t)
+	srv.repo = testRepo()
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	fact = new(testingcommons.MockIdentityFactory)
+	fact.On("IdentityExists", mock.Anything).Return(true, nil)
+	srv.factory = fact
+	m, _, err := srv.CreateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
+	fact.AssertExpectations(t)
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	srv := service{}
+
+	// nil  model
+	_, _, err := srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
+
+	// empty context
+	payload.Data = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(context.Background(), payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// missing id
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, fact, srvr := getServiceWithMockedLayers()
+	srv = srvr.(service)
+	payload.DocumentID = utils.RandomSlice(32)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// payload invalid
+	e := createEntity(t)
+	err = testRepo().Create(did[:], e.ID(), e)
+	assert.NoError(t, err)
+	payload.DocumentID = e.ID()
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	payload.Data = validData(t)
+	fact.On("IdentityExists", mock.Anything).Return(false, nil)
+	_, _, err = srv.UpdateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	fact.AssertExpectations(t)
+
+	// Success
+	fact = new(testingcommons.MockIdentityFactory)
+	fact.On("IdentityExists", mock.Anything).Return(true, nil)
+	srv.factory = fact
+	payload.Data = validDataWithIdentity(t)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.UpdateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, m.ID(), e.ID())
+	assert.Equal(t, m.CurrentVersion(), e.NextVersion())
+	jm.AssertExpectations(t)
+	fact.AssertExpectations(t)
 }

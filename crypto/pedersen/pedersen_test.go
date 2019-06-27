@@ -10,7 +10,7 @@ import (
 )
 
 func TestHashPayload(t *testing.T) {
-	ph := NewPedersenHash()
+	ph := New()
 
 	_, err := ph.Write(utils.RandomSlice(64))
 	assert.NoError(t, err)

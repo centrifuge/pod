@@ -15,7 +15,7 @@ was being used even for unit tests because there was no way to mock it out indiv
 
 Other than solving those problems while allowing the code to slowly evolve, Bootstrappers satisfies the need for inversion of control(IOC)
 where modules of code get injected with their dependencies based on a requirement defined by each package in the bootstrapper.go.
-This convention of defining a boostrapper.go in each package also serves as a good documentation source as well as to reduce
+This convention of defining a bootstrapper.go in each package also serves as a good documentation source as well as to reduce
 complexity in understanding the code base at a global level. The package level bootstrapper also helps in implementing runtime
 behavior modifications based on IOC, that are very useful in simulations.
 

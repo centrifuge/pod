@@ -15,34 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/token/mint": {
-      "post": {
-        "description": "Mint an NFT from a Centrifuge Document",
-        "operationId": "MintNFT",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/nftNFTMintResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/nftNFTMintRequest"
-            }
-          }
-        ],
-        "tags": [
-          "NFTService"
-        ]
-      }
-    },
-    "/token/mint/invoice/unpaid/{identifier}": {
+    "/v1/invoices/{document_id}/mint/unpaid": {
       "post": {
         "description": "Mints an NFT out of an Unpaid Centrifuge Invoice",
         "operationId": "MintInvoiceUnpaidNFT",
@@ -56,7 +29,7 @@
         },
         "parameters": [
           {
-            "name": "identifier",
+            "name": "document_id",
             "description": "Invoice Document identifier",
             "in": "path",
             "required": true,
@@ -81,50 +54,13 @@
     "nftNFTMintInvoiceUnpaidRequest": {
       "type": "object",
       "properties": {
-        "identifier": {
+        "document_id": {
           "type": "string",
           "title": "Invoice Document identifier"
         },
         "deposit_address": {
           "type": "string",
           "title": "Deposit address for NFT Token created"
-        }
-      }
-    },
-    "nftNFTMintRequest": {
-      "type": "object",
-      "properties": {
-        "identifier": {
-          "type": "string",
-          "title": "Document identifier"
-        },
-        "registry_address": {
-          "type": "string",
-          "title": "The contract address of the registry where the token should be minted"
-        },
-        "deposit_address": {
-          "type": "string"
-        },
-        "proof_fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "submit_token_proof": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "proof that nft is part of document"
-        },
-        "submit_nft_owner_access_proof": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "proof that nft owner can access the document if nft_grant_access is true"
-        },
-        "grant_nft_access": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "grant nft read access to the document"
         }
       }
     },

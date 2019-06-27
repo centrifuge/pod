@@ -105,17 +105,17 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	model.SetUsedAnchorRepoAddress(addr)
 
 	// calculate the document data root
-	ddr, err := model.CalculateDocumentDataRoot()
+	ddr, err := model.CalculateDataRoot()
 	if err != nil {
 		return errors.New("failed to calculate document data root: %v", err)
 	}
 
-	sig, err := self.SignMsg(ConsensusSignaturePayload(ddr, byte(0)))
+	sigs, err := self.SignMsg(ConsensusSignaturePayload(ddr, byte(0)))
 	if err != nil {
 		return err
 	}
 
-	model.AppendSignatures(sig)
+	model.AppendSignatures(sigs...)
 	return nil
 }
 
@@ -151,7 +151,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 
 // PreAnchorDocument pre-commits a document
 func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
-	docDataRoot, err := model.CalculateDocumentDataRoot()
+	dataRoot, err := model.CalculateDataRoot()
 	if err != nil {
 		return err
 	}
@@ -161,13 +161,13 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 		return err
 	}
 
-	sRoot, err := anchors.ToDocumentRoot(docDataRoot)
+	dRoot, err := anchors.ToDocumentRoot(dataRoot)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], docDataRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
-	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
+	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], dataRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dRoot)
+	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, dRoot)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 		return errors.New("failed to pre-commit anchor: %v", err)
 	}
 
-	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], docDataRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], dataRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dRoot)
 	return nil
 }
 
@@ -280,6 +280,6 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 }
 
 // ConsensusSignaturePayload forms the payload needed to be signed during the document consensus flow
-func ConsensusSignaturePayload(docDataRoot []byte, validationFlag byte) []byte {
-	return append(docDataRoot, []byte{validationFlag}...)
+func ConsensusSignaturePayload(dataRoot []byte, validationFlag byte) []byte {
+	return append(dataRoot, []byte{validationFlag}...)
 }

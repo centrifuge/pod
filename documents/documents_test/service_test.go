@@ -22,7 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -121,14 +120,12 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	err = doc.AddUpdateLog(did)
 	assert.NoError(t, err)
-	_, err = doc.CalculateDataRoot()
+	ddr, err := doc.CalculateDataRoot()
 	assert.NoError(t, err)
-	ddr, err := doc.CalculateDocumentDataRoot()
-	assert.NoError(t, err)
-	sig, err := acc.SignMsg(ddr)
+	sigs, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
-	doc.AppendSignatures(sig)
+	doc.AppendSignatures(sigs...)
 	ndr, err := doc.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	err = testRepo().Create(did[:], doc.CurrentVersion(), doc)
@@ -245,7 +242,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 
 	mockAnchor.On("GetAnchorData", mock.Anything).Return(nil, nil, errors.New("missing"))
 	// self failed
-	_, err := srv.RequestDocumentSignature(context.Background(), nil, did)
+	_, err := srv.RequestDocumentSignatures(context.Background(), nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
@@ -256,7 +253,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	acc.IdentityID = did[:]
 	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.NoError(t, err)
-	_, err = srv.RequestDocumentSignature(ctxh, nil, did)
+	_, err = srv.RequestDocumentSignatures(ctxh, nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
@@ -271,28 +268,26 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
 	err = doc.AddUpdateLog(did)
-	_, err = doc.CalculateDataRoot()
+	sr, err := doc.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := doc.CalculateDocumentDataRoot()
-	assert.NoError(t, err)
-	sig, err := acc.SignMsg(sr)
+	sigs, err := acc.SignMsg(sr)
 	assert.NoError(t, err)
 
-	doc.AppendSignatures(sig)
+	doc.AppendSignatures(sigs...)
 	_, err = doc.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
 	// invalid transition
 	id2 := testingidentity.GenerateRandomDID()
-	_, err = srv.RequestDocumentSignature(ctxh, doc, id2)
+	_, err = srv.RequestDocumentSignatures(ctxh, doc, id2)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition
-	sig, err = srv.RequestDocumentSignature(ctxh, doc, did)
+	sigs, err = srv.RequestDocumentSignatures(ctxh, doc, did)
 	assert.NoError(t, err)
-	assert.True(t, sig.TransitionValidated)
+	assert.True(t, sigs[0].TransitionValidated)
 }
 
 func TestService_RequestDocumentSignature_TransitionNotValidated(t *testing.T) {
@@ -309,9 +304,9 @@ func TestService_RequestDocumentSignature_TransitionNotValidated(t *testing.T) {
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
-	sig, err := srv.RequestDocumentSignature(ctxh, doc, did)
+	sigs, err := srv.RequestDocumentSignatures(ctxh, doc, did)
 	assert.NoError(t, err)
-	assert.False(t, sig.TransitionValidated)
+	assert.False(t, sigs[0].TransitionValidated)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
@@ -564,7 +559,7 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 		for _, c := range collaborators {
 			cs = append(cs, c.String())
 		}
-		data.WriteAccess = &documentpb.WriteAccess{Collaborators: cs}
+		data.WriteAccess = cs
 	}
 
 	err := i.InitInvoiceInput(data, did)
@@ -573,16 +568,16 @@ func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborator
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	ddr, err := i.CalculateDocumentDataRoot()
+	ddr, err := i.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	sig, err := acc.SignMsg(ddr)
+	sigs, err := acc.SignMsg(ddr)
 	assert.NoError(t, err)
 
-	i.AppendSignatures(sig)
+	i.AppendSignatures(sigs...)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	cd, err := i.PackCoreDocument()

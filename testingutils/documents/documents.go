@@ -5,6 +5,7 @@ package testingdocuments
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -21,22 +22,26 @@ type MockService struct {
 
 func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
 	args := m.Called(documentID)
-	return args.Get(0).(documents.Model), args.Error(1)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
 	args := m.Called(documentID, version)
-	return args.Get(0).(documents.Model), args.Error(1)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
 }
 
 func (m *MockService) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
-	args := m.Called(documentID, fields)
-	return args.Get(0).(*documents.DocumentProof), args.Error(1)
+	args := m.Called(ctx, documentID, fields)
+	resp, _ := args.Get(0).(*documents.DocumentProof)
+	return resp, args.Error(1)
 }
 
 func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*documents.DocumentProof, error) {
-	args := m.Called(documentID, version, fields)
-	return args.Get(0).(*documents.DocumentProof), args.Error(1)
+	args := m.Called(ctx, documentID, version, fields)
+	resp, _ := args.Get(0).(*documents.DocumentProof)
+	return resp, args.Error(1)
 }
 
 func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
@@ -44,9 +49,9 @@ func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (do
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (m *MockService) RequestDocumentSignatures(ctx context.Context, model documents.Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
-	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
+	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
 func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
@@ -76,6 +81,16 @@ func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdateP
 type MockModel struct {
 	documents.Model
 	mock.Mock
+}
+
+func (m *MockModel) Scheme() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *MockModel) GetData() interface{} {
+	args := m.Called()
+	return args.Get(0)
 }
 
 func (m *MockModel) PreviousVersion() []byte {
@@ -109,6 +124,42 @@ func (m *MockModel) JSON() ([]byte, error) {
 	args := m.Called()
 	data, _ := args.Get(0).([]byte)
 	return data, args.Error(1)
+}
+
+func (m *MockModel) ID() []byte {
+	args := m.Called()
+	id, _ := args.Get(0).([]byte)
+	return id
+}
+
+func (m *MockModel) NFTs() []*coredocumentpb.NFT {
+	args := m.Called()
+	dr, _ := args.Get(0).([]*coredocumentpb.NFT)
+	return dr
+}
+
+func (m *MockModel) Author() (identity.DID, error) {
+	args := m.Called()
+	id, _ := args.Get(0).(identity.DID)
+	return id, args.Error(1)
+}
+
+func (m *MockModel) Timestamp() (time.Time, error) {
+	args := m.Called()
+	dr, _ := args.Get(0).(time.Time)
+	return dr, args.Error(1)
+}
+
+func (m *MockModel) GetCollaborators(filterIDs ...identity.DID) (documents.CollaboratorsAccess, error) {
+	args := m.Called(filterIDs)
+	cas, _ := args.Get(0).(documents.CollaboratorsAccess)
+	return cas, args.Error(1)
+}
+
+func (m *MockModel) GetAttributes() []documents.Attribute {
+	args := m.Called()
+	attrs, _ := args.Get(0).([]documents.Attribute)
+	return attrs
 }
 
 type MockRegistry struct {

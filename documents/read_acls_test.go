@@ -4,6 +4,7 @@ package documents
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
@@ -255,6 +256,7 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 }
 
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
+	h := sha256.New()
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	testTree, err := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
@@ -271,13 +273,11 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	_, err = cd.CalculateDocumentDataRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	_, err = cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -325,9 +325,6 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-	assert.NoError(t, err)
-
 	for _, c := range tests {
 		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
@@ -339,7 +336,9 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		assert.True(t, len(pfs) > 0)
 
 		for _, pf := range pfs {
-			valid, err := tree.ValidateProof(pf)
+			fieldHash, err := proofs.CalculateHashForProofField(pf, h)
+			assert.NoError(t, err)
+			valid, err := proofs.ValidateProofSortedHashes(fieldHash, pf.SortedHashes, docRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

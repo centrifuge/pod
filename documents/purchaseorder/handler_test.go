@@ -189,12 +189,12 @@ func getHandler() *grpcHandler {
 }
 
 func TestGrpcHandler_Get(t *testing.T) {
-	identifier := "0x01010101"
-	identifierBytes, _ := hexutil.Decode(identifier)
+	documentID := "0x01010101"
+	identifierBytes, _ := hexutil.Decode(documentID)
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(mockModel)
-	payload := &clientpopb.GetRequest{Identifier: identifier}
+	payload := &clientpopb.GetRequest{DocumentId: documentID}
 	response := &clientpopb.PurchaseOrderResponse{}
 	srv.On("GetCurrentVersion", mock.Anything, identifierBytes).Return(model, nil)
 	srv.On("DerivePurchaseOrderResponse", model).Return(response, nil)
@@ -209,18 +209,18 @@ func TestGrpcHandler_Get(t *testing.T) {
 func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
-	payload := &clientpopb.GetVersionRequest{Identifier: "0x0x", Version: "0x00"}
+	payload := &clientpopb.GetVersionRequest{DocumentId: "0x0x", VersionId: "0x00"}
 	res, err := h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "identifier is invalid: invalid hex string")
-	payload.Version = "0x0x"
-	payload.Identifier = "0x01"
+	payload.VersionId = "0x0x"
+	payload.DocumentId = "0x01"
 
 	res, err = h.GetVersion(testingconfig.HandlerContext(configService), payload)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "version is invalid: invalid hex string")
-	payload.Version = "0x00"
-	payload.Identifier = "0x01"
+	payload.VersionId = "0x00"
+	payload.DocumentId = "0x01"
 
 	mockErr := errors.New("not found")
 	srv.On("GetVersion", mock.Anything, []byte{0x01}, []byte{0x00}).Return(nil, mockErr)
@@ -234,7 +234,7 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
 	model := new(mockModel)
-	payload := &clientpopb.GetVersionRequest{Identifier: "0x01", Version: "0x00"}
+	payload := &clientpopb.GetVersionRequest{DocumentId: "0x01", VersionId: "0x00"}
 
 	response := &clientpopb.PurchaseOrderResponse{}
 	srv.On("GetVersion", mock.Anything, []byte{0x01}, []byte{0x00}).Return(model, nil)

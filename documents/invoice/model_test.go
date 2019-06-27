@@ -3,6 +3,7 @@
 package invoice
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -24,7 +25,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -205,7 +205,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	assert.NotNil(t, inv.Data.Payee)
 
 	collabs := []string{"0x010102040506", "some id"}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "malformed address provided")
 
@@ -214,7 +214,7 @@ func TestInvoiceModel_InitInvoiceInput(t *testing.T) {
 	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
 	assert.NoError(t, err)
 	collabs = []string{collab1.String(), collab2.String()}
-	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: &documentpb.WriteAccess{Collaborators: collabs}}, did)
+	err = inv.InitInvoiceInput(&clientinvoicepb.InvoiceCreatePayload{Data: data, WriteAccess: collabs}, did)
 	assert.Nil(t, err, "must be nil")
 	assert.Equal(t, inv.Data.Sender[:], senderDID[:])
 	assert.Equal(t, inv.Data.Payee[:], payeeDID[:])
@@ -248,15 +248,17 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 
+	h := sha256.New()
+	dataLeaves, err := i.getDataLeaves()
+	assert.NoError(t, err)
+
 	// Validate invoice_number
-	valid, err := tree.ValidateProof(proof[0])
+	err = i.CoreDocument.ValidateDataProof("invoice.number", i.DocumentType(), tree.RootHash(), proof[0], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = tree.ValidateProof(proof[1])
+	err = i.CoreDocument.ValidateDataProof(pf, i.DocumentType(), tree.RootHash(), proof[1], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate []byte value
 	acc, err := identity.NewDIDFromBytes(proof[1].Value)
@@ -264,18 +266,15 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
+	err = i.CoreDocument.ValidateDataProof(documents.CDTreePrefix+".document_type", i.DocumentType(), tree.RootHash(), proof[2], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// validate line item
-	valid, err = tree.ValidateProof(proof[3])
+	err = i.CoreDocument.ValidateDataProof("invoice.line_items[0].item_number", i.DocumentType(), tree.RootHash(), proof[3], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
-	valid, err = tree.ValidateProof(proof[4])
+	err = i.CoreDocument.ValidateDataProof("invoice.line_items[0].description", i.DocumentType(), tree.RootHash(), proof[4], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 }
 
 func TestInvoice_CreateNFTProofs(t *testing.T) {
@@ -287,15 +286,15 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	invPayload := testingdocuments.CreateInvoicePayload()
 	invPayload.Data.DateDue = &timestamp.Timestamp{Seconds: time.Now().Unix()}
 	invPayload.Data.Status = "unpaid"
-	invPayload.WriteAccess = &documentpb.WriteAccess{Collaborators: []string{defaultDID.String()}}
+	invPayload.WriteAccess = []string{defaultDID.String()}
 	err = i.InitInvoiceInput(invPayload, defaultDID)
 	assert.NoError(t, err)
-	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
+	sigs, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
-	i.AppendSignatures(sig)
+	i.AppendSignatures(sigs...)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentDataRoot()
+	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -303,35 +302,35 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DocumentDataRootField)
+	dataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
-	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", dataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
 	tree, err := i.DocumentRootTree()
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 8)
+	h := sha256.New()
+	dataLeaves, err := i.getDataLeaves()
+	assert.NoError(t, err)
 
 	// Validate invoice_gross_amount
-	valid, err := tree.ValidateProof(proof[0])
+	err = i.CoreDocument.ValidateDataProof(proofFields[0], i.DocumentType(), tree.RootHash(), proof[0], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate document data root
-	valid, err = tree.ValidateProof(proof[5])
+	valid, err := tree.ValidateProof(proof[5])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate signature
-	valid, err = tree.ValidateProof(proof[6])
+	err = i.CoreDocument.ValidateDataProof(proofFields[6], i.DocumentType(), tree.RootHash(), proof[6], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = tree.ValidateProof(proof[7])
+	err = i.CoreDocument.ValidateDataProof(proofFields[7], i.DocumentType(), tree.RootHash(), proof[7], dataLeaves, h)
 	assert.Nil(t, err)
-	assert.True(t, valid)
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
@@ -345,7 +344,7 @@ func TestInvoiceModel_GetDocumentID(t *testing.T) {
 	assert.Equal(t, i.CoreDocument.ID(), i.ID())
 }
 
-func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
+func TestInvoiceModel_getDataTree(t *testing.T) {
 	na := new(documents.Decimal)
 	assert.NoError(t, na.SetString("2"))
 	ga := new(documents.Decimal)
@@ -379,7 +378,7 @@ func createInvoice(t *testing.T) *Invoice {
 	i.GetTestCoreDocWithReset()
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateDocumentDataRoot()
+	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -407,13 +406,13 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	data.GrossAmount = "50"
 	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{
 		ReadWriteCollaborators: []identity.DID{id3},
-	})
+	}, oldInv.Attributes)
 	assert.NoError(t, err)
 
 	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 
-	_, err = inv.CalculateDocumentDataRoot()
+	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	_, err = inv.CalculateDocumentRoot()
@@ -438,7 +437,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	data.GrossAmount = "55"
 	data.Currency = "INR"
-	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{})
+	err = inv.PrepareNewVersion(inv, data, documents.CollaboratorsAccess{}, oldInv.Attributes)
 	assert.NoError(t, err)
 
 	// id1 should have permission

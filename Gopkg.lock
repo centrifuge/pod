@@ -68,7 +68,7 @@
   revision = "05ea88324367e29eb2b5bd872b2d9819cd3c9cbc"
 
 [[projects]]
-  digest = "1:52d96383558e099b846fc2adf4f452ecc85e7df5868f8f3aeaa95110f899975b"
+  digest = "1:2121a0b666bba9881f93ec26b2aa7dec7616b4a6a0278430db90d4dbd344b9f5"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -76,13 +76,14 @@
     "gen/go/coredocument",
     "gen/go/entity",
     "gen/go/errors",
+    "gen/go/generic",
     "gen/go/invoice",
     "gen/go/notification",
     "gen/go/p2p",
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "4182bd33f07ef95ec29f14b458cfdb2a580aabbf"
+  revision = "7f0a5b9252522a9cd336ad522d6ef181185e2ca0"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -92,14 +93,15 @@
   revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
-  digest = "1:4247d5bcc433f62f6ab03f11ab7d5a5ecab7bac6fe49d8b9284d8f4909c14268"
+  digest = "1:748c108a8ff04c76b44a365436828c0cef72c3a794997edd22773b21c6113a1c"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "ba94d76ec63112adbfa8595088f24502dc6aee0b"
+  revision = "602cfd921194f453eb5439ca791656fb5bb8a89d"
+  source = "github.com/mikiquantum/precise-proofs"
 
 [[projects]]
   branch = "master"
@@ -1616,6 +1618,7 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/entity",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
+    "github.com/centrifuge/centrifuge-protobufs/gen/go/generic",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/notification",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",

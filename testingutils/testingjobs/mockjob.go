@@ -19,3 +19,9 @@ func (m MockJobManager) ExecuteWithinJob(ctx context.Context, accountID identity
 	args := m.Called(ctx, accountID, existingTxID, desc, work)
 	return args.Get(0).(jobs.JobID), args.Get(1).(chan bool), args.Error(2)
 }
+
+func (m MockJobManager) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error) {
+	args := m.Called(account, id)
+	resp, _ := args.Get(0).(jobs.StatusResponse)
+	return resp, args.Error(1)
+}
