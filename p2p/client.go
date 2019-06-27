@@ -366,12 +366,12 @@ func (s *peer) validateSignatureResp(
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("cannot get model timestamp : %s", err.Error()))
 		}
 
-		docDataRoot, err := model.CalculateDataRoot()
+		dataRoot, err := model.CalculateDataRoot()
 		if err != nil {
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
 		}
 
-		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, docDataRoot, tm)
+		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, dataRoot, tm)
 		if err != nil {
 			return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
 		}

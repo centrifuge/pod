@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -281,10 +279,6 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
-	cdLeaves, err := cd.coredocLeaves(documenttypes.InvoiceDataTypeUrl)
-	assert.NoError(t, err)
-	eDocDataTree, err := cd.eDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), cdLeaves)
-	assert.NoError(t, err)
 
 	tests := []struct {
 		registry       common.Address
@@ -344,12 +338,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		for _, pf := range pfs {
 			fieldHash, err := proofs.CalculateHashForProofField(pf, h)
 			assert.NoError(t, err)
-			valid, err := proofs.ValidateProofSortedHashes(fieldHash, pf.SortedHashes[:len(pf.SortedHashes)-2], eDocDataTree.RootHash(), h)
-			assert.NoError(t, err)
-			assert.True(t, valid)
-			zTreeHash := pf.SortedHashes[len(pf.SortedHashes)-2]
-			signHash := pf.SortedHashes[len(pf.SortedHashes)-1]
-			valid, err = proofs.ValidateProofHashes(eDocDataTree.RootHash(), []*proofspb.MerkleHash{{Right: zTreeHash}, {Right: signHash}}, docRoot, h)
+			valid, err := proofs.ValidateProofSortedHashes(fieldHash, pf.SortedHashes, docRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

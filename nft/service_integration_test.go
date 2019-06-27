@@ -134,13 +134,13 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 	keys, err := acc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
+	dataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           cid.ToAddress(),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", dataRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
 		SubmitTokenProof:         true,
@@ -194,13 +194,13 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 	keys, err := acc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
+	dataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           cid.ToAddress(),
-		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+		ProofFields:              []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", dataRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 		GrantNFTReadAccess:       grantAccess,
 		SubmitTokenProof:         tokenProof,
 		SubmitNFTReadAccessProof: readAccessProof,

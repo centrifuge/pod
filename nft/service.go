@@ -145,10 +145,10 @@ func (s *service) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]st
 		return nil, err
 	}
 
-	docDataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
+	dataRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.DataRootField)
 	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", docDataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", dataRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	return proofFields, nil
 }
 

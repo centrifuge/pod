@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -313,7 +311,7 @@ func TestGetDataProofHash(t *testing.T) {
 	// Arbitrary tree just to pass it to the calculate function
 	drTree, err := cd.getSignatureDataTree()
 	assert.NoError(t, err)
-	docDataRoot, err := cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
+	dataRoot, err := cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.Nil(t, err)
 
 	cd.GetTestCoreDocWithReset()
@@ -323,7 +321,7 @@ func TestGetDataProofHash(t *testing.T) {
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
 
-	valid, err := proofs.ValidateProofHashes(docDataRoot, []*proofspb.MerkleHash{{Right: signatureTree.RootHash()}}, docRoot, sha256.New())
+	valid, err := proofs.ValidateProofSortedHashes(dataRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -414,13 +412,13 @@ func TestGetDocumentRootTree(t *testing.T) {
 	assert.NoError(t, err)
 
 	// successful document root generation
-	docDataRoot, err := cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
+	dataRoot, err := cd.CalculateDataRoot(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.NoError(t, err)
 	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, drTree.GetLeaves())
 	assert.NoError(t, err)
 	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, DataRootField))
 	assert.NotNil(t, leaf)
-	assert.Equal(t, docDataRoot, leaf.Hash)
+	assert.Equal(t, dataRoot, leaf.Hash)
 
 	// Get signaturesLeaf
 	_, signaturesLeaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField))

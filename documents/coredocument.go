@@ -349,7 +349,7 @@ func (cd *CoreDocument) createProofs(fromZTree bool, docType string, dataLeaves 
 	treeProofs[dataPrefix] = newTreeProof(docDataTree, sortedHashes, orderedHashes)
 	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
 	treeProofs[CDTreePrefix] = treeProofs[dataPrefix]
-	// (signatureProof => signatureRoot) + docDataRoot = documentRoot
+	// (signatureProof => signatureRoot) + dataRoot = documentRoot
 	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{ddrRootHash}, nil)
 	treeProofs[DRTreePrefix] = newTreeProof(drTree, nil, nil)
 
@@ -423,18 +423,18 @@ func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err e
 
 // DocumentRootTree returns the merkle tree for the document root.
 func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
-	docDataRoot, err := cd.CalculateDataRoot(docType, dataLeaves)
+	dataRoot, err := cd.CalculateDataRoot(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
 
-	tree, err = cd.StaticTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
 	if err != nil {
 		return nil, err
 	}
 	// The first leave added is the document data root
 	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     docDataRoot,
+		Hash:     dataRoot,
 		Hashed:   true,
 		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, DataRootField), append(CompactProperties(DRTreePrefix), CompactProperties(DataRootField)...))})
 	if err != nil {
@@ -518,7 +518,7 @@ func (cd *CoreDocument) dataTrees(docType string, dataLeaves []proofs.LeafNode) 
 		return nil, nil, err
 	}
 	// create the dataTrees out of docData and coredoc trees
-	tree, err := cd.StaticTree()
+	tree, err := cd.DefaultTree()
 	if err != nil {
 		return nil, nil, err
 	}

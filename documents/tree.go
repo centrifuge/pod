@@ -12,30 +12,30 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 )
 
-// StaticTree returns a DocumentTree with the purpose of adding leaves manually and keeping the left/right hashing order
-func (cd *CoreDocument) StaticTree() (*proofs.DocumentTree, error) {
-	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
-		CompactProperties: true,
-		Hash:              sha256.New(),
-		Salts:             cd.DocumentSaltsFunc(),
-	})
-	return &t, err
-}
-
-// StaticTreeWithPrefix returns a DocumentTree with the purpose of adding leaves manually and keeping the left/right hashing order
-func (cd *CoreDocument) StaticTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
-	var prop proofs.Property
-	if prefix != "" {
-		prop = NewLeafProperty(prefix, compactPrefix)
-	}
-	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
-		CompactProperties: true,
-		Hash:              sha256.New(),
-		ParentPrefix:      prop,
-		Salts:             cd.DocumentSaltsFunc(),
-	})
-	return &t, err
-}
+//// StaticTree returns a DocumentTree with the purpose of adding leaves manually and keeping the left/right hashing order
+//func (cd *CoreDocument) StaticTree() (*proofs.DocumentTree, error) {
+//	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
+//		CompactProperties: true,
+//		Hash:              sha256.New(),
+//		Salts:             cd.DocumentSaltsFunc(),
+//	})
+//	return &t, err
+//}
+//
+//// StaticTreeWithPrefix returns a DocumentTree with the purpose of adding leaves manually and keeping the left/right hashing order
+//func (cd *CoreDocument) StaticTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+//	var prop proofs.Property
+//	if prefix != "" {
+//		prop = NewLeafProperty(prefix, compactPrefix)
+//	}
+//	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
+//		CompactProperties: true,
+//		Hash:              sha256.New(),
+//		ParentPrefix:      prop,
+//		Salts:             cd.DocumentSaltsFunc(),
+//	})
+//	return &t, err
+//}
 
 // DefaultTree returns a DocumentTree with default opts
 func (cd *CoreDocument) DefaultTree() (*proofs.DocumentTree, error) {
@@ -111,19 +111,14 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 
 // ValidateDataProof validates proof returning nil on success otherwise error
 func (cd *CoreDocument) ValidateDataProof(field, docType string, docRoot []byte, proof *proofspb.Proof, dataLeaves []proofs.LeafNode, h hash.Hash) error {
+	var l *proofs.LeafNode
+	var err error
 	if strings.Contains(field, SignaturesTreePrefix) {
 		signTree, err := cd.getSignatureDataTree()
 		if err != nil {
 			return err
 		}
-		_, l := signTree.GetLeafByProperty(field)
-		if l == nil {
-			return errors.New("Leaf %s not found", field)
-		}
-		_, err = proofs.ValidateProofSortedHashes(l.Hash, proof.SortedHashes[:1], signTree.RootHash(), h)
-		if err != nil {
-			return err
-		}
+		_, l = signTree.GetLeafByProperty(field)
 	} else {
 		cdLeaves, err := cd.coredocLeaves(docType)
 		if err != nil {
@@ -133,26 +128,20 @@ func (cd *CoreDocument) ValidateDataProof(field, docType string, docRoot []byte,
 		if err != nil {
 			return err
 		}
-		_, l := eDocDataTree.GetLeafByProperty(field)
-		if l == nil {
-			return errors.New("Leaf %s not found", field)
-		}
-		if len(l.Hash) == 0 {
-			l.Hash, err = proofs.CalculateHashForProofField(proof, h)
-			if err != nil {
-				return err
-			}
-		}
-		_, err = proofs.ValidateProofSortedHashes(l.Hash, proof.SortedHashes[:len(proof.SortedHashes)-2], eDocDataTree.RootHash(), h)
+		_, l = eDocDataTree.GetLeafByProperty(field)
+	}
+	if l == nil {
+		return errors.New("Leaf %s not found", field)
+	}
+	if len(l.Hash) == 0 {
+		l.Hash, err = proofs.CalculateHashForProofField(proof, h)
 		if err != nil {
 			return err
 		}
-		zTreeHash := proof.SortedHashes[len(proof.SortedHashes)-2]
-		signHash := proof.SortedHashes[len(proof.SortedHashes)-1]
-		_, err = proofs.ValidateProofHashes(eDocDataTree.RootHash(), []*proofspb.MerkleHash{{Right: zTreeHash}, {Right: signHash}}, docRoot, h)
-		if err != nil {
-			return err
-		}
+	}
+	_, err = proofs.ValidateProofSortedHashes(l.Hash, proof.SortedHashes, docRoot, h)
+	if err != nil {
+		return err
 	}
 	return nil
 }
