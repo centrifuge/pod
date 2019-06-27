@@ -56,7 +56,7 @@ func DefaultService(
 var log = logging.Logger("transferdetail-api")
 
 // TODO: get rid of this or make generic
-func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
+func deriveDIDs(data *Data) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.SenderID, data.RecipientID} {
 		if id != "" {
@@ -216,7 +216,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 
 	// overwriting is not enough because it is not required that
 	// the TransferDetail payload contains all TransferDetail attributes
-	model, err = extensions.DeleteAttributesSet(model, TransferDetailData{}, idx, transfersFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) findTransfer(model documents.Model, transferID string) (*TransferDetailData, error) {
+func (s service) findTransfer(model documents.Model, transferID string) (*Data, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
@@ -256,8 +256,8 @@ func (s service) findTransfer(model documents.Model, transferID string) (*Transf
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) deriveTransferData(model documents.Model, idx string) (*TransferDetailData, error) {
-	data := new(TransferDetailData)
+func (s service) deriveTransferData(model documents.Model, idx string) (*Data, error) {
+	data := new(Data)
 
 	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {

@@ -202,9 +202,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }
 
-func createTestData() TransferDetailData {
+func createTestData() Data {
 	transferID := extensions.NewAttributeSetID()
-	return TransferDetailData{
+	return Data{
 		TransferID:          transferID,
 		SenderID:            testingidentity.GenerateRandomDID().String(),
 		RecipientID:         testingidentity.GenerateRandomDID().String(),
@@ -224,7 +224,7 @@ func createTestPayload() CreateTransferDetailRequest {
 	return CreateTransferDetailRequest{Data: createTestData()}
 }
 
-func checkResponse(t *testing.T, payload CreateTransferDetailRequest, response *TransferDetailData) {
+func checkResponse(t *testing.T, payload CreateTransferDetailRequest, response *Data) {
 	assert.Equal(t, payload.Data.TransferID, response.TransferID)
 	assert.Equal(t, payload.Data.Currency, response.Currency)
 	assert.Equal(t, payload.Data.Status, response.Status)

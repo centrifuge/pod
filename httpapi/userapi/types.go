@@ -11,26 +11,26 @@ import (
 //CreateTransferDetailRequest is the request body for creating a Transfer Detail
 type CreateTransferDetailRequest struct {
 	DocumentID string                             `json:"document_id"`
-	Data       transferdetails.TransferDetailData `json:"data"`
+	Data       transferdetails.Data `json:"data"`
 }
 
 // UpdateTransferDetailRequest is the request body for updating a Transfer Detail
 type UpdateTransferDetailRequest struct {
 	DocumentID string                             `json:"document_id"`
 	TransferID string                             `json:"transfer_id"`
-	Data       transferdetails.TransferDetailData `json:"data"`
+	Data       transferdetails.Data `json:"data"`
 }
 
 // TransferDetailResponse is the response body when fetching a Transfer Detail
 type TransferDetailResponse struct {
 	Header coreapi.ResponseHeader             `json:"header"`
-	Data   transferdetails.TransferDetailData `json:"data"`
+	Data   transferdetails.Data `json:"data"`
 }
 
 // TransferDetailListResponse is the response body when fetching a list of Transfer Details
 type TransferDetailListResponse struct {
 	Header coreapi.ResponseHeader               `json:"header"`
-	Data   []transferdetails.TransferDetailData `json:"data"`
+	Data   []transferdetails.Data `json:"data"`
 }
 
 func toTransferDetailCreatePayload(request CreateTransferDetailRequest) (*transferdetails.CreateTransferDetailRequest, error) {

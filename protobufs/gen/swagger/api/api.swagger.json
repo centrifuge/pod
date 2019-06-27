@@ -359,10 +359,10 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Documents"
+                    "TransferDetail"
                 ],
                 "summary": "Returns a list of the latest versions of all transfer details on the document.",
-                "operationId": "get_transfer",
+                "operationId": "list_transfer_details",
                 "parameters": [
                     {
                         "type": "string",
@@ -488,10 +488,10 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Documents"
+                    "TransferDetail"
                 ],
                 "summary": "Returns the latest version of the transfer detail.",
-                "operationId": "get_transfer",
+                "operationId": "get_transfer_detail",
                 "parameters": [
                     {
                         "type": "string",
@@ -1377,7 +1377,7 @@
                 }
             }
         },
-        "transferdetails.TransferDetailData": {
+        "transferdetails.Data": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -1420,7 +1420,7 @@
             "properties": {
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/transferdetails.TransferDetailData"
+                    "$ref": "#/definitions/transferdetails.Data"
                 },
                 "document_id": {
                     "type": "string"
@@ -1433,7 +1433,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/transferdetails.TransferDetailData"
+                        "$ref": "#/definitions/transferdetails.Data"
                     }
                 },
                 "header": {
@@ -1447,7 +1447,7 @@
             "properties": {
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/transferdetails.TransferDetailData"
+                    "$ref": "#/definitions/transferdetails.Data"
                 },
                 "header": {
                     "type": "object",
@@ -1460,7 +1460,7 @@
             "properties": {
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/transferdetails.TransferDetailData"
+                    "$ref": "#/definitions/transferdetails.Data"
                 },
                 "document_id": {
                     "type": "string"

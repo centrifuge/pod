@@ -149,7 +149,7 @@ func TestHandler_GetTransferDetail(t *testing.T) {
 
 	w, r = getHTTPReqAndResp(ctx)
 	d := &transferdetails.TransferDetail{
-		Data: transferdetails.TransferDetailData{
+		Data: transferdetails.Data{
 			TransferID: transferID,
 		},
 	}
