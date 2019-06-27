@@ -166,7 +166,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // GetTransferDetail returns the latest version of transfer detail.
 // @summary Returns the latest version of the transfer detail.
 // @description Returns the latest version of the transfer detail.
-// @id get_transfer
+// @id get_transfer_detail
 // @tags TransferDetail
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
@@ -225,7 +225,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 // GetTransferDetailList returns a list of the latest versions all transfer details on the document.
 // @summary Returns a list of the latest versions of all transfer details on the document.
 // @description Returns a list of the latest versions of all transfer details on the document.
-// @id get_transfer_list
+// @id list_transfer_details
 // @tags TransferDetail
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"

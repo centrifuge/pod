@@ -362,7 +362,7 @@
                     "TransferDetail"
                 ],
                 "summary": "Returns a list of the latest versions of all transfer details on the document.",
-                "operationId": "get_transfer_list",
+                "operationId": "list_transfer_details",
                 "parameters": [
                     {
                         "type": "string",
@@ -491,7 +491,7 @@
                     "TransferDetail"
                 ],
                 "summary": "Returns the latest version of the transfer detail.",
-                "operationId": "get_transfer",
+                "operationId": "get_transfer_detail",
                 "parameters": [
                     {
                         "type": "string",
