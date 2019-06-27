@@ -82,7 +82,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			"document_id":                   docIdentifier,
 			"registry_address":              registry.String(),
 			"deposit_address":               depositAddress, // Centrifuge address
-			"proof_fields":                  []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
+			"proof_fields":                  []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", dataRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
 			"submit_token_proof":            tokenProof,
 			"submit_nft_owner_access_proof": nftReadAccessProof,
 			"grant_nft_access":              grantNFTAccess,

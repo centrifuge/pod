@@ -57,11 +57,11 @@ func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
 
 	dm2 := createCDWithEmbeddedPO(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
 
-	sr, err := dm2.CalculateSigningRoot()
+	dr, err := dm2.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
-	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKeyValid, dr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -96,11 +96,11 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	collaborators := [][]byte{mallory.id[:]}
 	dm := createCDWithEmbeddedPO(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
 
-	sr, err := dm.CalculateSigningRoot()
+	dr, err := dm.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
-	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKeyValid, dr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -126,7 +126,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	//Following simulate attack by Mallory with random keys pair
 	//Random keys pairs should cause signature verification failure
 	publicKey2, privateKey2 := GetRandomSigningKeyPair(t)
-	s, err = crypto.SignMessage(privateKey2, sr, crypto.CurveSecp256K1)
+	s, err = crypto.SignMessage(privateKey2, dr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig = &coredocumentpb.Signature{
