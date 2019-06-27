@@ -55,7 +55,7 @@ func TestService_CreateTransferDetail(t *testing.T) {
 	transferSrv.On("CreateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	nm, _, err := service.CreateTransferDetail(context.Background(), transferdetails.CreateTransferDetailRequest{
 		DocumentID: "test_id",
-		Data:       transferdetails.TransferDetailData{},
+		Data:       transferdetails.Data{},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, m, nm)
@@ -70,7 +70,7 @@ func TestService_UpdateDocument(t *testing.T) {
 	nm, _, err := service.UpdateTransferDetail(context.Background(), transferdetails.UpdateTransferDetailRequest{
 		DocumentID: "test_id",
 		TransferID: "test_transfer",
-		Data:       transferdetails.TransferDetailData{},
+		Data:       transferdetails.Data{},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, m, nm)

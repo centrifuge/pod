@@ -1377,7 +1377,7 @@
                 }
             }
         },
-        "transferdetails.TransferDetailData": {
+        "transferdetails.Data": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -1420,7 +1420,7 @@
             "properties": {
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/transferdetails.TransferDetailData"
+                    "$ref": "#/definitions/transferdetails.Data"
                 },
                 "document_id": {
                     "type": "string"
@@ -1433,7 +1433,7 @@
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/transferdetails.TransferDetailData"
+                        "$ref": "#/definitions/transferdetails.Data"
                     }
                 },
                 "header": {
@@ -1447,7 +1447,7 @@
             "properties": {
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/transferdetails.TransferDetailData"
+                    "$ref": "#/definitions/transferdetails.Data"
                 },
                 "header": {
                     "type": "object",
@@ -1460,7 +1460,7 @@
             "properties": {
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/transferdetails.TransferDetailData"
+                    "$ref": "#/definitions/transferdetails.Data"
                 },
                 "document_id": {
                     "type": "string"
