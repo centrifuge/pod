@@ -129,8 +129,19 @@ func TestDeriveTransferResponse(t *testing.T) {
 
 }
 
+func TestService_DeriveTransferListWithNoAttributes(t *testing.T) {
+	model := new(invoice.Invoice)
+	err := model.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
+	docSrv := new(testingdocuments.MockService)
+	srv := DefaultService(docSrv, nil)
+	response, m, err := srv.DeriveTransferList(context.Background(), model)
+	assert.NotNil(t, response)
+	assert.NotNil(t, m)
+	assert.NoError(t, err)
+}
+
 func TestDeriveTransferListResponse(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
@@ -161,7 +172,6 @@ func TestDeriveTransferListResponse(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)

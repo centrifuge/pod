@@ -77,16 +77,13 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		return nil, jobs.NilJobID(), err
 	}
 
-	a := model.GetAttributes()
-	attr, err := extensions.ToMapAttributes(a)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
 	d, err := json.Marshal(model.GetData())
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
+
+	a := model.GetAttributes()
+	attr := extensions.ToMapAttributes(a)
 
 	payload := documents.UpdatePayload{
 		DocumentID: model.ID(),
@@ -320,7 +317,7 @@ func (s service) DeriveTransferList(ctx context.Context, model documents.Model) 
 	if !model.AttributeExists(fl) {
 		return &TransferDetailList{
 			Data: nil,
-		}, nil, nil
+		}, model, nil
 	}
 
 	lastIdx, err := extensions.GetArrayLatestIDX(model, transfersLabel)
