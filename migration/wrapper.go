@@ -21,6 +21,7 @@ var log = logging.Logger("migrate-cmd")
 var migrations = map[string]func(*leveldb.DB) error{
 	"00Initial":   mfiles.Initial00,
 	"01KeysToHex": mfiles.KeysToHex01,
+	"02AddPrefix": mfiles.AddPrefix02,
 }
 
 // Runner is the actor that runs the migrations
