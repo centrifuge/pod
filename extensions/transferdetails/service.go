@@ -8,32 +8,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
 
-// Service defines specific functions for extension funding
-type Service interface {
-
-	// UpdateTransferDetail updates a TransferDetail
-	UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error)
-
-	// CreateTransferDetail derives a TransferDetail from a request payload
-	CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, jobs.JobID, error)
-
-	// DeriveFundingResponse returns a TransferDetail in client format
-	DeriveTransferDetail(ctx context.Context, model documents.Model, transferID []byte) (*TransferDetail, documents.Model, error)
-
-	// DeriveFundingListResponse returns a TransferDetail list in client format
-	DeriveTransferList(ctx context.Context, model documents.Model) (*TransferDetailList, documents.Model, error)
-}
-
-// service implements Service and handles all funding related persistence and validations
+// service implements TransferDetailService and handles all funding related persistence and validations
 type service struct {
-	srv           documents.Service
-	tokenRegistry documents.TokenRegistry
+	// coreSrvProvider is a lazy initiated service on the API router
+	coreSrvProvider func() httpapi.CoreService
+	tokenRegistry   documents.TokenRegistry
 }
 
 const (
@@ -44,19 +30,19 @@ const (
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
-	srv documents.Service,
+	srv func() httpapi.CoreService,
 	tokenRegistry documents.TokenRegistry,
-) Service {
+) extensions.TransferDetailService {
 	return service{
-		srv:           srv,
-		tokenRegistry: tokenRegistry,
+		coreSrvProvider: srv,
+		tokenRegistry:   tokenRegistry,
 	}
 }
 
 var log = logging.Logger("transferdetail-api")
 
 // TODO: get rid of this or make generic
-func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
+func deriveDIDs(data *extensions.TransferDetailData) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.SenderID, data.RecipientID} {
 		if id != "" {
@@ -98,9 +84,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		},
 	}
 
-	// TODO: use coreapi.UpdateDocument
-	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, payload)
-	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
+	updated, jobID, err := s.coreSrvProvider().UpdateDocument(ctx, payload)
 	if err != nil {
 		return nil, jobID, err
 	}
@@ -109,7 +93,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 }
 
 // CreateTransferDetail creates and anchors a TransferDetail
-func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
+func (s service) CreateTransferDetail(ctx context.Context, req extensions.CreateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
 	model, err := s.deriveFromPayload(ctx, req)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -124,7 +108,7 @@ func (s service) CreateTransferDetail(ctx context.Context, req CreateTransferDet
 }
 
 // deriveFromPayload derives a new TransferDetail from a CreateTransferDetailRequest
-func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetailRequest) (model documents.Model, err error) {
+func (s service) deriveFromPayload(ctx context.Context, req extensions.CreateTransferDetailRequest) (model documents.Model, err error) {
 	if req.DocumentID == "" {
 		return nil, documents.ErrDocumentIdentifier
 	}
@@ -134,7 +118,7 @@ func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetail
 		return nil, err
 	}
 
-	model, err = s.srv.GetCurrentVersion(ctx, docID)
+	model, err = s.coreSrvProvider().GetDocument(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -171,7 +155,7 @@ func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetail
 }
 
 // UpdateTransferDetail updates and anchors a TransferDetail
-func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
+func (s service) UpdateTransferDetail(ctx context.Context, req extensions.UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error) {
 	model, err := s.deriveFromUpdatePayload(ctx, req)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -186,7 +170,7 @@ func (s service) UpdateTransferDetail(ctx context.Context, req UpdateTransferDet
 }
 
 // deriveFromUpdatePayload derives an updated TransferDetail from an UpdateTransferDetailRequest
-func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransferDetailRequest) (model documents.Model, err error) {
+func (s service) deriveFromUpdatePayload(ctx context.Context, req extensions.UpdateTransferDetailRequest) (model documents.Model, err error) {
 	var docID []byte
 	if req.DocumentID == "" {
 		return nil, documents.ErrDocumentIdentifier
@@ -197,7 +181,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 		return nil, err
 	}
 
-	model, err = s.srv.GetCurrentVersion(ctx, docID)
+	model, err = s.coreSrvProvider().GetDocument(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -216,7 +200,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 
 	// overwriting is not enough because it is not required that
 	// the TransferDetail payload contains all TransferDetail attributes
-	model, err = extensions.DeleteAttributesSet(model, TransferDetailData{}, idx, transfersFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, extensions.TransferDetailData{}, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +231,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) findTransfer(model documents.Model, transferID string) (*TransferDetailData, error) {
+func (s service) findTransfer(model documents.Model, transferID string) (*extensions.TransferDetailData, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
@@ -256,8 +240,8 @@ func (s service) findTransfer(model documents.Model, transferID string) (*Transf
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) deriveTransferData(model documents.Model, idx string) (*TransferDetailData, error) {
-	data := new(TransferDetailData)
+func (s service) deriveTransferData(model documents.Model, idx string) (*extensions.TransferDetailData, error) {
+	data := new(extensions.TransferDetailData)
 
 	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {
@@ -292,7 +276,7 @@ func (s service) deriveTransferData(model documents.Model, idx string) (*Transfe
 }
 
 // DeriveTransferResponse returns create response from the added TransferDetail
-func (s service) DeriveTransferDetail(ctx context.Context, model documents.Model, transferID []byte) (*TransferDetail, documents.Model, error) {
+func (s service) DeriveTransferDetail(ctx context.Context, model documents.Model, transferID []byte) (*extensions.TransferDetail, documents.Model, error) {
 	tID := hexutil.Encode(transferID)
 	idx, err := extensions.FindAttributeSetIDX(model, tID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
@@ -304,21 +288,21 @@ func (s service) DeriveTransferDetail(ctx context.Context, model documents.Model
 		return nil, nil, err
 	}
 
-	return &TransferDetail{
+	return &extensions.TransferDetail{
 		Data: *data,
 	}, model, nil
 }
 
 // DeriveTransfersListResponse returns a transfers list
-func (s service) DeriveTransferList(ctx context.Context, model documents.Model) (*TransferDetailList, documents.Model, error) {
-	list := new(TransferDetailList)
+func (s service) DeriveTransferList(ctx context.Context, model documents.Model) (*extensions.TransferDetailList, documents.Model, error) {
+	list := new(extensions.TransferDetailList)
 	fl, err := documents.AttrKeyFromLabel(transfersLabel)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if !model.AttributeExists(fl) {
-		return &TransferDetailList{
+		return &extensions.TransferDetailList{
 			Data: nil,
 		}, nil, nil
 	}
@@ -347,7 +331,7 @@ func (s service) DeriveTransferList(ctx context.Context, model documents.Model) 
 		}
 	}
 
-	return &TransferDetailList{
+	return &extensions.TransferDetailList{
 		Data: list.Data,
 	}, model, nil
 }

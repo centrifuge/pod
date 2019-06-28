@@ -1,18 +1,16 @@
-package httpapi
+package router
 
 import (
 	"context"
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
 	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,13 +30,20 @@ import (
 // @license.name MIT
 // @host localhost:8082
 // @schemes http
-func Router(
-	config Config,
-	configSrv config.Service,
-	nftSrv nft.Service,
-	docsSrv documents.Service,
-	transferSrv transferdetails.Service,
-	jobsSrv jobs.Manager) *chi.Mux {
+func Router(ctx context.Context) (*chi.Mux, error) {
+	// node object registry
+	nodeObjReg, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
+	if !ok {
+		return nil, errors.New("failed to get %s", bootstrap.NodeObjRegistry)
+	}
+
+	configSrv, ok := nodeObjReg[config.BootstrappedConfigStorage].(config.Service)
+	if !ok {
+		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
+	}
+
+	cfg := nodeObjReg[bootstrap.BootstrappedConfig].(config.Configuration)
+
 	r := chi.NewRouter()
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
@@ -47,15 +52,23 @@ func Router(
 	r.Use(auth(configSrv))
 
 	// health check
-	health.Register(r, config)
+	health.Register(r, cfg)
 
 	r.Route("/v1", func(r chi.Router) {
 		// core apis
-		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+		err := coreapi.Register(ctx, r)
+		if err != nil {
+			// we have no choice but to panic, node must not continue to run
+			panic(err)
+		}
 		// user apis
-		userapi.Register(r, docsSrv, nftSrv, transferSrv)
+		err = userapi.Register(ctx, r)
+		if err != nil {
+			// we have no choice but to panic, node must not continue to run
+			panic(err)
+		}
 	})
-	return r
+	return r, nil
 }
 
 // Config defines required methods for http API

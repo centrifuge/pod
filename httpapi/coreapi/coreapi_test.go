@@ -5,14 +5,13 @@ package coreapi
 import (
 	"testing"
 
-	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
-	Register(r, new(testingnfts.MockNFTService), nil, nil, nil)
+	Register(nil, r)
 	assert.Len(t, r.Routes(), 10)
 	assert.Equal(t, r.Routes()[0].Pattern, "/accounts/{account_id}/sign")
 	assert.NotNil(t, r.Routes()[0].Handlers["POST"])

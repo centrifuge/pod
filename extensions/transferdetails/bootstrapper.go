@@ -4,11 +4,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-)
-
-const (
-	// BootstrappedTransferDetailService is the key to bootstrapped document service
-	BootstrappedTransferDetailService = "BootstrappedTransferDetailsService"
+	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 )
 
 // Bootstrapper implements Bootstrapper Interface
@@ -22,17 +20,15 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		}
 	}()
 
-	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
-	if !ok {
-		return errors.New("document service not initialised")
-	}
-
 	tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	if !ok {
 		return errors.New("token registry not initialisation")
 	}
 
-	srv := DefaultService(docSrv, tokenRegistry)
-	ctx[BootstrappedTransferDetailService] = srv
+	srv := DefaultService(func() httpapi.CoreService {
+		return ctx[coreapi.BootstrappedCoreService].(httpapi.CoreService)
+	}, tokenRegistry)
+
+	ctx[extensions.BootstrappedTransferDetailService] = srv
 	return nil
 }

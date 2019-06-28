@@ -1,4 +1,16 @@
-package transferdetails
+package extensions
+
+import (
+	"context"
+
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/jobs"
+)
+
+const (
+	// BootstrappedTransferDetailService is the key to bootstrapped document service
+	BootstrappedTransferDetailService = "BootstrappedTransferDetailsService"
+)
 
 // TransferDetailData is the default transfer details extension schema
 type TransferDetailData struct {
@@ -38,4 +50,20 @@ type TransferDetail struct {
 // TransferDetailList holds a list of TransferDetails
 type TransferDetailList struct {
 	Data []TransferDetailData
+}
+
+// TransferDetailService defines specific functions for extension funding
+type TransferDetailService interface {
+
+	// UpdateTransferDetail updates a TransferDetail
+	UpdateTransferDetail(ctx context.Context, req UpdateTransferDetailRequest) (documents.Model, jobs.JobID, error)
+
+	// CreateTransferDetail derives a TransferDetail from a request payload
+	CreateTransferDetail(ctx context.Context, req CreateTransferDetailRequest) (documents.Model, jobs.JobID, error)
+
+	// DeriveFundingResponse returns a TransferDetail in client format
+	DeriveTransferDetail(ctx context.Context, model documents.Model, transferID []byte) (*TransferDetail, documents.Model, error)
+
+	// DeriveFundingListResponse returns a TransferDetail list in client format
+	DeriveTransferList(ctx context.Context, model documents.Model) (*TransferDetailList, documents.Model, error)
 }

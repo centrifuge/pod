@@ -32,7 +32,7 @@ type Service interface {
 	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error)
 }
 
-// service implements Service and handles all funding related persistence and validations
+// service implements TransferDetailService and handles all funding related persistence and validations
 type service struct {
 	documents.Service
 	tokenRegistry documents.TokenRegistry

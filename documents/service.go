@@ -273,8 +273,10 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		DocumentId:   hexutil.Encode(model.ID()),
 	}
 
-	// Async until we add queuing
-	go s.notifier.Send(ctx, notificationMsg)
+	status, err := s.notifier.Send(ctx, notificationMsg)
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentNotification, errors.New("webhook error %v with status %d", err, status))
+	}
 
 	return nil
 }

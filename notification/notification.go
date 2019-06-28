@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"

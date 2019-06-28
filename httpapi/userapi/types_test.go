@@ -5,14 +5,14 @@ package userapi
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTypes_toTransferDetailCreatePayload(t *testing.T) {
 	req := CreateTransferDetailRequest{
 		DocumentID: "test_id",
-		Data: transferdetails.TransferDetailData{
+		Data: extensions.TransferDetailData{
 			TransferID: "test",
 		},
 	}
@@ -28,7 +28,7 @@ func TestTypes_toTransferDetailUpdatePayload(t *testing.T) {
 	req := UpdateTransferDetailRequest{
 		DocumentID: "test_id",
 		TransferID: "transfer_id",
-		Data: transferdetails.TransferDetailData{
+		Data: extensions.TransferDetailData{
 			TransferID: "test",
 		},
 	}

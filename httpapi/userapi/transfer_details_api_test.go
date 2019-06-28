@@ -11,7 +11,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi"
+
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -26,9 +28,9 @@ import (
 )
 
 func TestHandler_CreateTransferDetail(t *testing.T) {
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	transferSrv := new(MockTransferService)
-	srv := Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv := Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h := handler{srv: srv}
 
 	docID := hexutil.Encode(utils.RandomSlice(32))
@@ -75,7 +77,7 @@ func TestHandler_CreateTransferDetail(t *testing.T) {
 
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	transferSrv = new(MockTransferService)
-	srv = Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv = Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h = handler{srv: srv}
 	transferSrv.On("CreateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	h.CreateTransferDetail(w, r)
@@ -83,9 +85,9 @@ func TestHandler_CreateTransferDetail(t *testing.T) {
 }
 
 func TestHandler_GetTransferDetail(t *testing.T) {
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	transferSrv := new(MockTransferService)
-	srv := Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv := Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h := handler{srv: srv}
 
 	data := map[string]interface{}{
@@ -124,9 +126,9 @@ func TestHandler_GetTransferDetail(t *testing.T) {
 	// missing document
 	id := utils.RandomSlice(32)
 	rctx.URLParams.Values[0] = hexutil.Encode(id)
-	docSrv = new(testingdocuments.MockService)
+	docSrv = new(httpapi.MockCoreService)
 	docSrv.On("GetCurrentVersion", id).Return(nil, errors.New("document not found"))
-	srv = Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv = Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h = handler{srv: srv}
 	ctx = context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	w, r = getHTTPReqAndResp(ctx)
@@ -148,15 +150,15 @@ func TestHandler_GetTransferDetail(t *testing.T) {
 	m.On("GetAttributes").Return(nil)
 
 	w, r = getHTTPReqAndResp(ctx)
-	d := &transferdetails.TransferDetail{
-		Data: transferdetails.TransferDetailData{
+	d := &extensions.TransferDetail{
+		Data: extensions.TransferDetailData{
 			TransferID: transferID,
 		},
 	}
-	docSrv = new(testingdocuments.MockService)
+	docSrv = new(httpapi.MockCoreService)
 	docSrv.On("GetCurrentVersion", id).Return(m, nil)
 	transferSrv = new(MockTransferService)
-	srv = Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv = Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h = handler{srv: srv}
 	transferSrv.On("DeriveTransferDetail", mock.Anything, m, mock.Anything).Return(d, m, nil)
 	h.GetTransferDetail(w, r)
@@ -164,9 +166,9 @@ func TestHandler_GetTransferDetail(t *testing.T) {
 }
 
 func TestHandler_UpdateTransferDetail(t *testing.T) {
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	transferSrv := new(MockTransferService)
-	srv := Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv := Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h := handler{srv: srv}
 
 	docID := hexutil.Encode(utils.RandomSlice(32))
@@ -213,7 +215,7 @@ func TestHandler_UpdateTransferDetail(t *testing.T) {
 
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	transferSrv = new(MockTransferService)
-	srv = Service{docSrv: docSrv, transferDetailsService: transferSrv}
+	srv = Service{coreService: docSrv, transferDetailsService: transferSrv}
 	h = handler{srv: srv}
 	transferSrv.On("UpdateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	h.UpdateTransferDetail(w, r)

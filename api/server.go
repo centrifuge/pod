@@ -10,6 +10,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/httpapi/router"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/ipfs/go-log"
@@ -64,7 +65,13 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 
 	grpcServer := grpc.NewServer(opts...)
 	gwmux := runtime.NewServeMux()
-	mux, err := registerServices(ctx, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
+	err = registerServices(ctx, grpcServer, gwmux, grpcAddr, []grpc.DialOption{grpc.WithInsecure()})
+	if err != nil {
+		startupErr <- err
+		return
+	}
+
+	mux, err := router.Router(ctx)
 	if err != nil {
 		startupErr <- err
 		return

@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -81,10 +82,12 @@ func TestDeriveFromPayload(t *testing.T) {
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(func() httpapi.CoreService {
+		return docSrv
+	}, nil)
 	payload := createTestPayload()
 	payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
 
@@ -107,10 +110,12 @@ func TestDeriveTransferResponse(t *testing.T) {
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(func() httpapi.CoreService {
+		return docSrv
+	}, nil)
 
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
@@ -135,13 +140,15 @@ func TestDeriveTransferListResponse(t *testing.T) {
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(func() httpapi.CoreService {
+		return docSrv
+	}, nil)
 
 	var model documents.Model
-	var payloads []CreateTransferDetailRequest
+	var payloads []extensions.CreateTransferDetailRequest
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
 		p.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
@@ -166,10 +173,12 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 
-	docSrv := new(testingdocuments.MockService)
+	docSrv := new(httpapi.MockCoreService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	srv := DefaultService(func() httpapi.CoreService {
+		return docSrv
+	}, nil)
 	var model documents.Model
 
 	p := createTestPayload()
@@ -180,7 +189,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	// update
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(model, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	p2 := &UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: p.Data.TransferID}
+	p2 := &extensions.UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: p.Data.TransferID}
 	p2.Data.Currency = "USD"
 	p2.Data.Amount = "1200"
 
@@ -196,15 +205,15 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.NotEqual(t, p.Data.Currency, response.Data[0].Currency)
 
 	// attempted update of non-existent transfer details
-	p3 := &UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: hexutil.Encode(utils.RandomSlice(32))}
+	p3 := &extensions.UpdateTransferDetailRequest{Data: createTestData(), DocumentID: p.DocumentID, TransferID: hexutil.Encode(utils.RandomSlice(32))}
 	model, _, err = srv.UpdateTransferDetail(context.Background(), *p3)
 	assert.Error(t, err)
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }
 
-func createTestData() TransferDetailData {
+func createTestData() extensions.TransferDetailData {
 	transferID := extensions.NewAttributeSetID()
-	return TransferDetailData{
+	return extensions.TransferDetailData{
 		TransferID:          transferID,
 		SenderID:            testingidentity.GenerateRandomDID().String(),
 		RecipientID:         testingidentity.GenerateRandomDID().String(),
@@ -220,11 +229,11 @@ func createTestData() TransferDetailData {
 	}
 }
 
-func createTestPayload() CreateTransferDetailRequest {
-	return CreateTransferDetailRequest{Data: createTestData()}
+func createTestPayload() extensions.CreateTransferDetailRequest {
+	return extensions.CreateTransferDetailRequest{Data: createTestData()}
 }
 
-func checkResponse(t *testing.T, payload CreateTransferDetailRequest, response *TransferDetailData) {
+func checkResponse(t *testing.T, payload extensions.CreateTransferDetailRequest, response *extensions.TransferDetailData) {
 	assert.Equal(t, payload.Data.TransferID, response.TransferID)
 	assert.Equal(t, payload.Data.Currency, response.Currency)
 	assert.Equal(t, payload.Data.Status, response.Status)
