@@ -13,14 +13,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // AccountService allows for account management on the Node
 service AccountService {
-  rpc GetAccount(GetAccountRequest) returns (AccountData) {
-    option (google.api.http) = {
-      get: "/v1/accounts/{account_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get Account"
-    };
-  }
   rpc GetAllAccounts(google.protobuf.Empty) returns (GetAllAccountResponse) {
     option (google.api.http) = {
       get: "/v1/accounts"
@@ -55,10 +47,6 @@ service AccountService {
       description: "Updates an Account"
     };
   }
-}
-
-message GetAccountRequest {
-  string account_id = 1;
 }
 
 message GetAllAccountResponse {

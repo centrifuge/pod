@@ -75,29 +75,6 @@
       }
     },
     "/v1/accounts/{account_id}": {
-      "get": {
-        "description": "Get Account",
-        "operationId": "GetAccount",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/accountAccountData"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "account_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "AccountService"
-        ]
-      },
       "put": {
         "description": "Updates an Account",
         "operationId": "UpdateAccount",
