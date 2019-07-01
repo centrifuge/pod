@@ -136,10 +136,7 @@ func (s *service) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]st
 	if err != nil {
 		return nil, err
 	}
-	accDIDBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	accDIDBytes := acc.GetIdentityID()
 	keys, err := acc.GetKeys()
 	if err != nil {
 		return nil, err
@@ -180,10 +177,7 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
-	didBytes, err := tc.GetIdentityID()
-	if err != nil {
-		return nil, nil, err
-	}
+	didBytes := tc.GetIdentityID()
 
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
@@ -212,11 +206,7 @@ func (s *service) TransferFrom(ctx context.Context, registry common.Address, to 
 		return nil, nil, err
 	}
 
-	didBytes, err := tc.GetIdentityID()
-	if err != nil {
-		return nil, nil, err
-	}
-
+	didBytes := tc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
 		return nil, nil, err

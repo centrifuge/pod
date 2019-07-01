@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -319,4 +320,44 @@ type SignResponse struct {
 	Signature byteutils.HexBytes `json:"signature" swaggertype:"primitive,string"`
 	PublicKey byteutils.HexBytes `json:"public_key" swaggertype:"primitive,string"`
 	SignerID  byteutils.HexBytes `json:"signer_id" swaggertype:"primitive,string"`
+}
+
+// KeyPair represents the public and private key.
+type KeyPair struct {
+	Pub string `json:"pub"`
+	Pvt string `json:"pvt"`
+}
+
+// EthAccount holds address of the account.
+type EthAccount struct {
+	Address  string `json:"address"`
+	Key      string `json:"key,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+// Account holds the single account details.
+type Account struct {
+	EthereumAccount                  EthAccount         `json:"eth_account"`
+	EthereumDefaultAccountName       string             `json:"eth_default_account_name"`
+	ReceiveEventNotificationEndpoint string             `json:"receive_event_notification_endpoint"`
+	IdentityID                       byteutils.HexBytes `json:"identity_id" swaggertype:"primitive,string"`
+	SigningKeyPair                   KeyPair            `json:"signing_key_pair"`
+	P2PKeyPair                       KeyPair            `json:"p2p_key_pair"`
+}
+
+func toClientAccount(acc config.Account) Account {
+	var p2pkp, signingkp KeyPair
+	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
+	signingkp.Pub, signingkp.Pvt = acc.GetSigningKeyPair()
+
+	return Account{
+		EthereumAccount: EthAccount{
+			Address: acc.GetEthereumAccount().Address,
+		},
+		IdentityID:                       acc.GetIdentityID(),
+		ReceiveEventNotificationEndpoint: acc.GetReceiveEventNotificationEndpoint(),
+		EthereumDefaultAccountName:       acc.GetEthereumDefaultAccountName(),
+		P2PKeyPair:                       p2pkp,
+		SigningKeyPair:                   signingkp,
+	}
 }

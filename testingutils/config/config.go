@@ -115,7 +115,7 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 }
 
 func (m *MockConfig) GetEthereumAccount(accountName string) (account *config.AccountConfig, err error) {
-	args := m.Called()
+	args := m.Called(accountName)
 	return args.Get(0).(*config.AccountConfig), args.Error(1)
 }
 
@@ -194,7 +194,7 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 
 func HandlerContext(service config.Service) context.Context {
 	tcs, _ := service.GetAllAccounts()
-	cid, _ := tcs[0].GetIdentityID()
+	cid := tcs[0].GetIdentityID()
 	cidHex := hexutil.Encode(cid)
 	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, cidHex)
 	return ctx

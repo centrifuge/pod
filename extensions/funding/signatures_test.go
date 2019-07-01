@@ -32,10 +32,10 @@ func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	return sig, args.Error(1)
 }
 
-func (m *mockAccount) GetIdentityID() ([]byte, error) {
+func (m *mockAccount) GetIdentityID() []byte {
 	args := m.Called()
 	sig, _ := args.Get(0).([]byte)
-	return sig, args.Error(1)
+	return sig
 }
 
 func setupFundingForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {

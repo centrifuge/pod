@@ -58,10 +58,7 @@ func (s service) CreateConfig(data config.Configuration) (config.Configuration, 
 }
 
 func (s service) CreateAccount(data config.Account) (config.Account, error) {
-	id, err := data.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	id := data.GetIdentityID()
 	return data, s.repo.CreateAccount(id, data)
 }
 
@@ -142,10 +139,7 @@ func createKeyPath(keyStorepath string, DID *identity.DID, keyName string) (stri
 }
 
 func (s service) UpdateAccount(data config.Account) (config.Account, error) {
-	id, err := data.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	id := data.GetIdentityID()
 	return data, s.repo.UpdateAccount(id, data)
 }
 
@@ -177,7 +171,7 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configurati
 	}
 
 	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && cfg == nil && !dbOnly {
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && !dbOnly {
 		cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	} else {
 		return nil, errors.NewTypedError(config.ErrConfigRetrieve, err)

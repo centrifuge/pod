@@ -138,10 +138,7 @@ func getDID(ctx context.Context) (identity.DID, error) {
 		return identity.DID{}, err
 	}
 
-	addressByte, err := tc.GetIdentityID()
-	if err != nil {
-		return identity.DID{}, err
-	}
+	addressByte := tc.GetIdentityID()
 	return identity.NewDID(common.BytesToAddress(addressByte)), nil
 }
 

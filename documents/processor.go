@@ -86,11 +86,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	id, err := self.GetIdentityID()
-	if err != nil {
-		return err
-	}
-
+	id := self.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(id)
 	if err != nil {
 		return err

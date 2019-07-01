@@ -32,10 +32,7 @@ func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb
 	for _, t := range cfgs {
 		tpb, err := t.CreateProtobuf()
 		if err != nil {
-			bID, err := t.GetIdentityID()
-			if err != nil {
-				apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("error getting ID: %v", err)))
-			}
+			bID := t.GetIdentityID()
 			apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("account [%s]: %v", hexutil.Encode(bID), err)))
 			continue
 		}

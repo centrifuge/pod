@@ -52,10 +52,7 @@ func AccountDID(ctx context.Context) (identity.DID, error) {
 	if err != nil {
 		return identity.DID{}, err
 	}
-	didBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return identity.DID{}, err
-	}
+	didBytes := acc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
 		return identity.DID{}, err

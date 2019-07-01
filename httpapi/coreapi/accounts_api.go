@@ -12,8 +12,13 @@ import (
 	"github.com/go-chi/render"
 )
 
-// ErrAccountIDInvalid is a sentinel error for invalid account IDs.
-const ErrAccountIDInvalid = errors.Error("account ID is invalid")
+const (
+	// ErrAccountIDInvalid is a sentinel error for invalid account IDs.
+	ErrAccountIDInvalid = errors.Error("account ID is invalid")
+
+	// ErrAccountNotFound is a sentinel error for when account is missing.
+	ErrAccountNotFound = errors.Error("account not found")
+)
 
 // SignPayload signs the payload and returns the signature.
 // @summary Signs and returns the signature of the Payload.
@@ -69,4 +74,40 @@ func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 		Signature: sig.Signature,
 		SignerID:  sig.SignerId,
 	})
+}
+
+// GetAccount returns the account associated with accountID.
+// @summary Returns the account associated with accountID.
+// @description Returns the account associated with accountID.
+// @id get_account
+// @tags Accounts
+// @param account_id path string true "Account ID"
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @success 200 {object} coreapi.Account
+// @router /v1/accounts/{account_id} [get]
+func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	accID, err := hexutil.Decode(chi.URLParam(r, accountIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrAccountIDInvalid
+		return
+	}
+
+	acc, err := h.srv.GetAccount(accID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = ErrAccountNotFound
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, toClientAccount(acc))
 }

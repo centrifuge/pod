@@ -494,10 +494,7 @@ func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenPara
 		return nil, err
 	}
 	tokenIdentifier := utils.RandomSlice(32)
-	id, err := account.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	id := account.GetIdentityID()
 	granterID, err := identity.NewDIDFromBytes(id)
 	if err != nil {
 		return nil, err
