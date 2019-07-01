@@ -145,7 +145,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
 
-	// service fail
+	// Service fail
 	to := hexutil.Encode(utils.RandomSlice(20))
 	body := map[string]interface{}{
 		"to": to,

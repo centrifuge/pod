@@ -50,7 +50,7 @@ func (m *MockTransferService) DeriveTransferList(ctx context.Context, model docu
 func TestService_CreateTransferDetail(t *testing.T) {
 	transferSrv := new(MockTransferService)
 	docSrv := new(testingdocuments.MockService)
-	service := service{docSrv: docSrv, transferDetailsService: transferSrv}
+	service := Service{docSrv: docSrv, transferDetailsService: transferSrv}
 	m := new(testingdocuments.MockModel)
 	transferSrv.On("CreateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	nm, _, err := service.CreateTransferDetail(context.Background(), transferdetails.CreateTransferDetailRequest{
@@ -64,7 +64,7 @@ func TestService_CreateTransferDetail(t *testing.T) {
 func TestService_UpdateDocument(t *testing.T) {
 	transferSrv := new(MockTransferService)
 	docSrv := new(testingdocuments.MockService)
-	service := service{docSrv: docSrv, transferDetailsService: transferSrv}
+	service := Service{docSrv: docSrv, transferDetailsService: transferSrv}
 	m := new(testingdocuments.MockModel)
 	transferSrv.On("UpdateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	nm, _, err := service.UpdateTransferDetail(context.Background(), transferdetails.UpdateTransferDetailRequest{
@@ -79,7 +79,7 @@ func TestService_UpdateDocument(t *testing.T) {
 func TestService_GetCurrentTransferDetail(t *testing.T) {
 	transferSrv := new(MockTransferService)
 	docSrv := new(testingdocuments.MockService)
-	service := service{docSrv: docSrv, transferDetailsService: transferSrv}
+	service := Service{docSrv: docSrv, transferDetailsService: transferSrv}
 	m := new(testingdocuments.MockModel)
 	td := new(transferdetails.TransferDetail)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(m, nil)
@@ -93,7 +93,7 @@ func TestService_GetCurrentTransferDetail(t *testing.T) {
 func TestService_GetCurrentTransferDetailList(t *testing.T) {
 	transferSrv := new(MockTransferService)
 	docSrv := new(testingdocuments.MockService)
-	service := service{docSrv: docSrv, transferDetailsService: transferSrv}
+	service := Service{docSrv: docSrv, transferDetailsService: transferSrv}
 	m := new(testingdocuments.MockModel)
 	td := new(transferdetails.TransferDetailList)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(m, nil)
@@ -107,7 +107,7 @@ func TestService_GetCurrentTransferDetailList(t *testing.T) {
 func TestService_GetVersionTransferDetail(t *testing.T) {
 	transferSrv := new(MockTransferService)
 	docSrv := new(testingdocuments.MockService)
-	service := service{docSrv: docSrv, transferDetailsService: transferSrv}
+	service := Service{docSrv: docSrv, transferDetailsService: transferSrv}
 	m := new(testingdocuments.MockModel)
 	td := new(transferdetails.TransferDetail)
 	docSrv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(m, nil)
@@ -121,7 +121,7 @@ func TestService_GetVersionTransferDetail(t *testing.T) {
 func TestService_GetVersionTransferDetailList(t *testing.T) {
 	transferSrv := new(MockTransferService)
 	docSrv := new(testingdocuments.MockService)
-	service := service{docSrv: docSrv, transferDetailsService: transferSrv}
+	service := Service{docSrv: docSrv, transferDetailsService: transferSrv}
 	m := new(testingdocuments.MockModel)
 	td := new(transferdetails.TransferDetailList)
 	docSrv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(m, nil)

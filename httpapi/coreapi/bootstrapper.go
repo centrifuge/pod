@@ -29,6 +29,11 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	ctx[BootstrappedCoreAPIService] = DefaultService(docSrv, jobsMan, nftSrv, accountSrv)
+	ctx[BootstrappedCoreAPIService] = Service{
+		docService:      docSrv,
+		jobsService:     jobsMan,
+		nftService:      nftSrv,
+		accountsService: accountSrv,
+	}
 	return nil
 }
