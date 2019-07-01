@@ -273,8 +273,13 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		DocumentId:   hexutil.Encode(model.ID()),
 	}
 
-	// Async until we add queuing
-	go s.notifier.Send(ctx, notificationMsg)
+	// async so that we don't return an error as the p2p reply
+	go func() {
+		_, err = s.notifier.Send(ctx, notificationMsg)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 
 	return nil
 }
