@@ -30,10 +30,10 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	ctx[BootstrappedCoreAPIService] = Service{
-		docService:      docSrv,
-		jobsService:     jobsMan,
-		nftService:      nftSrv,
-		accountsService: accountSrv,
+		DocSrv:      docSrv,
+		JobsSrv:     jobsMan,
+		NFTSrv:      nftSrv,
+		AccountsSrv: accountSrv,
 	}
 	return nil
 }

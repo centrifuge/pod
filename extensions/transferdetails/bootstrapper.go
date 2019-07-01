@@ -25,7 +25,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 
 	coreAPISrv, ok := ctx[coreapi.BootstrappedCoreAPIService].(coreapi.Service)
 	if !ok {
-		return errors.New("document service not initialised")
+		return errors.New("core-api service not initialised")
 	}
 
 	tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)

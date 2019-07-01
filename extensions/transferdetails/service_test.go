@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -35,12 +36,8 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-
-var (
-	did = testingidentity.GenerateRandomDID()
-)
-
-var configService config.Service
+var did = testingidentity.GenerateRandomDID()
+var coreAPISrv = coreapi.Service{}
 
 func TestMain(m *testing.M) {
 	ethClient := new(ethereum.MockEthClient)
@@ -68,7 +65,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
@@ -84,7 +80,8 @@ func TestDeriveFromPayload(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	coreAPISrv.DocSrv = docSrv
+	srv := DefaultService(coreAPISrv, nil)
 	payload := createTestPayload()
 	payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
 
@@ -110,10 +107,9 @@ func TestDeriveTransferResponse(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
-
+	coreAPISrv.DocSrv = docSrv
+	srv := DefaultService(coreAPISrv, nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
 		payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
@@ -134,7 +130,8 @@ func TestService_DeriveTransferListWithNoAttributes(t *testing.T) {
 	err := model.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 	docSrv := new(testingdocuments.MockService)
-	srv := DefaultService(docSrv, nil)
+	coreAPISrv.DocSrv = docSrv
+	srv := DefaultService(coreAPISrv, nil)
 	response, m, err := srv.DeriveTransferList(context.Background(), model)
 	assert.NotNil(t, response)
 	assert.NotNil(t, m)
@@ -149,7 +146,8 @@ func TestDeriveTransferListResponse(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	coreAPISrv.DocSrv = docSrv
+	srv := DefaultService(coreAPISrv, nil)
 
 	var model documents.Model
 	var payloads []CreateTransferDetailRequest
@@ -179,7 +177,8 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	srv := DefaultService(docSrv, nil)
+	coreAPISrv.DocSrv = docSrv
+	srv := DefaultService(coreAPISrv, nil)
 	var model documents.Model
 
 	p := createTestPayload()

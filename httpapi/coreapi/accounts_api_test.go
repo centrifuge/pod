@@ -61,7 +61,7 @@ func TestHandler_SignPayload(t *testing.T) {
 	assert.NoError(t, err)
 	srv := new(configstore.MockService)
 	srv.On("Sign", accountID, payload).Return(nil, errors.New("failed to sign payload")).Once()
-	h.srv.accountsService = srv
+	h.srv.AccountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.SignPayload(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
@@ -77,7 +77,7 @@ func TestHandler_SignPayload(t *testing.T) {
 		Signature: signature,
 		PublicKey: pk,
 	}, nil).Once()
-	h.srv.accountsService = srv
+	h.srv.AccountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.SignPayload(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)

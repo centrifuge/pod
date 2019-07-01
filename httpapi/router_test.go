@@ -7,8 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/stretchr/testify/assert"
@@ -66,7 +69,12 @@ func TestRouter_auth(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
-	r := Router(nil, nil, new(testingnfts.MockNFTService), nil, nil, nil)
+	ctx := map[string]interface{}{
+		coreapi.BootstrappedCoreAPIService:  coreapi.Service{},
+		userapi.BootstrappedUserAPIService:  userapi.Service{},
+		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
+	}
+	r := Router(ctx, nil, nil)
 	assert.Len(t, r.Middlewares(), 3)
 	assert.Len(t, r.Routes(), 2)
 	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 12)
