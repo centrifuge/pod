@@ -12,67 +12,77 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// NewService returns the new CoreAPI Service.
+func NewService(docSrv documents.Service, jobsSrv jobs.Manager, nftSrv nft.Service, accountsSrv config.Service) Service {
+	return Service{
+		docSrv:      docSrv,
+		jobsSrv:     jobsSrv,
+		nftSrv:      nftSrv,
+		accountsSrv: accountsSrv,
+	}
+}
+
 // Service defines the functionality for the CoreAPI service.
 type Service struct {
-	DocSrv      documents.Service
-	JobsSrv     jobs.Manager
-	NFTSrv      nft.Service
-	AccountsSrv config.Service
+	docSrv      documents.Service
+	jobsSrv     jobs.Manager
+	nftSrv      nft.Service
+	accountsSrv config.Service
 }
 
 // CreateDocument creates the document from the payload and anchors it.
 func (s Service) CreateDocument(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
-	return s.DocSrv.CreateModel(ctx, payload)
+	return s.docSrv.CreateModel(ctx, payload)
 }
 
 // UpdateDocument updates the document from the payload and anchors the next version.
 func (s Service) UpdateDocument(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
-	return s.DocSrv.UpdateModel(ctx, payload)
+	return s.docSrv.UpdateModel(ctx, payload)
 }
 
 // GetJobStatus returns the job status.
 func (s Service) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error) {
-	return s.JobsSrv.GetJobStatus(account, id)
+	return s.jobsSrv.GetJobStatus(account, id)
 }
 
 // GetDocument returns the latest version of the document.
 func (s Service) GetDocument(ctx context.Context, docID []byte) (documents.Model, error) {
-	return s.DocSrv.GetCurrentVersion(ctx, docID)
+	return s.docSrv.GetCurrentVersion(ctx, docID)
 }
 
 // GetDocumentVersion returns the specific version of the document
 func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
-	return s.DocSrv.GetVersion(ctx, docID, versionID)
+	return s.docSrv.GetVersion(ctx, docID, versionID)
 }
 
 // GenerateProofs returns the proofs for the latest version of the document.
 func (s Service) GenerateProofs(ctx context.Context, docID []byte, fields []string) (*documents.DocumentProof, error) {
-	return s.DocSrv.CreateProofs(ctx, docID, fields)
+	return s.docSrv.CreateProofs(ctx, docID, fields)
 }
 
 // GenerateProofsForVersion returns the proofs for the specific version of the document.
 func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error) {
-	return s.DocSrv.CreateProofsForVersion(ctx, docID, versionID, fields)
+	return s.docSrv.CreateProofsForVersion(ctx, docID, versionID, fields)
 }
 
 // MintNFT mints an NFT.
 func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
-	resp, _, err := s.NFTSrv.MintNFT(ctx, request)
+	resp, _, err := s.nftSrv.MintNFT(ctx, request)
 	return resp, err
 }
 
 // TransferNFT transfers NFT with tokenID in a given registry to `to` address.
 func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
-	resp, _, err := s.NFTSrv.TransferFrom(ctx, registry, to, tokenID)
+	resp, _, err := s.nftSrv.TransferFrom(ctx, registry, to, tokenID)
 	return resp, err
 }
 
 // OwnerOfNFT returns the owner of the NFT.
 func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
-	return s.NFTSrv.OwnerOf(registry, tokenID[:])
+	return s.nftSrv.OwnerOf(registry, tokenID[:])
 }
 
 // SignPayload uses the accountID's secret key to sign the payload and returns the signature
 func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
-	return s.AccountsSrv.Sign(accountID, payload)
+	return s.accountsSrv.Sign(accountID, payload)
 }

@@ -17,8 +17,16 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
-	jobsMan := ctx[jobs.BootstrappedService].(jobs.Manager)
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	if !ok {
+		return errors.New("failed to get %s", documents.BootstrappedDocumentService)
+	}
+
+	jobsMan, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
+	if !ok {
+		return errors.New("failed to get %s", jobs.BootstrappedService)
+	}
+
 	nftSrv, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
 	if !ok {
 		return errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
@@ -30,10 +38,10 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	ctx[BootstrappedCoreAPIService] = Service{
-		DocSrv:      docSrv,
-		JobsSrv:     jobsMan,
-		NFTSrv:      nftSrv,
-		AccountsSrv: accountSrv,
+		docSrv:      docSrv,
+		jobsSrv:     jobsMan,
+		nftSrv:      nftSrv,
+		accountsSrv: accountSrv,
 	}
 	return nil
 }

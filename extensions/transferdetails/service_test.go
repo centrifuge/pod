@@ -37,7 +37,10 @@ import (
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
 var did = testingidentity.GenerateRandomDID()
-var coreAPISrv = coreapi.Service{}
+
+func newCoreAPIService(docSrv documents.Service) coreapi.Service {
+	return coreapi.NewService(docSrv, nil, nil, nil)
+}
 
 func TestMain(m *testing.M) {
 	ethClient := new(ethereum.MockEthClient)
@@ -80,8 +83,7 @@ func TestDeriveFromPayload(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	coreAPISrv.DocSrv = docSrv
-	srv := DefaultService(coreAPISrv, nil)
+	srv := DefaultService(newCoreAPIService(docSrv), nil)
 	payload := createTestPayload()
 	payload.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
 
@@ -107,8 +109,7 @@ func TestDeriveTransferResponse(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	coreAPISrv.DocSrv = docSrv
-	srv := DefaultService(coreAPISrv, nil)
+	srv := DefaultService(newCoreAPIService(docSrv), nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	for i := 0; i < 10; i++ {
 		payload := createTestPayload()
@@ -130,8 +131,7 @@ func TestService_DeriveTransferListWithNoAttributes(t *testing.T) {
 	err := model.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
 	docSrv := new(testingdocuments.MockService)
-	coreAPISrv.DocSrv = docSrv
-	srv := DefaultService(coreAPISrv, nil)
+	srv := DefaultService(newCoreAPIService(docSrv), nil)
 	response, m, err := srv.DeriveTransferList(context.Background(), model)
 	assert.NotNil(t, response)
 	assert.NotNil(t, m)
@@ -146,8 +146,7 @@ func TestDeriveTransferListResponse(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	coreAPISrv.DocSrv = docSrv
-	srv := DefaultService(coreAPISrv, nil)
+	srv := DefaultService(newCoreAPIService(docSrv), nil)
 
 	var model documents.Model
 	var payloads []CreateTransferDetailRequest
@@ -177,8 +176,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(inv, nil, nil)
-	coreAPISrv.DocSrv = docSrv
-	srv := DefaultService(coreAPISrv, nil)
+	srv := DefaultService(newCoreAPIService(docSrv), nil)
 	var model documents.Model
 
 	p := createTestPayload()
