@@ -42,7 +42,7 @@ func DefaultService(
 var log = logging.Logger("transferdetail-api")
 
 // TODO: get rid of this or make generic
-func deriveDIDs(data *extensions.TransferDetailData) ([]identity.DID, error) {
+func deriveDIDs(data *extensions.Data) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.SenderID, data.RecipientID} {
 		if id != "" {
@@ -63,16 +63,13 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		return nil, jobs.NilJobID(), err
 	}
 
-	a := model.GetAttributes()
-	attr, err := extensions.ToMapAttributes(a)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
 	d, err := json.Marshal(model.GetData())
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
+
+	a := model.GetAttributes()
+	attr := extensions.ToMapAttributes(a)
 
 	payload := documents.UpdatePayload{
 		DocumentID: model.ID(),
@@ -200,7 +197,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req extensions.Upd
 
 	// overwriting is not enough because it is not required that
 	// the TransferDetail payload contains all TransferDetail attributes
-	model, err = extensions.DeleteAttributesSet(model, extensions.TransferDetailData{}, idx, transfersFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, extensions.Data{}, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +228,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req extensions.Upd
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) findTransfer(model documents.Model, transferID string) (*extensions.TransferDetailData, error) {
+func (s service) findTransfer(model documents.Model, transferID string) (*extensions.Data, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
@@ -240,8 +237,8 @@ func (s service) findTransfer(model documents.Model, transferID string) (*extens
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) deriveTransferData(model documents.Model, idx string) (*extensions.TransferDetailData, error) {
-	data := new(extensions.TransferDetailData)
+func (s service) deriveTransferData(model documents.Model, idx string) (*extensions.Data, error) {
+	data := new(extensions.Data)
 
 	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {
@@ -304,7 +301,7 @@ func (s service) DeriveTransferList(ctx context.Context, model documents.Model) 
 	if !model.AttributeExists(fl) {
 		return &extensions.TransferDetailList{
 			Data: nil,
-		}, nil, nil
+		}, model, nil
 	}
 
 	lastIdx, err := extensions.GetArrayLatestIDX(model, transfersLabel)

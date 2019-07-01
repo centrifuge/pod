@@ -97,7 +97,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	opts.GasLimit = s.config.GetEthereumGasLimit(config.AnchorPreCommit)
 	pc := newPreCommitData(anchorID, signingRoot)
 	log.Infof("Add Anchor to Pre-commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.jobsMan.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
+	_, done, err := s.jobsMan.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.PreCommit, pc.AnchorID.BigInt(), pc.SigningRoot))
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	cd := NewCommitData(h.Number.Uint64(), anchorID, documentRoot, proof)
 
 	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.jobsMan.ExecuteWithinJob(ctx, did, jobID, "Check Job for anchor commit",
+	_, done, err := s.jobsMan.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for anchor commit",
 		s.ethereumTX(opts, s.anchorRepositoryContract.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProof))
 	if err != nil {
 		return nil, err

@@ -12,7 +12,7 @@ import (
 func TestTypes_toTransferDetailCreatePayload(t *testing.T) {
 	req := CreateTransferDetailRequest{
 		DocumentID: "test_id",
-		Data: extensions.TransferDetailData{
+		Data: extensions.Data{
 			TransferID: "test",
 		},
 	}
@@ -28,7 +28,7 @@ func TestTypes_toTransferDetailUpdatePayload(t *testing.T) {
 	req := UpdateTransferDetailRequest{
 		DocumentID: "test_id",
 		TransferID: "transfer_id",
-		Data: extensions.TransferDetailData{
+		Data: extensions.Data{
 			TransferID: "test",
 		},
 	}

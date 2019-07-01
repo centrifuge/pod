@@ -134,8 +134,19 @@ func TestDeriveTransferResponse(t *testing.T) {
 
 }
 
+func TestService_DeriveTransferListWithNoAttributes(t *testing.T) {
+	model := new(invoice.Invoice)
+	err := model.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
+	assert.NoError(t, err)
+	docSrv := new(testingdocuments.MockService)
+	srv := DefaultService(docSrv, nil)
+	response, m, err := srv.DeriveTransferList(context.Background(), model)
+	assert.NotNil(t, response)
+	assert.NotNil(t, m)
+	assert.NoError(t, err)
+}
+
 func TestDeriveTransferListResponse(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
@@ -168,7 +179,6 @@ func TestDeriveTransferListResponse(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
 	inv := new(invoice.Invoice)
 	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
 	assert.NoError(t, err)
@@ -211,9 +221,9 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	assert.Contains(t, err, extensions.ErrAttributeSetNotFound)
 }
 
-func createTestData() extensions.TransferDetailData {
+func createTestData() extensions.Data {
 	transferID := extensions.NewAttributeSetID()
-	return extensions.TransferDetailData{
+	return extensions.Data{
 		TransferID:          transferID,
 		SenderID:            testingidentity.GenerateRandomDID().String(),
 		RecipientID:         testingidentity.GenerateRandomDID().String(),
@@ -233,7 +243,7 @@ func createTestPayload() extensions.CreateTransferDetailRequest {
 	return extensions.CreateTransferDetailRequest{Data: createTestData()}
 }
 
-func checkResponse(t *testing.T, payload extensions.CreateTransferDetailRequest, response *extensions.TransferDetailData) {
+func checkResponse(t *testing.T, payload extensions.CreateTransferDetailRequest, response *extensions.Data) {
 	assert.Equal(t, payload.Data.TransferID, response.TransferID)
 	assert.Equal(t, payload.Data.Currency, response.Currency)
 	assert.Equal(t, payload.Data.Status, response.Status)
