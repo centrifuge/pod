@@ -1,9 +1,9 @@
 package userapi
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 )
 
 // BootstrappedUserAPIService key maps to the Service implementation in Bootstrap context.
@@ -14,9 +14,9 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	coreAPISrv, ok := ctx[coreapi.BootstrappedCoreAPIService].(coreapi.Service)
 	if !ok {
-		return errors.New("failed to get %s", documents.BootstrappedDocumentService)
+		return errors.New("failed to get %s", coreapi.BootstrappedCoreAPIService)
 	}
 
 	tdSrv, ok := ctx[transferdetails.BootstrappedTransferDetailService].(transferdetails.Service)
@@ -24,6 +24,6 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", transferdetails.BootstrappedTransferDetailService)
 	}
 
-	ctx[BootstrappedUserAPIService] = Service{docSrv, tdSrv}
+	ctx[BootstrappedUserAPIService] = Service{coreAPISrv, tdSrv}
 	return nil
 }

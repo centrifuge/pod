@@ -5,9 +5,8 @@ package userapi
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,13 +14,13 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx := make(map[string]interface{})
 	b := Bootstrapper{}
 
-	// missing doc service
+	// missing core-api service
 	err := b.Bootstrap(ctx)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), documents.BootstrappedDocumentService)
+	assert.Contains(t, err.Error(), coreapi.BootstrappedCoreAPIService)
 
 	// missing transfer detail service
-	ctx[documents.BootstrappedDocumentService] = new(testingdocuments.MockService)
+	ctx[coreapi.BootstrappedCoreAPIService] = coreapi.Service{}
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), transferdetails.BootstrappedTransferDetailService)
