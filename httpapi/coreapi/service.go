@@ -13,7 +13,52 @@ import (
 )
 
 // Service provides functionality for Core APIs.
-type Service struct {
+type Service interface {
+	// CreateDocument creates the document from the payload and anchors it.
+	CreateDocument(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error)
+
+	// UpdateDocument updates the document from the payload and anchors the next version.
+	UpdateDocument(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error)
+
+	// GetJobStatus returns the job status.
+	GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error)
+
+	// GetDocument returns the latest version of the document.
+	GetDocument(ctx context.Context, docID []byte) (documents.Model, error)
+
+	// GetDocumentVersion returns the specific version of the document
+	GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error)
+
+	// GenerateProofs returns the proofs for the latest version of the document.
+	GenerateProofs(ctx context.Context, docID []byte, fields []string) (*documents.DocumentProof, error)
+
+	// GenerateProofsForVersion returns the proofs for the specific version of the document.
+	GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error)
+
+	// MintNFT mints an NFT.
+	MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error)
+
+	// TransferNFT transfers NFT with tokenID in a given registry to `to` address.
+	TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error)
+
+	// OwnerOfNFT returns the owner of the NFT.
+	OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error)
+
+	// SignPayload uses the accountID's secret key to sign the payload and returns the signature
+	SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error)
+}
+
+// DefaultService returns the default implementation of the service
+func DefaultService(docSrv documents.Service, manager jobs.Manager, nftSrv nft.Service, accountSrv config.Service) Service {
+	return service{
+		docService:      docSrv,
+		jobsService:     manager,
+		nftService:      nftSrv,
+		accountsService: accountSrv,
+	}
+}
+
+type service struct {
 	docService      documents.Service
 	jobsService     jobs.Manager
 	nftService      nft.Service
@@ -21,58 +66,58 @@ type Service struct {
 }
 
 // CreateDocument creates the document from the payload and anchors it.
-func (s Service) CreateDocument(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) CreateDocument(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
 	return s.docService.CreateModel(ctx, payload)
 }
 
 // UpdateDocument updates the document from the payload and anchors the next version.
-func (s Service) UpdateDocument(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) UpdateDocument(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
 	return s.docService.UpdateModel(ctx, payload)
 }
 
 // GetJobStatus returns the job status.
-func (s Service) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error) {
+func (s service) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error) {
 	return s.jobsService.GetJobStatus(account, id)
 }
 
 // GetDocument returns the latest version of the document.
-func (s Service) GetDocument(ctx context.Context, docID []byte) (documents.Model, error) {
+func (s service) GetDocument(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.docService.GetCurrentVersion(ctx, docID)
 }
 
 // GetDocumentVersion returns the specific version of the document
-func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+func (s service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
 	return s.docService.GetVersion(ctx, docID, versionID)
 }
 
 // GenerateProofs returns the proofs for the latest version of the document.
-func (s Service) GenerateProofs(ctx context.Context, docID []byte, fields []string) (*documents.DocumentProof, error) {
+func (s service) GenerateProofs(ctx context.Context, docID []byte, fields []string) (*documents.DocumentProof, error) {
 	return s.docService.CreateProofs(ctx, docID, fields)
 }
 
 // GenerateProofsForVersion returns the proofs for the specific version of the document.
-func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error) {
+func (s service) GenerateProofsForVersion(ctx context.Context, docID, versionID []byte, fields []string) (*documents.DocumentProof, error) {
 	return s.docService.CreateProofsForVersion(ctx, docID, versionID, fields)
 }
 
 // MintNFT mints an NFT.
-func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
+func (s service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
 	resp, _, err := s.nftService.MintNFT(ctx, request)
 	return resp, err
 }
 
 // TransferNFT transfers NFT with tokenID in a given registry to `to` address.
-func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
+func (s service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
 	resp, _, err := s.nftService.TransferFrom(ctx, registry, to, tokenID)
 	return resp, err
 }
 
 // OwnerOfNFT returns the owner of the NFT.
-func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
+func (s service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
 	return s.nftService.OwnerOf(registry, tokenID[:])
 }
 
 // SignPayload uses the accountID's secret key to sign the payload and returns the signature
-func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+func (s service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
 	return s.accountsService.Sign(accountID, payload)
 }

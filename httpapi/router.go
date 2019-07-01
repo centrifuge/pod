@@ -6,13 +6,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
 	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,12 +29,9 @@ import (
 // @host localhost:8082
 // @schemes http
 func Router(
+	ctx map[string]interface{},
 	config Config,
-	configSrv config.Service,
-	nftSrv nft.Service,
-	docsSrv documents.Service,
-	transferSrv transferdetails.Service,
-	jobsSrv jobs.Manager) *chi.Mux {
+	configSrv config.Service) *chi.Mux {
 	r := chi.NewRouter()
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
@@ -51,9 +44,9 @@ func Router(
 
 	r.Route("/v1", func(r chi.Router) {
 		// core apis
-		coreapi.Register(r, nftSrv, configSrv, docsSrv, jobsSrv)
+		coreapi.Register(ctx, r)
 		// user apis
-		userapi.Register(r, docsSrv, nftSrv, transferSrv)
+		userapi.Register(ctx, r)
 	})
 	return r
 }

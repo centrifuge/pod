@@ -4,6 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 )
 
 const (
@@ -22,7 +23,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		}
 	}()
 
-	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	coreAPISrv, ok := ctx[coreapi.BootstrappedCoreAPIService].(coreapi.Service)
 	if !ok {
 		return errors.New("document service not initialised")
 	}
@@ -32,7 +33,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		return errors.New("token registry not initialisation")
 	}
 
-	srv := DefaultService(docSrv, tokenRegistry)
+	srv := DefaultService(coreAPISrv, tokenRegistry)
 	ctx[BootstrappedTransferDetailService] = srv
 	return nil
 }

@@ -4,15 +4,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
@@ -44,16 +41,6 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 		return nil, errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
 	}
 
-	docService, ok := nodeObjReg[documents.BootstrappedDocumentService].(documents.Service)
-	if !ok {
-		return nil, errors.New("failed to get %s", documents.BootstrappedDocumentService)
-	}
-
-	transferService, ok := nodeObjReg[transferdetails.BootstrappedTransferDetailService].(transferdetails.Service)
-	if !ok {
-		return nil, errors.New("failed to get %s", transferdetails.BootstrappedTransferDetailService)
-	}
-
 	// register document types
 	err = registerDocumentTypes(ctx, nodeObjReg, grpcServer, gwmux, addr, dopts)
 	if err != nil {
@@ -67,8 +54,7 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 	}
 
 	cfg := nodeObjReg[bootstrap.BootstrappedConfig].(config.Configuration)
-	jobsMan := nodeObjReg[jobs.BootstrappedService].(jobs.Manager)
-	return httpapi.Router(cfg, configService, invoiceUnpaidService, docService, transferService, jobsMan), nil
+	return httpapi.Router(nodeObjReg, cfg, configService), nil
 }
 
 func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
