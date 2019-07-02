@@ -6,32 +6,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	h := GRPCAccountHandler(svc)
-	accountCfg1, err := NewAccount("main", cfg)
-	assert.NoError(t, err)
-	accountCfg2, err := NewAccount("main", cfg)
-	assert.NoError(t, err)
-	tco := accountCfg1.(*Account)
-	tco.EthereumAccount = nil
-	tcs := []config.Account{tco, accountCfg2}
-	hc := h.(*grpcHandler)
-	resp, err := hc.deriveAllAccountResponse(tcs)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(resp.Data))
-}
 
 func TestGrpcHandler_CreateAccount(t *testing.T) {
 	idService := &testingcommons.MockIdentityService{}
