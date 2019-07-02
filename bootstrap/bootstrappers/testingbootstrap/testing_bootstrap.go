@@ -17,6 +17,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -47,9 +49,11 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&nft.Bootstrapper{},
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
+	coreapi.Bootstrapper{},
 	&entity.Bootstrapper{},
 	funding.Bootstrapper{},
 	transferdetails.Bootstrapper{},
+	userapi.Bootstrapper{},
 	&queue.Starter{},
 }
 

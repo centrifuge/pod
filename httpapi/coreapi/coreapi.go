@@ -1,10 +1,8 @@
 package coreapi
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/go-chi/chi"
 )
 
@@ -18,15 +16,14 @@ const (
 )
 
 // Register registers the core apis to the router.
-func Register(r chi.Router,
-	nftSrv nft.Service,
-	accountSrv config.Service,
-	docSrv documents.Service,
-	jobsSrv jobs.Manager) {
+func Register(ctx map[string]interface{}, r chi.Router) {
+	coreAPISrv := ctx[BootstrappedCoreAPIService].(Service)
+	tokenRegistry := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	h := handler{
-		srv:           Service{docService: docSrv, jobsService: jobsSrv, nftService: nftSrv, accountsService: accountSrv},
-		tokenRegistry: nftSrv.(documents.TokenRegistry),
+		srv:           coreAPISrv,
+		tokenRegistry: tokenRegistry,
 	}
+
 	r.Post("/documents", h.CreateDocument)
 	r.Put("/documents/{"+documentIDParam+"}", h.UpdateDocument)
 	r.Get("/documents/{"+documentIDParam+"}", h.GetDocument)

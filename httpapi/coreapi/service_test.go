@@ -15,7 +15,7 @@ import (
 
 func TestService_CreateDocument(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
-	srv := Service{docService: docSrv}
+	srv := Service{docSrv: docSrv}
 	m := new(testingdocuments.MockModel)
 	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	nm, _, err := srv.CreateDocument(context.Background(), documents.CreatePayload{})
@@ -25,7 +25,7 @@ func TestService_CreateDocument(t *testing.T) {
 
 func TestService_UpdateDocument(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
-	srv := Service{docService: docSrv}
+	srv := Service{docSrv: docSrv}
 	m := new(testingdocuments.MockModel)
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	nm, _, err := srv.UpdateDocument(context.Background(), documents.UpdatePayload{})
