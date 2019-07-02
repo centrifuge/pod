@@ -32,10 +32,6 @@ service AccountService {
   }
 }
 
-message GetAllAccountResponse {
-  repeated AccountData data = 1;
-}
-
 message UpdateAccountRequest {
   string account_id = 1;
   AccountData data = 2;
