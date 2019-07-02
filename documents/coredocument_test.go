@@ -33,7 +33,6 @@ import (
 )
 
 var ctx map[string]interface{}
-var ConfigService config.Service
 var cfg config.Configuration
 
 func TestMain(m *testing.M) {
@@ -54,7 +53,6 @@ func TestMain(m *testing.M) {
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")

@@ -5,6 +5,7 @@ package userapi
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,11 @@ import (
 
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
-	Register(r, nil, new(testingnfts.MockNFTService), nil)
+	ctx := map[string]interface{}{
+		BootstrappedUserAPIService:          Service{},
+		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
+	}
+	Register(ctx, r)
 	assert.Len(t, r.Routes(), 2)
 	assert.Equal(t, r.Routes()[0].Pattern, "/documents/{document_id}/transfer_details")
 	assert.Len(t, r.Routes()[0].Handlers, 2)

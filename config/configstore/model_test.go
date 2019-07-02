@@ -335,7 +335,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
 	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength)).Once()
+	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
 	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()

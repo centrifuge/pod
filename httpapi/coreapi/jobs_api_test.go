@@ -58,7 +58,7 @@ func TestService_GetJobStatus(t *testing.T) {
 	w, r = getHTTPReqAndResp(ctx)
 	jobMan := testingjobs.MockJobManager{}
 	jobMan.On("GetJobStatus", did, jobID).Return(nil, errors.New("missing job"))
-	h = handler{srv: Service{jobsService: jobMan}}
+	h = handler{srv: Service{jobsSrv: jobMan}}
 	h.GetJobStatus(w, r)
 	assert.Equal(t, w.Code, http.StatusNotFound)
 	assert.Contains(t, w.Body.String(), ErrJobNotFound.Error())
@@ -69,7 +69,7 @@ func TestService_GetJobStatus(t *testing.T) {
 	jobMan = testingjobs.MockJobManager{}
 	tt := time.Now().UTC()
 	jobMan.On("GetJobStatus", did, jobID).Return(jobs.StatusResponse{JobID: jobID.String(), LastUpdated: tt}, nil)
-	h = handler{srv: Service{jobsService: jobMan}}
+	h = handler{srv: Service{jobsSrv: jobMan}}
 	h.GetJobStatus(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 	assert.Contains(t, w.Body.String(), jobID.String())

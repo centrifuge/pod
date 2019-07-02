@@ -64,7 +64,7 @@ func TestHandler_SignPayload(t *testing.T) {
 	assert.NoError(t, err)
 	srv := new(configstore.MockService)
 	srv.On("Sign", accountID, payload).Return(nil, errors.New("failed to sign payload")).Once()
-	h.srv.accountsService = srv
+	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.SignPayload(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
@@ -80,7 +80,7 @@ func TestHandler_SignPayload(t *testing.T) {
 		Signature: signature,
 		PublicKey: pk,
 	}, nil).Once()
-	h.srv.accountsService = srv
+	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.SignPayload(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
@@ -120,7 +120,7 @@ func TestHandler_GetAccount(t *testing.T) {
 	rctx.URLParams.Values[0] = hexutil.Encode(accountID)
 	srv := new(configstore.MockService)
 	srv.On("GetAccount", accountID).Return(nil, errors.New("failed to get account")).Once()
-	h.srv.accountsService = srv
+	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetAccount(w, r)
 	srv.AssertExpectations(t)
@@ -141,7 +141,7 @@ func TestHandler_GetAccount(t *testing.T) {
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
 	srv.On("GetAccount", accountID).Return(acc, nil).Once()
-	h.srv.accountsService = srv
+	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetAccount(w, r)
 	srv.AssertExpectations(t)

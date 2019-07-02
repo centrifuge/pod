@@ -41,18 +41,6 @@ func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb
 	return response, nil
 }
 
-func (h grpcHandler) GetAccount(ctx context.Context, req *accountpb.GetAccountRequest) (*accountpb.AccountData, error) {
-	id, err := hexutil.Decode(req.AccountId)
-	if err != nil {
-		return nil, err
-	}
-	accountConfig, err := h.service.GetAccount(id)
-	if err != nil {
-		return nil, err
-	}
-	return accountConfig.CreateProtobuf()
-}
-
 func (h grpcHandler) GetAllAccounts(ctx context.Context, req *empty.Empty) (*accountpb.GetAllAccountResponse, error) {
 	cfgs, err := h.service.GetAllAccounts()
 	if err != nil {

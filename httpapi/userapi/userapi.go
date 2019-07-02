@@ -1,9 +1,8 @@
 package userapi
 
 import (
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/go-chi/chi"
 )
 
@@ -13,13 +12,12 @@ const (
 )
 
 // Register registers the core apis to the router.
-func Register(r chi.Router,
-	docSrv documents.Service,
-	nftSrv nft.Service,
-	transferSrv transferdetails.Service) {
+func Register(ctx map[string]interface{}, r chi.Router) {
+	tokenRegistry := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	userAPISrv := ctx[BootstrappedUserAPIService].(Service)
 	h := handler{
-		tokenRegistry: nftSrv.(documents.TokenRegistry),
-		srv:           Service{docSrv: docSrv, transferDetailsService: transferSrv},
+		tokenRegistry: tokenRegistry,
+		srv:           userAPISrv,
 	}
 	r.Post("/documents/{"+documentIDParam+"}/transfer_details", h.CreateTransferDetail)
 	r.Put("/documents/{"+documentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)

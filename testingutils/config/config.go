@@ -125,17 +125,17 @@ func (m *MockConfig) GetNetworkString() string {
 }
 
 func (m *MockConfig) GetNetworkKey(k string) string {
-	args := m.Called()
+	args := m.Called(k)
 	return args.Get(0).(string)
 }
 
 func (m *MockConfig) GetContractAddressString(address string) string {
-	args := m.Called()
+	args := m.Called(address)
 	return args.Get(0).(string)
 }
 
 func (m *MockConfig) GetContractAddress(contractName config.ContractName) common.Address {
-	args := m.Called()
+	args := m.Called(contractName)
 	return args.Get(0).(common.Address)
 }
 

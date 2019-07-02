@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -32,7 +33,7 @@ type Service interface {
 
 // service implements Service and handles all funding related persistence and validations
 type service struct {
-	srv           documents.Service
+	coreAPISrv    coreapi.Service
 	tokenRegistry documents.TokenRegistry
 }
 
@@ -44,11 +45,11 @@ const (
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
-	srv documents.Service,
+	srv coreapi.Service,
 	tokenRegistry documents.TokenRegistry,
 ) Service {
 	return service{
-		srv:           srv,
+		coreAPISrv:    srv,
 		tokenRegistry: tokenRegistry,
 	}
 }
@@ -95,9 +96,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		},
 	}
 
-	// TODO: use coreapi.UpdateDocument
-	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, payload)
-	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
+	updated, jobID, err := s.coreAPISrv.UpdateDocument(ctx, payload)
 	if err != nil {
 		return nil, jobID, err
 	}
@@ -131,7 +130,7 @@ func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetail
 		return nil, err
 	}
 
-	model, err = s.srv.GetCurrentVersion(ctx, docID)
+	model, err = s.coreAPISrv.GetDocument(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -194,7 +193,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 		return nil, err
 	}
 
-	model, err = s.srv.GetCurrentVersion(ctx, docID)
+	model, err = s.coreAPISrv.GetDocument(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
