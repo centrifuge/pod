@@ -164,10 +164,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-	idBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	idBytes := acc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(idBytes)
 	if err != nil {
 		return nil, err
@@ -226,10 +223,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		return ErrDocumentConfigAccountID
 	}
 
-	idBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return err
-	}
+	idBytes := acc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(idBytes)
 	if err != nil {
 		return err
@@ -289,10 +283,7 @@ func (s service) Exists(ctx context.Context, documentID []byte) bool {
 	if err != nil {
 		return false
 	}
-	idBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return false
-	}
+	idBytes := acc.GetIdentityID()
 	return s.repo.Exists(idBytes, documentID)
 }
 
@@ -301,10 +292,7 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-	idBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	idBytes := acc.GetIdentityID()
 	model, err := s.repo.Get(idBytes, version)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)

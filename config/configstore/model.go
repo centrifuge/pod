@@ -409,8 +409,8 @@ func (acc *Account) GetReceiveEventNotificationEndpoint() string {
 }
 
 // GetIdentityID gets IdentityID
-func (acc *Account) GetIdentityID() ([]byte, error) {
-	return acc.IdentityID, nil
+func (acc *Account) GetIdentityID() []byte {
+	return acc.IdentityID
 }
 
 // GetP2PKeyPair gets P2PKeyPair
@@ -440,11 +440,7 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		return nil, err
 	}
 
-	did, err := acc.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
+	did := acc.GetIdentityID()
 	return &coredocumentpb.Signature{
 		SignatureId: append(did, signingKeyPair.PublicKey...),
 		SignerId:    did,
@@ -510,15 +506,8 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 			PublicKey:  address32Bytes[:],
 			PrivateKey: sk}
 	}
-
-	id, err := acc.GetIdentityID()
-	if err != nil {
-		return idKeys, err
-	}
-	acc.IdentityID = id
-
+	acc.IdentityID = acc.GetIdentityID()
 	return acc.keys, nil
-
 }
 
 // ID Get the ID of the document represented by this model

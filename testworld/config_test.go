@@ -4,6 +4,7 @@ package testworld
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -14,7 +15,7 @@ func TestConfig_Happy(t *testing.T) {
 	// check charlies main account
 	res := getAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK, charlie.id.String())
 	accountID2 := res.Value("identity_id").String().NotEmpty()
-	accountID2.Equal(charlie.id.String())
+	accountID2.Equal(strings.ToLower(charlie.id.String()))
 
 	// check charlies all accounts
 	res = getAllAccounts(charlie.httpExpect, charlie.id.String(), http.StatusOK)

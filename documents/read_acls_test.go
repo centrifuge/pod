@@ -350,8 +350,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	account, _ := contextutil.Account(ctx)
 	srv := new(testingcommons.MockIdentityService)
 	docSrv := new(MockService)
-	id, err := account.GetIdentityID()
-	assert.NoError(t, err)
+	id := account.GetIdentityID()
 	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
 	granterID, err := identity.NewDIDFromBytes(id)
@@ -425,8 +424,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: malformed address provided")
 	// invalid docID length
-	id, err := account.GetIdentityID()
-	assert.NoError(t, err)
+	id := account.GetIdentityID()
 	invalidDocID := utils.RandomSlice(33)
 	payload = documentpb.AccessTokenParams{
 		Grantee:            hexutil.Encode(id),
@@ -455,9 +453,7 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 	account, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	id, err := account.GetIdentityID()
-	assert.NoError(t, err)
-
+	id := account.GetIdentityID()
 	cd := m.Document
 	assert.Len(t, cd.AccessTokens, 0)
 

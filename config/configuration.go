@@ -159,7 +159,7 @@ type Account interface {
 	GetEthereumAccount() *AccountConfig
 	GetEthereumDefaultAccountName() string
 	GetReceiveEventNotificationEndpoint() string
-	GetIdentityID() ([]byte, error)
+	GetIdentityID() []byte
 	GetP2PKeyPair() (pub, priv string)
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration

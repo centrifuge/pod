@@ -35,4 +35,6 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 	r.Get("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/owner", h.OwnerOfNFT)
 	r.Post("/accounts/{"+accountIDParam+"}/sign", h.SignPayload)
+	r.Post("/accounts/generate", h.GenerateAccount)
+	r.Get("/accounts/{"+accountIDParam+"}", h.GetAccount)
 }

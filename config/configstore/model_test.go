@@ -347,9 +347,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	accpb, err := tc.CreateProtobuf()
 	assert.NoError(t, err)
 	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), accpb.ReceiveEventNotificationEndpoint)
-	i, err := tc.GetIdentityID()
-	assert.Nil(t, err)
-
+	i := tc.GetIdentityID()
 	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(accpb.IdentityId).Hex())
 	_, priv := tc.GetSigningKeyPair()
 	assert.Equal(t, priv, accpb.SigningKeyPair.Pvt)

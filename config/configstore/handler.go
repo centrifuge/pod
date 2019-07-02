@@ -32,28 +32,13 @@ func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb
 	for _, t := range cfgs {
 		tpb, err := t.CreateProtobuf()
 		if err != nil {
-			bID, err := t.GetIdentityID()
-			if err != nil {
-				apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("error getting ID: %v", err)))
-			}
+			bID := t.GetIdentityID()
 			apiLog.Errorf("%v", errors.NewTypedError(ErrDerivingAccount, errors.New("account [%s]: %v", hexutil.Encode(bID), err)))
 			continue
 		}
 		response.Data = append(response.Data, tpb)
 	}
 	return response, nil
-}
-
-func (h grpcHandler) GetAccount(ctx context.Context, req *accountpb.GetAccountRequest) (*accountpb.AccountData, error) {
-	id, err := hexutil.Decode(req.AccountId)
-	if err != nil {
-		return nil, err
-	}
-	accountConfig, err := h.service.GetAccount(id)
-	if err != nil {
-		return nil, err
-	}
-	return accountConfig.CreateProtobuf()
 }
 
 func (h grpcHandler) GetAllAccounts(ctx context.Context, req *empty.Empty) (*accountpb.GetAllAccountResponse, error) {
@@ -72,15 +57,6 @@ func (h grpcHandler) CreateAccount(ctx context.Context, data *accountpb.AccountD
 		return nil, err
 	}
 	tc, err := h.service.CreateAccount(accountConfig)
-	if err != nil {
-		return nil, err
-	}
-	return tc.CreateProtobuf()
-}
-
-func (h grpcHandler) GenerateAccount(ctx context.Context, req *empty.Empty) (*accountpb.AccountData, error) {
-	apiLog.Infof("Generating account")
-	tc, err := h.service.GenerateAccount()
 	if err != nil {
 		return nil, err
 	}

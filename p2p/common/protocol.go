@@ -113,11 +113,7 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 		return nil, err
 	}
 
-	centIDBytes, err := self.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
+	centIDBytes := self.GetIdentityID()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err

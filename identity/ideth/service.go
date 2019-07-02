@@ -471,9 +471,6 @@ func NewDIDFromContext(ctx context.Context) (id.DID, error) {
 		return id.DID{}, err
 	}
 
-	addressByte, err := tc.GetIdentityID()
-	if err != nil {
-		return id.DID{}, err
-	}
+	addressByte := tc.GetIdentityID()
 	return id.NewDID(common.BytesToAddress(addressByte)), nil
 }

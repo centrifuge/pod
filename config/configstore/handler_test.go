@@ -10,40 +10,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestGrpcHandler_GetAccountNotExist(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	h := GRPCAccountHandler(svc)
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{AccountId: "0x123456789"})
-	assert.NotNil(t, err)
-	assert.Nil(t, readCfg)
-}
-
-func TestGrpcHandler_GetAccount(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	h := GRPCAccountHandler(svc)
-	accountCfg, err := NewAccount("main", cfg)
-	assert.Nil(t, err)
-	accpb, err := accountCfg.CreateProtobuf()
-	assert.NoError(t, err)
-	_, err = h.CreateAccount(context.Background(), accpb)
-	assert.Nil(t, err)
-	accID, err := accountCfg.GetIdentityID()
-	assert.Nil(t, err)
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{AccountId: hexutil.Encode(accID)})
-	assert.Nil(t, err)
-	assert.NotNil(t, readCfg)
-}
 
 func TestGrpcHandler_deriveAllAccountResponseFailure(t *testing.T) {
 	idService := &testingcommons.MockIdentityService{}
@@ -113,16 +82,6 @@ func TestGrpcHandler_CreateAccount(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGrpcHandler_GenerateAccount(t *testing.T) {
-	s := MockService{}
-	t1, _ := NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
-	s.On("GenerateAccount").Return(t1, nil)
-	h := GRPCAccountHandler(s)
-	tc, err := h.GenerateAccount(context.Background(), nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, tc)
-}
-
 func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
@@ -133,9 +92,7 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	tcfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 
-	accID, err := tcfg.GetIdentityID()
-	assert.Nil(t, err)
-
+	accID := tcfg.GetIdentityID()
 	acc := tcfg.(*Account)
 
 	// Config doesn't exist
@@ -154,7 +111,8 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	_, err = h.UpdateAccount(context.Background(), &accountpb.UpdateAccountRequest{AccountId: hexutil.Encode(accID), Data: tccpb})
 	assert.Nil(t, err)
 
-	readCfg, err := h.GetAccount(context.Background(), &accountpb.GetAccountRequest{AccountId: hexutil.Encode(accID)})
+	cfgs, err := h.GetAllAccounts(context.Background(), new(empty.Empty))
 	assert.Nil(t, err)
+	readCfg := cfgs.Data[0]
 	assert.Equal(t, acc.EthereumDefaultAccountName, readCfg.EthDefaultAccountName)
 }

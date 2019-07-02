@@ -14,7 +14,8 @@ type MockService struct {
 
 func (m MockService) GenerateAccount() (config.Account, error) {
 	args := m.Called()
-	return args.Get(0).(config.Account), args.Error(1)
+	acc, _ := args.Get(0).(config.Account)
+	return acc, args.Error(1)
 }
 
 func (m MockService) GetConfig() (config.Configuration, error) {

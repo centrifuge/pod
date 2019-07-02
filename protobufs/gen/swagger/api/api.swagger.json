@@ -41,6 +41,80 @@
                 }
             }
         },
+        "/v1/accounts/generate": {
+            "post": {
+                "description": "Generates a new account with defaults.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Generates a new account with defaults.",
+                "operationId": "generate_account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.Account"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/accounts/{account_id}": {
+            "get": {
+                "description": "Returns the account associated with accountID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Returns the account associated with accountID.",
+                "operationId": "get_account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.Account"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/accounts/{account_id}/sign": {
             "post": {
                 "description": "Signs and returns the signature of the Payload.",
@@ -1006,6 +1080,32 @@
             "type": "array",
             "items": {}
         },
+        "coreapi.Account": {
+            "type": "object",
+            "properties": {
+                "eth_account": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.EthAccount"
+                },
+                "eth_default_account_name": {
+                    "type": "string"
+                },
+                "identity_id": {
+                    "type": "string"
+                },
+                "p2p_key_pair": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.KeyPair"
+                },
+                "receive_event_notification_endpoint": {
+                    "type": "string"
+                },
+                "signing_key_pair": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.KeyPair"
+                }
+            }
+        },
         "coreapi.Attribute": {
             "type": "object",
             "properties": {
@@ -1100,6 +1200,31 @@
                         "purchase_order",
                         "entity"
                     ]
+                }
+            }
+        },
+        "coreapi.EthAccount": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.KeyPair": {
+            "type": "object",
+            "properties": {
+                "pub": {
+                    "type": "string"
+                },
+                "pvt": {
+                    "type": "string"
                 }
             }
         },

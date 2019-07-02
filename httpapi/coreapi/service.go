@@ -86,3 +86,13 @@ func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (commo
 func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
 	return s.accountsSrv.Sign(accountID, payload)
 }
+
+// GetAccount returns the Account associated with accountID
+func (s Service) GetAccount(accountID []byte) (config.Account, error) {
+	return s.accountsSrv.GetAccount(accountID)
+}
+
+// GenerateAccount generates an account with defaults.
+func (s Service) GenerateAccount() (config.Account, error) {
+	return s.accountsSrv.GenerateAccount()
+}

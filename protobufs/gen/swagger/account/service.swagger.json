@@ -57,47 +57,7 @@
         ]
       }
     },
-    "/v1/accounts/generate": {
-      "post": {
-        "description": "Generates an Account taking defaults based on the main account",
-        "operationId": "GenerateAccount",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/accountAccountData"
-            }
-          }
-        },
-        "tags": [
-          "AccountService"
-        ]
-      }
-    },
     "/v1/accounts/{account_id}": {
-      "get": {
-        "description": "Get Account",
-        "operationId": "GetAccount",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/accountAccountData"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "account_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "AccountService"
-        ]
-      },
       "put": {
         "description": "Updates an Account",
         "operationId": "UpdateAccount",
