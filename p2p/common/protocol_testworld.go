@@ -24,11 +24,7 @@ func PrepareP2PEnvelopeIncorrectNodeVersion(ctx context.Context, networkID uint3
 		return nil, err
 	}
 
-	centIDBytes, err := self.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
+	centIDBytes := self.GetIdentityID()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err
@@ -74,11 +70,7 @@ func PrepareP2PEnvelopeInvalidBody(ctx context.Context, networkID uint32, messag
 		return nil, err
 	}
 
-	centIDBytes, err := self.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
+	centIDBytes := self.GetIdentityID()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err
