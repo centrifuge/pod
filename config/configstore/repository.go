@@ -24,7 +24,7 @@ type Repository interface {
 	// GetConfig returns the node config model
 	GetConfig() (config.Configuration, error)
 
-	// GetAllAccounts returns a list of all account models in the config DB
+	// GetAccounts returns a list of all account models in the config DB
 	GetAllAccounts() ([]config.Account, error)
 
 	// Create creates the account model if not present in the DB.
@@ -99,7 +99,7 @@ func (r *repo) GetConfig() (config.Configuration, error) {
 	return model.(*NodeConfig), nil
 }
 
-// GetAllAccounts iterates over all account entries in DB and returns a list of Models
+// GetAccounts iterates over all account entries in DB and returns a list of Models
 // If an error occur reading a account, throws a warning and continue
 func (r *repo) GetAllAccounts() ([]config.Account, error) {
 	var accountConfigs []config.Account

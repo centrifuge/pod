@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes/empty"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -39,14 +38,6 @@ func (h grpcHandler) deriveAllAccountResponse(cfgs []config.Account) (*accountpb
 		response.Data = append(response.Data, tpb)
 	}
 	return response, nil
-}
-
-func (h grpcHandler) GetAllAccounts(ctx context.Context, req *empty.Empty) (*accountpb.GetAllAccountResponse, error) {
-	cfgs, err := h.service.GetAllAccounts()
-	if err != nil {
-		return nil, err
-	}
-	return h.deriveAllAccountResponse(cfgs)
 }
 
 func (h grpcHandler) CreateAccount(ctx context.Context, data *accountpb.AccountData) (*accountpb.AccountData, error) {
