@@ -63,15 +63,6 @@ func (h grpcHandler) CreateAccount(ctx context.Context, data *accountpb.AccountD
 	return tc.CreateProtobuf()
 }
 
-func (h grpcHandler) GenerateAccount(ctx context.Context, req *empty.Empty) (*accountpb.AccountData, error) {
-	apiLog.Infof("Generating account")
-	tc, err := h.service.GenerateAccount()
-	if err != nil {
-		return nil, err
-	}
-	return tc.CreateProtobuf()
-}
-
 func (h grpcHandler) UpdateAccount(ctx context.Context, req *accountpb.UpdateAccountRequest) (*accountpb.AccountData, error) {
 	apiLog.Infof("Updating account: %v", req)
 	accountConfig := new(Account)

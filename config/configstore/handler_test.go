@@ -82,16 +82,6 @@ func TestGrpcHandler_CreateAccount(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGrpcHandler_GenerateAccount(t *testing.T) {
-	s := MockService{}
-	t1, _ := NewAccount(cfg.GetEthereumDefaultAccountName(), cfg)
-	s.On("GenerateAccount").Return(t1, nil)
-	h := GRPCAccountHandler(s)
-	tc, err := h.GenerateAccount(context.Background(), nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, tc)
-}
-
 func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()

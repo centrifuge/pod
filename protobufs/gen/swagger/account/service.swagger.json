@@ -57,23 +57,6 @@
         ]
       }
     },
-    "/v1/accounts/generate": {
-      "post": {
-        "description": "Generates an Account taking defaults based on the main account",
-        "operationId": "GenerateAccount",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/accountAccountData"
-            }
-          }
-        },
-        "tags": [
-          "AccountService"
-        ]
-      }
-    },
     "/v1/accounts/{account_id}": {
       "put": {
         "description": "Updates an Account",

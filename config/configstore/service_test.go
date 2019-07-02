@@ -93,7 +93,6 @@ func TestService_Createaccount(t *testing.T) {
 	assert.Nil(t, err)
 	i := newCfg.GetIdentityID()
 	accID := accountCfg.GetIdentityID()
-	assert.Nil(t, err)
 	assert.Equal(t, accID, i)
 
 	//account already exists
@@ -136,7 +135,6 @@ func TestService_Deleteaccount(t *testing.T) {
 	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
 	accID := accountCfg.GetIdentityID()
-	assert.Nil(t, err)
 
 	//No config, no error
 	err = svc.DeleteAccount(accID)

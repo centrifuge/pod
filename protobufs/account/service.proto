@@ -30,14 +30,6 @@ service AccountService {
       description: "Creates an Account"
     };
   }
-  rpc GenerateAccount(google.protobuf.Empty) returns (AccountData) {
-    option (google.api.http) = {
-      post: "/v1/accounts/generate"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Generates an Account taking defaults based on the main account"
-    };
-  }
   rpc UpdateAccount(UpdateAccountRequest) returns (AccountData) {
     option (google.api.http) = {
       put: "/v1/accounts/{account_id}"

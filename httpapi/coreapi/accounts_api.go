@@ -111,3 +111,28 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, toClientAccount(acc))
 }
+
+// GenerateAccount generates a new account with defaults.
+// @summary Generates a new account with defaults.
+// @description Generates a new account with defaults.
+// @id generate_account
+// @tags Accounts
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.Account
+// @router /v1/accounts/generate [post]
+func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	acc, err := h.srv.GenerateAccount()
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, toClientAccount(acc))
+}

@@ -41,6 +41,35 @@
                 }
             }
         },
+        "/v1/accounts/generate": {
+            "post": {
+                "description": "Generates a new account with defaults.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Generates a new account with defaults.",
+                "operationId": "generate_account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.Account"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/accounts/{account_id}": {
             "get": {
                 "description": "Returns the account associated with accountID.",

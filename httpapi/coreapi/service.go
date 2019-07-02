@@ -91,3 +91,8 @@ func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signatu
 func (s Service) GetAccount(accountID []byte) (config.Account, error) {
 	return s.accountsSrv.GetAccount(accountID)
 }
+
+// GenerateAccount generates an account with defaults.
+func (s Service) GenerateAccount() (config.Account, error) {
+	return s.accountsSrv.GenerateAccount()
+}
