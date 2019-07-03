@@ -18,9 +18,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_SignPayload(t *testing.T) {
@@ -232,4 +234,97 @@ func TestHandler_GetAccounts(t *testing.T) {
 	cfg.AssertExpectations(t)
 	assert.Equal(t, w.Code, http.StatusOK)
 	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
+}
+
+func marshall(t *testing.T, data map[string]interface{}) []byte {
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	return d
+}
+
+func TestHandler_CreateAccount(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, body io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/accounts", body).WithContext(ctx)
+	}
+
+	// empty body
+	rctx := chi.NewRouteContext()
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// missing ethereum key and address
+	data := map[string]interface{}{
+		"eth_account": map[string]string{},
+	}
+	d := marshall(t, data)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "ethereum address/key cannot be empty")
+
+	// invalid p2p key pair
+	addr := byteutils.HexBytes(utils.RandomSlice(20))
+	key := byteutils.HexBytes(utils.RandomSlice(32))
+	data["eth_account"] = map[string]string{
+		"address": addr.String(),
+		"key":     key.String(),
+	}
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "p2p key pair is invalid")
+
+	randomKP := func() KeyPair {
+		return KeyPair{Pub: "pub", Pvt: "prv"}
+	}
+
+	// invalid signing key pair
+	data["p2p_key_pair"] = randomKP()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "signing key pair is invalid")
+
+	// invalid identity id
+	data["signing_key_pair"] = randomKP()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "Identity ID cannot be empty")
+
+	// create account failed
+	id := hexutil.Bytes(utils.RandomSlice(20))
+	data["identity_id"] = id.String()
+	srv := new(configstore.MockService)
+	srv.On("CreateAccount", mock.Anything).Return(nil, errors.New("failed to create account")).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to create account")
+	srv.AssertExpectations(t)
+
+	// success
+	cfg := new(testingconfig.MockConfig)
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{Address: addr.String(), Key: key.String()}, nil).Once()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
+	cfg.On("GetIdentityID").Return([]byte(id), nil).Once()
+	cfg.On("GetP2PKeyPair").Return("pub", "prv").Once()
+	cfg.On("GetSigningKeyPair").Return("pub", "prv").Once()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	acc, err := configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
+	srv = new(configstore.MockService)
+	srv.On("CreateAccount", mock.Anything).Return(acc, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Contains(t, w.Body.String(), id.String())
 }

@@ -101,3 +101,8 @@ func (s Service) GenerateAccount() (config.Account, error) {
 func (s Service) GetAccounts() ([]config.Account, error) {
 	return s.accountsSrv.GetAccounts()
 }
+
+// CreateAccount creates a new account from the data provided.
+func (s Service) CreateAccount(acc config.Account) (config.Account, error) {
+	return s.accountsSrv.CreateAccount(acc)
+}
