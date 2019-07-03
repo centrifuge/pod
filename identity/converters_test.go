@@ -44,10 +44,6 @@ func TestDIDsPointers(t *testing.T) {
 	vdids := FromPointerDIDs(pdids...)
 	assert.Len(t, vdids, 3)
 
-	addrs := DIDsToAddress(vdids...)
-	adids := AddressToDIDs(addrs...)
-	assert.Equal(t, vdids, adids)
-
 	epdids := DIDsPointers(vdids...)
 	assert.Equal(t, pdids, epdids)
 }
