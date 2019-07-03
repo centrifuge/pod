@@ -21,7 +21,7 @@ import (
 // @tags Invoice
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
-// @param body body userapi.CreateDocumentRequest true "Invoice Create Request"
+// @param body body userapi.CreateInvoiceRequest true "Invoice Create Request"
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
@@ -41,7 +41,7 @@ func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request CreateDocumentRequest
+	var request CreateInvoiceRequest
 	err = json.Unmarshal(data, &request)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -75,7 +75,7 @@ func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
+func toDocumentsCreatePayload(request CreateInvoiceRequest) (documents.CreatePayload, error) {
 	payload := documents.CreatePayload{
 		Scheme: invoice.Scheme,
 		Collaborators: documents.CollaboratorsAccess{

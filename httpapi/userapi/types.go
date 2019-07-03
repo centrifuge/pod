@@ -2,6 +2,7 @@
 package userapi
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/ethereum/go-ethereum/common"
@@ -51,10 +52,10 @@ func toTransferDetailUpdatePayload(request UpdateTransferDetailRequest) (*transf
 	return &payload, nil
 }
 
-// CreateDocumentRequest defines the payload for creating documents.
-type CreateDocumentRequest struct {
+// CreateInvoiceRequest defines the payload for creating documents.
+type CreateInvoiceRequest struct {
 	ReadAccess  []common.Address     `json:"read_access" swaggertype:"array,string"`
 	WriteAccess []common.Address     `json:"write_access" swaggertype:"array,string"`
-	Data        interface{}          `json:"data"`
+	Data        invoice.Data         `json:"data"`
 	Attributes  coreapi.AttributeMap `json:"attributes"`
 }
