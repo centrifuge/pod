@@ -24,7 +24,7 @@ type Repository interface {
 	// GetConfig returns the node config model
 	GetConfig() (config.Configuration, error)
 
-	// GetAccounts returns a list of all account models in the config DB
+	// GetAllAccounts returns a list of all account models in the config DB
 	GetAllAccounts() ([]config.Account, error)
 
 	// Create creates the account model if not present in the DB.

@@ -29,10 +29,10 @@ func (m MockService) GetAccount(identifier []byte) (config.Account, error) {
 	return acc, args.Error(1)
 }
 
-func (m MockService) GetAccounts() ([]config.Account, error) {
+func (m MockService) GetAllAccounts() ([]config.Account, error) {
 	args := m.Called()
 	v, _ := args.Get(0).([]config.Account)
-	return v, args.Error(1)
+	return v, nil
 }
 
 func (m MockService) CreateConfig(data config.Configuration) (config.Configuration, error) {

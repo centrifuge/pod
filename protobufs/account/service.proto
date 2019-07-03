@@ -8,10 +8,19 @@ option java_outer_classname = "ServiceProto";
 option java_package = "com.account";
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
 // AccountService allows for account management on the Node
 service AccountService {
+  rpc GetAllAccounts(google.protobuf.Empty) returns (GetAllAccountResponse) {
+    option (google.api.http) = {
+      get: "/v1/accounts"
+    };
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      description: "Get All Accounts"
+    };
+  }
   rpc CreateAccount(AccountData) returns (AccountData) {
     option (google.api.http) = {
       post: "/v1/accounts"
@@ -30,6 +39,10 @@ service AccountService {
       description: "Updates an Account"
     };
   }
+}
+
+message GetAllAccountResponse {
+  repeated AccountData data = 1;
 }
 
 message UpdateAccountRequest {

@@ -45,7 +45,7 @@ func (s service) GetAccount(identifier []byte) (config.Account, error) {
 	return s.repo.GetAccount(identifier)
 }
 
-func (s service) GetAccounts() ([]config.Account, error) {
+func (s service) GetAllAccounts() ([]config.Account, error) {
 	return s.repo.GetAllAccounts()
 }
 

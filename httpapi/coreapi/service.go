@@ -96,8 +96,3 @@ func (s Service) GetAccount(accountID []byte) (config.Account, error) {
 func (s Service) GenerateAccount() (config.Account, error) {
 	return s.accountsSrv.GenerateAccount()
 }
-
-// GetAccounts returns all the accounts.
-func (s Service) GetAccounts() ([]config.Account, error) {
-	return s.accountsSrv.GetAccounts()
-}

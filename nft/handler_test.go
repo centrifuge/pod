@@ -92,6 +92,6 @@ func TestPaymentObligationNFTMint_success(t *testing.T) {
 func mockmockConfigStore() *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
 	mockConfigStore.On("GetAccount", mock.Anything).Return(&configstore.Account{}, nil)
-	mockConfigStore.On("GetAccounts").Return([]config.Account{&configstore.Account{}}, nil)
+	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{}}, nil)
 	return mockConfigStore
 }

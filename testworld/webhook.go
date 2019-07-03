@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -82,13 +81,13 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// store
 	w.receivedMsgsLock.Lock()
 	defer w.receivedMsgsLock.Unlock()
-	w.receivedMsgs[strings.ToLower(msg.AccountId)+"-"+strconv.Itoa(int(msg.EventType))+"-"+msg.DocumentId] = msg
+	w.receivedMsgs[msg.AccountId+"-"+strconv.Itoa(int(msg.EventType))+"-"+msg.DocumentId] = msg
 }
 
 func (w *webhookReceiver) getReceivedMsg(accountID string, eventType int, docID string) (*notificationpb.NotificationMessage, error) {
 	w.receivedMsgsLock.RLock()
 	defer w.receivedMsgsLock.RUnlock()
-	n, ok := w.receivedMsgs[strings.ToLower(accountID)+"-"+strconv.Itoa(eventType)+"-"+docID]
+	n, ok := w.receivedMsgs[accountID+"-"+strconv.Itoa(eventType)+"-"+docID]
 	if !ok {
 		return nil, errors.New("not found")
 	}

@@ -16,6 +16,21 @@
   ],
   "paths": {
     "/v1/accounts": {
+      "get": {
+        "description": "Get All Accounts",
+        "operationId": "GetAllAccounts",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/accountGetAllAccountResponse"
+            }
+          }
+        },
+        "tags": [
+          "AccountService"
+        ]
+      },
       "post": {
         "description": "Creates an Account",
         "operationId": "CreateAccount",
@@ -111,6 +126,17 @@
         },
         "password": {
           "type": "string"
+        }
+      }
+    },
+    "accountGetAllAccountResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/accountAccountData"
+          }
         }
       }
     },
