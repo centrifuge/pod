@@ -99,7 +99,7 @@ func (r *repo) GetConfig() (config.Configuration, error) {
 	return model.(*NodeConfig), nil
 }
 
-// GetAccounts iterates over all account entries in DB and returns a list of Models
+// GetAllAccounts iterates over all account entries in DB and returns a list of Models
 // If an error occur reading a account, throws a warning and continue
 func (r *repo) GetAllAccounts() ([]config.Account, error) {
 	var accountConfigs []config.Account
