@@ -62,7 +62,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	c := accounts[2]
 
 	// a shares document with b first
-	res := createDocument(bob.httpExpect, a, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{b}))
+	res := createDocument(bob.httpExpect, a, documentType, http.StatusCreated, defaultDocumentPayload(documentType, []string{b}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(bob.httpExpect, a, txID)
 	if status != "success" {
@@ -128,7 +128,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{a, b}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusCreated, defaultDocumentPayload(documentType, []string{a, b}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -187,7 +187,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusCreated, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -232,6 +232,7 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 
 	//currently can't be run in parallel (because of node kill)
 	collaboratorTimeOut(t, typeInvoice)
+	// TODO enable when PO is migrated to new api
 	collaboratorTimeOut(t, typePO)
 }
 
@@ -240,7 +241,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusCreated, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, response)
 	status, message := getTransactionStatusAndMessage(kenny.httpExpect, kenny.id.String(), txID)
 	if status != "success" {
@@ -290,7 +291,8 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusInternalServerError, wrongInvoicePayload([]string{bob.id.String()}))
-	errMsg := response.Raw()["error"].(string)
-	assert.Contains(t, errMsg, "model attribute error")
+	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusBadRequest, wrongInvoicePayload([]string{bob.id.String()}))
+
+	errMsg := response.Raw()["message"].(string)
+	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"some invalid ti")
 }

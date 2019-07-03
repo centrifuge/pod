@@ -179,7 +179,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 	}, nil
 }
 
-func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
+func GetDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
 	attrMap, err := convertAttributes(model.GetAttributes())

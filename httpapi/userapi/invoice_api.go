@@ -26,7 +26,7 @@ import (
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.TransferDetailResponse
+// @success 201 {object} coreapi.DocumentResponse
 // @router /v1/invoices [post]
 func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -63,7 +63,7 @@ func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := coreapi.DeriveResponseHeader(h.tokenRegistry, m, j)
+	resp, err := coreapi.GetDocumentResponse(m, h.tokenRegistry, j)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

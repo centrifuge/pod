@@ -19,7 +19,7 @@ func Test_CreateGetUpdateTransfers(t *testing.T) {
 }
 
 func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transferId, docIdentifier string) {
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusCreated, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
