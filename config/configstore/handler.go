@@ -3,15 +3,10 @@ package configstore
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	logging "github.com/ipfs/go-log"
 )
-
-// ErrDerivingAccount used as generic account deriver type
-const ErrDerivingAccount = errors.Error("error deriving account")
 
 var apiLog = logging.Logger("account-api")
 

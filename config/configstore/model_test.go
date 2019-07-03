@@ -357,7 +357,7 @@ func TestAccountConfigProtobuf(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, accpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
 	assert.Equal(t, common.HexToAddress(accpb.IdentityId).Hex(), common.BytesToAddress(tcCopy.IdentityID).Hex())
-	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
+	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Pvt)
 }
 
 func createMockConfig() *mockConfig {

@@ -12,15 +12,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // AccountService allows for account management on the Node
 service AccountService {
-  rpc CreateAccount(AccountData) returns (AccountData) {
-    option (google.api.http) = {
-      post: "/v1/accounts"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates an Account"
-    };
-  }
   rpc UpdateAccount(UpdateAccountRequest) returns (AccountData) {
     option (google.api.http) = {
       put: "/v1/accounts/{account_id}"

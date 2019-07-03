@@ -161,3 +161,52 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, toClientAccounts(accs))
 }
+
+// CreateAccount creates a new account.
+// @summary Creates a new account.
+// @description Creates a new account.
+// @id create_account
+// @tags Accounts
+// @produce json
+// @param body body coreapi.Account true "Document Create request"
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.Account
+// @router /v1/accounts [post]
+func (h handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var cacc Account
+	err = json.Unmarshal(data, &cacc)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	acc, err := fromClientAccount(cacc)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	acc, err = h.srv.CreateAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, toClientAccount(acc))
+}
