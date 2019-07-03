@@ -41,6 +41,35 @@
                 }
             }
         },
+        "/v1/accounts": {
+            "get": {
+                "description": "Returns all the accounts in the node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Returns all the accounts in the node.",
+                "operationId": "get_accounts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.Accounts"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/accounts/generate": {
             "post": {
                 "description": "Generates a new account with defaults.",
@@ -1103,6 +1132,17 @@
                 "signing_key_pair": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.KeyPair"
+                }
+            }
+        },
+        "coreapi.Accounts": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/coreapi.Account"
+                    }
                 }
             }
         },

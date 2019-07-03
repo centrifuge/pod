@@ -71,6 +71,7 @@ type Config interface {
 }
 
 func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
+	// TODO(ved): regex would be a better alternative
 	skippedURLs := []string{
 		"/ping",
 		"/accounts", // since we use default account DID for endpoints

@@ -345,6 +345,11 @@ type Account struct {
 	P2PKeyPair                       KeyPair            `json:"p2p_key_pair"`
 }
 
+// Accounts holds a list of accounts
+type Accounts struct {
+	Data []Account `json:"data"`
+}
+
 func toClientAccount(acc config.Account) Account {
 	var p2pkp, signingkp KeyPair
 	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
@@ -360,4 +365,13 @@ func toClientAccount(acc config.Account) Account {
 		P2PKeyPair:                       p2pkp,
 		SigningKeyPair:                   signingkp,
 	}
+}
+
+func toClientAccounts(accs []config.Account) Accounts {
+	var caccs Accounts
+	for _, acc := range accs {
+		caccs.Data = append(caccs.Data, toClientAccount(acc))
+	}
+
+	return caccs
 }

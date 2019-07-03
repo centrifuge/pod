@@ -136,3 +136,28 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, toClientAccount(acc))
 }
+
+// GetAccounts returns all the accounts in the node.
+// @summary Returns all the accounts in the node.
+// @description Returns all the accounts in the node.
+// @id get_accounts
+// @tags Accounts
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.Accounts
+// @router /v1/accounts [get]
+func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	accs, err := h.srv.GetAccounts()
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, toClientAccounts(accs))
+}
