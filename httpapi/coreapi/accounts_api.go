@@ -163,8 +163,8 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateAccount creates a new account.
-// @summary Creates a new account.
-// @description Creates a new account.
+// @summary Creates a new account without any default configurations.
+// @description Creates a new account without any default configurations.
 // @id create_account
 // @tags Accounts
 // @produce json

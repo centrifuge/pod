@@ -70,14 +70,14 @@
                 }
             },
             "post": {
-                "description": "Creates a new account.",
+                "description": "Creates a new account without any default configurations.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Accounts"
                 ],
-                "summary": "Creates a new account.",
+                "summary": "Creates a new account without any default configurations.",
                 "operationId": "create_account",
                 "parameters": [
                     {
