@@ -14,15 +14,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // InvoiceService contains all common interactions for invoice documents
 service InvoiceService {
-  rpc Create(InvoiceCreatePayload) returns (InvoiceResponse) {
-    option (google.api.http) = {
-      post: "/v1/invoices"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates an invoice"
-    };
-  }
   rpc Update(InvoiceUpdatePayload) returns (InvoiceResponse) {
     option (google.api.http) = {
       put: "/v1/invoices/{document_id}"

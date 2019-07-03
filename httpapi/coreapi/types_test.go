@@ -35,7 +35,7 @@ func TestTypes_convertAttributes(t *testing.T) {
 		},
 	}
 
-	atts, err := toDocumentAttributes(attrs)
+	atts, err := ToDocumentAttributes(attrs)
 	assert.NoError(t, err)
 	assert.Len(t, atts, 2)
 
@@ -48,7 +48,7 @@ func TestTypes_convertAttributes(t *testing.T) {
 	assert.Equal(t, attrs, cattrs)
 
 	attrs["invalid"] = Attribute{Type: "unknown", Value: "some value"}
-	_, err = toDocumentAttributes(attrs)
+	_, err = ToDocumentAttributes(attrs)
 	assert.Error(t, err)
 
 	attrList = append(attrList, documents.Attribute{Value: documents.AttrVal{Type: "invalid"}})

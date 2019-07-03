@@ -62,7 +62,8 @@ type DocumentResponse struct {
 	Attributes AttributeMap   `json:"attributes"`
 }
 
-func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+// ToDocumentAttributes converts client api attributes to internal format
+func ToDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
 		attr, err := documents.NewAttribute(k, documents.AttributeType(v.Type), v.Value)
@@ -91,7 +92,7 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	}
 	payload.Data = data
 
-	attrs, err := toDocumentAttributes(request.Attributes)
+	attrs, err := ToDocumentAttributes(request.Attributes)
 	if err != nil {
 		return payload, err
 	}

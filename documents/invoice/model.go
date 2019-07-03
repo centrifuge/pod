@@ -23,7 +23,8 @@ import (
 const (
 	prefix string = "invoice"
 
-	scheme = prefix
+	// Scheme is the scheme used by invoice documents
+	Scheme = prefix
 
 	// ErrInvoiceInvalidData sentinel error when data unmarshal is failed.
 	ErrInvoiceInvalidData = errors.Error("invalid invoice data")
@@ -323,6 +324,7 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 }
 
 // InitInvoiceInput initialize the model based on the received parameters from the rest api call
+// Deprecated: in favour of non protobuf method (TODO remove after migration)
 func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self identity.DID) error {
 	err := i.initInvoiceFromData(payload.Data)
 	if err != nil {
@@ -837,7 +839,7 @@ func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.Update
 	return nil
 }
 
-// Scheme returns the invoice scheme.
+// Scheme returns the invoice Scheme.
 func (i *Invoice) Scheme() string {
-	return scheme
+	return Scheme
 }

@@ -15,33 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/invoices": {
-      "post": {
-        "description": "Creates an invoice",
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invInvoiceResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/invInvoiceCreatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "InvoiceService"
-        ]
-      }
-    },
     "/v1/invoices/{document_id}": {
       "get": {
         "description": "Get the current invoice",
@@ -293,33 +266,6 @@
           "items": {
             "$ref": "#/definitions/documentNFT"
           }
-        }
-      }
-    },
-    "invInvoiceCreatePayload": {
-      "type": "object",
-      "properties": {
-        "read_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "write_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "data": {
-          "$ref": "#/definitions/invInvoiceData"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
         }
       }
     },
