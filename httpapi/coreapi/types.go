@@ -2,12 +2,10 @@ package coreapi
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -376,37 +374,4 @@ func toClientAccounts(accs []config.Account) Accounts {
 	}
 
 	return caccs
-}
-
-func isKeyPairEmpty(kp *KeyPair) bool {
-	kp.Pvt, kp.Pub = strings.TrimSpace(kp.Pvt), strings.TrimSpace(kp.Pub)
-	return kp.Pvt == "" || kp.Pub == ""
-}
-
-func fromClientAccount(cacc Account) (config.Account, error) {
-	acc := new(configstore.Account)
-	if cacc.EthereumAccount.Address == "" || cacc.EthereumAccount.Key == "" {
-		return nil, errors.New("ethereum address/key cannot be empty")
-	}
-	ca := config.AccountConfig(cacc.EthereumAccount)
-	acc.EthereumAccount = &ca
-	acc.EthereumDefaultAccountName = cacc.EthereumDefaultAccountName
-
-	if isKeyPairEmpty(&cacc.P2PKeyPair) {
-		return nil, errors.New("p2p key pair is invalid")
-	}
-	acc.P2PKeyPair = configstore.KeyPair(cacc.P2PKeyPair)
-
-	if isKeyPairEmpty(&cacc.SigningKeyPair) {
-		return nil, errors.New("signing key pair is invalid")
-	}
-	acc.SigningKeyPair = configstore.KeyPair(cacc.SigningKeyPair)
-
-	if len(cacc.IdentityID) < 1 {
-		return nil, errors.New("Identity ID cannot be empty")
-	}
-
-	acc.IdentityID = cacc.IdentityID
-	acc.ReceiveEventNotificationEndpoint = cacc.ReceiveEventNotificationEndpoint
-	return acc, nil
 }

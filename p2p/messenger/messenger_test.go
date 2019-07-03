@@ -335,6 +335,6 @@ func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
 func updateKeys(c config.Configuration) config.Configuration {
 	n := c.(*configstore.NodeConfig)
 	n.MainIdentity.SigningKeyPair.Pub = "../../build/resources/signingKey.pub.pem"
-	n.MainIdentity.SigningKeyPair.Pvt = "../../build/resources/signingKey.key.pem"
+	n.MainIdentity.SigningKeyPair.Priv = "../../build/resources/signingKey.key.pem"
 	return c
 }

@@ -94,12 +94,12 @@ func TestPrepareP2PEnvelope(t *testing.T) {
 	acc := &configstore.Account{
 		IdentityID: id,
 		P2PKeyPair: configstore.KeyPair{
-			Pvt: ssk,
-			Pub: spk,
+			Priv: ssk,
+			Pub:  spk,
 		},
 		SigningKeyPair: configstore.KeyPair{
-			Pvt: ssk,
-			Pub: spk,
+			Priv: ssk,
+			Pub:  spk,
 		},
 	}
 	ctx, _ := contextutil.New(context.Background(), acc)

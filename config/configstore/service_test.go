@@ -158,7 +158,7 @@ func TestGenerateaccountKeys(t *testing.T) {
 	assert.NotNil(t, tc.SigningKeyPair)
 	_, err = os.Stat(tc.SigningKeyPair.Pub)
 	assert.False(t, os.IsNotExist(err))
-	_, err = os.Stat(tc.SigningKeyPair.Pvt)
+	_, err = os.Stat(tc.SigningKeyPair.Priv)
 	assert.False(t, os.IsNotExist(err))
 }
 

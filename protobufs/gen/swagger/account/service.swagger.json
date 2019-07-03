@@ -15,6 +15,33 @@
     "application/json"
   ],
   "paths": {
+    "/v1/accounts": {
+      "post": {
+        "description": "Creates an Account",
+        "operationId": "CreateAccount",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/accountAccountData"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/accountAccountData"
+            }
+          }
+        ],
+        "tags": [
+          "AccountService"
+        ]
+      }
+    },
     "/v1/accounts/{account_id}": {
       "put": {
         "description": "Updates an Account",

@@ -42,14 +42,12 @@ func (m MockService) CreateConfig(data config.Configuration) (config.Configurati
 
 func (m MockService) CreateAccount(data config.Account) (config.Account, error) {
 	args := m.Called(data)
-	acc, _ := args.Get(0).(*Account)
-	return acc, args.Error(1)
+	return args.Get(0).(*Account), args.Error(0)
 }
 
 func (m MockService) UpdateAccount(data config.Account) (config.Account, error) {
 	args := m.Called(data)
-	acc, _ := args.Get(0).(*Account)
-	return acc, args.Error(1)
+	return args.Get(0).(*Account), args.Error(0)
 }
 
 func (m MockService) DeleteAccount(identifier []byte) error {

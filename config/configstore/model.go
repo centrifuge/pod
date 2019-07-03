@@ -25,12 +25,12 @@ const ErrNilParameter = errors.Error("nil parameter")
 
 // KeyPair represents a key pair config
 type KeyPair struct {
-	Pub, Pvt string
+	Pub, Priv string
 }
 
 // NewKeyPair creates a KeyPair
 func NewKeyPair(pub, priv string) KeyPair {
-	return KeyPair{Pub: pub, Pvt: priv}
+	return KeyPair{Pub: pub, Priv: priv}
 }
 
 // NodeConfig exposes configs specific to the node
@@ -256,12 +256,12 @@ func (nc *NodeConfig) GetIdentityID() ([]byte, error) {
 
 // GetP2PKeyPair refer the interface
 func (nc *NodeConfig) GetP2PKeyPair() (pub, priv string) {
-	return nc.MainIdentity.P2PKeyPair.Pub, nc.MainIdentity.P2PKeyPair.Pvt
+	return nc.MainIdentity.P2PKeyPair.Pub, nc.MainIdentity.P2PKeyPair.Priv
 }
 
 // GetSigningKeyPair refer the interface
 func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
-	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Pvt
+	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Priv
 }
 
 // GetPrecommitEnabled refer the interface
@@ -322,12 +322,12 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 			IdentityID:                       mainIdentity,
 			ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
 			P2PKeyPair: KeyPair{
-				Pub: p2pPub,
-				Pvt: p2pPriv,
+				Pub:  p2pPub,
+				Priv: p2pPriv,
 			},
 			SigningKeyPair: KeyPair{
-				Pub: signPub,
-				Pvt: signPriv,
+				Pub:  signPub,
+				Priv: signPriv,
 			},
 		},
 		StoragePath:                    c.GetStoragePath(),
@@ -415,12 +415,12 @@ func (acc *Account) GetIdentityID() []byte {
 
 // GetP2PKeyPair gets P2PKeyPair
 func (acc *Account) GetP2PKeyPair() (pub, priv string) {
-	return acc.P2PKeyPair.Pub, acc.P2PKeyPair.Pvt
+	return acc.P2PKeyPair.Pub, acc.P2PKeyPair.Priv
 }
 
 // GetSigningKeyPair gets SigningKeyPair
 func (acc *Account) GetSigningKeyPair() (pub, priv string) {
-	return acc.SigningKeyPair.Pub, acc.SigningKeyPair.Pvt
+	return acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv
 }
 
 // GetEthereumContextWaitTimeout gets EthereumContextWaitTimeout
@@ -546,11 +546,11 @@ func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
 		IdentityId:                       common.BytesToAddress(acc.IdentityID).Hex(),
 		P2PKeyPair: &accountpb.KeyPair{
 			Pub: acc.P2PKeyPair.Pub,
-			Pvt: acc.P2PKeyPair.Pvt,
+			Pvt: acc.P2PKeyPair.Priv,
 		},
 		SigningKeyPair: &accountpb.KeyPair{
 			Pub: acc.SigningKeyPair.Pub,
-			Pvt: acc.SigningKeyPair.Pvt,
+			Pvt: acc.SigningKeyPair.Priv,
 		},
 	}, nil
 }
@@ -577,12 +577,12 @@ func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
 	acc.IdentityID, _ = hexutil.Decode(data.IdentityId)
 	acc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
 	acc.P2PKeyPair = KeyPair{
-		Pub: data.P2PKeyPair.Pub,
-		Pvt: data.P2PKeyPair.Pvt,
+		Pub:  data.P2PKeyPair.Pub,
+		Priv: data.P2PKeyPair.Pvt,
 	}
 	acc.SigningKeyPair = KeyPair{
-		Pub: data.SigningKeyPair.Pub,
-		Pvt: data.SigningKeyPair.Pvt,
+		Pub:  data.SigningKeyPair.Pub,
+		Priv: data.SigningKeyPair.Pvt,
 	}
 
 	return nil

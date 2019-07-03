@@ -12,6 +12,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGrpcHandler_CreateAccount(t *testing.T) {
+	idService := &testingcommons.MockIdentityService{}
+	repo, _, err := getRandomStorage()
+	assert.Nil(t, err)
+	repo.RegisterAccount(&Account{})
+	svc := DefaultService(repo, idService)
+	h := GRPCAccountHandler(svc)
+	tc, err := NewAccount("main", cfg)
+	assert.Nil(t, err)
+	accpb, err := tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
+	assert.Nil(t, err)
+
+	// Already exists
+	accpb, err = tc.CreateProtobuf()
+	assert.NoError(t, err)
+	_, err = h.CreateAccount(context.Background(), accpb)
+	assert.NotNil(t, err)
+}
+
 func TestGrpcHandler_UpdateAccount(t *testing.T) {
 	idService := &testingcommons.MockIdentityService{}
 	repo, _, err := getRandomStorage()
@@ -33,7 +54,7 @@ func TestGrpcHandler_UpdateAccount(t *testing.T) {
 
 	accpb, err = tcfg.CreateProtobuf()
 	assert.NoError(t, err)
-	_, err = h.(*grpcHandler).CreateAccount(context.Background(), accpb)
+	_, err = h.CreateAccount(context.Background(), accpb)
 	assert.Nil(t, err)
 	acc.EthereumDefaultAccountName = "other"
 	tccpb, err := acc.CreateProtobuf()
