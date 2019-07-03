@@ -191,3 +191,45 @@ func TestHandler_GenerateAccount(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
 }
+
+func TestHandler_GetAccounts(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/accounts", nil).WithContext(ctx)
+	}
+
+	// failed generation
+	rctx := chi.NewRouteContext()
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+	srv := new(configstore.MockService)
+	srv.On("GetAccounts").Return(nil, errors.New("failed to get accounts")).Once()
+	h.srv.accountsSrv = srv
+	w, r := getHTTPReqAndResp(ctx)
+	h.GetAccounts(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get accounts")
+	srv.AssertExpectations(t)
+
+	// success
+	accountID := utils.RandomSlice(20)
+	cfg := new(testingconfig.MockConfig)
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
+	cfg.On("GetIdentityID").Return(accountID, nil).Once()
+	cfg.On("GetP2PKeyPair").Return("pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
+	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	acc, err := configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
+	srv = new(configstore.MockService)
+	srv.On("GetAccounts").Return([]config.Account{acc}, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetAccounts(w, r)
+	srv.AssertExpectations(t)
+	cfg.AssertExpectations(t)
+	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
+}

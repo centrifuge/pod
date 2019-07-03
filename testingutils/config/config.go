@@ -193,7 +193,7 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 }
 
 func HandlerContext(service config.Service) context.Context {
-	tcs, _ := service.GetAllAccounts()
+	tcs, _ := service.GetAccounts()
 	cid := tcs[0].GetIdentityID()
 	cidHex := hexutil.Encode(cid)
 	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, cidHex)

@@ -21,7 +21,7 @@ func TestConfig_Happy(t *testing.T) {
 	res = getAllAccounts(charlie.httpExpect, charlie.id.String(), http.StatusOK)
 	tenants := res.Value("data").Array()
 	accIDs := getAccounts(tenants)
-	if _, ok := accIDs[charlie.id.String()]; !ok {
+	if _, ok := accIDs[strings.ToLower(charlie.id.String())]; !ok {
 		t.Error("Charlies id needs to exist in the accounts list")
 	}
 

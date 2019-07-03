@@ -173,7 +173,7 @@ type Account interface {
 type Service interface {
 	GetConfig() (Configuration, error)
 	GetAccount(identifier []byte) (Account, error)
-	GetAllAccounts() ([]Account, error)
+	GetAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateAccount(data Account) (Account, error)
 	GenerateAccount() (Account, error)
