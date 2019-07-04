@@ -23,11 +23,11 @@ type AttributeMap map[string]Attribute
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string           `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	Data        interface{}      `json:"data"`
-	Attributes  AttributeMap     `json:"attributes"`
+	Scheme      string         `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
+	ReadAccess  []identity.DID `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
+	Data        interface{}    `json:"data"`
+	Attributes  AttributeMap   `json:"attributes"`
 }
 
 // Attribute defines a single attribute.
@@ -46,14 +46,14 @@ type NFT struct {
 
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
-	DocumentID  string           `json:"document_id"`
-	VersionID   string           `json:"version_id"`
-	Author      string           `json:"author"`
-	CreatedAt   string           `json:"created_at"`
-	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	JobID       string           `json:"job_id,omitempty"`
-	NFTs        []NFT            `json:"nfts"`
+	DocumentID  string         `json:"document_id"`
+	VersionID   string         `json:"version_id"`
+	Author      string         `json:"author"`
+	CreatedAt   string         `json:"created_at"`
+	ReadAccess  []identity.DID `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
+	JobID       string         `json:"job_id,omitempty"`
+	NFTs        []NFT          `json:"nfts"`
 }
 
 // DocumentResponse is the common response for Document APIs.
@@ -82,8 +82,8 @@ func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	payload := documents.CreatePayload{
 		Scheme: request.Scheme,
 		Collaborators: documents.CollaboratorsAccess{
-			ReadCollaborators:      identity.AddressToDIDs(request.ReadAccess...),
-			ReadWriteCollaborators: identity.AddressToDIDs(request.WriteAccess...),
+			ReadCollaborators:      request.ReadAccess,
+			ReadWriteCollaborators: request.WriteAccess,
 		},
 	}
 
@@ -173,8 +173,8 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		VersionID:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author.String(),
 		CreatedAt:   ts,
-		ReadAccess:  identity.DIDsToAddress(cs.ReadCollaborators...),
-		WriteAccess: identity.DIDsToAddress(cs.ReadWriteCollaborators...),
+		ReadAccess:  cs.ReadCollaborators,
+		WriteAccess: cs.ReadWriteCollaborators,
 		NFTs:        cnfts,
 		JobID:       id.String(),
 	}, nil

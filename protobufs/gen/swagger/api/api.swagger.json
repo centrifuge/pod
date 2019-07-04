@@ -1571,6 +1571,10 @@
                 }
             }
         },
+        "identity.DID": {
+            "type": "array",
+            "items": {}
+        },
         "jobs.StatusResponse": {
             "type": "object",
             "properties": {
