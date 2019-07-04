@@ -78,7 +78,8 @@ func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]do
 	return attrs, nil
 }
 
-func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
+// ToDocumentsCreatePayload converts CoreAPI create payload to documents payload.
+func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
 	payload := documents.CreatePayload{
 		Scheme: request.Scheme,
 		Collaborators: documents.CollaboratorsAccess{
@@ -180,7 +181,8 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 	}, nil
 }
 
-func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
+// GetDocumentResponse converts model to a client api format.
+func GetDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
 	attrMap, err := convertAttributes(model.GetAttributes())
