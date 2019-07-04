@@ -27,6 +27,7 @@ func TestRegister(t *testing.T) {
 	assert.NotNil(t, r.Routes()[1].Handlers["POST"])
 	assert.Equal(t, r.Routes()[2].Pattern, "/accounts/{account_id}")
 	assert.NotNil(t, r.Routes()[2].Handlers["GET"])
+	assert.NotNil(t, r.Routes()[2].Handlers["PUT"])
 	assert.Equal(t, r.Routes()[3].Pattern, "/accounts/{account_id}/sign")
 	assert.NotNil(t, r.Routes()[3].Handlers["POST"])
 	assert.Equal(t, r.Routes()[4].Pattern, "/documents")

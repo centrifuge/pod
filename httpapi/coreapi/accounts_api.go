@@ -168,7 +168,7 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 // @id create_account
 // @tags Accounts
 // @produce json
-// @param body body coreapi.Account true "Document Create request"
+// @param body body coreapi.Account true "Account Create request"
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.Account
@@ -204,6 +204,67 @@ func (h handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, toClientAccount(acc))
+}
+
+// UpdateAccount updates an existing account.
+// @summary Updates an existing account.
+// @description Updates an existing account.
+// @id update_account
+// @tags Accounts
+// @produce json
+// @param account_id path string true "Account ID"
+// @param body body coreapi.Account true "Account Update request"
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.Account
+// @router /v1/accounts/{account_id} [put]
+func (h handler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	accID, err := hexutil.Decode(chi.URLParam(r, accountIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrAccountIDInvalid
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var cacc Account
+	err = json.Unmarshal(data, &cacc)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	cacc.IdentityID = accID
+	acc, err := fromClientAccount(cacc)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	acc, err = h.srv.UpdateAccount(acc)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = ErrAccountNotFound
 		return
 	}
 
