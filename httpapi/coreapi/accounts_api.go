@@ -221,6 +221,7 @@ func (h handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 // @param body body coreapi.Account true "Account Update request"
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.Account
 // @router /v1/accounts/{account_id} [put]
 func (h handler) UpdateAccount(w http.ResponseWriter, r *http.Request) {

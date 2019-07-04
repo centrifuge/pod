@@ -239,6 +239,13 @@
                             "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
                     }
                 }
             }
