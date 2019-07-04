@@ -106,3 +106,8 @@ func (s Service) GetAccounts() ([]config.Account, error) {
 func (s Service) CreateAccount(acc config.Account) (config.Account, error) {
 	return s.accountsSrv.CreateAccount(acc)
 }
+
+// UpdateAccount updates the existing account with the data provided.
+func (s Service) UpdateAccount(acc config.Account) (config.Account, error) {
+	return s.accountsSrv.UpdateAccount(acc)
+}

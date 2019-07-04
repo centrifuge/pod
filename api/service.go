@@ -3,14 +3,12 @@ package api
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
@@ -45,22 +43,9 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 		return err
 	}
 
-	// register other api endpoints
-	return registerAPIs(ctx, invoiceUnpaidService, configService, grpcServer, gwmux, addr, dopts)
-}
-
-func registerAPIs(ctx context.Context, InvoiceUnpaidService nft.InvoiceUnpaid, configService config.Service, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
-
 	// nft api
-	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, InvoiceUnpaidService))
-	err := nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-
-	// account api
-	accountpb.RegisterAccountServiceServer(grpcServer, configstore.GRPCAccountHandler(configService))
-	return accountpb.RegisterAccountServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	nftpb.RegisterNFTServiceServer(grpcServer, nft.GRPCHandler(configService, invoiceUnpaidService))
+	return nftpb.RegisterNFTServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 }
 
 func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {

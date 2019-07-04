@@ -39,4 +39,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/accounts/{"+accountIDParam+"}", h.GetAccount)
 	r.Get("/accounts", h.GetAccounts)
 	r.Post("/accounts", h.CreateAccount)
+	r.Put("/accounts/{"+accountIDParam+"}", h.UpdateAccount)
 }

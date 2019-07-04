@@ -7,6 +7,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -19,6 +20,8 @@ const (
 	signingPubKeyName  = "signingKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
 )
+
+var accLog = log.Logger("accounts")
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
@@ -165,7 +168,7 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configurati
 		// may be we need a way to detect a corrupted db here
 		cfg, err = cfgService.GetConfig()
 		if err != nil {
-			apiLog.Warningf("could not load config from db: %v", err)
+			accLog.Warningf("could not load config from db: %v", err)
 		}
 		return cfg, nil
 	}

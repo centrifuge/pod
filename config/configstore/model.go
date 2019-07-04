@@ -14,14 +14,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
-
-// ErrNilParameter used as nil parameter type
-const ErrNilParameter = errors.Error("nil parameter")
 
 // KeyPair represents a key pair config
 type KeyPair struct {
@@ -528,64 +523,6 @@ func (acc *Account) JSON() ([]byte, error) {
 // FromJSON initialize the model with a json
 func (acc *Account) FromJSON(data []byte) error {
 	return json.Unmarshal(data, acc)
-}
-
-// CreateProtobuf creates protobuf for config
-func (acc *Account) CreateProtobuf() (*accountpb.AccountData, error) {
-	if acc.EthereumAccount == nil {
-		return nil, errors.New("nil EthereumAccount field")
-	}
-	return &accountpb.AccountData{
-		EthAccount: &accountpb.EthereumAccount{
-			Address:  acc.EthereumAccount.Address,
-			Key:      acc.EthereumAccount.Key,
-			Password: acc.EthereumAccount.Password,
-		},
-		EthDefaultAccountName:            acc.EthereumDefaultAccountName,
-		ReceiveEventNotificationEndpoint: acc.ReceiveEventNotificationEndpoint,
-		IdentityId:                       common.BytesToAddress(acc.IdentityID).Hex(),
-		P2PKeyPair: &accountpb.KeyPair{
-			Pub: acc.P2PKeyPair.Pub,
-			Pvt: acc.P2PKeyPair.Pvt,
-		},
-		SigningKeyPair: &accountpb.KeyPair{
-			Pub: acc.SigningKeyPair.Pub,
-			Pvt: acc.SigningKeyPair.Pvt,
-		},
-	}, nil
-}
-
-func (acc *Account) loadFromProtobuf(data *accountpb.AccountData) error {
-	if data == nil {
-		return errors.NewTypedError(ErrNilParameter, errors.New("nil data"))
-	}
-	if data.EthAccount == nil {
-		return errors.NewTypedError(ErrNilParameter, errors.New("nil EthAccount field"))
-	}
-	if data.P2PKeyPair == nil {
-		return errors.NewTypedError(ErrNilParameter, errors.New("nil P2PKeyPair field"))
-	}
-	if data.SigningKeyPair == nil {
-		return errors.NewTypedError(ErrNilParameter, errors.New("nil SigningKeyPair field"))
-	}
-	acc.EthereumAccount = &config.AccountConfig{
-		Address:  data.EthAccount.Address,
-		Key:      data.EthAccount.Key,
-		Password: data.EthAccount.Password,
-	}
-	acc.EthereumDefaultAccountName = data.EthDefaultAccountName
-	acc.IdentityID, _ = hexutil.Decode(data.IdentityId)
-	acc.ReceiveEventNotificationEndpoint = data.ReceiveEventNotificationEndpoint
-	acc.P2PKeyPair = KeyPair{
-		Pub: data.P2PKeyPair.Pub,
-		Pvt: data.P2PKeyPair.Pvt,
-	}
-	acc.SigningKeyPair = KeyPair{
-		Pub: data.SigningKeyPair.Pub,
-		Pvt: data.SigningKeyPair.Pvt,
-	}
-
-	return nil
 }
 
 // NewAccount creates a new Account instance with configs
