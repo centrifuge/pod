@@ -27,38 +27,6 @@ func GRPCHandler(config config.Service, srv Service) clientpurchaseorderpb.Purch
 	}
 }
 
-// Create validates the purchase order, persists it to DB, and anchors it the chain
-func (h grpcHandler) Create(ctx context.Context, req *clientpurchaseorderpb.PurchaseOrderCreatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Debugf("Create request %v", req)
-	ctxh, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	doc, err := h.service.DeriveFromCreatePayload(ctxh, req)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive create payload")
-	}
-
-	// validate, persist, and anchor
-	doc, jobID, _, err := h.service.Create(ctxh, doc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not create document")
-	}
-
-	resp, err := h.service.DerivePurchaseOrderResponse(doc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
-}
-
 // Update handles the document update and anchoring
 func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("Update request %v", payload)

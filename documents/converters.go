@@ -20,17 +20,17 @@ type BinaryAttachment struct {
 	Name     string             `json:"name"`
 	FileType string             `json:"file_type"` // mime type of attached file
 	Size     int                `json:"size"`      // in bytes
-	Data     byteutils.HexBytes `json:"data"`
-	Checksum byteutils.HexBytes `json:"checksum"` // the md5 checksum of the original file for easier verification
+	Data     byteutils.HexBytes `json:"data" swaggertype:"primitive,string"`
+	Checksum byteutils.HexBytes `json:"checksum" swaggertype:"primitive,string"` // the md5 checksum of the original file for easier verification
 }
 
 // PaymentDetails holds the payment related details for invoice.
 type PaymentDetails struct {
 	ID                    string        `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *time.Time    `json:"date_executed"`
-	Payee                 *identity.DID `json:"payee"` // centrifuge id of payee
-	Payer                 *identity.DID `json:"payer"` // centrifuge id of payer
-	Amount                *Decimal      `json:"amount"`
+	DateExecuted          *time.Time    `json:"date_executed" swaggertype:"primitive,string"`
+	Payee                 *identity.DID `json:"payee" swaggertype:"primitive,string"` // centrifuge id of payee
+	Payer                 *identity.DID `json:"payer" swaggertype:"primitive,string"` // centrifuge id of payer
+	Amount                *Decimal      `json:"amount" swaggertype:"primitive,string"`
 	Currency              string        `json:"currency"`
 	Reference             string        `json:"reference"` // payment reference (e.g. reference field on bank transfer)
 	BankName              string        `json:"bank_name"`

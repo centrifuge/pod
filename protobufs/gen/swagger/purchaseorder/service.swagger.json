@@ -15,33 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/purchase_orders": {
-      "post": {
-        "description": "Creates a purchase order",
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/poPurchaseOrderResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/poPurchaseOrderCreatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "PurchaseOrderService"
-        ]
-      }
-    },
     "/v1/purchase_orders/{document_id}": {
       "get": {
         "description": "Get the current version of a purchase order",
@@ -388,33 +361,6 @@
         "date": {
           "type": "string",
           "format": "date-time"
-        }
-      }
-    },
-    "poPurchaseOrderCreatePayload": {
-      "type": "object",
-      "properties": {
-        "read_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "write_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "data": {
-          "$ref": "#/definitions/poPurchaseOrderData"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
         }
       }
     },

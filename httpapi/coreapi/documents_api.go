@@ -56,7 +56,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -70,7 +70,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -125,7 +125,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -139,7 +139,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -184,7 +184,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -236,7 +236,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

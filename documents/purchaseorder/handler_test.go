@@ -73,56 +73,6 @@ func (m mockService) DeriveFromUpdatePayload(ctx context.Context, payload *clien
 	return doc, args.Error(1)
 }
 
-func TestGRPCHandler_Create(t *testing.T) {
-	h := getHandler()
-	req := testingdocuments.CreatePOPayload()
-	ctx := testingconfig.HandlerContext(configService)
-	model := &testingdocuments.MockModel{}
-
-	// derive fails
-	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(nil, errors.New("derive failed")).Once()
-	h.service = srv
-	resp, err := h.Create(ctx, req)
-	srv.AssertExpectations(t)
-	assert.Nil(t, resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "derive failed")
-
-	// create fails
-	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, model).Return(nil, jobs.NilJobID().String(), errors.New("create failed")).Once()
-	h.service = srv
-	resp, err = h.Create(ctx, req)
-	srv.AssertExpectations(t)
-	assert.Nil(t, resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "create failed")
-
-	// derive response fails
-	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
-	srv.On("DerivePurchaseOrderResponse", model).Return(nil, errors.New("derive response fails")).Once()
-	h.service = srv
-	resp, err = h.Create(ctx, req)
-	srv.AssertExpectations(t)
-	assert.Nil(t, resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "derive response fails")
-
-	// success
-	eresp := &clientpopb.PurchaseOrderResponse{Header: new(documentpb.ResponseHeader)}
-	srv.On("DeriveFromCreatePayload", mock.Anything, req).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
-	srv.On("DerivePurchaseOrderResponse", model).Return(eresp, nil).Once()
-	h.service = srv
-	resp, err = h.Create(ctx, req)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, eresp, resp)
-}
-
 func TestGrpcHandler_Update(t *testing.T) {
 	h := getHandler()
 	p := testingdocuments.CreatePOPayload()

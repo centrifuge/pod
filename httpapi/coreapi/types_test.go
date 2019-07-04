@@ -115,7 +115,7 @@ func TestTypes_toDocumentCreatePayload(t *testing.T) {
 	request.Data = invoiceData()
 
 	// success
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	assert.NoError(t, err)
 	assert.Equal(t, payload.Scheme, "invoice")
 	assert.NotNil(t, payload.Data)
@@ -125,7 +125,7 @@ func TestTypes_toDocumentCreatePayload(t *testing.T) {
 		"invalid": {Type: "unknown", Value: "some value"},
 	}
 
-	_, err = toDocumentsCreatePayload(request)
+	_, err = ToDocumentsCreatePayload(request)
 	assert.Error(t, err)
 }
 

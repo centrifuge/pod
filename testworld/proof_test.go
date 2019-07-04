@@ -23,8 +23,14 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
+	st := http.StatusOK
+	if documentType == typePO {
+		// TODO(ved): remove once invoice is moved to new apis
+		st = http.StatusCreated
+	}
+
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, st, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
