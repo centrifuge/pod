@@ -18,9 +18,6 @@ import (
 type Service interface {
 	documents.Service
 
-	// DeriverFromPayload derives purchase order from clientPayload
-	DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error)
-
 	// DeriveFromUpdatePayload derives purchase order from update payload
 	DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error)
 

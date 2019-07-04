@@ -19,8 +19,13 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 		tokenRegistry: tokenRegistry,
 		srv:           userAPISrv,
 	}
+
+	// transfer details api
 	r.Post("/documents/{"+documentIDParam+"}/transfer_details", h.CreateTransferDetail)
 	r.Put("/documents/{"+documentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
 	r.Get("/documents/{"+documentIDParam+"}/transfer_details", h.GetTransferDetailList)
 	r.Get("/documents/{"+documentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
+
+	// purchase order api
+	r.Post("/purchase_orders", h.CreatePurchaseOrder)
 }

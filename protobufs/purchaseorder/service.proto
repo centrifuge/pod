@@ -14,15 +14,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // PurchaseOrderService contains all common interactions for purchase order documents
 service PurchaseOrderService {
-  rpc Create(PurchaseOrderCreatePayload) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      post: "/v1/purchase_orders"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates a purchase order"
-    };
-  }
   rpc Update(PurchaseOrderUpdatePayload) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
       put: "/v1/purchase_orders/{document_id}"
