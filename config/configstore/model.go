@@ -20,7 +20,8 @@ import (
 
 // KeyPair represents a key pair config
 type KeyPair struct {
-	Pub, Pvt string
+	Pub string `json:"Pub"`
+	Pvt string `json:"Priv"`
 }
 
 // NewKeyPair creates a KeyPair
