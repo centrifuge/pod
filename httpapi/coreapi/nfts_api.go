@@ -31,6 +31,7 @@ const (
 // @param registry_address path string true "NFT registry address in hex"
 // @param body body coreapi.MintNFTRequest true "Mint NFT request"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 201 {object} coreapi.MintNFTResponse
@@ -93,6 +94,7 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 // @param token_id path string true "NFT token ID in hex"
 // @param body body coreapi.TransferNFTRequest true "Mint NFT request"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 200 {object} coreapi.TransferNFTResponse
@@ -159,6 +161,7 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 // @param token_id path string true "NFT token ID in hex"
 // @param registry_address path string true "Registry address in hex"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 200 {object} coreapi.NFTOwnerResponse
 // @router /v1/nfts/registries/{registry_address}/tokens/{token_id}/owner [get]

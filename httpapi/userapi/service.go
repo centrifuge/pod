@@ -104,3 +104,8 @@ func (s Service) CreatePurchaseOrder(ctx context.Context, req CreatePurchaseOrde
 
 	return s.coreAPISrv.CreateDocument(ctx, docReq)
 }
+
+// GetPurchaseOrder returns the latest version of the PurchaseOrder associated with Document ID.
+func (s Service) GetPurchaseOrder(ctx context.Context, docID []byte) (documents.Model, error) {
+	return s.coreAPISrv.GetDocument(ctx, docID)
+}

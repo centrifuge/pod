@@ -158,6 +158,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -204,6 +205,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 // @param document_id path string true "Document Identifier"
 // @param version_id path string true "Document Version Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -256,6 +258,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 // @param document_id path string true "Document Identifier"
 // @param body body coreapi.ProofsRequest true "Document proof request"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
@@ -309,6 +312,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 // @param version_id path string true "Document Version Identifier"
 // @param body body coreapi.ProofsRequest true "Document proof request"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse

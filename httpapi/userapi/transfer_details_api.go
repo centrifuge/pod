@@ -172,6 +172,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @param document_id path string true "Document Identifier"
 // @param transfer_id path string true "Transfer Detail Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -230,6 +231,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError

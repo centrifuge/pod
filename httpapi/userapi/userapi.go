@@ -28,4 +28,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 
 	// purchase order api
 	r.Post("/purchase_orders", h.CreatePurchaseOrder)
+	r.Get("/purchase_orders/{"+documentIDParam+"}", h.GetPurchaseOrder)
 }
