@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	documentIDParam      = "document_id"
-	versionIDParam       = "version_id"
+	DocumentIDParam      = "document_id"
+	VersionIDParam       = "version_id"
 	jobIDParam           = "job_id"
 	tokenIDParam         = "token_id"
 	registryAddressParam = "registry_address"
@@ -25,11 +25,11 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	}
 
 	r.Post("/documents", h.CreateDocument)
-	r.Put("/documents/{"+documentIDParam+"}", h.UpdateDocument)
-	r.Get("/documents/{"+documentIDParam+"}", h.GetDocument)
-	r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}", h.GetDocumentVersion)
-	r.Post("/documents/{"+documentIDParam+"}/proofs", h.GenerateProofs)
-	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
+	r.Put("/documents/{"+DocumentIDParam+"}", h.UpdateDocument)
+	r.Get("/documents/{"+DocumentIDParam+"}", h.GetDocument)
+	r.Get("/documents/{"+DocumentIDParam+"}/versions/{"+VersionIDParam+"}", h.GetDocumentVersion)
+	r.Post("/documents/{"+DocumentIDParam+"}/proofs", h.GenerateProofs)
+	r.Post("/documents/{"+DocumentIDParam+"}/versions/{"+VersionIDParam+"}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/mint", h.MintNFT)
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/transfer", h.TransferNFT)

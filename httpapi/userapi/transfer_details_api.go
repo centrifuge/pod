@@ -62,7 +62,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	if request.Data.TransferID == "" {
 		request.Data.TransferID = extensions.NewAttributeSetID()
 	}
-	request.DocumentID = chi.URLParam(r, documentIDParam)
+	request.DocumentID = chi.URLParam(r, coreapi.DocumentIDParam)
 
 	payload, err := toTransferDetailCreatePayload(request)
 	if err != nil {
@@ -132,7 +132,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request.TransferID = chi.URLParam(r, transferIDParam)
-	request.DocumentID = chi.URLParam(r, documentIDParam)
+	request.DocumentID = chi.URLParam(r, coreapi.DocumentIDParam)
 	payload, err := toTransferDetailUpdatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -183,7 +183,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -242,7 +242,7 @@ func (h handler) GetTransferDetailList(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

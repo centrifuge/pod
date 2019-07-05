@@ -85,7 +85,7 @@ func (h handler) GetPurchaseOrder(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -94,6 +94,59 @@ func (h handler) GetPurchaseOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	model, err := h.srv.GetPurchaseOrder(r.Context(), docID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = coreapi.ErrDocumentNotFound
+		return
+	}
+
+	resp, err := toPurchaseOrderResponse(model, h.tokenRegistry, jobs.NilJobID())
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, resp)
+}
+
+// GetPurchaseOrderVersion returns the specific version of a PurchaseOrder.
+// @summary Returns the specific version of a PurchaseOrder.
+// @description Returns the specific version of a PurchaseOrder.
+// @id get_purchase_order_version
+// @tags PurchaseOrders
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param version_id path string true "Document Version Identifier"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} userapi.PurchaseOrderResponse
+// @router /v1/purchase_orders/{document_id}/versions/{version_id} [get]
+func (h handler) GetPurchaseOrderVersion(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	ids := make([][]byte, 2, 2)
+	for i, idStr := range []string{chi.URLParam(r, coreapi.DocumentIDParam), chi.URLParam(r, coreapi.VersionIDParam)} {
+		var id []byte
+		id, err = hexutil.Decode(idStr)
+		if err != nil {
+			code = http.StatusBadRequest
+			log.Error(err)
+			err = coreapi.ErrInvalidDocumentID
+			return
+		}
+
+		ids[i] = id
+	}
+
+	model, err := h.srv.GetPurchaseOrderVersion(r.Context(), ids[0], ids[1])
 	if err != nil {
 		code = http.StatusNotFound
 		log.Error(err)
