@@ -56,17 +56,17 @@ func toTransferDetailUpdatePayload(request UpdateTransferDetailRequest) (*transf
 
 // CreatePurchaseOrderRequest holds details for creating Purchase order Document.
 type CreatePurchaseOrderRequest struct {
-	ReadAccess  []identity.DID       `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID       `json:"write_access" swaggertype:"array,string"`
-	Data        purchaseorder.Data   `json:"data"`
-	Attributes  coreapi.AttributeMap `json:"attributes"`
+	ReadAccess  []identity.DID              `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID              `json:"write_access" swaggertype:"array,string"`
+	Data        purchaseorder.Data          `json:"data"`
+	Attributes  coreapi.AttributeMapRequest `json:"attributes"`
 }
 
 // PurchaseOrderResponse represents the purchase order in client API format.
 type PurchaseOrderResponse struct {
-	Header     coreapi.ResponseHeader `json:"header"`
-	Data       purchaseorder.Data     `json:"data"`
-	Attributes coreapi.AttributeMap   `json:"attributes"`
+	Header     coreapi.ResponseHeader       `json:"header"`
+	Data       purchaseorder.Data           `json:"data"`
+	Attributes coreapi.AttributeMapResponse `json:"attributes"`
 }
 
 func toPurchaseOrderResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp PurchaseOrderResponse, err error) {

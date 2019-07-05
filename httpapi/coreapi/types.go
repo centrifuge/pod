@@ -18,23 +18,32 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// AttributeMap defines a map of attributes with attribute key as key
-type AttributeMap map[string]Attribute
+// AttributeMapRequest defines a map of attributes with attribute key as key
+type AttributeMapRequest map[string]AttributeRequest
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string         `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	ReadAccess  []identity.DID `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
-	Data        interface{}    `json:"data"`
-	Attributes  AttributeMap   `json:"attributes"`
+	Scheme      string              `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
+	ReadAccess  []identity.DID      `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID      `json:"write_access" swaggertype:"array,string"`
+	Data        interface{}         `json:"data"`
+	Attributes  AttributeMapRequest `json:"attributes"`
 }
 
-// Attribute defines a single attribute.
-type Attribute struct {
+// AttributeRequest defines a single attribute.
+type AttributeRequest struct {
 	Type  string `json:"type" enums:"integer,decimal,string,bytes,timestamp"`
 	Value string `json:"value"`
 }
+
+// AttributeResponse adds key to the attribute.
+type AttributeResponse struct {
+	AttributeRequest
+	Key byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+}
+
+// AttributeMapResponse maps attribute label to AttributeResponse
+type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
@@ -58,13 +67,13 @@ type ResponseHeader struct {
 
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
-	Header     ResponseHeader `json:"header"`
-	Scheme     string         `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	Data       interface{}    `json:"data"`
-	Attributes AttributeMap   `json:"attributes"`
+	Header     ResponseHeader       `json:"header"`
+	Scheme     string               `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
+	Data       interface{}          `json:"data"`
+	Attributes AttributeMapResponse `json:"attributes"`
 }
 
-func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+func toDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
 		attr, err := documents.NewAttribute(k, documents.AttributeType(v.Type), v.Value)
@@ -128,17 +137,20 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 	return nnfts, err
 }
 
-func convertAttributes(attrs []documents.Attribute) (AttributeMap, error) {
-	m := make(AttributeMap)
+func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
+	m := make(AttributeMapResponse)
 	for _, v := range attrs {
 		val, err := v.Value.String()
 		if err != nil {
 			return nil, err
 		}
 
-		m[v.KeyLabel] = Attribute{
-			Type:  v.Value.Type.String(),
-			Value: val,
+		m[v.KeyLabel] = AttributeResponse{
+			AttributeRequest: AttributeRequest{
+				Type:  v.Value.Type.String(),
+				Value: val,
+			},
+			Key: v.Key[:],
 		}
 	}
 
@@ -185,7 +197,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 func GetDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
-	attrMap, err := convertAttributes(model.GetAttributes())
+	attrMap, err := toAttributeMapResponse(model.GetAttributes())
 	if err != nil {
 		return resp, err
 	}

@@ -1317,25 +1317,7 @@
                 }
             }
         },
-        "coreapi.Attribute": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "integer",
-                        "decimal",
-                        "string",
-                        "bytes",
-                        "timestamp"
-                    ]
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "coreapi.AttributeMap": {
+        "coreapi.AttributeMapRequest": {
             "type": "object",
             "additionalProperties": {
                 "type": "object",
@@ -1356,12 +1338,75 @@
                 }
             }
         },
+        "coreapi.AttributeMapResponse": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "integer",
+                            "decimal",
+                            "string",
+                            "bytes",
+                            "timestamp"
+                        ]
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "coreapi.AttributeRequest": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "integer",
+                        "decimal",
+                        "string",
+                        "bytes",
+                        "timestamp"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.AttributeResponse": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "integer",
+                        "decimal",
+                        "string",
+                        "bytes",
+                        "timestamp"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.CreateDocumentRequest": {
             "type": "object",
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMap"
+                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
                     "type": "object"
@@ -1394,7 +1439,7 @@
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMap"
+                    "$ref": "#/definitions/coreapi.AttributeMapResponse"
                 },
                 "data": {
                     "type": "object"
@@ -2059,7 +2104,7 @@
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMap"
+                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
                     "type": "object",
@@ -2096,7 +2141,7 @@
             "properties": {
                 "attributes": {
                     "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMap"
+                    "$ref": "#/definitions/coreapi.AttributeMapResponse"
                 },
                 "data": {
                     "type": "object",
