@@ -123,3 +123,8 @@ func (s Service) UpdatePurchaseOrder(ctx context.Context, docID []byte, req Crea
 
 	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{CreatePayload: docReq, DocumentID: docID})
 }
+
+// GetPurchaseOrderVersion returns specific version of the PurchaseOrder associated with Document ID.
+func (s Service) GetPurchaseOrderVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
+}

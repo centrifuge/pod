@@ -3,11 +3,11 @@ package userapi
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/go-chi/chi"
 )
 
 const (
-	documentIDParam = "document_id"
 	transferIDParam = "transfer_id"
 )
 
@@ -21,13 +21,14 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	}
 
 	// transfer details api
-	r.Post("/documents/{"+documentIDParam+"}/transfer_details", h.CreateTransferDetail)
-	r.Put("/documents/{"+documentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
-	r.Get("/documents/{"+documentIDParam+"}/transfer_details", h.GetTransferDetailList)
-	r.Get("/documents/{"+documentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details", h.CreateTransferDetail)
+	r.Put("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details", h.GetTransferDetailList)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
 
 	// purchase order api
 	r.Post("/purchase_orders", h.CreatePurchaseOrder)
-	r.Get("/purchase_orders/{"+documentIDParam+"}", h.GetPurchaseOrder)
-	r.Put("/purchase_orders/{"+documentIDParam+"}", h.UpdatePurchaseOrder)
+	r.Get("/purchase_orders/{"+coreapi.DocumentIDParam+"}", h.GetPurchaseOrder)
+	r.Put("/purchase_orders/{"+coreapi.DocumentIDParam+"}", h.UpdatePurchaseOrder)
+	r.Get("/purchase_orders/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}", h.GetPurchaseOrderVersion)
 }

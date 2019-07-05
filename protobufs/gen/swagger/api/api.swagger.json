@@ -582,7 +582,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "TransferDetail"
+                    "Transfer Details"
                 ],
                 "summary": "Returns a list of the latest versions of all transfer details on the document.",
                 "operationId": "list_transfer_details",
@@ -649,7 +649,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "TransferDetail"
+                    "Transfer Details"
                 ],
                 "summary": "Creates a new transfer detail extension on a document and anchors it.",
                 "operationId": "create_transfer_detail",
@@ -718,7 +718,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "TransferDetail"
+                    "Transfer Details"
                 ],
                 "summary": "Returns the latest version of the transfer detail.",
                 "operationId": "get_transfer_detail",
@@ -792,7 +792,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "TransferDetail"
+                    "Transfer Details"
                 ],
                 "summary": "Updates a new transfer detail extension on a document and anchors it.",
                 "operationId": "update_transfer_detail",
@@ -1079,7 +1079,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "NFT"
+                    "NFTs"
                 ],
                 "summary": "Mints an NFT against a document.",
                 "operationId": "mint_nft",
@@ -1148,7 +1148,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "NFT"
+                    "NFTs"
                 ],
                 "summary": "Returns the Owner of the given NFT.",
                 "operationId": "owner_of_nft",
@@ -1210,7 +1210,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "NFT"
+                    "NFTs"
                 ],
                 "summary": "Transfers given NFT to provide address.",
                 "operationId": "transfer_nft",
@@ -1289,7 +1289,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PurchaseOrders"
+                    "Purchase Orders"
                 ],
                 "summary": "Creates a new purchase order and anchors it.",
                 "operationId": "create_purchase_order",
@@ -1351,7 +1351,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PurchaseOrders"
+                    "Purchase Orders"
                 ],
                 "summary": "Returns the latest version of the PurchaseOrder.",
                 "operationId": "get_purchase_order",
@@ -1418,7 +1418,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PurchaseOrders"
+                    "Purchase Orders"
                 ],
                 "summary": "Updates an existing PurchaseOrder and anchors it.",
                 "operationId": "update_purchase_order",
@@ -1465,6 +1465,79 @@
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/purchase_orders/{document_id}/versions/{version_id}": {
+            "get": {
+                "description": "Returns the specific version of a PurchaseOrder.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Purchase Orders"
+                ],
+                "summary": "Returns the specific version of a PurchaseOrder.",
+                "operationId": "get_purchase_order_version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Version Identifier",
+                        "name": "version_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.PurchaseOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
