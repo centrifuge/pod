@@ -40,7 +40,6 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var configService config.Service
 var defaultDID = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
@@ -69,7 +68,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
@@ -299,6 +297,12 @@ func createPurchaseOrder(t *testing.T) *PurchaseOrder {
 	_, err = po.CalculateDocumentRoot()
 	assert.NoError(t, err)
 	return po
+}
+
+type mockModel struct {
+	documents.Model
+	mock.Mock
+	CoreDocument *coredocumentpb.CoreDocument
 }
 
 func TestPurchaseOrder_CollaboratorCanUpdate(t *testing.T) {

@@ -87,8 +87,7 @@ func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versi
 	return data, model, nil
 }
 
-// CreatePurchaseOrder creates a purchase Order.
-func (s Service) CreatePurchaseOrder(ctx context.Context, req CreatePurchaseOrderRequest) (documents.Model, jobs.JobID, error) {
+func convertPORequest(req CreatePurchaseOrderRequest) (documents.CreatePayload, error) {
 	coreAPIReq := coreapi.CreateDocumentRequest{
 		Scheme:      purchaseorder.Scheme,
 		WriteAccess: req.WriteAccess,
@@ -97,7 +96,12 @@ func (s Service) CreatePurchaseOrder(ctx context.Context, req CreatePurchaseOrde
 		Attributes:  req.Attributes,
 	}
 
-	docReq, err := coreapi.ToDocumentsCreatePayload(coreAPIReq)
+	return coreapi.ToDocumentsCreatePayload(coreAPIReq)
+}
+
+// CreatePurchaseOrder creates a purchase Order.
+func (s Service) CreatePurchaseOrder(ctx context.Context, req CreatePurchaseOrderRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertPORequest(req)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
@@ -108,6 +112,16 @@ func (s Service) CreatePurchaseOrder(ctx context.Context, req CreatePurchaseOrde
 // GetPurchaseOrder returns the latest version of the PurchaseOrder associated with Document ID.
 func (s Service) GetPurchaseOrder(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.coreAPISrv.GetDocument(ctx, docID)
+}
+
+// UpdatePurchaseOrder updates a purchase Order.
+func (s Service) UpdatePurchaseOrder(ctx context.Context, docID []byte, req CreatePurchaseOrderRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertPORequest(req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{CreatePayload: docReq, DocumentID: docID})
 }
 
 // GetPurchaseOrderVersion returns specific version of the PurchaseOrder associated with Document ID.

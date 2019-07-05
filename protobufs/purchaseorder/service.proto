@@ -8,22 +8,7 @@ option java_outer_classname = "ServiceProto";
 option java_package = "com.po";
 
 import "document/service.proto";
-import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "protoc-gen-swagger/options/annotations.proto";
-
-// PurchaseOrderService contains all common interactions for purchase order documents
-service PurchaseOrderService {
-  rpc Update(PurchaseOrderUpdatePayload) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      put: "/v1/purchase_orders/{document_id}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates a purchase order"
-    };
-  }
-}
 
 message PurchaseOrderCreatePayload {
   repeated string read_access = 1;

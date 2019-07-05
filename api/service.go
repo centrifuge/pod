@@ -5,7 +5,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -13,7 +12,6 @@ import (
 	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
-	purchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -57,18 +55,6 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 
 	invoicepb.RegisterInvoiceServiceServer(grpcServer, invHandler)
 	err := invoicepb.RegisterInvoiceServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-
-	// register purchase order
-	poHandler, ok := nodeObjReg[purchaseorder.BootstrappedPOHandler].(purchaseorderpb.PurchaseOrderServiceServer)
-	if !ok {
-		return errors.New("purchase order grpc handler not registered")
-	}
-
-	purchaseorderpb.RegisterPurchaseOrderServiceServer(grpcServer, poHandler)
-	err = purchaseorderpb.RegisterPurchaseOrderServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
