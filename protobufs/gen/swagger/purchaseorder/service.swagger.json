@@ -47,37 +47,6 @@
           "PurchaseOrderService"
         ]
       }
-    },
-    "/v1/purchase_orders/{document_id}/versions/{version_id}": {
-      "get": {
-        "description": "Get a specific version of a purchase order",
-        "operationId": "GetVersion",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/poPurchaseOrderResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "version_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "PurchaseOrderService"
-        ]
-      }
     }
   },
   "definitions": {
