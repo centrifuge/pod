@@ -170,7 +170,7 @@ func TestService_CreatePurchaseOrder(t *testing.T) {
 				},
 			},
 		},
-		Attributes: coreapi.AttributeMap{
+		Attributes: coreapi.AttributeMapRequest{
 			"string_test": {
 				Type:  "invalid",
 				Value: "hello, world!",
