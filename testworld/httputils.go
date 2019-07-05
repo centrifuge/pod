@@ -179,8 +179,14 @@ func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, paylo
 func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
+	status := http.StatusInternalServerError
+	if documentType == typePO {
+		// todo(ved): remove once invoice and entity is done
+		status = http.StatusNotFound
+	}
+
 	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
-		Expect().Status(500).JSON().NotNull()
+		Expect().Status(status).JSON().NotNull()
 	return objGet
 }
 

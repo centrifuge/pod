@@ -27,6 +27,7 @@ const (
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param job_id path string true "Job ID"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @success 200 {object} jobs.StatusResponse

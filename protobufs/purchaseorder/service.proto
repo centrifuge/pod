@@ -14,15 +14,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // PurchaseOrderService contains all common interactions for purchase order documents
 service PurchaseOrderService {
-  rpc Update(PurchaseOrderUpdatePayload) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      put: "/v1/purchase_orders/{document_id}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates a purchase order"
-    };
-  }
   rpc GetVersion(GetVersionRequest) returns (PurchaseOrderResponse) {
     option (google.api.http) = {
       get: "/v1/purchase_orders/{document_id}/versions/{version_id}"
@@ -31,18 +22,6 @@ service PurchaseOrderService {
       description: "Get a specific version of a purchase order"
     };
   }
-  rpc Get(GetRequest) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      get: "/v1/purchase_orders/{document_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the current version of a purchase order"
-    };
-  }
-}
-
-message GetRequest {
-  string document_id = 1;
 }
 
 message GetVersionRequest {
