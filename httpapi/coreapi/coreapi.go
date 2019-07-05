@@ -7,8 +7,12 @@ import (
 )
 
 const (
-	DocumentIDParam      = "document_id"
-	VersionIDParam       = "version_id"
+	// DocumentIDParam for document_id in api path.
+	DocumentIDParam = "document_id"
+
+	// VersionIDParam for version_id in api path.
+	VersionIDParam = "version_id"
+
 	jobIDParam           = "job_id"
 	tokenIDParam         = "token_id"
 	registryAddressParam = "registry_address"
