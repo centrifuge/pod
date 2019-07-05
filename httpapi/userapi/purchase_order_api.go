@@ -17,7 +17,7 @@ import (
 // @summary Creates a new purchase order and anchors it.
 // @description Creates a new purchase order and anchors it.
 // @id create_purchase_order
-// @tags PurchaseOrders
+// @tags Purchase Orders
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body userapi.CreatePurchaseOrderRequest true "Purchase Order Create request"
@@ -70,7 +70,7 @@ func (h handler) CreatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 // @summary Returns the latest version of the PurchaseOrder.
 // @description Returns the latest version of the PurchaseOrder.
 // @id get_purchase_order
-// @tags PurchaseOrders
+// @tags Purchase Orders
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json
@@ -116,7 +116,7 @@ func (h handler) GetPurchaseOrder(w http.ResponseWriter, r *http.Request) {
 // @summary Updates an existing PurchaseOrder and anchors it.
 // @description Updates an existing PurchaseOrder and anchors it.
 // @id update_purchase_order
-// @tags PurchaseOrders
+// @tags Purchase Orders
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
@@ -178,7 +178,7 @@ func (h handler) UpdatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 // @summary Returns the specific version of a PurchaseOrder.
 // @description Returns the specific version of a PurchaseOrder.
 // @id get_purchase_order_version
-// @tags PurchaseOrders
+// @tags Purchase Orders
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param version_id path string true "Document Version Identifier"

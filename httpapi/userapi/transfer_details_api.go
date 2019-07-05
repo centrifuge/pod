@@ -27,7 +27,7 @@ var log = logging.Logger("user-api")
 // @summary Creates a new transfer detail extension on a document and anchors it.
 // @description Creates a new transfer detail extension on a document and anchors it.
 // @id create_transfer_detail
-// @tags TransferDetail
+// @tags Transfer Details
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body userapi.CreateTransferDetailRequest true "Transfer Detail Create Request"
@@ -98,7 +98,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @summary Updates a new transfer detail extension on a document and anchors it.
 // @description Updates a new transfer detail extension on a document and anchors it.
 // @id update_transfer_detail
-// @tags TransferDetail
+// @tags Transfer Details
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body userapi.UpdateTransferDetailRequest true "Transfer Detail Update Request"
@@ -167,7 +167,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @summary Returns the latest version of the transfer detail.
 // @description Returns the latest version of the transfer detail.
 // @id get_transfer_detail
-// @tags TransferDetail
+// @tags Transfer Details
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param transfer_id path string true "Transfer Detail Identifier"
@@ -227,7 +227,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @summary Returns a list of the latest versions of all transfer details on the document.
 // @description Returns a list of the latest versions of all transfer details on the document.
 // @id list_transfer_details
-// @tags TransferDetail
+// @tags Transfer Details
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json

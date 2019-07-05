@@ -25,7 +25,7 @@ const (
 // @summary Mints an NFT against a document.
 // @description Mints an NFT against a document.
 // @id mint_nft
-// @tags NFT
+// @tags NFTs
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param registry_address path string true "NFT registry address in hex"
@@ -87,7 +87,7 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 // @summary Transfers given NFT to provide address.
 // @description Transfers given NFT to provide address.
 // @id transfer_nft
-// @tags NFT
+// @tags NFTs
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param registry_address path string true "NFT registry address in hex"
@@ -156,7 +156,7 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 // @summary Returns the Owner of the given NFT.
 // @description Returns the Owner of the given NFT.
 // @id owner_of_nft
-// @tags NFT
+// @tags NFTs
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param token_id path string true "NFT token ID in hex"
 // @param registry_address path string true "Registry address in hex"
