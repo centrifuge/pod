@@ -16,29 +16,6 @@
   ],
   "paths": {
     "/v1/purchase_orders/{document_id}": {
-      "get": {
-        "description": "Get the current version of a purchase order",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/poPurchaseOrderResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "PurchaseOrderService"
-        ]
-      },
       "put": {
         "description": "Updates a purchase order",
         "operationId": "Update",

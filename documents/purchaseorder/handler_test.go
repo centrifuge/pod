@@ -15,7 +15,6 @@ import (
 	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -136,24 +135,6 @@ type mockModel struct {
 
 func getHandler() *grpcHandler {
 	return &grpcHandler{service: &mockService{}, config: configService}
-}
-
-func TestGrpcHandler_Get(t *testing.T) {
-	documentID := "0x01010101"
-	identifierBytes, _ := hexutil.Decode(documentID)
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	payload := &clientpopb.GetRequest{DocumentId: documentID}
-	response := &clientpopb.PurchaseOrderResponse{}
-	srv.On("GetCurrentVersion", mock.Anything, identifierBytes).Return(model, nil)
-	srv.On("DerivePurchaseOrderResponse", model).Return(response, nil)
-	res, err := h.Get(testingconfig.HandlerContext(configService), payload)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err, "must be nil")
-	assert.NotNil(t, res, "must be non nil")
-	assert.Equal(t, res, response)
 }
 
 func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {

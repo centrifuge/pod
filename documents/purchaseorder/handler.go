@@ -93,33 +93,3 @@ func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.
 
 	return resp, nil
 }
-
-// Get returns the purchase order the latest version of the document with given identifier
-func (h grpcHandler) Get(ctx context.Context, getRequest *clientpurchaseorderpb.GetRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Debugf("Get request %v", getRequest)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(getRequest.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
-	}
-
-	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "document not found")
-	}
-
-	resp, err := h.service.DerivePurchaseOrderResponse(model)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	return resp, nil
-}
