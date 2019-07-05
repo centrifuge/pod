@@ -214,7 +214,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
+	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, st, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -275,7 +275,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	updatedPayload := updatedDocumentPayload(documentType, []string{kenny.id.String()})
 
 	// Bob will anchor the document without Kennys signature
-	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedPayload)
+	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, st, docIdentifier, updatedPayload)
 	txID = getTransactionID(t, response)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "failed" {
