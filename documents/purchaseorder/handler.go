@@ -27,37 +27,6 @@ func GRPCHandler(config config.Service, srv Service) clientpurchaseorderpb.Purch
 	}
 }
 
-// Update handles the document update and anchoring
-func (h grpcHandler) Update(ctx context.Context, payload *clientpurchaseorderpb.PurchaseOrderUpdatePayload) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
-	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	doc, err := h.service.DeriveFromUpdatePayload(ctxHeader, payload)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive update payload")
-	}
-
-	doc, jobID, _, err := h.service.Update(ctxHeader, doc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not update document")
-	}
-
-	resp, err := h.service.DerivePurchaseOrderResponse(doc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
-}
-
 // GetVersion returns the requested version of a purchase order
 func (h grpcHandler) GetVersion(ctx context.Context, req *clientpurchaseorderpb.GetVersionRequest) (*clientpurchaseorderpb.PurchaseOrderResponse, error) {
 	apiLog.Debugf("GetVersion request %v", req)

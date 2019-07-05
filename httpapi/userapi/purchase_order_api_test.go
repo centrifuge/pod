@@ -131,7 +131,6 @@ func TestHandler_GetPurchaseOrder(t *testing.T) {
 		return httptest.NewRecorder(), httptest.NewRequest("GET", "/purchase_orders/{document_id}", nil).WithContext(ctx)
 	}
 
-	// empty document_id and invalid
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Keys = make([]string, 1, 1)
 	rctx.URLParams.Values = make([]string, 1, 1)
@@ -139,6 +138,7 @@ func TestHandler_GetPurchaseOrder(t *testing.T) {
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	h := handler{}
 
+	// empty document_id and invalid
 	for _, id := range []string{"", "invalid"} {
 		rctx.URLParams.Values[0] = id
 		w, r := getHTTPReqAndResp(ctx)
@@ -194,4 +194,107 @@ func TestHandler_GetPurchaseOrder(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	docSrv.AssertExpectations(t)
 	m.AssertExpectations(t)
+}
+
+func TestHandler_UpdatePurchaseOrder(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("PUT", "/purchase_orders/{document_id}", b).WithContext(ctx)
+	}
+	// empty document_id and invalid id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		w, r := getHTTPReqAndResp(ctx, nil)
+		h.UpdatePurchaseOrder(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	// empty body
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.CreatePurchaseOrder(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed conversion
+	data := map[string]interface{}{
+		"data": poData(),
+		"attributes": map[string]map[string]string{
+			"string_test": {
+				"type":  "invalid",
+				"value": "hello, world",
+			},
+		},
+	}
+
+	id := hexutil.Encode(utils.RandomSlice(32))
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	rctx.URLParams.Values[0] = id
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.UpdatePurchaseOrder(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), documents.ErrNotValidAttrType.Error())
+
+	// failed to update
+	data["attributes"] = map[string]map[string]string{
+		"string_test": {
+			"type":  "string",
+			"value": "hello, world",
+		},
+	}
+	d, err = json.Marshal(data)
+	assert.NoError(t, err)
+	docSrv := new(testingdocuments.MockService)
+	srv := Service{coreAPISrv: newCoreAPIService(docSrv)}
+	h = handler{srv: srv}
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("failed to update model"))
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.UpdatePurchaseOrder(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "failed to update model")
+	docSrv.AssertExpectations(t)
+
+	// failed response conversion
+	m := new(testingdocuments.MockModel)
+	m.On("GetData").Return(purchaseorder.Data{})
+	m.On("Scheme").Return(purchaseorder.Scheme)
+	m.On("GetAttributes").Return(nil)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
+	docSrv = new(testingdocuments.MockService)
+	srv = Service{coreAPISrv: newCoreAPIService(docSrv)}
+	h = handler{srv: srv}
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.UpdatePurchaseOrder(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+	docSrv.AssertExpectations(t)
+	m.AssertExpectations(t)
+
+	// success
+	m = new(testingdocuments.MockModel)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	m.On("GetData").Return(purchaseorder.Data{})
+	m.On("Scheme").Return(purchaseorder.Scheme)
+	m.On("ID").Return(utils.RandomSlice(32)).Once()
+	m.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	m.On("Author").Return(nil, errors.New("somerror"))
+	m.On("Timestamp").Return(nil, errors.New("somerror"))
+	m.On("NFTs").Return(nil)
+	m.On("GetAttributes").Return(nil)
+	docSrv = new(testingdocuments.MockService)
+	srv = Service{coreAPISrv: newCoreAPIService(docSrv)}
+	h = handler{srv: srv}
+	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.UpdatePurchaseOrder(w, r)
+	assert.Equal(t, w.Code, http.StatusCreated)
+	m.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
 }

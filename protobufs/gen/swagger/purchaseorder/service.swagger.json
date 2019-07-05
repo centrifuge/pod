@@ -15,39 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/purchase_orders/{document_id}": {
-      "put": {
-        "description": "Updates a purchase order",
-        "operationId": "Update",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/poPurchaseOrderResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/poPurchaseOrderUpdatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "PurchaseOrderService"
-        ]
-      }
-    },
     "/v1/purchase_orders/{document_id}/versions/{version_id}": {
       "get": {
         "description": "Get a specific version of a purchase order",
@@ -451,36 +418,6 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
-        },
-        "data": {
-          "$ref": "#/definitions/poPurchaseOrderData"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
-        }
-      }
-    },
-    "poPurchaseOrderUpdatePayload": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "read_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "write_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "data": {
           "$ref": "#/definitions/poPurchaseOrderData"

@@ -63,7 +63,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	data.TotalAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
-	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
+	newPO, err := poSrv.(service).DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
 		DocumentId:  hexutil.Encode(po.ID()),
 		WriteAccess: []string{collab},
 		Data:        data,
@@ -85,8 +85,9 @@ func TestService_Update(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	_, poSrv := getServiceWithMockedLayers()
+	_, poSrvv := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	poSrv := poSrvv.(service)
 
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(ctxh, nil)
