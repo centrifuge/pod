@@ -5,13 +5,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/go-chi/render"
-
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/go-chi/render"
 )
 
 // CreateInvoice creates an invoice document.
@@ -49,14 +45,7 @@ func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	i, err := toDocumentsCreatePayload(request)
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	m, j, err := h.srv.coreAPISrv.CreateDocument(ctx, i)
+	m, j, err := h.srv.CreateInvoice(ctx, request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -73,28 +62,4 @@ func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, resp)
 
-}
-
-func toDocumentsCreatePayload(request CreateInvoiceRequest) (documents.CreatePayload, error) {
-	payload := documents.CreatePayload{
-		Scheme: invoice.Scheme,
-		Collaborators: documents.CollaboratorsAccess{
-			ReadCollaborators:      identity.AddressToDIDs(request.ReadAccess...),
-			ReadWriteCollaborators: identity.AddressToDIDs(request.WriteAccess...),
-		},
-	}
-
-	data, err := json.Marshal(request.Data)
-	if err != nil {
-		return payload, err
-	}
-	payload.Data = data
-
-	attrs, err := coreapi.ToDocumentAttributes(request.Attributes)
-	if err != nil {
-		return payload, err
-	}
-	payload.Attributes = attrs
-
-	return payload, nil
 }

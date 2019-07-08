@@ -3,13 +3,12 @@ package userapi
 
 import (
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // TODO: think: generic custom attribute set creation?
@@ -58,9 +57,9 @@ func toTransferDetailUpdatePayload(request UpdateTransferDetailRequest) (*transf
 
 // CreateInvoiceRequest defines the payload for creating documents.
 type CreateInvoiceRequest struct {
-	ReadAccess  []common.Address     `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address     `json:"write_access" swaggertype:"array,string"`
-	Data        invoice.Data         `json:"data"`
+	ReadAccess  []identity.DID              `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID              `json:"write_access" swaggertype:"array,string"`
+	Data        invoice.Data                `json:"data"`
 	Attributes  coreapi.AttributeMapRequest `json:"attributes"`
 }
 

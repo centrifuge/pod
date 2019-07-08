@@ -103,7 +103,7 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	}
 	payload.Data = data
 
-	attrs, err := ToDocumentAttributes(request.Attributes)
+	attrs, err := toDocumentAttributes(request.Attributes)
 	if err != nil {
 		return payload, err
 	}

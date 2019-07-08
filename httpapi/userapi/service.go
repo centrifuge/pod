@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -85,6 +86,28 @@ func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versi
 	}
 
 	return data, model, nil
+}
+
+func convertInvRequest(req CreateInvoiceRequest) (documents.CreatePayload, error) {
+	coreAPIReq := coreapi.CreateDocumentRequest{
+		Scheme:      invoice.Scheme,
+		WriteAccess: req.WriteAccess,
+		ReadAccess:  req.ReadAccess,
+		Data:        req.Data,
+		Attributes:  req.Attributes,
+	}
+
+	return coreapi.ToDocumentsCreatePayload(coreAPIReq)
+}
+
+// CreateInvoice creates an invoice.
+func (s Service) CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertInvRequest(req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.CreateDocument(ctx, docReq)
 }
 
 func convertPORequest(req CreatePurchaseOrderRequest) (documents.CreatePayload, error) {
