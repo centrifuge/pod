@@ -304,10 +304,7 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
 	if po == nil {
-		payload := testingdocuments.CreatePOPayload()
-		po = new(purchaseorder.PurchaseOrder)
-		err = po.InitPurchaseOrderInput(payload, defaultDID)
-		assert.NoError(t, err)
+		po = purchaseorder.InitPurchaseOrder(t, defaultDID, purchaseorder.CreatePOPayload(t, nil))
 	}
 	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)

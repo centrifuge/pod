@@ -27,38 +27,6 @@ func GRPCHandler(config config.Service, srv Service) cliententitypb.EntityServic
 	}
 }
 
-// Create handles the creation of the entities and anchoring the documents on chain
-func (h *grpcHandler) Create(ctx context.Context, req *cliententitypb.EntityCreatePayload) (*cliententitypb.EntityResponse, error) {
-	apiLog.Debugf("Create request %v", req)
-	cctx, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	m, err := h.service.DeriveFromCreatePayload(cctx, req)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive create payload")
-	}
-
-	// validate and persist
-	m, jobID, _, err := h.service.Create(cctx, m)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not create document")
-	}
-
-	resp, err := h.service.DeriveEntityResponse(cctx, m)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
-}
-
 // Update handles the document update and anchoring
 func (h *grpcHandler) Update(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (*cliententitypb.EntityResponse, error) {
 	apiLog.Debugf("Update request %v", payload)

@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -113,59 +112,6 @@ type LineItem struct {
 	TaxItems          []*TaxItem          `json:"tax_items"`
 }
 
-// getClientData returns the client data from the purchaseOrder model
-func (p *PurchaseOrder) getClientData() (*clientpurchaseorderpb.PurchaseOrderData, error) {
-	data := p.Data
-	decs := documents.DecimalsToStrings(data.TotalAmount)
-	dids := identity.DIDsToStrings(data.Recipient, data.Sender)
-
-	pd, err := documents.ToClientPaymentDetails(data.PaymentDetails)
-	if err != nil {
-		return nil, err
-	}
-
-	pts, err := timeutils.ToProtoTimestamps(data.DateCreated, data.DateUpdated, data.DateConfirmed, data.DateSent)
-	if err != nil {
-		return nil, err
-	}
-
-	lis, err := toClientLineItems(data.LineItems)
-	if err != nil {
-		return nil, err
-	}
-
-	return &clientpurchaseorderpb.PurchaseOrderData{
-		Status:                  data.Status,
-		Number:                  data.Number,
-		SenderOrderId:           data.SenderOrderID,
-		TotalAmount:             decs[0],
-		Recipient:               dids[0],
-		Sender:                  dids[1],
-		DateCreated:             pts[0],
-		DateUpdated:             pts[1],
-		RequesterName:           data.RequesterName,
-		RequesterEmail:          data.RequesterEmail,
-		Comment:                 data.Comment,
-		Currency:                data.Currency,
-		ShipToCountry:           data.ShipToCountry,
-		ShipToState:             data.ShipToState,
-		ShipToZipcode:           data.ShipToZipcode,
-		ShipToCity:              data.ShipToCity,
-		ShipToStreet1:           data.ShipToStreet1,
-		ShipToStreet2:           data.ShipToStreet2,
-		ShipToContactPersonName: data.ShipToContactPersonName,
-		ShipToCompanyName:       data.ShipToCompanyName,
-		DateConfirmed:           pts[2],
-		DateSent:                pts[3],
-		PaymentTerms:            data.PaymentTerms,
-		RecipientOrderId:        data.RecipientOrderID,
-		RequisitionId:           data.RequisitionID,
-		PaymentDetails:          pd,
-		Attachments:             documents.ToClientAttachments(data.Attachments),
-		LineItems:               lis,
-	}, nil
-}
-
 // createP2PProtobuf returns centrifuge protobuf specific purchaseOrderData
 func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData, error) {
 	data := p.Data
@@ -221,98 +167,6 @@ func (p *PurchaseOrder) createP2PProtobuf() (*purchaseorderpb.PurchaseOrderData,
 		LineItems:               li,
 	}, nil
 
-}
-
-// InitPurchaseOrderInput initialize the model based on the received parameters from the rest api call
-func (p *PurchaseOrder) InitPurchaseOrderInput(payload *clientpurchaseorderpb.PurchaseOrderCreatePayload, self identity.DID) error {
-	err := p.initPurchaseOrderFromData(payload.Data)
-	if err != nil {
-		return err
-	}
-
-	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
-	if err != nil {
-		return err
-	}
-	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-
-	attrs, err := documents.FromClientAttributes(payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	cd, err := documents.NewCoreDocument(compactPrefix(), cs, attrs)
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	p.CoreDocument = cd
-	return nil
-}
-
-// initPurchaseOrderFromData initialises purchase order from purchaseOrderData
-func (p *PurchaseOrder) initPurchaseOrderFromData(data *clientpurchaseorderpb.PurchaseOrderData) error {
-	atts, err := documents.FromClientAttachments(data.Attachments)
-	if err != nil {
-		return err
-	}
-
-	pdetails, err := documents.FromClientPaymentDetails(data.PaymentDetails)
-	if err != nil {
-		return err
-	}
-
-	decs, err := documents.StringsToDecimals(data.TotalAmount)
-	if err != nil {
-		return err
-	}
-
-	dids, err := identity.StringsToDIDs(data.Recipient, data.Sender)
-	if err != nil {
-		return err
-	}
-
-	li, err := fromClientLineItems(data.LineItems)
-	if err != nil {
-		return err
-	}
-
-	tms, err := timeutils.FromProtoTimestamps(data.DateSent, data.DateUpdated, data.DateCreated, data.DateConfirmed)
-	if err != nil {
-		return err
-	}
-
-	var d Data
-	d.Status = data.Status
-	d.Number = data.Number
-	d.SenderOrderID = data.SenderOrderId
-	d.RecipientOrderID = data.RecipientOrderId
-	d.RequisitionID = data.RequisitionId
-	d.RequesterEmail = data.RequesterEmail
-	d.RequesterName = data.RequesterName
-	d.ShipToCompanyName = data.ShipToCompanyName
-	d.ShipToContactPersonName = data.ShipToContactPersonName
-	d.ShipToStreet1 = data.ShipToStreet1
-	d.ShipToStreet2 = data.ShipToStreet2
-	d.ShipToCity = data.ShipToCity
-	d.ShipToZipcode = data.ShipToZipcode
-	d.ShipToState = data.ShipToState
-	d.ShipToCountry = data.ShipToCountry
-	d.PaymentTerms = data.PaymentTerms
-	d.Currency = data.Currency
-	d.Comment = data.Comment
-	d.DateSent = tms[0]
-	d.DateUpdated = tms[1]
-	d.DateCreated = tms[2]
-	d.DateConfirmed = tms[3]
-	d.Attachments = atts
-	d.PaymentDetails = pdetails
-	d.TotalAmount = decs[0]
-	d.Recipient = dids[0]
-	d.Sender = dids[1]
-	d.LineItems = li
-	p.Data = d
-	return nil
 }
 
 // loadFromP2PProtobuf loads the purcase order from centrifuge protobuf purchase order data
@@ -479,22 +333,6 @@ func (p *PurchaseOrder) CreateProofs(fields []string) (proofs []*proofspb.Proof,
 // DocumentType returns the po document type.
 func (*PurchaseOrder) DocumentType() string {
 	return documenttypes.PurchaseOrderDataTypeUrl
-}
-
-// PrepareNewVersion prepares new version from the old invoice.
-func (p *PurchaseOrder) PrepareNewVersion(old documents.Model, data *clientpurchaseorderpb.PurchaseOrderData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
-	err := p.initPurchaseOrderFromData(data)
-	if err != nil {
-		return err
-	}
-
-	oldCD := old.(*PurchaseOrder).CoreDocument
-	p.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddNFT adds NFT to the Purchase Order.
