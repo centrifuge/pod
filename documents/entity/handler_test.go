@@ -105,63 +105,6 @@ func getHandler() *grpcHandler {
 	return &grpcHandler{service: &mockService{}, config: configService}
 }
 
-func TestGRPCHandler_Create_derive_fail(t *testing.T) {
-	// DeriveFrom payload fails
-	h := getHandler()
-	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(nil, errors.New("derive failed")).Once()
-	_, err := h.Create(testingconfig.HandlerContext(configService), nil)
-	srv.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "derive failed")
-}
-
-func TestGRPCHandler_Create_create_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(new(Entity), nil).Once()
-	srv.On("Create", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID().String(), errors.New("create failed")).Once()
-	payload := &cliententitypb.EntityCreatePayload{Data: &cliententitypb.EntityData{LegalName: "test company"}}
-	_, err := h.Create(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "create failed")
-}
-
-func TestGRPCHandler_Create_DeriveEntityResponse_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(Entity)
-	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, mock.Anything).Return(model, jobs.NilJobID().String(), nil).Once()
-	srv.On("DeriveEntityResponse", mock.Anything, mock.Anything).Return(nil, errors.New("derive response failed"))
-	payload := &cliententitypb.EntityCreatePayload{Data: &cliententitypb.EntityData{LegalName: "test company"}}
-	_, err := h.Create(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Error(t, err, "must be non nil")
-	assert.Contains(t, err.Error(), "derive response failed")
-}
-
-func TestGrpcHandler_Create(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(Entity)
-	jobID := jobs.NewJobID()
-	payload := &cliententitypb.EntityCreatePayload{
-		Data:        &cliententitypb.EntityData{LegalName: "test company"},
-		WriteAccess: []string{"0x010203040506"},
-	}
-	response := &cliententitypb.EntityResponse{Header: &documentpb.ResponseHeader{}}
-	srv.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("Create", mock.Anything, mock.Anything).Return(model, jobID.String(), nil).Once()
-	srv.On("DeriveEntityResponse", mock.Anything, model).Return(response, nil)
-	res, err := h.Create(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err, "must be nil")
-	assert.NotNil(t, res, "must be non nil")
-	assert.Equal(t, res, response)
-}
-
 func TestGrpcHandler_Share(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)

@@ -1010,6 +1010,71 @@
                 }
             }
         },
+        "/v1/entities": {
+            "post": {
+                "description": "Creates a new Entity and anchors it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entities"
+                ],
+                "summary": "Creates a new Entity and anchors it.",
+                "operationId": "create_entity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Entity Create request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.CreateEntityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.EntityResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/jobs/{job_id}": {
             "get": {
                 "description": "Returns the status of a given Job.",
@@ -2091,6 +2156,171 @@
                 }
             }
         },
+        "entity.Address": {
+            "type": "object",
+            "properties": {
+                "address_line_1": {
+                    "type": "string"
+                },
+                "address_line_2": {
+                    "type": "string"
+                },
+                "contact_person": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "is_main": {
+                    "type": "boolean"
+                },
+                "is_pay_to": {
+                    "type": "boolean"
+                },
+                "is_remit_to": {
+                    "type": "boolean"
+                },
+                "is_ship_to": {
+                    "type": "boolean"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "zip": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.BankPaymentMethod": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.Address"
+                },
+                "bank_account_number": {
+                    "type": "string"
+                },
+                "bank_key": {
+                    "type": "string"
+                },
+                "holder_name": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "supported_currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.Contact": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "fax": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.CryptoPaymentMethod": {
+            "type": "object",
+            "properties": {
+                "chain_uri": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "supported_currency": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.Data": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Address"
+                    }
+                },
+                "contacts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Contact"
+                    }
+                },
+                "identity": {
+                    "type": "string"
+                },
+                "legal_name": {
+                    "type": "string"
+                },
+                "payment_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.PaymentDetail"
+                    }
+                }
+            }
+        },
+        "entity.OtherPaymentMethod": {
+            "type": "object",
+            "properties": {
+                "identifier": {
+                    "type": "string"
+                },
+                "pay_to": {
+                    "type": "string"
+                },
+                "supported_currency": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.PaymentDetail": {
+            "type": "object",
+            "properties": {
+                "bank_payment_method": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.BankPaymentMethod"
+                },
+                "crypto_payment_method": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.CryptoPaymentMethod"
+                },
+                "other_payment_method": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.OtherPaymentMethod"
+                },
+                "predefined": {
+                    "type": "boolean"
+                }
+            }
+        },
         "health.Pong": {
             "type": "object",
             "properties": {
@@ -2378,6 +2608,31 @@
                 }
             }
         },
+        "userapi.CreateEntityRequest": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.Data"
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "userapi.CreatePurchaseOrderRequest": {
             "type": "object",
             "properties": {
@@ -2412,6 +2667,23 @@
                 },
                 "document_id": {
                     "type": "string"
+                }
+            }
+        },
+        "userapi.EntityResponse": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMapResponse"
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.Data"
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.ResponseHeader"
                 }
             }
         },

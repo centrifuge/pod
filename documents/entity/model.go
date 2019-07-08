@@ -22,7 +22,9 @@ import (
 
 const (
 	prefix string = "entity"
-	scheme        = prefix
+
+	// Scheme is entity scheme.
+	Scheme = prefix
 
 	// ErrMultiplePaymentMethodsSet is a sentinel error when multiple payment methods are set in a single payment detail.
 	ErrMultiplePaymentMethodsSet = errors.Error("multiple payment methods are set")
@@ -54,7 +56,7 @@ type Address struct {
 
 // BankPaymentMethod holds the bank details of the entity.
 type BankPaymentMethod struct {
-	Identifier        byteutils.HexBytes `json:"identifier"`
+	Identifier        byteutils.HexBytes `json:"identifier" swaggertype:"primitive,string"`
 	Address           Address            `json:"address"`
 	HolderName        string             `json:"holder_name"`
 	BankKey           string             `json:"bank_key"`
@@ -64,7 +66,7 @@ type BankPaymentMethod struct {
 
 // CryptoPaymentMethod holds the crypto details of the entity.
 type CryptoPaymentMethod struct {
-	Identifier        byteutils.HexBytes `json:"identifier"`
+	Identifier        byteutils.HexBytes `json:"identifier" swaggertype:"primitive,string"`
 	To                string             `json:"to"`
 	ChainURI          string             `json:"chain_uri"`
 	SupportedCurrency string             `json:"supported_currency"`
@@ -72,7 +74,7 @@ type CryptoPaymentMethod struct {
 
 // OtherPaymentMethod represents any other payment methods entity accepts.
 type OtherPaymentMethod struct {
-	Identifier        byteutils.HexBytes `json:"identifier"`
+	Identifier        byteutils.HexBytes `json:"identifier" swaggertype:"primitive,string"`
 	Type              string             `json:"type"`
 	PayTo             string             `json:"pay_to"`
 	SupportedCurrency string             `json:"supported_currency"`
@@ -98,7 +100,7 @@ type Contact struct {
 
 // Data represents the entity data.
 type Data struct {
-	Identity       *identity.DID   `json:"identity"`
+	Identity       *identity.DID   `json:"identity" swaggertype:"primitive,string"`
 	LegalName      string          `json:"legal_name"`
 	Addresses      []Address       `json:"addresses"`
 	PaymentDetails []PaymentDetail `json:"payment_details"`
@@ -511,5 +513,5 @@ func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePa
 
 // Scheme returns the entity scheme.
 func (e *Entity) Scheme() string {
-	return scheme
+	return Scheme
 }

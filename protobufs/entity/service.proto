@@ -14,15 +14,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // EntityService contains all common interactions for entity documents
 service EntityService {
-  rpc Create(EntityCreatePayload) returns (EntityResponse) {
-    option (google.api.http) = {
-      post: "/v1/entities"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates an entity"
-    };
-  }
   rpc Update(EntityUpdatePayload) returns (EntityResponse) {
     option (google.api.http) = {
       put: "/v1/entities/{document_id}"
