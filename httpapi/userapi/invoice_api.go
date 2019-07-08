@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 )
@@ -22,7 +21,7 @@ import (
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} coreapi.DocumentResponse
+// @success 201 {object} userapi.InvoiceResponse
 // @router /v1/invoices [post]
 func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -52,7 +51,7 @@ func (h handler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := coreapi.GetDocumentResponse(m, h.tokenRegistry, j)
+	resp, err := toInvoiceResponse(m, h.tokenRegistry, j)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
