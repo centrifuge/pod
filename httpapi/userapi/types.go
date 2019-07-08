@@ -3,6 +3,7 @@ package userapi
 
 import (
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -79,5 +80,33 @@ func toPurchaseOrderResponse(model documents.Model, tokenRegistry documents.Toke
 		Header:     docResp.Header,
 		Attributes: docResp.Attributes,
 		Data:       docResp.Data.(purchaseorder.Data),
+	}, nil
+}
+
+// CreateEntityRequest holds details for creating Entity Document.
+type CreateEntityRequest struct {
+	ReadAccess  []identity.DID              `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID              `json:"write_access" swaggertype:"array,string"`
+	Data        entity.Data                 `json:"data"`
+	Attributes  coreapi.AttributeMapRequest `json:"attributes"`
+}
+
+// EntityResponse represents the entity in client API format.
+type EntityResponse struct {
+	Header     coreapi.ResponseHeader       `json:"header"`
+	Data       entity.Data                  `json:"data"`
+	Attributes coreapi.AttributeMapResponse `json:"attributes"`
+}
+
+func toEntityResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp EntityResponse, err error) {
+	docResp, err := coreapi.GetDocumentResponse(model, tokenRegistry, jobID)
+	if err != nil {
+		return resp, err
+	}
+
+	return EntityResponse{
+		Header:     docResp.Header,
+		Attributes: docResp.Attributes,
+		Data:       docResp.Data.(entity.Data),
 	}, nil
 }

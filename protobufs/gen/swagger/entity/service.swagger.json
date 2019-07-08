@@ -15,33 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/entities": {
-      "post": {
-        "description": "Creates an entity",
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityEntityCreatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/v1/entities/{document_id}": {
       "get": {
         "description": "Get the current entity",
@@ -370,33 +343,6 @@
         },
         "supported_currency": {
           "type": "string"
-        }
-      }
-    },
-    "entityEntityCreatePayload": {
-      "type": "object",
-      "properties": {
-        "read_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "write_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "data": {
-          "$ref": "#/definitions/entityEntityData"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
         }
       }
     },

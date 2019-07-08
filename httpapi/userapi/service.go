@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -127,4 +128,26 @@ func (s Service) UpdatePurchaseOrder(ctx context.Context, docID []byte, req Crea
 // GetPurchaseOrderVersion returns specific version of the PurchaseOrder associated with Document ID.
 func (s Service) GetPurchaseOrderVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
 	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
+}
+
+func convertEntityRequest(req CreateEntityRequest) (documents.CreatePayload, error) {
+	coreAPIReq := coreapi.CreateDocumentRequest{
+		Scheme:      entity.Scheme,
+		WriteAccess: req.WriteAccess,
+		ReadAccess:  req.ReadAccess,
+		Data:        req.Data,
+		Attributes:  req.Attributes,
+	}
+
+	return coreapi.ToDocumentsCreatePayload(coreAPIReq)
+}
+
+// CreateEntity creates Entity document and anchors it.
+func (s Service) CreateEntity(ctx context.Context, req CreateEntityRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertEntityRequest(req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.CreateDocument(ctx, docReq)
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
@@ -257,6 +258,54 @@ func TestService_UpdatePurchaseOrder(t *testing.T) {
 	strAttr.Type = "string"
 	req.Attributes["string_test"] = strAttr
 	_, _, err = s.UpdatePurchaseOrder(ctx, docID, req)
+	assert.NoError(t, err)
+	docSrv.AssertExpectations(t)
+}
+
+func TestService_CreateEntity(t *testing.T) {
+	ctx := context.Background()
+	did := testingidentity.GenerateRandomDID()
+	req := CreateEntityRequest{
+		WriteAccess: []identity.DID{did},
+		Data: entity.Data{
+			Identity:  &did,
+			LegalName: "John Doe",
+			Addresses: []entity.Address{
+				{
+					IsMain:  true,
+					Country: "Germany",
+					Label:   "home",
+				},
+			},
+		},
+		Attributes: coreapi.AttributeMapRequest{
+			"string_test": {
+				Type:  "invalid",
+				Value: "hello, world!",
+			},
+
+			"decimal_test": {
+				Type:  "decimal",
+				Value: "100001.001",
+			},
+		},
+	}
+	s := Service{}
+
+	// invalid attribute map
+	_, _, err := s.CreateEntity(ctx, req)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrNotValidAttrType, err))
+
+	// success
+	docSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	docSrv.On("CreateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	s.coreAPISrv = newCoreAPIService(docSrv)
+	strAttr := req.Attributes["string_test"]
+	strAttr.Type = "string"
+	req.Attributes["string_test"] = strAttr
+	_, _, err = s.CreateEntity(ctx, req)
 	assert.NoError(t, err)
 	docSrv.AssertExpectations(t)
 }
