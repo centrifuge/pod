@@ -15,11 +15,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -225,17 +223,16 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 
 // Helper Methods
 func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
-	payload := testingdocuments.CreatePOPayload()
-	var cs []string
-	for _, c := range collaborators {
-		cs = append(cs, hexutil.Encode(c))
-	}
-	payload.WriteAccess = cs
-
-	po := new(purchaseorder.PurchaseOrder)
-	err := po.InitPurchaseOrderInput(payload, identityDID)
+	payload := purchaseorder.CreatePOPayload(t, nil)
+	var cs []identity.DID
+	collabs, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
+	for _, c := range collabs {
+		cs = append(cs, *c)
+	}
+	payload.Collaborators.ReadWriteCollaborators = cs
 
+	po := purchaseorder.InitPurchaseOrder(t, identityDID, payload)
 	po.SetUsedAnchorRepoAddress(anchorRepo)
 	err = po.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
@@ -264,17 +261,16 @@ func createCDWithEmbeddedPO(t *testing.T, collaborators [][]byte, identityDID id
 }
 
 func createCDWithEmbeddedPOWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
-	payload := testingdocuments.CreatePOPayload()
-	var cs []string
-	for _, c := range collaborators {
-		cs = append(cs, hexutil.Encode(c))
-	}
-	payload.WriteAccess = cs
-
-	po := new(purchaseorder.PurchaseOrder)
-	err := po.InitPurchaseOrderInput(payload, identityDID)
+	payload := purchaseorder.CreatePOPayload(t, nil)
+	var cs []identity.DID
+	collabs, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
+	for _, c := range collabs {
+		cs = append(cs, *c)
+	}
+	payload.Collaborators.ReadWriteCollaborators = cs
 
+	po := purchaseorder.InitPurchaseOrder(t, identityDID, payload)
 	po.SetUsedAnchorRepoAddress(anchorRepo)
 	err = po.AddUpdateLog(identityDID)
 	assert.NoError(t, err)

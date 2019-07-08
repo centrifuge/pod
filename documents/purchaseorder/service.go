@@ -9,31 +9,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	clientpopb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
-
-// Service defines specific functions for purchase order
-type Service interface {
-	documents.Service
-
-	// DerivePurchaseOrderData returns the purchase order data as client data
-	DerivePurchaseOrderData(po documents.Model) (*clientpopb.PurchaseOrderData, error)
-
-	// DerivePurchaseOrderResponse returns the purchase order in our standard client format
-	DerivePurchaseOrderResponse(po documents.Model) (*clientpopb.PurchaseOrderResponse, error)
-}
 
 // service implements Service and handles all purchase order related persistence and validations
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo           documents.Repository
-	queueSrv       queue.TaskQueuer
-	jobManager     jobs.Manager
-	tokenRegFinder func() documents.TokenRegistry
-	anchorRepo     anchors.AnchorRepository
+	repo       documents.Repository
+	queueSrv   queue.TaskQueuer
+	jobManager jobs.Manager
+	anchorRepo anchors.AnchorRepository
 }
 
 // DefaultService returns the default implementation of the service
@@ -42,16 +29,14 @@ func DefaultService(
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
-	tokenRegFinder func() documents.TokenRegistry,
 	anchorRepo anchors.AnchorRepository,
-) Service {
+) documents.Service {
 	return service{
-		repo:           repo,
-		queueSrv:       queueSrv,
-		jobManager:     jobManager,
-		Service:        srv,
-		tokenRegFinder: tokenRegFinder,
-		anchorRepo:     anchorRepo,
+		repo:       repo,
+		queueSrv:   queueSrv,
+		jobManager: jobManager,
+		Service:    srv,
+		anchorRepo: anchorRepo,
 	}
 }
 
@@ -136,97 +121,6 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, err
 	}
 	return new, jobID, done, nil
-}
-
-// DeriveFromCreatePayload derives purchase order from create payload
-func (s service) DeriveFromCreatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderCreatePayload) (documents.Model, error) {
-	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentNil
-	}
-
-	self, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, documents.ErrDocumentConfigAccountID
-	}
-
-	po := new(PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payload, self)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
-	return po, nil
-}
-
-// DeriveFromUpdatePayload derives purchase order from update payload
-func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *clientpopb.PurchaseOrderUpdatePayload) (documents.Model, error) {
-	if payload == nil || payload.Data == nil {
-		return nil, documents.ErrDocumentNil
-	}
-
-	// get latest old version of the document
-	id, err := hexutil.Decode(payload.DocumentId)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentIdentifier, errors.New("failed to decode identifier: %v", err))
-	}
-
-	old, err := s.GetCurrentVersion(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
-	if err != nil {
-		return nil, err
-	}
-
-	attrs, err := documents.FromClientAttributes(payload.Attributes)
-	if err != nil {
-		return nil, err
-	}
-
-	// load purchase order data
-	po := new(PurchaseOrder)
-	err = po.PrepareNewVersion(old, payload.Data, cs, attrs)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, errors.New("failed to load purchase order from data: %v", err))
-	}
-
-	return po, nil
-}
-
-// DerivePurchaseOrderData returns po data from the model
-func (s service) DerivePurchaseOrderData(doc documents.Model) (*clientpopb.PurchaseOrderData, error) {
-	po, ok := doc.(*PurchaseOrder)
-	if !ok {
-		return nil, documents.ErrDocumentInvalidType
-	}
-
-	return po.getClientData()
-}
-
-// DerivePurchaseOrderResponse returns po response from the model
-func (s service) DerivePurchaseOrderResponse(doc documents.Model) (*clientpopb.PurchaseOrderResponse, error) {
-	data, err := s.DerivePurchaseOrderData(doc)
-	if err != nil {
-		return nil, err
-	}
-
-	h, err := documents.DeriveResponseHeader(s.tokenRegFinder(), doc)
-	if err != nil {
-		return nil, err
-	}
-
-	attrs, err := documents.ToClientAttributes(doc.GetAttributes())
-	if err != nil {
-		return nil, err
-	}
-
-	return &clientpopb.PurchaseOrderResponse{
-		Header:     h,
-		Data:       data,
-		Attributes: attrs,
-	}, nil
 }
 
 // CreateModel creates purchase order from the payload, validates, persists, and returns the purchase order.
