@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestTypes_convertAttributes(t *testing.T) {
-	attrs := AttributeMap{
+func TestTypes_toAttributeMapResponse(t *testing.T) {
+	attrs := AttributeMapRequest{
 		"string_test": {
 			Type:  "string",
 			Value: "hello, world!",
@@ -35,7 +35,7 @@ func TestTypes_convertAttributes(t *testing.T) {
 		},
 	}
 
-	atts, err := ToDocumentAttributes(attrs)
+	atts, err := toDocumentAttributes(attrs)
 	assert.NoError(t, err)
 	assert.Len(t, atts, 2)
 
@@ -43,16 +43,18 @@ func TestTypes_convertAttributes(t *testing.T) {
 	for _, v := range atts {
 		attrList = append(attrList, v)
 	}
-	cattrs, err := convertAttributes(attrList)
+	cattrs, err := toAttributeMapResponse(attrList)
 	assert.NoError(t, err)
-	assert.Equal(t, attrs, cattrs)
+	assert.Len(t, cattrs, len(attrs))
+	assert.Equal(t, cattrs["string_test"].Value, attrs["string_test"].Value)
+	assert.Equal(t, cattrs["decimal_test"].Value, attrs["decimal_test"].Value)
 
-	attrs["invalid"] = Attribute{Type: "unknown", Value: "some value"}
-	_, err = ToDocumentAttributes(attrs)
+	attrs["invalid"] = AttributeRequest{Type: "unknown", Value: "some value"}
+	_, err = toDocumentAttributes(attrs)
 	assert.Error(t, err)
 
 	attrList = append(attrList, documents.Attribute{Value: documents.AttrVal{Type: "invalid"}})
-	_, err = convertAttributes(attrList)
+	_, err = toAttributeMapResponse(attrList)
 	assert.Error(t, err)
 }
 
@@ -115,17 +117,17 @@ func TestTypes_toDocumentCreatePayload(t *testing.T) {
 	request.Data = invoiceData()
 
 	// success
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	assert.NoError(t, err)
 	assert.Equal(t, payload.Scheme, "invoice")
 	assert.NotNil(t, payload.Data)
 
 	// failure
-	request.Attributes = map[string]Attribute{
+	request.Attributes = map[string]AttributeRequest{
 		"invalid": {Type: "unknown", Value: "some value"},
 	}
 
-	_, err = toDocumentsCreatePayload(request)
+	_, err = ToDocumentsCreatePayload(request)
 	assert.Error(t, err)
 }
 

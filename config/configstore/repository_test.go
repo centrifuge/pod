@@ -190,7 +190,7 @@ func cleanupDBFiles() {
 	for _, db := range dbFiles {
 		err := os.RemoveAll(db)
 		if err != nil {
-			apiLog.Warningf("Cleanup warn: %v", err)
+			accLog.Warningf("Cleanup warn: %v", err)
 		}
 	}
 }

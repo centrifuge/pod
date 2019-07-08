@@ -104,7 +104,7 @@ func GetPurposeByName(name string) Purpose {
 }
 
 // DID stores the identity address of the user
-type DID common.Address
+type DID [DIDLength]byte
 
 // DIDLength contains the length of a DID
 const DIDLength = common.AddressLength

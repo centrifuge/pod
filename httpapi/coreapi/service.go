@@ -96,3 +96,18 @@ func (s Service) GetAccount(accountID []byte) (config.Account, error) {
 func (s Service) GenerateAccount() (config.Account, error) {
 	return s.accountsSrv.GenerateAccount()
 }
+
+// GetAccounts returns all the accounts.
+func (s Service) GetAccounts() ([]config.Account, error) {
+	return s.accountsSrv.GetAccounts()
+}
+
+// CreateAccount creates a new account from the data provided.
+func (s Service) CreateAccount(acc config.Account) (config.Account, error) {
+	return s.accountsSrv.CreateAccount(acc)
+}
+
+// UpdateAccount updates the existing account with the data provided.
+func (s Service) UpdateAccount(acc config.Account) (config.Account, error) {
+	return s.accountsSrv.UpdateAccount(acc)
+}

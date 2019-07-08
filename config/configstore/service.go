@@ -7,6 +7,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -19,6 +20,8 @@ const (
 	signingPubKeyName  = "signingKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
 )
+
+var accLog = log.Logger("accounts")
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
@@ -45,7 +48,7 @@ func (s service) GetAccount(identifier []byte) (config.Account, error) {
 	return s.repo.GetAccount(identifier)
 }
 
-func (s service) GetAllAccounts() ([]config.Account, error) {
+func (s service) GetAccounts() ([]config.Account, error) {
 	return s.repo.GetAllAccounts()
 }
 
@@ -115,10 +118,10 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 		return nil, err
 	}
 	acc.SigningKeyPair = KeyPair{
-		Pub:  sPub,
-		Priv: sPriv,
+		Pub: sPub,
+		Pvt: sPriv,
 	}
-	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Pvt, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +168,7 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configurati
 		// may be we need a way to detect a corrupted db here
 		cfg, err = cfgService.GetConfig()
 		if err != nil {
-			apiLog.Warningf("could not load config from db: %v", err)
+			accLog.Warningf("could not load config from db: %v", err)
 		}
 		return cfg, nil
 	}

@@ -8,56 +8,7 @@ option java_outer_classname = "ServiceProto";
 option java_package = "com.po";
 
 import "document/service.proto";
-import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "protoc-gen-swagger/options/annotations.proto";
-
-// PurchaseOrderService contains all common interactions for purchase order documents
-service PurchaseOrderService {
-  rpc Create(PurchaseOrderCreatePayload) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      post: "/v1/purchase_orders"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Creates a purchase order"
-    };
-  }
-  rpc Update(PurchaseOrderUpdatePayload) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      put: "/v1/purchase_orders/{document_id}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates a purchase order"
-    };
-  }
-  rpc GetVersion(GetVersionRequest) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      get: "/v1/purchase_orders/{document_id}/versions/{version_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get a specific version of a purchase order"
-    };
-  }
-  rpc Get(GetRequest) returns (PurchaseOrderResponse) {
-    option (google.api.http) = {
-      get: "/v1/purchase_orders/{document_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the current version of a purchase order"
-    };
-  }
-}
-
-message GetRequest {
-  string document_id = 1;
-}
-
-message GetVersionRequest {
-  string document_id = 1;
-  string version_id = 2;
-}
 
 message PurchaseOrderCreatePayload {
   repeated string read_access = 1;

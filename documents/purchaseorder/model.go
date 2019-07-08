@@ -22,7 +22,9 @@ import (
 
 const (
 	prefix string = "po"
-	scheme        = "purchase_order"
+
+	// Scheme is purchase order scheme
+	Scheme = "purchase_order"
 
 	// ErrPOInvalidData sentinel error when data unmarshal is failed.
 	ErrPOInvalidData = errors.Error("invalid purchase order data")
@@ -50,14 +52,14 @@ type Data struct {
 	ShipToCountry           string                        `json:"ship_to_country"`
 	PaymentTerms            string                        `json:"payment_terms"`
 	Currency                string                        `json:"currency"`
-	TotalAmount             *documents.Decimal            `json:"total_amount"`
-	Recipient               *identity.DID                 `json:"recipient"`
-	Sender                  *identity.DID                 `json:"sender"`
+	TotalAmount             *documents.Decimal            `json:"total_amount" swaggertype:"primitive,string"`
+	Recipient               *identity.DID                 `json:"recipient" swaggertype:"primitive,string"`
+	Sender                  *identity.DID                 `json:"sender" swaggertype:"primitive,string"`
 	Comment                 string                        `json:"comment"`
-	DateSent                *time.Time                    `json:"date_sent"`
-	DateConfirmed           *time.Time                    `json:"date_confirmed"`
-	DateUpdated             *time.Time                    `json:"date_updated"`
-	DateCreated             *time.Time                    `json:"date_created"`
+	DateSent                *time.Time                    `json:"date_sent" swaggertype:"primitive,string"`
+	DateConfirmed           *time.Time                    `json:"date_confirmed" swaggertype:"primitive,string"`
+	DateUpdated             *time.Time                    `json:"date_updated" swaggertype:"primitive,string"`
+	DateCreated             *time.Time                    `json:"date_created" swaggertype:"primitive,string"`
 	Attachments             []*documents.BinaryAttachment `json:"attachments"`
 	LineItems               []*LineItem                   `json:"line_items"`
 	PaymentDetails          []*documents.PaymentDetails   `json:"payment_details"`
@@ -73,21 +75,21 @@ type PurchaseOrder struct {
 type LineItemActivity struct {
 	ItemNumber            string             `json:"item_number"`
 	Status                string             `json:"status"`
-	Quantity              *documents.Decimal `json:"quantity"`
-	Amount                *documents.Decimal `json:"amount"`
+	Quantity              *documents.Decimal `json:"quantity" swaggertype:"primitive,string"`
+	Amount                *documents.Decimal `json:"amount" swaggertype:"primitive,string"`
 	ReferenceDocumentID   string             `json:"reference_document_id"`
 	ReferenceDocumentItem string             `json:"reference_document_item"`
-	Date                  *time.Time         `json:"date"`
+	Date                  *time.Time         `json:"date" swaggertype:"primitive,string"`
 }
 
 // TaxItem describes a single Purchase Order tax item.
 type TaxItem struct {
 	ItemNumber              string             `json:"item_number"`
 	PurchaseOrderItemNumber string             `json:"purchase_order_item_number"`
-	TaxAmount               *documents.Decimal `json:"tax_amount"`
-	TaxRate                 *documents.Decimal `json:"tax_rate"`
-	TaxCode                 *documents.Decimal `json:"tax_code"`
-	TaxBaseAmount           *documents.Decimal `json:"tax_base_amount"`
+	TaxAmount               *documents.Decimal `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate                 *documents.Decimal `json:"tax_rate" swaggertype:"primitive,string"`
+	TaxCode                 *documents.Decimal `json:"tax_code" swaggertype:"primitive,string"`
+	TaxBaseAmount           *documents.Decimal `json:"tax_base_amount" swaggertype:"primitive,string"`
 }
 
 // LineItem describes a single LineItem Activity
@@ -95,17 +97,17 @@ type LineItem struct {
 	Status            string              `json:"status"`
 	ItemNumber        string              `json:"item_number"`
 	Description       string              `json:"description"`
-	AmountInvoiced    *documents.Decimal  `json:"amount_invoiced"`
-	AmountTotal       *documents.Decimal  `json:"amount_total"`
+	AmountInvoiced    *documents.Decimal  `json:"amount_invoiced" swaggertype:"primitive,string"`
+	AmountTotal       *documents.Decimal  `json:"amount_total" swaggertype:"primitive,string"`
 	RequisitionNumber string              `json:"requisition_number"`
 	RequisitionItem   string              `json:"requisition_item"`
 	PartNumber        string              `json:"part_number"`
-	PricePerUnit      *documents.Decimal  `json:"price_per_unit"`
-	UnitOfMeasure     *documents.Decimal  `json:"unit_of_measure"`
-	Quantity          *documents.Decimal  `json:"quantity"`
-	ReceivedQuantity  *documents.Decimal  `json:"received_quantity"`
-	DateUpdated       *time.Time          `json:"date_updated"`
-	DateCreated       *time.Time          `json:"date_created"`
+	PricePerUnit      *documents.Decimal  `json:"price_per_unit" swaggertype:"primitive,string"`
+	UnitOfMeasure     *documents.Decimal  `json:"unit_of_measure" swaggertype:"primitive,string"`
+	Quantity          *documents.Decimal  `json:"quantity" swaggertype:"primitive,string"`
+	ReceivedQuantity  *documents.Decimal  `json:"received_quantity" swaggertype:"primitive,string"`
+	DateUpdated       *time.Time          `json:"date_updated" swaggertype:"primitive,string"`
+	DateCreated       *time.Time          `json:"date_created" swaggertype:"primitive,string"`
 	RevisionNumber    int                 `json:"revision_number"`
 	Activities        []*LineItemActivity `json:"activities"`
 	TaxItems          []*TaxItem          `json:"tax_items"`
@@ -653,5 +655,5 @@ func (p *PurchaseOrder) unpackFromUpdatePayload(old *PurchaseOrder, payload docu
 
 // Scheme returns the purchase order scheme.
 func (p *PurchaseOrder) Scheme() string {
-	return scheme
+	return Scheme
 }

@@ -15,8 +15,6 @@ func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 }
 
 func TestProofWithMultipleFields_po_successful(t *testing.T) {
-	// TODO enable this after PO migration to new API
-	t.SkipNow()
 	t.Parallel()
 	proofWithMultipleFields_successful(t, typePO)
 }

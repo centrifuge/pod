@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
@@ -164,16 +163,13 @@ type Account interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
 	GetPrecommitEnabled() bool
-
-	// CreateProtobuf creates protobuf
-	CreateProtobuf() (*accountpb.AccountData, error)
 }
 
 // Service exposes functions over the config objects
 type Service interface {
 	GetConfig() (Configuration, error)
 	GetAccount(identifier []byte) (Account, error)
-	GetAllAccounts() ([]Account, error)
+	GetAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateAccount(data Account) (Account, error)
 	GenerateAccount() (Account, error)

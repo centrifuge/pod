@@ -63,7 +63,7 @@ func TestService_Update(t *testing.T) {
 	assert.Nil(t, err)
 	data.TotalAmount = "100"
 	collab := testingidentity.GenerateRandomDID().String()
-	newPO, err := poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
+	newPO, err := poSrv.(service).DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
 		DocumentId:  hexutil.Encode(po.ID()),
 		WriteAccess: []string{collab},
 		Data:        data,
@@ -85,8 +85,9 @@ func TestService_Update(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	_, poSrv := getServiceWithMockedLayers()
+	_, poSrvv := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	poSrv := poSrvv.(service)
 
 	// nil payload
 	doc, err := poSrv.DeriveFromUpdatePayload(ctxh, nil)
@@ -205,28 +206,6 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.Equal(t, po.Data.TotalAmount.String(), "42")
 }
 
-func TestService_Create(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, poSrv := getServiceWithMockedLayers()
-
-	// calculate data root fails
-	m, _, _, err := poSrv.Create(ctxh, &testingdocuments.MockModel{})
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown document type")
-
-	// success
-	po, err := poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
-	assert.Nil(t, err)
-	m, _, _, err = poSrv.Create(ctxh, po)
-	assert.Nil(t, err)
-	assert.NotNil(t, m)
-
-	assert.Nil(t, err)
-	assert.True(t, testRepo().Exists(accountID, po.ID()))
-	assert.True(t, testRepo().Exists(accountID, po.CurrentVersion()))
-}
-
 func TestService_DerivePurchaseOrderData(t *testing.T) {
 	var m documents.Model
 	_, poSrv := getServiceWithMockedLayers()
@@ -240,7 +219,7 @@ func TestService_DerivePurchaseOrderData(t *testing.T) {
 
 	// success
 	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
+	m, err = poSrv.(service).DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
 	assert.Nil(t, err)
 	d, err = poSrv.DerivePurchaseOrderData(m)
 	assert.Nil(t, err)

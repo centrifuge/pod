@@ -2,10 +2,12 @@ package coreapi
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -16,23 +18,32 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// AttributeMap defines a map of attributes with attribute key as key
-type AttributeMap map[string]Attribute
+// AttributeMapRequest defines a map of attributes with attribute key as key
+type AttributeMapRequest map[string]AttributeRequest
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string           `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	Data        interface{}      `json:"data"`
-	Attributes  AttributeMap     `json:"attributes"`
+	Scheme      string              `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
+	ReadAccess  []identity.DID      `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID      `json:"write_access" swaggertype:"array,string"`
+	Data        interface{}         `json:"data"`
+	Attributes  AttributeMapRequest `json:"attributes"`
 }
 
-// Attribute defines a single attribute.
-type Attribute struct {
+// AttributeRequest defines a single attribute.
+type AttributeRequest struct {
 	Type  string `json:"type" enums:"integer,decimal,string,bytes,timestamp"`
 	Value string `json:"value"`
 }
+
+// AttributeResponse adds key to the attribute.
+type AttributeResponse struct {
+	AttributeRequest
+	Key byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+}
+
+// AttributeMapResponse maps attribute label to AttributeResponse
+type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
@@ -44,26 +55,25 @@ type NFT struct {
 
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
-	DocumentID  string           `json:"document_id"`
-	VersionID   string           `json:"version_id"`
-	Author      string           `json:"author"`
-	CreatedAt   string           `json:"created_at"`
-	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	JobID       string           `json:"job_id,omitempty"`
-	NFTs        []NFT            `json:"nfts"`
+	DocumentID  string         `json:"document_id"`
+	VersionID   string         `json:"version_id"`
+	Author      string         `json:"author"`
+	CreatedAt   string         `json:"created_at"`
+	ReadAccess  []identity.DID `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
+	JobID       string         `json:"job_id,omitempty"`
+	NFTs        []NFT          `json:"nfts"`
 }
 
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
-	Header     ResponseHeader `json:"header"`
-	Scheme     string         `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	Data       interface{}    `json:"data"`
-	Attributes AttributeMap   `json:"attributes"`
+	Header     ResponseHeader       `json:"header"`
+	Scheme     string               `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
+	Data       interface{}          `json:"data"`
+	Attributes AttributeMapResponse `json:"attributes"`
 }
 
-// ToDocumentAttributes converts client api attributes to internal format
-func ToDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+func toDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
 		attr, err := documents.NewAttribute(k, documents.AttributeType(v.Type), v.Value)
@@ -77,12 +87,13 @@ func ToDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]do
 	return attrs, nil
 }
 
-func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
+// ToDocumentsCreatePayload converts CoreAPI create payload to documents payload.
+func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
 	payload := documents.CreatePayload{
 		Scheme: request.Scheme,
 		Collaborators: documents.CollaboratorsAccess{
-			ReadCollaborators:      identity.AddressToDIDs(request.ReadAccess...),
-			ReadWriteCollaborators: identity.AddressToDIDs(request.WriteAccess...),
+			ReadCollaborators:      request.ReadAccess,
+			ReadWriteCollaborators: request.WriteAccess,
 		},
 	}
 
@@ -126,17 +137,20 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 	return nnfts, err
 }
 
-func convertAttributes(attrs []documents.Attribute) (AttributeMap, error) {
-	m := make(AttributeMap)
+func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
+	m := make(AttributeMapResponse)
 	for _, v := range attrs {
 		val, err := v.Value.String()
 		if err != nil {
 			return nil, err
 		}
 
-		m[v.KeyLabel] = Attribute{
-			Type:  v.Value.Type.String(),
-			Value: val,
+		m[v.KeyLabel] = AttributeResponse{
+			AttributeRequest: AttributeRequest{
+				Type:  v.Value.Type.String(),
+				Value: val,
+			},
+			Key: v.Key[:],
 		}
 	}
 
@@ -172,17 +186,18 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		VersionID:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author.String(),
 		CreatedAt:   ts,
-		ReadAccess:  identity.DIDsToAddress(cs.ReadCollaborators...),
-		WriteAccess: identity.DIDsToAddress(cs.ReadWriteCollaborators...),
+		ReadAccess:  cs.ReadCollaborators,
+		WriteAccess: cs.ReadWriteCollaborators,
 		NFTs:        cnfts,
 		JobID:       id.String(),
 	}, nil
 }
 
+// GetDocumentResponse converts model to a client api format.
 func GetDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
-	attrMap, err := convertAttributes(model.GetAttributes())
+	attrMap, err := toAttributeMapResponse(model.GetAttributes())
 	if err != nil {
 		return resp, err
 	}
@@ -346,6 +361,11 @@ type Account struct {
 	P2PKeyPair                       KeyPair            `json:"p2p_key_pair"`
 }
 
+// Accounts holds a list of accounts
+type Accounts struct {
+	Data []Account `json:"data"`
+}
+
 func toClientAccount(acc config.Account) Account {
 	var p2pkp, signingkp KeyPair
 	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
@@ -361,4 +381,46 @@ func toClientAccount(acc config.Account) Account {
 		P2PKeyPair:                       p2pkp,
 		SigningKeyPair:                   signingkp,
 	}
+}
+
+func toClientAccounts(accs []config.Account) Accounts {
+	var caccs Accounts
+	for _, acc := range accs {
+		caccs.Data = append(caccs.Data, toClientAccount(acc))
+	}
+
+	return caccs
+}
+
+func isKeyPairEmpty(kp *KeyPair) bool {
+	kp.Pvt, kp.Pub = strings.TrimSpace(kp.Pvt), strings.TrimSpace(kp.Pub)
+	return kp.Pvt == "" || kp.Pub == ""
+}
+
+func fromClientAccount(cacc Account) (config.Account, error) {
+	acc := new(configstore.Account)
+	if cacc.EthereumAccount.Address == "" || cacc.EthereumAccount.Key == "" {
+		return nil, errors.New("ethereum address/key cannot be empty")
+	}
+	ca := config.AccountConfig(cacc.EthereumAccount)
+	acc.EthereumAccount = &ca
+	acc.EthereumDefaultAccountName = cacc.EthereumDefaultAccountName
+
+	if isKeyPairEmpty(&cacc.P2PKeyPair) {
+		return nil, errors.New("p2p key pair is invalid")
+	}
+	acc.P2PKeyPair = configstore.KeyPair(cacc.P2PKeyPair)
+
+	if isKeyPairEmpty(&cacc.SigningKeyPair) {
+		return nil, errors.New("signing key pair is invalid")
+	}
+	acc.SigningKeyPair = configstore.KeyPair(cacc.SigningKeyPair)
+
+	if len(cacc.IdentityID) < 1 {
+		return nil, errors.New("Identity ID cannot be empty")
+	}
+
+	acc.IdentityID = cacc.IdentityID
+	acc.ReceiveEventNotificationEndpoint = cacc.ReceiveEventNotificationEndpoint
+	return acc, nil
 }
