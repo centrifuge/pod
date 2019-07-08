@@ -13,7 +13,7 @@ import (
 // @summary Creates a new invoice document and anchors it.
 // @description Creates a new invoice document and anchors it.
 // @id create_invoice
-// @tags Invoice
+// @tags Invoices
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body userapi.CreateInvoiceRequest true "Invoice Create Request"
