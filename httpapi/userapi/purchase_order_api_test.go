@@ -368,7 +368,7 @@ func TestHandler_UpdatePurchaseOrder(t *testing.T) {
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdatePurchaseOrder(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusOK)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
