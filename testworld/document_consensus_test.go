@@ -19,21 +19,21 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 		docType  string
 		testType testType
 	}{
-		//{
-		//	"Invoice_multiHost_AddExternalCollaborator",
-		//	typeInvoice,
-		//	multiHost,
-		//},
-		//{
-		//	"Invoice_withinhost_AddExternalCollaborator",
-		//	typeInvoice,
-		//	withinHost,
-		//},
-		//{
-		//	"Invoice_multiHostMultiAccount_AddExternalCollaborator",
-		//	typeInvoice,
-		//	multiHostMultiAccount,
-		//},
+		{
+			"Invoice_multiHost_AddExternalCollaborator",
+			typeInvoice,
+			multiHost,
+		},
+		{
+			"Invoice_withinhost_AddExternalCollaborator",
+			typeInvoice,
+			withinHost,
+		},
+		{
+			"Invoice_multiHostMultiAccount_AddExternalCollaborator",
+			typeInvoice,
+			multiHostMultiAccount,
+		},
 		{
 			"PO_AddExternalCollaborator",
 			typePO,
