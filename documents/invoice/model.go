@@ -76,11 +76,11 @@ type Data struct {
 	ShipToZipcode            string                        `json:"ship_to_zipcode"`
 	ShipToState              string                        `json:"ship_to_state"`
 	ShipToCountry            string                        `json:"ship_to_country"`
-	Currency                 string                        `json:"currency"`     // ISO currency code
-	GrossAmount              *documents.Decimal            `json:"gross_amount"` // invoice amount including tax
-	NetAmount                *documents.Decimal            `json:"net_amount"`   // invoice amount excluding tax
-	TaxAmount                *documents.Decimal            `json:"tax_amount"`
-	TaxRate                  *documents.Decimal            `json:"tax_rate"`
+	Currency                 string                        `json:"currency"`                                    // ISO currency code
+	GrossAmount              *documents.Decimal            `json:"gross_amount" swaggertype:"primitive,string"` // invoice amount including tax
+	NetAmount                *documents.Decimal            `json:"net_amount" swaggertype:"primitive,string"`   // invoice amount excluding tax
+	TaxAmount                *documents.Decimal            `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate                  *documents.Decimal            `json:"tax_rate" swaggertype:"primitive,string"`
 	TaxOnLineLevel           bool                          `json:"tax_on_line_level"`
 	Recipient                *identity.DID                 `json:"recipient,string"` // centrifuge ID of the recipient
 	Sender                   *identity.DID                 `json:"sender,string"`    // centrifuge ID of the sender
@@ -93,10 +93,10 @@ type Data struct {
 	IsCreditNote             bool                          `json:"is_credit_note"`
 	CreditNoteInvoiceNumber  string                        `json:"credit_note_invoice_number"`
 	CreditForInvoiceDate     *time.Time                    `json:"credit_for_invoice_date"`
-	DateDue                  *time.Time                    `json:"date_due"`
-	DatePaid                 *time.Time                    `json:"date_paid"`
-	DateUpdated              *time.Time                    `json:"date_updated"`
-	DateCreated              *time.Time                    `json:"date_created"`
+	DateDue                  *time.Time                    `json:"date_due" swaggertype:"primitive,string"`
+	DatePaid                 *time.Time                    `json:"date_paid" swaggertype:"primitive,string"`
+	DateUpdated              *time.Time                    `json:"date_updated" swaggertype:"primitive,string"`
+	DateCreated              *time.Time                    `json:"date_created" swaggertype:"primitive,string"`
 	Attachments              []*documents.BinaryAttachment `json:"attachments"`
 	LineItems                []*LineItem                   `json:"line_items"`
 	PaymentDetails           []*documents.PaymentDetails   `json:"payment_details"`
@@ -114,14 +114,14 @@ type LineItem struct {
 	ItemNumber              string             `json:"item_number"`
 	Description             string             `json:"description"`
 	SenderPartNo            string             `json:"sender_part_no"`
-	PricePerUnit            *documents.Decimal `json:"price_per_unit"`
-	Quantity                *documents.Decimal `json:"quantity"`
+	PricePerUnit            *documents.Decimal `json:"price_per_unit" swaggertype:"primitive,string"`
+	Quantity                *documents.Decimal `json:"quantity" swaggertype:"primitive,string"`
 	UnitOfMeasure           string             `json:"unit_of_measure"`
-	NetWeight               *documents.Decimal `json:"net_weight"`
-	TaxAmount               *documents.Decimal `json:"tax_amount"`
-	TaxRate                 *documents.Decimal `json:"tax_rate"`
-	TaxCode                 *documents.Decimal `json:"tax_code"`
-	TotalAmount             *documents.Decimal `json:"total_amount"` // the total amount of the line item
+	NetWeight               *documents.Decimal `json:"net_weight" swaggertype:"primitive,string"`
+	TaxAmount               *documents.Decimal `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate                 *documents.Decimal `json:"tax_rate" swaggertype:"primitive,string"`
+	TaxCode                 *documents.Decimal `json:"tax_code" swaggertype:"primitive,string"`
+	TotalAmount             *documents.Decimal `json:"total_amount" swaggertype:"primitive,string"` // the total amount of the line item
 	PurchaseOrderNumber     string             `json:"purchase_order_number"`
 	PurchaseOrderItemNumber string             `json:"purchase_order_item_number"`
 	DeliveryNoteNumber      string             `json:"delivery_note_number"`
@@ -131,10 +131,10 @@ type LineItem struct {
 type TaxItem struct {
 	ItemNumber        string             `json:"item_number"`
 	InvoiceItemNumber string             `json:"invoice_item_number"`
-	TaxAmount         *documents.Decimal `json:"tax_amount"`
-	TaxRate           *documents.Decimal `json:"tax_rate"`
-	TaxCode           *documents.Decimal `json:"tax_code"`
-	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount"`
+	TaxAmount         *documents.Decimal `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate           *documents.Decimal `json:"tax_rate" swaggertype:"primitive,string"`
+	TaxCode           *documents.Decimal `json:"tax_code" swaggertype:"primitive,string"`
+	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount" swaggertype:"primitive,string"`
 }
 
 // getClientData returns the client data from the invoice model

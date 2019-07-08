@@ -263,7 +263,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	updatedPayload := updatedDocumentPayload(documentType, []string{kenny.id.String()})
 
 	// Bob will anchor the document without Kennys signature
-	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, st, docIdentifier, updatedPayload)
+	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedPayload)
 	txID = getTransactionID(t, response)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "failed" {
