@@ -2249,7 +2249,7 @@
                 },
                 "gross_amount": {
                     "description": "invoice amount including tax",
-                    "type": "number"
+                    "type": "string"
                 },
                 "is_credit_note": {
                     "type": "boolean"
@@ -2262,7 +2262,7 @@
                 },
                 "net_amount": {
                     "description": "invoice amount excluding tax",
-                    "type": "number"
+                    "type": "string"
                 },
                 "number": {
                     "description": "invoice number or reference number",
@@ -2392,7 +2392,7 @@
                     "type": "string"
                 },
                 "tax_amount": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "tax_items": {
                     "type": "array",
@@ -2404,7 +2404,7 @@
                     "type": "boolean"
                 },
                 "tax_rate": {
-                    "type": "number"
+                    "type": "string"
                 }
             }
         },
@@ -2421,10 +2421,10 @@
                     "type": "string"
                 },
                 "net_weight": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "price_per_unit": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "purchase_order_item_number": {
                     "type": "string"
@@ -2433,23 +2433,23 @@
                     "type": "string"
                 },
                 "quantity": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "sender_part_no": {
                     "type": "string"
                 },
                 "tax_amount": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "tax_code": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "tax_rate": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "total_amount": {
                     "description": "the total amount of the line item",
-                    "type": "number"
+                    "type": "string"
                 },
                 "unit_of_measure": {
                     "type": "string"
@@ -2466,16 +2466,16 @@
                     "type": "string"
                 },
                 "tax_amount": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "tax_base_amount": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "tax_code": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "tax_rate": {
-                    "type": "number"
+                    "type": "string"
                 }
             }
         },
