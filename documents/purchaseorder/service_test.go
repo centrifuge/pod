@@ -4,25 +4,22 @@ package purchaseorder
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	clientpurchaseorderpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -32,7 +29,7 @@ var (
 	accountID = did[:]
 )
 
-func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service) {
+func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, documents.Service) {
 	idService := &testingcommons.MockIdentityService{}
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
@@ -42,9 +39,7 @@ func getServiceWithMockedLayers() (*testingcommons.MockIdentityService, Service)
 	anchorRepo := &testinganchors.MockAnchorRepo{}
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
 	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), idService)
-	return idService, DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
-		return nil
-	}, anchorRepo)
+	return idService, DefaultService(docSrv, repo, queueSrv, jobManager, anchorRepo)
 }
 
 func TestService_Update(t *testing.T) {
@@ -52,151 +47,47 @@ func TestService_Update(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// missing last version
-	po, _ := createCDWithEmbeddedPO(t)
+	po, _ := CreatePOWithEmbedCD(t, ctxh, did, nil)
 	_, _, _, err := poSrv.Update(ctxh, po)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
+	// success
 	assert.NoError(t, testRepo().Create(accountID, po.CurrentVersion(), po))
-	// success
-	data, err := poSrv.DerivePurchaseOrderData(po)
-	assert.Nil(t, err)
-	data.TotalAmount = "100"
-	collab := testingidentity.GenerateRandomDID().String()
-	newPO, err := poSrv.(service).DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{
-		DocumentId:  hexutil.Encode(po.ID()),
-		WriteAccess: []string{collab},
-		Data:        data,
-	})
-	assert.Nil(t, err)
-	newData, err := poSrv.DerivePurchaseOrderData(newPO)
-	assert.Nil(t, err)
-	assert.Equal(t, data, newData)
-	po, _, _, err = poSrv.Update(ctxh, newPO)
-	assert.Nil(t, err)
-	assert.NotNil(t, po)
-	assert.True(t, testRepo().Exists(accountID, po.ID()))
-	assert.True(t, testRepo().Exists(accountID, po.CurrentVersion()))
-	assert.True(t, testRepo().Exists(accountID, po.PreviousVersion()))
-
-	newData, err = poSrv.DerivePurchaseOrderData(po)
-	assert.Nil(t, err)
-	assert.Equal(t, data, newData)
-}
-
-func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	_, poSrvv := getServiceWithMockedLayers()
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	poSrv := poSrvv.(service)
-
-	// nil payload
-	doc, err := poSrv.DeriveFromUpdatePayload(ctxh, nil)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
-	assert.Nil(t, doc)
-
-	// nil payload data
-	doc, err = poSrv.DeriveFromUpdatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderUpdatePayload{})
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
-	assert.Nil(t, doc)
-
-	// messed up identifier
-	contextHeader := testingconfig.CreateAccountContext(t, cfg)
-	payload := &clientpurchaseorderpb.PurchaseOrderUpdatePayload{DocumentId: "some identifier", Data: &clientpurchaseorderpb.PurchaseOrderData{}}
-	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to decode identifier")
-	assert.Nil(t, doc)
-
-	// missing last version
-	id := utils.RandomSlice(32)
-	payload.DocumentId = hexutil.Encode(id)
-	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
-	assert.Nil(t, doc)
-
-	// failed to load from data
-	old, _ := createCDWithEmbeddedPO(t)
-	err = testRepo().Create(accountID, old.CurrentVersion(), old)
-	assert.Nil(t, err)
-	payload.Data = &clientpurchaseorderpb.PurchaseOrderData{
-		Recipient: "some recipient",
-		Currency:  "EUR",
-	}
-
-	payload.DocumentId = hexutil.Encode(old.ID())
-	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load purchase order from data")
-	assert.Nil(t, doc)
-
-	// failed core document new version
-	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
-	payload.WriteAccess = []string{"some wrong ID"}
-	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
-	assert.Error(t, err)
-	assert.Nil(t, doc)
-
-	// success
-	wantCollab := testingidentity.GenerateRandomDID()
-	payload.WriteAccess = []string{wantCollab.String()}
-	doc, err = poSrv.DeriveFromUpdatePayload(contextHeader, payload)
-	assert.Nil(t, err)
-	assert.NotNil(t, doc)
-	cs, err := doc.GetCollaborators()
+	dec, err := documents.NewDecimal("100")
 	assert.NoError(t, err)
-	assert.Len(t, cs.ReadWriteCollaborators, 3)
-	assert.Contains(t, cs.ReadWriteCollaborators, wantCollab)
-	assert.Equal(t, old.ID(), doc.ID())
-	assert.Equal(t, payload.DocumentId, hexutil.Encode(doc.ID()))
-	assert.Equal(t, old.CurrentVersion(), doc.PreviousVersion())
-	assert.Equal(t, old.NextVersion(), doc.CurrentVersion())
-	assert.NotNil(t, doc.NextVersion())
-	data, err := doc.(*PurchaseOrder).getClientData()
+	data := po.GetData().(Data)
+	data.TotalAmount = dec
+	d, err := json.Marshal(data)
 	assert.NoError(t, err)
-	assert.Equal(t, payload.Data, data)
-}
-
-func TestService_DeriveFromCreatePayload(t *testing.T) {
-	poSrv := service{}
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	// nil payload
-	m, err := poSrv.DeriveFromCreatePayload(ctxh, nil)
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
-
-	// nil data payload
-	m, err = poSrv.DeriveFromCreatePayload(ctxh, &clientpurchaseorderpb.PurchaseOrderCreatePayload{})
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
-
-	// Init fails
-	payload := &clientpurchaseorderpb.PurchaseOrderCreatePayload{
-		Data: &clientpurchaseorderpb.PurchaseOrderData{
-			Recipient: "some recipient",
+	collab := testingidentity.GenerateRandomDID()
+	newPO := new(PurchaseOrder)
+	assert.NoError(t, newPO.unpackFromUpdatePayload(po, documents.UpdatePayload{
+		DocumentID: po.ID(),
+		CreatePayload: documents.CreatePayload{
+			Collaborators: documents.CollaboratorsAccess{
+				ReadWriteCollaborators: []identity.DID{collab},
+			},
+			Data: d,
 		},
-	}
-
-	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
-	assert.Nil(t, m)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
-
-	// success
-	payload.Data.Recipient = "0xEA939D5C0494b072c51565b191eE59B5D34fbf79"
-	m, err = poSrv.DeriveFromCreatePayload(ctxh, payload)
+	}))
+	newData := newPO.GetData()
+	assert.Equal(t, data, newData)
+	poModel, _, _, err := poSrv.Update(ctxh, newPO)
 	assert.Nil(t, err)
-	assert.NotNil(t, m)
+	assert.NotNil(t, poModel)
+	assert.True(t, testRepo().Exists(accountID, poModel.ID()))
+	assert.True(t, testRepo().Exists(accountID, poModel.CurrentVersion()))
+	assert.True(t, testRepo().Exists(accountID, poModel.PreviousVersion()))
+
+	newData = poModel.GetData()
+	assert.Nil(t, err)
+	assert.Equal(t, data, newData)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
 	poSrv := service{repo: testRepo()}
-	_, cd := createCDWithEmbeddedPO(t)
+	_, cd := CreatePOWithEmbedCD(t, nil, did, nil)
 	m, err := poSrv.DeriveFromCoreDocument(cd)
 	assert.Nil(t, err, "must return model")
 	assert.NotNil(t, m, "model must be non-nil")
@@ -206,62 +97,22 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.Equal(t, po.Data.TotalAmount.String(), "42")
 }
 
-func TestService_DerivePurchaseOrderData(t *testing.T) {
-	var m documents.Model
-	_, poSrv := getServiceWithMockedLayers()
-
-	// unknown type
-	m = &testingdocuments.MockModel{}
-	d, err := poSrv.DerivePurchaseOrderData(m)
-	assert.Nil(t, d)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
-
-	// success
-	payload := testingdocuments.CreatePOPayload()
-	m, err = poSrv.(service).DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
-	assert.Nil(t, err)
-	d, err = poSrv.DerivePurchaseOrderData(m)
-	assert.Nil(t, err)
-	assert.Equal(t, d.Currency, payload.Data.Currency)
-}
-
-func TestService_DerivePurchaseOrderResponse(t *testing.T) {
-	poSrv := service{tokenRegFinder: func() documents.TokenRegistry {
-		return nil
-	}}
-
-	// derive data failed
-	m := &testingdocuments.MockModel{}
-	r, err := poSrv.DerivePurchaseOrderResponse(m)
-	m.AssertExpectations(t)
-	assert.Nil(t, r)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
-
-	// success
-	payload := testingdocuments.CreatePOPayload()
-	po, err := poSrv.DeriveFromCreatePayload(testingconfig.CreateAccountContext(t, cfg), payload)
-	assert.Nil(t, err)
-	r, err = poSrv.DerivePurchaseOrderResponse(po)
-	assert.Nil(t, err)
-	assert.Equal(t, payload.Data, r.Data)
-	assert.Contains(t, r.Header.WriteAccess, did.String())
-}
-
 func TestService_GetCurrentVersion(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
-	doc, _ := createCDWithEmbeddedPO(t)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
+	doc, _ := CreatePOWithEmbedCD(t, ctxh, did, nil)
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.Nil(t, err)
 
-	data, err := doc.(*PurchaseOrder).getClientData()
-	assert.NoError(t, err)
+	data := doc.Data
 	data.Currency = "INR"
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
 	doc2 := new(PurchaseOrder)
-	assert.NoError(t, doc2.PrepareNewVersion(doc, data, documents.CollaboratorsAccess{}, doc.(*PurchaseOrder).Attributes))
+	assert.NoError(t, doc2.unpackFromUpdatePayload(doc, documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{Data: d},
+		DocumentID:    doc.ID(),
+	}))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := poSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -271,7 +122,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 
 func TestService_GetVersion(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
-	po, _ := createCDWithEmbeddedPO(t)
+	po, _ := CreatePOWithEmbedCD(t, nil, did, nil)
 	err := testRepo().Create(accountID, po.CurrentVersion(), po)
 	assert.Nil(t, err)
 
@@ -285,7 +136,7 @@ func TestService_GetVersion(t *testing.T) {
 
 func TestService_Exists(t *testing.T) {
 	_, poSrv := getServiceWithMockedLayers()
-	po, _ := createCDWithEmbeddedPO(t)
+	po, _ := CreatePOWithEmbedCD(t, nil, did, nil)
 	err := testRepo().Create(accountID, po.CurrentVersion(), po)
 	assert.Nil(t, err)
 
@@ -295,45 +146,6 @@ func TestService_Exists(t *testing.T) {
 
 	exists = poSrv.Exists(ctxh, utils.RandomSlice(32))
 	assert.False(t, exists, "purchase order should not exist")
-}
-
-func TestService_calculateDataRoot(t *testing.T) {
-	poSrv := service{repo: testRepo()}
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	// type mismatch
-	po, err := poSrv.validateAndPersist(ctxh, nil, &testingdocuments.MockModel{}, nil)
-	assert.Nil(t, po)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown document type")
-
-	// failed validator
-	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
-	assert.Nil(t, err)
-	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
-		return errors.New("validations fail")
-	})
-	po, err = poSrv.validateAndPersist(ctxh, nil, po, v)
-	assert.Nil(t, po)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "validations fail")
-
-	// create failed
-	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
-	assert.Nil(t, err)
-	err = poSrv.repo.Create(accountID, po.CurrentVersion(), po)
-	assert.Nil(t, err)
-	po, err = poSrv.validateAndPersist(ctxh, nil, po, CreateValidator())
-	assert.Nil(t, po)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists)
-
-	// success
-	po, err = poSrv.DeriveFromCreatePayload(ctxh, testingdocuments.CreatePOPayload())
-	assert.Nil(t, err)
-	po, err = poSrv.validateAndPersist(ctxh, nil, po, CreateValidator())
-	assert.Nil(t, err)
-	assert.NotNil(t, po)
 }
 
 var testRepoGlobal documents.Repository
@@ -350,22 +162,6 @@ func testRepo() documents.Repository {
 	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
 	testRepoGlobal.Register(&PurchaseOrder{})
 	return testRepoGlobal
-}
-
-func createCDWithEmbeddedPO(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
-	po := new(PurchaseOrder)
-	err := po.InitPurchaseOrderInput(testingdocuments.CreatePOPayload(), did)
-	assert.NoError(t, err)
-	po.GetTestCoreDocWithReset()
-	_, err = po.CalculateDataRoot()
-	assert.NoError(t, err)
-	_, err = po.CalculateSigningRoot()
-	assert.NoError(t, err)
-	_, err = po.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	cd, err := po.PackCoreDocument()
-	assert.NoError(t, err)
-	return po, cd
 }
 
 func TestService_CreateModel(t *testing.T) {
@@ -432,7 +228,7 @@ func TestService_UpdateModel(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// payload invalid
-	po := createPurchaseOrder(t)
+	po, _ := CreatePOWithEmbedCD(t, nil, did, nil)
 	err = testRepo().Create(did[:], po.ID(), po)
 	assert.NoError(t, err)
 	payload.DocumentID = po.ID()

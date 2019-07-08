@@ -47,14 +47,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(docSrv, repo, queueSrv, jobManager, func() documents.TokenRegistry {
-		tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
-		if !ok {
-			panic("token registry initialisation error")
-		}
-		return tokenRegistry
-	}, anchorRepo)
-
+	srv := DefaultService(docSrv, repo, queueSrv, jobManager, anchorRepo)
 	err := registry.Register(documenttypes.PurchaseOrderDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register purchase order service")

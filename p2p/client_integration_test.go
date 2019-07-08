@@ -20,11 +20,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -133,15 +131,15 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	acc.IdentityID = defaultDID[:]
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	payalod := testingdocuments.CreatePOPayload()
-	var cs []string
-	for _, c := range collaborators {
-		cs = append(cs, hexutil.Encode(c))
-	}
-	payalod.WriteAccess = cs
-	po := new(purchaseorder.PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payalod, defaultDID)
+	payalod := purchaseorder.CreatePOPayload(t, nil)
+	dids, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
+	var cs []identity.DID
+	for _, did := range dids {
+		cs = append(cs, *did)
+	}
+	payalod.Collaborators.ReadWriteCollaborators = cs
+	po := purchaseorder.InitPurchaseOrder(t, defaultDID, payalod)
 	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
