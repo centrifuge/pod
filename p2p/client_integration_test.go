@@ -131,15 +131,15 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	acc.IdentityID = defaultDID[:]
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	payalod := purchaseorder.CreatePOPayload(t, nil)
+	payload := purchaseorder.CreatePOPayload(t, nil)
 	dids, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
 	var cs []identity.DID
 	for _, did := range dids {
 		cs = append(cs, *did)
 	}
-	payalod.Collaborators.ReadWriteCollaborators = cs
-	po := purchaseorder.InitPurchaseOrder(t, defaultDID, payalod)
+	payload.Collaborators.ReadWriteCollaborators = cs
+	po := purchaseorder.InitPurchaseOrder(t, defaultDID, payload)
 	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = po.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
