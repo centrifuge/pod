@@ -25,10 +25,8 @@ func invData() map[string]interface{} {
 	return map[string]interface{}{
 		"number":         "12345",
 		"status":         "unpaid",
-		"total_amount":   "12.345",
 		"recipient":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-		"date_sent":      "2019-05-24T14:48:44.308854Z", // rfc3339nano
-		"date_confirmed": "2019-05-24T14:48:44Z",        // rfc3339
+		"date_confirmed": "2019-05-24T14:48:44Z", // rfc3339
 		"currency":       "EUR",
 		"attachments": []map[string]interface{}{
 			{
