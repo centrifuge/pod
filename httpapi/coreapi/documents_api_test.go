@@ -103,7 +103,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
 	w = httptest.NewRecorder()
 	h.CreateDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
@@ -206,7 +206,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }

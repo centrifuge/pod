@@ -36,7 +36,7 @@ var log = logging.Logger("user-api")
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.TransferDetailResponse
+// @success 202 {object} userapi.TransferDetailResponse
 // @router /v1/documents/{document_id}/transfer_details [post]
 func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -90,7 +90,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		Data:   payload.Data,
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 
@@ -108,7 +108,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.TransferDetailResponse
+// @success 202 {object} userapi.TransferDetailResponse
 // @router /v1/documents/{document_id}/transfer_details/{transfer_id} [put]
 func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -159,7 +159,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		Data:   payload.Data,
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 

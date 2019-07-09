@@ -19,7 +19,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice anchors entity
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusCreated, defaultEntityPayload(alice.id.String(), []string{}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, defaultEntityPayload(alice.id.String(), []string{}))
 	entityIdentifier := getDocumentIdentifier(t, res)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)

@@ -23,7 +23,7 @@ func TestHost_BasicEntity(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares a document with Bob and Charlie
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusCreated, defaultEntityPayload(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, defaultEntityPayload(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
 	docIdentifier := getDocumentIdentifier(t, res)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -49,7 +49,7 @@ func TestHost_EntityShareGet(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice anchors Entity
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusCreated, defaultEntityPayload(alice.id.String(), []string{}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, defaultEntityPayload(alice.id.String(), []string{}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

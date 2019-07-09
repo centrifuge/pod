@@ -112,7 +112,7 @@ func TestHandler_CreateEntity(t *testing.T) {
 	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
 	h.CreateEntity(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }

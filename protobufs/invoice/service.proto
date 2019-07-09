@@ -14,29 +14,12 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // InvoiceService contains all common interactions for invoice documents
 service InvoiceService {
-  rpc Update(InvoiceUpdatePayload) returns (InvoiceResponse) {
-    option (google.api.http) = {
-      put: "/v1/invoices/{document_id}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates an invoice"
-    };
-  }
   rpc GetVersion(GetVersionRequest) returns (InvoiceResponse) {
     option (google.api.http) = {
       get: "/v1/invoices/{document_id}/versions/{version_id}"
     };
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
       description: "Get a specific version of an invoice"
-    };
-  }
-  rpc Get(GetRequest) returns (InvoiceResponse) {
-    option (google.api.http) = {
-      get: "/v1/invoices/{document_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the current invoice"
     };
   }
 }

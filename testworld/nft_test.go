@@ -40,7 +40,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusCreated, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -87,7 +87,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			"submit_nft_owner_access_proof": nftReadAccessProof,
 			"grant_nft_access":              grantNFTAccess,
 		}
-		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusCreated, payload)
+		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
 	} else {
 		// mint a PO NFT

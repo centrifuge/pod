@@ -25,7 +25,7 @@ import (
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.PurchaseOrderResponse
+// @success 202 {object} userapi.PurchaseOrderResponse
 // @router  /v1/purchase_orders [post]
 func (h handler) CreatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -62,7 +62,7 @@ func (h handler) CreatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 
@@ -125,7 +125,7 @@ func (h handler) GetPurchaseOrder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.PurchaseOrderResponse
+// @success 202 {object} userapi.PurchaseOrderResponse
 // @router /v1/purchase_orders/{document_id} [put]
 func (h handler) UpdatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -170,7 +170,7 @@ func (h handler) UpdatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Status(r, http.StatusOK)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 

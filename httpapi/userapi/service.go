@@ -113,6 +113,21 @@ func (s Service) CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (d
 	return s.coreAPISrv.CreateDocument(ctx, docReq)
 }
 
+// UpdateInvoice updates an invoice
+func (s Service) UpdateInvoice(ctx context.Context, docID []byte, req CreateInvoiceRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertInvRequest(req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{CreatePayload: docReq, DocumentID: docID})
+}
+
+// GetInvoice returns the latest version of the Invoice associated with Document ID.
+func (s Service) GetInvoice(ctx context.Context, docID []byte) (documents.Model, error) {
+	return s.coreAPISrv.GetDocument(ctx, docID)
+}
+
 func convertPORequest(req CreatePurchaseOrderRequest) (documents.CreatePayload, error) {
 	coreAPIReq := coreapi.CreateDocumentRequest{
 		Scheme:      purchaseorder.Scheme,
