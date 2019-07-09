@@ -38,4 +38,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	// entity api
 	r.Post("/entities", h.CreateEntity)
 	r.Put("/entities/{"+coreapi.DocumentIDParam+"}", h.UpdateEntity)
+	r.Get("/entities/{"+coreapi.DocumentIDParam+"}", h.GetEntity)
 }

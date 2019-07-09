@@ -187,3 +187,8 @@ func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntit
 		CreatePayload: docReq,
 	})
 }
+
+// GetEntity returns the Entity associated with docID.
+func (s Service) GetEntity(ctx context.Context, docID []byte) (documents.Model, error) {
+	return s.coreAPISrv.GetDocument(ctx, docID)
+}

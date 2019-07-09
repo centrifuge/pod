@@ -63,36 +63,6 @@ func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *cliente
 	return resp, nil
 }
 
-// Get returns the entity the latest version of the document with given identifier
-func (h *grpcHandler) Get(ctx context.Context, getRequest *cliententitypb.GetRequest) (*cliententitypb.EntityResponse, error) {
-	apiLog.Debugf("Get request %v", getRequest)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(getRequest.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "identifier is an invalid hex string")
-	}
-
-	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "document not found")
-	}
-
-	resp, err := h.service.DeriveEntityResponse(ctxHeader, model)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	return resp, nil
-}
-
 // GetEntityByRelationship returns the entity model from database or requests from granter
 func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *cliententitypb.GetRequestRelationship) (*cliententitypb.EntityResponse, error) {
 	apiLog.Debugf("Get request %v", getRequest)

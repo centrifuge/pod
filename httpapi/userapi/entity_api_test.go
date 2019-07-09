@@ -215,3 +215,73 @@ func TestHandler_UpdateEntity(t *testing.T) {
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
+
+func TestHandler_GetEntity(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/entities/{document_id}", nil).WithContext(ctx)
+	}
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+
+	// empty document_id and invalid
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.GetEntity(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	// missing document
+	id := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(id)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", id).Return(nil, errors.New("failed"))
+	h = handler{srv: Service{coreAPISrv: newCoreAPIService(docSrv)}}
+	w, r := getHTTPReqAndResp(ctx)
+	h.GetEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
+	docSrv.AssertExpectations(t)
+
+	// failed doc response
+	m := new(testingdocuments.MockModel)
+	m.On("GetData").Return(entity.Data{})
+	m.On("Scheme").Return(entity.Scheme)
+	m.On("GetAttributes").Return(nil)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
+	docSrv = new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", id).Return(m, nil)
+	h = handler{srv: Service{coreAPISrv: newCoreAPIService(docSrv)}}
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+	docSrv.AssertExpectations(t)
+	m.AssertExpectations(t)
+
+	// success
+	m = new(testingdocuments.MockModel)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	m.On("GetData").Return(entity.Data{})
+	m.On("Scheme").Return(entity.Scheme)
+	m.On("ID").Return(utils.RandomSlice(32)).Once()
+	m.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	m.On("Author").Return(nil, errors.New("somerror"))
+	m.On("Timestamp").Return(nil, errors.New("somerror"))
+	m.On("NFTs").Return(nil)
+	m.On("GetAttributes").Return(nil)
+	docSrv = new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", id).Return(m, nil)
+	h = handler{srv: Service{coreAPISrv: newCoreAPIService(docSrv)}}
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	docSrv.AssertExpectations(t)
+	m.AssertExpectations(t)
+}

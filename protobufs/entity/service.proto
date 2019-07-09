@@ -14,14 +14,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // EntityService contains all common interactions for entity documents
 service EntityService {
-  rpc Get(GetRequest) returns (EntityResponse) {
-    option (google.api.http) = {
-      get: "/v1/entities/{document_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get the current entity"
-    };
-  }
   // Entity Relation Get
   rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
     option (google.api.http) = {
@@ -51,10 +43,6 @@ service EntityService {
       description: "revoke an entity document share"
     };
   }
-}
-
-message GetRequest {
-  string document_id = 1;
 }
 
 message GetRequestRelationship {

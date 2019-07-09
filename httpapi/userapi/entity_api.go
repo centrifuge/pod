@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -124,5 +125,51 @@ func (h handler) UpdateEntity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusAccepted)
+	render.JSON(w, r, resp)
+}
+
+// GetEntity returns the latest version of the Entity.
+// @summary Returns the latest version of the Entity.
+// @description Returns the latest version of the Entity.
+// @id get_entity
+// @tags Entities
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} userapi.EntityResponse
+// @router /v1/entities/{document_id} [get]
+func (h handler) GetEntity(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	model, err := h.srv.GetEntity(r.Context(), docID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = coreapi.ErrDocumentNotFound
+		return
+	}
+
+	resp, err := toEntityResponse(model, h.tokenRegistry, jobs.NilJobID())
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
 	render.JSON(w, r, resp)
 }

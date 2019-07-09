@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -119,45 +118,6 @@ func TestGrpcHandler_Share(t *testing.T) {
 	srv.On("Share", mock.Anything, mock.Anything).Return(model, jobID.String(), nil).Once()
 	srv.On("DeriveEntityRelationshipResponse", model).Return(response, nil)
 	res, err := h.Share(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err, "must be nil")
-	assert.NotNil(t, res, "must be non nil")
-	assert.Equal(t, res, response)
-}
-
-func TestGrpcHandler_Get_invalid_input(t *testing.T) {
-	identifier := "0x01010101"
-	identifierBytes, err := hexutil.Decode(identifier)
-	assert.NoError(t, err)
-	h := getHandler()
-	srv := h.service.(*mockService)
-	payload := &cliententitypb.GetRequest{DocumentId: "invalid"}
-
-	res, err := h.Get(testingconfig.HandlerContext(configService), payload)
-	assert.Nil(t, res)
-	assert.EqualError(t, err, "identifier is an invalid hex string: hex string without 0x prefix")
-
-	payload.DocumentId = identifier
-	srv.On("GetCurrentVersion", mock.Anything, identifierBytes).Return(nil, errors.New("not found"))
-	res, err = h.Get(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Nil(t, res)
-	assert.EqualError(t, err, "document not found: not found")
-}
-
-func TestGrpcHandler_Get(t *testing.T) {
-	identifier := "0x01010101"
-	identifierBytes, err := hexutil.Decode(identifier)
-	assert.NoError(t, err)
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	payload := &cliententitypb.GetRequest{DocumentId: identifier}
-	response := &cliententitypb.EntityResponse{}
-	srv.On("GetCurrentVersion", mock.Anything, identifierBytes).Return(model, nil)
-	srv.On("DeriveEntityResponse", mock.Anything, model).Return(response, nil)
-	res, err := h.Get(testingconfig.HandlerContext(configService), payload)
-	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, res, "must be non nil")

@@ -15,31 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/entities/{document_id}": {
-      "get": {
-        "description": "Get the current entity",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/v1/entities/{document_id}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
