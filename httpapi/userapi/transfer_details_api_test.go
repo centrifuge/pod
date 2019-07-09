@@ -79,7 +79,7 @@ func TestHandler_CreateTransferDetail(t *testing.T) {
 	h = handler{srv: srv}
 	transferSrv.On("CreateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	h.CreateTransferDetail(w, r)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusAccepted, w.Code)
 }
 
 func TestHandler_GetTransferDetail(t *testing.T) {
@@ -217,5 +217,5 @@ func TestHandler_UpdateTransferDetail(t *testing.T) {
 	h = handler{srv: srv}
 	transferSrv.On("UpdateTransferDetail", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	h.UpdateTransferDetail(w, r)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusAccepted, w.Code)
 }

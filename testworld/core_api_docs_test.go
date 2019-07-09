@@ -16,7 +16,7 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, invoiceCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -37,7 +37,7 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, invoiceCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, invoiceCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -60,7 +60,7 @@ func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, poCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, poCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -81,7 +81,7 @@ func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, poCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, poCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -104,7 +104,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, genericCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -122,7 +122,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -144,7 +144,7 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

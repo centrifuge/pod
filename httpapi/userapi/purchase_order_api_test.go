@@ -121,7 +121,7 @@ func TestHandler_CreatePurchaseOrder(t *testing.T) {
 	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
 	h.CreatePurchaseOrder(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
@@ -368,7 +368,7 @@ func TestHandler_UpdatePurchaseOrder(t *testing.T) {
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdatePurchaseOrder(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
