@@ -27,37 +27,6 @@ func GRPCHandler(config config.Service, srv Service) cliententitypb.EntityServic
 	}
 }
 
-// Update handles the document update and anchoring
-func (h *grpcHandler) Update(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (*cliententitypb.EntityResponse, error) {
-	apiLog.Debugf("Update request %v", payload)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	doc, err := h.service.DeriveFromUpdatePayload(ctxHeader, payload)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive update payload")
-	}
-
-	doc, jobID, _, err := h.service.Update(ctxHeader, doc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not update document")
-	}
-
-	resp, err := h.service.DeriveEntityResponse(ctxHeader, doc)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
-}
-
 // GetVersion returns the requested version of the document
 func (h *grpcHandler) GetVersion(ctx context.Context, getVersionRequest *cliententitypb.GetVersionRequest) (*cliententitypb.EntityResponse, error) {
 	apiLog.Debugf("Get version request %v", getVersionRequest)

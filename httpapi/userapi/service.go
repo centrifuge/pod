@@ -174,3 +174,16 @@ func (s Service) CreateEntity(ctx context.Context, req CreateEntityRequest) (doc
 
 	return s.coreAPISrv.CreateDocument(ctx, docReq)
 }
+
+// UpdateEntity updates existing entity associated with docID  with provided data and anchors it.
+func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntityRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertEntityRequest(req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{
+		DocumentID:    docID,
+		CreatePayload: docReq,
+	})
+}

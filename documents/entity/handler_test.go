@@ -203,66 +203,6 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	assert.Equal(t, res, response)
 }
 
-func TestGrpcHandler_Update_derive_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "0x010201"}
-	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(nil, errors.New("derive error")).Once()
-	res, err := h.Update(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "derive error")
-	assert.Nil(t, res)
-}
-
-func TestGrpcHandler_Update_update_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	ctx := testingconfig.HandlerContext(configService)
-	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "0x010201"}
-	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(nil, jobs.NilJobID().String(), errors.New("update error")).Once()
-	res, err := h.Update(ctx, payload)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "update error")
-	assert.Nil(t, res)
-}
-
-func TestGrpcHandler_Update_derive_response_fail(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	ctx := testingconfig.HandlerContext(configService)
-	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "0x010201"}
-	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(model, jobs.NilJobID().String(), nil).Once()
-	srv.On("DeriveEntityResponse", mock.Anything, model).Return(nil, errors.New("derive response error")).Once()
-	res, err := h.Update(ctx, payload)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "derive response error")
-	assert.Nil(t, res)
-}
-
-func TestGrpcHandler_Update(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	ctx := testingconfig.HandlerContext(configService)
-	jobID := jobs.NewJobID()
-	payload := &cliententitypb.EntityUpdatePayload{DocumentId: "0x010201"}
-	resp := &cliententitypb.EntityResponse{Header: new(documentpb.ResponseHeader)}
-	srv.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Update", mock.Anything, model).Return(model, jobID.String(), nil).Once()
-	srv.On("DeriveEntityResponse", mock.Anything, model).Return(resp, nil).Once()
-	res, err := h.Update(ctx, payload)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, resp, res)
-}
-
 func TestGrpcHandler_Revoke(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)

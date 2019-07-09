@@ -290,8 +290,10 @@ func TestHandler_UpdatePurchaseOrder(t *testing.T) {
 	}
 
 	// empty body
+	id := hexutil.Encode(utils.RandomSlice(32))
+	rctx.URLParams.Values[0] = id
 	w, r := getHTTPReqAndResp(ctx, nil)
-	h.CreatePurchaseOrder(w, r)
+	h.UpdatePurchaseOrder(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
 
@@ -306,10 +308,8 @@ func TestHandler_UpdatePurchaseOrder(t *testing.T) {
 		},
 	}
 
-	id := hexutil.Encode(utils.RandomSlice(32))
 	d, err := json.Marshal(data)
 	assert.NoError(t, err)
-	rctx.URLParams.Values[0] = id
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdatePurchaseOrder(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
