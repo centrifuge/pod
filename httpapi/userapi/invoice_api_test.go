@@ -215,7 +215,7 @@ func TestHandler_UpdateInvoice(t *testing.T) {
 
 	// failed conversion
 	data := map[string]interface{}{
-		"data": poData(),
+		"data": invData(),
 		"attributes": map[string]map[string]string{
 			"string_test": {
 				"type":  "invalid",
