@@ -162,6 +162,12 @@ func (m *MockModel) GetAttributes() []documents.Attribute {
 	return attrs
 }
 
+func (m *MockModel) IsDIDCollaborator(did identity.DID) (bool, error) {
+	args := m.Called(did)
+	ok, _ := args.Get(0).(bool)
+	return ok, args.Error(1)
+}
+
 type MockRegistry struct {
 	mock.Mock
 }

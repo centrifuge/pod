@@ -11,12 +11,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -101,6 +103,9 @@ func TestHandler_CreateEntity(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	collab := testingidentity.GenerateRandomDID()
+	m.On("IsDIDCollaborator", collab).Return(false, nil).Once()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, collab.String())
 	docSrv = new(testingdocuments.MockService)
 	srv = Service{coreAPISrv: newCoreAPIService(docSrv)}
 	h = handler{srv: srv}
@@ -204,6 +209,9 @@ func TestHandler_UpdateEntity(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	collab := testingidentity.GenerateRandomDID()
+	m.On("IsDIDCollaborator", collab).Return(false, nil).Once()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, collab.String())
 	docSrv = new(testingdocuments.MockService)
 	srv = Service{coreAPISrv: newCoreAPIService(docSrv)}
 	h = handler{srv: srv}
@@ -275,6 +283,9 @@ func TestHandler_GetEntity(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	collab := testingidentity.GenerateRandomDID()
+	m.On("IsDIDCollaborator", collab).Return(false, nil).Once()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, collab.String())
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", id).Return(m, nil)
 	h = handler{srv: Service{coreAPISrv: newCoreAPIService(docSrv)}}

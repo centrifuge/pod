@@ -5,6 +5,8 @@ package userapi
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +27,13 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), transferdetails.BootstrappedTransferDetailService)
 
-	// success
+	// missing entityrelationship service
 	ctx[transferdetails.BootstrappedTransferDetailService] = new(MockTransferService)
+	err = b.Bootstrap(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), entityrelationship.BootstrappedEntityRelationshipService)
+
+	// success
+	ctx[entityrelationship.BootstrappedEntityRelationshipService] = new(entity.MockEntityRelationService)
 	assert.NoError(t, b.Bootstrap(ctx))
 }

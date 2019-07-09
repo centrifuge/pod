@@ -55,7 +55,7 @@ func (h handler) CreateEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toEntityResponse(model, h.tokenRegistry, jobID)
+	resp, err := toEntityResponse(ctx, h.srv.entityRelationshipSrv, model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -117,7 +117,7 @@ func (h handler) UpdateEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toEntityResponse(model, h.tokenRegistry, jobID)
+	resp, err := toEntityResponse(ctx, h.srv.entityRelationshipSrv, model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -155,7 +155,8 @@ func (h handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model, err := h.srv.GetEntity(r.Context(), docID)
+	ctx := r.Context()
+	model, err := h.srv.GetEntity(ctx, docID)
 	if err != nil {
 		code = http.StatusNotFound
 		log.Error(err)
@@ -163,7 +164,7 @@ func (h handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toEntityResponse(model, h.tokenRegistry, jobs.NilJobID())
+	resp, err := toEntityResponse(ctx, h.srv.entityRelationshipSrv, model, h.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
