@@ -339,8 +339,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
@@ -475,8 +475,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
@@ -680,8 +680,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/userapi.TransferDetailResponse"
@@ -830,8 +830,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/userapi.TransferDetailResponse"
@@ -1044,8 +1044,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/userapi.EntityResponse"
@@ -1109,8 +1109,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/userapi.InvoiceResponse"
@@ -1240,8 +1240,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.MintNFTResponse"
@@ -1443,8 +1443,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/userapi.PurchaseOrderResponse"
@@ -1579,8 +1579,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/userapi.PurchaseOrderResponse"
