@@ -3193,6 +3193,21 @@
                 }
             }
         },
+        "userapi.EntityDataResponse": {
+            "type": "object",
+            "properties": {
+                "entity": {
+                    "type": "object",
+                    "$ref": "#/definitions/entity.Data"
+                },
+                "relationships": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/userapi.Relationship"
+                    }
+                }
+            }
+        },
         "userapi.EntityResponse": {
             "type": "object",
             "properties": {
@@ -3202,7 +3217,7 @@
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/entity.Data"
+                    "$ref": "#/definitions/userapi.EntityDataResponse"
                 },
                 "header": {
                     "type": "object",
@@ -3241,6 +3256,17 @@
                 "header": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
+                }
+            }
+        },
+        "userapi.Relationship": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "identity": {
+                    "type": "string"
                 }
             }
         },
