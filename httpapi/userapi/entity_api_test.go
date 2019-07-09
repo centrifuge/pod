@@ -13,7 +13,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -179,8 +178,8 @@ func TestHandler_UpdateEntity(t *testing.T) {
 
 	// failed response conversion
 	m := new(testingdocuments.MockModel)
-	m.On("GetData").Return(purchaseorder.Data{})
-	m.On("Scheme").Return(purchaseorder.Scheme)
+	m.On("GetData").Return(entity.Data{})
+	m.On("Scheme").Return(entity.Scheme)
 	m.On("GetAttributes").Return(nil)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
 	docSrv = new(testingdocuments.MockService)
@@ -197,8 +196,8 @@ func TestHandler_UpdateEntity(t *testing.T) {
 	// success
 	m = new(testingdocuments.MockModel)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
-	m.On("GetData").Return(purchaseorder.Data{})
-	m.On("Scheme").Return(purchaseorder.Scheme)
+	m.On("GetData").Return(entity.Data{})
+	m.On("Scheme").Return(entity.Scheme)
 	m.On("ID").Return(utils.RandomSlice(32)).Once()
 	m.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	m.On("Author").Return(nil, errors.New("somerror"))

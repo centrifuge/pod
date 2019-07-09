@@ -102,7 +102,7 @@ func (h handler) UpdateEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request CreatePurchaseOrderRequest
+	var request CreateEntityRequest
 	err = json.Unmarshal(data, &request)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -110,14 +110,14 @@ func (h handler) UpdateEntity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model, jobID, err := h.srv.UpdatePurchaseOrder(ctx, docID, request)
+	model, jobID, err := h.srv.UpdateEntity(ctx, docID, request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	resp, err := toPurchaseOrderResponse(model, h.tokenRegistry, jobID)
+	resp, err := toEntityResponse(model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
