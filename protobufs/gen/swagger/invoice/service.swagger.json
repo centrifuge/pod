@@ -15,62 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/invoices/{document_id}": {
-      "get": {
-        "description": "Get the current invoice",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invInvoiceResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "InvoiceService"
-        ]
-      },
-      "put": {
-        "description": "Updates an invoice",
-        "operationId": "Update",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/invInvoiceResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/invInvoiceUpdatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "InvoiceService"
-        ]
-      }
-    },
     "/v1/invoices/{document_id}/versions/{version_id}": {
       "get": {
         "description": "Get a specific version of an invoice",
@@ -508,36 +452,6 @@
       "properties": {
         "header": {
           "$ref": "#/definitions/documentResponseHeader"
-        },
-        "data": {
-          "$ref": "#/definitions/invInvoiceData"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
-        }
-      }
-    },
-    "invInvoiceUpdatePayload": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "read_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "write_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "data": {
           "$ref": "#/definitions/invInvoiceData"

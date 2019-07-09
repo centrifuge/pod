@@ -28,6 +28,8 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 
 	// invoice apis
 	r.Post("/invoices", h.CreateInvoice)
+	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}", h.GetInvoice)
+	r.Put("/invoices/{"+coreapi.DocumentIDParam+"}", h.UpdateInvoice)
 
 	// purchase order api
 	r.Post("/purchase_orders", h.CreatePurchaseOrder)
