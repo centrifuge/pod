@@ -92,5 +92,6 @@ func (m *MockEntityRelationService) DeriveEntityRelationshipResponse(relationshi
 // GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
 func (m *MockEntityRelationService) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error) {
 	args := m.Called(ctx, entityID)
-	return args.Get(0).([]documents.Model), args.Error(1)
+	rs, _ := args.Get(0).([]documents.Model)
+	return rs, args.Error(1)
 }
