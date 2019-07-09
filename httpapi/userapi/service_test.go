@@ -362,3 +362,56 @@ func TestService_CreateInvoice(t *testing.T) {
 	assert.NoError(t, err)
 	docSrv.AssertExpectations(t)
 }
+
+func TestService_UpdateInvoice(t *testing.T) {
+	ctx := context.Background()
+	did := testingidentity.GenerateRandomDID()
+	req := CreateInvoiceRequest{
+		WriteAccess: []identity.DID{did},
+		Data: invoice.Data{
+			Number:    "12345",
+			Status:    "unpaid",
+			Recipient: &did,
+			Currency:  "EUR",
+			Attachments: []*documents.BinaryAttachment{
+				{
+					Name:     "test",
+					FileType: "pdf",
+					Size:     1000202,
+					Data:     byteutils.HexBytes(utils.RandomSlice(32)),
+					Checksum: byteutils.HexBytes(utils.RandomSlice(32)),
+				},
+			},
+		},
+		Attributes: coreapi.AttributeMapRequest{
+			"string_test": {
+				Type:  "invalid",
+				Value: "hello, world!",
+			},
+
+			"decimal_test": {
+				Type:  "decimal",
+				Value: "100001.001",
+			},
+		},
+	}
+	s := Service{}
+	docID := utils.RandomSlice(32)
+
+	// invalid attribute map
+	_, _, err := s.UpdateInvoice(ctx, docID, req)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrNotValidAttrType, err))
+
+	// success
+	docSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	docSrv.On("UpdateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	s.coreAPISrv = newCoreAPIService(docSrv)
+	strAttr := req.Attributes["string_test"]
+	strAttr.Type = "string"
+	req.Attributes["string_test"] = strAttr
+	_, _, err = s.UpdateInvoice(ctx, docID, req)
+	assert.NoError(t, err)
+	docSrv.AssertExpectations(t)
+}

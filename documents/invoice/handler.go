@@ -88,6 +88,7 @@ func (h *grpcHandler) Update(ctx context.Context, payload *clientinvoicepb.Invoi
 	}
 
 	resp.Header.JobId = jobID.String()
+
 	return resp, nil
 }
 

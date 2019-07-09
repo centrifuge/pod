@@ -113,7 +113,7 @@ func TestHandler_MintNFT(t *testing.T) {
 		}, nil, nil).Once()
 	h.srv.nftSrv = srv
 	h.MintNFT(w, r)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusAccepted, w.Code)
 	assert.Contains(t, w.Body.String(), tokenID)
 	srv.AssertExpectations(t)
 }

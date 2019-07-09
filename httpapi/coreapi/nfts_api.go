@@ -34,7 +34,7 @@ const (
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @success 201 {object} coreapi.MintNFTResponse
+// @success 202 {object} coreapi.MintNFTResponse
 // @router /v1/nfts/registries/{registry_address}/mint [post]
 func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -79,7 +79,7 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		DocumentID:      req.DocumentID,
 		TokenID:         resp.TokenID,
 	}
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, nftResp)
 }
 
