@@ -62,7 +62,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	c := accounts[2]
 
 	// a shares document with b first
-	res := createDocument(bob.httpExpect, a, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{b}))
+	res := createDocument(bob.httpExpect, a, documentType, http.StatusCreated, defaultDocumentPayload(documentType, []string{b}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(bob.httpExpect, a, txID)
 	if status != "success" {
@@ -128,7 +128,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{a, b}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusCreated, defaultDocumentPayload(documentType, []string{a, b}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -186,14 +186,8 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	st := http.StatusOK
-	if documentType == typePO {
-		// TODO(ved): remove once invoice is moved to new apis
-		st = http.StatusCreated
-	}
-
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, st, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusCreated, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -214,7 +208,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, st, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
+	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -245,14 +239,8 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	st := http.StatusOK
-	if documentType == typePO {
-		// TODO(ved): remove once invoice is moved to new apis
-		st = http.StatusCreated
-	}
-
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, st, defaultInvoicePayload([]string{bob.id.String()}))
+	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusCreated, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, response)
 	status, message := getTransactionStatusAndMessage(kenny.httpExpect, kenny.id.String(), txID)
 	if status != "success" {
@@ -275,7 +263,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	updatedPayload := updatedDocumentPayload(documentType, []string{kenny.id.String()})
 
 	// Bob will anchor the document without Kennys signature
-	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, st, docIdentifier, updatedPayload)
+	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedPayload)
 	txID = getTransactionID(t, response)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "failed" {
@@ -302,7 +290,8 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusInternalServerError, wrongInvoicePayload([]string{bob.id.String()}))
-	errMsg := response.Raw()["error"].(string)
-	assert.Contains(t, errMsg, "model attribute error")
+	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusBadRequest, wrongInvoicePayload([]string{bob.id.String()}))
+
+	errMsg := response.Raw()["message"].(string)
+	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"some invalid ti")
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
@@ -306,6 +307,58 @@ func TestService_CreateEntity(t *testing.T) {
 	strAttr.Type = "string"
 	req.Attributes["string_test"] = strAttr
 	_, _, err = s.CreateEntity(ctx, req)
+	assert.NoError(t, err)
+	docSrv.AssertExpectations(t)
+}
+
+func TestService_CreateInvoice(t *testing.T) {
+	ctx := context.Background()
+	did := testingidentity.GenerateRandomDID()
+	req := CreateInvoiceRequest{
+		WriteAccess: []identity.DID{did},
+		Data: invoice.Data{
+			Number:    "12345",
+			Status:    "unpaid",
+			Recipient: &did,
+			Currency:  "EUR",
+			Attachments: []*documents.BinaryAttachment{
+				{
+					Name:     "test",
+					FileType: "pdf",
+					Size:     1000202,
+					Data:     byteutils.HexBytes(utils.RandomSlice(32)),
+					Checksum: byteutils.HexBytes(utils.RandomSlice(32)),
+				},
+			},
+		},
+		Attributes: coreapi.AttributeMapRequest{
+			"string_test": {
+				Type:  "invalid",
+				Value: "hello, world!",
+			},
+
+			"decimal_test": {
+				Type:  "decimal",
+				Value: "100001.001",
+			},
+		},
+	}
+	s := Service{}
+
+	// invalid attribute map
+	_, _, err := s.CreateInvoice(ctx, req)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrNotValidAttrType, err))
+
+	// success
+	docSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	docSrv.On("CreateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil)
+	s.coreAPISrv = newCoreAPIService(docSrv)
+	strAttr := req.Attributes["string_test"]
+	strAttr.Type = "string"
+	req.Attributes["string_test"] = strAttr
+	_, _, err = s.CreateInvoice(ctx, req)
 	assert.NoError(t, err)
 	docSrv.AssertExpectations(t)
 }

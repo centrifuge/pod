@@ -170,7 +170,7 @@ func (h handler) UpdatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusOK)
 	render.JSON(w, r, resp)
 }
 

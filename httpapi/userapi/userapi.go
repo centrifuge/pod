@@ -26,6 +26,9 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details", h.GetTransferDetailList)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
 
+	// invoice apis
+	r.Post("/invoices", h.CreateInvoice)
+
 	// purchase order api
 	r.Post("/purchase_orders", h.CreatePurchaseOrder)
 	r.Get("/purchase_orders/{"+coreapi.DocumentIDParam+"}", h.GetPurchaseOrder)

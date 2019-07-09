@@ -1075,6 +1075,71 @@
                 }
             }
         },
+        "/v1/invoices": {
+            "post": {
+                "description": "Creates a new invoice document and anchors it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoices"
+                ],
+                "summary": "Creates a new invoice document and anchors it.",
+                "operationId": "create_invoice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Invoice Create Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.CreateInvoiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.InvoiceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/jobs/{job_id}": {
             "get": {
                 "description": "Returns the status of a given Job.",
@@ -2344,6 +2409,303 @@
             "type": "array",
             "items": {}
         },
+        "invoice.Data": {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/documents.BinaryAttachment"
+                    }
+                },
+                "bill_to_city": {
+                    "type": "string"
+                },
+                "bill_to_company_name": {
+                    "type": "string"
+                },
+                "bill_to_contact_person_name": {
+                    "type": "string"
+                },
+                "bill_to_country": {
+                    "type": "string"
+                },
+                "bill_to_local_tax_id": {
+                    "type": "string"
+                },
+                "bill_to_state": {
+                    "type": "string"
+                },
+                "bill_to_street_1": {
+                    "type": "string"
+                },
+                "bill_to_street_2": {
+                    "type": "string"
+                },
+                "bill_to_vat_number": {
+                    "type": "string"
+                },
+                "bill_to_zipcode": {
+                    "type": "string"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "credit_for_invoice_date": {
+                    "type": "string"
+                },
+                "credit_note_invoice_number": {
+                    "type": "string"
+                },
+                "currency": {
+                    "description": "ISO currency code",
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_due": {
+                    "type": "string"
+                },
+                "date_paid": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "delivery_number": {
+                    "description": "number of the delivery note",
+                    "type": "string"
+                },
+                "gross_amount": {
+                    "description": "invoice amount including tax",
+                    "type": "string"
+                },
+                "is_credit_note": {
+                    "type": "boolean"
+                },
+                "line_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.LineItem"
+                    }
+                },
+                "net_amount": {
+                    "description": "invoice amount excluding tax",
+                    "type": "string"
+                },
+                "number": {
+                    "description": "invoice number or reference number",
+                    "type": "string"
+                },
+                "payee": {
+                    "description": "centrifuge ID of the payee",
+                    "type": "string"
+                },
+                "payment_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/documents.PaymentDetails"
+                    }
+                },
+                "recipient": {
+                    "description": "centrifuge ID of the recipient",
+                    "type": "string"
+                },
+                "recipient_invoice_id": {
+                    "type": "string"
+                },
+                "remit_to_city": {
+                    "type": "string"
+                },
+                "remit_to_company_name": {
+                    "type": "string"
+                },
+                "remit_to_contact_person_name": {
+                    "type": "string"
+                },
+                "remit_to_country": {
+                    "type": "string"
+                },
+                "remit_to_local_tax_id": {
+                    "type": "string"
+                },
+                "remit_to_state": {
+                    "type": "string"
+                },
+                "remit_to_street_1": {
+                    "type": "string"
+                },
+                "remit_to_street_2": {
+                    "type": "string"
+                },
+                "remit_to_tax_country": {
+                    "type": "string"
+                },
+                "remit_to_vat_number": {
+                    "type": "string"
+                },
+                "remit_to_zipcode": {
+                    "type": "string"
+                },
+                "requester_email": {
+                    "type": "string"
+                },
+                "requester_name": {
+                    "type": "string"
+                },
+                "sender": {
+                    "description": "centrifuge ID of the sender",
+                    "type": "string"
+                },
+                "sender_city": {
+                    "type": "string"
+                },
+                "sender_company_name": {
+                    "type": "string"
+                },
+                "sender_contact_person_name": {
+                    "type": "string"
+                },
+                "sender_country": {
+                    "description": "country ISO code of the sender of this invoice",
+                    "type": "string"
+                },
+                "sender_invoice_id": {
+                    "type": "string"
+                },
+                "sender_state": {
+                    "type": "string"
+                },
+                "sender_street_1": {
+                    "description": "street and address details of the sender company",
+                    "type": "string"
+                },
+                "sender_street_2": {
+                    "type": "string"
+                },
+                "sender_zipcode": {
+                    "type": "string"
+                },
+                "ship_to_city": {
+                    "type": "string"
+                },
+                "ship_to_company_name": {
+                    "type": "string"
+                },
+                "ship_to_contact_person_name": {
+                    "type": "string"
+                },
+                "ship_to_country": {
+                    "type": "string"
+                },
+                "ship_to_state": {
+                    "type": "string"
+                },
+                "ship_to_street_1": {
+                    "type": "string"
+                },
+                "ship_to_street_2": {
+                    "type": "string"
+                },
+                "ship_to_zipcode": {
+                    "type": "string"
+                },
+                "shipping_terms": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "invoice status",
+                    "type": "string"
+                },
+                "tax_amount": {
+                    "type": "string"
+                },
+                "tax_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invoice.TaxItem"
+                    }
+                },
+                "tax_on_line_level": {
+                    "type": "boolean"
+                },
+                "tax_rate": {
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.LineItem": {
+            "type": "object",
+            "properties": {
+                "delivery_note_number": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "item_number": {
+                    "type": "string"
+                },
+                "net_weight": {
+                    "type": "string"
+                },
+                "price_per_unit": {
+                    "type": "string"
+                },
+                "purchase_order_item_number": {
+                    "type": "string"
+                },
+                "purchase_order_number": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "sender_part_no": {
+                    "type": "string"
+                },
+                "tax_amount": {
+                    "type": "string"
+                },
+                "tax_code": {
+                    "type": "string"
+                },
+                "tax_rate": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "description": "the total amount of the line item",
+                    "type": "string"
+                },
+                "unit_of_measure": {
+                    "type": "string"
+                }
+            }
+        },
+        "invoice.TaxItem": {
+            "type": "object",
+            "properties": {
+                "invoice_item_number": {
+                    "type": "string"
+                },
+                "item_number": {
+                    "type": "string"
+                },
+                "tax_amount": {
+                    "type": "string"
+                },
+                "tax_base_amount": {
+                    "type": "string"
+                },
+                "tax_code": {
+                    "type": "string"
+                },
+                "tax_rate": {
+                    "type": "string"
+                }
+            }
+        },
         "jobs.StatusResponse": {
             "type": "object",
             "properties": {
@@ -2633,6 +2995,31 @@
                 }
             }
         },
+        "userapi.CreateInvoiceRequest": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/invoice.Data"
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "userapi.CreatePurchaseOrderRequest": {
             "type": "object",
             "properties": {
@@ -2680,6 +3067,23 @@
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/entity.Data"
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.ResponseHeader"
+                }
+            }
+        },
+        "userapi.InvoiceResponse": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMapResponse"
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/invoice.Data"
                 },
                 "header": {
                     "type": "object",
