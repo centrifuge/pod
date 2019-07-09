@@ -2500,8 +2500,7 @@
                 },
                 "payee": {
                     "description": "centrifuge ID of the payee",
-                    "type": "object",
-                    "$ref": "#/definitions/identity.DID"
+                    "type": "string"
                 },
                 "payment_details": {
                     "type": "array",
@@ -2511,8 +2510,7 @@
                 },
                 "recipient": {
                     "description": "centrifuge ID of the recipient",
-                    "type": "object",
-                    "$ref": "#/definitions/identity.DID"
+                    "type": "string"
                 },
                 "recipient_invoice_id": {
                     "type": "string"
@@ -2558,8 +2556,7 @@
                 },
                 "sender": {
                     "description": "centrifuge ID of the sender",
-                    "type": "object",
-                    "$ref": "#/definitions/identity.DID"
+                    "type": "string"
                 },
                 "sender_city": {
                     "type": "string"

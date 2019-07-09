@@ -82,9 +82,9 @@ type Data struct {
 	TaxAmount                *documents.Decimal            `json:"tax_amount" swaggertype:"primitive,string"`
 	TaxRate                  *documents.Decimal            `json:"tax_rate" swaggertype:"primitive,string"`
 	TaxOnLineLevel           bool                          `json:"tax_on_line_level"`
-	Recipient                *identity.DID                 `json:"recipient,string"` // centrifuge ID of the recipient
-	Sender                   *identity.DID                 `json:"sender,string"`    // centrifuge ID of the sender
-	Payee                    *identity.DID                 `json:"payee,string"`     // centrifuge ID of the payee
+	Recipient                *identity.DID                 `json:"recipient,string" swaggertype:"primitive,string"` // centrifuge ID of the recipient
+	Sender                   *identity.DID                 `json:"sender,string" swaggertype:"primitive,string"`    // centrifuge ID of the sender
+	Payee                    *identity.DID                 `json:"payee,string" swaggertype:"primitive,string"`     // centrifuge ID of the payee
 	Comment                  string                        `json:"comment"`
 	ShippingTerms            string                        `json:"shipping_terms"`
 	RequesterEmail           string                        `json:"requester_email"`
