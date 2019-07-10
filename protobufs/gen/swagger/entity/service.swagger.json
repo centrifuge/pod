@@ -15,62 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/entities/{document_id}": {
-      "get": {
-        "description": "Get the current entity",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      },
-      "put": {
-        "description": "Updates an entity",
-        "operationId": "Update",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityEntityResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityEntityUpdatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/v1/entities/{document_id}/revoke": {
       "post": {
         "summary": "Entity Relation Revoke",
@@ -402,36 +346,6 @@
         },
         "data": {
           "$ref": "#/definitions/entityEntityDataResponse"
-        },
-        "attributes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/documentAttribute"
-          },
-          "title": "custom attributes"
-        }
-      }
-    },
-    "entityEntityUpdatePayload": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "read_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "write_access": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "data": {
-          "$ref": "#/definitions/entityEntityData"
         },
         "attributes": {
           "type": "object",

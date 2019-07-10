@@ -47,7 +47,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response.Path("$.data.entity.legal_name").String().Equal("test company")
 
 	// Alice updates her entity
-	res = updateDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, entityIdentifier, updatedEntityPayload(alice.id.String(), []string{}))
+	res = updateDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, entityIdentifier, updatedEntityPayload(alice.id.String(), []string{}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
@@ -16,6 +17,7 @@ import (
 type Service struct {
 	coreAPISrv             coreapi.Service
 	transferDetailsService transferdetails.Service
+	entityRelationshipSrv  entityrelationship.Service
 }
 
 // TODO: this can be refactored into a generic Service which handles all kinds of custom attributes
@@ -188,4 +190,22 @@ func (s Service) CreateEntity(ctx context.Context, req CreateEntityRequest) (doc
 	}
 
 	return s.coreAPISrv.CreateDocument(ctx, docReq)
+}
+
+// UpdateEntity updates existing entity associated with docID  with provided data and anchors it.
+func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntityRequest) (documents.Model, jobs.JobID, error) {
+	docReq, err := convertEntityRequest(req)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{
+		DocumentID:    docID,
+		CreatePayload: docReq,
+	})
+}
+
+// GetEntity returns the Entity associated with docID.
+func (s Service) GetEntity(ctx context.Context, docID []byte) (documents.Model, error) {
+	return s.coreAPISrv.GetDocument(ctx, docID)
 }

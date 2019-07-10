@@ -2,10 +2,15 @@
 package userapi
 
 import (
+	"context"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -123,12 +128,66 @@ type CreateEntityRequest struct {
 // EntityResponse represents the entity in client API format.
 type EntityResponse struct {
 	Header     coreapi.ResponseHeader       `json:"header"`
-	Data       entity.Data                  `json:"data"`
+	Data       EntityDataResponse           `json:"data"`
 	Attributes coreapi.AttributeMapResponse `json:"attributes"`
 }
 
-func toEntityResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp EntityResponse, err error) {
+// EntityDataResponse holds the entity data and Relationships
+type EntityDataResponse struct {
+	Entity        entity.Data    `json:"entity"`
+	Relationships []Relationship `json:"relationships"`
+}
+
+// Relationship holds the identity and status of the relationship
+type Relationship struct {
+	Identity identity.DID `json:"identity" swaggertype:"primitive,string"`
+	Active   bool         `json:"active"`
+}
+
+func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Service, entity documents.Model) (relationships []Relationship, err error) {
+	selfDID, err := contextutil.DIDFromContext(ctx)
+	if err != nil {
+		return nil, errors.New("failed to get self ID")
+	}
+
+	isCollaborator, err := entity.IsDIDCollaborator(selfDID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isCollaborator {
+		return nil, nil
+	}
+
+	rs, err := erSrv.GetEntityRelationships(ctx, entity.ID())
+	if err != nil {
+		return nil, err
+	}
+
+	//list the relationships associated with the entity
+	for _, r := range rs {
+		tokens, err := r.GetAccessTokens()
+		if err != nil {
+			return nil, err
+		}
+
+		targetDID := r.(*entityrelationship.EntityRelationship).TargetIdentity
+		relationships = append(relationships, Relationship{
+			Identity: *targetDID,
+			Active:   len(tokens) != 0,
+		})
+	}
+
+	return relationships, nil
+}
+
+func toEntityResponse(ctx context.Context, erSrv entityrelationship.Service, model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp EntityResponse, err error) {
 	docResp, err := coreapi.GetDocumentResponse(model, tokenRegistry, jobID)
+	if err != nil {
+		return resp, err
+	}
+
+	rs, err := getEntityRelationships(ctx, erSrv, model)
 	if err != nil {
 		return resp, err
 	}
@@ -136,6 +195,9 @@ func toEntityResponse(model documents.Model, tokenRegistry documents.TokenRegist
 	return EntityResponse{
 		Header:     docResp.Header,
 		Attributes: docResp.Attributes,
-		Data:       docResp.Data.(entity.Data),
+		Data: EntityDataResponse{
+			Entity:        docResp.Data.(entity.Data),
+			Relationships: rs,
+		},
 	}, nil
 }

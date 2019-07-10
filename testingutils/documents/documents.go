@@ -162,6 +162,18 @@ func (m *MockModel) GetAttributes() []documents.Attribute {
 	return attrs
 }
 
+func (m *MockModel) IsDIDCollaborator(did identity.DID) (bool, error) {
+	args := m.Called(did)
+	ok, _ := args.Get(0).(bool)
+	return ok, args.Error(1)
+}
+
+func (m *MockModel) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
+	args := m.Called()
+	ac, _ := args.Get(0).([]*coredocumentpb.AccessToken)
+	return ac, args.Error(1)
+}
+
 type MockRegistry struct {
 	mock.Mock
 }
