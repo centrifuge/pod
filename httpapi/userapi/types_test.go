@@ -106,7 +106,7 @@ func Test_getEntityRelationships(t *testing.T) {
 	er.CoreDocument = &documents.CoreDocument{
 		Document: coredocumentpb.CoreDocument{},
 	}
-	er.TargetIdentity = &collab
+	er.Data.TargetIdentity = &collab
 	erSrv.On("GetEntityRelationships", ctx, eid).Return([]documents.Model{er}, nil).Once()
 	rs, err = getEntityRelationships(ctx, erSrv, m)
 	assert.NoError(t, err)

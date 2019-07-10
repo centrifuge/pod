@@ -171,7 +171,7 @@ func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Servic
 			return nil, err
 		}
 
-		targetDID := r.(*entityrelationship.EntityRelationship).TargetIdentity
+		targetDID := r.(*entityrelationship.EntityRelationship).Data.TargetIdentity
 		relationships = append(relationships, Relationship{
 			Identity: *targetDID,
 			Active:   len(tokens) != 0,
