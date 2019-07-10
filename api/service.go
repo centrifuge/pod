@@ -4,13 +4,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
-	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
-	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
+	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"golang.org/x/net/context"
@@ -47,18 +45,6 @@ func registerServices(ctx context.Context, grpcServer *grpc.Server, gwmux *runti
 }
 
 func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{}, grpcServer *grpc.Server, gwmux *runtime.ServeMux, addr string, dopts []grpc.DialOption) error {
-	// register invoice
-	invHandler, ok := nodeObjReg[invoice.BootstrappedInvoiceHandler].(invoicepb.InvoiceServiceServer)
-	if !ok {
-		return errors.New("invoice grpc handler not registered")
-	}
-
-	invoicepb.RegisterInvoiceServiceServer(grpcServer, invHandler)
-	err := invoicepb.RegisterInvoiceServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-
 	// register entity
 	entityHandler, ok := nodeObjReg[entity.BootstrappedEntityHandler].(entitypb.EntityServiceServer)
 	if !ok {
@@ -66,7 +52,7 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 	}
 
 	entitypb.RegisterEntityServiceServer(grpcServer, entityHandler)
-	err = entitypb.RegisterEntityServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
+	err := entitypb.RegisterEntityServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}
