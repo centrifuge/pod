@@ -4,6 +4,7 @@ package userapi
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -13,10 +14,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestTypes_toTransferDetailCreatePayload(t *testing.T) {
@@ -49,17 +54,6 @@ func TestTypes_toTransferDetailUpdatePayload(t *testing.T) {
 	assert.Equal(t, "transfer_id", payload.TransferID)
 	assert.NotNil(t, payload.Data)
 	assert.Equal(t, payload.Data.TransferID, req.Data.TransferID)
-}
-
-func transferData() map[string]interface{} {
-	return map[string]interface{}{
-		"status":       "unpaid",
-		"amount":       "300",
-		"sender_id":    "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-		"recipient_id": "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-		"date_due":     "2019-05-24T14:48:44.308854Z", // rfc3339nano
-		"currency":     "EUR",
-	}
 }
 
 func Test_getEntityRelationships(t *testing.T) {
@@ -102,17 +96,77 @@ func Test_getEntityRelationships(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get access tokens")
 
 	//success
-	er := new(entityrelationship.EntityRelationship)
-	er.CoreDocument = &documents.CoreDocument{
-		Document: coredocumentpb.CoreDocument{},
+	er := &entityrelationship.EntityRelationship{
+		CoreDocument: &documents.CoreDocument{
+			Document: coredocumentpb.CoreDocument{},
+		},
+
+		Data: entityrelationship.Data{
+			TargetIdentity:   &collab,
+			OwnerIdentity:    &collab,
+			EntityIdentifier: eid,
+		},
 	}
-	er.Data.TargetIdentity = &collab
 	erSrv.On("GetEntityRelationships", ctx, eid).Return([]documents.Model{er}, nil).Once()
 	rs, err = getEntityRelationships(ctx, erSrv, m)
 	assert.NoError(t, err)
 	assert.Len(t, rs, 1)
-	assert.Equal(t, rs[0].Identity, collab)
+	assert.Equal(t, rs[0].TargetIdentity, collab)
 	assert.False(t, rs[0].Active)
 	m.AssertExpectations(t)
 	erSrv.AssertExpectations(t)
+}
+
+func TestTypes_toEntityShareResponse(t *testing.T) {
+	// failed to derive header
+	model := new(testingdocuments.MockModel)
+	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
+	_, err := toEntityShareResponse(model, nil, jobs.NewJobID())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error fetching collaborators")
+	model.AssertExpectations(t)
+
+	// success
+	id := byteutils.HexBytes(utils.RandomSlice(32))
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+	er := &entityrelationship.EntityRelationship{
+		CoreDocument: &documents.CoreDocument{
+			Document: coredocumentpb.CoreDocument{},
+		},
+
+		Data: entityrelationship.Data{
+			TargetIdentity:   &did1,
+			OwnerIdentity:    &did2,
+			EntityIdentifier: id,
+		},
+	}
+
+	resp, err := toEntityShareResponse(er, nil, jobs.NewJobID())
+	assert.NoError(t, err)
+	assert.Equal(t, resp.Relationship.EntityIdentifier, id)
+	assert.Equal(t, resp.Relationship.OwnerIdentity, did2)
+	assert.Equal(t, resp.Relationship.TargetIdentity, did1)
+	assert.True(t, resp.Relationship.Active)
+}
+
+func TestTypes_convertEntityShareRequest(t *testing.T) {
+	// failed context
+	ctx := context.Background()
+	_, err := convertShareEntityRequest(ctx, nil, identity.DID{})
+	assert.Error(t, err)
+
+	// success
+	did := testingidentity.GenerateRandomDID()
+	did1 := testingidentity.GenerateRandomDID()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
+	docID := byteutils.HexBytes(utils.RandomSlice(32))
+	req, err := convertShareEntityRequest(ctx, docID, did1)
+	assert.NoError(t, err)
+	assert.Equal(t, req.Scheme, entityrelationship.Scheme)
+	var r entityrelationship.Data
+	assert.NoError(t, json.Unmarshal(req.Data, &r))
+	assert.Equal(t, r.EntityIdentifier, docID)
+	assert.Equal(t, r.OwnerIdentity, &did)
+	assert.Equal(t, r.TargetIdentity, &did1)
 }

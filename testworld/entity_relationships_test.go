@@ -61,7 +61,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	// Alice wants to list all relationships associated with her entity, this should return her one (with Bob)
 	response = getEntity(alice.httpExpect, alice.id.String(), entityIdentifier)
 	response.Path("$.data.relationships[0].active").Boolean().Equal(true)
-	response.Path("$.data.relationships[0].identity").String().Equal(bob.id.String())
+	response.Path("$.data.relationships[0].target_identity").String().Equal(bob.id.String())
 
 	// Alice creates an EntityRelationship with Charlie
 	resC := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, charlie.id.String()))
@@ -107,7 +107,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 
 func checkRelationships(response *httpexpect.Value, charlieDID, bobDID string) (string, string) {
 	response.Path("$.data.relationships").Array().Length().Equal(2)
-	firstR := response.Path("$.data.relationships[0].identity").String().Raw()
+	firstR := response.Path("$.data.relationships[0].target_identity").String().Raw()
 	charlieIdx := 0
 	if firstR != charlieDID {
 		charlieIdx = 1
@@ -115,8 +115,8 @@ func checkRelationships(response *httpexpect.Value, charlieDID, bobDID string) (
 	}
 	bIdx := strconv.Itoa(1 - charlieIdx)
 	cIdx := strconv.Itoa(charlieIdx)
-	response.Path("$.data.relationships[" + cIdx + "].identity").String().Equal(charlieDID)
-	response.Path("$.data.relationships[" + bIdx + "].identity").String().Equal(bobDID)
+	response.Path("$.data.relationships[" + cIdx + "].target_identity").String().Equal(charlieDID)
+	response.Path("$.data.relationships[" + bIdx + "].target_identity").String().Equal(bobDID)
 
 	return cIdx, bIdx
 }
