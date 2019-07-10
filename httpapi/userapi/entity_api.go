@@ -175,9 +175,9 @@ func (h handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, resp)
 }
 
-// ShareEntity shares the entity with the target identity.
-// @summary Shares the entity with the target identity.
-// @description Shares the entity with the target identity.
+// ShareEntity gives entity access to target identity.
+// @summary Share gives entity access to target identity.
+// @description Share gives entity access to target identity.
 // @id share_entity
 // @tags Entities
 // @accept json

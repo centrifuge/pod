@@ -1213,7 +1213,7 @@
         },
         "/v1/entities/{document_id}/share": {
             "post": {
-                "description": "Shares the entity with the target identity.",
+                "description": "Share gives entity access to target identity.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1223,7 +1223,7 @@
                 "tags": [
                     "Entities"
                 ],
-                "summary": "Shares the entity with the target identity.",
+                "summary": "Share gives entity access to target identity.",
                 "operationId": "share_entity",
                 "parameters": [
                     {
