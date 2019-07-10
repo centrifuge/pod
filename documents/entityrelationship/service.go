@@ -275,3 +275,32 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 
 	return relationships, nil
 }
+
+// CreateModel creates entity relationship from the payload, validates, persists, and returns the document.
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
+	}
+
+	e := new(EntityRelationship)
+	if err := e.unpackFromCreatePayload(ctx, payload); err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// validate invoice
+	err = CreateValidator(s.factory).Validate(nil, e)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	err = s.repo.Create(did[:], e.CurrentVersion(), e)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, e.CurrentVersion())
+	return e, jobID, err
+}
