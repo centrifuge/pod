@@ -247,7 +247,7 @@ func (s service) DeriveEntityResponse(ctx context.Context, model documents.Model
 				return nil, err
 			}
 
-			targetDID := m.(*entityrelationship.EntityRelationship).TargetIdentity.String()
+			targetDID := m.(*entityrelationship.EntityRelationship).Data.TargetIdentity.String()
 			r := &cliententitypb.Relationship{
 				Identity: targetDID,
 				Active:   len(tokens) != 0,
@@ -405,7 +405,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 	}
 
 	at := accessTokens[0]
-	if !utils.IsSameByteSlice(at.DocumentIdentifier, relationship.EntityIdentifier) {
+	if !utils.IsSameByteSlice(at.DocumentIdentifier, relationship.Data.EntityIdentifier) {
 		return nil, entityrelationship.ErrERInvalidIdentifier
 	}
 

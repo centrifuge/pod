@@ -84,5 +84,5 @@ func TestRouter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, r.Middlewares(), 3)
 	assert.Len(t, r.Routes(), 2)
-	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 22)
+	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 23)
 }

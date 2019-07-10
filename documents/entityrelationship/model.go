@@ -2,6 +2,7 @@ package entityrelationship
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -12,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,28 +24,36 @@ import (
 
 const (
 	prefix string = "entity_relationship"
-	scheme        = prefix
+
+	// Scheme to identify entity relationship
+	Scheme = prefix
 )
 
 // tree prefixes for specific documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 4, 0, 0} }
 
+// Data represents entity relationship data
+type Data struct {
+	// Owner of the relationship
+	OwnerIdentity *identity.DID `json:"owner_identity" swaggertype:"primitive,string"`
+	// Entity identifier
+	EntityIdentifier byteutils.HexBytes `json:"entity_identifier" swaggertype:"primitive,string"`
+	// identity which will be granted access
+	TargetIdentity *identity.DID `json:"target_identity" swaggertype:"primitive,string"`
+}
+
 // EntityRelationship implements the documents.Model and keeps track of entity-relationship related fields and state.
 type EntityRelationship struct {
 	*documents.CoreDocument
 
-	// owner of the relationship
-	OwnerIdentity *identity.DID
-	// Entity identifier
-	EntityIdentifier []byte
-	// identity which will be granted access
-	TargetIdentity *identity.DID
+	Data Data `json:"data"`
 }
 
 // getRelationshipData returns the entity relationship data from the entity relationship model
 func (e *EntityRelationship) getRelationshipData() *entitypb2.RelationshipData {
-	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
-	eID := hexutil.Encode(e.EntityIdentifier)
+	d := e.Data
+	dids := identity.DIDsToStrings(d.OwnerIdentity, d.TargetIdentity)
+	eID := hexutil.Encode(d.EntityIdentifier)
 	return &entitypb2.RelationshipData{
 		OwnerIdentity:    dids[0],
 		TargetIdentity:   dids[1],
@@ -53,11 +63,12 @@ func (e *EntityRelationship) getRelationshipData() *entitypb2.RelationshipData {
 
 // createP2PProtobuf returns Centrifuge protobuf-specific RelationshipData.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
-	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
+	d := e.Data
+	dids := identity.DIDsToBytes(d.OwnerIdentity, d.TargetIdentity)
 	return &entitypb.EntityRelationship{
 		OwnerIdentity:    dids[0],
 		TargetIdentity:   dids[1],
-		EntityIdentifier: e.EntityIdentifier,
+		EntityIdentifier: d.EntityIdentifier,
 	}
 }
 
@@ -107,9 +118,12 @@ func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.Rela
 	if err != nil {
 		return err
 	}
-	e.OwnerIdentity = dids[0]
-	e.TargetIdentity = dids[1]
-	e.EntityIdentifier = eID
+
+	var d Data
+	d.OwnerIdentity = dids[0]
+	d.TargetIdentity = dids[1]
+	d.EntityIdentifier = eID
+	e.Data = d
 	return nil
 }
 
@@ -119,9 +133,11 @@ func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.En
 	if err != nil {
 		return err
 	}
-	e.OwnerIdentity = dids[0]
-	e.TargetIdentity = dids[1]
-	e.EntityIdentifier = entityRelationship.EntityIdentifier
+	var d Data
+	d.OwnerIdentity = dids[0]
+	d.TargetIdentity = dids[1]
+	d.EntityIdentifier = entityRelationship.EntityIdentifier
+	e.Data = d
 	return nil
 }
 
@@ -272,7 +288,7 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity relationship but got %T", updated))
 	}
 
-	if !e.OwnerIdentity.Equal(identity) || !newEntityRelationship.OwnerIdentity.Equal(identity) {
+	if !e.Data.OwnerIdentity.Equal(identity) || !newEntityRelationship.Data.OwnerIdentity.Equal(identity) {
 		return documents.ErrIdentityNotOwner
 	}
 	return nil
@@ -302,10 +318,42 @@ func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVe
 
 // GetData returns entity relationship data
 func (e *EntityRelationship) GetData() interface{} {
-	return nil
+	return e.Data
 }
 
 // Scheme returns the entity relationship scheme.
 func (e *EntityRelationship) Scheme() string {
-	return scheme
+	return Scheme
+}
+
+// loadData unmarshals json blob to Data.
+func (e *EntityRelationship) loadData(data []byte) error {
+	var d Data
+	err := json.Unmarshal(data, &d)
+	if err != nil {
+		return err
+	}
+
+	e.Data = d
+	return nil
+}
+
+// unpackFromCreatePayload unpacks the entity relationship data from the Payload.
+func (e *EntityRelationship) unpackFromCreatePayload(ctx context.Context, payload documents.CreatePayload) error {
+	if err := e.loadData(payload.Data); err != nil {
+		return err
+	}
+
+	params := documentpb.AccessTokenParams{
+		Grantee:            e.Data.TargetIdentity.String(),
+		DocumentIdentifier: e.Data.EntityIdentifier.String(),
+	}
+
+	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
+	if err != nil {
+		return errors.New("failed to init core document: %v", err)
+	}
+
+	e.CoreDocument = cd
+	return nil
 }

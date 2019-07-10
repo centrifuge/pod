@@ -50,41 +50,6 @@
         ]
       }
     },
-    "/v1/entities/{document_id}/share": {
-      "post": {
-        "summary": "Entity Relation Share",
-        "description": "Share the entity document with others",
-        "operationId": "Share",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityRelationshipResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "description": "entity identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityRelationshipPayload"
-            }
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/v1/relationships/{relationship_id}/entity": {
       "get": {
         "summary": "Entity Relation Get",

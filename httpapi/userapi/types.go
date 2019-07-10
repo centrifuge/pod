@@ -3,6 +3,7 @@ package userapi
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -15,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 )
 
 // TODO: think: generic custom attribute set creation?
@@ -140,8 +142,60 @@ type EntityDataResponse struct {
 
 // Relationship holds the identity and status of the relationship
 type Relationship struct {
-	Identity identity.DID `json:"identity" swaggertype:"primitive,string"`
-	Active   bool         `json:"active"`
+	TargetIdentity   identity.DID       `json:"target_identity" swaggertype:"primitive,string"`
+	OwnerIdentity    identity.DID       `json:"owner_identity" swaggertype:"primitive,string"`
+	EntityIdentifier byteutils.HexBytes `json:"entity_identifier" swaggertype:"primitive,string"`
+	Active           bool               `json:"active"`
+}
+
+// ShareEntityRequest holds the documentID and target identity to share entity with.
+type ShareEntityRequest struct {
+	TargetIdentity identity.DID `json:"target_identity" swaggertype:"primitive,string"`
+}
+
+// ShareEntityResponse holds the response for entity share.
+type ShareEntityResponse struct {
+	Header       coreapi.ResponseHeader `json:"header"`
+	Relationship Relationship           `json:"relationship"`
+}
+
+func toEntityShareResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp ShareEntityResponse, err error) {
+	header, err := coreapi.DeriveResponseHeader(tokenRegistry, model, jobID)
+	if err != nil {
+		return resp, err
+	}
+
+	d := model.GetData().(entityrelationship.Data)
+	return ShareEntityResponse{
+		Header: header,
+		Relationship: Relationship{
+			TargetIdentity:   *d.TargetIdentity,
+			EntityIdentifier: d.EntityIdentifier,
+			OwnerIdentity:    *d.OwnerIdentity,
+			Active:           true,
+		},
+	}, nil
+}
+
+func convertShareEntityRequest(ctx context.Context, docID byteutils.HexBytes, targetID identity.DID) (req documents.CreatePayload, err error) {
+	self, err := contextutil.DIDFromContext(ctx)
+	if err != nil {
+		return req, err
+	}
+
+	d, err := json.Marshal(entityrelationship.Data{
+		TargetIdentity:   &targetID,
+		OwnerIdentity:    &self,
+		EntityIdentifier: docID,
+	})
+	if err != nil {
+		return req, err
+	}
+
+	return documents.CreatePayload{
+		Scheme: entityrelationship.Scheme,
+		Data:   d,
+	}, nil
 }
 
 func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Service, entity documents.Model) (relationships []Relationship, err error) {
@@ -171,10 +225,12 @@ func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Servic
 			return nil, err
 		}
 
-		targetDID := r.(*entityrelationship.EntityRelationship).TargetIdentity
+		d := r.GetData().(entityrelationship.Data)
 		relationships = append(relationships, Relationship{
-			Identity: *targetDID,
-			Active:   len(tokens) != 0,
+			TargetIdentity:   *d.TargetIdentity,
+			OwnerIdentity:    *d.OwnerIdentity,
+			EntityIdentifier: d.EntityIdentifier,
+			Active:           len(tokens) != 0,
 		})
 	}
 
