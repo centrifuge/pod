@@ -24,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -424,10 +425,14 @@ func invalidData(t *testing.T) []byte {
 	return d
 }
 
-func validData(t *testing.T) []byte {
+func validData(t *testing.T, self identity.DID) []byte {
+	return validDataWithTargetDID(t, self, testingidentity.GenerateRandomDID())
+}
+
+func validDataWithTargetDID(t *testing.T, self, target identity.DID) []byte {
 	m := map[string]string{
-		"target_identity":   testingidentity.GenerateRandomDID().String(),
-		"owner_identity":    testingidentity.GenerateRandomDID().String(),
+		"target_identity":   target.String(),
+		"owner_identity":    self.String(),
 		"entity_identifier": byteutils.HexBytes(utils.RandomSlice(32)).String(),
 	}
 
@@ -444,7 +449,7 @@ func TestEntityRelationship_loadData(t *testing.T) {
 	err := e.loadData(d)
 	assert.Error(t, err)
 
-	d = validData(t)
+	d = validData(t, testingidentity.GenerateRandomDID())
 	err = e.loadData(d)
 	assert.NoError(t, err)
 }
@@ -460,7 +465,7 @@ func TestEntityRelationship_unpackCreatePayload(t *testing.T) {
 	assert.Error(t, err)
 
 	// missing account context
-	payload.Data = validData(t)
+	payload.Data = validData(t, did)
 	err = e.unpackFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), documents.ErrDocumentConfigAccountID.Error())
@@ -468,5 +473,28 @@ func TestEntityRelationship_unpackCreatePayload(t *testing.T) {
 	// success
 	ctx = testingconfig.CreateAccountContext(t, cfg)
 	err = e.unpackFromCreatePayload(ctx, payload)
+	assert.NoError(t, err)
+}
+
+func TestEntityRelationship_revokeRelationship(t *testing.T) {
+	old, _ := createCDWithEmbeddedEntityRelationship(t)
+	e := old.(*EntityRelationship)
+	er := new(EntityRelationship)
+
+	// failed to remove token
+	id := testingidentity.GenerateRandomDID()
+	docID := utils.RandomSlice(32)
+	payload := documentpb.AccessTokenParams{
+		Grantee:            id.String(),
+		DocumentIdentifier: hexutil.Encode(docID),
+	}
+	err := er.revokeRelationship(e, id)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrAccessTokenNotFound, err))
+
+	// success
+	cd, err := e.AddAccessToken(testingconfig.CreateAccountContext(t, cfg), payload)
+	e.CoreDocument = cd
+	err = er.revokeRelationship(e, id)
 	assert.NoError(t, err)
 }

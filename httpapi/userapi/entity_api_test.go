@@ -373,3 +373,79 @@ func TestHandler_ShareEntity(t *testing.T) {
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
+
+func TestHandler_RevokeEntity(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/entities/{document_id}/revoke", b).WithContext(ctx)
+	}
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+
+	// empty document_id and invalid
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		w, r := getHTTPReqAndResp(ctx, nil)
+		h.RevokeEntity(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	// empty body
+	id := hexutil.Encode(utils.RandomSlice(32))
+	rctx.URLParams.Values[0] = id
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.RevokeEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed creation
+	docSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	h.srv.coreAPISrv = newCoreAPIService(docSrv)
+	did := testingidentity.GenerateRandomDID()
+	did1 := testingidentity.GenerateRandomDID()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
+	docSrv.On("UpdateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), errors.New("failed update")).Once()
+	req := ShareEntityRequest{TargetIdentity: did1}
+	d, err := json.Marshal(req)
+	assert.NoError(t, err)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RevokeEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "failed update")
+
+	// failed convert
+	docSrv.On("UpdateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RevokeEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success
+	id1 := byteutils.HexBytes(utils.RandomSlice(32))
+	did2 := testingidentity.GenerateRandomDID()
+	er := &entityrelationship.EntityRelationship{
+		CoreDocument: &documents.CoreDocument{
+			Document: coredocumentpb.CoreDocument{},
+		},
+
+		Data: entityrelationship.Data{
+			TargetIdentity:   &did1,
+			OwnerIdentity:    &did2,
+			EntityIdentifier: id1,
+		},
+	}
+	docSrv.On("UpdateModel", ctx, mock.Anything).Return(er, jobs.NewJobID(), nil).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RevokeEntity(w, r)
+	assert.Equal(t, w.Code, http.StatusAccepted)
+	assert.Contains(t, w.Body.String(), "\"active\":false")
+	m.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
+}

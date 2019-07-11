@@ -91,33 +91,3 @@ func (h *grpcHandler) GetEntityByRelationship(ctx context.Context, getRequest *c
 
 	return resp, nil
 }
-
-func (h *grpcHandler) Revoke(ctx context.Context, payload *cliententitypb.RelationshipPayload) (*cliententitypb.RelationshipResponse, error) {
-	apiLog.Debugf("Revoke request %v", payload)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	m, err := h.service.DeriveFromRevokePayload(ctxHeader, payload)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive revoke payload")
-	}
-
-	m, jobID, _, err := h.service.Revoke(ctxHeader, m)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not update document")
-	}
-
-	resp, err := h.service.DeriveEntityRelationshipResponse(m)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, centerrors.Wrap(err, "could not derive response")
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
-}

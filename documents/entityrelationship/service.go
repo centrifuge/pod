@@ -2,6 +2,7 @@ package entityrelationship
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -235,7 +236,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, payload *entitypb.
 		return nil, err
 	}
 
-	cd, err := r.(*EntityRelationship).DeleteAccessToken(ctx, hexutil.Encode(did[0][:]))
+	cd, err := r.(*EntityRelationship).DeleteAccessToken(*did[0])
 	if err != nil {
 		return nil, err
 	}
@@ -278,23 +279,19 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 
 // CreateModel creates entity relationship from the payload, validates, persists, and returns the document.
 func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
-	did, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
-	}
-
 	e := new(EntityRelationship)
 	if err := e.unpackFromCreatePayload(ctx, payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// validate invoice
-	err = CreateValidator(s.factory).Validate(nil, e)
+	err := CreateValidator(s.factory).Validate(nil, e)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
 	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	did := *e.Data.OwnerIdentity
 	err = s.repo.Create(did[:], e.CurrentVersion(), e)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
@@ -303,4 +300,46 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 	jobID := contextutil.Job(ctx)
 	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, e.CurrentVersion())
 	return e, jobID, err
+}
+
+// UpdateModel revokes the entity relationship of a target identity.
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+	var data Data
+	err := json.Unmarshal(payload.Data, &data)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	id, err := s.repo.FindEntityRelationshipIdentifier(data.EntityIdentifier, *data.OwnerIdentity, *data.TargetIdentity)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentNotFound, err)
+	}
+
+	r, err := s.GetCurrentVersion(ctx, id)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentNotFound, err)
+	}
+
+	er := new(EntityRelationship)
+	err = er.revokeRelationship(r.(*EntityRelationship), *data.TargetIdentity)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	// validate invoice
+	err = UpdateValidator(s.factory, s.anchorRepo).Validate(r, er)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
+	did := *er.Data.OwnerIdentity
+	err = s.repo.Create(did[:], er.CurrentVersion(), er)
+	if err != nil {
+		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, er.CurrentVersion())
+	return er, jobID, err
 }
