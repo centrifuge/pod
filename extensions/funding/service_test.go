@@ -73,10 +73,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAttributesUtils(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
@@ -199,10 +196,7 @@ func TestAttributesUtils(t *testing.T) {
 
 func TestDeriveFromPayload(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -224,15 +218,12 @@ func TestDeriveFromPayload(t *testing.T) {
 	}
 
 	payload.DocumentId = ""
-	_, err = srv.DeriveFromPayload(ctxh, payload)
+	_, err := srv.DeriveFromPayload(ctxh, payload)
 	assert.Error(t, err)
 }
 
 func TestDeriveFundingResponse(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -254,16 +245,14 @@ func TestDeriveFundingResponse(t *testing.T) {
 }
 
 func TestDeriveFundingListResponse(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
 
 	var model documents.Model
+	var err error
 	var payloads []*clientfunpb.FundingCreatePayload
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
@@ -283,10 +272,7 @@ func TestDeriveFundingListResponse(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -295,7 +281,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 	var model documents.Model
 	p := createTestPayload()
 	p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
-	model, err = srv.DeriveFromPayload(context.Background(), p)
+	model, err := srv.DeriveFromPayload(context.Background(), p)
 	assert.NoError(t, err)
 
 	// update

@@ -4,6 +4,7 @@ package nft_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -21,10 +22,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
-	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
@@ -72,25 +71,15 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 
 	// create invoice (anchor)
-	service, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
-	assert.Nil(t, err, "should not error out when getting invoice service")
+	invSrv, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
+	assert.Nil(t, err, "should not error out when getting invoice invSrv")
 	ctx, err := contextutil.New(context.Background(), tcr)
 	assert.NoError(t, err)
-	invSrv := service.(invoice.Service)
 	dueDate := time.Now().Add(4 * 24 * time.Hour)
-	tm, err := utils.ToTimestamp(dueDate)
 	assert.NoError(t, err)
-	model, err := invSrv.DeriveFromCreatePayload(ctx, &invoicepb.InvoiceCreatePayload{
-		Data: &invoicepb.InvoiceData{
-			Sender:      did.String(),
-			Number:      "2132131",
-			Status:      "unpaid",
-			GrossAmount: "123",
-			NetAmount:   "123",
-			Currency:    "EUR",
-			DateDue:     tm,
-		},
-	})
+
+	payload := invoicePayload(t, nil, invoiceData(t, &did, &dueDate))
+	model, _ := invoice.CreateInvoiceWithEmbedCDWithPayload(t, ctx, did, payload)
 	assert.NoError(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, done, err := invSrv.Create(ctx, model)
 	assert.NoError(t, err)
@@ -264,4 +253,35 @@ func TestTransferNFT(t *testing.T) {
 	err = jobManager.WaitForJob(did, jobID)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "from address is not the owner of tokenID")
+}
+
+func invoicePayload(t *testing.T, collaborators []identity.DID, data []byte) documents.CreatePayload {
+	if collaborators == nil {
+		collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
+	}
+	return documents.CreatePayload{
+		Scheme: invoice.Scheme,
+		Collaborators: documents.CollaboratorsAccess{
+			ReadWriteCollaborators: collaborators,
+		},
+		Data: data,
+	}
+}
+
+func invoiceData(t *testing.T, did *identity.DID, tm *time.Time) []byte {
+	dec, err := documents.NewDecimal("123")
+	assert.NoError(t, err)
+	data := invoice.Data{
+		Sender:      did,
+		Number:      "2132131",
+		Status:      "unpaid",
+		GrossAmount: dec,
+		NetAmount:   dec,
+		Currency:    "EUR",
+		DateDue:     tm,
+	}
+
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	return d
 }

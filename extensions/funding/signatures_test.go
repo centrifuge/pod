@@ -39,10 +39,7 @@ func (m *mockAccount) GetIdentityID() []byte {
 }
 
 func setupFundingForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -58,7 +55,7 @@ func setupFundingForTesting(t *testing.T, fundingAmount int) (Service, *testingd
 		p := createTestPayload()
 		p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
 		payloads = append(payloads, p)
-		model, err = srv.DeriveFromPayload(context.Background(), p)
+		_, err := srv.DeriveFromPayload(context.Background(), p)
 		assert.NoError(t, err)
 		lastFundingId = p.Data.AgreementId
 	}

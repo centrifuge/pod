@@ -536,19 +536,8 @@ func TestService_UpdateModel(t *testing.T) {
 }
 
 func createCDWithEmbeddedInvoice(t *testing.T, ctx context.Context, collaborators []identity.DID, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
-	i := new(invoice.Invoice)
-	data := testingdocuments.CreateInvoicePayload()
-	if len(collaborators) > 0 {
-		var cs []string
-		for _, c := range collaborators {
-			cs = append(cs, c.String())
-		}
-		data.WriteAccess = cs
-	}
-
-	err := i.InitInvoiceInput(data, did)
-	assert.NoError(t, err)
-	err = i.AddUpdateLog(did)
+	i, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, did, collaborators)
+	err := i.AddUpdateLog(did)
 	assert.NoError(t, err)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
