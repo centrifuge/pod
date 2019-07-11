@@ -1211,6 +1211,150 @@
                 }
             }
         },
+        "/v1/entities/{document_id}/revoke": {
+            "post": {
+                "description": "Revoke revokes target id's access to entity.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entities"
+                ],
+                "summary": "Revoke revokes target id's access to entity.",
+                "operationId": "revoke_entity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Entity Revoke request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.ShareEntityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.ShareEntityResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/entities/{document_id}/share": {
+            "post": {
+                "description": "Share gives entity access to target identity.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entities"
+                ],
+                "summary": "Share gives entity access to target identity.",
+                "operationId": "share_entity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Entity Share request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.ShareEntityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.ShareEntityResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/invoices": {
             "post": {
                 "description": "Creates a new invoice document and anchors it.",
@@ -3474,8 +3618,35 @@
                 "active": {
                     "type": "boolean"
                 },
-                "identity": {
+                "entity_identifier": {
                     "type": "string"
+                },
+                "owner_identity": {
+                    "type": "string"
+                },
+                "target_identity": {
+                    "type": "string"
+                }
+            }
+        },
+        "userapi.ShareEntityRequest": {
+            "type": "object",
+            "properties": {
+                "target_identity": {
+                    "type": "string"
+                }
+            }
+        },
+        "userapi.ShareEntityResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.ResponseHeader"
+                },
+                "relationship": {
+                    "type": "object",
+                    "$ref": "#/definitions/userapi.Relationship"
                 }
             }
         },

@@ -19,7 +19,7 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 			return documents.ErrDocumentInvalidType
 		}
 
-		identities := []*identity.DID{relationship.OwnerIdentity, relationship.TargetIdentity}
+		identities := []*identity.DID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
 		for _, i := range identities {
 			valid, err := factory.IdentityExists(i)
 			if err != nil || !valid {

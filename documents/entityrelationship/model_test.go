@@ -3,6 +3,7 @@
 package entityrelationship
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -31,6 +33,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -172,8 +175,8 @@ func TestEntityRelationship_getRelationshipData(t *testing.T) {
 
 	data := er.getRelationshipData()
 	assert.NotNil(t, data, "entity relationship data should not be nil")
-	assert.Equal(t, data.OwnerIdentity, er.OwnerIdentity.String())
-	assert.Equal(t, data.TargetIdentity, er.TargetIdentity.String())
+	assert.Equal(t, data.OwnerIdentity, er.Data.OwnerIdentity.String())
+	assert.Equal(t, data.TargetIdentity, er.Data.TargetIdentity.String())
 }
 
 func TestEntityRelationship_InitEntityInput(t *testing.T) {
@@ -410,4 +413,88 @@ func TestEntityRelationship_DeleteAttribute(t *testing.T) {
 	assert.True(t, e.AttributeExists(attr.Key))
 	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
 	assert.False(t, e.AttributeExists(attr.Key))
+}
+
+func invalidData(t *testing.T) []byte {
+	m := map[string]string{
+		"target_identity": "",
+	}
+
+	d, err := json.Marshal(m)
+	assert.NoError(t, err)
+	return d
+}
+
+func validData(t *testing.T, self identity.DID) []byte {
+	return validDataWithTargetDID(t, self, testingidentity.GenerateRandomDID())
+}
+
+func validDataWithTargetDID(t *testing.T, self, target identity.DID) []byte {
+	m := map[string]string{
+		"target_identity":   target.String(),
+		"owner_identity":    self.String(),
+		"entity_identifier": byteutils.HexBytes(utils.RandomSlice(32)).String(),
+	}
+
+	d, err := json.Marshal(m)
+	assert.NoError(t, err)
+	return d
+}
+
+func TestEntityRelationship_loadData(t *testing.T) {
+	e := new(EntityRelationship)
+
+	// invalid data
+	d := invalidData(t)
+	err := e.loadData(d)
+	assert.Error(t, err)
+
+	d = validData(t, testingidentity.GenerateRandomDID())
+	err = e.loadData(d)
+	assert.NoError(t, err)
+}
+
+func TestEntityRelationship_unpackCreatePayload(t *testing.T) {
+	e := new(EntityRelationship)
+	var payload documents.CreatePayload
+	ctx := context.Background()
+
+	// invalid data
+	payload.Data = invalidData(t)
+	err := e.unpackFromCreatePayload(ctx, payload)
+	assert.Error(t, err)
+
+	// missing account context
+	payload.Data = validData(t, did)
+	err = e.unpackFromCreatePayload(ctx, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), documents.ErrDocumentConfigAccountID.Error())
+
+	// success
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	err = e.unpackFromCreatePayload(ctx, payload)
+	assert.NoError(t, err)
+}
+
+func TestEntityRelationship_revokeRelationship(t *testing.T) {
+	old, _ := createCDWithEmbeddedEntityRelationship(t)
+	e := old.(*EntityRelationship)
+	er := new(EntityRelationship)
+
+	// failed to remove token
+	id := testingidentity.GenerateRandomDID()
+	docID := utils.RandomSlice(32)
+	payload := documentpb.AccessTokenParams{
+		Grantee:            id.String(),
+		DocumentIdentifier: hexutil.Encode(docID),
+	}
+	err := er.revokeRelationship(e, id)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrAccessTokenNotFound, err))
+
+	// success
+	cd, err := e.AddAccessToken(testingconfig.CreateAccountContext(t, cfg), payload)
+	e.CoreDocument = cd
+	err = er.revokeRelationship(e, id)
+	assert.NoError(t, err)
 }

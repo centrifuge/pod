@@ -458,20 +458,15 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 }
 
 // DeleteAccessToken deletes an access token on the Document
-func (cd *CoreDocument) DeleteAccessToken(ctx context.Context, granteeID string) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAccessToken(granteeID identity.DID) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = identity.StringsToDIDs(granteeID)
 	if err != nil {
 		return nil, err
 	}
 
 	accessTokens := ncd.Document.AccessTokens
 	for i, t := range accessTokens {
-		if hexutil.Encode(t.Grantee) == granteeID {
+		if bytes.Equal(t.Grantee, granteeID.ToAddress().Bytes()) {
 			ncd.Document.AccessTokens = removeTokenAtIndex(i, accessTokens)
 			ncd.Modified = true
 			return ncd, nil

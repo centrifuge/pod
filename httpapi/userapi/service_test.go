@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
@@ -463,5 +464,51 @@ func TestService_UpdateInvoice(t *testing.T) {
 	req.Attributes["string_test"] = strAttr
 	_, _, err = s.UpdateInvoice(ctx, docID, req)
 	assert.NoError(t, err)
+	docSrv.AssertExpectations(t)
+}
+
+func TestService_ShareEntity(t *testing.T) {
+	// failed to convert
+	ctx := context.Background()
+	s := Service{}
+	_, _, err := s.ShareEntity(ctx, nil, ShareEntityRequest{})
+	assert.Error(t, err)
+
+	// success
+	docSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	s.coreAPISrv = newCoreAPIService(docSrv)
+	did := testingidentity.GenerateRandomDID()
+	did1 := testingidentity.GenerateRandomDID()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
+	docSrv.On("CreateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
+	docID := byteutils.HexBytes(utils.RandomSlice(32))
+	m1, _, err := s.ShareEntity(ctx, docID, ShareEntityRequest{TargetIdentity: did1})
+	assert.NoError(t, err)
+	assert.Equal(t, m, m1)
+	m.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
+}
+
+func TestService_RevokeRelationship(t *testing.T) {
+	// failed to convert
+	ctx := context.Background()
+	s := Service{}
+	_, _, err := s.RevokeRelationship(ctx, nil, ShareEntityRequest{})
+	assert.Error(t, err)
+
+	// success
+	docSrv := new(testingdocuments.MockService)
+	m := new(testingdocuments.MockModel)
+	s.coreAPISrv = newCoreAPIService(docSrv)
+	did := testingidentity.GenerateRandomDID()
+	did1 := testingidentity.GenerateRandomDID()
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
+	docSrv.On("UpdateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
+	docID := byteutils.HexBytes(utils.RandomSlice(32))
+	m1, _, err := s.RevokeRelationship(ctx, docID, ShareEntityRequest{TargetIdentity: did1})
+	assert.NoError(t, err)
+	assert.Equal(t, m, m1)
+	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }

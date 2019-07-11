@@ -23,26 +23,6 @@ service EntityService {
       description: "Get entity from business partner"
     };
   }
-  // Entity Relation Share
-  rpc Share(RelationshipPayload) returns (RelationshipResponse) {
-    option (google.api.http) = {
-      post: "/v1/entities/{document_id}/share"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Share the entity document with others"
-    };
-  }
-  // Entity Relation Revoke
-  rpc Revoke(RelationshipPayload) returns (RelationshipResponse) {
-    option (google.api.http) = {
-      post: "/v1/entities/{document_id}/revoke"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "revoke an entity document share"
-    };
-  }
 }
 
 message GetRequestRelationship {

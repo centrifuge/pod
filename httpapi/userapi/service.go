@@ -214,3 +214,26 @@ func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntit
 func (s Service) GetEntity(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.coreAPISrv.GetDocument(ctx, docID)
 }
+
+// ShareEntity shares an entity relationship document with target identity.
+func (s Service) ShareEntity(ctx context.Context, docID []byte, req ShareEntityRequest) (documents.Model, jobs.JobID, error) {
+	r, err := convertShareEntityRequest(ctx, docID, req.TargetIdentity)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.CreateDocument(ctx, r)
+}
+
+// RevokeRelationship revokes target_identity's access to entity.
+func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req ShareEntityRequest) (documents.Model, jobs.JobID, error) {
+	r, err := convertShareEntityRequest(ctx, docID, req.TargetIdentity)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{
+		DocumentID:    docID,
+		CreatePayload: r,
+	})
+}

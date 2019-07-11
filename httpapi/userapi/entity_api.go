@@ -174,3 +174,128 @@ func (h handler) GetEntity(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, resp)
 }
+
+// ShareEntity gives entity access to target identity.
+// @summary Share gives entity access to target identity.
+// @description Share gives entity access to target identity.
+// @id share_entity
+// @tags Entities
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param body body userapi.ShareEntityRequest true "Entity Share request"
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 202 {object} userapi.ShareEntityResponse
+// @router  /v1/entities/{document_id}/share [post]
+func (h handler) ShareEntity(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	ctx := r.Context()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var request ShareEntityRequest
+	err = json.Unmarshal(data, &request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	model, jobID, err := h.srv.ShareEntity(ctx, docID, request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	resp, err := toEntityShareResponse(model, h.tokenRegistry, jobID)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusAccepted)
+	render.JSON(w, r, resp)
+}
+
+// RevokeEntity revokes target id's access to entity.
+// @summary Revoke revokes target id's access to entity.
+// @description Revoke revokes target id's access to entity.
+// @id revoke_entity
+// @tags Entities
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param body body userapi.ShareEntityRequest true "Entity Revoke request"
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 202 {object} userapi.ShareEntityResponse
+// @router  /v1/entities/{document_id}/revoke [post]
+func (h handler) RevokeEntity(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	ctx := r.Context()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var request ShareEntityRequest
+	err = json.Unmarshal(data, &request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	model, jobID, err := h.srv.RevokeRelationship(ctx, docID, request)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	resp, err := toEntityShareResponse(model, h.tokenRegistry, jobID)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	resp.Relationship.Active = false
+	render.Status(r, http.StatusAccepted)
+	render.JSON(w, r, resp)
+}

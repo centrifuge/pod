@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
@@ -104,26 +103,6 @@ func getHandler() *grpcHandler {
 	return &grpcHandler{service: &mockService{}, config: configService}
 }
 
-func TestGrpcHandler_Share(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := &mockModel{}
-	jobID := jobs.NewJobID()
-	payload := &cliententitypb.RelationshipPayload{
-		DocumentId:     "0x010203",
-		TargetIdentity: "some DID",
-	}
-	response := &cliententitypb.RelationshipResponse{Header: &documentpb.ResponseHeader{}}
-	srv.On("DeriveFromSharePayload", mock.Anything, mock.Anything).Return(model, nil).Once()
-	srv.On("Share", mock.Anything, mock.Anything).Return(model, jobID.String(), nil).Once()
-	srv.On("DeriveEntityRelationshipResponse", model).Return(response, nil)
-	res, err := h.Share(testingconfig.HandlerContext(configService), payload)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err, "must be nil")
-	assert.NotNil(t, res, "must be non nil")
-	assert.Equal(t, res, response)
-}
-
 func TestGrpcHandler_GetVersion_invalid_input(t *testing.T) {
 	h := getHandler()
 	srv := h.service.(*mockService)
@@ -161,21 +140,4 @@ func TestGrpcHandler_GetVersion(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.Equal(t, res, response)
-}
-
-func TestGrpcHandler_Revoke(t *testing.T) {
-	h := getHandler()
-	srv := h.service.(*mockService)
-	model := new(mockModel)
-	ctx := testingconfig.HandlerContext(configService)
-	jobID := jobs.NewJobID()
-	payload := &cliententitypb.RelationshipPayload{DocumentId: "0x010201", TargetIdentity: "some DID"}
-	resp := &cliententitypb.RelationshipResponse{Header: new(documentpb.ResponseHeader)}
-	srv.On("DeriveFromRevokePayload", mock.Anything, payload).Return(model, nil).Once()
-	srv.On("Revoke", mock.Anything, model).Return(model, jobID.String(), nil).Once()
-	srv.On("DeriveEntityRelationshipResponse", model).Return(resp, nil).Once()
-	res, err := h.Revoke(ctx, payload)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, resp, res)
 }

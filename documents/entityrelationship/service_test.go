@@ -3,13 +3,16 @@
 package entityrelationship
 
 import (
+	"context"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
@@ -17,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -222,7 +226,7 @@ func TestService_DeriveFromCreatePayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 	er := m.(*EntityRelationship)
-	assert.Equal(t, er.TargetIdentity.String(), payload.TargetIdentity)
+	assert.Equal(t, er.Data.TargetIdentity.String(), payload.TargetIdentity)
 }
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
@@ -240,8 +244,8 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	assert.NotNil(t, m, "model must be non-nil")
 	relationship, ok := m.(*EntityRelationship)
 	assert.True(t, ok, "must be true")
-	assert.Equal(t, relationship.TargetIdentity.String(), "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
-	assert.Equal(t, relationship.OwnerIdentity.String(), selfDID.String())
+	assert.Equal(t, relationship.Data.TargetIdentity.String(), "0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
+	assert.Equal(t, relationship.Data.OwnerIdentity.String(), selfDID.String())
 }
 
 func TestService_DeriveEntityRelationshipData(t *testing.T) {
@@ -286,4 +290,134 @@ func TestService_DeriveEntityResponse(t *testing.T) {
 	}
 	assert.Equal(t, payload.TargetIdentity, r.Relationship[0].TargetIdentity)
 	assert.Equal(t, payload.OwnerIdentity, r.Relationship[0].OwnerIdentity)
+}
+
+type mockRepo struct {
+	repository
+	mock.Mock
+}
+
+func (m *mockRepo) Create(acc, id []byte, model documents.Model) error {
+	args := m.Called(acc, id, model)
+	return args.Error(0)
+}
+
+func (m *mockRepo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDID, targetDID identity.DID) ([]byte, error) {
+	args := m.Called(entityIdentifier, ownerDID, targetDID)
+	d, _ := args.Get(0).([]byte)
+	return d, args.Error(1)
+}
+func TestService_CreateModel(t *testing.T) {
+	payload := documents.CreatePayload{}
+	srv := service{}
+
+	// invalid data
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err := srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// validator failed
+	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory.On("IdentityExists", mock.Anything).Return(false, nil).Once()
+	payload.Data = validData(t, did)
+	srv.factory = idFactory
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// failed to create
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
+	repo := new(mockRepo)
+	repo.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("failed to save")).Once()
+	srv.repo = repo
+	_, _, err = srv.CreateModel(ctxh, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
+
+	// success
+	srv.repo = testEntityRepo()
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	m, _, err := srv.CreateModel(ctxh, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	jm.AssertExpectations(t)
+	idFactory.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}
+
+func TestService_UpdateModel(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	_, _, gsrv := getServiceWithMockedLayers()
+	srv := gsrv.(service)
+	ctx := context.Background()
+
+	// invalid payload
+	_, _, err := srv.UpdateModel(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// missing relationship
+	payload.Data = validData(t, did)
+	r := new(mockRepo)
+	r.On("FindEntityRelationshipIdentifier", mock.Anything, did, mock.Anything).Return(
+		nil, errors.New("failed to find relationship")).Once()
+	srv.repo = r
+	_, _, err = srv.UpdateModel(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// missing version
+	erid := utils.RandomSlice(32)
+	r.On("FindEntityRelationshipIdentifier", mock.Anything, did, mock.Anything).Return(erid, nil).Once()
+	_, _, err = srv.UpdateModel(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// missing token
+	old := createEntityRelationship(t)
+	err = testEntityRepo().Create(did[:], old.ID(), old)
+	assert.NoError(t, err)
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	r.On("FindEntityRelationshipIdentifier", mock.Anything, did, mock.Anything).Return(old.ID(), nil)
+	_, _, err = srv.UpdateModel(ctx, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), documents.ErrAccessTokenNotFound.Error())
+
+	// validation failed
+	id := testingidentity.GenerateRandomDID()
+	p := documentpb.AccessTokenParams{
+		Grantee:            id.String(),
+		DocumentIdentifier: hexutil.Encode(old.ID()),
+	}
+	old.CoreDocument, err = old.AddAccessToken(ctx, p)
+	assert.NoError(t, err)
+	assert.NoError(t, testEntityRepo().Update(did[:], old.ID(), old))
+	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory.On("IdentityExists", mock.Anything).Return(false, nil).Once()
+	srv.factory = idFactory
+	payload.Data = validDataWithTargetDID(t, did, id)
+	_, _, err = srv.UpdateModel(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// create failed
+	idFactory.On("IdentityExists", mock.Anything).Return(true, nil)
+	r.On("Create", did[:], old.NextVersion(), mock.Anything).Return(errors.New("failed to create")).Once()
+	_, _, err = srv.UpdateModel(ctx, payload)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create")
+
+	// success
+	r.On("Create", did[:], old.NextVersion(), mock.Anything).Return(nil)
+	jm := testingjobs.MockJobManager{}
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	srv.jobManager = jm
+	_, _, err = srv.UpdateModel(ctx, payload)
+	assert.NoError(t, err)
+	r.AssertExpectations(t)
+	idFactory.AssertExpectations(t)
+	jm.AssertExpectations(t)
 }
