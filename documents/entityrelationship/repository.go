@@ -49,7 +49,7 @@ func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDI
 			continue
 		}
 		if bytes.Equal(e.Data.EntityIdentifier, entityIdentifier) && targetDID.Equal(*e.Data.TargetIdentity) {
-			return e.Document.DocumentIdentifier, nil
+			return e.ID(), nil
 		}
 	}
 	return nil, documents.ErrDocumentNotFound

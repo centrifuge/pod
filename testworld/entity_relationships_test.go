@@ -86,7 +86,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response.Path("$.data.relationships[" + bIdx + "].active").Boolean().Equal(true)
 
 	// Alice revokes the EntityRelationship with Bob
-	resB = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
+	resB = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusAccepted, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
 	txID = getTransactionID(t, resB)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

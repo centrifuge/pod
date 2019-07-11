@@ -15,41 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/entities/{document_id}/revoke": {
-      "post": {
-        "summary": "Entity Relation Revoke",
-        "description": "revoke an entity document share",
-        "operationId": "Revoke",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/entityRelationshipResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "description": "entity identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/entityRelationshipPayload"
-            }
-          }
-        ],
-        "tags": [
-          "EntityService"
-        ]
-      }
-    },
     "/v1/relationships/{relationship_id}/entity": {
       "get": {
         "summary": "Entity Relation Get",
@@ -367,49 +332,6 @@
         "active": {
           "type": "boolean",
           "format": "boolean"
-        }
-      }
-    },
-    "entityRelationshipData": {
-      "type": "object",
-      "properties": {
-        "owner_identity": {
-          "type": "string",
-          "title": "DID of relationship owner"
-        },
-        "target_identity": {
-          "type": "string",
-          "title": "DID of target identity"
-        },
-        "entity_identifier": {
-          "type": "string",
-          "title": "identifier of Entity whose data can be accessed via this relationship"
-        }
-      }
-    },
-    "entityRelationshipPayload": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string",
-          "title": "entity identifier"
-        },
-        "target_identity": {
-          "type": "string"
-        }
-      }
-    },
-    "entityRelationshipResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/documentResponseHeader"
-        },
-        "relationship": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/entityRelationshipData"
-          }
         }
       }
     }

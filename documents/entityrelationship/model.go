@@ -357,3 +357,15 @@ func (e *EntityRelationship) unpackFromCreatePayload(ctx context.Context, payloa
 	e.CoreDocument = cd
 	return nil
 }
+
+// revokeRelationship revokes a relationship by deleting the access token in the Entity
+func (e *EntityRelationship) revokeRelationship(old *EntityRelationship, grantee identity.DID) error {
+	e.Data = old.Data
+	cd, err := old.DeleteAccessToken(grantee)
+	if err != nil {
+		return err
+	}
+
+	e.CoreDocument = cd
+	return nil
+}

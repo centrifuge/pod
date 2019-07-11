@@ -42,4 +42,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Put("/entities/{"+coreapi.DocumentIDParam+"}", h.UpdateEntity)
 	r.Get("/entities/{"+coreapi.DocumentIDParam+"}", h.GetEntity)
 	r.Post("/entities/{"+coreapi.DocumentIDParam+"}/share", h.ShareEntity)
+	r.Post("/entities/{"+coreapi.DocumentIDParam+"}/revoke", h.RevokeEntity)
 }
