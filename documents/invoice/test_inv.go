@@ -23,7 +23,7 @@ func (*Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-func invData(t *testing.T) []byte {
+func invoiceData(t *testing.T) []byte {
 	did, err := identity.NewDIDFromString("0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
 	assert.NoError(t, err)
 	dec, err := documents.NewDecimal("42")
@@ -45,7 +45,7 @@ func invData(t *testing.T) []byte {
 	return d
 }
 
-func CreateInvPayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
+func CreateInvoicePayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
 	if collaborators == nil {
 		collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
 	}
@@ -54,7 +54,7 @@ func CreateInvPayload(t *testing.T, collaborators []identity.DID) documents.Crea
 		Collaborators: documents.CollaboratorsAccess{
 			ReadWriteCollaborators: collaborators,
 		},
-		Data: invData(t),
+		Data: invoiceData(t),
 	}
 }
 
@@ -64,7 +64,7 @@ func InitInvoice(t *testing.T, did identity.DID, payload documents.CreatePayload
 	return inv
 }
 
-func CreateInvWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Invoice, coredocumentpb.CoreDocument) {
+func CreateInvoiceWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Invoice, coredocumentpb.CoreDocument) {
 	inv := new(Invoice)
 	err := inv.unpackFromCreatePayload(did, payload)
 	assert.NoError(t, err)
@@ -91,7 +91,7 @@ func CreateInvWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did iden
 	return inv, cd
 }
 
-func CreateInvWithEmbedCD(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (*Invoice, coredocumentpb.CoreDocument) {
-	payload := CreateInvPayload(t, collaborators)
-	return CreateInvWithEmbedCDWithPayload(t, ctx, did, payload)
+func CreateInvoiceWithEmbedCD(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (*Invoice, coredocumentpb.CoreDocument) {
+	payload := CreateInvoicePayload(t, collaborators)
+	return CreateInvoiceWithEmbedCDWithPayload(t, ctx, did, payload)
 }

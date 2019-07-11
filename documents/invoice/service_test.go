@@ -57,7 +57,7 @@ func TestService_Update(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 
 	// missing last version
-	inv, _ := CreateInvWithEmbedCD(t, ctxh, did, nil)
+	inv, _ := CreateInvoiceWithEmbedCD(t, ctxh, did, nil)
 	_, _, _, err := invSrv.Update(ctxh, inv)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
@@ -119,7 +119,7 @@ func TestService_Create(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown document type")
 
 	// success
-	inv, _ := CreateInvWithEmbedCDWithPayload(t, ctxh, did, CreateInvPayload(t, nil))
+	inv, _ := CreateInvoiceWithEmbedCDWithPayload(t, ctxh, did, CreateInvoicePayload(t, nil))
 	m, _, _, err = invSrv.Create(ctxh, inv)
 	assert.Nil(t, err)
 	assert.True(t, testRepo().Exists(accountID, m.ID()))
@@ -129,7 +129,7 @@ func TestService_Create(t *testing.T) {
 func TestService_GetCurrentVersion(t *testing.T) {
 	_, invSrv := getServiceWithMockedLayers()
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	doc, _ := CreateInvWithEmbedCD(t, ctxh, did, nil)
+	doc, _ := CreateInvoiceWithEmbedCD(t, ctxh, did, nil)
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.Nil(t, err)
 
@@ -189,7 +189,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// failed validator
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvPayload(t, nil)))
+	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return errors.New("validations fail")
 	})
@@ -200,7 +200,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// create failed
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvPayload(t, nil)))
+	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
 	err = invSrv.repo.Create(accountID, inv.CurrentVersion(), inv)
 	assert.Nil(t, err)
 	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
@@ -210,7 +210,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// success
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvPayload(t, nil)))
+	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
 	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
@@ -234,7 +234,7 @@ func testRepo() documents.Repository {
 
 func createCDWithEmbeddedInvoice(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
 	i := new(Invoice)
-	i = InitInvoice(t, did, CreateInvPayload(t, nil))
+	i = InitInvoice(t, did, CreateInvoicePayload(t, nil))
 	i.GetTestCoreDocWithReset()
 	_, err := i.CalculateDataRoot()
 	assert.NoError(t, err)
@@ -311,7 +311,7 @@ func TestService_UpdateModel(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// payload invalid
-	inv, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	inv, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	err = testRepo().Create(did[:], inv.ID(), inv)
 	assert.NoError(t, err)
 	payload.DocumentID = inv.ID()

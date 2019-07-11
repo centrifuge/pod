@@ -86,7 +86,7 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	inv := new(Invoice)
-	assert.NoError(t, inv.unpackFromCreatePayload(did, CreateInvPayload(t, nil)))
+	assert.NoError(t, inv.unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
@@ -97,7 +97,7 @@ func TestInvoice_JSON(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, inv.unpackFromCreatePayload(did, CreateInvPayload(t, nil)))
+	assert.NoError(t, inv.unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
@@ -136,7 +136,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err)
 
 	// successful
-	inv, cd := CreateInvWithEmbedCD(t, nil, did, nil)
+	inv, cd := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	assert.NoError(t, model.UnpackCoreDocument(cd))
 	data := model.GetData()
 	data1 := inv.GetData()
@@ -151,7 +151,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 	m := new(Invoice)
-	assert.NoError(t, m.unpackFromCreatePayload(did, CreateInvPayload(t, nil)))
+	assert.NoError(t, m.unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
 	assert.Nil(t, err, "Init must pass")
 
 	dr, err := m.CalculateDataRoot()
@@ -160,7 +160,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 }
 
 func TestInvoice_CreateProofs(t *testing.T) {
-	i, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	i, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	rk := i.GetTestCoreDocWithReset().Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := i.CreateProofs([]string{"invoice.number", pf, documents.CDTreePrefix + ".document_type", "invoice.line_items[0].item_number", "invoice.line_items[0].description"})
@@ -209,7 +209,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	acc.IdentityID = defaultDID[:]
 	assert.NoError(t, err)
 
-	i, _ := CreateInvWithEmbedCD(t, nil, did, []identity.DID{defaultDID})
+	i, _ := CreateInvoiceWithEmbedCD(t, nil, did, []identity.DID{defaultDID})
 	tt := time.Now()
 	i.Data.DateDue = &tt
 	i.Data.Status = "unpaid"
@@ -259,13 +259,13 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 }
 
 func TestInvoiceModel_createProofsFieldDoesNotExist(t *testing.T) {
-	i, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	i, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	_, err := i.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestInvoiceModel_GetDocumentID(t *testing.T) {
-	i, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	i, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	assert.Equal(t, i.CoreDocument.ID(), i.ID())
 }
 
@@ -274,7 +274,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 	assert.NoError(t, na.SetString("2"))
 	ga := new(documents.Decimal)
 	assert.NoError(t, ga.SetString("2"))
-	i, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	i, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	i.Data.Number = "321321"
 	i.Data.NetAmount = na
 	i.Data.GrossAmount = ga
@@ -287,7 +287,7 @@ func TestInvoiceModel_getDocumentDataTree(t *testing.T) {
 }
 
 func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
-	inv, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	inv, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	id1 := did
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
@@ -401,7 +401,7 @@ func TestInvoice_DeleteAttribute(t *testing.T) {
 }
 
 func TestInvoice_GetData(t *testing.T) {
-	inv, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	inv, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	data := inv.GetData()
 	assert.Equal(t, inv.Data, data)
 }
@@ -593,7 +593,7 @@ func TestInvoice_unpackFromCreatePayload(t *testing.T) {
 
 func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	payload := documents.UpdatePayload{}
-	old, _ := CreateInvWithEmbedCD(t, nil, did, nil)
+	old, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	inv := new(Invoice)
 
 	// invalid data
