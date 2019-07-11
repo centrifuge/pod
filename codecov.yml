@@ -5,4 +5,4 @@ ignore:
   - anchors/anchor_contract.go
   - nft/invoice_unpaid_contract.go
   - documents/entity/test_entity.go
-  - documents/invoice/test_inv.go
+  - documents/invoice/test_invoice.go
