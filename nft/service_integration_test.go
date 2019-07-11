@@ -79,7 +79,7 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	assert.NoError(t, err)
 
 	payload := invoicePayload(t, nil, invoiceData(t, &did, &dueDate))
-	model, _ := invoice.CreateInvoiceWithEmbedCDWithPayload(t, ctx, did, payload)
+	model := invoice.InitInvoice(t, did, payload)
 	assert.NoError(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, done, err := invSrv.Create(ctx, model)
 	assert.NoError(t, err)
@@ -256,9 +256,6 @@ func TestTransferNFT(t *testing.T) {
 }
 
 func invoicePayload(t *testing.T, collaborators []identity.DID, data []byte) documents.CreatePayload {
-	if collaborators == nil {
-		collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
-	}
 	return documents.CreatePayload{
 		Scheme: invoice.Scheme,
 		Collaborators: documents.CollaboratorsAccess{
