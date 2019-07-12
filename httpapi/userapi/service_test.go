@@ -23,7 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/stretchr/testify/assert"
@@ -552,8 +552,4 @@ func TestService_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
 	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
 	assert.Equal(t, signatureSender, proofList[6])
-}
-
-func TestService_MintInvoiceUnpaidNFT(t *testing.T) {
-
 }
