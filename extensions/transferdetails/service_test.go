@@ -75,10 +75,7 @@ func TestMain(m *testing.M) {
 
 func TestDeriveFromPayload(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -101,10 +98,7 @@ func TestDeriveFromPayload(t *testing.T) {
 }
 
 func TestDeriveTransferResponse(t *testing.T) {
-	testingdocuments.CreateInvoicePayload()
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -127,21 +121,17 @@ func TestDeriveTransferResponse(t *testing.T) {
 }
 
 func TestService_DeriveTransferListWithNoAttributes(t *testing.T) {
-	model := new(invoice.Invoice)
-	err := model.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 	docSrv := new(testingdocuments.MockService)
 	srv := DefaultService(newCoreAPIService(docSrv), nil)
-	response, m, err := srv.DeriveTransferList(context.Background(), model)
+	response, m, err := srv.DeriveTransferList(context.Background(), inv)
 	assert.NotNil(t, response)
 	assert.NotNil(t, m)
 	assert.NoError(t, err)
 }
 
 func TestDeriveTransferListResponse(t *testing.T) {
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -149,6 +139,7 @@ func TestDeriveTransferListResponse(t *testing.T) {
 	srv := DefaultService(newCoreAPIService(docSrv), nil)
 
 	var model documents.Model
+	var err error
 	var payloads []CreateTransferDetailRequest
 	for i := 0; i < 10; i++ {
 		p := createTestPayload()
@@ -169,9 +160,7 @@ func TestDeriveTransferListResponse(t *testing.T) {
 }
 
 func TestService_DeriveFromUpdatePayload(t *testing.T) {
-	inv := new(invoice.Invoice)
-	err := inv.InitInvoiceInput(testingdocuments.CreateInvoicePayload(), testingidentity.GenerateRandomDID())
-	assert.NoError(t, err)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
@@ -181,7 +170,7 @@ func TestService_DeriveFromUpdatePayload(t *testing.T) {
 
 	p := createTestPayload()
 	p.DocumentID = hexutil.Encode(inv.Document.DocumentIdentifier)
-	model, _, err = srv.CreateTransferDetail(context.Background(), p)
+	model, _, err := srv.CreateTransferDetail(context.Background(), p)
 	assert.NoError(t, err)
 
 	// update

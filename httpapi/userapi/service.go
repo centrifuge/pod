@@ -129,6 +129,11 @@ func (s Service) GetInvoice(ctx context.Context, docID []byte) (documents.Model,
 	return s.coreAPISrv.GetDocument(ctx, docID)
 }
 
+// GetInvoiceVersion gets a specific version of the provided invoice document
+func (s Service) GetInvoiceVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
+}
+
 func convertPORequest(req CreatePurchaseOrderRequest) (documents.CreatePayload, error) {
 	coreAPIReq := coreapi.CreateDocumentRequest{
 		Scheme:      purchaseorder.Scheme,

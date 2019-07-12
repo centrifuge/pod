@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -137,92 +136,6 @@ type TaxItem struct {
 	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount" swaggertype:"primitive,string"`
 }
 
-// getClientData returns the client data from the invoice model
-func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
-	d := i.Data
-	decs := documents.DecimalsToStrings(d.GrossAmount, d.NetAmount, d.TaxAmount, d.TaxRate)
-	dids := identity.DIDsToStrings(d.Recipient, d.Sender, d.Payee)
-
-	pd, err := documents.ToClientPaymentDetails(d.PaymentDetails)
-	if err != nil {
-		return nil, err
-	}
-
-	pts, err := timeutils.ToProtoTimestamps(d.CreditForInvoiceDate, d.DateDue, d.DatePaid, d.DateCreated, d.DateUpdated)
-	if err != nil {
-		return nil, err
-	}
-
-	return &clientinvoicepb.InvoiceData{
-		Number:                   d.Number,
-		Status:                   d.Status,
-		SenderInvoiceId:          d.SenderInvoiceID,
-		RecipientInvoiceId:       d.RecipientInvoiceID,
-		SenderCompanyName:        d.SenderCompanyName,
-		SenderContactPersonName:  d.SenderContactPersonName,
-		SenderStreet1:            d.SenderStreet1,
-		SenderStreet2:            d.SenderStreet2,
-		SenderCity:               d.SenderCity,
-		SenderZipcode:            d.SenderZipcode,
-		SenderState:              d.SenderState,
-		SenderCountry:            d.SenderCountry,
-		BillToCompanyName:        d.BillToCompanyName,
-		BillToContactPersonName:  d.BillToContactPersonName,
-		BillToStreet1:            d.BillToStreet1,
-		BillToStreet2:            d.BillToStreet2,
-		BillToCity:               d.BillToCity,
-		BillToZipcode:            d.BillToZipcode,
-		BillToState:              d.BillToState,
-		BillToCountry:            d.BillToCountry,
-		BillToLocalTaxId:         d.BillToLocalTaxID,
-		BillToVatNumber:          d.BillToVatNumber,
-		RemitToCompanyName:       d.RemitToCompanyName,
-		RemitToContactPersonName: d.RemitToContactPersonName,
-		RemitToStreet1:           d.RemitToStreet1,
-		RemitToStreet2:           d.RemitToStreet2,
-		RemitToCity:              d.RemitToCity,
-		RemitToCountry:           d.RemitToCountry,
-		RemitToState:             d.RemitToState,
-		RemitToZipcode:           d.RemitToZipcode,
-		RemitToLocalTaxId:        d.RemitToLocalTaxID,
-		RemitToTaxCountry:        d.RemitToTaxCountry,
-		RemitToVatNumber:         d.RemitToVatNumber,
-		ShipToCompanyName:        d.ShipToCompanyName,
-		ShipToContactPersonName:  d.ShipToContactPersonName,
-		ShipToStreet1:            d.ShipToStreet1,
-		ShipToStreet2:            d.ShipToStreet2,
-		ShipToCity:               d.ShipToCity,
-		ShipToState:              d.ShipToState,
-		ShipToCountry:            d.ShipToCountry,
-		ShipToZipcode:            d.ShipToZipcode,
-		Currency:                 d.Currency,
-		GrossAmount:              decs[0],
-		NetAmount:                decs[1],
-		TaxAmount:                decs[2],
-		TaxRate:                  decs[3],
-		TaxOnLineLevel:           d.TaxOnLineLevel,
-		Recipient:                dids[0],
-		Sender:                   dids[1],
-		Payee:                    dids[2],
-		Comment:                  d.Comment,
-		ShippingTerms:            d.ShippingTerms,
-		RequesterEmail:           d.RequesterEmail,
-		RequesterName:            d.RequesterName,
-		DeliveryNumber:           d.DeliveryNumber,
-		IsCreditNote:             d.IsCreditNote,
-		CreditNoteInvoiceNumber:  d.CreditNoteInvoiceNumber,
-		CreditForInvoiceDate:     pts[0],
-		DateDue:                  pts[1],
-		DatePaid:                 pts[2],
-		DateCreated:              pts[3],
-		DateUpdated:              pts[4],
-		Attachments:              documents.ToClientAttachments(d.Attachments),
-		LineItems:                toClientLineItems(d.LineItems),
-		PaymentDetails:           pd,
-		TaxItems:                 toClientTaxItems(d.TaxItems),
-	}, nil
-}
-
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
 func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 	d := i.Data
@@ -321,141 +234,6 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		TaxItems:                 ti,
 	}, nil
 
-}
-
-// InitInvoiceInput initialize the model based on the received parameters from the rest api call
-// Deprecated: in favour of non protobuf method (TODO remove after migration)
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self identity.DID) error {
-	err := i.initInvoiceFromData(payload.Data)
-	if err != nil {
-		return err
-	}
-
-	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
-	if err != nil {
-		return err
-	}
-	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-
-	attrs, err := documents.FromClientAttributes(payload.Attributes)
-	if err != nil {
-		return err
-	}
-	cd, err := documents.NewCoreDocument(compactPrefix(), cs, attrs)
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	i.CoreDocument = cd
-	return nil
-}
-
-// initInvoiceFromData initialises invoice from invoiceData
-func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
-	decs, err := documents.StringsToDecimals(data.GrossAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
-	if err != nil {
-		return err
-	}
-
-	dids, err := identity.StringsToDIDs(data.Recipient, data.Sender, data.Payee)
-	if err != nil {
-		return err
-	}
-
-	atts, err := documents.FromClientAttachments(data.Attachments)
-	if err != nil {
-		return err
-	}
-
-	li, err := fromClientLineItems(data.LineItems)
-	if err != nil {
-		return err
-	}
-
-	pd, err := documents.FromClientPaymentDetails(data.PaymentDetails)
-	if err != nil {
-		return err
-	}
-
-	ti, err := fromClientTaxItems(data.TaxItems)
-	if err != nil {
-		return err
-	}
-
-	tms, err := timeutils.FromProtoTimestamps(data.CreditForInvoiceDate, data.DateDue, data.DatePaid, data.DateCreated, data.DateUpdated)
-	if err != nil {
-		return err
-	}
-
-	var d Data
-	d.Number = data.Number
-	d.Status = data.Status
-	d.SenderInvoiceID = data.SenderInvoiceId
-	d.RecipientInvoiceID = data.RecipientInvoiceId
-	d.SenderCompanyName = data.SenderCompanyName
-	d.SenderContactPersonName = data.SenderContactPersonName
-	d.SenderStreet1 = data.SenderStreet1
-	d.SenderStreet2 = data.SenderStreet2
-	d.SenderCity = data.SenderCity
-	d.SenderZipcode = data.SenderZipcode
-	d.SenderState = data.SenderState
-	d.SenderCountry = data.SenderCountry
-	d.BillToCompanyName = data.BillToCompanyName
-	d.BillToContactPersonName = data.BillToContactPersonName
-	d.BillToStreet1 = data.BillToStreet1
-	d.BillToStreet2 = data.BillToStreet2
-	d.BillToCity = data.BillToCity
-	d.BillToZipcode = data.BillToZipcode
-	d.BillToState = data.BillToState
-	d.BillToCountry = data.BillToCountry
-	d.BillToVatNumber = data.BillToVatNumber
-	d.BillToLocalTaxID = data.BillToLocalTaxId
-	d.RemitToCompanyName = data.RemitToCompanyName
-	d.RemitToContactPersonName = data.RemitToContactPersonName
-	d.RemitToStreet1 = data.RemitToStreet1
-	d.RemitToStreet2 = data.RemitToStreet2
-	d.RemitToCity = data.RemitToCity
-	d.RemitToZipcode = data.RemitToZipcode
-	d.RemitToState = data.RemitToState
-	d.RemitToCountry = data.RemitToCountry
-	d.RemitToVatNumber = data.RemitToVatNumber
-	d.RemitToLocalTaxID = data.RemitToLocalTaxId
-	d.RemitToTaxCountry = data.RemitToTaxCountry
-	d.ShipToCompanyName = data.ShipToCompanyName
-	d.ShipToContactPersonName = data.ShipToContactPersonName
-	d.ShipToStreet1 = data.ShipToStreet1
-	d.ShipToStreet2 = data.ShipToStreet2
-	d.ShipToCity = data.ShipToCity
-	d.ShipToZipcode = data.ShipToZipcode
-	d.ShipToState = data.ShipToState
-	d.ShipToCountry = data.ShipToCountry
-	d.Currency = data.Currency
-	d.GrossAmount = decs[0]
-	d.NetAmount = decs[1]
-	d.TaxAmount = decs[2]
-	d.TaxRate = decs[3]
-	d.TaxOnLineLevel = data.TaxOnLineLevel
-	d.Recipient = dids[0]
-	d.Sender = dids[1]
-	d.Payee = dids[2]
-	d.Comment = data.Comment
-	d.ShippingTerms = data.ShippingTerms
-	d.RequesterEmail = data.RequesterEmail
-	d.RequesterName = data.RequesterName
-	d.DeliveryNumber = data.DeliveryNumber
-	d.IsCreditNote = data.IsCreditNote
-	d.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
-	d.CreditForInvoiceDate = tms[0]
-	d.DateDue = tms[1]
-	d.DatePaid = tms[2]
-	d.DateCreated = tms[3]
-	d.DateUpdated = tms[4]
-	d.Attachments = atts
-	d.LineItems = li
-	d.PaymentDetails = pd
-	d.TaxItems = ti
-	i.Data = d
-	return nil
 }
 
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
@@ -666,22 +444,6 @@ func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err e
 // DocumentType returns the invoice document type.
 func (*Invoice) DocumentType() string {
 	return documenttypes.InvoiceDataTypeUrl
-}
-
-// PrepareNewVersion prepares new version from the old invoice.
-func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
-	err := i.initInvoiceFromData(data)
-	if err != nil {
-		return err
-	}
-
-	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddNFT adds NFT to the Invoice.

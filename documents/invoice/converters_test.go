@@ -21,21 +21,12 @@ func TestLineItems(t *testing.T) {
 		},
 	}
 
-	citems := toClientLineItems(items)
 	pitems, err := toP2PLineItems(items)
 	assert.NoError(t, err)
-
-	fcitems, err := fromClientLineItems(citems)
-	assert.NoError(t, err)
-	assert.Equal(t, items, fcitems)
 
 	fpitems, err := fromP2PLineItems(pitems)
 	assert.NoError(t, err)
 	assert.Equal(t, items, fpitems)
-
-	citems[0].TaxAmount = "100.1234567891234567891"
-	_, err = fromClientLineItems(citems)
-	assert.Error(t, err)
 
 	pitems[0].TaxAmount = utils.RandomSlice(40)
 	_, err = fromP2PLineItems(pitems)
@@ -53,21 +44,12 @@ func TestTaxItems(t *testing.T) {
 		},
 	}
 
-	citems := toClientTaxItems(items)
 	pitems, err := toP2PTaxItems(items)
 	assert.NoError(t, err)
 
-	fcitems, err := fromClientTaxItems(citems)
-	assert.NoError(t, err)
 	fpitems, err := fromP2PTaxItems(pitems)
 	assert.NoError(t, err)
-
-	assert.Equal(t, items, fcitems)
 	assert.Equal(t, items, fpitems)
-
-	citems[0].TaxAmount = "0.1.1"
-	_, err = fromClientTaxItems(citems)
-	assert.Error(t, err)
 
 	pitems[0].TaxAmount = utils.RandomSlice(40)
 	_, err = fromP2PTaxItems(pitems)
