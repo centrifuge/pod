@@ -1556,6 +1556,71 @@
                 }
             }
         },
+        "/v1/invoices/{document_id}/mint/unpaid": {
+            "post": {
+                "description": "Mints an NFT for an unpaid invoice document.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoices"
+                ],
+                "summary": "Mints an NFT for an unpaid invoice document.",
+                "operationId": "invoice_unpaid_nft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Invoice Unpaid NFT Mint Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.NFTMintInvoiceUnpaidRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.NFTMintResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/invoices/{document_id}/versions/{version_id}": {
             "get": {
                 "description": "Returns the specific version of an Invoice.",
@@ -3661,6 +3726,28 @@
                 }
             }
         },
+        "userapi.NFTMintInvoiceUnpaidRequest": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "description": "Deposit address for NFT Token created",
+                    "type": "string"
+                },
+                "document_id": {
+                    "description": "Invoice Document identifier",
+                    "type": "string"
+                }
+            }
+        },
+        "userapi.NFTMintResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/userapi.ResponseHeader"
+                }
+            }
+        },
         "userapi.PurchaseOrderResponse": {
             "type": "object",
             "properties": {
@@ -3691,6 +3778,14 @@
                     "type": "string"
                 },
                 "target_identity": {
+                    "type": "string"
+                }
+            }
+        },
+        "userapi.ResponseHeader": {
+            "type": "object",
+            "properties": {
+                "job_id": {
                     "type": "string"
                 }
             }

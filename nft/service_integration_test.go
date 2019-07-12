@@ -35,7 +35,7 @@ var cfg config.Configuration
 var cfgService config.Service
 var idService identity.Service
 var idFactory identity.Factory
-var invoiceUnpaid nft.InvoiceUnpaid
+var invoiceUnpaid nft.Service
 var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
 
@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	invoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.InvoiceUnpaid)
+	invoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.Service)
 	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	result := m.Run()
