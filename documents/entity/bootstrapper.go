@@ -77,7 +77,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, jobManager, factory, erService, didService, anchorRepo, processor, func() documents.ValidatorGroup {
+		queueSrv, jobManager, factory, erService, anchorRepo, processor, func() documents.ValidatorGroup {
 			return documents.PostAnchoredValidator(didService, anchorRepo)
 		})
 

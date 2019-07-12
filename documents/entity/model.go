@@ -3,7 +3,6 @@ package entity
 import (
 	"encoding/json"
 	"reflect"
-	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -114,19 +112,6 @@ type Entity struct {
 	Data Data
 }
 
-// getClientData returns the client data from the entity model
-func (e *Entity) getClientData() *cliententitypb.EntityData {
-	d := e.Data
-	dids := identity.DIDsToStrings(d.Identity)
-	return &cliententitypb.EntityData{
-		Identity:       dids[0],
-		LegalName:      d.LegalName,
-		Addresses:      toProtoAddresses(d.Addresses),
-		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
-		Contacts:       toProtoContacts(d.Contacts),
-	}
-}
-
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 	d := e.Data
@@ -138,55 +123,6 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
 		Contacts:       toProtoContacts(d.Contacts),
 	}
-}
-
-// InitEntityInput initialize the model based on the received parameters from the rest api call
-func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self identity.DID) error {
-	err := e.initEntityFromData(payload.Data)
-	if err != nil {
-		return err
-	}
-
-	ca, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
-	if err != nil {
-		return errors.New("failed to decode collaborator: %v", err)
-	}
-
-	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)
-	attrs, err := documents.FromClientAttributes(payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	cd, err := documents.NewCoreDocument(compactPrefix(), ca, attrs)
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	e.CoreDocument = cd
-	return nil
-}
-
-// initEntityFromData initialises entity from entityData
-func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
-	data.Identity = strings.TrimSpace(data.Identity)
-	if data.Identity == "" {
-		return identity.ErrMalformedAddress
-	}
-
-	dids, err := identity.StringsToDIDs(data.Identity)
-	if err != nil {
-		return errors.NewTypedError(identity.ErrMalformedAddress, err)
-	}
-
-	var d Data
-	d.Identity = dids[0]
-	d.LegalName = data.LegalName
-	d.Addresses = fromProtoAddresses(data.Addresses)
-	d.PaymentDetails = fromProtoPaymentDetails(data.PaymentDetails)
-	d.Contacts = fromProtoContacts(data.Contacts)
-	e.Data = d
-	return nil
 }
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
@@ -324,22 +260,6 @@ func (e *Entity) CreateProofs(fields []string) (proofs []*proofspb.Proof, err er
 // DocumentType returns the entity document type.
 func (*Entity) DocumentType() string {
 	return documenttypes.EntityDataTypeUrl
-}
-
-// PrepareNewVersion prepares new version from the old entity.
-func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
-	err := e.initEntityFromData(data)
-	if err != nil {
-		return err
-	}
-
-	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddNFT adds NFT to the Entity.
