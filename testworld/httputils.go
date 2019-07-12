@@ -164,7 +164,7 @@ func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, documentTy
 	relationshipIdentifier := params["r_identifier"].(string)
 
 	objGet := addCommonHeaders(e.GET("/v1/relationships/"+relationshipIdentifier+"/entity"), auth).
-		Expect().Status(500).JSON().NotNull()
+		Expect().Status(http.StatusNotFound).JSON().NotNull()
 
 	return objGet
 }
