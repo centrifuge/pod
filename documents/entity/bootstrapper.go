@@ -4,7 +4,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -14,9 +13,6 @@ import (
 )
 
 const (
-	// BootstrappedEntityHandler maps to grpc handler for entities
-	BootstrappedEntityHandler string = "BootstrappedEntityHandler"
-
 	// BootstrappedEntityService maps to the service for entities
 	BootstrappedEntityService string = "BootstrappedEntityService"
 )
@@ -50,11 +46,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("transaction service not initialised")
-	}
-
-	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
-	if !ok {
-		return errors.New("config service not initialised")
 	}
 
 	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
@@ -101,7 +92,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	ctx[BootstrappedEntityService] = srv
-	ctx[BootstrappedEntityHandler] = GRPCHandler(cfgSrv, srv)
 
 	return nil
 }

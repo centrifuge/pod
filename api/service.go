@@ -3,12 +3,10 @@ package api
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	invoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/nft"
@@ -55,18 +53,6 @@ func registerDocumentTypes(ctx context.Context, nodeObjReg map[string]interface{
 
 	invoicepb.RegisterInvoiceServiceServer(grpcServer, invHandler)
 	err := invoicepb.RegisterInvoiceServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
-	if err != nil {
-		return err
-	}
-
-	// register entity
-	entityHandler, ok := nodeObjReg[entity.BootstrappedEntityHandler].(entitypb.EntityServiceServer)
-	if !ok {
-		return errors.New("entity grpc handler not registered")
-	}
-
-	entitypb.RegisterEntityServiceServer(grpcServer, entityHandler)
-	err = entitypb.RegisterEntityServiceHandlerFromEndpoint(ctx, gwmux, addr, dopts)
 	if err != nil {
 		return err
 	}

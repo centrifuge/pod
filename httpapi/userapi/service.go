@@ -18,6 +18,7 @@ type Service struct {
 	coreAPISrv             coreapi.Service
 	transferDetailsService transferdetails.Service
 	entityRelationshipSrv  entityrelationship.Service
+	entitySrv              entity.Service
 }
 
 // TODO: this can be refactored into a generic Service which handles all kinds of custom attributes
@@ -231,4 +232,9 @@ func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req Share
 		DocumentID:    docID,
 		CreatePayload: r,
 	})
+}
+
+// GetEntityByRelationship returns an entity through a relationship ID.
+func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Model, error) {
+	return s.entitySrv.GetEntityByRelationship(ctx, docID)
 }

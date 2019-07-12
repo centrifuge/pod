@@ -12,19 +12,6 @@ import "entity/entity.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-// EntityService contains all common interactions for entity documents
-service EntityService {
-  // Entity Relation Get
-  rpc GetEntityByRelationship(GetRequestRelationship) returns (EntityResponse) {
-    option (google.api.http) = {
-      get: "/v1/relationships/{relationship_id}/entity"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get entity from business partner"
-    };
-  }
-}
-
 message GetRequestRelationship {
   string relationship_id = 1;
 }
