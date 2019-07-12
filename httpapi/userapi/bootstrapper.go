@@ -1,6 +1,7 @@
 package userapi
 
 import (
+	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
@@ -29,6 +30,16 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if !ok {
 		return errors.New("failed to get %s", entityrelationship.BootstrappedEntityRelationshipService)
 	}
-	ctx[BootstrappedUserAPIService] = Service{coreAPISrv: coreAPISrv, transferDetailsService: tdSrv, entityRelationshipSrv: erSrv}
+
+	eSrv, ok := ctx[entity.BootstrappedEntityService].(entity.Service)
+	if !ok {
+		return errors.New("failed to get %s", entity.BootstrappedEntityService)
+	}
+	ctx[BootstrappedUserAPIService] = Service{
+		coreAPISrv:             coreAPISrv,
+		transferDetailsService: tdSrv,
+		entityRelationshipSrv:  erSrv,
+		entitySrv:              eSrv,
+	}
 	return nil
 }

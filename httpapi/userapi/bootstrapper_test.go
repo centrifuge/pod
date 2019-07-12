@@ -33,7 +33,13 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), entityrelationship.BootstrappedEntityRelationshipService)
 
-	// success
+	// missing entity service
 	ctx[entityrelationship.BootstrappedEntityRelationshipService] = new(entity.MockEntityRelationService)
+	err = b.Bootstrap(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), entity.BootstrappedEntityService)
+
+	// success
+	ctx[entity.BootstrappedEntityService] = new(entity.MockService)
 	assert.NoError(t, b.Bootstrap(ctx))
 }
