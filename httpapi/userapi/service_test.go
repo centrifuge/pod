@@ -553,3 +553,7 @@ func TestService_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
 	assert.Equal(t, signatureSender, proofList[6])
 }
+
+func TestService_MintInvoiceUnpaidNFT(t *testing.T) {
+
+}

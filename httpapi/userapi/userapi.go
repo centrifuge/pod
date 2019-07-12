@@ -31,7 +31,7 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}", h.GetInvoice)
 	r.Put("/invoices/{"+coreapi.DocumentIDParam+"}", h.UpdateInvoice)
 	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}", h.GetInvoiceVersion)
-	r.Post("/invoices/{"+coreapi.DocumentIDParam+"}//mint/unpaid", h.MintInvoiceUnpaidNFT)
+	r.Post("/invoices/{"+coreapi.DocumentIDParam+"}/mint/unpaid", h.MintInvoiceUnpaidNFT)
 
 	// purchase order api
 	r.Post("/purchase_orders", h.CreatePurchaseOrder)
