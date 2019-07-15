@@ -271,6 +271,6 @@ func (h handler) MintInvoiceUnpaidNFT(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, NFTMintResponse{
-		Header: &ResponseHeader{JobId: m.JobID},
+		Header: &ResponseHeader{JobID: m.JobID},
 	})
 }
