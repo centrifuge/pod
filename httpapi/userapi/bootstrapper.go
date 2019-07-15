@@ -1,6 +1,7 @@
 package userapi
 
 import (
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -42,12 +43,18 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", funding.BootstrappedFundingService)
 	}
 
+	configSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
+	if !ok {
+		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
+	}
+
 	ctx[BootstrappedUserAPIService] = Service{
 		coreAPISrv:             coreAPISrv,
 		transferDetailsService: tdSrv,
 		entityRelationshipSrv:  erSrv,
 		entitySrv:              eSrv,
 		fundingSrv:             fundingSrv,
+		config:                 configSrv,
 	}
 	return nil
 }

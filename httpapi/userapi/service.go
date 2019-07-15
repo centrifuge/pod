@@ -2,7 +2,10 @@ package userapi
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -11,7 +14,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service provides functionality for User APIs.
@@ -21,6 +28,7 @@ type Service struct {
 	entityRelationshipSrv  entityrelationship.Service
 	entitySrv              entity.Service
 	fundingSrv             funding.Service
+	config                 config.Service
 }
 
 // TODO: this can be refactored into a generic Service which handles all kinds of custom attributes
@@ -244,4 +252,57 @@ func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req Share
 // GetEntityByRelationship returns an entity through a relationship ID.
 func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.entitySrv.GetEntityByRelationship(ctx, docID)
+}
+
+// MintInvoiceUnpaidNFT mints an NFT for an unpaid invoice document.
+func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnpaidRequest) (*nft.TokenResponse, error) {
+	// Get proof fields
+	proofFields, err := getRequiredInvoiceUnpaidProofFields(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := s.config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
+
+	identifier, err := hexutil.Decode(req.DocumentID)
+	if err != nil {
+		return nil, err
+	}
+
+	nreq := nft.MintNFTRequest{
+		DocumentID:               identifier,
+		RegistryAddress:          poRegistry,
+		DepositAddress:           common.HexToAddress(req.DepositAddress),
+		ProofFields:              proofFields,
+		GrantNFTReadAccess:       true,
+		SubmitNFTReadAccessProof: true,
+		SubmitTokenProof:         true,
+	}
+
+	return s.coreAPISrv.MintNFT(ctx, nreq)
+}
+
+// getRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
+func getRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+	var proofFields []string
+
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accDIDBytes := acc.GetIdentityID()
+	keys, err := acc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
+	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	return proofFields, nil
 }

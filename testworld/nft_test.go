@@ -95,7 +95,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			"document_id":     docIdentifier,
 			"deposit_address": depositAddress, // Centrifuge address
 		}
-		response, err = alice.host.mintUnpaidInvoiceNFT(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, payload)
+		response, err = alice.host.mintUnpaidInvoiceNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, docIdentifier, payload)
 	}
 
 	assert.NoError(t, err, "mintNFT should be successful")
