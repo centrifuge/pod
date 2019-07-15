@@ -23,12 +23,6 @@ func (m *MockNFTService) MintNFT(ctx context.Context, request nft.MintNFTRequest
 	return resp, done, args.Error(2)
 }
 
-func (m *MockNFTService) GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
-	args := m.Called(ctx)
-	resp, _ := args.Get(0).([]string)
-	return resp, args.Error(1)
-}
-
 func (m *MockNFTService) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID nft.TokenID) (*nft.TokenResponse, chan bool, error) {
 	args := m.Called(ctx)
 	resp, _ := args.Get(0).(*nft.TokenResponse)

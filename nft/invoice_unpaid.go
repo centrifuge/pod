@@ -89,13 +89,6 @@ type Service interface {
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
 }
 
-// InvoiceUnpaid handles transactions related to minting of NFTs for unpaid invoices
-type InvoiceUnpaid interface {
-	Service
-	// GetRequiredInvoiceUnpaidProofFields returns the required proof field properties
-	GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error)
-}
-
 // TokenResponse holds tokenID and transaction ID.
 type TokenResponse struct {
 	TokenID string

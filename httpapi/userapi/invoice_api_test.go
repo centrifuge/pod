@@ -11,12 +11,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -363,4 +367,54 @@ func TestHandler_GetInvoiceVersion(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	docSrv.AssertExpectations(t)
 	m.AssertExpectations(t)
+}
+
+func TestHandler_MintInvoiceUnpaidNFT(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/v1/invoices/{document_id}/mint/unpaid", b).WithContext(ctx)
+	}
+
+	srv := new(testingnfts.MockNFTService)
+	mc := configstore.MockService{}
+	mc.On("GetConfig").Return(cfg, nil)
+	h := handler{srv: Service{coreAPISrv: coreapi.NewService(nil, nil, srv, nil), config: mc}}
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	c := testingconfig.CreateAccountContext(t, cfg)
+	ctx := context.WithValue(c, chi.RouteCtxKey, rctx)
+
+	// empty data
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(20))
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.MintInvoiceUnpaidNFT(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+	data := map[string]interface{}{
+		"document_id":     hexutil.Encode(utils.RandomSlice(32)),
+		"deposit_address": hexutil.Encode(utils.RandomSlice(20)),
+	}
+
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	srv.On("MintNFT", ctx, mock.Anything).Return(nil, nil, errors.New("failed to mint nft")).Once()
+	h.MintInvoiceUnpaidNFT(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "failed to mint nft")
+	srv.AssertExpectations(t)
+
+	// success
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	tokenID := hexutil.Encode(utils.RandomSlice(32))
+	srv.On("MintNFT", ctx, mock.Anything).Return(
+		&nft.TokenResponse{
+			TokenID: tokenID,
+			JobID:   jobs.NewJobID().String(),
+		}, nil, nil).Once()
+	h.MintInvoiceUnpaidNFT(w, r)
+	assert.Equal(t, http.StatusAccepted, w.Code)
+	assert.Contains(t, w.Body.String(), "job_id")
+	srv.AssertExpectations(t)
 }

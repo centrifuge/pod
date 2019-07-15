@@ -46,6 +46,24 @@ type TransferDetailListResponse struct {
 	Data   []transferdetails.Data `json:"data"`
 }
 
+// NFTMintInvoiceUnpaidRequest is the request for minting an NFT for an unpaid NFT
+type NFTMintInvoiceUnpaidRequest struct {
+	// Invoice Document identifier
+	DocumentID string `json:"document_id"`
+	// Deposit address for NFT Token created
+	DepositAddress string `json:"deposit_address"`
+}
+
+// ResponseHeader header with job id
+type ResponseHeader struct {
+	JobID string `json:"job_id"`
+}
+
+// NFTMintResponse is response from user api NFT minting
+type NFTMintResponse struct {
+	Header *ResponseHeader `json:"header"`
+}
+
 func toTransferDetailCreatePayload(request CreateTransferDetailRequest) (*transferdetails.CreateTransferDetailRequest, error) {
 	payload := transferdetails.CreateTransferDetailRequest{
 		DocumentID: request.DocumentID,
