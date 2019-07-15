@@ -1,6 +1,8 @@
 //nolint
 package funding
 
+import funpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+
 // OldData is the default funding extension schema.
 // deprecated. use Data
 type OldData struct {
@@ -34,4 +36,44 @@ type Data struct {
 	Currency              string `json:"currency,omitempty" attr:"string"`
 	NFTAddress            string `json:"nft_address,omitempty" attr:"bytes"`
 	PaymentDetailsID      string `json:"payment_details_id,omitempty" attr:"bytes"`
+}
+
+// Signature is the funding agreement Signature.
+type Signature struct {
+	Valid             string `json:"valid"`
+	OutdatedSignature string `json:"outdated_signature"`
+	Identity          string `json:"identity"`
+	SignedVersion     string `json:"signed_version"`
+}
+
+func fromOldData(data OldData) Data {
+	return Data{
+		Currency:              data.Currency,
+		AgreementID:           data.AgreementId,
+		Amount:                data.Amount,
+		Apr:                   data.Apr,
+		BorrowerID:            data.BorrowerId,
+		Days:                  data.Days,
+		Fee:                   data.Fee,
+		FunderID:              data.FunderId,
+		NFTAddress:            data.NftAddress,
+		PaymentDetailsID:      data.PaymentDetailsId,
+		RepaymentAmount:       data.RepaymentAmount,
+		RepaymentDueDate:      data.RepaymentDueDate,
+		RepaymentOccurredDate: data.RepaymentOccurredDate,
+	}
+}
+
+func fromClientSignatures(sigs []*funpb.FundingSignature) []Signature {
+	var resp []Signature
+	for _, sig := range sigs {
+		resp = append(resp, Signature{
+			Identity:          sig.Identity,
+			OutdatedSignature: sig.OutdatedSignature,
+			SignedVersion:     sig.SignedVersion,
+			Valid:             sig.Valid,
+		})
+	}
+
+	return resp
 }

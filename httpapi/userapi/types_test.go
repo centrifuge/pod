@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -169,4 +170,36 @@ func TestTypes_convertEntityShareRequest(t *testing.T) {
 	assert.Equal(t, r.EntityIdentifier, docID)
 	assert.Equal(t, r.OwnerIdentity, &did)
 	assert.Equal(t, r.TargetIdentity, &did1)
+}
+
+func TestTypes_toFundingResponse(t *testing.T) {
+	// failed to derive header
+	model := new(testingdocuments.MockModel)
+	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
+	fundingSrv := new(funding.MockService)
+	ctx := context.Background()
+	fundingID := byteutils.HexBytes(utils.RandomSlice(32)).String()
+	_, err := toFundingAgreementResponse(ctx, fundingSrv, model, fundingID, nil, jobs.NilJobID())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error fetching collaborators")
+
+	// failed to get data and signatures
+	id := utils.RandomSlice(32)
+	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil)
+	model.On("ID").Return(id)
+	model.On("CurrentVersion").Return(id)
+	model.On("Author").Return(nil, errors.New("somerror"))
+	model.On("Timestamp").Return(nil, errors.New("somerror"))
+	model.On("NFTs").Return(nil)
+	fundingSrv.On("GetDataAndSignatures", ctx, model, fundingID).Return(nil, nil, errors.New("failed to get data and sigs")).Once()
+	_, err = toFundingAgreementResponse(ctx, fundingSrv, model, fundingID, nil, jobs.NilJobID())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get data and sigs")
+
+	// success
+	fundingSrv.On("GetDataAndSignatures", ctx, model, fundingID).Return(funding.Data{}, nil, nil)
+	_, err = toFundingAgreementResponse(ctx, fundingSrv, model, fundingID, nil, jobs.NilJobID())
+	assert.NoError(t, err)
+	model.AssertExpectations(t)
+	fundingSrv.AssertExpectations(t)
 }

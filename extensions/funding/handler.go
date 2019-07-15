@@ -29,48 +29,6 @@ func GRPCHandler(config config.Service, srv Service) clientfunpb.FundingServiceS
 	}
 }
 
-// Create handles a new funding document extension and adds it to an existing document
-func (h *grpcHandler) Create(ctx context.Context, req *clientfunpb.FundingCreatePayload) (*clientfunpb.FundingResponse, error) {
-	apiLog.Debugf("create funding request %v", req)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	// create new funding id
-	if req.Data.AgreementId == "" {
-		req.Data.AgreementId = extensions.NewAttributeSetID()
-	} else {
-		_, err := hexutil.Decode(req.Data.AgreementId)
-		if err != nil {
-			apiLog.Error(err)
-			return nil, extensions.ErrAttributeSetID
-		}
-	}
-
-	// returns model with added funding custom fields
-	model, err := h.service.DeriveFromPayload(ctxHeader, req)
-	if err != nil {
-		return nil, errors.NewTypedError(extensions.ErrPayload, err)
-	}
-
-	model, jobID, _, err := h.service.Update(ctxHeader, model)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, errors.NewTypedError(extensions.ErrDeriveAttr, err)
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
-}
-
 // Get returns a funding agreement from an existing document
 func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clientfunpb.FundingResponse, error) {
 	apiLog.Debugf("Get request %v", req)

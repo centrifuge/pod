@@ -121,7 +121,7 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
 
 	// alice adds a funding and shares with charlie
-	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusOK, defaultFundingPayload(alice.id.String(), charlie.id.String()))
+	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultFundingPayload(alice.id.String(), charlie.id.String()))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

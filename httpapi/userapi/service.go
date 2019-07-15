@@ -306,3 +306,8 @@ func getRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) 
 	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	return proofFields, nil
 }
+
+// CreateFundingAgreement creates a new funding agreement on a document and anchors the document.
+func (s Service) CreateFundingAgreement(ctx context.Context, docID []byte, data *funding.Data) (documents.Model, jobs.JobID, error) {
+	return s.fundingSrv.CreateFundingAgreement(ctx, docID, data)
+}

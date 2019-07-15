@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -350,17 +352,17 @@ func createTestData() OldData {
 	}
 }
 
-func createData() Data {
+func createData() *Data {
 	fundingId := extensions.NewAttributeSetID()
-	return Data{
+	return &Data{
 		AgreementID:           fundingId,
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
 		RepaymentAmount:       "1200.12",
 		Fee:                   "10",
-		BorrowerID:            testingidentity.GenerateRandomDID().String(),
-		FunderID:              testingidentity.GenerateRandomDID().String(),
+		BorrowerID:            strings.ToLower(testingidentity.GenerateRandomDID().String()),
+		FunderID:              strings.ToLower(testingidentity.GenerateRandomDID().String()),
 		NFTAddress:            hexutil.Encode(utils.RandomSlice(32)),
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
@@ -368,8 +370,8 @@ func createData() Data {
 	}
 }
 
-func invalidData() Data {
-	return Data{
+func invalidData() *Data {
+	return &Data{
 		Currency:              "eur",
 		Days:                  "90",
 		Amount:                "1000",
@@ -403,7 +405,7 @@ func TestService_CreateFundingAgreement(t *testing.T) {
 	srv := DefaultService(docSrv, nil)
 	docID := utils.RandomSlice(32)
 	ctx := context.Background()
-	_, _, err := srv.CreateFundingAgreement(ctx, docID, Data{})
+	_, _, err := srv.CreateFundingAgreement(ctx, docID, new(Data))
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
@@ -412,7 +414,7 @@ func TestService_CreateFundingAgreement(t *testing.T) {
 	docSrv.On("GetCurrentVersion", mock.Anything).Return(m, nil)
 	m.On("AttributeExists", mock.Anything).Return(true).Once()
 	m.On("GetAttribute", mock.Anything).Return(documents.Attribute{}, errors.New("attribute not found")).Once()
-	_, _, err = srv.CreateFundingAgreement(ctx, docID, Data{})
+	_, _, err = srv.CreateFundingAgreement(ctx, docID, new(Data))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "attribute not found")
 
@@ -445,4 +447,27 @@ func TestService_CreateFundingAgreement(t *testing.T) {
 	assert.Equal(t, d, m)
 	docSrv.AssertExpectations(t)
 	m.AssertExpectations(t)
+}
+
+func TestService_GetDataAndSignatures(t *testing.T) {
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	docSrv := new(testingdocuments.MockService)
+	srv := DefaultService(docSrv, nil)
+
+	// missing funding id
+	fundingID := byteutils.HexBytes(utils.RandomSlice(32)).String()
+	_, _, err := srv.GetDataAndSignatures(ctx, inv, fundingID)
+	assert.Error(t, err)
+
+	// success
+	data := createData()
+	attrs, err := extensions.CreateAttributesList(inv, *data, fundingFieldKey, fundingLabel)
+	assert.NoError(t, err)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	data1, sigs, err := srv.GetDataAndSignatures(ctx, inv, data.AgreementID)
+	assert.NoError(t, err)
+	assert.Equal(t, *data, data1)
+	assert.Len(t, sigs, 0)
 }

@@ -33,7 +33,10 @@ type Service interface {
 	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error)
 
 	// CreateFundingAgreement creates a new funding agreement and anchors the document.
-	CreateFundingAgreement(ctx context.Context, docID []byte, data Data) (documents.Model, jobs.JobID, error)
+	CreateFundingAgreement(ctx context.Context, docID []byte, data *Data) (documents.Model, jobs.JobID, error)
+
+	// GetDataAndSignatures return the funding Data and Signatures associated with the FundingID.
+	GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (Data, []Signature, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -319,14 +322,14 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 }
 
 // CreateFundingAgreement creates a funding agreement and anchors the document update
-func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data Data) (documents.Model, jobs.JobID, error) {
+func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data *Data) (documents.Model, jobs.JobID, error) {
 	model, err := s.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentNotFound
 	}
 
 	data.AgreementID = extensions.NewAttributeSetID()
-	attributes, err := extensions.CreateAttributesList(model, data, fundingFieldKey, fundingLabel)
+	attributes, err := extensions.CreateAttributesList(model, *data, fundingFieldKey, fundingLabel)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
@@ -358,4 +361,24 @@ func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data 
 	}
 
 	return model, jobID, nil
+}
+
+// GetDataAndSignatures return the funding Data and Signatures associated with the FundingID.
+func (s service) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (data Data, sigs []Signature, err error) {
+	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	if err != nil {
+		return data, sigs, err
+	}
+
+	oldData, err := s.deriveFundingData(model, idx)
+	if err != nil {
+		return data, sigs, err
+	}
+
+	signatures, err := s.deriveFundingSignatures(ctx, model, oldData, idx)
+	if err != nil {
+		return data, sigs, errors.NewTypedError(extensions.ErrAttrSetSignature, err)
+	}
+
+	return fromOldData(*oldData), fromClientSignatures(signatures), nil
 }

@@ -72,3 +72,17 @@ func (m *MockService) Sign(ctx context.Context, fundingID string, identifier []b
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
+
+func (m *MockService) CreateFundingAgreement(ctx context.Context, docID []byte, data *Data) (documents.Model, jobs.JobID, error) {
+	args := m.Called(ctx, docID, data)
+	model, _ := args.Get(0).(documents.Model)
+	jobID, _ := args.Get(1).(jobs.JobID)
+	return model, jobID, args.Error(2)
+}
+
+func (m *MockService) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (Data, []Signature, error) {
+	args := m.Called(ctx, model, fundingID)
+	d, _ := args.Get(0).(Data)
+	sigs, _ := args.Get(1).([]Signature)
+	return d, sigs, args.Error(2)
+}

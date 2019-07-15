@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
@@ -19,21 +18,6 @@ import (
 )
 
 var configService config.Service
-
-func TestGRPCHandler_Create(t *testing.T) {
-	srv := &MockService{}
-
-	h := &grpcHandler{service: srv, config: configService}
-	jobID := jobs.NewJobID()
-
-	// successful
-	srv.On("DeriveFromPayload", mock.Anything, mock.Anything).Return(documents.ErrDocumentIdentifier, nil)
-	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
-	response, err := h.Create(testingconfig.HandlerContext(configService), &clientfunpb.FundingCreatePayload{DocumentId: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-}
 
 func TestGRPCHandler_Update(t *testing.T) {
 	srv := &MockService{}
