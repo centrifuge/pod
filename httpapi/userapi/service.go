@@ -255,7 +255,7 @@ func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (doc
 // MintInvoiceUnpaidNFT mints an NFT for an unpaid invoice document.
 func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnpaidRequest) (*nft.TokenResponse, error) {
 	// Get proof fields
-	proofFields, err := GetRequiredInvoiceUnpaidProofFields(ctx)
+	proofFields, err := getRequiredInvoiceUnpaidProofFields(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnp
 	}
 	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
-	identifier, err := hexutil.Decode(req.DocumentId)
+	identifier, err := hexutil.Decode(req.DocumentID)
 	if err != nil {
 		return nil, err
 	}
@@ -284,8 +284,8 @@ func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnp
 	return s.coreAPISrv.MintNFT(ctx, nreq)
 }
 
-// GetRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
-func GetRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
+// getRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
+func getRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
 	var proofFields []string
 
 	acc, err := contextutil.Account(ctx)

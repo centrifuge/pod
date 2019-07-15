@@ -520,7 +520,7 @@ func TestService_RevokeRelationship(t *testing.T) {
 func TestService_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
 	//missing account in context
 	ctxh := context.Background()
-	proofList, err := GetRequiredInvoiceUnpaidProofFields(ctxh)
+	proofList, err := getRequiredInvoiceUnpaidProofFields(ctxh)
 	assert.Error(t, err)
 	assert.Nil(t, proofList)
 
@@ -533,7 +533,7 @@ func TestService_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
 	}
 	ctxh, err = contextutil.New(ctxh, acc)
 	assert.Nil(t, err)
-	proofList, err = GetRequiredInvoiceUnpaidProofFields(ctxh)
+	proofList, err = getRequiredInvoiceUnpaidProofFields(ctxh)
 	assert.Error(t, err)
 	assert.Nil(t, proofList)
 
@@ -542,7 +542,7 @@ func TestService_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
 	assert.Nil(t, err)
 	ctxh, err = contextutil.New(ctxh, tc)
 	assert.Nil(t, err)
-	proofList, err = GetRequiredInvoiceUnpaidProofFields(ctxh)
+	proofList, err = getRequiredInvoiceUnpaidProofFields(ctxh)
 	assert.NoError(t, err)
 	assert.Len(t, proofList, 8)
 	accDIDBytes := tc.GetIdentityID()
