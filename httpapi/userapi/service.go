@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -19,6 +20,7 @@ type Service struct {
 	transferDetailsService transferdetails.Service
 	entityRelationshipSrv  entityrelationship.Service
 	entitySrv              entity.Service
+	fundingSrv             funding.Service
 }
 
 // TODO: this can be refactored into a generic Service which handles all kinds of custom attributes

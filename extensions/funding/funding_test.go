@@ -11,7 +11,7 @@ import (
 
 func TestInitFundingFromData(t *testing.T) {
 	fdc := &clientfunpb.FundingData{Currency: "eur"}
-	fd := new(Data)
+	fd := new(OldData)
 	fd.initFundingFromData(fdc)
 	assert.Equal(t, fdc.Currency, fd.Currency)
 

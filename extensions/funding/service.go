@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -30,10 +31,14 @@ type Service interface {
 
 	// DeriveFundingListResponse returns a funding list in client format
 	DeriveFundingListResponse(ctx context.Context, model documents.Model) (*clientfunpb.FundingListResponse, error)
+
+	// CreateFundingAgreement creates a new funding agreement and anchors the document.
+	CreateFundingAgreement(ctx context.Context, docID []byte, data Data) (documents.Model, jobs.JobID, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
 type service struct {
+	// TODO: this should not be embed
 	documents.Service
 	tokenRegistry documents.TokenRegistry
 	idSrv         identity.Service
@@ -74,7 +79,7 @@ func deriveDIDs(data *clientfunpb.FundingData) ([]identity.DID, error) {
 }
 
 func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload) (model documents.Model, err error) {
-	var fd Data
+	var fd OldData
 	fd.initFundingFromData(req.Data)
 
 	var docID []byte
@@ -125,7 +130,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 
 // DeriveFromUpdatePayload derives Funding from clientUpdatePayload
 func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload) (model documents.Model, err error) {
-	var fd Data
+	var fd OldData
 	fd.initFundingFromData(req.Data)
 
 	var docID []byte
@@ -158,7 +163,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 
 	// overwriting is not enough because it is not required that
 	// the funding payload contains all funding attributes
-	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, OldData{}, idx, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +194,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 }
 
 // TODO: Move to attribute utils
-func (s service) findFunding(model documents.Model, fundingID string) (*Data, error) {
+func (s service) findFunding(model documents.Model, fundingID string) (*OldData, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
@@ -198,8 +203,8 @@ func (s service) findFunding(model documents.Model, fundingID string) (*Data, er
 }
 
 // TODO: Move to attribute utils
-func (s service) deriveFundingData(model documents.Model, idx string) (*Data, error) {
-	data := new(Data)
+func (s service) deriveFundingData(model documents.Model, idx string) (*OldData, error) {
+	data := new(OldData)
 
 	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {
@@ -311,4 +316,46 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 
 	}
 	return response, nil
+}
+
+// CreateFundingAgreement creates a funding agreement and anchors the document update
+func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data Data) (documents.Model, jobs.JobID, error) {
+	model, err := s.GetCurrentVersion(ctx, docID)
+	if err != nil {
+		return nil, jobs.NilJobID(), documents.ErrDocumentNotFound
+	}
+
+	data.AgreementID = extensions.NewAttributeSetID()
+	attributes, err := extensions.CreateAttributesList(model, data, fundingFieldKey, fundingLabel)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	var collabs []identity.DID
+	for _, id := range []string{data.BorrowerID, data.FunderID} {
+		did, err := identity.NewDIDFromString(id)
+		if err != nil {
+			return nil, jobs.NilJobID(), err
+		}
+
+		collabs = append(collabs, did)
+	}
+
+	err = model.AddAttributes(
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: collabs,
+		},
+		true,
+		attributes...,
+	)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	model, jobID, _, err := s.Update(ctx, model)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return model, jobID, nil
 }

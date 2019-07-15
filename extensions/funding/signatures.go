@@ -83,7 +83,7 @@ func (s service) Sign(ctx context.Context, agreementID string, identifier []byte
 	return model, nil
 }
 
-func (s service) validateValueOfSignAttr(funding *Data, signAttr documents.Attribute) (bool, error) {
+func (s service) validateValueOfSignAttr(funding *OldData, signAttr documents.Attribute) (bool, error) {
 	value, err := json.Marshal(funding)
 	if err != nil {
 		return false, extensions.ErrJSON
@@ -116,7 +116,7 @@ func (s service) validateSignedFundingVersion(ctx context.Context, identifier []
 	return &clientfunpb.FundingSignature{Valid: "false", SignedVersion: hexutil.Encode(identifier), Identity: did.String(), OutdatedSignature: "true"}, nil
 }
 
-func (s service) signAttrToClientData(ctx context.Context, current documents.Model, funding *Data, signAttr documents.Attribute) (*clientfunpb.FundingSignature, error) {
+func (s service) signAttrToClientData(ctx context.Context, current documents.Model, funding *OldData, signAttr documents.Attribute) (*clientfunpb.FundingSignature, error) {
 	if signAttr.Value.Type != documents.AttrSigned {
 		return nil, extensions.ErrAttrSetSignature
 	}
@@ -135,7 +135,7 @@ func (s service) signAttrToClientData(ctx context.Context, current documents.Mod
 	return s.validateSignedFundingVersion(ctx, current.ID(), funding.AgreementId, signAttr)
 }
 
-func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, funding *Data, idxFunding string) ([]*clientfunpb.FundingSignature, error) {
+func (s service) deriveFundingSignatures(ctx context.Context, model documents.Model, funding *OldData, idxFunding string) ([]*clientfunpb.FundingSignature, error) {
 	var signatures []*clientfunpb.FundingSignature
 	sLabel := extensions.GenerateLabel(fundingFieldKey, idxFunding, fundingSignatures)
 	key, err := documents.AttrKeyFromLabel(sLabel)

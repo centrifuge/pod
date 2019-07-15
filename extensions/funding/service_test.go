@@ -16,8 +16,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -160,7 +162,7 @@ func TestAttributesUtils(t *testing.T) {
 	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.NoError(t, err)
 
-	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, OldData{}, idx, fundingFieldKey)
 	assert.NoError(t, err)
 	assert.Len(t, model.GetAttributes(), 13)
 
@@ -330,9 +332,9 @@ func createTestClientData() *clientfunpb.FundingData {
 	}
 }
 
-func createTestData() Data {
+func createTestData() OldData {
 	fundingId := extensions.NewAttributeSetID()
-	return Data{
+	return OldData{
 		AgreementId:           fundingId,
 		Currency:              "eur",
 		Days:                  "90",
@@ -348,6 +350,40 @@ func createTestData() Data {
 	}
 }
 
+func createData() Data {
+	fundingId := extensions.NewAttributeSetID()
+	return Data{
+		AgreementID:           fundingId,
+		Currency:              "eur",
+		Days:                  "90",
+		Amount:                "1000",
+		RepaymentAmount:       "1200.12",
+		Fee:                   "10",
+		BorrowerID:            testingidentity.GenerateRandomDID().String(),
+		FunderID:              testingidentity.GenerateRandomDID().String(),
+		NFTAddress:            hexutil.Encode(utils.RandomSlice(32)),
+		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
+		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
+		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
+	}
+}
+
+func invalidData() Data {
+	return Data{
+		Currency:              "eur",
+		Days:                  "90",
+		Amount:                "1000",
+		RepaymentAmount:       "1200.12",
+		Fee:                   "10",
+		BorrowerID:            "",
+		FunderID:              testingidentity.GenerateRandomDID().String(),
+		NFTAddress:            hexutil.Encode(utils.RandomSlice(32)),
+		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
+		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
+		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
+	}
+}
+
 func createTestPayload() *clientfunpb.FundingCreatePayload {
 	return &clientfunpb.FundingCreatePayload{Data: createTestClientData()}
 }
@@ -358,4 +394,55 @@ func checkResponse(t *testing.T, payload *clientfunpb.FundingCreatePayload, resp
 	assert.Equal(t, payload.Data.Days, response.Days)
 	assert.Equal(t, payload.Data.Amount, response.Amount)
 	assert.Equal(t, payload.Data.RepaymentDueDate, response.RepaymentDueDate)
+}
+
+func TestService_CreateFundingAgreement(t *testing.T) {
+	// missing document.
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", mock.Anything).Return(nil, errors.New("failed to get document")).Once()
+	srv := DefaultService(docSrv, nil)
+	docID := utils.RandomSlice(32)
+	ctx := context.Background()
+	_, _, err := srv.CreateFundingAgreement(ctx, docID, Data{})
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// failed to create attribute
+	m := new(testingdocuments.MockModel)
+	docSrv.On("GetCurrentVersion", mock.Anything).Return(m, nil)
+	m.On("AttributeExists", mock.Anything).Return(true).Once()
+	m.On("GetAttribute", mock.Anything).Return(documents.Attribute{}, errors.New("attribute not found")).Once()
+	_, _, err = srv.CreateFundingAgreement(ctx, docID, Data{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "attribute not found")
+
+	// invalid dids
+	data := invalidData()
+	m.On("AttributeExists", mock.Anything).Return(false)
+	_, _, err = srv.CreateFundingAgreement(ctx, docID, data)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
+
+	// failed to add attributes
+	data = createData()
+	m.On("AddAttributes", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("failed to add attrs")).Once()
+	m.On("AttributeExists", mock.Anything).Return(false)
+	_, _, err = srv.CreateFundingAgreement(ctx, docID, data)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to add attrs")
+
+	// failed to update document
+	m.On("AddAttributes", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	docSrv.On("Update", ctx, m).Return(nil, jobs.NilJobID(), errors.New("failed to update")).Once()
+	_, _, err = srv.CreateFundingAgreement(ctx, docID, data)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update")
+
+	// success
+	docSrv.On("Update", ctx, m).Return(m, jobs.NewJobID(), nil)
+	d, _, err := srv.CreateFundingAgreement(ctx, docID, data)
+	assert.NoError(t, err)
+	assert.Equal(t, d, m)
+	docSrv.AssertExpectations(t)
+	m.AssertExpectations(t)
 }

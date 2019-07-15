@@ -3,11 +3,9 @@
 package funding
 
 import (
-	"context"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
@@ -20,63 +18,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type mockService struct {
-	Service
-	mock.Mock
-}
-
 var configService config.Service
 
-func (m *mockService) DeriveFromPayload(ctx context.Context, req *clientfunpb.FundingCreatePayload) (documents.Model, error) {
-	args := m.Called(ctx, req)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
-func (m *mockService) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.FundingUpdatePayload) (documents.Model, error) {
-	args := m.Called(ctx, req)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
-func (m *mockService) DeriveFundingResponse(ctx context.Context, doc documents.Model, fundingId string) (*clientfunpb.FundingResponse, error) {
-	args := m.Called(doc)
-	data, _ := args.Get(0).(*clientfunpb.FundingResponse)
-	return data, args.Error(1)
-}
-
-func (m *mockService) DeriveFundingListResponse(ctx context.Context, doc documents.Model) (*clientfunpb.FundingListResponse, error) {
-	args := m.Called(doc)
-	data, _ := args.Get(0).(*clientfunpb.FundingListResponse)
-	return data, args.Error(1)
-}
-
-func (m *mockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
-	args := m.Called(ctx, model)
-	doc1, _ := args.Get(0).(documents.Model)
-	return doc1, contextutil.Job(ctx), nil, args.Error(2)
-}
-
-func (m *mockService) GetCurrentVersion(ctx context.Context, identifier []byte) (documents.Model, error) {
-	args := m.Called(ctx, identifier)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
-func (m *mockService) GetVersion(ctx context.Context, identifier, version []byte) (documents.Model, error) {
-	args := m.Called(ctx, identifier)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
-func (m *mockService) Sign(ctx context.Context, fundingID string, identifier []byte) (documents.Model, error) {
-	args := m.Called(ctx, fundingID, identifier)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
 func TestGRPCHandler_Create(t *testing.T) {
-	srv := &mockService{}
+	srv := &MockService{}
 
 	h := &grpcHandler{service: srv, config: configService}
 	jobID := jobs.NewJobID()
@@ -91,7 +36,7 @@ func TestGRPCHandler_Create(t *testing.T) {
 }
 
 func TestGRPCHandler_Update(t *testing.T) {
-	srv := &mockService{}
+	srv := &MockService{}
 
 	h := &grpcHandler{service: srv, config: configService}
 	jobID := jobs.NewJobID()
@@ -107,7 +52,7 @@ func TestGRPCHandler_Update(t *testing.T) {
 }
 
 func TestGRPCHandler_Sign(t *testing.T) {
-	srv := &mockService{}
+	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}
 	jobID := jobs.NewJobID()
 
@@ -127,7 +72,7 @@ func TestGRPCHandler_Sign(t *testing.T) {
 }
 
 func TestGRPCHandler_Get(t *testing.T) {
-	srv := &mockService{}
+	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
@@ -139,7 +84,7 @@ func TestGRPCHandler_Get(t *testing.T) {
 }
 
 func TestGRPCHandler_GetVersion(t *testing.T) {
-	srv := &mockService{}
+	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
@@ -151,7 +96,7 @@ func TestGRPCHandler_GetVersion(t *testing.T) {
 }
 
 func TestGRPCHandler_GetList(t *testing.T) {
-	srv := &mockService{}
+	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}
 
 	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)

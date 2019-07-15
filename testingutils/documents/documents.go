@@ -78,6 +78,13 @@ func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdateP
 	return model, jobID, args.Error(2)
 }
 
+func (m *MockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+	args := m.Called(ctx, model)
+	model, _ = args.Get(0).(documents.Model)
+	jobID, _ := args.Get(1).(jobs.JobID)
+	return model, jobID, make(chan bool), args.Error(2)
+}
+
 type MockModel struct {
 	documents.Model
 	mock.Mock
@@ -172,6 +179,22 @@ func (m *MockModel) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
 	args := m.Called()
 	ac, _ := args.Get(0).([]*coredocumentpb.AccessToken)
 	return ac, args.Error(1)
+}
+
+func (m *MockModel) AttributeExists(key documents.AttrKey) bool {
+	args := m.Called(key)
+	return args.Bool(0)
+}
+
+func (m *MockModel) GetAttribute(key documents.AttrKey) (documents.Attribute, error) {
+	args := m.Called(key)
+	attr, _ := args.Get(0).(documents.Attribute)
+	return attr, args.Error(1)
+}
+
+func (m *MockModel) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVersion bool, attrs ...documents.Attribute) error {
+	args := m.Called(ca, prepareNewVersion, attrs)
+	return args.Error(0)
 }
 
 type MockRegistry struct {

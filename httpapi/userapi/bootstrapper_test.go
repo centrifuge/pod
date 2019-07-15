@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,13 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), entity.BootstrappedEntityService)
 
-	// success
+	// missing funding service
 	ctx[entity.BootstrappedEntityService] = new(entity.MockService)
+	err = b.Bootstrap(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), funding.BootstrappedFundingService)
+
+	// success
+	ctx[funding.BootstrappedFundingService] = new(funding.MockService)
 	assert.NoError(t, b.Bootstrap(ctx))
 }

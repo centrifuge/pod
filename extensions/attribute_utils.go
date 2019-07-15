@@ -76,7 +76,6 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 
 	// increment idx
 	newIdx, err := idx.Inc()
-
 	if err != nil {
 		return attr, err
 	}
@@ -124,9 +123,7 @@ func CreateAttributesList(current documents.Model, data interface{}, fieldKey, t
 
 	// add updated idx
 	attributes = append(attributes, idx)
-
 	return attributes, nil
-
 }
 
 // DeleteAttributesSet deletes attributes that already exist on a given model for the addition of new attributes to the set

@@ -10,6 +10,9 @@ import (
 const (
 	// BootstrappedFundingAPIHandler is the key for the api handler in Context
 	BootstrappedFundingAPIHandler = "Funding API Handler"
+
+	// BootstrappedFundingService is the key for Funding service in Context.
+	BootstrappedFundingService = "Funding Service"
 )
 
 // Bootstrapper implements Bootstrapper Interface
@@ -39,6 +42,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 	}
 
 	srv := DefaultService(docSrv, tokenRegistry)
+	ctx[BootstrappedFundingService] = srv
 	handler := GRPCHandler(cfgSrv, srv)
 	ctx[BootstrappedFundingAPIHandler] = handler
 	return nil
