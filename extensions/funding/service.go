@@ -48,7 +48,8 @@ type service struct {
 }
 
 const (
-	fundingLabel              = "funding_agreement"
+	// AttrFundingLabel is the funding agreement label
+	AttrFundingLabel          = "funding_agreement"
 	fundingFieldKey           = "funding_agreement[{IDX}]."
 	agreementIDLabel          = "agreement_id"
 	fundingSignatures         = "signatures"
@@ -100,7 +101,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 		apiLog.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
-	attributes, err := extensions.CreateAttributesList(model, fd, fundingFieldKey, fundingLabel)
+	attributes, err := extensions.CreateAttributesList(model, fd, fundingFieldKey, AttrFundingLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +154,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 	}
 
 	fd.AgreementId = req.AgreementId
-	idx, err := extensions.FindAttributeSetIDX(model, fd.AgreementId, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(model, fd.AgreementId, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 
 // TODO: Move to attribute utils
 func (s service) findFunding(model documents.Model, fundingID string) (*OldData, error) {
-	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(model, fundingID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +245,7 @@ func (s service) deriveFundingData(model documents.Model, idx string) (*OldData,
 
 // DeriveFundingResponse returns create response from the added funding
 func (s service) DeriveFundingResponse(ctx context.Context, model documents.Model, fundingID string) (*clientfunpb.FundingResponse, error) {
-	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(model, fundingID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +281,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 	}
 	response.Header = h
 
-	fl, err := documents.AttrKeyFromLabel(fundingLabel)
+	fl, err := documents.AttrKeyFromLabel(AttrFundingLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +290,7 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 		return response, nil
 	}
 
-	lastIdx, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	lastIdx, err := extensions.GetArrayLatestIDX(model, AttrFundingLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +313,6 @@ func (s service) DeriveFundingListResponse(ctx context.Context, model documents.
 
 		response.Data = append(response.Data, &clientfunpb.FundingResponseData{Funding: funding.getClientData(), Signatures: signatures})
 		i, err = i.Inc()
-
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +329,7 @@ func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data 
 	}
 
 	data.AgreementID = extensions.NewAttributeSetID()
-	attributes, err := extensions.CreateAttributesList(model, *data, fundingFieldKey, fundingLabel)
+	attributes, err := extensions.CreateAttributesList(model, *data, fundingFieldKey, AttrFundingLabel)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
@@ -365,7 +365,7 @@ func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data 
 
 // GetDataAndSignatures return the funding Data and Signatures associated with the FundingID.
 func (s service) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (data Data, sigs []Signature, err error) {
-	idx, err := extensions.FindAttributeSetIDX(model, fundingID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(model, fundingID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return data, sigs, err
 	}

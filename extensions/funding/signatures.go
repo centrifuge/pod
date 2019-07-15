@@ -65,7 +65,7 @@ func (s service) Sign(ctx context.Context, agreementID string, identifier []byte
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	idxFunding, err := extensions.FindAttributeSetIDX(model, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idxFunding, err := extensions.FindAttributeSetIDX(model, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	if err != nil {
 		return nil, extensions.ErrAttributeSetNotFound
 	}

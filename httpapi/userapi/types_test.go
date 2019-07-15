@@ -12,11 +12,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -199,6 +202,40 @@ func TestTypes_toFundingResponse(t *testing.T) {
 	// success
 	fundingSrv.On("GetDataAndSignatures", ctx, model, fundingID).Return(funding.Data{}, nil, nil)
 	_, err = toFundingAgreementResponse(ctx, fundingSrv, model, fundingID, nil, jobs.NilJobID())
+	assert.NoError(t, err)
+	model.AssertExpectations(t)
+	fundingSrv.AssertExpectations(t)
+}
+
+func TestTypes_toFundingListResponse(t *testing.T) {
+	// failed to derive header
+	model := new(testingdocuments.MockModel)
+	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
+	fundingSrv := new(funding.MockService)
+	ctx := context.Background()
+	_, err := toFundingAgreementListResponse(ctx, fundingSrv, model, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error fetching collaborators")
+
+	// no agreements exists
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+	resp, err := toFundingAgreementListResponse(ctx, fundingSrv, inv, nil)
+	assert.NoError(t, err)
+	assert.Len(t, resp.Data, 0)
+
+	// failed conversion
+	data := funding.CreateData()
+	attrs, err := extensions.CreateAttributesList(inv, *data, "funding_agreement[{IDX}].", funding.AttrFundingLabel)
+	assert.NoError(t, err)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil, errors.New("error")).Once()
+	_, err = toFundingAgreementListResponse(ctx, fundingSrv, inv, nil)
+	assert.Error(t, err)
+
+	// success
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil, nil)
+	_, err = toFundingAgreementListResponse(ctx, fundingSrv, inv, nil)
 	assert.NoError(t, err)
 	model.AssertExpectations(t)
 	fundingSrv.AssertExpectations(t)

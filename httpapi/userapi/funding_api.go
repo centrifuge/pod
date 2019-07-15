@@ -73,3 +73,50 @@ func (h handler) CreateFundingAgreement(w http.ResponseWriter, r *http.Request) 
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
+
+// GetFundingAgreements returns all the funding agreements in the document associated with document_id.
+// @summary Returns all the funding agreements in the document associated with document_id.
+// @description Returns all the funding agreements in the document associated with document_id.
+// @id get_funding_agreements
+// @tags Funding Agreements
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 200 {object} userapi.FundingListResponse
+// @router /v1/documents/{document_id}/funding_agreements [get]
+func (h handler) GetFundingAgreements(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	ctx := r.Context()
+	m, err := h.srv.coreAPISrv.GetDocument(ctx, docID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		return
+	}
+
+	resp, err := toFundingAgreementListResponse(ctx, h.srv.fundingSrv, m, h.tokenRegistry)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, resp)
+}

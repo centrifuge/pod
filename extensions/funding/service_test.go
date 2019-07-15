@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -91,7 +90,7 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Len(t, a, 12)
 
 	// Creating an attributes list generates the correct attributes and adds an idx as an attribute
-	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
+	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
 	assert.Len(t, attributes, 13)
 
@@ -119,17 +118,17 @@ func TestAttributesUtils(t *testing.T) {
 	}
 
 	// wrong attributeSetID
-	idx, err := extensions.FindAttributeSetIDX(inv, "randomID", fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(inv, "randomID", AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Error(t, err)
 
 	// correct
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Equal(t, "0", idx)
 	assert.NoError(t, err)
 
 	// add second attributeSet
 	data.AgreementId = extensions.NewAttributeSetID()
-	a2, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, fundingLabel)
+	a2, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
 
 	var aID string
@@ -148,7 +147,7 @@ func TestAttributesUtils(t *testing.T) {
 	model, err := srv.GetCurrentVersion(context.Background(), inv.Document.DocumentIdentifier)
 	assert.NoError(t, err)
 
-	lastIdx, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	lastIdx, err := extensions.GetArrayLatestIDX(model, AttrFundingLabel)
 	assert.NoError(t, err)
 
 	n, err := documents.NewInt256("1")
@@ -156,12 +155,12 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Equal(t, lastIdx, n)
 
 	// index should be 1
-	idx, err = extensions.FindAttributeSetIDX(inv, aID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(inv, aID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Equal(t, "1", idx)
 	assert.NoError(t, err)
 
 	// delete the first attribute set
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.NoError(t, err)
 
 	model, err = extensions.DeleteAttributesSet(model, OldData{}, idx, fundingFieldKey)
@@ -169,11 +168,11 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Len(t, model.GetAttributes(), 13)
 
 	// error when trying to delete non existing attribute set
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Error(t, err)
 
 	// check that latest idx is still 1 even though the first set of attributes have been deleted ?
-	latest, err := extensions.GetArrayLatestIDX(model, fundingLabel)
+	latest, err := extensions.GetArrayLatestIDX(model, AttrFundingLabel)
 	assert.NoError(t, err)
 	assert.Equal(t, latest, n)
 
@@ -182,20 +181,20 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Error(t, err)
 
 	// check that we can no longer find the attributes from the first set
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, fundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Error(t, err)
 
 	// test increment array attr idx
 	n, err = documents.NewInt256("2")
 	assert.NoError(t, err)
 
-	newIdx, err := extensions.IncrementArrayAttrIDX(model, fundingLabel)
+	newIdx, err := extensions.IncrementArrayAttrIDX(model, AttrFundingLabel)
 	assert.NoError(t, err)
 
 	v, err := newIdx.Value.String()
 	assert.NoError(t, err)
 	assert.Equal(t, "2", v)
-	assert.Equal(t, fundingLabel, newIdx.KeyLabel)
+	assert.Equal(t, AttrFundingLabel, newIdx.KeyLabel)
 }
 
 func TestDeriveFromPayload(t *testing.T) {
@@ -352,24 +351,6 @@ func createTestData() OldData {
 	}
 }
 
-func createData() *Data {
-	fundingId := extensions.NewAttributeSetID()
-	return &Data{
-		AgreementID:           fundingId,
-		Currency:              "eur",
-		Days:                  "90",
-		Amount:                "1000",
-		RepaymentAmount:       "1200.12",
-		Fee:                   "10",
-		BorrowerID:            strings.ToLower(testingidentity.GenerateRandomDID().String()),
-		FunderID:              strings.ToLower(testingidentity.GenerateRandomDID().String()),
-		NFTAddress:            hexutil.Encode(utils.RandomSlice(32)),
-		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
-		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
-		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
-	}
-}
-
 func invalidData() *Data {
 	return &Data{
 		Currency:              "eur",
@@ -426,7 +407,7 @@ func TestService_CreateFundingAgreement(t *testing.T) {
 	assert.True(t, errors.IsOfType(identity.ErrMalformedAddress, err))
 
 	// failed to add attributes
-	data = createData()
+	data = CreateData()
 	m.On("AddAttributes", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("failed to add attrs")).Once()
 	m.On("AttributeExists", mock.Anything).Return(false)
 	_, _, err = srv.CreateFundingAgreement(ctx, docID, data)
@@ -461,8 +442,8 @@ func TestService_GetDataAndSignatures(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	data := createData()
-	attrs, err := extensions.CreateAttributesList(inv, *data, fundingFieldKey, fundingLabel)
+	data := CreateData()
+	attrs, err := extensions.CreateAttributesList(inv, *data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
 	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)

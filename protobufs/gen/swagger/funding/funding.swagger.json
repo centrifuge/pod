@@ -15,31 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/documents/{document_id}/funding_agreements": {
-      "get": {
-        "description": "Get all funding agreements of a latest document",
-        "operationId": "GetList",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/funFundingListResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
-    },
     "/v1/documents/{document_id}/funding_agreements/{agreement_id}": {
       "get": {
         "description": "Get a funding agreement of a latest document",

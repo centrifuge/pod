@@ -4,11 +4,17 @@ package funding
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -85,4 +91,22 @@ func (m *MockService) GetDataAndSignatures(ctx context.Context, model documents.
 	d, _ := args.Get(0).(Data)
 	sigs, _ := args.Get(1).([]Signature)
 	return d, sigs, args.Error(2)
+}
+
+func CreateData() *Data {
+	fundingId := extensions.NewAttributeSetID()
+	return &Data{
+		AgreementID:           fundingId,
+		Currency:              "eur",
+		Days:                  "90",
+		Amount:                "1000",
+		RepaymentAmount:       "1200.12",
+		Fee:                   "10",
+		BorrowerID:            strings.ToLower(testingidentity.GenerateRandomDID().String()),
+		FunderID:              strings.ToLower(testingidentity.GenerateRandomDID().String()),
+		NFTAddress:            hexutil.Encode(utils.RandomSlice(32)),
+		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
+		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
+		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
+	}
 }

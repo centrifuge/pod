@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -294,6 +295,12 @@ type FundingResponse struct {
 	Data   FundingDataResponse    `json:"data"`
 }
 
+// FundingListResponse holds the response for funding agreements.
+type FundingListResponse struct {
+	Header coreapi.ResponseHeader `json:"header"`
+	Data   []FundingDataResponse  `json:"data"`
+}
+
 func toFundingAgreementResponse(
 	ctx context.Context,
 	fundingSrv funding.Service,
@@ -319,4 +326,54 @@ func toFundingAgreementResponse(
 			Signatures: sigs,
 		},
 	}, nil
+}
+
+func toFundingAgreementListResponse(ctx context.Context,
+	fundingSrv funding.Service,
+	doc documents.Model,
+	tokenRegistry documents.TokenRegistry) (resp FundingListResponse, err error) {
+
+	header, err := coreapi.DeriveResponseHeader(tokenRegistry, doc, jobs.NilJobID())
+	if err != nil {
+		return resp, err
+	}
+	resp.Header = header
+
+	fl, err := documents.AttrKeyFromLabel(funding.AttrFundingLabel)
+	if err != nil {
+		return resp, err
+	}
+
+	if !doc.AttributeExists(fl) {
+		return resp, nil
+	}
+
+	lastIdx, err := extensions.GetArrayLatestIDX(doc, funding.AttrFundingLabel)
+	if err != nil {
+		return resp, err
+	}
+
+	i, err := documents.NewInt256("0")
+	if err != nil {
+		return resp, err
+	}
+
+	for i.Cmp(lastIdx) != 1 {
+		data, sigs, err := fundingSrv.GetDataAndSignatures(ctx, doc, i.String())
+		if err != nil {
+			return resp, err
+		}
+
+		resp.Data = append(resp.Data, FundingDataResponse{
+			Funding:    data,
+			Signatures: sigs,
+		})
+
+		i, err = i.Inc()
+		if err != nil {
+			return resp, err
+		}
+	}
+
+	return resp, nil
 }

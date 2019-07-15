@@ -507,6 +507,73 @@
             }
         },
         "/v1/documents/{document_id}/funding_agreements": {
+            "get": {
+                "description": "Returns all the funding agreements in the document associated with document_id.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Funding Agreements"
+                ],
+                "summary": "Returns all the funding agreements in the document associated with document_id.",
+                "operationId": "get_funding_agreements",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/userapi.FundingListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new funding agreement on the document.",
                 "consumes": [
@@ -3854,6 +3921,21 @@
                     "items": {
                         "$ref": "#/definitions/funding.Signature"
                     }
+                }
+            }
+        },
+        "userapi.FundingListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/userapi.FundingDataResponse"
+                    }
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.ResponseHeader"
                 }
             }
         },

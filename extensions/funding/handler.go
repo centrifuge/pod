@@ -131,35 +131,6 @@ func (h *grpcHandler) GetVersion(ctx context.Context, req *clientfunpb.GetVersio
 }
 
 // GetList returns all funding agreements of a existing document
-func (h *grpcHandler) GetList(ctx context.Context, req *clientfunpb.GetListRequest) (*clientfunpb.FundingListResponse, error) {
-	apiLog.Debugf("Get request %v", req)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
-	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentNotFound
-	}
-
-	resp, err := h.service.DeriveFundingListResponse(ctxHeader, model)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, extensions.ErrDeriveAttr
-	}
-	return resp, nil
-}
-
-// GetList returns all funding agreements of a existing document
 func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfunpb.GetListVersionRequest) (*clientfunpb.FundingListResponse, error) {
 	apiLog.Debugf("Get request %v", req)
 	ctxHeader, err := contextutil.Context(ctx, h.config)
