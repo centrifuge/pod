@@ -21,7 +21,7 @@ type MockService struct {
 }
 
 func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
-	args := m.Called(ctx, documentID)
+	args := m.Called(documentID)
 	model, _ := args.Get(0).(documents.Model)
 	return model, args.Error(1)
 }
