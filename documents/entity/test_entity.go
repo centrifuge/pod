@@ -1,16 +1,19 @@
-// +build integration unit
+// +build integration unit testworld
 
 package entity
 
 import (
 	"context"
+	"encoding/json"
+	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -67,30 +70,6 @@ func (m *MockEntityRelationService) Exists(ctx context.Context, documentID []byt
 	return args.Get(0).(bool)
 }
 
-// DeriveFromCreatePayload derives Entity Relationship from RelationshipPayload
-func (m *MockEntityRelationService) DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
-	args := m.Called(ctx, payload)
-	return args.Get(0).(documents.Model), args.Error(1)
-}
-
-// DeriveFromUpdatePayload derives a revoked entity relationship model from RelationshipPayload
-func (m *MockEntityRelationService) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
-	args := m.Called(ctx, payload)
-	return args.Get(0).(documents.Model), args.Error(1)
-}
-
-// DeriveEntityRelationshipData returns the entity relationship data as client data
-func (m *MockEntityRelationService) DeriveEntityRelationshipData(relationship documents.Model) (*cliententitypb.RelationshipData, error) {
-	args := m.Called(relationship)
-	return args.Get(0).(*cliententitypb.RelationshipData), args.Error(1)
-}
-
-// DeriveEntityRelationshipResponse returns the entity relationship model in our standard client format
-func (m *MockEntityRelationService) DeriveEntityRelationshipResponse(relationship documents.Model) (*cliententitypb.RelationshipResponse, error) {
-	args := m.Called(relationship)
-	return args.Get(0).(*cliententitypb.RelationshipResponse), args.Error(1)
-}
-
 // GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
 func (m *MockEntityRelationService) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error) {
 	args := m.Called(ctx, entityID)
@@ -103,25 +82,7 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) DeriveFromCreatePayload(ctx context.Context, payload *cliententitypb.EntityCreatePayload) (documents.Model, error) {
-	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
-func (m *MockService) DeriveFromSharePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
-	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Model)
-	return model, args.Error(1)
-}
-
 func (m *MockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
-	args := m.Called(ctx, model)
-	model, _ = args.Get(0).(documents.Model)
-	return model, contextutil.Job(ctx), nil, args.Error(2)
-}
-
-func (m *MockService) Share(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
 	return model, contextutil.Job(ctx), nil, args.Error(2)
@@ -139,50 +100,84 @@ func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version
 	return data, args.Error(1)
 }
 
-func (m *MockService) DeriveEntityData(doc documents.Model) (*cliententitypb.EntityData, error) {
-	args := m.Called(doc)
-	data, _ := args.Get(0).(*cliententitypb.EntityData)
-	return data, args.Error(1)
-}
-
-func (m *MockService) DeriveEntityResponse(ctx context.Context, doc documents.Model) (*cliententitypb.EntityResponse, error) {
-	args := m.Called(ctx, doc)
-	data, _ := args.Get(0).(*cliententitypb.EntityResponse)
-	return data, args.Error(1)
-}
-
-func (m *MockService) DeriveEntityRelationshipResponse(doc documents.Model) (*cliententitypb.RelationshipResponse, error) {
-	args := m.Called(doc)
-	data, _ := args.Get(0).(*cliententitypb.RelationshipResponse)
-	return data, args.Error(1)
-}
-
-func (m *MockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
-	args := m.Called(ctx, model)
-	doc1, _ := args.Get(0).(documents.Model)
-	return doc1, contextutil.Job(ctx), nil, args.Error(2)
-}
-
-func (m *MockService) Revoke(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
-	args := m.Called(ctx, model)
-	doc1, _ := args.Get(0).(documents.Model)
-	return doc1, contextutil.Job(ctx), nil, args.Error(2)
-}
-
-func (m *MockService) DeriveFromUpdatePayload(ctx context.Context, payload *cliententitypb.EntityUpdatePayload) (documents.Model, error) {
-	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(documents.Model)
-	return doc, args.Error(1)
-}
-
-func (m *MockService) DeriveFromRevokePayload(ctx context.Context, payload *cliententitypb.RelationshipPayload) (documents.Model, error) {
-	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(documents.Model)
-	return doc, args.Error(1)
-}
-
 func (m *MockService) GetEntityByRelationship(ctx context.Context, rID []byte) (documents.Model, error) {
 	args := m.Called(ctx, rID)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
+}
+
+func entityData(t *testing.T) []byte {
+	did, err := identity.NewDIDFromString("0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	assert.NoError(t, err)
+	data := Data{
+		Identity:  &did,
+		LegalName: "Hello, world",
+		Addresses: []Address{
+			{
+				Country: "Germany",
+				IsMain:  true,
+				Label:   "office",
+			},
+		},
+		Contacts: []Contact{
+			{
+				Name:  "John Doe",
+				Title: "Mr",
+			},
+		},
+	}
+
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	return d
+}
+
+func CreateEntityPayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
+	if collaborators == nil {
+		collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
+	}
+	return documents.CreatePayload{
+		Scheme: Scheme,
+		Collaborators: documents.CollaboratorsAccess{
+			ReadWriteCollaborators: collaborators,
+		},
+		Data: entityData(t),
+	}
+}
+
+func InitEntity(t *testing.T, did identity.DID, payload documents.CreatePayload) *Entity {
+	entity := new(Entity)
+	assert.NoError(t, entity.unpackFromCreatePayload(did, payload))
+	return entity
+}
+
+func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Entity, coredocumentpb.CoreDocument) {
+	entity := new(Entity)
+	err := entity.unpackFromCreatePayload(did, payload)
+	assert.NoError(t, err)
+	entity.GetTestCoreDocWithReset()
+	_, err = entity.CalculateDataRoot()
+	assert.NoError(t, err)
+	sr, err := entity.CalculateSigningRoot()
+	assert.NoError(t, err)
+	// if acc errors out, just skip it
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	acc, err := contextutil.Account(ctx)
+	if err == nil {
+		sig, err := acc.SignMsg(sr)
+		assert.NoError(t, err)
+		entity.AppendSignatures(sig)
+	}
+	_, err = entity.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	cd, err := entity.PackCoreDocument()
+	assert.NoError(t, err)
+	return entity, cd
+}
+
+func CreateEntityWithEmbedCD(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (*Entity, coredocumentpb.CoreDocument) {
+	payload := CreateEntityPayload(t, collaborators)
+	return CreateEntityWithEmbedCDWithPayload(t, ctx, did, payload)
 }
