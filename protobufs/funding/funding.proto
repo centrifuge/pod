@@ -13,15 +13,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // FundingService contains all common interactions for funding extension documents
 service FundingService {
-  rpc Update(FundingUpdatePayload) returns (FundingResponse) {
-    option (google.api.http) = {
-      put: "/v1/documents/{document_id}/funding_agreements/{agreement_id}"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Updates a funding agreement in a document"
-    };
-  }
   rpc Sign(Request) returns (FundingResponse) {
     option (google.api.http) = {
       post: "/v1/documents/{document_id}/funding_agreements/{agreement_id}/sign"

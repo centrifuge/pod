@@ -35,6 +35,9 @@ type Service interface {
 	// CreateFundingAgreement creates a new funding agreement and anchors the document.
 	CreateFundingAgreement(ctx context.Context, docID []byte, data *Data) (documents.Model, jobs.JobID, error)
 
+	// UpdateFundingAgreement updates a given funding agreement with the data passed.
+	UpdateFundingAgreement(ctx context.Context, docID, fundingID []byte, data *Data) (documents.Model, jobs.JobID, error)
+
 	// GetDataAndSignatures return the funding Data and Signatures associated with the FundingID or funding index.
 	GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string, idx string) (Data, []Signature, error)
 }
@@ -342,6 +345,61 @@ func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data 
 		}
 
 		collabs = append(collabs, did)
+	}
+
+	err = model.AddAttributes(
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: collabs,
+		},
+		true,
+		attributes...,
+	)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	model, jobID, _, err := s.Update(ctx, model)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return model, jobID, nil
+}
+
+// UpdateFundingAgreement updates a given funding agreement with the data passed.
+func (s service) UpdateFundingAgreement(ctx context.Context, docID, fundingID []byte, data *Data) (documents.Model, jobs.JobID, error) {
+	model, err := s.GetCurrentVersion(ctx, docID)
+	if err != nil {
+		apiLog.Error(err)
+		return nil, jobs.NilJobID(), documents.ErrDocumentNotFound
+	}
+
+	data.AgreementID = hexutil.Encode(fundingID)
+	idx, err := extensions.FindAttributeSetIDX(model, data.AgreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	var collabs []identity.DID
+	for _, id := range []string{data.BorrowerID, data.FunderID} {
+		did, err := identity.NewDIDFromString(id)
+		if err != nil {
+			return nil, jobs.NilJobID(), err
+		}
+
+		collabs = append(collabs, did)
+	}
+
+	// overwriting is not enough because it is not required that
+	// the funding payload contains all funding attributes
+	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	attributes, err := extensions.FillAttributeList(*data, idx, fundingFieldKey)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
 	}
 
 	err = model.AddAttributes(

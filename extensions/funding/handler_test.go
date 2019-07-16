@@ -19,22 +19,6 @@ import (
 
 var configService config.Service
 
-func TestGRPCHandler_Update(t *testing.T) {
-	srv := &MockService{}
-
-	h := &grpcHandler{service: srv, config: configService}
-	jobID := jobs.NewJobID()
-
-	// successful
-	srv.On("DeriveFromUpdatePayload", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
-
-	response, err := h.Update(testingconfig.HandlerContext(configService), &clientfunpb.FundingUpdatePayload{DocumentId: hexutil.Encode(utils.RandomSlice(32)), Data: &clientfunpb.FundingData{Currency: "eur"}})
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-}
-
 func TestGRPCHandler_Sign(t *testing.T) {
 	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}
