@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -18,26 +17,6 @@ import (
 )
 
 var configService config.Service
-
-func TestGRPCHandler_Sign(t *testing.T) {
-	srv := &MockService{}
-	h := &grpcHandler{service: srv, config: configService}
-	jobID := jobs.NewJobID()
-
-	// successful
-	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
-	srv.On("Sign", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil).Once()
-	srv.On("Update", mock.Anything, mock.Anything).Return(nil, jobID, nil).Once()
-
-	response, err := h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))})
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-
-	// fail
-	response, err = h.Sign(testingconfig.HandlerContext(configService), &clientfunpb.Request{AgreementId: hexutil.Encode(utils.RandomSlice(32))})
-	assert.Error(t, err)
-}
 
 func TestGRPCHandler_GetVersion(t *testing.T) {
 	srv := &MockService{}

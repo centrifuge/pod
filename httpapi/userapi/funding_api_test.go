@@ -280,3 +280,55 @@ func TestHandler_UpdateFundingAgreement(t *testing.T) {
 	assert.Contains(t, w.Body.String(), data.AgreementID)
 	fundingSrv.AssertExpectations(t)
 }
+
+func TestHandler_SignFundingAgreement(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/documents/{document_id}/funding_agreements/{agreement_id}/sign", nil).WithContext(ctx)
+	}
+	// empty document_id and invalid id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Keys[1] = "agreement_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.SignFundingAgreement(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	id := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = byteutils.HexBytes(id).String()
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[1] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.SignFundingAgreement(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), ErrInvalidAgreementID.Error())
+	}
+
+	// failed to sign
+	fundingID := utils.RandomSlice(32)
+	rctx.URLParams.Values[1] = hexutil.Encode(fundingID)
+	fundingSrv := new(funding.MockService)
+	h.srv.fundingSrv = fundingSrv
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+	fundingSrv.On("SignFundingAgreement", mock.Anything, id, fundingID).Return(nil, nil, errors.New("failed to sign")).Once()
+	w, r := getHTTPReqAndResp(ctx)
+	h.SignFundingAgreement(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.Contains(t, w.Body.String(), "failed to sign")
+
+	// success
+	fundingSrv.On("SignFundingAgreement", mock.Anything, id, fundingID).Return(inv, jobs.NewJobID(), nil).Once()
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, nil)
+	w, r = getHTTPReqAndResp(ctx)
+	h.SignFundingAgreement(w, r)
+	assert.Equal(t, w.Code, http.StatusAccepted)
+	fundingSrv.AssertExpectations(t)
+	fundingSrv.AssertExpectations(t)
+}
