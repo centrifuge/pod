@@ -86,7 +86,7 @@ func (m *MockService) CreateFundingAgreement(ctx context.Context, docID []byte, 
 	return model, jobID, args.Error(2)
 }
 
-func (m *MockService) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (Data, []Signature, error) {
+func (m *MockService) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID, idx string) (Data, []Signature, error) {
 	args := m.Called(ctx, model, fundingID)
 	d, _ := args.Get(0).(Data)
 	sigs, _ := args.Get(1).([]Signature)
