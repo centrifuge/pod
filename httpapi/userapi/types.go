@@ -314,7 +314,7 @@ func toFundingAgreementResponse(
 		return resp, err
 	}
 
-	data, sigs, err := fundingSrv.GetDataAndSignatures(ctx, doc, fundingID)
+	data, sigs, err := fundingSrv.GetDataAndSignatures(ctx, doc, fundingID, "")
 	if err != nil {
 		return resp, err
 	}
@@ -359,7 +359,7 @@ func toFundingAgreementListResponse(ctx context.Context,
 	}
 
 	for i.Cmp(lastIdx) != 1 {
-		data, sigs, err := fundingSrv.GetDataAndSignatures(ctx, doc, i.String())
+		data, sigs, err := fundingSrv.GetDataAndSignatures(ctx, doc, "", i.String())
 		if err != nil {
 			return resp, err
 		}

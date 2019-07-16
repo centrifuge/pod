@@ -35,8 +35,8 @@ type Service interface {
 	// CreateFundingAgreement creates a new funding agreement and anchors the document.
 	CreateFundingAgreement(ctx context.Context, docID []byte, data *Data) (documents.Model, jobs.JobID, error)
 
-	// GetDataAndSignatures return the funding Data and Signatures associated with the FundingID.
-	GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (Data, []Signature, error)
+	// GetDataAndSignatures return the funding Data and Signatures associated with the FundingID or funding index.
+	GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string, idx string) (Data, []Signature, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -364,10 +364,12 @@ func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data 
 }
 
 // GetDataAndSignatures return the funding Data and Signatures associated with the FundingID.
-func (s service) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string) (data Data, sigs []Signature, err error) {
-	idx, err := extensions.FindAttributeSetIDX(model, fundingID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
-	if err != nil {
-		return data, sigs, err
+func (s service) GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string, idx string) (data Data, sigs []Signature, err error) {
+	if idx == "" {
+		idx, err = extensions.FindAttributeSetIDX(model, fundingID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+		if err != nil {
+			return data, sigs, err
+		}
 	}
 
 	oldData, err := s.deriveFundingData(model, idx)

@@ -438,7 +438,7 @@ func TestService_GetDataAndSignatures(t *testing.T) {
 
 	// missing funding id
 	fundingID := byteutils.HexBytes(utils.RandomSlice(32)).String()
-	_, _, err := srv.GetDataAndSignatures(ctx, inv, fundingID)
+	_, _, err := srv.GetDataAndSignatures(ctx, inv, fundingID, "")
 	assert.Error(t, err)
 
 	// success
@@ -447,7 +447,7 @@ func TestService_GetDataAndSignatures(t *testing.T) {
 	assert.NoError(t, err)
 	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
-	data1, sigs, err := srv.GetDataAndSignatures(ctx, inv, data.AgreementID)
+	data1, sigs, err := srv.GetDataAndSignatures(ctx, inv, data.AgreementID, "")
 	assert.NoError(t, err)
 	assert.Equal(t, *data, data1)
 	assert.Len(t, sigs, 0)
