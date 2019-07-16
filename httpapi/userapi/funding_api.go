@@ -253,3 +253,59 @@ func (h handler) UpdateFundingAgreement(w http.ResponseWriter, r *http.Request) 
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
+
+// SignFundingAgreement signs the funding agreement associated with agreement_id.
+// @summary Signs the funding agreement associated with agreement_id.
+// @description Signs the funding agreement associated with agreement_id.
+// @id sign_funding_agreement
+// @tags Funding Agreements
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param agreement_id path string true "Funding agreement Identifier"
+// @produce json
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 200 {object} userapi.FundingResponse
+// @router /v1/documents/{document_id}/funding_agreements/{agreement_id}/sign [post]
+func (h handler) SignFundingAgreement(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	fundingID, err := hexutil.Decode(chi.URLParam(r, agreementIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrInvalidAgreementID
+		return
+	}
+
+	ctx := r.Context()
+	m, jobID, err := h.srv.fundingSrv.SignFundingAgreement(ctx, docID, fundingID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		return
+	}
+
+	resp, err := toFundingAgreementResponse(ctx, h.srv.fundingSrv, m, chi.URLParam(r, agreementIDParam), h.tokenRegistry, jobID)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusAccepted)
+	render.JSON(w, r, resp)
+}

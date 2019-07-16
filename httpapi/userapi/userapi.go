@@ -53,4 +53,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements", h.GetFundingAgreements)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.GetFundingAgreement)
 	r.Put("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.UpdateFundingAgreement)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}/sign", h.SignFundingAgreement)
 }

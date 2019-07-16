@@ -81,7 +81,7 @@ func listTest(t *testing.T, alice, bob, charlie hostTestSuite, docIdentifier str
 
 func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
 	// alice adds a funding and shares with charlie
-	res := signFunding(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, http.StatusOK)
+	res := signFunding(alice.httpExpect, alice.id.String(), docIdentifier, fundingId, http.StatusAccepted)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

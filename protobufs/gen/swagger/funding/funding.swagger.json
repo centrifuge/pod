@@ -15,45 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/documents/{document_id}/funding_agreements/{agreement_id}/sign": {
-      "post": {
-        "description": "Signs funding agreement in a document",
-        "operationId": "Sign",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/funFundingResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "agreement_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/funRequest"
-            }
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
-    },
     "/v1/documents/{document_id}/versions/{version_id}/funding_agreements": {
       "get": {
         "description": "Get all funding agreements of a document version",
@@ -278,17 +239,6 @@
           "type": "string"
         },
         "signed_version": {
-          "type": "string"
-        }
-      }
-    },
-    "funRequest": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "agreement_id": {
           "type": "string"
         }
       }

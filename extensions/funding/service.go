@@ -40,6 +40,9 @@ type Service interface {
 
 	// GetDataAndSignatures return the funding Data and Signatures associated with the FundingID or funding index.
 	GetDataAndSignatures(ctx context.Context, model documents.Model, fundingID string, idx string) (Data, []Signature, error)
+
+	// SignFundingAgreement adds the signature to the given funding agreement.
+	SignFundingAgreement(ctx context.Context, docID, fundingID []byte) (documents.Model, jobs.JobID, error)
 }
 
 // service implements Service and handles all funding related persistence and validations
@@ -419,6 +422,21 @@ func (s service) UpdateFundingAgreement(ctx context.Context, docID, fundingID []
 	}
 
 	return model, jobID, nil
+}
+
+// SignFundingAgreement adds the signature to the given funding agreement.
+func (s service) SignFundingAgreement(ctx context.Context, docID, fundingID []byte) (documents.Model, jobs.JobID, error) {
+	m, err := s.Sign(ctx, hexutil.Encode(fundingID), docID)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	m, jobID, _, err := s.Update(ctx, m)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return m, jobID, nil
 }
 
 // GetDataAndSignatures return the funding Data and Signatures associated with the FundingID.

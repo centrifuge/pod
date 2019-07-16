@@ -478,6 +478,39 @@ func TestService_UpdateFundingAgreement(t *testing.T) {
 	docSrv.AssertExpectations(t)
 }
 
+func TestService_SignFundingAgreement(t *testing.T) {
+	// missing agreement
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	docSrv := new(testingdocuments.MockService)
+	s := DefaultService(docSrv, nil)
+	docID := inv.ID()
+	docSrv.On("GetCurrentVersion", docID).Return(inv, nil)
+	_, _, err := s.SignFundingAgreement(ctx, docID, utils.RandomSlice(32))
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(extensions.ErrAttributeSetNotFound, err))
+
+	// failed update
+	data := CreateData()
+	attrs, err := extensions.CreateAttributesList(inv, *data, fundingFieldKey, AttrFundingLabel)
+	assert.NoError(t, err)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	fundingID, err := hexutil.Decode(data.AgreementID)
+	assert.NoError(t, err)
+	docSrv.On("Update", ctx, inv).Return(nil, nil, errors.New("failed to update")).Once()
+	_, _, err = s.SignFundingAgreement(ctx, docID, fundingID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update")
+
+	// success
+	docSrv.On("Update", ctx, inv).Return(inv, jobs.NewJobID(), nil)
+	m, _, err := s.SignFundingAgreement(ctx, docID, fundingID)
+	assert.NoError(t, err)
+	assert.Equal(t, inv, m)
+	docSrv.AssertExpectations(t)
+}
+
 func TestService_GetDataAndSignatures(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)

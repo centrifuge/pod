@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -27,43 +26,6 @@ func GRPCHandler(config config.Service, srv Service) clientfunpb.FundingServiceS
 		service: srv,
 		config:  config,
 	}
-}
-
-// Sign adds a funding signature to a document
-func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clientfunpb.FundingResponse, error) {
-	apiLog.Debugf("create funding request %v", req)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
-	// returns model with a signature
-	model, err := h.service.Sign(ctxHeader, req.AgreementId, identifier)
-	if err != nil {
-		return nil, errors.NewTypedError(extensions.ErrPayload, err)
-	}
-
-	model, jobID, _, err := h.service.Update(ctxHeader, model)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, errors.NewTypedError(extensions.ErrDeriveAttr, err)
-	}
-
-	resp.Header.JobId = jobID.String()
-	return resp, nil
 }
 
 // Get returns a funding agreement from an existing document
