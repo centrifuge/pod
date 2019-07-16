@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	transferIDParam = "transfer_id"
+	transferIDParam  = "transfer_id"
+	agreementIDParam = "agreement_id"
 )
 
 // Register registers the core apis to the router.
@@ -50,4 +51,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	// funding api
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements", h.CreateFundingAgreement)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements", h.GetFundingAgreements)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.GetFundingAgreement)
 }

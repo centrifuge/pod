@@ -16,35 +16,6 @@
   ],
   "paths": {
     "/v1/documents/{document_id}/funding_agreements/{agreement_id}": {
-      "get": {
-        "description": "Get a funding agreement of a latest document",
-        "operationId": "Get",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/funFundingResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "agreement_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      },
       "put": {
         "description": "Updates a funding agreement in a document",
         "operationId": "Update",

@@ -29,35 +29,6 @@ func GRPCHandler(config config.Service, srv Service) clientfunpb.FundingServiceS
 	}
 }
 
-// Get returns a funding agreement from an existing document
-func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clientfunpb.FundingResponse, error) {
-	apiLog.Debugf("Get request %v", req)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
-	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentNotFound
-	}
-
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, extensions.ErrDeriveAttr
-	}
-	return resp, nil
-}
-
 // Sign adds a funding signature to a document
 func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clientfunpb.FundingResponse, error) {
 	apiLog.Debugf("create funding request %v", req)

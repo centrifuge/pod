@@ -19,6 +19,7 @@ import (
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -137,4 +138,72 @@ func TestHandler_GetFundingAgreements(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	docSrv.AssertExpectations(t)
 	m.AssertExpectations(t)
+}
+
+func TestHandler_GetFundingAgreement(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/documents/{document_id}/funding_agreements/{agreement_id}", nil).WithContext(ctx)
+	}
+	// empty document_id and invalid id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Keys[1] = "agreement_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.GetFundingAgreement(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	id := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = byteutils.HexBytes(id).String()
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[1] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.GetFundingAgreement(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), ErrInvalidAgreementID.Error())
+	}
+
+	// missing Doc
+	fundingID := hexutil.Encode(utils.RandomSlice(32))
+	rctx.URLParams.Values[1] = fundingID
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", id).Return(nil, errors.New("doc not found")).Once()
+	h.srv.coreAPISrv = newCoreAPIService(docSrv)
+	w, r := getHTTPReqAndResp(ctx)
+	h.GetFundingAgreement(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+
+	// failed response conversion
+	fundingSrv := new(funding.MockService)
+	h.srv.fundingSrv = fundingSrv
+	m := new(testingdocuments.MockModel)
+	docSrv.On("GetCurrentVersion", id).Return(m, nil)
+	m.On("ID").Return(utils.RandomSlice(32))
+	m.On("CurrentVersion").Return(utils.RandomSlice(32))
+	m.On("Author").Return(nil, errors.New("somerror"))
+	m.On("Timestamp").Return(nil, errors.New("somerror"))
+	m.On("NFTs").Return(nil)
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetFundingAgreement(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success
+	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil)
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, nil)
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetFundingAgreement(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	fundingSrv.AssertExpectations(t)
+	m.AssertExpectations(t)
+	fundingSrv.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
 }

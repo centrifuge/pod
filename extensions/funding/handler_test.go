@@ -55,18 +55,6 @@ func TestGRPCHandler_Sign(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGRPCHandler_Get(t *testing.T) {
-	srv := &MockService{}
-	h := &grpcHandler{service: srv, config: configService}
-
-	srv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
-
-	response, err := h.Get(testingconfig.HandlerContext(configService), &clientfunpb.Request{DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))})
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-}
-
 func TestGRPCHandler_GetVersion(t *testing.T) {
 	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}
