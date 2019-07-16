@@ -31,7 +31,7 @@ func Test_SignUpdate(t *testing.T) {
 
 func updateTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIdentifier string) {
 	// alice adds a funding and shares with charlie
-	res := updateFunding(alice.httpExpect, alice.id.String(), fundingId, http.StatusOK, docIdentifier, updateFundingPayload(fundingId, alice.id.String(), charlie.id.String()))
+	res := updateFunding(alice.httpExpect, alice.id.String(), fundingId, http.StatusAccepted, docIdentifier, updateFundingPayload(fundingId, alice.id.String(), charlie.id.String()))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

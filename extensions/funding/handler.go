@@ -29,35 +29,6 @@ func GRPCHandler(config config.Service, srv Service) clientfunpb.FundingServiceS
 	}
 }
 
-// Get returns a funding agreement from an existing document
-func (h *grpcHandler) Get(ctx context.Context, req *clientfunpb.Request) (*clientfunpb.FundingResponse, error) {
-	apiLog.Debugf("Get request %v", req)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	identifier, err := hexutil.Decode(req.DocumentId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentIdentifier
-	}
-
-	model, err := h.service.GetCurrentVersion(ctxHeader, identifier)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, documents.ErrDocumentNotFound
-	}
-
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.AgreementId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, extensions.ErrDeriveAttr
-	}
-	return resp, nil
-}
-
 // Sign adds a funding signature to a document
 func (h *grpcHandler) Sign(ctx context.Context, req *clientfunpb.Request) (*clientfunpb.FundingResponse, error) {
 	apiLog.Debugf("create funding request %v", req)
@@ -162,36 +133,5 @@ func (h *grpcHandler) GetListVersion(ctx context.Context, req *clientfunpb.GetLi
 		apiLog.Error(err)
 		return nil, extensions.ErrDeriveAttr
 	}
-	return resp, nil
-}
-
-// Update handles an update over an existing funding document extension
-func (h *grpcHandler) Update(ctx context.Context, req *clientfunpb.FundingUpdatePayload) (*clientfunpb.FundingResponse, error) {
-	apiLog.Debugf("create funding request %v", req)
-	ctxHeader, err := contextutil.Context(ctx, h.config)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	// returns model with updated funding custom fields
-	model, err := h.service.DeriveFromUpdatePayload(ctxHeader, req)
-	if err != nil {
-		return nil, errors.NewTypedError(extensions.ErrPayload, err)
-	}
-
-	model, jobID, _, err := h.service.Update(ctxHeader, model)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, err
-	}
-
-	resp, err := h.service.DeriveFundingResponse(ctxHeader, model, req.Data.AgreementId)
-	if err != nil {
-		apiLog.Error(err)
-		return nil, errors.NewTypedError(extensions.ErrPayload, err)
-	}
-
-	resp.Header.JobId = jobID.String()
 	return resp, nil
 }

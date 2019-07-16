@@ -430,6 +430,54 @@ func TestService_CreateFundingAgreement(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
+func TestService_UpdateFundingAgreement(t *testing.T) {
+	// missing document.
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", mock.Anything).Return(nil, errors.New("failed to get document")).Once()
+	srv := DefaultService(docSrv, nil)
+	docID := utils.RandomSlice(32)
+	fundingID := utils.RandomSlice(32)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	_, _, err := srv.UpdateFundingAgreement(ctx, docID, fundingID, new(Data))
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// missing attribute
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	docID = inv.ID()
+	docSrv.On("GetCurrentVersion", mock.Anything).Return(inv, nil)
+	_, _, err = srv.UpdateFundingAgreement(ctx, docID, fundingID, new(Data))
+	assert.Error(t, err)
+
+	// invalid identities
+	data := CreateData()
+	fundingID, err = hexutil.Decode(data.AgreementID)
+	assert.NoError(t, err)
+	attrs, err := extensions.CreateAttributesList(inv, *data, fundingFieldKey, AttrFundingLabel)
+	assert.NoError(t, err)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	_, _, err = srv.UpdateFundingAgreement(ctx, docID, fundingID, new(Data))
+	assert.Error(t, err)
+
+	// update fails
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	docSrv.On("Update", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("update failed")).Once()
+	_, _, err = srv.UpdateFundingAgreement(ctx, docID, fundingID, data)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "update failed")
+
+	// success
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	docSrv.On("Update", mock.Anything, mock.Anything).Return(inv, jobs.NewJobID(), nil).Once()
+	m, _, err := srv.UpdateFundingAgreement(ctx, docID, fundingID, data)
+	assert.NoError(t, err)
+	assert.Equal(t, m, inv)
+	docSrv.AssertExpectations(t)
+}
+
 func TestService_GetDataAndSignatures(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
