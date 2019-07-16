@@ -7,7 +7,7 @@ import (
 )
 
 // TODO: generic? Create something like ServiceRegistry for Custom Attributes...
-func (f *Data) initFundingFromData(data *funpb.FundingData) {
+func (f *OldData) initFundingFromData(data *funpb.FundingData) {
 	types := reflect.TypeOf(*f)
 	values := reflect.ValueOf(*data)
 	for i := 0; i < types.NumField(); i++ {
@@ -20,7 +20,7 @@ func (f *Data) initFundingFromData(data *funpb.FundingData) {
 }
 
 // TODO: generic?
-func (f *Data) getClientData() *funpb.FundingData {
+func (f *OldData) getClientData() *funpb.FundingData {
 	clientData := new(funpb.FundingData)
 	types := reflect.TypeOf(*f)
 	values := reflect.ValueOf(*f)

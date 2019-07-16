@@ -29,7 +29,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Contains(t, err.Error(), "document service not initialised")
 
 	// missing identity service
-	ctx[documents.BootstrappedDocumentService] = new(mockService)
+	ctx[documents.BootstrappedDocumentService] = new(MockService)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "token registry not initialisation")

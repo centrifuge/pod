@@ -5,6 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 )
@@ -37,6 +38,11 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", entity.BootstrappedEntityService)
 	}
 
+	fundingSrv, ok := ctx[funding.BootstrappedFundingService].(funding.Service)
+	if !ok {
+		return errors.New("failed to get %s", funding.BootstrappedFundingService)
+	}
+
 	configSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
@@ -47,6 +53,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		transferDetailsService: tdSrv,
 		entityRelationshipSrv:  erSrv,
 		entitySrv:              eSrv,
+		fundingSrv:             fundingSrv,
 		config:                 configSrv,
 	}
 	return nil

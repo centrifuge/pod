@@ -15,62 +15,6 @@
     "application/json"
   ],
   "paths": {
-    "/v1/documents/{document_id}/funding_agreements": {
-      "get": {
-        "description": "Get all funding agreements of a latest document",
-        "operationId": "GetList",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/funFundingListResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      },
-      "post": {
-        "description": "Adds a funding to a document",
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/funFundingResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/funFundingCreatePayload"
-            }
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
-    },
     "/v1/documents/{document_id}/funding_agreements/{agreement_id}": {
       "get": {
         "description": "Get a funding agreement of a latest document",
@@ -302,17 +246,6 @@
           "items": {
             "$ref": "#/definitions/documentNFT"
           }
-        }
-      }
-    },
-    "funFundingCreatePayload": {
-      "type": "object",
-      "properties": {
-        "document_id": {
-          "type": "string"
-        },
-        "data": {
-          "$ref": "#/definitions/funFundingData"
         }
       }
     },
