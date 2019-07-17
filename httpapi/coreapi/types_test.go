@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -156,7 +155,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 		errLen       int
 		errMsg       string
 		nftLen       int
-		expectedNFTs []*documentpb.NFT
+		expectedNFTs []NFT
 	}{
 		{
 			name: "1 nft, no error",
@@ -176,11 +175,11 @@ func TestTypes_convertNFTs(t *testing.T) {
 			},
 			isErr:  false,
 			nftLen: 1,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[0][:20]),
 					Owner:      addrs[0].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[0]),
+					TokenID:    hexutil.Encode(tokIDs[0]),
 					TokenIndex: hexutil.Encode(tokIDx[0].Bytes()),
 				},
 			},
@@ -209,17 +208,17 @@ func TestTypes_convertNFTs(t *testing.T) {
 			},
 			isErr:  false,
 			nftLen: 2,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[0][:20]),
 					Owner:      addrs[0].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[0]),
+					TokenID:    hexutil.Encode(tokIDs[0]),
 					TokenIndex: hexutil.Encode(tokIDx[0].Bytes()),
 				},
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[1]),
+					TokenID:    hexutil.Encode(tokIDs[1]),
 					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
 				},
 			},
@@ -250,11 +249,11 @@ func TestTypes_convertNFTs(t *testing.T) {
 			errLen: 1,
 			errMsg: "owner",
 			nftLen: 1,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[1]),
+					TokenID:    hexutil.Encode(tokIDs[1]),
 					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
 				},
 			},
@@ -284,11 +283,11 @@ func TestTypes_convertNFTs(t *testing.T) {
 			errLen: 1,
 			errMsg: "CurrentIndexOfToken",
 			nftLen: 1,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[1]),
+					TokenID:    hexutil.Encode(tokIDs[1]),
 					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
 				},
 			},
@@ -361,7 +360,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 				for i, nn := range n {
 					assert.Equal(t, strings.ToLower(nn.Registry), strings.ToLower(test.expectedNFTs[i].Registry))
 					assert.Equal(t, strings.ToLower(nn.TokenIndex), strings.ToLower(test.expectedNFTs[i].TokenIndex))
-					assert.Equal(t, strings.ToLower(nn.TokenID), strings.ToLower(test.expectedNFTs[i].TokenId))
+					assert.Equal(t, strings.ToLower(nn.TokenID), strings.ToLower(test.expectedNFTs[i].TokenID))
 					assert.Equal(t, strings.ToLower(nn.Owner), strings.ToLower(test.expectedNFTs[i].Owner))
 				}
 			}

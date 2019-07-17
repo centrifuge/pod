@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -243,7 +242,7 @@ func TestService_UpdateModel(t *testing.T) {
 
 	// validation failed
 	id := testingidentity.GenerateRandomDID()
-	p := documentpb.AccessTokenParams{
+	p := documents.AccessTokenParams{
 		Grantee:            id.String(),
 		DocumentIdentifier: hexutil.Encode(old.ID()),
 	}
