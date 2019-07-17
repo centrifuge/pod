@@ -4,6 +4,8 @@ package userapi
 import (
 	"context"
 	"encoding/json"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -275,3 +277,58 @@ func toEntityResponse(ctx context.Context, erSrv entityrelationship.Service, mod
 		},
 	}, nil
 }
+
+// MintNFTRequest holds required fields for minting NFT
+type MintNFTRequest struct {
+	DocumentID               byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	DepositAddress           common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
+	ProofFields              []string           `json:"proof_fields"`
+}
+
+// NFTResponseHeader holds the NFT mint job ID.
+type NFTResponseHeader struct {
+	JobID string `json:"job_id"`
+}
+
+// MintNFTResponse holds the details of the minted NFT.
+type MintNFTResponse struct {
+	Header          NFTResponseHeader  `json:"header"`
+	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	TokenID         string             `json:"token_id"`
+	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
+	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
+}
+
+func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
+	return nft.MintNFTRequest{
+		DocumentID:               req.DocumentID,
+		DepositAddress:           req.DepositAddress,
+		GrantNFTReadAccess:       false,
+		ProofFields:              req.ProofFields,
+		RegistryAddress:          registryAddress,
+		SubmitNFTReadAccessProof: false,
+		SubmitTokenProof:         true,
+		UseGeneric:               true,
+	}
+}
+
+// TransferNFTRequest holds Registry Address and To address for NFT transfer
+type TransferNFTRequest struct {
+	To common.Address `json:"to" swaggertype:"primitive,string"`
+}
+
+// TransferNFTResponse is the response for NFT transfer.
+type TransferNFTResponse struct {
+	Header          NFTResponseHeader `json:"header"`
+	TokenID         string            `json:"token_id"`
+	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
+	To              common.Address    `json:"to" swaggertype:"primitive,string"`
+}
+
+// NFTOwnerResponse is the response for NFT owner request.
+type NFTOwnerResponse struct {
+	TokenID         string         `json:"token_id"`
+	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
+	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
+}
+

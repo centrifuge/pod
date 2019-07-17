@@ -3,6 +3,7 @@
 package invoice
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -170,17 +171,17 @@ func TestInvoice_CreateProofs(t *testing.T) {
 		return
 	}
 
-	tree, err := i.DocumentRootTree()
+	signingRoot, err := i.CalculateSigningRoot()
 	assert.NoError(t, err)
 
 	// Validate invoice_number
-	valid, err := tree.ValidateProof(proof[0])
-	assert.Nil(t, err)
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = tree.ValidateProof(proof[1])
-	assert.Nil(t, err)
+	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
@@ -189,17 +190,17 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
-	assert.Nil(t, err)
+	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// validate line item
-	valid, err = tree.ValidateProof(proof[3])
-	assert.Nil(t, err)
+	valid, err = documents.ValidateProof(proof[3], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
 
-	valid, err = tree.ValidateProof(proof[4])
-	assert.Nil(t, err)
+	valid, err = documents.ValidateProof(proof[4], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
 }
 
@@ -219,7 +220,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	i.AppendSignatures(sig)
 	_, err = i.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = i.CalculateSigningRoot()
+	signingRoot, err := i.CalculateSigningRoot()
 	assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -227,9 +228,9 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signingRootField := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
-	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRootField, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
@@ -238,8 +239,8 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.Len(t, proofFields, 8)
 
 	// Validate invoice_gross_amount
-	valid, err := tree.ValidateProof(proof[0])
-	assert.Nil(t, err)
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate signing_root
@@ -253,7 +254,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = tree.ValidateProof(proof[7])
+	valid, err = documents.ValidateProof(proof[7], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

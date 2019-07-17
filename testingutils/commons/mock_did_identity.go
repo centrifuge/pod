@@ -44,7 +44,7 @@ func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address,
 	return args.Get(0).(identity.IDTX), args.Get(1).(chan bool), args.Error(2)
 }
 
-// Execute creates the abi encoding an calls the execute method on the identity contract
+// Execute creates the abi encoding and calls the execute method on the identity contract
 func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID identity.IDTX, done chan bool, err error) {
 	a := i.Called(ctx, to, contractAbi, methodName, args)
 	return a.Get(0).(identity.IDTX), a.Get(1).(chan bool), a.Error(2)

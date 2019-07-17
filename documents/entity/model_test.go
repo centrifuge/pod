@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -178,16 +179,16 @@ func TestEntity_CreateProofs(t *testing.T) {
 	proof, err := e.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	tree, err := e.DocumentRootTree()
+	signingRoot, err := e.CalculateSigningRoot()
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := tree.ValidateProof(proof[0])
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = tree.ValidateProof(proof[1])
+	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -197,7 +198,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
+	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

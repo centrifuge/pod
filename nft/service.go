@@ -2,8 +2,9 @@ package nft
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"math/big"
 	"time"
 
@@ -16,8 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -29,6 +28,9 @@ var log = logging.Logger("nft")
 const (
 	// ErrNFTMinted error for NFT already minted for registry
 	ErrNFTMinted = errors.Error("NFT already minted")
+
+	// GenericMintMethodABI constant interface to interact with mint methods
+	GenericMintMethodABI = `[{"constant":true, "inputs":[{"name":"usr","type":"address"},{"name":"tkn","type":"uint256"},{"name":"anchor","type":"uint256"},{"name":"data_root","type":"bytes32"},{"name":"signatures_root","type":"bytes32"},{"name":"properties","type":"bytes[]"},{"name":"values","type":"bytes[]"},{"name":"salts","type":"bytes32[]"},{"name":"proofs","type":"bytes32[][]"}],"name":"mint","outputs":[],"type":"function"}]`
 )
 
 // Config is the config interface for nft package
@@ -71,21 +73,6 @@ func newService(
 	}
 }
 
-func (s *service) filterMintProofs(docProof *documents.DocumentProof) *documents.DocumentProof {
-	// Compact properties
-	var nonFilteredProofsLiteral = [][]byte{append(documents.CompactProperties(documents.DRTreePrefix), documents.CompactProperties(documents.SigningRootField)...)}
-	// Byte array Regex - (signatureTreePrefix + signatureProp) + Index[up to 104 characters (52bytes*2)] + Signature key
-	m0 := append(documents.CompactProperties(documents.SignaturesTreePrefix), []byte{0, 0, 0, 1}...)
-	var nonFilteredProofsMatch = []string{fmt.Sprintf("%s(.{104})%s", hex.EncodeToString(m0), hex.EncodeToString([]byte{0, 0, 0, 4}))}
-
-	for i, p := range docProof.FieldProofs {
-		if !byteutils.ContainsBytesInSlice(nonFilteredProofsLiteral, p.GetCompactName()) && !stringutils.ContainsBytesMatchInSlice(nonFilteredProofsMatch, p.GetCompactName()) {
-			docProof.FieldProofs[i].SortedHashes = docProof.FieldProofs[i].SortedHashes[:len(docProof.FieldProofs[i].SortedHashes)-1]
-		}
-	}
-	return docProof
-}
-
 func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
 	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
@@ -107,7 +94,33 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
-	docProofs = s.filterMintProofs(docProofs)
+
+	///////////////////////////////////////// REMOVE
+	docRoot, err := model.CalculateDocumentRoot()
+	if err != nil {
+		return mreq, err
+	}
+	signaturesRoot, err := model.CalculateSignaturesRoot()
+	if err != nil {
+		return mreq, err
+	}
+	signingRoot, err := model.CalculateSigningRoot()
+	if err != nil {
+		return mreq, err
+	}
+	fmt.Println("Document Root:", hexutil.Encode(docRoot))
+	fmt.Println("Signatures Root:", hexutil.Encode(signaturesRoot))
+	fmt.Println("SigningRoot:", hexutil.Encode(signingRoot))
+
+	dp := &documents.DocumentProof{
+		DocumentID:  model.ID(),
+		VersionID:   model.CurrentVersion(),
+		FieldProofs: docProofs.FieldProofs,
+	}
+	proofResponse := ConvertProofs(dp)
+	data, _ :=json.MarshalIndent(proofResponse, "", "")
+	fmt.Println(string(data))
+	///////////////////////////////////////////////////
 
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
@@ -231,12 +244,41 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 
-		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, InvoiceUnpaidContractABI, "mint", requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][32]byte, salts [][32]byte, proofs [][][32]byte
+		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
+		mintContractABI := InvoiceUnpaidContractABI
+		if req.UseGeneric {
+			signaturesRoot, err := model.CalculateSignaturesRoot()
+			if err != nil {
+				errOut <- errors.New("failed to calculate signatures root: %v", err)
+				return
+			}
+			signingRoot, err := model.CalculateSigningRoot()
+			if err != nil {
+				errOut <- errors.New("failed to calculate signing root: %v", err)
+				return
+			}
+			signaturesB32, err := utils.SliceToByte32(signaturesRoot)
+			if err != nil {
+				errOut <- errors.New("failed to calculate signatures root to bytes32: %v", err)
+				return
+			}
+			signingB32, err := utils.SliceToByte32(signingRoot)
+			if err != nil {
+				errOut <- errors.New("failed to convert signing root to bytes32: %v", err)
+				return
+			}
+			// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, signingRoot [32]byte, signaturesRoot [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+			args = []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, signingB32, signaturesB32, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
+			mintContractABI = GenericMintMethodABI
+		}
+
+		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, mintContractABI, "mint", args...)
 		if err != nil {
 			errOut <- err
 			return
 		}
+
 		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
 			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
 
@@ -460,4 +502,61 @@ func byteByte32SlicetoString(s [][][32]byte) string {
 	}
 	str += "]"
 	return str
+}
+
+
+// REMOVE //////
+// ProofResponseHeader holds the document details.
+type ProofResponseHeader struct {
+	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	VersionID  byteutils.HexBytes `json:"version_id" swaggertype:"primitive,string"`
+	State      string             `json:"state"`
+}
+
+// Proof represents a single proof
+type Proof struct {
+	Property     byteutils.HexBytes   `json:"property" swaggertype:"primitive,string"`
+	Value        byteutils.HexBytes   `json:"value" swaggertype:"primitive,string"`
+	Salt         byteutils.HexBytes   `json:"salt" swaggertype:"primitive,string"`
+	Hash         byteutils.HexBytes   `json:"hash" swaggertype:"primitive,string"`
+	SortedHashes []byteutils.HexBytes `json:"sorted_hashes" swaggertype:"array,string"`
+}
+
+// ProofsResponse holds the proofs for the fields given for a document.
+type ProofsResponse struct {
+	Header      ProofResponseHeader `json:"header"`
+	FieldProofs []Proof             `json:"field_proofs"`
+}
+
+
+func ConvertProofs(proof *documents.DocumentProof) ProofsResponse {
+	resp := ProofsResponse{
+		Header: ProofResponseHeader{
+			DocumentID: proof.DocumentID,
+			VersionID:  proof.VersionID,
+			State:      proof.State,
+		},
+	}
+
+	var proofs []Proof
+	for _, pf := range proof.FieldProofs {
+		pff := Proof{
+			Value:    pf.Value,
+			Hash:     pf.Hash,
+			Salt:     pf.Salt,
+			Property: pf.GetCompactName(),
+		}
+
+		var hashes []byteutils.HexBytes
+		for _, h := range pf.SortedHashes {
+			h := h
+			hashes = append(hashes, h)
+		}
+
+		pff.SortedHashes = hashes
+		proofs = append(proofs, pff)
+	}
+
+	resp.FieldProofs = proofs
+	return resp
 }

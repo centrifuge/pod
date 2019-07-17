@@ -213,7 +213,7 @@ type Service interface {
 	// RawExecute calls the execute method on the identity contract
 	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan bool, err error)
 
-	// Execute creates the abi encoding an calls the execute method on the identity contract
+	// Execute creates the abi encoding and calls the execute method on the identity contract
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan bool, err error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes

@@ -61,6 +61,12 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		// user apis
 		userapi.Register(cctx, r)
 	})
+
+	// beta apis
+	r.Route("/beta", func(r chi.Router) {
+		userapi.RegisterBeta(cctx, r)
+	})
+
 	return r, nil
 }
 

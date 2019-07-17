@@ -55,6 +55,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
 
 [[constraint]]
+  name = "github.com/charleenfei/newsilver-nft"
+  revision = "321c7e0994cd233bd62d43d5dbc4c0ea6e9e14ae"
+
+[[constraint]]
   name = "github.com/go-errors/errors"
   version = "1.0.1"
 

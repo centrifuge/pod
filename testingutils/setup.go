@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -54,6 +55,41 @@ func RunSmartContractMigrations() {
 
 	// trying 3 times to migrate didnt work
 	log.Fatal(err, string(out))
+}
+
+func RunDAppSmartContractMigrations() string {
+	gp := os.Getenv("GOPATH")
+	// TODO DO NOT COMMIT
+	projDir := path.Join(gp, "src", "github.com", "centrifuge", "newsilver-nft")
+	cmd := exec.Command("dapp", "update")
+	cmd.Dir = projDir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err, string(out))
+		return ""
+	}
+	cmd = exec.Command("dapp", "build", "--extract")
+	cmd.Dir = projDir
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err, string(out))
+		return ""
+	}
+	os.Setenv("ETH_RPC_ACCOUNTS", "true")
+	os.Setenv("ETH_GAS", "5000000")
+	os.Setenv("ETH_KEYSTORE", "/Users/miguelhervas/Library/Ethereum/8383/keystore")
+	os.Setenv("ETH_RPC_URL", "http://localhost:9545")
+	os.Setenv("ETH_PASSWORD", "/dev/null")
+	os.Setenv("ETH_FROM", "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5")
+	smAddr := GetSmartContractAddresses()
+	cmd = exec.Command("dapp", "create", "NewSilverLoanNFT", smAddr.AnchorRepositoryAddr)
+	cmd.Dir = projDir
+	out, err = cmd.Output()
+	if err != nil {
+		fmt.Println(err, string(out))
+		return ""
+	}
+	return strings.Replace(string(out),"\n","",-1)
 }
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
@@ -157,7 +193,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
-	RunSmartContractMigrations()
+	//RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
