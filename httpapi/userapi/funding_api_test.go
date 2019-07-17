@@ -271,7 +271,7 @@ func TestHandler_UpdateFundingAgreement(t *testing.T) {
 	assert.NoError(t, err)
 	rctx.URLParams.Values[1] = agreementID
 	fundingSrv.On("UpdateFundingAgreement", mock.Anything, id, fundingID, mock.Anything).Return(inv, jobs.NewJobID(), nil)
-	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(*data, nil, nil)
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(data, nil, nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateFundingAgreement(w, r)
 	assert.Equal(t, w.Code, http.StatusAccepted)
