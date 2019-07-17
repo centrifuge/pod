@@ -82,7 +82,8 @@ func RunDAppSmartContractMigrations() string {
 	os.Setenv("ETH_PASSWORD", "/dev/null")
 	os.Setenv("ETH_FROM", "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5")
 	smAddr := GetSmartContractAddresses()
-	cmd = exec.Command("dapp", "create", "NewSilverLoanNFT", smAddr.AnchorRepositoryAddr)
+	fmt.Println("Using AnchorAddr", smAddr.AnchorRepositoryAddr)
+	cmd = exec.Command("dapp", "create", "NewSilverLoanNFT", strings.Replace(smAddr.AnchorRepositoryAddr, "0x", "", -1))
 	cmd.Dir = projDir
 	out, err = cmd.Output()
 	if err != nil {

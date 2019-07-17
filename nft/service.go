@@ -30,7 +30,7 @@ const (
 	ErrNFTMinted = errors.Error("NFT already minted")
 
 	// GenericMintMethodABI constant interface to interact with mint methods
-	GenericMintMethodABI = `[{"constant":true, "inputs":[{"name":"usr","type":"address"},{"name":"tkn","type":"uint256"},{"name":"anchor","type":"uint256"},{"name":"data_root","type":"bytes32"},{"name":"signatures_root","type":"bytes32"},{"name":"properties","type":"bytes[]"},{"name":"values","type":"bytes[]"},{"name":"salts","type":"bytes32[]"},{"name":"proofs","type":"bytes32[][]"}],"name":"mint","outputs":[],"type":"function"}]`
+	GenericMintMethodABI = `[{"constant":false,"inputs":[{"name":"usr","type":"address"},{"name":"tkn","type":"uint256"},{"name":"anchor","type":"uint256"},{"name":"data_root","type":"bytes32"},{"name":"signatures_root","type":"bytes32"},{"name":"properties","type":"bytes[]"},{"name":"values","type":"bytes[]"},{"name":"salts","type":"bytes32[]"},{"name":"proofs","type":"bytes32[][]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
 
 // Config is the config interface for nft package
@@ -95,7 +95,6 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
 
-	///////////////////////////////////////// REMOVE
 	docRoot, err := model.CalculateDocumentRoot()
 	if err != nil {
 		return mreq, err
@@ -112,6 +111,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	fmt.Println("Signatures Root:", hexutil.Encode(signaturesRoot))
 	fmt.Println("SigningRoot:", hexutil.Encode(signingRoot))
 
+	///////////////////////////////////////// REMOVE
 	dp := &documents.DocumentProof{
 		DocumentID:  model.ID(),
 		VersionID:   model.CurrentVersion(),
@@ -132,7 +132,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.FieldProofs)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, signingRoot, signaturesRoot, docProofs.FieldProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -248,28 +248,10 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric {
-			signaturesRoot, err := model.CalculateSignaturesRoot()
-			if err != nil {
-				errOut <- errors.New("failed to calculate signatures root: %v", err)
-				return
-			}
-			signingRoot, err := model.CalculateSigningRoot()
-			if err != nil {
-				errOut <- errors.New("failed to calculate signing root: %v", err)
-				return
-			}
-			signaturesB32, err := utils.SliceToByte32(signaturesRoot)
-			if err != nil {
-				errOut <- errors.New("failed to calculate signatures root to bytes32: %v", err)
-				return
-			}
-			signingB32, err := utils.SliceToByte32(signingRoot)
-			if err != nil {
-				errOut <- errors.New("failed to convert signing root to bytes32: %v", err)
-				return
-			}
+			// TODO Remove once we have finalized the generic NFT work
+			filteredProofs := requestData.Proofs[:len(requestData.Proofs)-1]
 			// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, signingRoot [32]byte, signaturesRoot [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, signingB32, signaturesB32, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
+			args = []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.DataRoot, requestData.SignaturesRoot, requestData.Props, requestData.Values, requestData.Salts, filteredProofs}
 			mintContractABI = GenericMintMethodABI
 		}
 
@@ -402,6 +384,12 @@ type MintRequest struct {
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
 
+	// DataRoot of the document
+	DataRoot [32]byte
+
+	// SignaturesRoot of the document
+	SignaturesRoot [32]byte
+
 	// Props contains the compact props for readRole and tokenRole
 	Props [][]byte
 
@@ -416,17 +404,27 @@ type MintRequest struct {
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, proofs []*proofspb.Proof) (MintRequest, error) {
+func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, dataRoot, signaturesRoot []byte, proofs []*proofspb.Proof) (MintRequest, error) {
 	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
 
+	dr, err := utils.SliceToByte32(dataRoot)
+	if err != nil {
+		return MintRequest{}, err
+	}
+	sr, err := utils.SliceToByte32(signaturesRoot)
+	if err != nil {
+		return MintRequest{}, err
+	}
 	return MintRequest{
 		To:           to,
 		TokenID:      tokenID.BigInt(),
 		AnchorID:     anchorID.BigInt(),
 		NextAnchorID: nextAnchorID.BigInt(),
+		DataRoot:     dr,
+		SignaturesRoot: sr,
 		Props:        proofData.Props,
 		Values:       proofData.Values,
 		Salts:        proofData.Salts,
