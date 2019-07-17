@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	logging "github.com/ipfs/go-log"
 )
 
 // Service defines specific functions for extension funding
@@ -52,6 +53,8 @@ type service struct {
 	tokenRegistry documents.TokenRegistry
 	idSrv         identity.Service
 }
+
+var log = logging.Logger("funding_agreement")
 
 const (
 	// AttrFundingLabel is the funding agreement label
@@ -104,7 +107,7 @@ func (s service) DeriveFromPayload(ctx context.Context, req *clientfunpb.Funding
 
 	model, err = s.GetCurrentVersion(ctx, docID)
 	if err != nil {
-		apiLog.Error(err)
+		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
 	attributes, err := extensions.CreateAttributesList(model, fd, fundingFieldKey, AttrFundingLabel)
@@ -155,7 +158,7 @@ func (s service) DeriveFromUpdatePayload(ctx context.Context, req *clientfunpb.F
 
 	model, err = s.GetCurrentVersion(ctx, docID)
 	if err != nil {
-		apiLog.Error(err)
+		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
 	}
 
@@ -373,7 +376,7 @@ func (s service) CreateFundingAgreement(ctx context.Context, docID []byte, data 
 func (s service) UpdateFundingAgreement(ctx context.Context, docID, fundingID []byte, data *Data) (documents.Model, jobs.JobID, error) {
 	model, err := s.GetCurrentVersion(ctx, docID)
 	if err != nil {
-		apiLog.Error(err)
+		log.Error(err)
 		return nil, jobs.NilJobID(), documents.ErrDocumentNotFound
 	}
 

@@ -2,15 +2,11 @@ package funding
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 const (
-	// BootstrappedFundingAPIHandler is the key for the api handler in Context
-	BootstrappedFundingAPIHandler = "Funding API Handler"
-
 	// BootstrappedFundingService is the key for Funding service in Context.
 	BootstrappedFundingService = "Funding Service"
 )
@@ -26,11 +22,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 		}
 	}()
 
-	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
-	if !ok {
-		return errors.New("config service not initialised")
-	}
-
 	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	if !ok {
 		return errors.New("document service not initialised")
@@ -43,7 +34,5 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) (err error) {
 
 	srv := DefaultService(docSrv, tokenRegistry)
 	ctx[BootstrappedFundingService] = srv
-	handler := GRPCHandler(cfgSrv, srv)
-	ctx[BootstrappedFundingAPIHandler] = handler
 	return nil
 }

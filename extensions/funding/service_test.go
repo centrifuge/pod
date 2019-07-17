@@ -69,7 +69,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)

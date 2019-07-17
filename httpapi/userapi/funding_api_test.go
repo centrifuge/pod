@@ -395,3 +395,58 @@ func TestHandler_GetFundingAgreementFromVersion(t *testing.T) {
 	docSrv.AssertExpectations(t)
 	fundingSrv.AssertExpectations(t)
 }
+
+func TestHandler_GetFundingAgreementsFromVersion(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/documents/{document_id}/versions/{version_id}/funding_agreements", nil).WithContext(ctx)
+	}
+
+	// empty document_id and invalid
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Keys[1] = "version_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		rctx.URLParams.Values[1] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.GetFundingAgreementsFromVersion(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	// missing document
+	id := utils.RandomSlice(32)
+	vid := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(id)
+	rctx.URLParams.Values[1] = hexutil.Encode(vid)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetVersion", id, vid).Return(nil, errors.New("missing document")).Once()
+	w, r := getHTTPReqAndResp(ctx)
+	h.srv.coreAPISrv = newCoreAPIService(docSrv)
+	h.GetFundingAgreementsFromVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
+
+	// failed conversion
+	fundingSrv := new(funding.MockService)
+	h.srv.fundingSrv = fundingSrv
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, errors.New("failed coneverison")).Once()
+	inv, _ := funding.CreateInvoiceWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
+	docSrv.On("GetVersion", id, vid).Return(inv, nil)
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetFundingAgreementsFromVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+
+	// success
+	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, nil)
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetFundingAgreementsFromVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	docSrv.AssertExpectations(t)
+	fundingSrv.AssertExpectations(t)
+}
