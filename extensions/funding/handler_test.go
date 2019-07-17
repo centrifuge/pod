@@ -18,18 +18,6 @@ import (
 
 var configService config.Service
 
-func TestGRPCHandler_GetVersion(t *testing.T) {
-	srv := &MockService{}
-	h := &grpcHandler{service: srv, config: configService}
-
-	srv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(&testingdocuments.MockModel{}, nil)
-	srv.On("DeriveFundingResponse", mock.Anything, mock.Anything, mock.Anything).Return(&clientfunpb.FundingResponse{Header: new(documentpb.ResponseHeader)}, nil).Once()
-
-	response, err := h.GetVersion(testingconfig.HandlerContext(configService), &clientfunpb.GetVersionRequest{DocumentId: hexutil.Encode(utils.RandomSlice(32)), VersionId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: hexutil.Encode(utils.RandomSlice(32))})
-	assert.NoError(t, err)
-	assert.NotNil(t, response)
-}
-
 func TestGRPCHandler_GetList(t *testing.T) {
 	srv := &MockService{}
 	h := &grpcHandler{service: srv, config: configService}

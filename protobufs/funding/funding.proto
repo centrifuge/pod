@@ -13,14 +13,6 @@ import "protoc-gen-swagger/options/annotations.proto";
 
 // FundingService contains all common interactions for funding extension documents
 service FundingService {
-  rpc GetVersion(GetVersionRequest) returns (FundingResponse) {
-    option (google.api.http) = {
-      get: "/v1/documents/{document_id}/versions/{version_id}/funding_agreements/{agreement_id}"
-    };
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      description: "Get a funding agreement of a document version"
-    };
-  }
   rpc GetListVersion(GetListVersionRequest) returns (FundingListResponse) {
     option (google.api.http) = {
       get: "/v1/documents/{document_id}/versions/{version_id}/funding_agreements"

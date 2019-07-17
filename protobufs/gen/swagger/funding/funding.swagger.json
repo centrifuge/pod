@@ -45,43 +45,6 @@
           "FundingService"
         ]
       }
-    },
-    "/v1/documents/{document_id}/versions/{version_id}/funding_agreements/{agreement_id}": {
-      "get": {
-        "description": "Get a funding agreement of a document version",
-        "operationId": "GetVersion",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/funFundingResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "document_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "version_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "agreement_id",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "FundingService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -198,17 +161,6 @@
           "items": {
             "$ref": "#/definitions/funFundingResponseData"
           }
-        }
-      }
-    },
-    "funFundingResponse": {
-      "type": "object",
-      "properties": {
-        "header": {
-          "$ref": "#/definitions/documentResponseHeader"
-        },
-        "data": {
-          "$ref": "#/definitions/funFundingResponseData"
         }
       }
     },

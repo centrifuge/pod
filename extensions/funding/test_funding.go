@@ -5,16 +5,20 @@ package funding
 import (
 	"context"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -123,4 +127,14 @@ func CreateData() *Data {
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
 		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
 	}
+}
+
+func CreateInvoiceWithFunding(t *testing.T, ctx context.Context, did identity.DID) (*invoice.Invoice, string) {
+	data := CreateData()
+	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	attrs, err := extensions.CreateAttributesList(inv, *data, fundingFieldKey, AttrFundingLabel)
+	assert.NoError(t, err)
+	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+	return inv, data.AgreementID
 }
