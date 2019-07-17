@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/errors"
-	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
