@@ -12,8 +12,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	clientfunpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/funding"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -40,27 +41,22 @@ func (m *mockAccount) GetIdentityID() []byte {
 
 func setupFundingForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
 	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
-
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
-
 	srv := DefaultService(docSrv, nil)
-
-	var model documents.Model
-	var payloads []*clientfunpb.FundingCreatePayload
 	var lastFundingId string
 
 	// create a list of fundings
 	for i := 0; i < fundingAmount; i++ {
-		p := createTestPayload()
-		p.DocumentId = hexutil.Encode(inv.Document.DocumentIdentifier)
-		payloads = append(payloads, p)
-		_, err := srv.DeriveFromPayload(context.Background(), p)
+		data := CreateData()
+		attrs, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
 		assert.NoError(t, err)
-		lastFundingId = p.Data.AgreementId
+		err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+		assert.NoError(t, err)
+		lastFundingId = data.AgreementID
 	}
 
-	return srv, docSrv, model, lastFundingId
+	return srv, docSrv, inv, lastFundingId
 }
 
 func TestService_Sign(t *testing.T) {
@@ -121,10 +117,10 @@ func TestService_SignVerify(t *testing.T) {
 	assert.NoError(t, err)
 
 	// funding current version: valid
-	response, err := srv.DeriveFundingResponse(ctx, model, fundingID)
+	data, signatures, err := srv.GetDataAndSignatures(ctx, model, fundingID, "")
 	assert.NoError(t, err)
-	assert.Equal(t, "true", response.Data.Signatures[0].Valid)
-	assert.Equal(t, "false", response.Data.Signatures[0].OutdatedSignature)
+	assert.Equal(t, "true", signatures[0].Valid)
+	assert.Equal(t, "false", signatures[0].OutdatedSignature)
 
 	// update funding after signature
 	oldCD, err := model.PackCoreDocument()
@@ -133,18 +129,20 @@ func TestService_SignVerify(t *testing.T) {
 	err = oldInv.UnpackCoreDocument(oldCD)
 	assert.NoError(t, err)
 
-	p2 := &clientfunpb.FundingUpdatePayload{Data: createTestClientData(), DocumentId: hexutil.Encode(utils.RandomSlice(32)), AgreementId: fundingID}
-	p2.Data.Currency = ""
-	p2.Data.Fee = "13.37"
-	updatedModel, err := srv.DeriveFromUpdatePayload(context.Background(), p2)
+	data.Currency = ""
+	data.Fee = "13.37"
+	fundIDBytes, err := hexutil.Decode(fundingID)
+	assert.NoError(t, err)
+	docSrv.On("Update", mock.Anything, model).Return(model, jobs.NewJobID(), nil)
+	updatedModel, _, err := srv.UpdateFundingAgreement(context.Background(), utils.RandomSlice(32), fundIDBytes, &data)
 	assert.NoError(t, err)
 
 	// older funding version signed: valid
 	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil).Once()
-	response, err = srv.DeriveFundingResponse(ctx, updatedModel, fundingID)
+	_, signatures, err = srv.GetDataAndSignatures(ctx, updatedModel, fundingID, "")
 	assert.NoError(t, err)
-	assert.Equal(t, "true", response.Data.Signatures[0].Valid)
-	assert.Equal(t, "true", response.Data.Signatures[0].OutdatedSignature)
+	assert.Equal(t, "true", signatures[0].Valid)
+	assert.Equal(t, "true", signatures[0].OutdatedSignature)
 
 	// older funding version signed: invalid
 	invalidValue, err := hexutil.Decode("0x1234")
@@ -155,8 +153,8 @@ func TestService_SignVerify(t *testing.T) {
 	assert.NoError(t, err)
 
 	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil)
-	response, err = srv.DeriveFundingResponse(ctx, oldInv, fundingID)
+	_, signatures, err = srv.GetDataAndSignatures(ctx, oldInv, fundingID, "")
 	assert.NoError(t, err)
-	assert.Equal(t, "false", response.Data.Signatures[0].Valid)
-	assert.Equal(t, "true", response.Data.Signatures[0].OutdatedSignature)
+	assert.Equal(t, "false", signatures[0].Valid)
+	assert.Equal(t, "true", signatures[0].OutdatedSignature)
 }

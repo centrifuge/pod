@@ -225,7 +225,7 @@ func TestTypes_toFundingListResponse(t *testing.T) {
 
 	// failed conversion
 	data := funding.CreateData()
-	attrs, err := extensions.CreateAttributesList(inv, *data, "funding_agreement[{IDX}].", funding.AttrFundingLabel)
+	attrs, err := extensions.CreateAttributesList(inv, data, "funding_agreement[{IDX}].", funding.AttrFundingLabel)
 	assert.NoError(t, err)
 	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
