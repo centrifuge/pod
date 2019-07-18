@@ -34,6 +34,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
+[[override]]
+  name = "github.com/centrifuge/privacy-enabled-erc721"
+  revision = "bb3e50cfbdccc93890590febe6a542148064c17e"
+
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
@@ -53,10 +57,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[override]]
   name = "github.com/satori/go.uuid"
   revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
-
-[[constraint]]
-  name = "github.com/charleenfei/newsilver-nft"
-  revision = "321c7e0994cd233bd62d43d5dbc4c0ea6e9e14ae"
 
 [[constraint]]
   name = "github.com/go-errors/errors"

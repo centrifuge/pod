@@ -29,7 +29,7 @@ const (
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param registry_address path string true "NFT registry address in hex"
-// @param body body coreapi.MintNFTRequest true "Mint NFT request"
+// @param body body userapi.MintNFTRequest true "Mint NFT request"
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError

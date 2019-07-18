@@ -55,7 +55,7 @@
                         "required": true,
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/coreapi.MintNFTRequest"
+                            "$ref": "#/definitions/userapi.MintNFTRequest"
                         }
                     }
                 ],
@@ -3933,6 +3933,23 @@
                 "header": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
+                }
+            }
+        },
+        "userapi.MintNFTRequest": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "proof_fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

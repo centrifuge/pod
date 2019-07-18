@@ -58,33 +58,13 @@ func RunSmartContractMigrations() {
 }
 
 func RunDAppSmartContractMigrations() string {
-	gp := os.Getenv("GOPATH")
-	// TODO DO NOT COMMIT
-	projDir := path.Join(gp, "src", "github.com", "centrifuge", "newsilver-nft")
-	cmd := exec.Command("dapp", "update")
-	cmd.Dir = projDir
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err, string(out))
-		return ""
-	}
-	cmd = exec.Command("dapp", "build", "--extract")
-	cmd.Dir = projDir
-	out, err = cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err, string(out))
-		return ""
-	}
-	os.Setenv("ETH_RPC_ACCOUNTS", "true")
-	os.Setenv("ETH_GAS", "5000000")
-	os.Setenv("ETH_KEYSTORE", "/Users/miguelhervas/Library/Ethereum/8383/keystore")
-	os.Setenv("ETH_RPC_URL", "http://localhost:9545")
-	os.Setenv("ETH_PASSWORD", "/dev/null")
-	os.Setenv("ETH_FROM", "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5")
+	var err error
+	var out []byte
+	projDir := GetProjectDir()
 	smAddr := GetSmartContractAddresses()
-	fmt.Println("Using AnchorAddr", smAddr.AnchorRepositoryAddr)
-	cmd = exec.Command("dapp", "create", "NewSilverLoanNFT", strings.Replace(smAddr.AnchorRepositoryAddr, "0x", "", -1))
-	cmd.Dir = projDir
+	migrationScript := path.Join(projDir, "build", "scripts", "DAppMigrate.sh")
+	fmt.Println("Using AnchorAddr for DApp Contracts", smAddr.AnchorRepositoryAddr)
+	cmd := exec.Command(migrationScript, smAddr.AnchorRepositoryAddr, projDir)
 	out, err = cmd.Output()
 	if err != nil {
 		fmt.Println(err, string(out))
@@ -194,7 +174,8 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
-	//RunSmartContractMigrations()
+	RunSmartContractMigrations()
+	genericNFTReg := RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
@@ -204,5 +185,6 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	SetupSmartContractAddresses(cfg, addresses)
 	cm := make(map[string]interface{})
 	cm[bootstrap.BootstrappedConfig] = cfg
+	cm[bootstrap.GenericNFTRegistry] = genericNFTReg
 	return cm
 }

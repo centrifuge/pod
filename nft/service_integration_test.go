@@ -39,6 +39,7 @@ var idFactory identity.Factory
 var invoiceUnpaid nft.Service
 var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
+var genericNFTRegistry string
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -51,6 +52,7 @@ func TestMain(m *testing.M) {
 	invoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.Service)
 	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	genericNFTRegistry = ctx[bootstrap.GenericNFTRegistry].(string)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -186,8 +188,6 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 }
 
 func TestGenericMintNFT(t *testing.T) {
-	//t.SkipNow()
-	nftAddr := testingutils.RunDAppSmartContractMigrations()
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
 	loanAmountValue := "100"
@@ -205,9 +205,9 @@ func TestGenericMintNFT(t *testing.T) {
 	assert.NoError(t, err)
 	attrs[attr2.Key] = attr2
 
-	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, nftAddr, attrs)
+	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, genericNFTRegistry, attrs)
 	regAddr := registry.String()
-	fmt.Println("HOLA", regAddr)
+	fmt.Println("Generic NFT Registry", regAddr)
 
 	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
 	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
