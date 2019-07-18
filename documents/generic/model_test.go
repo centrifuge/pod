@@ -293,9 +293,9 @@ func TestGeneric_getDocumentDataTree(t *testing.T) {
 	g, _ := createCDWithEmbeddedGeneric(t)
 	tree, err := g.(*Generic).getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("generic.Scheme")
+	_, leaf := tree.GetLeafByProperty("generic.scheme")
 	assert.NotNil(t, leaf)
-	assert.Equal(t, "generic.Scheme", leaf.Property.ReadableName())
+	assert.Equal(t, "generic.scheme", leaf.Property.ReadableName())
 	assert.Equal(t, []byte(Scheme), leaf.Value)
 }
 
