@@ -88,7 +88,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	// account b sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromID))
 	log.Debug("Host test success")
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
@@ -111,7 +111,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	// account c sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromID))
 }
 
 func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType string) {
@@ -155,7 +155,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	// bobs account b sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
