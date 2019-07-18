@@ -62,7 +62,7 @@ func RunDAppSmartContractMigrations() string {
 	var out []byte
 	projDir := GetProjectDir()
 	smAddr := GetSmartContractAddresses()
-	migrationScript := path.Join(projDir, "build", "scripts", "DAppMigrate.sh")
+	migrationScript := path.Join(projDir, "build", "scripts", "migrateDApp.sh")
 	fmt.Println("Using AnchorAddr for DApp Contracts", smAddr.AnchorRepositoryAddr)
 	cmd := exec.Command(migrationScript, smAddr.AnchorRepositoryAddr, projDir)
 	out, err = cmd.Output()
