@@ -25,7 +25,7 @@ const (
 // @summary Mints an NFT against a document.
 // @description Mints an NFT against a document.
 // @id mint_nft
-// @tags NFTs
+// @tags NFTsBeta
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param registry_address path string true "NFT registry address in hex"

@@ -29,7 +29,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "NFTs"
+                    "NFTsBeta"
                 ],
                 "summary": "Mints an NFT against a document.",
                 "operationId": "mint_nft",

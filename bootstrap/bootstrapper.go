@@ -11,7 +11,6 @@ const (
 	NodeObjRegistry         string = "NodeObjRegistry"
 	// BootstrappedInvoiceUnpaid is the key to InvoiceUnpaid NFT in bootstrap context.
 	BootstrappedInvoiceUnpaid = "BootstrappedInvoiceUnpaid"
-	GenericNFTRegistry      string = "GenericNFTRegistry"
 )
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start

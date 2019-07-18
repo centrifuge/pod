@@ -39,7 +39,6 @@ var idFactory identity.Factory
 var invoiceUnpaid nft.Service
 var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
-var genericNFTRegistry string
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -52,7 +51,6 @@ func TestMain(m *testing.M) {
 	invoiceUnpaid = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.Service)
 	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
-	genericNFTRegistry = ctx[bootstrap.GenericNFTRegistry].(string)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -191,23 +189,23 @@ func TestGenericMintNFT(t *testing.T) {
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
 	loanAmountValue := "100"
-	attr0, err := documents.NewAttribute(loanAmount, documents.AttrInt256, loanAmountValue)
+	attr0, err := documents.NewAttribute(loanAmount, documents.AttrDecimal, loanAmountValue)
 	assert.NoError(t, err)
 	attrs[attr0.Key] = attr0
 	asIsValue := "asIsValue"
 	asIsValueValue := "1000"
-	attr1, err := documents.NewAttribute(asIsValue, documents.AttrInt256, asIsValueValue)
+	attr1, err := documents.NewAttribute(asIsValue, documents.AttrDecimal, asIsValueValue)
 	assert.NoError(t, err)
 	attrs[attr1.Key] = attr1
 	afterRehabValue := "afterRehabValue"
 	afterRehabValueValue := "2000"
-	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrInt256, afterRehabValueValue)
+	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrDecimal, afterRehabValueValue)
 	assert.NoError(t, err)
 	attrs[attr2.Key] = attr2
-
-	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, genericNFTRegistry, attrs)
-	regAddr := registry.String()
-	fmt.Println("Generic NFT Registry", regAddr)
+	scAddrs := testingutils.GetDAppSmartContractAddresses()
+	fmt.Println(scAddrs)
+	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], attrs)
+	fmt.Println("Generic NFT Registry", scAddrs["genericNFT"])
 
 	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
 	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())

@@ -12,3 +12,4 @@ coverage.txt
 *.swo
 testworld/hostconfigs/*
 .DS_Store
+localAddresses

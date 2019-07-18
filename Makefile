@@ -37,6 +37,7 @@ install-deps: ## Install Dependencies
 	@dep ensure
 	@npm --prefix ./build  install
 	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
+	@git submodule update --init --recursive
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
 lint-check: ## runs linters on go code
