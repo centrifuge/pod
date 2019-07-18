@@ -6,12 +6,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"

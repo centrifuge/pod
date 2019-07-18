@@ -82,5 +82,5 @@ func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash) (
 	} else {
 		valid, err = proofs.ValidateProofHashes(fieldHash, proof.Hashes, rootHash, hashFunc)
 	}
-	return
+	return valid, err
 }

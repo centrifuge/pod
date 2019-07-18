@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -182,27 +181,27 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 	did1 := testingidentity.GenerateRandomDID()
 
 	// wrong granteeID format
-	at := &documentpb.AccessTokenParams{
+	at := AccessTokenParams{
 		Grantee:            "random string",
 		DocumentIdentifier: id,
 	}
-	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
 	assert.Error(t, err)
 
 	// wrong docID
-	at = &documentpb.AccessTokenParams{
+	at = AccessTokenParams{
 		Grantee:            did1.String(),
 		DocumentIdentifier: "random string",
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
 	assert.Error(t, err)
 
 	// correct access token params
-	at = &documentpb.AccessTokenParams{
+	at = AccessTokenParams{
 		Grantee:            did1.String(),
 		DocumentIdentifier: id,
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
 	assert.NoError(t, err)
 
 	token := ncd.Document.AccessTokens[0]
@@ -434,7 +433,6 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
 	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
-
 
 	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
@@ -688,7 +686,7 @@ func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
 }
 
 func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
-	oldCAttrs := map[string]*documentpb.Attribute{
+	oldCAttrs := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().UTC().Format(time.RFC3339),
@@ -715,7 +713,7 @@ func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 		},
 	}
 
-	updates := map[string]*documentpb.Attribute{
+	updates := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
@@ -747,11 +745,8 @@ func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 		},
 	}
 
-	oldAttrs, err := FromClientAttributes(oldCAttrs)
-	assert.NoError(t, err)
-
-	newAttrs, err := FromClientAttributes(updates)
-	assert.NoError(t, err)
+	oldAttrs := toAttrsMap(t, oldCAttrs)
+	newAttrs := toAttrsMap(t, updates)
 
 	newPattrs, err := toProtocolAttributes(newAttrs)
 	assert.NoError(t, err)
@@ -771,7 +766,7 @@ func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 }
 
 func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
-	updates := map[string]*documentpb.Attribute{
+	updates := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
@@ -803,9 +798,7 @@ func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
 		},
 	}
 
-	newAttrs, err := FromClientAttributes(updates)
-	assert.NoError(t, err)
-
+	newAttrs := toAttrsMap(t, updates)
 	newPattrs, err := toProtocolAttributes(newAttrs)
 	assert.NoError(t, err)
 
@@ -817,7 +810,7 @@ func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
 }
 
 func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
-	oldCAttrs := map[string]*documentpb.Attribute{
+	oldCAttrs := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().UTC().Format(time.RFC3339),
@@ -844,9 +837,7 @@ func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
 		},
 	}
 
-	oldAttrs, err := FromClientAttributes(oldCAttrs)
-	assert.NoError(t, err)
-
+	oldAttrs := toAttrsMap(t, oldCAttrs)
 	oldPattrs, err := toProtocolAttributes(oldAttrs)
 	assert.NoError(t, err)
 

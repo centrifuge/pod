@@ -10,7 +10,7 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PROTOTOOL_VERSION=1.4.0 PROTOTOOL_BIN=~/bin/1.4.0/prototool
+    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge
 
 checkout:
   post:
@@ -19,7 +19,6 @@ checkout:
 cache:
   directories:
     - ~/bin/
-    - ~/.cache/prototool/Linux/x86_64/protobuf/
     - /tmp/depcache
 
 before_install:
@@ -33,7 +32,6 @@ before_install:
 
 install:
   - mkdir -p ~/bin
-  - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./build/scripts/install_prototool.sh
   - go get -u github.com/kyoh86/richgo
   - make install
 
@@ -42,8 +40,8 @@ jobs:
     - stage: "Tests"
       name: "Linting"
       script:
-        - make lint-check proto-lint proto-all gen-swagger generate format-go
-        - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code protobufs/gen
+        - make lint-check gen-swagger generate format-go
+        - echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./httpapi
     - stage: "Tests"
       name: "Unit and CMD tests"
       script:

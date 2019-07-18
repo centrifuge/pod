@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	transferIDParam = "transfer_id"
+	transferIDParam      = "transfer_id"
+	agreementIDParam     = "agreement_id"
 	registryAddressParam = "registry_address"
 	tokenIDParam         = "token_id"
 )
@@ -48,6 +49,15 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/entities/{"+coreapi.DocumentIDParam+"}/share", h.ShareEntity)
 	r.Post("/entities/{"+coreapi.DocumentIDParam+"}/revoke", h.RevokeEntity)
 	r.Get("/relationships/{"+coreapi.DocumentIDParam+"}/entity", h.GetEntityThroughRelationship)
+
+	// funding api
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements", h.CreateFundingAgreement)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements", h.GetFundingAgreements)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.GetFundingAgreement)
+	r.Put("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.UpdateFundingAgreement)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}/sign", h.SignFundingAgreement)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.GetFundingAgreementFromVersion)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}/funding_agreements", h.GetFundingAgreementsFromVersion)
 }
 
 // RegisterBeta registers the core apis to the router that are not production ready

@@ -6,10 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"

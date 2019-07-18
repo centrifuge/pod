@@ -47,7 +47,7 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	// bobs node sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(bob.id.String(), int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
 	fmt.Println("Host test success")
 }
 

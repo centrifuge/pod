@@ -20,6 +20,7 @@ import (
 const (
 	prefix string = "generic"
 
+	// Scheme to identify generic document
 	Scheme = prefix
 )
 

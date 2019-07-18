@@ -212,8 +212,10 @@ func TestHandler_UpdateInvoice(t *testing.T) {
 	}
 
 	// empty body
+	id := hexutil.Encode(utils.RandomSlice(32))
+	rctx.URLParams.Values[0] = id
 	w, r := getHTTPReqAndResp(ctx, nil)
-	h.CreateInvoice(w, r)
+	h.UpdateInvoice(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
 
@@ -228,10 +230,8 @@ func TestHandler_UpdateInvoice(t *testing.T) {
 		},
 	}
 
-	id := hexutil.Encode(utils.RandomSlice(32))
 	d, err := json.Marshal(data)
 	assert.NoError(t, err)
-	rctx.URLParams.Values[0] = id
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateInvoice(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)

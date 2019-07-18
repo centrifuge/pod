@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 const (
@@ -132,25 +130,21 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 		}
 
 		if mJob != nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
-			ts, err1 := utils.ToTimestamp(time.Now().UTC())
-			if err1 != nil {
-				log.Error(err1)
-			}
-			notificationMsg := &notificationpb.NotificationMessage{
-				EventType:    uint32(notification.JobCompleted),
-				AccountId:    accountID.String(),
-				Recorded:     ts,
+			notificationMsg := notification.Message{
+				EventType:    notification.JobCompleted,
+				AccountID:    accountID.String(),
+				Recorded:     time.Now().UTC(),
 				DocumentType: jobs.JobDataTypeURL,
-				DocumentId:   mJob.ID.String(),
+				DocumentID:   mJob.ID.String(),
 				Status:       string(mJob.Status),
 			}
 			if len(mJob.Logs) > 0 {
 				notificationMsg.Message = mJob.Logs[len(mJob.Logs)-1].Message
 			}
 			// Send Job notification webhook
-			_, err1 = s.notifier.Send(ctx, notificationMsg)
-			if err1 != nil {
-				log.Error(err1)
+			_, err := s.notifier.Send(ctx, notificationMsg)
+			if err != nil {
+				log.Error(err)
 			}
 		}
 

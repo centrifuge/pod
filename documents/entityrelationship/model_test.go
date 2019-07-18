@@ -24,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -384,7 +383,7 @@ func TestEntityRelationship_revokeRelationship(t *testing.T) {
 	// failed to remove token
 	id := testingidentity.GenerateRandomDID()
 	docID := utils.RandomSlice(32)
-	payload := documentpb.AccessTokenParams{
+	payload := documents.AccessTokenParams{
 		Grantee:            id.String(),
 		DocumentIdentifier: hexutil.Encode(docID),
 	}

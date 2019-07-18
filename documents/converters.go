@@ -6,13 +6,9 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/common"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // BinaryAttachment represent a single file attached to invoice.
@@ -47,31 +43,6 @@ type PaymentDetails struct {
 	CryptoTo            string `json:"crypto_to"`             // to address
 }
 
-// ToClientAttachments converts Attachments to Client Attachments.
-func ToClientAttachments(atts []*BinaryAttachment) []*documentpb.BinaryAttachment {
-	var catts []*documentpb.BinaryAttachment
-	for _, att := range atts {
-		var data, checksum string
-		if len(att.Data) > 0 {
-			data = hexutil.Encode(att.Data)
-		}
-
-		if len(att.Checksum) > 0 {
-			checksum = hexutil.Encode(att.Checksum)
-		}
-
-		catts = append(catts, &documentpb.BinaryAttachment{
-			Name:     att.Name,
-			FileType: att.FileType,
-			Size:     uint64(att.Size),
-			Data:     data,
-			Checksum: checksum,
-		})
-	}
-
-	return catts
-}
-
 // ToProtocolAttachments converts Binary Attchments to protocol attachments.
 func ToProtocolAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachment {
 	var patts []*commonpb.BinaryAttachment
@@ -88,38 +59,6 @@ func ToProtocolAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachmen
 	return patts
 }
 
-// FromClientAttachments converts Client Attachments to Binary Attachments
-func FromClientAttachments(catts []*documentpb.BinaryAttachment) ([]*BinaryAttachment, error) {
-	var atts []*BinaryAttachment
-	for _, att := range catts {
-		var data, checksum []byte
-		var err error
-		if s := strings.TrimSpace(att.Data); s != "" {
-			data, err = hexutil.Decode(s)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if s := strings.TrimSpace(att.Checksum); s != "" {
-			checksum, err = hexutil.Decode(s)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		atts = append(atts, &BinaryAttachment{
-			Name:     att.Name,
-			FileType: att.FileType,
-			Size:     int(att.Size),
-			Data:     data,
-			Checksum: checksum,
-		})
-	}
-
-	return atts, nil
-}
-
 // FromProtocolAttachments converts Protocol attachments to Binary Attachments
 func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttachment {
 	var atts []*BinaryAttachment
@@ -134,42 +73,6 @@ func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttach
 	}
 
 	return atts
-}
-
-// ToClientPaymentDetails converts PaymentDetails to client payment details.
-func ToClientPaymentDetails(details []*PaymentDetails) ([]*documentpb.PaymentDetails, error) {
-	var cdetails []*documentpb.PaymentDetails
-	for _, detail := range details {
-		decs := DecimalsToStrings(detail.Amount)
-		dids := identity.DIDsToStrings(detail.Payee, detail.Payer)
-		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
-		if err != nil {
-			return nil, err
-		}
-
-		cdetails = append(cdetails, &documentpb.PaymentDetails{
-			Id:                    detail.ID,
-			DateExecuted:          tms[0],
-			Payee:                 dids[0],
-			Payer:                 dids[1],
-			Amount:                decs[0],
-			Currency:              detail.Currency,
-			Reference:             detail.Reference,
-			BankName:              detail.BankName,
-			BankAddress:           detail.BankAddress,
-			BankAccountCurrency:   detail.BankAccountCurrency,
-			BankAccountHolderName: detail.BankAccountHolderName,
-			BankAccountNumber:     detail.BankAccountNumber,
-			BankCountry:           detail.BankCountry,
-			BankKey:               detail.BankKey,
-			CryptoChainUri:        detail.CryptoChainURI,
-			CryptoFrom:            detail.CryptoFrom,
-			CryptoTo:              detail.CryptoTo,
-			CryptoTransactionId:   detail.CryptoTransactionID,
-		})
-	}
-
-	return cdetails, nil
 }
 
 // ToProtocolPaymentDetails converts payment details to protocol payment details
@@ -210,50 +113,6 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 	}
 
 	return pdetails, nil
-}
-
-// FromClientPaymentDetails converts Client PaymentDetails to PaymentDetails
-func FromClientPaymentDetails(cdetails []*documentpb.PaymentDetails) ([]*PaymentDetails, error) {
-	var details []*PaymentDetails
-	for _, detail := range cdetails {
-		decs, err := StringsToDecimals(detail.Amount)
-		if err != nil {
-			return nil, err
-		}
-
-		dids, err := identity.StringsToDIDs(detail.Payee, detail.Payer)
-		if err != nil {
-			return nil, err
-		}
-
-		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
-		if err != nil {
-			return nil, err
-		}
-
-		details = append(details, &PaymentDetails{
-			ID:                    detail.Id,
-			DateExecuted:          pts[0],
-			Payee:                 dids[0],
-			Payer:                 dids[1],
-			Amount:                decs[0],
-			Currency:              detail.Currency,
-			Reference:             detail.Reference,
-			BankName:              detail.BankName,
-			BankAddress:           detail.BankAddress,
-			BankAccountCurrency:   detail.BankAccountCurrency,
-			BankAccountHolderName: detail.BankAccountHolderName,
-			BankAccountNumber:     detail.BankAccountNumber,
-			BankCountry:           detail.BankCountry,
-			BankKey:               detail.BankKey,
-			CryptoChainURI:        detail.CryptoChainUri,
-			CryptoFrom:            detail.CryptoFrom,
-			CryptoTo:              detail.CryptoTo,
-			CryptoTransactionID:   detail.CryptoTransactionId,
-		})
-	}
-
-	return details, nil
 }
 
 // FromProtocolPaymentDetails converts protocol payment details to PaymentDetails
@@ -297,173 +156,6 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 	}
 
 	return details, nil
-}
-
-// FromClientCollaboratorAccess converts client collaborator access to CollaboratorsAccess
-func FromClientCollaboratorAccess(racess, waccess []string) (ca CollaboratorsAccess, err error) {
-	wmap, rmap := make(map[string]struct{}), make(map[string]struct{})
-	var wcs, rcs []string
-	if waccess != nil {
-		for _, c := range waccess {
-			c = strings.TrimSpace(strings.ToLower(c))
-			if c == "" {
-				continue
-			}
-
-			if _, ok := wmap[c]; ok {
-				continue
-			}
-
-			wmap[c] = struct{}{}
-			wcs = append(wcs, c)
-		}
-	}
-
-	if racess != nil {
-		for _, c := range racess {
-			c = strings.TrimSpace(strings.ToLower(c))
-			if c == "" {
-				continue
-			}
-
-			if _, ok := wmap[c]; ok {
-				continue
-			}
-
-			if _, ok := rmap[c]; ok {
-				continue
-			}
-
-			rcs = append(rcs, c)
-			rmap[c] = struct{}{}
-		}
-	}
-
-	rdids, err := identity.StringsToDIDs(rcs...)
-	if err != nil {
-		return ca, err
-	}
-
-	wdids, err := identity.StringsToDIDs(wcs...)
-	if err != nil {
-		return ca, err
-	}
-
-	return CollaboratorsAccess{
-		ReadCollaborators:      identity.FromPointerDIDs(rdids...),
-		ReadWriteCollaborators: identity.FromPointerDIDs(wdids...),
-	}, nil
-}
-
-// ToClientCollaboratorAccess converts CollaboratorAccess to client collaborator access
-func ToClientCollaboratorAccess(ca CollaboratorsAccess) (readAccess, writeAccess []string) {
-	rcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadCollaborators...)...)
-	wcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadWriteCollaborators...)...)
-	return rcs, wcs
-}
-
-// ToClientAttributes converts attribute map to the client api format
-func ToClientAttributes(attributes []Attribute) (map[string]*documentpb.Attribute, error) {
-	if len(attributes) < 1 {
-		return nil, nil
-	}
-
-	m := make(map[string]*documentpb.Attribute)
-	for _, v := range attributes {
-		val, err := v.Value.String()
-		if err != nil {
-			return nil, errors.NewTypedError(ErrCDAttribute, err)
-		}
-
-		m[v.KeyLabel] = &documentpb.Attribute{
-			Key:   v.Key.String(),
-			Type:  v.Value.Type.String(),
-			Value: val,
-		}
-	}
-
-	return m, nil
-}
-
-// FromClientAttributes converts the api attributes type to local Attributes map.
-func FromClientAttributes(attrs map[string]*documentpb.Attribute) (map[AttrKey]Attribute, error) {
-	if len(attrs) < 1 {
-		return nil, nil
-	}
-
-	m := make(map[AttrKey]Attribute)
-	for k, at := range attrs {
-		attr, err := NewAttribute(k, AttributeType(at.Type), at.Value)
-		if err != nil {
-			return nil, errors.NewTypedError(ErrCDAttribute, err)
-		}
-
-		m[attr.Key] = attr
-	}
-
-	return m, nil
-}
-
-// DeriveResponseHeader derives common response header for model
-func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb.ResponseHeader, error) {
-	cs, err := model.GetCollaborators()
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCollaborators, err)
-	}
-
-	// we ignore error here because it can happen when a model is first created but its not anchored yet
-	a, _ := model.Author()
-	author := a.String()
-
-	// we ignore error here because it can happen when a model is first created but its not anchored yet
-	time := ""
-	t, err := model.Timestamp()
-	if err == nil {
-		time = t.UTC().String()
-	}
-
-	nfts := model.NFTs()
-	cnfts, err := convertNFTs(tokenRegistry, nfts)
-	if err != nil {
-		// this could be a temporary failure, so we ignore but warn about the error
-		log.Warningf("errors encountered when trying to set nfts to the response: %v", errors.NewTypedError(ErrNftNotFound, err))
-	}
-
-	rcs, wcs := ToClientCollaboratorAccess(cs)
-	return &documentpb.ResponseHeader{
-		DocumentId:  hexutil.Encode(model.ID()),
-		VersionId:   hexutil.Encode(model.CurrentVersion()),
-		Author:      author,
-		CreatedAt:   time,
-		ReadAccess:  rcs,
-		WriteAccess: wcs,
-		Nfts:        cnfts,
-	}, nil
-}
-
-func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []*documentpb.NFT, err error) {
-	for _, n := range nfts {
-		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
-		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
-		if errn != nil || i == nil {
-			err = errors.AppendError(err, errors.New("token index received is nil or other error: %v", errn))
-			continue
-		}
-
-		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
-		if errn != nil {
-			err = errors.AppendError(err, errn)
-			continue
-		}
-
-		nnfts = append(nnfts, &documentpb.NFT{
-			Registry:   regAddress.Hex(),
-			Owner:      o.Hex(),
-			TokenId:    hexutil.Encode(n.TokenId),
-			TokenIndex: hexutil.Encode(i.Bytes()),
-		})
-	}
-	return nnfts, err
 }
 
 // toProtocolAttributes convert model attributes to p2p attributes

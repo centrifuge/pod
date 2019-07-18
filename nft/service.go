@@ -2,9 +2,6 @@ package nft
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"math/big"
 	"time"
 
@@ -95,10 +92,6 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
 
-	docRoot, err := model.CalculateDocumentRoot()
-	if err != nil {
-		return mreq, err
-	}
 	signaturesRoot, err := model.CalculateSignaturesRoot()
 	if err != nil {
 		return mreq, err
@@ -107,20 +100,6 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	if err != nil {
 		return mreq, err
 	}
-	fmt.Println("Document Root:", hexutil.Encode(docRoot))
-	fmt.Println("Signatures Root:", hexutil.Encode(signaturesRoot))
-	fmt.Println("SigningRoot:", hexutil.Encode(signingRoot))
-
-	///////////////////////////////////////// REMOVE
-	dp := &documents.DocumentProof{
-		DocumentID:  model.ID(),
-		VersionID:   model.CurrentVersion(),
-		FieldProofs: docProofs.FieldProofs,
-	}
-	proofResponse := ConvertProofs(dp)
-	data, _ :=json.MarshalIndent(proofResponse, "", "")
-	fmt.Println(string(data))
-	///////////////////////////////////////////////////
 
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
@@ -419,16 +398,16 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 		return MintRequest{}, err
 	}
 	return MintRequest{
-		To:           to,
-		TokenID:      tokenID.BigInt(),
-		AnchorID:     anchorID.BigInt(),
-		NextAnchorID: nextAnchorID.BigInt(),
-		DataRoot:     dr,
+		To:             to,
+		TokenID:        tokenID.BigInt(),
+		AnchorID:       anchorID.BigInt(),
+		NextAnchorID:   nextAnchorID.BigInt(),
+		DataRoot:       dr,
 		SignaturesRoot: sr,
-		Props:        proofData.Props,
-		Values:       proofData.Values,
-		Salts:        proofData.Salts,
-		Proofs:       proofData.Proofs}, nil
+		Props:          proofData.Props,
+		Values:         proofData.Values,
+		Salts:          proofData.Salts,
+		Proofs:         proofData.Proofs}, nil
 }
 
 type proofData struct {
@@ -500,61 +479,4 @@ func byteByte32SlicetoString(s [][][32]byte) string {
 	}
 	str += "]"
 	return str
-}
-
-
-// REMOVE //////
-// ProofResponseHeader holds the document details.
-type ProofResponseHeader struct {
-	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	VersionID  byteutils.HexBytes `json:"version_id" swaggertype:"primitive,string"`
-	State      string             `json:"state"`
-}
-
-// Proof represents a single proof
-type Proof struct {
-	Property     byteutils.HexBytes   `json:"property" swaggertype:"primitive,string"`
-	Value        byteutils.HexBytes   `json:"value" swaggertype:"primitive,string"`
-	Salt         byteutils.HexBytes   `json:"salt" swaggertype:"primitive,string"`
-	Hash         byteutils.HexBytes   `json:"hash" swaggertype:"primitive,string"`
-	SortedHashes []byteutils.HexBytes `json:"sorted_hashes" swaggertype:"array,string"`
-}
-
-// ProofsResponse holds the proofs for the fields given for a document.
-type ProofsResponse struct {
-	Header      ProofResponseHeader `json:"header"`
-	FieldProofs []Proof             `json:"field_proofs"`
-}
-
-
-func ConvertProofs(proof *documents.DocumentProof) ProofsResponse {
-	resp := ProofsResponse{
-		Header: ProofResponseHeader{
-			DocumentID: proof.DocumentID,
-			VersionID:  proof.VersionID,
-			State:      proof.State,
-		},
-	}
-
-	var proofs []Proof
-	for _, pf := range proof.FieldProofs {
-		pff := Proof{
-			Value:    pf.Value,
-			Hash:     pf.Hash,
-			Salt:     pf.Salt,
-			Property: pf.GetCompactName(),
-		}
-
-		var hashes []byteutils.HexBytes
-		for _, h := range pf.SortedHashes {
-			h := h
-			hashes = append(hashes, h)
-		}
-
-		pff.SortedHashes = hashes
-		proofs = append(proofs, pff)
-	}
-
-	resp.FieldProofs = proofs
-	return resp
 }

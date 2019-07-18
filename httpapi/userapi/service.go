@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -26,6 +27,7 @@ type Service struct {
 	transferDetailsService transferdetails.Service
 	entityRelationshipSrv  entityrelationship.Service
 	entitySrv              entity.Service
+	fundingSrv             funding.Service
 	config                 config.Service
 }
 
@@ -318,4 +320,9 @@ func getRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) 
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
 	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
 	return proofFields, nil
+}
+
+// CreateFundingAgreement creates a new funding agreement on a document and anchors the document.
+func (s Service) CreateFundingAgreement(ctx context.Context, docID []byte, data *funding.Data) (documents.Model, jobs.JobID, error) {
+	return s.fundingSrv.CreateFundingAgreement(ctx, docID, data)
 }
