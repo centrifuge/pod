@@ -36,7 +36,7 @@ jobs:
       name: "Linting"
       script:
         - make lint-check gen-swagger generate format-go
-        - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code ./httpapi
+        - echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./httpapi
     - stage: "Tests"
       name: "Unit and CMD tests"
       script:
