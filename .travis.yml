@@ -25,6 +25,7 @@ before_install:
   - nvm install 10.15.1
   - npm install -g truffle@4.1.13
   - bash <(curl https://nixos.org/nix/install)
+  - . /home/travis/.nix-profile/etc/profile.d/nix.sh
   - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
   - cachix use dapp
   - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
