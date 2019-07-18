@@ -1549,7 +1549,6 @@
     "internal/syscall",
     "internal/transport",
     "keepalive",
-    "metadata",
     "naming",
     "peer",
     "resolver",
@@ -1670,7 +1669,6 @@
     "golang.org/x/tools/cmd/goimports",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
     "gopkg.in/resty.v1",
   ]
