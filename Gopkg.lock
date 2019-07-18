@@ -293,7 +293,7 @@
   version = "v1.2.1"
 
 [[projects]]
-  digest = "1:4c7d888a6e8a1dedccc2bafa0febdbbfaa010d8e73ed7f2561c0ccd73b0243cb"
+  digest = "1:45e19a9f4fe8b3dc41d050dc07118748fd94350a4a908431764ebd66a1526697"
   name = "github.com/golang/protobuf"
   packages = [
     "descriptor",
@@ -308,6 +308,7 @@
     "ptypes/duration",
     "ptypes/struct",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
@@ -357,15 +358,16 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:ee73ed01fc93b8aa38a7f25543afed400df661992eeb7d3b250100b8b8f989b9"
+  digest = "1:07ac748d2913b3c6d963aceec7fc4348c34a4ea58c0063779d08c2717380f7e9"
   name = "github.com/grpc-ecosystem/grpc-gateway"
   packages = [
+    "internal",
     "runtime",
-    "runtime/internal",
     "utilities",
   ]
   pruneopts = "UT"
-  revision = "8558711daa6c2853489043207b563dceacbc19cf"
+  revision = "bebc7374a79e1105d786ef3468b474e47d652511"
+  version = "v1.9.4"
 
 [[projects]]
   digest = "1:43c609cba7aa615eaae5aa8f2ddba65dc1b2d3af7bc434f738238df8d3797ddb"
@@ -1517,14 +1519,18 @@
   revision = "d61658bd2e18010be0e21349cc92b1b706e35146"
 
 [[projects]]
-  digest = "1:9cc1d3de11a1b6994eb01fe3cf81db064470d0fd39a37475f53a396aa5e8622c"
+  digest = "1:dad602a4b79ce01f4ea9b3e7a6d3074d7de6bddca4ce798e0705bfda7089d8a8"
   name = "google.golang.org/genproto"
-  packages = ["googleapis/rpc/status"]
+  packages = [
+    "googleapis/api/httpbody",
+    "googleapis/rpc/status",
+    "protobuf/field_mask",
+  ]
   pruneopts = "UT"
   revision = "5a2fd4cab2d6d4a18e70c34937662526cd0c4bd1"
 
 [[projects]]
-  digest = "1:c00eb80d7b152379c3e94c38d82b29deca98b1d0f53e4e20362589b7fcbffa07"
+  digest = "1:cf01ae0753310464677058b125fa31e74fd943781782ada503180ad784fc83d3"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -1541,6 +1547,7 @@
     "grpclog",
     "internal",
     "internal/backoff",
+    "internal/balancerload",
     "internal/binarylog",
     "internal/channelz",
     "internal/envconfig",
@@ -1555,13 +1562,14 @@
     "resolver",
     "resolver/dns",
     "resolver/passthrough",
+    "serviceconfig",
     "stats",
     "status",
     "tap",
   ]
   pruneopts = "UT"
-  revision = "3507fb8e1a5ad030303c106fef3a47c9fdad16ad"
-  version = "v1.19.1"
+  revision = "1d89a3c832915b2314551c1d2a506874d62e53f7"
+  version = "v1.22.0"
 
 [[projects]]
   branch = "v2"
@@ -1670,7 +1678,6 @@
     "golang.org/x/tools/cmd/goimports",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
     "gopkg.in/resty.v1",
   ]

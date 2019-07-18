@@ -2,11 +2,9 @@ package centerrors
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/go-centrifuge/code"
-	"github.com/go-errors/errors"
 )
 
 const (
@@ -108,12 +106,6 @@ func (p2pErr *P2PError) Errors() map[string]string {
 	}
 
 	return p2pErr.err.Errors
-}
-
-// NilError returns error with Type added to message
-// Deprecated: in favour of functions in `github.com/centrifuge/go-centrifuge/errors`
-func NilError(param interface{}) error {
-	return errors.Errorf("NIL %v provided", reflect.TypeOf(param))
 }
 
 // Wrap appends msg to errpb.Message if it is of type *errpb
