@@ -24,7 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "golang.org/x/tools/cmd/goimports", "github.com/swaggo/swag", "github.com/urfave/cli"]
+required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/ghodss/yaml", "golang.org/x/tools/cmd/goimports", "github.com/swaggo/swag", "github.com/urfave/cli"]
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
