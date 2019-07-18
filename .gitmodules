@@ -1,4 +1,4 @@
 [submodule "build/privacy-enabled-erc721"]
 	path = build/privacy-enabled-erc721
-	url = git@github.com:centrifuge/privacy-enabled-erc721.git
+	url = https://github.com/centrifuge/privacy-enabled-erc721.git
 	branch = develop
