@@ -5,9 +5,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
@@ -21,7 +18,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // TODO: think: generic custom attribute set creation?

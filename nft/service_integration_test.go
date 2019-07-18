@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/documents/generic"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -19,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
