@@ -49,6 +49,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	}
 
 	mux.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		render.Status(r, http.StatusNotFound)
 		render.JSON(w, r, httputils.HTTPError{
 			Message: http.StatusText(http.StatusNotFound),
 		})
