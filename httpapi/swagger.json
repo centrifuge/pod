@@ -64,7 +64,7 @@
                         "description": "Accepted",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/coreapi.MintNFTResponse"
+                            "$ref": "#/definitions/userapi.MintNFTResponse"
                         }
                     },
                     "400": {
@@ -98,7 +98,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "NFTs"
+                    "NFTsBeta"
                 ],
                 "summary": "Returns the Owner of the given NFT.",
                 "operationId": "owner_of_nft",
@@ -130,7 +130,7 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/coreapi.NFTOwnerResponse"
+                            "$ref": "#/definitions/userapi.NFTOwnerResponse"
                         }
                     },
                     "400": {
@@ -160,7 +160,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "NFTs"
+                    "NFTsBeta"
                 ],
                 "summary": "Transfers given NFT to provide address.",
                 "operationId": "transfer_nft",
@@ -193,7 +193,7 @@
                         "required": true,
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/coreapi.TransferNFTRequest"
+                            "$ref": "#/definitions/userapi.TransferNFTRequest"
                         }
                     }
                 ],
@@ -202,7 +202,7 @@
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/coreapi.TransferNFTResponse"
+                            "$ref": "#/definitions/userapi.TransferNFTResponse"
                         }
                     },
                     "400": {
@@ -4647,6 +4647,27 @@
                 }
             }
         },
+        "userapi.MintNFTResponse": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/userapi.NFTResponseHeader"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
         "userapi.NFTMintInvoiceUnpaidRequest": {
             "type": "object",
             "properties": {
@@ -4666,6 +4687,28 @@
                 "header": {
                     "type": "object",
                     "$ref": "#/definitions/userapi.ResponseHeader"
+                }
+            }
+        },
+        "userapi.NFTOwnerResponse": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "userapi.NFTResponseHeader": {
+            "type": "object",
+            "properties": {
+                "job_id": {
+                    "type": "string"
                 }
             }
         },
@@ -4757,6 +4800,32 @@
                 "header": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
+                }
+            }
+        },
+        "userapi.TransferNFTRequest": {
+            "type": "object",
+            "properties": {
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "userapi.TransferNFTResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "object",
+                    "$ref": "#/definitions/userapi.NFTResponseHeader"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
                 }
             }
         },

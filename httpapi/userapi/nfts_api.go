@@ -34,7 +34,7 @@ const (
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @success 202 {object} coreapi.MintNFTResponse
+// @success 202 {object} userapi.MintNFTResponse
 // @router /beta/nfts/registries/{registry_address}/mint [post]
 func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -87,17 +87,17 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 // @summary Transfers given NFT to provide address.
 // @description Transfers given NFT to provide address.
 // @id transfer_nft
-// @tags NFTs
+// @tags NFTsBeta
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param registry_address path string true "NFT registry address in hex"
 // @param token_id path string true "NFT token ID in hex"
-// @param body body coreapi.TransferNFTRequest true "Mint NFT request"
+// @param body body userapi.TransferNFTRequest true "Mint NFT request"
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @success 200 {object} coreapi.TransferNFTResponse
+// @success 200 {object} userapi.TransferNFTResponse
 // @router /beta/nfts/registries/{registry_address}/tokens/{token_id}/transfer [post]
 func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -156,14 +156,14 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 // @summary Returns the Owner of the given NFT.
 // @description Returns the Owner of the given NFT.
 // @id owner_of_nft
-// @tags NFTs
+// @tags NFTsBeta
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param token_id path string true "NFT token ID in hex"
 // @param registry_address path string true "Registry address in hex"
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @success 200 {object} coreapi.NFTOwnerResponse
+// @success 200 {object} userapi.NFTOwnerResponse
 // @router /beta/nfts/registries/{registry_address}/tokens/{token_id}/owner [get]
 func (h handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
