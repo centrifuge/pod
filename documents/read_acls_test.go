@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -357,7 +356,7 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	assert.NoError(t, err)
 	cd, err := NewCoreDocument(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{granterID}}, nil)
 	assert.NoError(t, err)
-	payload := documentpb.AccessTokenParams{
+	payload := AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
 		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
 	}
@@ -406,7 +405,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Len(t, cd.AccessTokens, 0)
 
 	// invalid centID format
-	payload := documentpb.AccessTokenParams{
+	payload := AccessTokenParams{
 		// invalid grantee format
 		Grantee:            "randomCentID",
 		DocumentIdentifier: "randomDocID",
@@ -416,7 +415,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to construct access token: malformed address provided")
 	// invalid centID length
 	invalidCentID := utils.RandomSlice(25)
-	payload = documentpb.AccessTokenParams{
+	payload = AccessTokenParams{
 		Grantee:            hexutil.Encode(invalidCentID),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
@@ -426,7 +425,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	// invalid docID length
 	id := account.GetIdentityID()
 	invalidDocID := utils.RandomSlice(33)
-	payload = documentpb.AccessTokenParams{
+	payload = AccessTokenParams{
 		Grantee:            hexutil.Encode(id),
 		DocumentIdentifier: hexutil.Encode(invalidDocID),
 	}
@@ -435,7 +434,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: invalid identifier length")
 	// valid
-	payload = documentpb.AccessTokenParams{
+	payload = AccessTokenParams{
 		Grantee:            hexutil.Encode(id),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
@@ -458,7 +457,7 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 	cd := m.Document
 	assert.Len(t, cd.AccessTokens, 0)
 
-	payload := documentpb.AccessTokenParams{
+	payload := AccessTokenParams{
 		Grantee:            id.String(),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}

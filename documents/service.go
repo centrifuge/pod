@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -252,19 +251,14 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	ts, err := utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return errors.NewTypedError(ErrDocumentNotification, err)
-	}
-
-	notificationMsg := &notificationpb.NotificationMessage{
-		EventType:    uint32(notification.ReceivedPayload),
-		AccountId:    did.String(),
-		FromId:       hexutil.Encode(collaborator[:]),
-		ToId:         did.String(),
-		Recorded:     ts,
+	notificationMsg := notification.Message{
+		EventType:    notification.ReceivedPayload,
+		AccountID:    did.String(),
+		FromID:       hexutil.Encode(collaborator[:]),
+		ToID:         did.String(),
+		Recorded:     time.Now().UTC(),
 		DocumentType: model.DocumentType(),
-		DocumentId:   hexutil.Encode(model.ID()),
+		DocumentID:   hexutil.Encode(model.ID()),
 	}
 
 	// async so that we don't return an error as the p2p reply

@@ -68,7 +68,7 @@
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[projects]]
-  digest = "1:9a7966c6c967e522d698557690ea1d0a62b75e78d0bf738c137410df9468dcd6"
+  digest = "1:0da6c14c31926179cab83169b528ba144118ed832f09a3801e0b29649aa5ff08"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -78,12 +78,12 @@
     "gen/go/errors",
     "gen/go/generic",
     "gen/go/invoice",
-    "gen/go/notification",
     "gen/go/p2p",
+    "gen/go/protocol",
     "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "7d846bc3247e93446882acde5edc23767cb12824"
+  revision = "4d63917fac4f37c5803bc59da88ac762c3b09879"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -212,6 +212,7 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:58c033da727ebd5a6769209e479cac9a6e4dab53c879631af3d8161423099d57"
@@ -292,29 +293,19 @@
   version = "v1.2.1"
 
 [[projects]]
-  digest = "1:1ba1d79f2810270045c328ae5d674321db34e3aae468eb4233883b473c5c0467"
-  name = "github.com/golang/glog"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
-
-[[projects]]
-  digest = "1:b2d7e82c930fd78145f944d3c5e8e900c770b9147bddf917c6fbdfe2426b7210"
+  digest = "1:4c7d888a6e8a1dedccc2bafa0febdbbfaa010d8e73ed7f2561c0ccd73b0243cb"
   name = "github.com/golang/protobuf"
   packages = [
     "descriptor",
     "jsonpb",
     "proto",
-    "protoc-gen-go",
     "protoc-gen-go/descriptor",
     "protoc-gen-go/generator",
     "protoc-gen-go/generator/internal/remap",
-    "protoc-gen-go/grpc",
     "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
-    "ptypes/empty",
     "ptypes/struct",
     "ptypes/timestamp",
   ]
@@ -366,21 +357,14 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:fbce563e8f11fde364d451c7df043b88eb7776444cd7875a99e837e4aedd65cb"
+  digest = "1:ee73ed01fc93b8aa38a7f25543afed400df661992eeb7d3b250100b8b8f989b9"
   name = "github.com/grpc-ecosystem/grpc-gateway"
   packages = [
-    "codegenerator",
-    "protoc-gen-grpc-gateway",
-    "protoc-gen-grpc-gateway/descriptor",
-    "protoc-gen-grpc-gateway/generator",
-    "protoc-gen-grpc-gateway/gengateway",
-    "protoc-gen-grpc-gateway/httprule",
-    "protoc-gen-swagger/options",
     "runtime",
     "runtime/internal",
     "utilities",
   ]
-  pruneopts = "T"
+  pruneopts = "UT"
   revision = "8558711daa6c2853489043207b563dceacbc19cf"
 
 [[projects]]
@@ -1533,12 +1517,9 @@
   revision = "d61658bd2e18010be0e21349cc92b1b706e35146"
 
 [[projects]]
-  digest = "1:f969b1b8bcb2a5162a5dc797b261eff0c2f099d7fc63c143ada31b002709f6a5"
+  digest = "1:9cc1d3de11a1b6994eb01fe3cf81db064470d0fd39a37475f53a396aa5e8622c"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/api/annotations",
-    "googleapis/rpc/status",
-  ]
+  packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
   revision = "5a2fd4cab2d6d4a18e70c34937662526cd0c4bd1"
 
@@ -1619,8 +1600,8 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/generic",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
-    "github.com/centrifuge/centrifuge-protobufs/gen/go/notification",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",
+    "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder",
     "github.com/centrifuge/gocelery",
     "github.com/centrifuge/precise-proofs/proofs",
@@ -1640,21 +1621,17 @@
     "github.com/ethereum/go-ethereum/log",
     "github.com/ethereum/go-ethereum/rpc",
     "github.com/gavv/httpexpect",
+    "github.com/ghodss/yaml",
     "github.com/go-chi/chi",
     "github.com/go-chi/chi/middleware",
     "github.com/go-chi/render",
     "github.com/go-errors/errors",
     "github.com/gogo/protobuf/io",
     "github.com/golang/protobuf/proto",
-    "github.com/golang/protobuf/protoc-gen-go",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/any",
-    "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
-    "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway",
-    "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
-    "github.com/grpc-ecosystem/grpc-gateway/utilities",
     "github.com/ipfs/go-cid",
     "github.com/ipfs/go-datastore",
     "github.com/ipfs/go-ipfs-addr",
@@ -1691,10 +1668,8 @@
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/net/context",
     "golang.org/x/tools/cmd/goimports",
-    "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/grpclog",
     "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
     "gopkg.in/resty.v1",

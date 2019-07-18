@@ -2823,6 +2823,31 @@
                     }
                 }
             }
+        },
+        "/webhook": {
+            "post": {
+                "description": "Webhook is a place holder to describe webhook response in swagger.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhook"
+                ],
+                "summary": "Webhook is a place holder to describe webhook response in swagger.",
+                "operationId": "webhook",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/notification.Message"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -3921,6 +3946,41 @@
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "notification.Message": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "description": "account_id is the account associated to webhook",
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "document_type": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "type": "integer"
+                },
+                "from_id": {
+                    "description": "from_id if provided, original trigger of the event",
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "recorded": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "to_id": {
+                    "description": "to_id if provided, final destination of the event",
                     "type": "string"
                 }
             }
