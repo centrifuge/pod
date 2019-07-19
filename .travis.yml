@@ -32,7 +32,7 @@ before_install:
   - bash <(curl https://nixos.org/nix/install)
   - . $HOME/.nix-profile/etc/profile.d/nix.sh
   - sudo mkdir -p /etc/nix
-  - echo "substituters = https://cache.nixos.org/ file://$HOME/nix.store" | sudo tee -a /etc/nix/nix.conf > /dev/null
+  - echo "substituters = https://cachix.cachix.org/ file://$HOME/nix.store" | sudo tee -a /etc/nix/nix.conf > /dev/null
   - echo "trusted-public-keys = cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=" | sudo tee -a /etc/nix/nix.conf > /dev/null
   - nix-env -if https://github.com/cachix/cachix/tarball/master
   - cachix use dapp
