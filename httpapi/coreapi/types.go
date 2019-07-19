@@ -2,6 +2,7 @@ package coreapi
 
 import (
 	"encoding/json"
+	"math/big"
 	"strings"
 	"time"
 
@@ -117,8 +118,9 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
 		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
 		if errn != nil || i == nil {
-			err = errors.AppendError(err, errors.New("token index received is nil or other error: %v", errn))
-			continue
+			// Optional value to be part of the document response
+			log.Debug(errors.New("token index received is nil or other error: %v", errn))
+			i = new(big.Int)
 		}
 
 		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)

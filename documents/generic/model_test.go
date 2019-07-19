@@ -3,6 +3,7 @@
 package generic
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -152,11 +153,11 @@ func TestGeneric_CreateProofs(t *testing.T) {
 		return
 	}
 
-	tree, err := g.DocumentRootTree()
+	signingRoot, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
 
 	// Validate roles
-	valid, err := tree.ValidateProof(proof[0])
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -166,9 +167,74 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	assert.True(t, g.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[1])
-	assert.Nil(t, err)
+	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	assert.NoError(t, err)
 	assert.True(t, valid)
+}
+
+func TestAttributeProof(t *testing.T) {
+	tc, err := configstore.NewAccount("main", cfg)
+	acc := tc.(*configstore.Account)
+	acc.IdentityID = did[:]
+	assert.NoError(t, err)
+	g, _ := createCDWithEmbeddedGeneric(t)
+
+	var attrs []documents.Attribute
+	loanAmount := "loanAmount"
+	loanAmountValue := "100"
+	attr0, err := documents.NewAttribute(loanAmount, documents.AttrInt256, loanAmountValue)
+	assert.NoError(t, err)
+	attrs = append(attrs, attr0)
+	asIsValue := "asIsValue"
+	asIsValueValue := "1000"
+	attr1, err := documents.NewAttribute(asIsValue, documents.AttrInt256, asIsValueValue)
+	assert.NoError(t, err)
+	attrs = append(attrs, attr1)
+	afterRehabValue := "afterRehabValue"
+	afterRehabValueValue := "2000"
+	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrInt256, afterRehabValueValue)
+	assert.NoError(t, err)
+	attrs = append(attrs, attr2)
+
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
+	assert.NoError(t, err)
+	g.AppendSignatures(sig)
+	_, err = g.CalculateDataRoot()
+	assert.NoError(t, err)
+	signingRoot, err := g.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	keys, err := tc.GetKeys()
+	assert.NoError(t, err)
+	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
+	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
+	attributeAfterRehabVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr2.Key.String())
+	proofFields := []string{attributeLoanAmount, attributeAsIsVal, attributeAfterRehabVal, signatureSender}
+	proof, err := g.CreateProofs(proofFields)
+	assert.NoError(t, err)
+	assert.NotNil(t, proof)
+	assert.Len(t, proofFields, 4)
+
+	// Validate loanAmount
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	assert.NoError(t, err)
+	assert.True(t, valid)
+
+	// Validate asIsValue
+	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	assert.NoError(t, err)
+	assert.True(t, valid)
+
+	// Validate afterRehabValue
+	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	assert.NoError(t, err)
+	assert.True(t, valid)
+
 }
 
 func TestGeneric_CreateNFTProofs(t *testing.T) {
@@ -182,7 +248,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	g.AppendSignatures(sig)
 	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = g.CalculateSigningRoot()
+	signingRoot, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
 	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
@@ -190,9 +256,9 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
+	signingRootField := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
-	proofFields := []string{signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
+	proofFields := []string{signingRootField, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := g.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
@@ -211,7 +277,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = tree.ValidateProof(proof[2])
+	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -223,7 +289,7 @@ func TestGeneric_getDocumentDataTree(t *testing.T) {
 	_, leaf := tree.GetLeafByProperty("generic.scheme")
 	assert.NotNil(t, leaf)
 	assert.Equal(t, "generic.scheme", leaf.Property.ReadableName())
-	assert.Equal(t, []byte(scheme), leaf.Value)
+	assert.Equal(t, []byte(Scheme), leaf.Value)
 }
 
 type mockModel struct {
@@ -359,26 +425,9 @@ func validData(t *testing.T) []byte {
 	return marshallData(t, d)
 }
 
-func TestGeneric_loadData(t *testing.T) {
-	g := new(Generic)
-	payload := documents.CreatePayload{}
-
-	// valid data
-	payload.Data = validData(t)
-	err := g.loadData(payload.Data)
-	assert.NoError(t, err)
-	data := g.GetData().(Data)
-	assert.Empty(t, data)
-}
-
 func TestGeneric_unpackFromCreatePayload(t *testing.T) {
 	payload := documents.CreatePayload{}
 	g := new(Generic)
-
-	// invalid data
-	err := g.unpackFromCreatePayload(did, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected end of JSON input")
 
 	// invalid attributes
 	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
@@ -408,11 +457,6 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	old, _ := createCDWithEmbeddedGeneric(t)
 	g := new(Generic)
-
-	// invalid data
-	err := g.unpackFromUpdatePayload(old.(*Generic), payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected end of JSON input")
 
 	// invalid attributes
 	attr, err := documents.NewAttribute("test", documents.AttrString, "value")

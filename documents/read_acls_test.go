@@ -4,6 +4,7 @@ package documents
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
@@ -269,11 +270,9 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
+	assert.NoError(t, err)
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
@@ -323,9 +322,6 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-
 	for _, c := range tests {
 		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
@@ -337,7 +333,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		assert.True(t, len(pfs) > 0)
 
 		for _, pf := range pfs {
-			valid, err := tree.ValidateProof(pf)
+			valid, err := ValidateProof(pf, signingRoot, sha256.New())
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

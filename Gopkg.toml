@@ -275,8 +275,9 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
     unused-packages = false
 
 [prune]
-  go-tests = true
-  unused-packages = true
+    go-tests = true
+    unused-packages = true
+
 [[constraint]]
   branch = "master"
   name = "github.com/savaki/jq"

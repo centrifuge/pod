@@ -33,6 +33,7 @@ install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
 	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
+	@git submodule update --init --recursive
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
 lint-check: ## runs linters on go code

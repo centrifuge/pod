@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"hash"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -63,4 +64,23 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 		cd.Document.Salts = salts
 		return randbytes, nil
 	}
+}
+
+// ValidateProof by comparing it to the provided rootHash
+func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash) (valid bool, err error) {
+	var fieldHash []byte
+	if len(proof.Hash) == 0 {
+		fieldHash, err = proofs.CalculateHashForProofField(proof, hashFunc)
+	} else {
+		fieldHash = proof.Hash
+	}
+	if err != nil {
+		return false, err
+	}
+	if len(proof.SortedHashes) > 0 {
+		valid, err = proofs.ValidateProofSortedHashes(fieldHash, proof.SortedHashes, rootHash, hashFunc)
+	} else {
+		valid, err = proofs.ValidateProofHashes(fieldHash, proof.Hashes, rootHash, hashFunc)
+	}
+	return valid, err
 }

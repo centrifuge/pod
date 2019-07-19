@@ -254,6 +254,21 @@ func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (doc
 	return s.entitySrv.GetEntityByRelationship(ctx, docID)
 }
 
+// MintNFT mints an NFT.
+func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
+	return s.coreAPISrv.MintNFT(ctx, request)
+}
+
+// TransferNFT transfers NFT with tokenID in a given registry to `to` address.
+func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
+	return s.coreAPISrv.TransferNFT(ctx, registry, to, tokenID)
+}
+
+// OwnerOfNFT returns the owner of the NFT.
+func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
+	return s.coreAPISrv.OwnerOfNFT(registry, tokenID)
+}
+
 // MintInvoiceUnpaidNFT mints an NFT for an unpaid invoice document.
 func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnpaidRequest) (*nft.TokenResponse, error) {
 	// Get proof fields

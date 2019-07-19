@@ -20,7 +20,8 @@ import (
 const (
 	prefix string = "generic"
 
-	scheme = prefix
+	// Scheme to identify generic document
+	Scheme = prefix
 )
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
@@ -37,7 +38,7 @@ type Generic struct {
 
 func getProtoGenericData() *genericpb.GenericData {
 	return &genericpb.GenericData{
-		Scheme: []byte(scheme),
+		Scheme: []byte(Scheme),
 	}
 }
 
@@ -268,10 +269,6 @@ func (g *Generic) loadData(data []byte) error {
 
 // unpackFromCreatePayload unpacks the invoice data from the Payload.
 func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := g.loadData(payload.Data); err != nil {
-		return err
-	}
-
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
@@ -284,10 +281,6 @@ func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.Cr
 
 // unpackFromUpdatePayload unpacks the update payload and prepares a new version.
 func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.UpdatePayload) error {
-	if err := g.loadData(payload.Data); err != nil {
-		return err
-	}
-
 	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return err
@@ -297,7 +290,7 @@ func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.Update
 	return nil
 }
 
-// Scheme returns the invoice scheme.
+// Scheme returns the invoice Scheme.
 func (g *Generic) Scheme() string {
-	return scheme
+	return Scheme
 }

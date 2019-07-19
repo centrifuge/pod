@@ -3,6 +3,7 @@
 package purchaseorder
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -156,16 +157,17 @@ func TestPOModel_CreateProofs(t *testing.T) {
 	proof, err := po.CreateProofs([]string{"po.number", pf, documents.CDTreePrefix + ".document_type", "po.line_items[0].status"})
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := po.DocumentRootTree()
+
+	signingRoot, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
 
 	// Validate po_number
-	valid, err := tree.ValidateProof(proof[0])
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles collaborators
-	valid, err = tree.ValidateProof(proof[1])
+	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -175,12 +177,12 @@ func TestPOModel_CreateProofs(t *testing.T) {
 	assert.True(t, po.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
+	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// validate line items
-	valid, err = tree.ValidateProof(proof[3])
+	valid, err = documents.ValidateProof(proof[3], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

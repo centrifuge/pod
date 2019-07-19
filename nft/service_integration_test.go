@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -55,7 +56,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
+func prepareInvoiceForNFTMinting(t *testing.T) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
 	// create identity
 	log.Debug("Create Identity for Testing")
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
@@ -96,6 +97,39 @@ func prepareForNFTMinting(t *testing.T) (context.Context, []byte, common.Address
 	return ctx, id, registry, invSrv, cid
 }
 
+func prepareGenericForNFTMinting(t *testing.T, regAddr string, attrs map[documents.AttrKey]documents.Attribute) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
+	// create identity
+	log.Debug("Create Identity for Testing")
+	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	assert.NoError(t, err)
+	did := identity.NewDID(*didAddr)
+	tc, err := configstore.TempAccount("main", cfg)
+	assert.NoError(t, err)
+	tcr := tc.(*configstore.Account)
+	tcr.IdentityID = did[:]
+	_, err = cfgService.CreateAccount(tcr)
+	assert.NoError(t, err)
+	cid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	assert.NoError(t, err)
+
+	// create Generic doc (anchor)
+	genericSrv, err := registry.LocateService(documenttypes.GenericDataTypeUrl)
+	assert.Nil(t, err, "should not error out when getting generic genSrv")
+	ctx, err := contextutil.New(context.Background(), tcr)
+	assert.NoError(t, err)
+
+	payload := genericPayload(t, nil, attrs)
+	modelUpdated, txID, err := genericSrv.CreateModel(ctx, payload)
+	assert.NoError(t, err)
+	assert.NoError(t, jobManager.WaitForJob(cid, txID))
+
+	// get ID
+	id := modelUpdated.ID()
+	registry := common.HexToAddress(regAddr)
+
+	return ctx, id, registry, genericSrv, cid
+}
+
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
 	resp, done, err := invoiceUnpaid.MintNFT(ctx, req)
 	assert.NoError(t, err, "should not error out when minting an invoice")
@@ -113,7 +147,7 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
-	ctx, id, registry, invSrv, cid := prepareForNFTMinting(t)
+	ctx, id, registry, invSrv, cid := prepareInvoiceForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
 	acc, err := contextutil.Account(ctx)
@@ -151,8 +185,53 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 	assert.True(t, errors.IsOfType(nft.ErrNFTMinted, err))
 }
 
+func TestGenericMintNFT(t *testing.T) {
+	attrs := map[documents.AttrKey]documents.Attribute{}
+	loanAmount := "loanAmount"
+	loanAmountValue := "100"
+	attr0, err := documents.NewAttribute(loanAmount, documents.AttrDecimal, loanAmountValue)
+	assert.NoError(t, err)
+	attrs[attr0.Key] = attr0
+	asIsValue := "asIsValue"
+	asIsValueValue := "1000"
+	attr1, err := documents.NewAttribute(asIsValue, documents.AttrDecimal, asIsValueValue)
+	assert.NoError(t, err)
+	attrs[attr1.Key] = attr1
+	afterRehabValue := "afterRehabValue"
+	afterRehabValueValue := "2000"
+	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrDecimal, afterRehabValueValue)
+	assert.NoError(t, err)
+	attrs[attr2.Key] = attr2
+	scAddrs := testingutils.GetDAppSmartContractAddresses()
+	fmt.Println(scAddrs)
+	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], attrs)
+	fmt.Println("Generic NFT Registry", scAddrs["genericNFT"])
+
+	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
+	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
+	attributeAfterRehabVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr2.Key.String())
+	proofFields := []string{attributeLoanAmount, attributeAsIsVal, attributeAfterRehabVal}
+
+	req := nft.MintNFTRequest{
+		DocumentID:               id,
+		RegistryAddress:          registry,
+		DepositAddress:           cid.ToAddress(),
+		ProofFields:              proofFields,
+		GrantNFTReadAccess:       false,
+		SubmitNFTReadAccessProof: false,
+		SubmitTokenProof:         true,
+		UseGeneric:               true,
+	}
+	_ = mintNFT(t, ctx, req, cid, registry)
+	doc, err := invSrv.GetCurrentVersion(ctx, id)
+	assert.NoError(t, err)
+	cd, err := doc.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Roles, 2)
+}
+
 func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
-	ctx, id, registry, _, cid := prepareForNFTMinting(t)
+	ctx, id, registry, _, cid := prepareInvoiceForNFTMinting(t)
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
@@ -174,7 +253,7 @@ func TestEthereumInvoiceUnpaid_MintNFT_no_grant_access(t *testing.T) {
 }
 
 func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bool) (context.Context, nft.TokenID, identity.DID) {
-	ctx, id, registry, invSrv, cid := prepareForNFTMinting(t)
+	ctx, id, registry, invSrv, cid := prepareInvoiceForNFTMinting(t)
 	acc, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 	accDIDBytes := acc.GetIdentityID()
@@ -262,6 +341,16 @@ func invoicePayload(t *testing.T, collaborators []identity.DID, data []byte) doc
 			ReadWriteCollaborators: collaborators,
 		},
 		Data: data,
+	}
+}
+
+func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[documents.AttrKey]documents.Attribute) documents.CreatePayload {
+	return documents.CreatePayload{
+		Scheme: generic.Scheme,
+		Collaborators: documents.CollaboratorsAccess{
+			ReadWriteCollaborators: collaborators,
+		},
+		Attributes: attrs,
 	}
 }
 

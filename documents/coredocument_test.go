@@ -431,9 +431,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
@@ -446,22 +444,22 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		{
 			"prefix.sample_field",
 			false,
-			3,
+			2,
 		},
 		{
 			CDTreePrefix + ".document_identifier",
 			true,
-			6,
+			5,
 		},
 		{
 			"prefix.sample_field2",
 			false,
-			3,
+			2,
 		},
 		{
 			CDTreePrefix + ".next_version",
 			true,
-			6,
+			5,
 		},
 	}
 	for _, test := range tests {
@@ -482,7 +480,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 				assert.NoError(t, err)
 				assert.True(t, valid)
 			}
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, docRoot, h)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, signingRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		})

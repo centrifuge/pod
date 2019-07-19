@@ -297,6 +297,7 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 // CreateProofs takes document data tree and list to fields and generates proofs.
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
 // errors out when the proof generation is failed on core document tree.
+// It only generates proofs up to the signingRoot level
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
 	drTree, err := cd.DocumentRootTree(docType, dataTree.RootHash())
@@ -328,12 +329,12 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	}
 
 	treeProofs[DRTreePrefix] = newTreeProof(drTree, nil)
-	// (dataProof => dataRoot) + cdRoot+ signatureRoot = documentRoot
-	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, signatureTree.RootHash()))
+	// (dataProof => dataRoot) + cdRoot = signingRoot
+	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}))
 	// (signatureProof => signatureRoot) + signingRoot = documentRoot
 	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{signingRoot})
-	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
-	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, signatureTree.RootHash()))
+	// (cdProof => cdRoot) + dataRoot = signingRoot
+	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}))
 
 	return generateProofs(fields, treeProofs)
 }
