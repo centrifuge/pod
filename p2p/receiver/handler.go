@@ -16,9 +16,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
+	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 )
+
+var log = logging.Logger("p2p-handler")
 
 // Handler implements protocol message handlers
 type Handler struct {
@@ -283,6 +286,9 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 }
 
 func (srv *Handler) convertToErrorEnvelop(ierr error) (*pb.P2PEnvelope, error) {
+	// Log on server side
+	log.Error(ierr)
+
 	ierr = errors.Mask(ierr)
 	errPb := &errorspb.Error{Message: ierr.Error()}
 	errBytes, errx := proto.Marshal(errPb)
