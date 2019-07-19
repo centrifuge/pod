@@ -101,7 +101,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	m.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "[5]signature invalid with err: provided bytes doesn't match centID")
+	assert.Contains(t, err.Error(), "signature invalid with err: provided bytes doesn't match centID")
 
 }
 
