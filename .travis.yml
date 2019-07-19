@@ -16,18 +16,25 @@ checkout:
   post:
     git pull --ff-only origin "refs/pull/${CI_PULL_REQUEST//*pull\//}/merge"
 
+before_cache:
+  - mkdir -p $HOME/nix.store
+  - nix copy --to file://$HOME/nix.store -f default.nix buildInputs
+
 cache:
   directories:
     - ~/bin/
     - /tmp/depcache
-    - /nix/store
+    - $HOME/nix.store
 
 before_install:
   - nvm install 10.15.1
   - npm install -g truffle@4.1.13
   - bash <(curl https://nixos.org/nix/install)
   - . $HOME/.nix-profile/etc/profile.d/nix.sh
-  - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
+  - sudo mkdir -p /etc/nix
+  - echo "substituters = https://cache.nixos.org/ file://$HOME/nix.store" | sudo tee -a /etc/nix/nix.conf > /dev/null
+  - echo "trusted-public-keys = cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=" | sudo tee -a /etc/nix/nix.conf > /dev/null
+  - nix-env -if https://github.com/cachix/cachix/tarball/master
   - cachix use dapp
   - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
   - nix-env -f $HOME/.dapp/dapptools -iA dapp solc
