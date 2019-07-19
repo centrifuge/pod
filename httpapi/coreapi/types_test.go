@@ -262,6 +262,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, CurrentIndexOfToken error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
+				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], errors.New("CurrentIndexOfToken error")).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], nil).Once()
@@ -279,11 +280,15 @@ func TestTypes_convertNFTs(t *testing.T) {
 					},
 				}
 			},
-			isErr:  true,
-			errLen: 1,
-			errMsg: "CurrentIndexOfToken",
-			nftLen: 1,
+			isErr:  false,
+			nftLen: 2,
 			expectedNFTs: []NFT{
+				{
+					Registry:   hexutil.Encode(regIDs[0][:20]),
+					Owner:      addrs[0].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[0]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
@@ -296,6 +301,8 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, 2 CurrentIndexOfToken error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
+				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
+				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], errors.New("CurrentIndexOfToken error")).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], errors.New("CurrentIndexOfToken error")).Once()
 				return m
@@ -312,10 +319,23 @@ func TestTypes_convertNFTs(t *testing.T) {
 					},
 				}
 			},
-			isErr:  true,
-			errLen: 2,
+			isErr:  false,
 			errMsg: "CurrentIndexOfToken",
-			nftLen: 0,
+			nftLen: 2,
+			expectedNFTs: []NFT{
+				{
+					Registry:   hexutil.Encode(regIDs[0][:20]),
+					Owner:      addrs[0].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[0]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
+				{
+					Registry:   hexutil.Encode(regIDs[1][:20]),
+					Owner:      addrs[1].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[1]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
+			},
 		},
 		{
 			name: "2 nft, ownerOf and CurrentIndexOfToken error",
@@ -340,9 +360,17 @@ func TestTypes_convertNFTs(t *testing.T) {
 				}
 			},
 			isErr:  true,
-			errLen: 2,
+			errLen: 1,
 			errMsg: "owner",
-			nftLen: 0,
+			nftLen: 1,
+			expectedNFTs: []NFT{
+				{
+					Registry:   hexutil.Encode(regIDs[1][:20]),
+					Owner:      addrs[1].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[1]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
+			},
 		},
 	}
 	for _, test := range tests {

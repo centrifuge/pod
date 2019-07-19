@@ -30,13 +30,8 @@ func TestService_CreateModel(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
-	// invalid data
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, _, err = srv.CreateModel(ctxh, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected end of JSON input")
-
 	// success
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	payload.Data = validData(t)
 	srv.repo = testRepo()
 	jm := testingjobs.MockJobManager{}
@@ -90,9 +85,6 @@ func TestService_UpdateModel(t *testing.T) {
 	err = testRepo().Create(did[:], g.ID(), g)
 	assert.NoError(t, err)
 	payload.DocumentID = g.ID()
-	_, _, err = srv.UpdateModel(ctxh, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// failed validations
 	payload.Data = validData(t)

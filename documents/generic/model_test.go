@@ -206,13 +206,6 @@ func TestAttributeProof(t *testing.T) {
 	assert.NoError(t, err)
 	signingRoot, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
-	docRoot, err := g.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	signaturesRoot, err := g.CalculateSignaturesRoot()
-	assert.NoError(t, err)
-	fmt.Println("Document Root:", hexutil.Encode(docRoot))
-	fmt.Println("Signatures Root:", hexutil.Encode(signaturesRoot))
-	fmt.Println("SigningRoot:", hexutil.Encode(signingRoot))
 
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
@@ -436,11 +429,6 @@ func TestGeneric_unpackFromCreatePayload(t *testing.T) {
 	payload := documents.CreatePayload{}
 	g := new(Generic)
 
-	// invalid data
-	err := g.unpackFromCreatePayload(did, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected end of JSON input")
-
 	// invalid attributes
 	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
@@ -469,11 +457,6 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	old, _ := createCDWithEmbeddedGeneric(t)
 	g := new(Generic)
-
-	// invalid data
-	err := g.unpackFromUpdatePayload(old.(*Generic), payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected end of JSON input")
 
 	// invalid attributes
 	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
