@@ -7,8 +7,6 @@ import (
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -145,7 +143,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 
 	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	return &p2ppb.SignatureResponse{Signature: signature}, nil
@@ -194,7 +192,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 
 	err = srv.docSrv.ReceiveAnchoredDocument(ctx, model, collaborator)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil

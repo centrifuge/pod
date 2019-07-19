@@ -6,8 +6,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -357,22 +355,22 @@ func (s *peer) validateSignatureResp(
 
 	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
+		return errors.New("signature invalid with err: %s", err.Error())
 	}
 
 	tm, err := model.Timestamp()
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("cannot get model timestamp : %s", err.Error()))
+		return errors.New("cannot get model timestamp : %s", err.Error())
 	}
 
 	signingRoot, err := model.CalculateSigningRoot()
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("failed to calculate signing root: %s", err.Error()))
+		return errors.New("failed to calculate signing root: %s", err.Error())
 	}
 
 	err = s.idService.ValidateSignature(receiver, resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
 	if err != nil {
-		return centerrors.New(code.AuthenticationFailed, fmt.Sprintf("signature invalid with err: %s", err.Error()))
+		return errors.New("signature invalid with err: %s", err.Error())
 	}
 
 	return nil

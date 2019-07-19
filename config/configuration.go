@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/centerrors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -425,7 +424,7 @@ func (c *configuration) GetNetworkID() uint32 {
 func (c *configuration) GetIdentityID() ([]byte, error) {
 	id, err := hexutil.Decode(c.GetString("identityId"))
 	if err != nil {
-		return nil, centerrors.Wrap(err, "can't read identityId from config")
+		return nil, errors.New("can't read identityId from config %v", err)
 	}
 	return id, err
 }
