@@ -2,10 +2,7 @@ package documents
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -98,7 +95,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	tc, err := d.config.GetAccount(d.accountID[:])
 	if err != nil {
 		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+		return nil, errors.New("failed to get header: %v", err)
 	}
 	jobCtx := contextutil.WithJob(context.Background(), d.JobID)
 	ctxh, err := contextutil.New(jobCtx, tc)

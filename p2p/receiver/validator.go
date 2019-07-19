@@ -2,11 +2,8 @@ package receiver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -103,5 +100,5 @@ func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorG
 }
 
 func incompatibleNetworkError(configNetwork uint32, nodeNetwork uint32) error {
-	return centerrors.New(code.NetworkMismatch, fmt.Sprintf("Incompatible network id: node network: %d, client network: %d", configNetwork, nodeNetwork))
+	return errors.New("Incompatible network id: node network: %d, client network: %d", configNetwork, nodeNetwork)
 }
