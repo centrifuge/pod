@@ -385,14 +385,20 @@ func TestHandler_MintInvoiceUnpaidNFT(t *testing.T) {
 	c := testingconfig.CreateAccountContext(t, cfg)
 	ctx := context.WithValue(c, chi.RouteCtxKey, rctx)
 
-	// empty data
-	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(20))
+	// invalid docID
 	w, r := getHTTPReqAndResp(ctx, nil)
+	h.MintInvoiceUnpaidNFT(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// empty data
+	docID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	w, r = getHTTPReqAndResp(ctx, nil)
 	h.MintInvoiceUnpaidNFT(w, r)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
 	data := map[string]interface{}{
-		"document_id":     hexutil.Encode(utils.RandomSlice(32)),
 		"deposit_address": hexutil.Encode(utils.RandomSlice(20)),
 	}
 

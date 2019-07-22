@@ -246,6 +246,14 @@ func (h handler) MintInvoiceUnpaidNFT(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
 	ctx := r.Context()
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -254,15 +262,15 @@ func (h handler) MintInvoiceUnpaidNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request NFTMintInvoiceUnpaidRequest
-	err = json.Unmarshal(data, &request)
+	var req NFTMintInvoiceUnpaidRequest
+	err = json.Unmarshal(data, &req)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	m, err := h.srv.MintInvoiceUnpaidNFT(ctx, request)
+	m, err := h.srv.MintInvoiceUnpaidNFT(ctx, docID, req.DepositAddress)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

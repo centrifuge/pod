@@ -270,7 +270,7 @@ func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (commo
 }
 
 // MintInvoiceUnpaidNFT mints an NFT for an unpaid invoice document.
-func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnpaidRequest) (*nft.TokenResponse, error) {
+func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, docID []byte, depositAddr common.Address) (*nft.TokenResponse, error) {
 	// Get proof fields
 	proofFields, err := getRequiredInvoiceUnpaidProofFields(ctx)
 	if err != nil {
@@ -283,15 +283,10 @@ func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, req NFTMintInvoiceUnp
 	}
 	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
 
-	identifier, err := hexutil.Decode(req.DocumentID)
-	if err != nil {
-		return nil, err
-	}
-
 	nreq := nft.MintNFTRequest{
-		DocumentID:               identifier,
+		DocumentID:               docID,
 		RegistryAddress:          poRegistry,
-		DepositAddress:           common.HexToAddress(req.DepositAddress),
+		DepositAddress:           depositAddr,
 		ProofFields:              proofFields,
 		GrantNFTReadAccess:       true,
 		SubmitNFTReadAccessProof: true,
