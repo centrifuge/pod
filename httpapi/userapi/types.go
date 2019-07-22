@@ -52,10 +52,8 @@ type TransferDetailListResponse struct {
 
 // NFTMintInvoiceUnpaidRequest is the request for minting an NFT for an unpaid NFT
 type NFTMintInvoiceUnpaidRequest struct {
-	// Invoice Document identifier
-	DocumentID string `json:"document_id"`
 	// Deposit address for NFT Token created
-	DepositAddress string `json:"deposit_address"`
+	DepositAddress common.Address `json:"deposit_address" swaggertype:"primitive,string"`
 }
 
 // ResponseHeader header with job id

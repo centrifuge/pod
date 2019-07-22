@@ -4674,10 +4674,6 @@
                 "deposit_address": {
                     "description": "Deposit address for NFT Token created",
                     "type": "string"
-                },
-                "document_id": {
-                    "description": "Invoice Document identifier",
-                    "type": "string"
                 }
             }
         },
