@@ -27,8 +27,8 @@
 required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports", "github.com/swaggo/swag", "github.com/urfave/cli"]
 
 [[constraint]]
-  name = "github.com/DataDog/go-python3"
-  version = "0.1.1"
+  name = "github.com/iden3/go-iden3-crypto"
+  revision = "5b79ded5402fca8ee0763efd689865f8e3c6975c"
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
