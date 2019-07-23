@@ -69,6 +69,7 @@ type Repository interface {
 
 // NewDBRepository creates an instance of the documents Repository
 func NewDBRepository(db storage.Repository) Repository {
+	db.Register(new(latestVersion))
 	return &repo{db: db}
 }
 

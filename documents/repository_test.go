@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -19,6 +20,7 @@ func getRepository(ctx map[string]interface{}) Repository {
 
 type doc struct {
 	Model
+	DocID      []byte
 	SomeString string `json:"some_string"`
 }
 
@@ -38,6 +40,18 @@ func (u *unknownDoc) FromJSON(j []byte) error {
 	return json.Unmarshal(j, u)
 }
 
+func (m *doc) ID() []byte {
+	return m.DocID
+}
+
+func (m *doc) CurrentVersion() []byte {
+	return m.DocID
+}
+
+func (m *doc) NextVersion() []byte {
+	return m.DocID
+}
+
 func (m *doc) JSON() ([]byte, error) {
 	return json.Marshal(m)
 }
@@ -50,10 +64,14 @@ func (m *doc) Type() reflect.Type {
 	return reflect.TypeOf(m)
 }
 
+func (m *doc) Timestamp() (time.Time, error) {
+	return time.Now().UTC(), nil
+}
+
 func TestLevelDBRepo_Create_Exists(t *testing.T) {
 	repo := getRepository(ctx)
-	d := &doc{SomeString: "Hello, World!"}
 	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
+	d := &doc{SomeString: "Hello, World!", DocID: id}
 	assert.False(t, repo.Exists(accountID, id), "doc must not be present")
 	err := repo.Create(accountID, id, d)
 	assert.Nil(t, err, "Create: unknown error")
@@ -66,8 +84,8 @@ func TestLevelDBRepo_Create_Exists(t *testing.T) {
 
 func TestLevelDBRepo_Update_Exists(t *testing.T) {
 	repo := getRepository(ctx)
-	d := &doc{SomeString: "Hello, World!"}
 	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
+	d := &doc{SomeString: "Hello, World!", DocID: id}
 	assert.False(t, repo.Exists(accountID, id), "doc must not be present")
 	err := repo.Update(accountID, id, d)
 	assert.Error(t, err, "Update: should error out")
@@ -90,7 +108,7 @@ func TestLevelDBRepo_Get_Create_Update(t *testing.T) {
 	assert.Error(t, err, "must return error")
 	assert.Nil(t, m)
 
-	d := &doc{SomeString: "Hello, Repo!"}
+	d := &doc{SomeString: "Hello, Repo!", DocID: id}
 	err = repor.Create(accountID, id, d)
 	assert.Nil(t, err, "Create: unknown error")
 
