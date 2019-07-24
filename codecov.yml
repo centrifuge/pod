@@ -5,3 +5,4 @@ ignore:
   - nft/invoice_unpaid_contract.go
   - documents/entity/test_entity.go
   - documents/invoice/test_invoice.go
+  - migrations/files/
