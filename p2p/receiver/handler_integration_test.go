@@ -169,7 +169,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorResp, err := handler.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: &cd}, accDID)
 	assert.Error(t, err)
@@ -217,7 +217,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 	cd, err = po.PackCoreDocument()
 	assert.NoError(t, err)
 
@@ -246,7 +246,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	watchCommittedAnchor = <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 	ncd, err = npo.PackCoreDocument()
 	assert.NoError(t, err)
 

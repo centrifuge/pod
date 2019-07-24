@@ -328,7 +328,8 @@ func TestTransferNFT(t *testing.T) {
 	resp, done, err = invoiceUnpaid.TransferFrom(ctx, registry, secondTo, tokenID)
 	assert.NoError(t, err)
 	err = <-done
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "from address is not the owner of tokenID")
 	jobID, err = jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 
