@@ -134,10 +134,10 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		return nil, err
 	}
 
-	isDone := <-done
+	err = <-done
 	// non async task
-	if !isDone {
-		return nil, errors.New("Create Identity Job failed: jobID:%s", jobID.String())
+	if err != nil {
+		return nil, errors.New("Create Identity Job failed: jobID:%s with error [%s]", jobID.String(), err)
 	}
 
 	tx, err := s.jobManager.GetJob(createdDID, jobID)

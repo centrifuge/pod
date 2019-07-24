@@ -79,7 +79,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create validates, persists, and anchors a purchase order
-func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (s service) Create(ctx context.Context, po documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -99,7 +99,7 @@ func (s service) Create(ctx context.Context, po documents.Model) (documents.Mode
 }
 
 // Update validates, persists, and anchors a new version of purchase order
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)

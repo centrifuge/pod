@@ -82,7 +82,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
-func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -102,7 +102,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)

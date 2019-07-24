@@ -67,7 +67,7 @@ func (s *manager) UpdateTaskStatus(accountID identity.DID, id jobs.JobID, status
 }
 
 // ExecuteWithinJob executes a task within a Job.
-func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
+func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingJobID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan error, err error) {
 	job, err := s.repo.Get(accountID, existingJobID)
 	if err != nil {
 		job = jobs.NewJob(accountID, desc)
@@ -77,17 +77,19 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 		}
 	}
 	// set capacity to one so that any late listener won't miss updates.
-	done = make(chan bool, 1)
+	done = make(chan error, 1)
 	go func(ctx context.Context) {
 		err := make(chan error)
 		go work(accountID, job.ID, s, err)
 
 		var mJob *jobs.Job
+		var doneErr error
 		select {
 		case e := <-err:
 			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(e, err)
+				doneErr = errors.AppendError(e, err)
 				break
 			}
 			// update job success status only if this wasn't an existing job.
@@ -97,12 +99,16 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			if e == nil && jobs.JobIDEqual(existingJobID, jobs.NilJobID()) {
 				tempJob.Status = jobs.Success
 			} else if e != nil {
-				tempJob.Logs = append(tempJob.Logs, jobs.NewLog(fmt.Sprintf("%s[%s]", managerLogPrefix, desc), e.Error()))
+				log.Error(e)
+				action := fmt.Sprintf("%s[%s]", managerLogPrefix, desc)
+				doneErr = fmt.Errorf(fmt.Sprintf("%s %s", action, e.Error()))
+				tempJob.Logs = append(tempJob.Logs, jobs.NewLog(action, e.Error()))
 				tempJob.Status = jobs.Failed
 			}
-			e = s.saveJob(tempJob)
-			if e != nil {
-				log.Error(e)
+			es := s.saveJob(tempJob)
+			if es != nil {
+				log.Error(e, es)
+				doneErr = errors.AppendError(e, es)
 			}
 			mJob = tempJob
 		case <-ctx.Done():
@@ -111,19 +117,21 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			tempJob, err := s.repo.Get(accountID, job.ID)
 			if err != nil {
 				log.Error(err)
+				doneErr = err
 				break
 			}
 			tempJob.Logs = append(tempJob.Logs, jobs.NewLog("context closed", msg))
 			e := s.saveJob(tempJob)
 			if e != nil {
 				log.Error(e)
+				doneErr = e
 			}
 			mJob = tempJob
 		}
 
 		// non blocking send
 		select {
-		case done <- true:
+		case done <- doneErr:
 		default:
 			// must not happen
 			log.Error("job done channel capacity breach")

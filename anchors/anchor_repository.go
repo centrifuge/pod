@@ -14,10 +14,10 @@ var log = logging.Logger("anchorRepository")
 type AnchorRepository interface {
 
 	// PreCommitAnchor will call the transaction PreCommit on the smart contract, to pre commit a document update
-	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan bool, err error)
+	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan error, err error)
 
 	// CommitAnchor will send a commit transaction to Ethereum.
-	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan bool, error)
+	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error)
 
 	// GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 	GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)

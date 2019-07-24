@@ -121,7 +121,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 }
 
 // MintNFT mints an NFT
-func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenResponse, chan bool, error) {
+func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenResponse, chan error, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -171,7 +171,7 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 }
 
 // TransferFrom transfers an NFT to another address
-func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan bool, error) {
+func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan error, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -210,10 +210,10 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 
-		isDone := <-done
-		if !isDone {
+		err = <-done
+		if err != nil {
 			// some problem occurred in a child task
-			errOut <- errors.New("update document failed for document %s and job %s", hexutil.Encode(req.DocumentID), jobID)
+			errOut <- errors.New("update document failed for document %s and job %s with error %s", hexutil.Encode(req.DocumentID), jobID, err.Error())
 			return
 		}
 
@@ -252,10 +252,10 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
 		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
 
-		isDone = <-done
-		if !isDone {
+		err = <-done
+		if err != nil {
 			// some problem occurred in a child task
-			errOut <- errors.New("mint nft failed for document %s and transaction %s", hexutil.Encode(req.DocumentID), txID)
+			errOut <- errors.New("mint nft failed for document %s and transaction %s with error %s", hexutil.Encode(req.DocumentID), txID, err.Error())
 			return
 		}
 
@@ -297,10 +297,10 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 		log.Infof("sent off ethTX to transferFrom [registry: %s tokenID: %s, from: %s, to: %s].",
 			registry.String(), tokenID.String(), from.String(), to.String())
 
-		isDone := <-done
-		if !isDone {
+		err = <-done
+		if err != nil {
 			// some problem occurred in a child task
-			errOut <- errors.New("failed to transfer token with transaction:  %s", txID)
+			errOut <- errors.New("failed to transfer token with transaction:  %s with error %s", txID, err.Error())
 			return
 		}
 

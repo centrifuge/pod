@@ -75,7 +75,7 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 }
 
 // PreCommitAnchor will call the transaction PreCommit on the smart contract
-func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan bool, err error) {
+func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan error, err error) {
 	did, err := getDID(ctx)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func getDID(ctx context.Context) (identity.DID, error) {
 }
 
 // CommitAnchor will send a commit transaction to Ethereum.
-func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan bool, error) {
+func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error) {
 	did, err := getDID(ctx)
 	if err != nil {
 		return nil, err

@@ -82,7 +82,7 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (m *MockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
 	return model, contextutil.Job(ctx), nil, args.Error(2)

@@ -40,8 +40,8 @@ func TestService_ExecuteWithinTX_happy(t *testing.T) {
 		err <- nil
 	})
 	assert.NoError(t, err)
-	<-done
-	assert.NoError(t, err)
+	doneErr := <-done
+	assert.NoError(t, doneErr)
 	assert.NotNil(t, jobID)
 	job, err := srv.GetJob(did, jobID)
 	assert.NoError(t, err)
@@ -61,7 +61,8 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 		err <- errors.New(errStr)
 	})
 	assert.NoError(t, err)
-	<-done
+	doneErr := <-done
+	assert.Error(t, doneErr)
 	ntf := <-sendChan
 	assert.Equal(t, notification.JobCompleted, ntf.EventType)
 	assert.Equal(t, jobs.JobDataTypeURL, ntf.DocumentType)
@@ -86,8 +87,8 @@ func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
 	})
 	canc()
 	assert.NoError(t, err)
-	<-done
-	assert.NoError(t, err)
+	doneErr := <-done
+	assert.NoError(t, doneErr)
 	assert.NotNil(t, tid)
 	job, err := srv.GetJob(did, tid)
 	assert.NoError(t, err)

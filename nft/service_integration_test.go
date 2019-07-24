@@ -84,8 +84,8 @@ func prepareInvoiceForNFTMinting(t *testing.T) (context.Context, []byte, common.
 	assert.NoError(t, err, "should not error out when creating invoice model")
 	modelUpdated, txID, done, err := invSrv.Create(ctx, model)
 	assert.NoError(t, err)
-	d := <-done
-	assert.True(t, d)
+	err = <-done
+	assert.NoError(t, err)
 	assert.NoError(t, jobManager.WaitForJob(cid, txID))
 
 	// get ID
@@ -136,7 +136,8 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
 	assert.NoError(t, err, "should not error out when getting tokenID hex")
-	<-done
+	err = <-done
+	assert.NoError(t, err)
 	jobID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 	assert.NoError(t, jobManager.WaitForJob(cid, jobID))
@@ -312,7 +313,8 @@ func TestTransferNFT(t *testing.T) {
 	// successful
 	resp, done, err := invoiceUnpaid.TransferFrom(ctx, registry, to, tokenID)
 	assert.NoError(t, err)
-	<-done
+	err = <-done
+	assert.NoError(t, err)
 	jobID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 	assert.NoError(t, jobManager.WaitForJob(did, jobID))
@@ -325,7 +327,8 @@ func TestTransferNFT(t *testing.T) {
 	secondTo := common.HexToAddress("0xFBb1b73C4f0BDa4f67dcA266ce6Ef42f520fBB98")
 	resp, done, err = invoiceUnpaid.TransferFrom(ctx, registry, secondTo, tokenID)
 	assert.NoError(t, err)
-	<-done
+	err = <-done
+	assert.NoError(t, err)
 	jobID, err = jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 

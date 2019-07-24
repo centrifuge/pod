@@ -435,7 +435,7 @@ func TestService_CreateModel(t *testing.T) {
 	payload.Data = validDataWithIdentity(t)
 	srv.repo = testRepo()
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	fact = new(testingcommons.MockIdentityFactory)
 	fact.On("IdentityExists", mock.Anything).Return(true, nil)
@@ -495,7 +495,7 @@ func TestService_UpdateModel(t *testing.T) {
 	srv.factory = fact
 	payload.Data = validDataWithIdentity(t)
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	m, _, err := srv.UpdateModel(ctxh, payload)
 	assert.NoError(t, err)

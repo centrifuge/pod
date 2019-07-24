@@ -390,9 +390,9 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan bool, err error) {
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan error, err error) {
 	args := m.Called(anchorID, documentRoot, documentProof)
-	c, _ := args.Get(0).(chan bool)
+	c, _ := args.Get(0).(chan error)
 	return c, args.Error(1)
 }
 
@@ -488,8 +488,8 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
-	ch := make(chan bool, 1)
-	ch <- true
+	ch := make(chan error, 1)
+	ch <- nil
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)

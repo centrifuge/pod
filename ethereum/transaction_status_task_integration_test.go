@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.JobID, chan bool) {
+func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.JobID, chan error) {
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 

@@ -78,11 +78,11 @@ func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdateP
 	return model, jobID, args.Error(2)
 }
 
-func (m *MockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (m *MockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	args := m.Called(ctx, model)
 	model, _ = args.Get(0).(documents.Model)
 	jobID, _ := args.Get(1).(jobs.JobID)
-	return model, jobID, make(chan bool), args.Error(2)
+	return model, jobID, make(chan error), args.Error(2)
 }
 
 type MockModel struct {

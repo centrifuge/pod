@@ -138,10 +138,10 @@ func (i service) AddKey(ctx context.Context, key id.Key) error {
 		return err
 	}
 
-	isDone := <-done
+	err = <-done
 	// non async task
-	if !isDone {
-		return errors.New("add key  Job failed: jobID:%s", jobID.String())
+	if err != nil {
+		return errors.New("add key  Job failed: jobID:%s with error [%s]", jobID.String(), err)
 
 	}
 	return nil
@@ -167,11 +167,9 @@ func (i service) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes 
 		return err
 	}
 
-	isDone := <-done
-	// non async task
-	if !isDone {
-		return errors.New("add key multi purpose  Job failed: jobID:%s", jobID.String())
-
+	err = <-done
+	if err != nil {
+		return errors.New("add key multi purpose  Job failed: jobID[%s] with error [%s]", jobID.String(), err.Error())
 	}
 	return nil
 }
@@ -195,10 +193,10 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 		return err
 	}
 
-	isDone := <-done
+	err = <-done
 	// non async task
-	if !isDone {
-		return errors.New("revoke key Job failed: jobID:%s", jobID.String())
+	if err != nil {
+		return errors.New("revoke key Job failed: jobID:%s with error [%s]", jobID.String(), err.Error())
 	}
 
 	return nil
@@ -246,7 +244,7 @@ func (i service) GetKey(did id.DID, key [32]byte) (*id.KeyResponse, error) {
 
 // RawExecute calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan bool, err error) {
+func (i service) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID id.IDTX, done chan error, err error) {
 	jobID := contextutil.Job(ctx)
 	did, err := NewDIDFromContext(ctx)
 	if err != nil {
@@ -265,7 +263,7 @@ func (i service) RawExecute(ctx context.Context, to common.Address, data []byte,
 
 // Execute creates the abi encoding an calls the execute method on the identity contract
 // TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID id.IDTX, done chan bool, err error) {
+func (i service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID id.IDTX, done chan error, err error) {
 	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
 	if err != nil {
 		return jobs.NilJobID(), nil, err
