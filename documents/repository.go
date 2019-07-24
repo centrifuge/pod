@@ -161,7 +161,7 @@ func (r *repo) getLatest(key []byte) (*latestVersion, error) {
 		return nil, err
 	}
 
-	return nil, errors.New("index not found")
+	return nil, ErrDocumentNotFound
 }
 
 // getLatestKey constructs the key to the latest version of the document.
