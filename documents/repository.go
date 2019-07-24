@@ -65,6 +65,9 @@ type Repository interface {
 
 	// Register registers the model so that the DB can return the document without knowing the type
 	Register(model Model)
+
+	// GetLatest returns the latest version of the document.
+	GetLatest(accountID, docID []byte) (Model, error)
 }
 
 // NewDBRepository creates an instance of the documents Repository
