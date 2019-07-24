@@ -56,7 +56,7 @@ func TestTransactionStatusTask_failed(t *testing.T) {
 	txManager, cid, tx, result := enqueueJob(t, "0x2")
 
 	r := <-result
-	assert.NoError(t, r)
+	assert.Error(t, r)
 	trans, err := txManager.GetJob(cid, tx)
 	assert.Nil(t, err, "a  centrifuge transaction should be  returned")
 	assert.Equal(t, string(jobs.Failed), string(trans.Status), "transaction should fail")
