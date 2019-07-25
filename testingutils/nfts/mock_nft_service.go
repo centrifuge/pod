@@ -16,17 +16,17 @@ type MockNFTService struct {
 	mock.Mock
 }
 
-func (m *MockNFTService) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, chan bool, error) {
+func (m *MockNFTService) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, chan error, error) {
 	args := m.Called(ctx, request)
 	resp, _ := args.Get(0).(*nft.TokenResponse)
-	done, _ := args.Get(1).(chan bool)
+	done, _ := args.Get(1).(chan error)
 	return resp, done, args.Error(2)
 }
 
-func (m *MockNFTService) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID nft.TokenID) (*nft.TokenResponse, chan bool, error) {
+func (m *MockNFTService) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID nft.TokenID) (*nft.TokenResponse, chan error, error) {
 	args := m.Called(ctx)
 	resp, _ := args.Get(0).(*nft.TokenResponse)
-	done, _ := args.Get(1).(chan bool)
+	done, _ := args.Get(1).(chan error)
 	return resp, done, args.Error(2)
 }
 

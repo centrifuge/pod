@@ -83,9 +83,9 @@ type MintNFTRequest struct {
 // Service defines the NFT service to mint and transfer NFTs.
 type Service interface {
 	// MintNFT mints an NFT
-	MintNFT(ctx context.Context, request MintNFTRequest) (*TokenResponse, chan bool, error)
+	MintNFT(ctx context.Context, request MintNFTRequest) (*TokenResponse, chan error, error)
 	// TransferFrom transfers an NFT to another address
-	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan bool, error)
+	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan error, error)
 	// OwnerOf returns the owner of an NFT
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
 }

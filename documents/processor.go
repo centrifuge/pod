@@ -168,8 +168,8 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 		return err
 	}
 
-	isDone := <-done
-	if !isDone {
+	err = <-done
+	if err != nil {
 		return errors.New("failed to pre-commit anchor: %v", err)
 	}
 
@@ -216,8 +216,8 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to commit anchor: %v", err)
 	}
 
-	isDone := <-done
-	if !isDone {
+	err = <-done
+	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}
 

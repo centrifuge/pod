@@ -35,7 +35,7 @@ func TestService_CreateModel(t *testing.T) {
 	payload.Data = validData(t)
 	srv.repo = testRepo()
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	m, _, err := srv.CreateModel(ctxh, payload)
 	assert.NoError(t, err)
@@ -100,7 +100,7 @@ func TestService_UpdateModel(t *testing.T) {
 
 	// Success
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	srv.anchorRepo = oldRepo
 	m, _, err := srv.UpdateModel(ctxh, payload)
@@ -142,7 +142,7 @@ func TestService_Update(t *testing.T) {
 
 	// success
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	gsrv.jobManager = jm
 	m, _, _, err := gsrv.Update(ctxh, g)
 	assert.NoError(t, err)

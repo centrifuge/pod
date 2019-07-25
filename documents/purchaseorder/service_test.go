@@ -195,7 +195,7 @@ func TestService_CreateModel(t *testing.T) {
 	payload.Data = validDataWithCurrency(t)
 	srv.repo = testRepo()
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	m, _, err := srv.CreateModel(ctxh, payload)
 	assert.NoError(t, err)
@@ -245,7 +245,7 @@ func TestService_UpdateModel(t *testing.T) {
 	// Success
 	payload.Data = validDataWithCurrency(t)
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	m, _, err := srv.UpdateModel(ctxh, payload)
 	assert.NoError(t, err)

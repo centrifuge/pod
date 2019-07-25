@@ -55,10 +55,10 @@ type Service interface {
 	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
 
 	// Create validates and persists Model and returns a Updated model
-	Create(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
+	Create(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error)
 
 	// Update validates and updates the model and return the updated model
-	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error)
+	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error)
 
 	// CreateModel creates a new model from the payload and initiates the anchor process.
 	CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error)
@@ -312,7 +312,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, 
 	return srv.DeriveFromCoreDocument(cd)
 }
 
-func (s service) Create(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error) {
+func (s service) Create(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error) {
 	srv, err := s.getService(model)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
@@ -321,7 +321,7 @@ func (s service) Create(ctx context.Context, model Model) (Model, jobs.JobID, ch
 	return srv.Create(ctx, model)
 }
 
-func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, chan bool, error) {
+func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error) {
 	srv, err := s.getService(model)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)

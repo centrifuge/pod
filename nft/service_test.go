@@ -181,7 +181,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				queueSrv := new(testingutils.MockQueue)
 				jobMan := new(testingjobs.MockJobManager)
 				jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+					mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, jobMan
 			},
 			MintNFTRequest{DocumentID: decodeHex("0x1212"), ProofFields: []string{"collaborators[0]"}, DepositAddress: common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")},
@@ -235,7 +235,7 @@ func TestTokenTransfer(t *testing.T) {
 	jobID := jobs.NewJobID()
 	jobMan := new(testingjobs.MockJobManager)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(jobID, make(chan bool), nil)
+		mock.Anything, mock.Anything).Return(jobID, make(chan error), nil)
 
 	idServiceMock := &testingcommons.MockIdentityService{}
 

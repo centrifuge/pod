@@ -15,9 +15,9 @@ type MockJobManager struct {
 	jobs.Manager
 }
 
-func (m MockJobManager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingTxID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan bool, err error) {
+func (m MockJobManager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, existingTxID jobs.JobID, desc string, work func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error)) (txID jobs.JobID, done chan error, err error) {
 	args := m.Called(ctx, accountID, existingTxID, desc, work)
-	return args.Get(0).(jobs.JobID), args.Get(1).(chan bool), args.Error(2)
+	return args.Get(0).(jobs.JobID), args.Get(1).(chan error), args.Error(2)
 }
 
 func (m MockJobManager) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusResponse, error) {
