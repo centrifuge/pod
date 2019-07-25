@@ -14,11 +14,6 @@ func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	proofWithMultipleFields_successful(t, typeInvoice)
 }
 
-func TestProofWithMultipleFields_po_successful(t *testing.T) {
-	t.Parallel()
-	proofWithMultipleFields_successful(t, typePO)
-}
-
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -49,13 +44,6 @@ func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier 
 	compactPrefix := "0x00010000" // invoice prefix
 	prop1 := "0000002d"           // invoice.net_amount
 	prop2 := "0000000d"           // invoice.currency
-
-	if documentType == typePO {
-		compactPrefix = "0x00020000" // po prefix
-		prop1 = "00000012"           // po.total_amount
-		prop2 = "00000011"           // po.currency
-	}
-
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
 	objProof.Path("$.field_proofs[0].property").String().Equal(compactPrefix + prop1)
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()

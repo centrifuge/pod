@@ -18,7 +18,7 @@ func TestRegister(t *testing.T) {
 		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
 	}
 	Register(ctx, r)
-	assert.Len(t, r.Routes(), 19)
+	assert.Len(t, r.Routes(), 16)
 	assert.Equal(t, r.Routes()[0].Pattern, "/documents/{document_id}/funding_agreements")
 	assert.Len(t, r.Routes()[0].Handlers, 2)
 	assert.NotNil(t, r.Routes()[0].Handlers["POST"])
@@ -65,17 +65,8 @@ func TestRegister(t *testing.T) {
 	assert.NotNil(t, r.Routes()[13].Handlers["POST"])
 	assert.Equal(t, r.Routes()[14].Pattern, "/invoices/{document_id}/versions/{version_id}")
 	assert.NotNil(t, r.Routes()[14].Handlers["GET"])
-	assert.Equal(t, r.Routes()[15].Pattern, "/purchase_orders")
-	assert.Len(t, r.Routes()[15].Handlers, 1)
-	assert.NotNil(t, r.Routes()[15].Handlers["POST"])
-	assert.Equal(t, r.Routes()[16].Pattern, "/purchase_orders/{document_id}")
-	assert.Len(t, r.Routes()[16].Handlers, 2)
-	assert.NotNil(t, r.Routes()[16].Handlers["GET"])
-	assert.NotNil(t, r.Routes()[16].Handlers["PUT"])
-	assert.Equal(t, r.Routes()[17].Pattern, "/purchase_orders/{document_id}/versions/{version_id}")
-	assert.NotNil(t, r.Routes()[17].Handlers["GET"])
-	assert.Equal(t, r.Routes()[18].Pattern, "/relationships/{document_id}/entity")
-	assert.NotNil(t, r.Routes()[18].Handlers["GET"])
+	assert.Equal(t, r.Routes()[15].Pattern, "/relationships/{document_id}/entity")
+	assert.NotNil(t, r.Routes()[15].Handlers["GET"])
 }
 
 func TestRegisterBeta(t *testing.T) {

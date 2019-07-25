@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -141,48 +140,6 @@ func (s Service) GetInvoice(ctx context.Context, docID []byte) (documents.Model,
 
 // GetInvoiceVersion gets a specific version of the provided invoice document
 func (s Service) GetInvoiceVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
-	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
-}
-
-func convertPORequest(req CreatePurchaseOrderRequest) (documents.CreatePayload, error) {
-	coreAPIReq := coreapi.CreateDocumentRequest{
-		Scheme:      purchaseorder.Scheme,
-		WriteAccess: req.WriteAccess,
-		ReadAccess:  req.ReadAccess,
-		Data:        req.Data,
-		Attributes:  req.Attributes,
-	}
-
-	return coreapi.ToDocumentsCreatePayload(coreAPIReq)
-}
-
-// CreatePurchaseOrder creates a purchase Order.
-func (s Service) CreatePurchaseOrder(ctx context.Context, req CreatePurchaseOrderRequest) (documents.Model, jobs.JobID, error) {
-	docReq, err := convertPORequest(req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return s.coreAPISrv.CreateDocument(ctx, docReq)
-}
-
-// GetPurchaseOrder returns the latest version of the PurchaseOrder associated with Document ID.
-func (s Service) GetPurchaseOrder(ctx context.Context, docID []byte) (documents.Model, error) {
-	return s.coreAPISrv.GetDocument(ctx, docID)
-}
-
-// UpdatePurchaseOrder updates a purchase Order.
-func (s Service) UpdatePurchaseOrder(ctx context.Context, docID []byte, req CreatePurchaseOrderRequest) (documents.Model, jobs.JobID, error) {
-	docReq, err := convertPORequest(req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{CreatePayload: docReq, DocumentID: docID})
-}
-
-// GetPurchaseOrderVersion returns specific version of the PurchaseOrder associated with Document ID.
-func (s Service) GetPurchaseOrderVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
 	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
 }
 

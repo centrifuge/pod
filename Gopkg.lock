@@ -68,7 +68,7 @@
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[projects]]
-  digest = "1:0da6c14c31926179cab83169b528ba144118ed832f09a3801e0b29649aa5ff08"
+  digest = "1:f04b353f157e5ab86685d9c9b5a5b89e1e7e3babeb0b748801db092c1fe7108e"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -80,10 +80,9 @@
     "gen/go/invoice",
     "gen/go/p2p",
     "gen/go/protocol",
-    "gen/go/purchaseorder",
   ]
   pruneopts = "T"
-  revision = "4d63917fac4f37c5803bc59da88ac762c3b09879"
+  revision = "3d5bdf9902852de7da8e3c69d2b0fde36e3eb48b"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -1610,7 +1609,6 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol",
-    "github.com/centrifuge/centrifuge-protobufs/gen/go/purchaseorder",
     "github.com/centrifuge/gocelery",
     "github.com/centrifuge/precise-proofs/proofs",
     "github.com/centrifuge/precise-proofs/proofs/proto",

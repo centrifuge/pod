@@ -54,50 +54,6 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
 }
 
-func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-
-	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, poCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	params := map[string]interface{}{
-		"currency": "EUR",
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
-	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
-
-	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, poCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
-	txID = getTransactionID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-	params["currency"] = "EUR"
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
-}
-
 func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -194,38 +150,6 @@ func invoiceCoreAPICreate(collaborators []string) map[string]interface{} {
 
 func invoiceCoreAPIUpdate(collaborators []string) map[string]interface{} {
 	payload := invoiceCoreAPICreate(collaborators)
-	payload["attributes"] = updateAttributes()
-	return payload
-}
-
-func poCoreAPICreate(collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
-		"scheme":       "purchase_order",
-		"write_access": collaborators,
-		"data": map[string]interface{}{
-			"number":         "12345",
-			"status":         "unpaid",
-			"total_amount":   "12.345",
-			"recipient":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-			"date_sent":      "2019-05-24T14:48:44.308854Z", // rfc3339nano
-			"date_confirmed": "2019-05-24T14:48:44Z",        // rfc3339
-			"currency":       "EUR",
-			"attachments": []map[string]interface{}{
-				{
-					"name":      "test",
-					"file_type": "pdf",
-					"size":      1000202,
-					"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-					"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
-				},
-			},
-		},
-		"attributes": createAttributes(),
-	}
-}
-
-func poCoreAPIUpdate(collaborators []string) map[string]interface{} {
-	payload := poCoreAPICreate(collaborators)
 	payload["attributes"] = updateAttributes()
 	return payload
 }

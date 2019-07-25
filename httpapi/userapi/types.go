@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
@@ -108,34 +107,6 @@ func toInvoiceResponse(model documents.Model, tokenRegistry documents.TokenRegis
 		Header:     docResp.Header,
 		Attributes: docResp.Attributes,
 		Data:       docResp.Data.(invoice.Data),
-	}, nil
-}
-
-// CreatePurchaseOrderRequest holds details for creating Purchase order Document.
-type CreatePurchaseOrderRequest struct {
-	ReadAccess  []identity.DID              `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID              `json:"write_access" swaggertype:"array,string"`
-	Data        purchaseorder.Data          `json:"data"`
-	Attributes  coreapi.AttributeMapRequest `json:"attributes"`
-}
-
-// PurchaseOrderResponse represents the purchase order in client API format.
-type PurchaseOrderResponse struct {
-	Header     coreapi.ResponseHeader       `json:"header"`
-	Data       purchaseorder.Data           `json:"data"`
-	Attributes coreapi.AttributeMapResponse `json:"attributes"`
-}
-
-func toPurchaseOrderResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp PurchaseOrderResponse, err error) {
-	docResp, err := coreapi.GetDocumentResponse(model, tokenRegistry, jobID)
-	if err != nil {
-		return resp, err
-	}
-
-	return PurchaseOrderResponse{
-		Header:     docResp.Header,
-		Attributes: docResp.Attributes,
-		Data:       docResp.Data.(purchaseorder.Data),
 	}, nil
 }
 

@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -131,7 +131,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	acc.IdentityID = defaultDID[:]
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	payload := purchaseorder.CreatePOPayload(t, nil)
+	payload := invoice.CreateInvoicePayload(t, nil)
 	dids, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
 	var cs []identity.DID
@@ -139,13 +139,13 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 		cs = append(cs, *did)
 	}
 	payload.Collaborators.ReadWriteCollaborators = cs
-	po := purchaseorder.InitPurchaseOrder(t, defaultDID, payload)
-	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
-	err = po.AddUpdateLog(defaultDID)
+	inv := invoice.InitInvoice(t, defaultDID, payload)
+	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
+	err = inv.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
-	_, err = po.CalculateDataRoot()
+	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
+	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
@@ -155,8 +155,8 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature:   s,
 	}
-	po.AppendSignatures(sig)
-	_, err = po.CalculateDocumentRoot()
+	inv.AppendSignatures(sig)
+	_, err = inv.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	return po
+	return inv
 }

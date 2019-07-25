@@ -34,11 +34,6 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 			typeInvoice,
 			multiHostMultiAccount,
 		},
-		{
-			"PO_AddExternalCollaborator",
-			typePO,
-			multiHost,
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -232,7 +227,6 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 
 	//currently can't be run in parallel (because of node kill)
 	collaboratorTimeOut(t, typeInvoice)
-	collaboratorTimeOut(t, typePO)
 }
 
 func collaboratorTimeOut(t *testing.T, documentType string) {

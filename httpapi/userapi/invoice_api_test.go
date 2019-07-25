@@ -47,6 +47,12 @@ func invData() map[string]interface{} {
 	}
 }
 
+func marshall(t *testing.T, data interface{}) []byte {
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	return d
+}
+
 func TestHandler_CreateInvoice(t *testing.T) {
 	data := map[string]interface{}{
 		"data": invData(),
