@@ -10,23 +10,8 @@ func defaultDocumentPayload(documentType string, collaborators []string) map[str
 	switch documentType {
 	case typeInvoice:
 		return defaultInvoicePayload(collaborators)
-	case typePO:
-		return defaultPOPayload(collaborators)
 	default:
 		return defaultInvoicePayload(collaborators)
-	}
-}
-
-func defaultPOPayload(collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"number":       "12324",
-			"date_created": "2018-09-26T23:12:37.902198664Z",
-			"total_amount": "40",
-			"currency":     "USD",
-		},
-		"write_access": collaborators,
-		"attributes":   defaultAttributePayload(),
 	}
 }
 
@@ -169,25 +154,10 @@ func invoiceNFTPayload(collaborators []string, sender string) map[string]interfa
 	}
 }
 
-func poNFTPayload(collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"number":        "123245",
-			"date_created":  "2018-09-26T23:12:37.902198664Z",
-			"currency":      "USD",
-			"total_amount":  "40",
-			"document_type": "po",
-		},
-		"write_access": collaborators,
-	}
-}
-
 func defaultNFTPayload(documentType string, collaborators []string, sender string) map[string]interface{} {
 	switch documentType {
 	case typeInvoice:
 		return invoiceNFTPayload(collaborators, sender)
-	case typePO:
-		return poNFTPayload(collaborators)
 	default:
 		return invoiceNFTPayload(collaborators, sender)
 	}
@@ -198,24 +168,9 @@ func updatedDocumentPayload(documentType string, collaborators []string) map[str
 	switch documentType {
 	case typeInvoice:
 		return updatedInvoicePayload(collaborators)
-	case typePO:
-		return updatedPOPayload(collaborators)
 	default:
 		return updatedInvoicePayload(collaborators)
 	}
-}
-
-func updatedPOPayload(collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"number":       "12324",
-			"date_created": "2018-09-26T23:12:37.902198664Z",
-			"currency":     "EUR",
-			"total_amount": "42",
-		},
-		"write_access": collaborators,
-	}
-
 }
 
 func updatedInvoicePayload(collaborators []string) map[string]interface{} {
@@ -248,16 +203,13 @@ func updatedEntityPayload(identity string, collaborators []string) map[string]in
 }
 
 func defaultProofPayload(documentType string) map[string]interface{} {
-	if documentType == typeInvoice {
-
-		return map[string]interface{}{
-			"type":   "http://github.com/centrifuge/centrifuge-protobufs/invoice/#invoice.InvoiceData",
-			"fields": []string{"invoice.net_amount", "invoice.currency"},
-		}
+	if documentType != typeInvoice {
+		return nil
 	}
+
 	return map[string]interface{}{
-		"type":   "http://github.com/centrifuge/centrifuge-protobufs/purchaseorder/#purchaseorder.PurchaseOrderData",
-		"fields": []string{"po.total_amount", "po.currency"},
+		"type":   "http://github.com/centrifuge/centrifuge-protobufs/invoice/#invoice.InvoiceData",
+		"fields": []string{"invoice.net_amount", "invoice.currency"},
 	}
 }
 

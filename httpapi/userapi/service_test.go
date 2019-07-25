@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -14,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -149,123 +147,6 @@ func TestService_GetVersionTransferDetailList(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, td, ntd)
 	assert.Equal(t, m, nm)
-}
-
-func TestService_CreatePurchaseOrder(t *testing.T) {
-	ctx := context.Background()
-	did := testingidentity.GenerateRandomDID()
-	dec, err := documents.NewDecimal("12.345")
-	assert.NoError(t, err)
-	tt := time.Now().UTC()
-	req := CreatePurchaseOrderRequest{
-		WriteAccess: []identity.DID{did},
-		Data: purchaseorder.Data{
-			Number:        "12345",
-			Status:        "unpaid",
-			TotalAmount:   dec,
-			Recipient:     &did,
-			DateSent:      &tt,
-			DateConfirmed: &tt,
-			Currency:      "EUR",
-			Attachments: []*documents.BinaryAttachment{
-				{
-					Name:     "test",
-					FileType: "pdf",
-					Size:     1000202,
-					Data:     byteutils.HexBytes(utils.RandomSlice(32)),
-					Checksum: byteutils.HexBytes(utils.RandomSlice(32)),
-				},
-			},
-		},
-		Attributes: coreapi.AttributeMapRequest{
-			"string_test": {
-				Type:  "invalid",
-				Value: "hello, world!",
-			},
-
-			"decimal_test": {
-				Type:  "decimal",
-				Value: "100001.001",
-			},
-		},
-	}
-	s := Service{}
-
-	// invalid attribute map
-	_, _, err = s.CreatePurchaseOrder(ctx, req)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrNotValidAttrType, err))
-
-	// success
-	docSrv := new(testingdocuments.MockService)
-	m := new(testingdocuments.MockModel)
-	docSrv.On("CreateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil)
-	s.coreAPISrv = newCoreAPIService(docSrv)
-	strAttr := req.Attributes["string_test"]
-	strAttr.Type = "string"
-	req.Attributes["string_test"] = strAttr
-	_, _, err = s.CreatePurchaseOrder(ctx, req)
-	assert.NoError(t, err)
-	docSrv.AssertExpectations(t)
-}
-
-func TestService_UpdatePurchaseOrder(t *testing.T) {
-	ctx := context.Background()
-	did := testingidentity.GenerateRandomDID()
-	dec, err := documents.NewDecimal("12.345")
-	assert.NoError(t, err)
-	tt := time.Now().UTC()
-	req := CreatePurchaseOrderRequest{
-		WriteAccess: []identity.DID{did},
-		Data: purchaseorder.Data{
-			Number:        "12345",
-			Status:        "unpaid",
-			TotalAmount:   dec,
-			Recipient:     &did,
-			DateSent:      &tt,
-			DateConfirmed: &tt,
-			Currency:      "EUR",
-			Attachments: []*documents.BinaryAttachment{
-				{
-					Name:     "test",
-					FileType: "pdf",
-					Size:     1000202,
-					Data:     byteutils.HexBytes(utils.RandomSlice(32)),
-					Checksum: byteutils.HexBytes(utils.RandomSlice(32)),
-				},
-			},
-		},
-		Attributes: coreapi.AttributeMapRequest{
-			"string_test": {
-				Type:  "invalid",
-				Value: "hello, world!",
-			},
-
-			"decimal_test": {
-				Type:  "decimal",
-				Value: "100001.001",
-			},
-		},
-	}
-	s := Service{}
-	docID := utils.RandomSlice(32)
-
-	// invalid attribute map
-	_, _, err = s.UpdatePurchaseOrder(ctx, docID, req)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrNotValidAttrType, err))
-
-	// success
-	docSrv := new(testingdocuments.MockService)
-	m := new(testingdocuments.MockModel)
-	docSrv.On("UpdateModel", ctx, mock.Anything).Return(m, jobs.NewJobID(), nil)
-	s.coreAPISrv = newCoreAPIService(docSrv)
-	strAttr := req.Attributes["string_test"]
-	strAttr.Type = "string"
-	req.Attributes["string_test"] = strAttr
-	_, _, err = s.UpdatePurchaseOrder(ctx, docID, req)
-	assert.NoError(t, err)
-	docSrv.AssertExpectations(t)
 }
 
 func TestService_CreateEntity(t *testing.T) {

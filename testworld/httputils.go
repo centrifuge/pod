@@ -15,7 +15,6 @@ import (
 
 const typeInvoice string = "invoices"
 const typeEntity string = "entities"
-const typePO string = "purchase_orders"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 

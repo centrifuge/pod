@@ -40,7 +40,6 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var configService config.Service
 var defaultDID = testingidentity.GenerateRandomDID()
 
 type mockModel struct {
@@ -75,7 +74,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
@@ -131,7 +129,7 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{
 		EmbeddedData: &any.Any{
 			Value:   utils.RandomSlice(32),
-			TypeUrl: documenttypes.PurchaseOrderDataTypeUrl,
+			TypeUrl: documenttypes.EntityDataTypeUrl,
 		},
 	})
 	assert.Error(t, err)
