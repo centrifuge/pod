@@ -332,7 +332,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, []string{charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "success" {
+	if status != "failed" {
 		t.Error(message)
 	}
 
@@ -350,7 +350,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	// alice updates document
 	res = updateDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, nil))
 	txID = getTransactionID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
 	}
