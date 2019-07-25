@@ -158,30 +158,22 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
-	selfDID, err := contextutil.AccountDID(ctx)
+	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
 
-	var entity documents.Model
-	if s.Service.Exists(ctx, documentID) {
-		entity, err = s.Service.GetCurrentVersion(ctx, documentID)
-
-		if err != nil {
-			return nil, err
-		}
-
-		isCollaborator, err := entity.IsDIDCollaborator(selfDID)
-		if err != nil {
-			return nil, err
-		}
-		if !isCollaborator {
-			return nil, documents.ErrNoCollaborator
-		}
-		return entity, nil
+	entity, err := s.Service.GetCurrentVersion(ctx, documentID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
 	}
 
-	return nil, documents.ErrDocumentNotFound
+	isCollaborator, err := entity.IsDIDCollaborator(did)
+	if err != nil || !isCollaborator {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	return entity, nil
 }
 
 func (s service) requestEntityWithRelationship(ctx context.Context, relationship *entityrelationship.EntityRelationship) (documents.Model, error) {

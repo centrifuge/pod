@@ -1,13 +1,50 @@
 package documents
 
 import (
+	"bytes"
+	"encoding/json"
+	"reflect"
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// DocPrefix holds the generic prefix of a document in DB
-const DocPrefix string = "document_"
+const (
+	// DocPrefix holds the generic prefix of a document in DB
+	DocPrefix string = "document_"
+
+	// LatestPrefix is used to index latest version of the document.
+	LatestPrefix string = "latest_document_"
+)
+
+type latestVersion struct {
+	// CurrentVersion is the current latest version of the document
+	CurrentVersion []byte `json:"current_version"`
+
+	// NextVersion is the supposed next version of the document.
+	// this is stored to check and invalidate the old index
+	NextVersion []byte `json:"next_version"`
+
+	// Timestamp is the time when document version is created.
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// JSON marshals latestVersion to json bytes.
+func (l *latestVersion) JSON() ([]byte, error) {
+	return json.Marshal(l)
+}
+
+// Type returns the type of latestVersion.
+func (l *latestVersion) Type() reflect.Type {
+	return reflect.TypeOf(l)
+}
+
+// FromJSON loads json bytes to latest version
+func (l *latestVersion) FromJSON(data []byte) error {
+	return json.Unmarshal(data, l)
+}
 
 // Repository defines the required methods for a document repository.
 // Can be implemented by any type that stores the documents. Ex: levelDB, sql etc...
@@ -28,10 +65,14 @@ type Repository interface {
 
 	// Register registers the model so that the DB can return the document without knowing the type
 	Register(model Model)
+
+	// GetLatest returns the latest version of the document.
+	GetLatest(accountID, docID []byte) (Model, error)
 }
 
 // NewDBRepository creates an instance of the documents Repository
 func NewDBRepository(db storage.Repository) Repository {
+	db.Register(new(latestVersion))
 	return &repo{db: db}
 }
 
@@ -74,12 +115,117 @@ func (r *repo) Get(accountID, id []byte) (Model, error) {
 // should error out if the document exists.
 func (r *repo) Create(accountID, id []byte, model Model) error {
 	key := r.getKey(accountID, id)
-	return r.db.Create(key, model)
+	if err := r.db.Create(key, model); err != nil {
+		return err
+	}
+
+	return r.updateLatestIndex(accountID, model)
 }
 
 // Update strictly updates the model.
 // Will error out when the model doesn't exist in the DB.
 func (r *repo) Update(accountID, id []byte, model Model) error {
 	key := r.getKey(accountID, id)
-	return r.db.Update(key, model)
+	if err := r.db.Update(key, model); err != nil {
+		return err
+	}
+
+	return r.updateLatestIndex(accountID, model)
+}
+
+// GetLatest returns thee latest version of the document.
+func (r *repo) GetLatest(accountID, docID []byte) (Model, error) {
+	key := r.getLatestKey(accountID, docID)
+	lv, err := r.getLatest(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Get(accountID, lv.CurrentVersion)
+}
+
+func (r *repo) getLatest(key []byte) (*latestVersion, error) {
+	val, err := r.db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	lv, ok := val.(*latestVersion)
+	if ok {
+		return lv, nil
+	}
+
+	// delete key val if the type mismatches
+	err = r.db.Delete(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, ErrDocumentNotFound
+}
+
+// getLatestKey constructs the key to the latest version of the document.
+// Note: DocumentIdentifier needs to be passed here not the versionID.
+func (r *repo) getLatestKey(accountID, docID []byte) []byte {
+	hexKey := hexutil.Encode(append(accountID, docID...))
+	return append([]byte(LatestPrefix), []byte(hexKey)...)
+}
+
+// storeLatestIndex stores the latestVersion to db.
+// If update is true, it is assumed that index is overwritten
+// else, index is created first time.
+func (r *repo) storeLatestIndex(key []byte, model Model, update bool) error {
+	lv := &latestVersion{
+		CurrentVersion: model.CurrentVersion(),
+		NextVersion:    model.NextVersion(),
+	}
+
+	tm, err := model.Timestamp()
+	if err != nil {
+		// we will update this actual value when available
+		tm = time.Now().UTC()
+	}
+	lv.Timestamp = tm
+
+	if update {
+		return r.db.Update(key, lv)
+	}
+
+	return r.db.Create(key, lv)
+}
+
+// updateLatestIndex updates the latest version index.
+// We check if the latest index is present for a model.
+// If not found, create a latest index and return.
+// Note: anchor timestamp is not available immediately, so don't error out if the timestamp is empty
+// If found, check if the next version matches the current version of the passed model.
+// If matches, update the timestamp of anchor and return.
+// If not matches, check the model timestamp is greater than stored timestamp.
+// If greater update the latestVersion and return
+// If not, skip update and return.
+func (r *repo) updateLatestIndex(accID []byte, model Model) error {
+	key := r.getLatestKey(accID, model.ID())
+	lv, err := r.getLatest(key)
+	if err != nil {
+		// no index is created yet. create one
+		return r.storeLatestIndex(key, model, false)
+	}
+
+	if bytes.Equal(lv.NextVersion, model.CurrentVersion()) {
+		return r.storeLatestIndex(key, model, true)
+	}
+
+	// compare timestamps
+	ts, err := model.Timestamp()
+	if err != nil {
+		ts = time.Now().UTC()
+	}
+
+	if lv.Timestamp.Before(ts) {
+		// newer version found. so update
+		return r.storeLatestIndex(key, model, true)
+	}
+
+	// must be an old version.
+	return nil
 }

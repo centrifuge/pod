@@ -384,7 +384,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 	//document is not existing
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: documentIdentifier,
@@ -463,7 +463,7 @@ func TestService_Exists(t *testing.T) {
 
 	//document is not existing
 	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentVersionNotFound, err))
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	cd := coredocumentpb.CoreDocument{
 		DocumentIdentifier: documentIdentifier,

@@ -246,8 +246,9 @@ func TestService_UpdateModel(t *testing.T) {
 		Grantee:            id.String(),
 		DocumentIdentifier: hexutil.Encode(old.ID()),
 	}
-	old.(*EntityRelationship).CoreDocument, err = old.(*EntityRelationship).AddAccessToken(ctx, p)
+	cd, err := old.(*EntityRelationship).AddAccessToken(ctx, p)
 	assert.NoError(t, err)
+	old.(*EntityRelationship).CoreDocument.Document.AccessTokens = cd.Document.AccessTokens
 	assert.NoError(t, testEntityRepo().Update(did[:], old.ID(), old))
 	idFactory := new(testingcommons.MockIdentityFactory)
 	idFactory.On("IdentityExists", mock.Anything).Return(false, nil).Once()

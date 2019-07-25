@@ -112,6 +112,9 @@ func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, docume
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+	if versionID, ok := params["version_id"]; ok {
+		objGet.Path("$.header.version_id").String().Equal(versionID.(string))
+	}
 	if checkattrs {
 		attrs := objGet.Path("$.attributes").Object().Raw()
 		eattrs := defaultAttributePayload()
@@ -180,6 +183,15 @@ func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType st
 	docIdentifier := params["document_id"].(string)
 
 	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
+		Expect().Status(http.StatusNotFound).JSON().NotNull()
+	return objGet
+}
+
+func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	docIdentifier := params["document_id"].(string)
+	versionID := params["version_id"].(string)
+
+	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier+"/versions/"+versionID), auth).
 		Expect().Status(http.StatusNotFound).JSON().NotNull()
 	return objGet
 }
@@ -280,7 +292,7 @@ func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
-	versionID := resp.Value("header").Path("$.version").String().Raw()
+	versionID := resp.Value("header").Path("$.version_id").String().Raw()
 	if versionID == "" {
 		t.Error("version ID empty")
 	}

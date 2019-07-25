@@ -96,27 +96,19 @@ func DefaultService(
 	}
 }
 
-func (s service) searchVersion(ctx context.Context, m Model) (Model, error) {
-	id, next := m.ID(), m.NextVersion()
-	if !s.Exists(ctx, next) {
-		// at the latest locally known version
-		return m, nil
-	}
-
-	m, err := s.getVersion(ctx, id, next)
-	if err != nil {
-		return nil, err
-	}
-	return s.searchVersion(ctx, m)
-
-}
-
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Model, error) {
-	model, err := s.getVersion(ctx, documentID, documentID)
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, ErrDocumentConfigAccountID
+	}
+
+	accID := acc.GetIdentityID()
+	m, err := s.repo.GetLatest(accID, documentID)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentNotFound, err)
 	}
-	return s.searchVersion(ctx, model)
+
+	return m, nil
 }
 
 func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {

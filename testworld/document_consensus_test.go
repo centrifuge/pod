@@ -295,3 +295,73 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	errMsg := response.Raw()["message"].(string)
 	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"some invalid ti")
 }
+
+func TestDocument_latestDocumentVersion(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+	kenny := doctorFord.getHostTestSuite(t, "Kenny")
+	documentType := typeInvoice
+
+	// alice creates a document with bob and kenny
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{bob.id.String(), kenny.id.String()}))
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier := getDocumentIdentifier(t, res)
+	versionID := getDocumentCurrentVersion(t, res)
+	if versionID != docIdentifier {
+		t.Errorf("docID(%s) != versionID(%s)\n", docIdentifier, versionID)
+	}
+
+	params := map[string]interface{}{
+		"document_id": docIdentifier,
+		"version_id":  versionID,
+		"currency":    "USD",
+	}
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, params, true)
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
+
+	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
+	kenny.host.kill()
+	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, []string{charlie.id.String()}))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "failed" {
+		t.Error(message)
+	}
+
+	docIdentifier = getDocumentIdentifier(t, res)
+	versionID = getDocumentCurrentVersion(t, res)
+	params["currency"] = "EUR"
+	params["version_id"] = versionID
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, params, true)
+	// bring kenny back and should not have the latest version
+	doctorFord.reLive(t, kenny.name)
+	nonExistingDocumentVersionCheck(kenny.httpExpect, kenny.id.String(), documentType, params)
+
+	// alice updates document
+	res = updateDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, nil))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier = getDocumentIdentifier(t, res)
+	versionID = getDocumentCurrentVersion(t, res)
+	params["version_id"] = versionID
+
+	// everyone should have the latest version
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, params, true)
+}
