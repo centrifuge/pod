@@ -16,6 +16,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// AddDocumentIndex03 adds index to the document for efficient fetching.
 func AddDocumentIndex03(db *ldb.DB) error {
 	strRepo := leveldb.NewLevelDBRepository(db)
 	repo := documents.NewDBRepository(strRepo)
@@ -51,7 +52,7 @@ func AddDocumentIndex03(db *ldb.DB) error {
 		}
 
 	}
-	log.Infof("Updated index to %d documents\n", c-e)
+	log.Infof("Updated index for %d documents\n", c-e)
 	iter.Release()
 	err := iter.Error()
 	if err != nil {
