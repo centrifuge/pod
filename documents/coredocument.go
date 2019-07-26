@@ -216,6 +216,7 @@ func (cd *CoreDocument) NextVersion() []byte {
 }
 
 // GetStatus returns document status
+// nolint
 func (cd *CoreDocument) GetStatus() status {
 	return cd.Status
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// AddStatusToDocuments04 adds status to committed.
 func AddStatusToDocuments04(db *ldb.DB) error {
 	strRepo := leveldb.NewLevelDBRepository(db)
 	repo := documents.NewDBRepository(strRepo)
