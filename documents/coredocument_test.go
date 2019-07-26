@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
@@ -853,4 +854,21 @@ func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, upattrs, 0)
 	assert.Len(t, uattrs, 0)
+}
+
+func TestCoreDocument_Status(t *testing.T) {
+	cd, err := NewCoreDocument(nil, CollaboratorsAccess{}, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.GetStatus(), Pending)
+
+	// set status to Committed
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.GetStatus(), Committed)
+
+	// try to update status to Committing
+	err = cd.SetStatus(Committing)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrCDStatus, err))
+	assert.Equal(t, cd.GetStatus(), Committed)
 }

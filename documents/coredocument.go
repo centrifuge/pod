@@ -53,7 +53,19 @@ const (
 
 	// SignaturesTreePrefix is the human readable prefix for signature props
 	SignaturesTreePrefix = "signatures_tree"
+
+	// Pending status represents document is in pending state
+	Pending status = "pending"
+
+	// Committing status represents document is being committed.
+	Committing status = "committing"
+
+	// Committed status represents document is committed/anchored.
+	Committed status = "committed"
 )
+
+// status represents the document status.
+type status string
 
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
@@ -89,6 +101,9 @@ type CoreDocument struct {
 	// Attributes are the custom attributes added to the document
 	Attributes map[AttrKey]Attribute
 
+	// Status represents document status.
+	Status status
+
 	Document coredocumentpb.CoreDocument
 }
 
@@ -108,7 +123,12 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{Document: cd, Modified: true, Attributes: make(map[AttrKey]Attribute)}, nil
+	return &CoreDocument{
+		Document:   cd,
+		Modified:   true,
+		Attributes: make(map[AttrKey]Attribute),
+		Status:     Pending,
+	}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -193,6 +213,22 @@ func (cd *CoreDocument) PreviousVersion() []byte {
 // NextVersion returns the next version of the document.
 func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
+}
+
+// GetStatus returns document status
+func (cd *CoreDocument) GetStatus() status {
+	return cd.Status
+}
+
+// SetStatus set the status of the document.
+// if the document is already committed, returns an error if set status is called.
+func (cd *CoreDocument) SetStatus(st status) error {
+	if cd.Status == Committed && st != Committed {
+		return ErrCDStatus
+	}
+
+	cd.Status = st
+	return nil
 }
 
 // AppendSignatures appends signatures to core document.
