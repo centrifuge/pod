@@ -70,6 +70,11 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to anchor document: %v", err))
 	}
 
+	// set the status to committed
+	if err = model.SetStatus(Committed); err != nil {
+		return nil, err
+	}
+
 	err = updater(id, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, err)
