@@ -190,6 +190,11 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 	model.AppendSignatures(sig)
 
+	// set the status to committing since we are at requesting signatures stage.
+	if err := model.SetStatus(Committing); err != nil {
+		return nil, err
+	}
+
 	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new model with old identifier. We should sync from the peer.
 	if !s.repo.Exists(did[:], model.ID()) && !utils.IsSameByteSlice(model.ID(), model.CurrentVersion()) {
@@ -236,6 +241,11 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 
 	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepo, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
+	}
+
+	// set the status to committed since the document is anchored already.
+	if err := model.SetStatus(Committed); err != nil {
+		return err
 	}
 
 	err = s.repo.Update(did[:], model.CurrentVersion(), model)

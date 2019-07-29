@@ -147,6 +147,12 @@ type Model interface {
 
 	// GetData returns the document data. Ex: invoice.Data
 	GetData() interface{}
+
+	// GetStatus returns the status of the document.
+	GetStatus() status
+
+	// SetStatus set the status of the document.
+	SetStatus(st status) error
 }
 
 // TokenRegistry defines NFT related functions.

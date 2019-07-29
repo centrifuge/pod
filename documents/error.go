@@ -17,9 +17,6 @@ const (
 	// ErrDocumentIdentifier must be used for errors caused by document identifier problems
 	ErrDocumentIdentifier = errors.Error("document identifier error")
 
-	// ErrDocumentVersion must be used for errors caused by document version problems
-	ErrDocumentVersion = errors.Error("document version error")
-
 	// ErrDocumentInvalidType must be used when a provided document type is not valid to be processed by the service
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
@@ -32,17 +29,11 @@ const (
 	// ErrDocumentSchemeUnknown is a sentinel error when the scheme provided is missing in the registry.
 	ErrDocumentSchemeUnknown = errors.Error("unknown document scheme provided")
 
-	// ErrDocumentNotification must be used when a notification about a document could not be delivered
-	ErrDocumentNotification = errors.Error("could not notify of the document")
-
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
 	ErrDocumentInvalid = errors.Error("document is invalid")
 
 	// ErrDocumentNotFound must be used to indicate that the document for provided id is not found in the system
 	ErrDocumentNotFound = errors.Error("document not found in the system database")
-
-	// ErrNoCollaborator must be used to indicate that the document for provided id the user is not a collaborator
-	ErrNoCollaborator = errors.Error("no collaborator on the document")
 
 	// ErrDocumentVersionNotFound must be used to indicate that the specified version of the document for provided id is not found in the system
 	ErrDocumentVersionNotFound = errors.Error("specified version of the document not found in the system database")
@@ -52,9 +43,6 @@ const (
 
 	// ErrDocumentUnPackingCoreDocument must be used when unpacking of core document for the given document failed
 	ErrDocumentUnPackingCoreDocument = errors.Error("core document unpacking failed")
-
-	// ErrDocumentPrepareCoreDocument must be used when preparing a new core document fails for the given document
-	ErrDocumentPrepareCoreDocument = errors.Error("core document preparation failed")
 
 	// ErrDocumentAnchoring must be used when document anchoring fails
 	ErrDocumentAnchoring = errors.Error("document anchoring failed")
@@ -70,14 +58,14 @@ const (
 	// ErrCDNewVersion must be used for coredoc creation/generation errors
 	ErrCDNewVersion = errors.Error("error creating new version of core document")
 
-	// ErrCollaborators must be used when collaborators are not valid
-	ErrCollaborators = errors.Error("invalid collaborators")
-
 	// ErrCDTree must be used when there are errors during precise-proof tree and root generation
 	ErrCDTree = errors.Error("error when generating trees/roots")
 
 	// ErrCDAttribute must be used when there are errors caused by custom model attributes
 	ErrCDAttribute = errors.Error("model attribute error")
+
+	// ErrCDStatus is a sentinel error used when status is being chnaged from Committed to anything else.
+	ErrCDStatus = errors.Error("cannot change the status of a committed document")
 
 	// Read ACL errors
 
