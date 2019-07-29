@@ -35,7 +35,14 @@ type MockService struct {
 
 func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
 	args := m.Called(documentID, version)
-	return args.Get(0).(Model), args.Error(1)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
+	args := m.Called(ctx, payload)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
 }
 
 func TestReadACLs_initReadRules(t *testing.T) {

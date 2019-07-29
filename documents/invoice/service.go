@@ -82,6 +82,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Create takes and invoice model and does required validation checks, tries to persist to DB
+// Deprecated
 func (s service) Create(ctx context.Context, inv documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -102,6 +103,7 @@ func (s service) Create(ctx context.Context, inv documents.Model) (documents.Mod
 }
 
 // Update finds the old document, validates the new version and persists the updated document
+// Deprecated
 func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
@@ -127,6 +129,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 }
 
 // CreateModel creates invoice from the payload, validates, persists, and returns the invoice.
+// Deprecated
 func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
 	if payload.Data == nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentNil
@@ -160,6 +163,7 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 }
 
 // UpdateModel updates the migrates the current invoice to next version with data from the update payload
+// Deprecated
 func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
 	if payload.Data == nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentNil
@@ -181,7 +185,7 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	}
 
 	inv := new(Invoice)
-	err = inv.unpackFromUpdatePayload(oldInv, payload)
+	err = inv.unpackFromUpdatePayloadOld(oldInv, payload)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -199,4 +203,40 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	jobID := contextutil.Job(ctx)
 	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, inv.CurrentVersion())
 	return inv, jobID, err
+}
+
+// Derive derives the document from the payload
+// if document_id is not nil, we prepare the next invoice version by patching the data
+// else return a fresh invoice.
+func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	if len(payload.DocumentID) == 0 {
+		did, err := contextutil.AccountDID(ctx)
+		if err != nil {
+			return nil, documents.ErrDocumentConfigAccountID
+		}
+
+		inv := new(Invoice)
+		if err := inv.unpackFromCreatePayload(did, payload.CreatePayload); err != nil {
+			return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+		}
+
+		return inv, nil
+	}
+
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
+	if err != nil {
+		return nil, err
+	}
+
+	oldInv, ok := old.(*Invoice)
+	if !ok {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.DocumentID)))
+	}
+
+	inv, err := oldInv.unpackFromUpdatePayload(payload)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+
+	return inv, nil
 }
