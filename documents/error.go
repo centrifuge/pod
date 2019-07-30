@@ -116,20 +116,23 @@ const (
 	// ErrNotImplemented must be used when an method has not been implemented
 	ErrNotImplemented = errors.Error("Method not implemented")
 
-	// ErrDocumentConfigNotInitialised is a sentinal error when document config is missing
+	// ErrDocumentConfigNotInitialised is a sentinel error when document config is missing
 	ErrDocumentConfigNotInitialised = errors.Error("document config not initialised")
 
-	// ErrDifferentAnchoredAddress is a sentinal error when anchor address is different from the configured one.
+	// ErrDifferentAnchoredAddress is a sentinel error when anchor address is different from the configured one.
 	ErrDifferentAnchoredAddress = errors.Error("anchor address is not the node configured address")
 
-	// ErrDocumentIDReused is a sentinal error when identifier is re-used
+	// ErrDocumentIDReused is a sentinel error when identifier is re-used
 	ErrDocumentIDReused = errors.Error("document identifier is already used")
 
-	// ErrNotValidAttrType is a sentinal error when an unknown attribute type is given
+	// ErrNotValidAttrType is a sentinel error when an unknown attribute type is given
 	ErrNotValidAttrType = errors.Error("not a valid attribute type")
 
-	// ErrEmptyAttrLabel is a sentinal error when the attribute label is empty
+	// ErrEmptyAttrLabel is a sentinel error when the attribute label is empty
 	ErrEmptyAttrLabel = errors.Error("empty attribute label")
+
+	// ErrDocumentValidation must be used when document validation fails
+	ErrDocumentValidation = errors.Error("document validation failure")
 )
 
 // Error wraps an error with specific key

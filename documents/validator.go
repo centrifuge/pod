@@ -100,6 +100,15 @@ func versionIDsValidator() Validator {
 	})
 }
 
+// CreateVersionValidator validates if the new core document is properly derived from old one
+func CreateVersionValidator(repo anchors.AnchorRepository) Validator {
+	return ValidatorGroup{
+		baseValidator(),
+		currentVersionValidator(repo),
+		LatestVersionValidator(repo),
+	}
+}
+
 // UpdateVersionValidator validates if the new core document is properly derived from old one
 func UpdateVersionValidator(repo anchors.AnchorRepository) Validator {
 	return ValidatorGroup{

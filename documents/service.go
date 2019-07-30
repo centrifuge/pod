@@ -76,6 +76,9 @@ type Service interface {
 	// Document Data will be patched from the old and attributes and collaborators are imported
 	// If not provided, it is a fresh document.
 	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
+
+	// Validate takes care of document validation
+	Validate(ctx context.Context, model Model) error
 }
 
 // service implements Service
@@ -373,4 +376,26 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 	}
 
 	return srv.Derive(ctx, payload)
+}
+
+func (s service) Validate(ctx context.Context, model Model) error {
+	srv, err := s.registry.LocateService(model.Scheme())
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentSchemeUnknown, err)
+	}
+
+	if old, err := s.GetCurrentVersion(ctx, model.ID()); err != nil {
+		if !err.(errors.TypedError).IsOfType(ErrDocumentVersionNotFound) {
+			return err
+		}
+		if err := CreateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
+			return errors.NewTypedError(ErrDocumentValidation, err)
+		}
+	} else {
+		if err := UpdateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
+			return errors.NewTypedError(ErrDocumentValidation, err)
+		}
+	}
+	// Run document specific validations if any
+	return srv.Validate(ctx, model)
 }
