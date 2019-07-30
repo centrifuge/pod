@@ -34,6 +34,7 @@ type Service interface {
 	GetCurrentVersion(ctx context.Context, documentID []byte) (Model, error)
 
 	// Exists checks if a document exists
+	// Deprecated
 	Exists(ctx context.Context, documentID []byte) bool
 
 	// GetVersion reads a document from the database
@@ -55,16 +56,26 @@ type Service interface {
 	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
 
 	// Create validates and persists Model and returns a Updated model
+	// Deprecated
 	Create(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error)
 
 	// Update validates and updates the model and return the updated model
+	// Deprecated
 	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error)
 
 	// CreateModel creates a new model from the payload and initiates the anchor process.
+	// Deprecated
 	CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error)
 
 	// UpdateModel prepares the next version from the payload and initiates the anchor process.
+	// Deprecated
 	UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error)
+
+	// Derive derives the Model from the Payload.
+	// If document_id is provided, it will prepare a new version of the document
+	// Document Data will be patched from the old and attributes and collaborators are imported
+	// If not provided, it is a fresh document.
+	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
 }
 
 // service implements Service
@@ -352,4 +363,14 @@ func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model,
 	}
 
 	return srv.UpdateModel(ctx, payload)
+}
+
+// Derive looks for specific document type service based in the schema and delegates the Derivation to that service.˜
+func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
+	srv, err := s.registry.LocateService(payload.Scheme)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrDocumentSchemeUnknown, err)
+	}
+
+	return srv.Derive(ctx, payload)
 }

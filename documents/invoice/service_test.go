@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -72,7 +73,7 @@ func TestService_Update(t *testing.T) {
 	assert.NoError(t, err)
 	collab := testingidentity.GenerateRandomDID()
 	newInv := new(Invoice)
-	assert.NoError(t, newInv.unpackFromUpdatePayload(inv, documents.UpdatePayload{
+	assert.NoError(t, newInv.unpackFromUpdatePayloadOld(inv, documents.UpdatePayload{
 		DocumentID: inv.ID(),
 		CreatePayload: documents.CreatePayload{
 			Collaborators: documents.CollaboratorsAccess{
@@ -138,7 +139,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	d, err := json.Marshal(data)
 	assert.NoError(t, err)
 	doc2 := new(Invoice)
-	assert.NoError(t, doc2.unpackFromUpdatePayload(doc, documents.UpdatePayload{
+	assert.NoError(t, doc2.unpackFromUpdatePayloadOld(doc, documents.UpdatePayload{
 		CreatePayload: documents.CreatePayload{Data: d},
 		DocumentID:    doc.ID(),
 	}))
@@ -335,4 +336,59 @@ func TestService_UpdateModel(t *testing.T) {
 	assert.Equal(t, m.ID(), inv.ID())
 	assert.Equal(t, m.CurrentVersion(), inv.NextVersion())
 	jm.AssertExpectations(t)
+}
+
+func TestService_Derive(t *testing.T) {
+	// new document
+	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Scheme: Scheme, Data: invalidDecimalData(t)}}
+	s := service{}
+
+	// missing account ctx
+	ctx := context.Background()
+	_, err := s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
+
+	// invalid payload
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// valid data
+	payload.Data = validData(t)
+	inv, err := s.Derive(ctx, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, inv)
+
+	// update document
+	docID := utils.RandomSlice(32)
+	payload.DocumentID = docID
+	srv := new(testingdocuments.MockService)
+	srv.On("GetCurrentVersion", docID).Return(nil, documents.ErrDocumentNotFound).Once()
+	s.Service = srv
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// invalid type
+	srv.On("GetCurrentVersion", docID).Return(new(mockModel), nil).Once()
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	old, _ := CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	srv.On("GetCurrentVersion", docID).Return(old, nil)
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+
+	// success
+	payload.Data = validData(t)
+	inv, err = s.Derive(ctx, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, inv)
+	srv.AssertExpectations(t)
 }

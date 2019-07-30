@@ -316,3 +316,8 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, e.CurrentVersion())
 	return e, jobID, err
 }
+
+// TODO
+func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	return nil, errors.New("not implemented")
+}

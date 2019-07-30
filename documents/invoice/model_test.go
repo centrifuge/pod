@@ -307,7 +307,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	data.GrossAmount = dec
 	d, err := json.Marshal(data)
 	assert.NoError(t, err)
-	err = inv.unpackFromUpdatePayload(inv, documents.UpdatePayload{
+	err = inv.unpackFromUpdatePayloadOld(inv, documents.UpdatePayload{
 		DocumentID: inv.ID(),
 		CreatePayload: documents.CreatePayload{
 			Data: d,
@@ -340,7 +340,7 @@ func TestInvoice_CollaboratorCanUpdate(t *testing.T) {
 	data.Currency = "INR"
 	d, err = json.Marshal(data)
 	assert.NoError(t, err)
-	err = inv.unpackFromUpdatePayload(inv, documents.UpdatePayload{
+	err = inv.unpackFromUpdatePayloadOld(inv, documents.UpdatePayload{
 		DocumentID:    inv.ID(),
 		CreatePayload: documents.CreatePayload{Data: d},
 	})
@@ -505,7 +505,7 @@ func validDataWithCurrency(t *testing.T) []byte {
 }
 
 func checkInvoicePayloadDataError(t *testing.T, inv *Invoice, payload documents.CreatePayload) {
-	err := inv.loadData(payload.Data)
+	err := loadData(payload.Data, &inv.Data)
 	assert.Error(t, err)
 }
 
@@ -539,7 +539,7 @@ func TestInvoice_loadData(t *testing.T) {
 
 	// valid data
 	payload.Data = validData(t)
-	err := inv.loadData(payload.Data)
+	err := loadData(payload.Data, &inv.Data)
 	assert.NoError(t, err)
 	data := inv.GetData().(Data)
 	assert.Equal(t, data.Number, "12345")
@@ -590,14 +590,14 @@ func TestInvoice_unpackFromCreatePayload(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
+func TestInvoice_unpackFromUpdatePayloadOld(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	old, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	inv := new(Invoice)
 
 	// invalid data
 	payload.Data = invalidDecimalData(t)
-	err := inv.unpackFromUpdatePayload(old, payload)
+	err := inv.unpackFromUpdatePayloadOld(old, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
@@ -611,7 +611,7 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = inv.unpackFromUpdatePayload(old, payload)
+	err = inv.unpackFromUpdatePayloadOld(old, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
 
@@ -621,6 +621,49 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = inv.unpackFromUpdatePayload(old, payload)
+	err = inv.unpackFromUpdatePayloadOld(old, payload)
 	assert.NoError(t, err)
+}
+
+func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	old, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	inv, err := old.unpackFromUpdatePayload(payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
+
+	// invalid attributes
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	payload.Data = validData(t)
+	_, err = old.unpackFromUpdatePayload(payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+
+	// valid
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	inv, err = old.unpackFromUpdatePayload(payload)
+	assert.NoError(t, err)
+	// check if patch worked
+	assert.NotEqual(t, inv.Data, old.Data)
+	assert.Equal(t, inv.Data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.Equal(t, old.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	assert.Len(t, inv.Data.LineItems, 1)
+
+	// new data
+	assert.Len(t, old.Data.Attachments, 0)
+	assert.Len(t, inv.Data.Attachments, 1)
 }

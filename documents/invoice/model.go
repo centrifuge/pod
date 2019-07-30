@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/jinzhu/copier"
 )
 
 const (
@@ -559,20 +560,18 @@ func (i *Invoice) GetData() interface{} {
 }
 
 // loadData unmarshals json blob to Data.
-func (i *Invoice) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
+func loadData(data []byte, v *Data) error {
+	err := json.Unmarshal(data, v)
 	if err != nil {
 		return err
 	}
 
-	i.Data = d
 	return nil
 }
 
 // unpackFromCreatePayload unpacks the invoice data from the Payload.
 func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := i.loadData(payload.Data); err != nil {
+	if err := loadData(payload.Data, &i.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
@@ -586,9 +585,10 @@ func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.Cr
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.UpdatePayload) error {
-	if err := i.loadData(payload.Data); err != nil {
+// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
+// deprecated
+func (i *Invoice) unpackFromUpdatePayloadOld(old *Invoice, payload documents.UpdatePayload) error {
+	if err := loadData(payload.Data, &i.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
@@ -599,6 +599,29 @@ func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.Update
 
 	i.CoreDocument = ncd
 	return nil
+}
+
+// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
+func (i *Invoice) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Invoice, error) {
+	var d Data
+	err := copier.Copy(&d, &i.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return nil, errors.NewTypedError(ErrInvoiceInvalidData, err)
+	}
+
+	ncd, err := i.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Invoice{
+		Data:         d,
+		CoreDocument: ncd,
+	}, nil
 }
 
 // Scheme returns the invoice Scheme.

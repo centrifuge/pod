@@ -544,6 +544,14 @@
   revision = "b497e2f366b8624394fb2e89c10ab607bebdde0b"
 
 [[projects]]
+  branch = "master"
+  digest = "1:ae940e9156d0d778ce1991bcc99e58fa5ca2790ddf7c5f0bc05385854416f7a6"
+  name = "github.com/jinzhu/copier"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "976e0346caa839d22a17f8031a96bcd0870c0128"
+
+[[projects]]
   digest = "1:aaa8e0e7e35d92e21daed3f241832cee73d15ca1cd3302ba3843159a959a7eac"
   name = "github.com/klauspost/compress"
   packages = [
@@ -1643,6 +1651,7 @@
     "github.com/ipfs/go-ipfs-addr",
     "github.com/ipfs/go-log",
     "github.com/jbenet/go-context/io",
+    "github.com/jinzhu/copier",
     "github.com/libp2p/go-libp2p",
     "github.com/libp2p/go-libp2p-crypto",
     "github.com/libp2p/go-libp2p-host",

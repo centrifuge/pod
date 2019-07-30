@@ -309,3 +309,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   name = "github.com/urfave/cli"
   version = "1.20.0"
+
+[[constraint]]
+  name = "github.com/jinzhu/copier"
+  revision = "976e0346caa839d22a17f8031a96bcd0870c0128"
