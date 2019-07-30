@@ -5,6 +5,9 @@ package documents
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -29,6 +32,8 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[jobs.BootstrappedService] = jobsv1.NewManager(&testingconfig.MockConfig{}, jobsv1.NewRepository(repo))
 	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
 	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
+	ctx[jobs.BootstrappedService] = new(testingjobs.MockJobManager)
+	ctx[bootstrap.BootstrappedQueueServer] = &queue.Server{}
 
 	err = Bootstrapper{}.Bootstrap(ctx)
 	assert.Nil(t, err)

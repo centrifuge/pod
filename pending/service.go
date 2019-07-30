@@ -3,12 +3,12 @@ package pending
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
+	logging "github.com/ipfs/go-log"
 )
+
+var srvLog = logging.Logger("pending-service")
 
 // Service provides an interface for functions common to all document types
 type Service interface {
@@ -18,49 +18,20 @@ type Service interface {
 
 // service implements Service
 type service struct {
-	docSvc     documents.Service
-	docRepo    documents.Repository
-	queueSrv   queue.TaskQueuer
-	jobManager jobs.Manager
+	docSvc documents.Service
 	// pendingRepo Repository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(
-	docSvc documents.Service,
-	docRepo documents.Repository,
-	queueSrv queue.TaskQueuer,
-	jobManager jobs.Manager) Service {
+func DefaultService(docSvc documents.Service) Service {
 	return service{
-		docSvc:     docSvc,
-		docRepo:    docRepo,
-		queueSrv:   queueSrv,
-		jobManager: jobManager,
+		docSvc: docSvc,
 	}
 }
 
 // Commit triggers validations, state change and anchor job
 func (s service) Commit(ctx context.Context, model documents.Model) (jobs.JobID, error) {
-	did, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return jobs.NilJobID(), documents.ErrDocumentConfigAccountID
-	}
-
-	if err := s.docSvc.Validate(ctx, model); err != nil {
-		return jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentValidation, err)
-	}
-
-	if err := model.SetStatus(documents.Committing); err != nil {
-		return jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
-	}
-
-	err = s.docRepo.Create(did[:], model.CurrentVersion(), model)
-	if err != nil {
-		return jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentPersistence, err)
-	}
-
-	jobID := contextutil.Job(ctx)
-	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, model.CurrentVersion())
+	jobID, err := s.docSvc.Commit(ctx, model)
 	if err != nil {
 		return jobs.NilJobID(), err
 	}
