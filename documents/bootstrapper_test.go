@@ -5,19 +5,18 @@ package documents
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
-
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/stretchr/testify/assert"
 )
 
