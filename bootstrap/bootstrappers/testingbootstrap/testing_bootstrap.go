@@ -22,6 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -47,6 +48,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&nft.Bootstrapper{},
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
+	pending.Bootstrapper{},
 	coreapi.Bootstrapper{},
 	&entity.Bootstrapper{},
 	funding.Bootstrapper{},
