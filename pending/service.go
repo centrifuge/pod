@@ -19,14 +19,14 @@ type Service interface {
 
 // service implements Service
 type service struct {
-	docSvc      documents.Service
+	docSrv      documents.Service
 	pendingRepo Repository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(docSvc documents.Service, repo Repository) Service {
+func DefaultService(docSrv documents.Service, repo Repository) Service {
 	return service{
-		docSvc:      docSvc,
+		docSrv:      docSrv,
 		pendingRepo: repo,
 	}
 }
@@ -43,7 +43,7 @@ func (s service) Commit(ctx context.Context, docID []byte) (jobs.JobID, error) {
 		return jobs.NilJobID(), documents.ErrDocumentNotFound
 	}
 
-	jobID, err := s.docSvc.Commit(ctx, model)
+	jobID, err := s.docSrv.Commit(ctx, model)
 	if err != nil {
 		return jobs.NilJobID(), err
 	}
