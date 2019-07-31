@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil)
+	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil, nil, nil)
 
 	// self failed
 	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
@@ -89,7 +89,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	nextAid, err := anchors.ToAnchorID(doc.NextVersion())
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
@@ -109,7 +109,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -150,7 +150,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -162,7 +162,7 @@ func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentit
 	idService := testingcommons.MockIdentityService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService), idService
+	return documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService, nil, nil), idService
 }
 
 type mockAnchorRepo struct {
@@ -264,7 +264,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv)
+	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil, nil)
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
@@ -496,7 +496,7 @@ func TestService_CreateModel(t *testing.T) {
 	invSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
 	err := reg.Register("invoice", invSrv)
 	assert.NoError(t, err)
-	srv := documents.DefaultService(cfg, nil, nil, reg, nil)
+	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil)
 
 	// unknown scheme
 	payload := documents.CreatePayload{Scheme: "invalid_scheme"}
@@ -519,7 +519,7 @@ func TestService_UpdateModel(t *testing.T) {
 	invSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
 	err := reg.Register("invoice", invSrv)
 	assert.NoError(t, err)
-	srv := documents.DefaultService(cfg, nil, nil, reg, nil)
+	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil)
 
 	// unknown scheme
 	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Scheme: "unknown_service"}}

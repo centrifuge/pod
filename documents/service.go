@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -76,6 +77,12 @@ type Service interface {
 	// Document Data will be patched from the old and attributes and collaborators are imported
 	// If not provided, it is a fresh document.
 	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
+
+	// Commit triggers validations, state change and anchor job
+	Commit(ctx context.Context, model Model) (jobs.JobID, error)
+
+	// Validate takes care of document validation
+	Validate(ctx context.Context, model Model) error
 }
 
 // service implements Service
@@ -86,6 +93,8 @@ type service struct {
 	anchorRepo anchors.AnchorRepository
 	registry   *ServiceRegistry
 	idService  identity.Service
+	queueSrv   queue.TaskQueuer
+	jobManager jobs.Manager
 }
 
 var srvLog = logging.Logger("document-service")
@@ -96,7 +105,9 @@ func DefaultService(
 	repo Repository,
 	anchorRepo anchors.AnchorRepository,
 	registry *ServiceRegistry,
-	idService identity.Service) Service {
+	idService identity.Service,
+	queueSrv queue.TaskQueuer,
+	jobManager jobs.Manager) Service {
 	return service{
 		config:     config,
 		repo:       repo,
@@ -104,6 +115,8 @@ func DefaultService(
 		notifier:   notification.NewWebhookSender(),
 		registry:   registry,
 		idService:  idService,
+		queueSrv:   queueSrv,
+		jobManager: jobManager,
 	}
 }
 
@@ -373,4 +386,56 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 	}
 
 	return srv.Derive(ctx, payload)
+}
+
+// Validate takes care of document validation
+func (s service) Validate(ctx context.Context, model Model) error {
+	srv, err := s.registry.LocateService(model.Scheme())
+	if err != nil {
+		return errors.NewTypedError(ErrDocumentSchemeUnknown, err)
+	}
+
+	if old, err := s.GetCurrentVersion(ctx, model.ID()); err != nil {
+		if !errors.IsOfType(ErrDocumentVersionNotFound, err) {
+			return err
+		}
+		if err := CreateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
+			return errors.NewTypedError(ErrDocumentValidation, err)
+		}
+	} else {
+		if err := UpdateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
+			return errors.NewTypedError(ErrDocumentValidation, err)
+		}
+	}
+	// Run document specific validations if any
+	return srv.Validate(ctx, model)
+}
+
+// Commit triggers validations, state change and anchor job
+func (s service) Commit(ctx context.Context, model Model) (jobs.JobID, error) {
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return jobs.NilJobID(), ErrDocumentConfigAccountID
+	}
+
+	if err := s.Validate(ctx, model); err != nil {
+		return jobs.NilJobID(), errors.NewTypedError(ErrDocumentValidation, err)
+	}
+
+	if err := model.SetStatus(Committing); err != nil {
+		return jobs.NilJobID(), err
+	}
+
+	err = s.repo.Create(did[:], model.CurrentVersion(), model)
+	if err != nil {
+		return jobs.NilJobID(), errors.NewTypedError(ErrDocumentPersistence, err)
+	}
+
+	jobID := contextutil.Job(ctx)
+	jobID, _, err = CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, model.CurrentVersion())
+	if err != nil {
+		return jobs.NilJobID(), err
+	}
+
+	return jobID, nil
 }

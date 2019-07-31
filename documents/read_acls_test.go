@@ -45,6 +45,11 @@ func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model,
 	return doc, args.Error(1)
 }
 
+func (m *MockService) Validate(ctx context.Context, model Model) error {
+	args := m.Called(ctx, model)
+	return args.Error(0)
+}
+
 func TestReadACLs_initReadRules(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)

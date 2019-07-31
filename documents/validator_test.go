@@ -169,6 +169,11 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Len(t, uvv, 3)
 }
 
+func TestCreateVersionValidator(t *testing.T) {
+	uvv := CreateVersionValidator(nil)
+	assert.Len(t, uvv, 3)
+}
+
 func TestValidator_baseValidator(t *testing.T) {
 	bv := baseValidator()
 
