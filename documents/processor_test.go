@@ -30,6 +30,16 @@ type mockModel struct {
 	sigs []*coredocumentpb.Signature
 }
 
+func (m *mockModel) Scheme() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *mockModel) SetStatus(st status) error {
+	args := m.Called(st)
+	return args.Error(0)
+}
+
 func (m *mockModel) NFTs() []*coredocumentpb.NFT {
 	args := m.Called()
 	dr, _ := args.Get(0).([]*coredocumentpb.NFT)

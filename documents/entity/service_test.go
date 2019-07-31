@@ -504,3 +504,9 @@ func TestService_UpdateModel(t *testing.T) {
 	jm.AssertExpectations(t)
 	fact.AssertExpectations(t)
 }
+
+func TestService_ValidateError(t *testing.T) {
+	srv := service{}
+	err := srv.Validate(context.Background(), nil)
+	assert.Error(t, err)
+}

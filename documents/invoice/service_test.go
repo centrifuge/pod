@@ -392,3 +392,9 @@ func TestService_Derive(t *testing.T) {
 	assert.NotNil(t, inv)
 	srv.AssertExpectations(t)
 }
+
+func TestService_Validate(t *testing.T) {
+	srv := service{}
+	err := srv.Validate(context.Background(), nil)
+	assert.NoError(t, err)
+}

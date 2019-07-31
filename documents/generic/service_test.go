@@ -152,3 +152,9 @@ func TestService_Update(t *testing.T) {
 	assert.Equal(t, m.CurrentVersion(), g.NextVersion())
 	jm.AssertExpectations(t)
 }
+
+func TestService_Validate(t *testing.T) {
+	srv := service{}
+	err := srv.Validate(context.Background(), nil)
+	assert.NoError(t, err)
+}

@@ -388,6 +388,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 	return srv.Derive(ctx, payload)
 }
 
+// Validate takes care of document validation
 func (s service) Validate(ctx context.Context, model Model) error {
 	srv, err := s.registry.LocateService(model.Scheme())
 	if err != nil {
@@ -398,11 +399,11 @@ func (s service) Validate(ctx context.Context, model Model) error {
 		if !errors.IsOfType(ErrDocumentVersionNotFound, err) {
 			return err
 		}
-		if err := CreateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
+		if err := CreateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
 	} else {
-		if err := UpdateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
+		if err := UpdateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
 	}
@@ -422,7 +423,7 @@ func (s service) Commit(ctx context.Context, model Model) (jobs.JobID, error) {
 	}
 
 	if err := model.SetStatus(Committing); err != nil {
-		return jobs.NilJobID(), errors.NewTypedError(ErrDocumentPersistence, err)
+		return jobs.NilJobID(), err
 	}
 
 	err = s.repo.Create(did[:], model.CurrentVersion(), model)
