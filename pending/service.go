@@ -3,6 +3,7 @@ package pending
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	logging "github.com/ipfs/go-log"
@@ -13,30 +14,39 @@ var srvLog = logging.Logger("pending-service")
 // Service provides an interface for functions common to all document types
 type Service interface {
 	// Commit validates, shares and anchors document
-	Commit(ctx context.Context, model documents.Model) (jobs.JobID, error)
+	Commit(ctx context.Context, docID []byte) (jobs.JobID, error)
 }
 
 // service implements Service
 type service struct {
-	docSvc documents.Service
-	// pendingRepo Repository
+	docSrv      documents.Service
+	pendingRepo Repository
 }
 
 // DefaultService returns the default implementation of the service
-func DefaultService(docSvc documents.Service) Service {
+func DefaultService(docSrv documents.Service, repo Repository) Service {
 	return service{
-		docSvc: docSvc,
+		docSrv:      docSrv,
+		pendingRepo: repo,
 	}
 }
 
 // Commit triggers validations, state change and anchor job
-func (s service) Commit(ctx context.Context, model documents.Model) (jobs.JobID, error) {
-	jobID, err := s.docSvc.Commit(ctx, model)
+func (s service) Commit(ctx context.Context, docID []byte) (jobs.JobID, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return jobs.NilJobID(), contextutil.ErrDIDMissingFromContext
+	}
+
+	model, err := s.pendingRepo.Get(accID[:], docID)
+	if err != nil {
+		return jobs.NilJobID(), documents.ErrDocumentNotFound
+	}
+
+	jobID, err := s.docSrv.Commit(ctx, model)
 	if err != nil {
 		return jobs.NilJobID(), err
 	}
 
-	// TODO Remove document from pending DB as soon as job is triggered successfully
-
-	return jobID, nil
+	return jobID, s.pendingRepo.Delete(accID[:], docID)
 }

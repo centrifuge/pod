@@ -85,6 +85,12 @@ func (m *MockService) Update(ctx context.Context, model documents.Model) (docume
 	return model, jobID, make(chan error), args.Error(2)
 }
 
+func (m *MockService) Commit(ctx context.Context, doc documents.Model) (jobs.JobID, error) {
+	args := m.Called(ctx, doc)
+	jobID, _ := args.Get(0).(jobs.JobID)
+	return jobID, args.Error(1)
+}
+
 type MockModel struct {
 	documents.Model
 	mock.Mock
