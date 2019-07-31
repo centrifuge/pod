@@ -299,7 +299,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, convertProofs(proofs))
+	render.JSON(w, r, ConvertProofs(proofs))
 }
 
 // GenerateProofsForVersion returns proofs for the fields from a specific document version.
@@ -359,5 +359,5 @@ func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, convertProofs(proofs))
+	render.JSON(w, r, ConvertProofs(proofs))
 }

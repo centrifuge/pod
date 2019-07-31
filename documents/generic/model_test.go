@@ -6,9 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"os"
-	"testing"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -19,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -33,6 +31,9 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"os"
+	"testing"
+	"time"
 )
 
 var ctx = map[string]interface{}{}
@@ -180,21 +181,26 @@ func TestAttributeProof(t *testing.T) {
 	g, _ := createCDWithEmbeddedGeneric(t)
 
 	var attrs []documents.Attribute
-	loanAmount := "loanAmount"
+	loanAmount := "loan_size"
 	loanAmountValue := "100"
 	attr0, err := documents.NewAttribute(loanAmount, documents.AttrInt256, loanAmountValue)
 	assert.NoError(t, err)
 	attrs = append(attrs, attr0)
-	asIsValue := "asIsValue"
-	asIsValueValue := "1000"
-	attr1, err := documents.NewAttribute(asIsValue, documents.AttrInt256, asIsValueValue)
+	advanceRate := "advance_rate"
+	advanceRateValue := "0.9"
+	attr1, err := documents.NewAttribute(advanceRate, documents.AttrDecimal, advanceRateValue)
 	assert.NoError(t, err)
 	attrs = append(attrs, attr1)
-	afterRehabValue := "afterRehabValue"
-	afterRehabValueValue := "2000"
-	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrInt256, afterRehabValueValue)
+	riskRating := "risk_rating"
+	riskRatingValue := "1"
+	attr2, err := documents.NewAttribute(riskRating, documents.AttrInt256, riskRatingValue)
 	assert.NoError(t, err)
 	attrs = append(attrs, attr2)
+	loanMat := "loan_maturity"
+	loanMatValue := time.Now().UTC().Format(time.RFC3339)
+	attr3, err := documents.NewAttribute(loanMat, documents.AttrTimestamp, loanMatValue)
+	assert.NoError(t, err)
+	attrs = append(attrs, attr3)
 
 	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
@@ -202,23 +208,41 @@ func TestAttributeProof(t *testing.T) {
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
 	g.AppendSignatures(sig)
-	_, err = g.CalculateDataRoot()
+
+	sigs, err := g.CalculateSignaturesRoot()
+	fmt.Println("signature root", hexutil.Encode(sigs))
+
 	assert.NoError(t, err)
 	signingRoot, err := g.CalculateSigningRoot()
+	fmt.Println("dataroot", hexutil.Encode(signingRoot))
 	assert.NoError(t, err)
+
+	tree, err := g.(*Generic).DocumentRootTree()
+	fmt.Println("roothash", hexutil.Encode(tree.RootHash()))
+
 
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
 	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
-	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
-	attributeAfterRehabVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr2.Key.String())
-	proofFields := []string{attributeLoanAmount, attributeAsIsVal, attributeAfterRehabVal, signatureSender}
+	attributeAdvRate := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
+	attributeRiskRating := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr2.Key.String())
+	attributeLoanMat := fmt.Sprintf("%s.attributes[%s].time_val", documents.CDTreePrefix, attr3.Key.String())
+	proofFields := []string{attributeLoanAmount, attributeAdvRate, attributeRiskRating,  attributeLoanMat, signatureSender}
 	proof, err := g.CreateProofs(proofFields)
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	assert.Len(t, proofFields, 4)
+	raw := coreapi.ConvertProofs(&documents.DocumentProof{
+		DocumentID:  g.ID(),
+		VersionID:   g.CurrentVersion(),
+		FieldProofs: proof,
+	})
+	fmt.Println( "docid", raw.Header.DocumentID, "version", raw.Header.VersionID)
+	for _, p := range raw.FieldProofs {
+		fmt.Println("property", p.Property, "hash", p.Hash, "salt", p.Salt, "value", p.Value, "sorted hashes", p.SortedHashes)
+	}
+	assert.Len(t, proofFields, 5)
 
 	// Validate loanAmount
 	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
@@ -234,6 +258,11 @@ func TestAttributeProof(t *testing.T) {
 	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
 	assert.NoError(t, err)
 	assert.True(t, valid)
+
+	// Validate loanMat
+	//valid, err = documents.ValidateProof(proof[3], signingRoot, sha256.New())
+	//assert.NoError(t, err)
+	//assert.True(t, valid)
 
 }
 

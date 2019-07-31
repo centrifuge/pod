@@ -239,7 +239,7 @@ type ProofsResponse struct {
 	FieldProofs []Proof             `json:"field_proofs"`
 }
 
-func convertProofs(proof *documents.DocumentProof) ProofsResponse {
+func ConvertProofs(proof *documents.DocumentProof) ProofsResponse {
 	resp := ProofsResponse{
 		Header: ProofResponseHeader{
 			DocumentID: proof.DocumentID,
