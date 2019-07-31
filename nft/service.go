@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -110,6 +111,16 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	if err != nil {
 		return mreq, err
 	}
+
+	docRoot, err := model.CalculateDocumentRoot()
+	if err != nil {
+		return mreq, err
+	}
+
+	// useful to log proof data to be passed to mint method
+	log.Debugf("\nDocumentRoot %x\nSignaturesRoot %x\nSigningRoot %x\nDocumentID %x\nCurrentVersion %x\n",
+		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
+	log.Debug(json.MarshalIndent(documents.ConvertProofs(docProofs.FieldProofs), "", "  "))
 
 	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, signingRoot, signaturesRoot, docProofs.FieldProofs)
 	if err != nil {
