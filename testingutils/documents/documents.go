@@ -91,6 +91,12 @@ func (m *MockService) Commit(ctx context.Context, doc documents.Model) (jobs.Job
 	return jobID, args.Error(1)
 }
 
+func (m *MockService) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
+	model, _ := args.Get(0).(documents.Model)
+	return model, args.Error(1)
+}
+
 type MockModel struct {
 	documents.Model
 	mock.Mock
