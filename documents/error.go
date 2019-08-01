@@ -50,6 +50,9 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
+	// ErrNotPatcher must be used if an expected patcher model is not a patcher
+	ErrNotPatcher = errors.Error("model not patcher")
+
 	// Coredoc errors
 
 	// ErrCDCreate must be used for coredoc creation/generation errors

@@ -624,6 +624,15 @@ func (i *Invoice) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Inv
 	}, nil
 }
 
+// Patch merges payload data into model
+func (i *Invoice) Patch(payload documents.UpdatePayload) (documents.Model, error) {
+	inv, err := i.unpackFromUpdatePayload(payload)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+	return inv, nil
+}
+
 // Scheme returns the invoice Scheme.
 func (i *Invoice) Scheme() string {
 	return Scheme

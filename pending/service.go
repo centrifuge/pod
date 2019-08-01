@@ -15,9 +15,6 @@ var srvLog = logging.Logger("pending-service")
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
 const ErrPendingDocumentExists = errors.Error("Pending document already created")
 
-// ErrPendingDocumentDoesNotExist is a sentinel error used when document does not exist
-const ErrPendingDocumentDoesNotExist = errors.Error("Pending document does not exist")
-
 // Service provides an interface for functions common to all document types
 type Service interface {
 
@@ -83,7 +80,12 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 		return nil, err
 	}
 
-	doc, err := s.docSrv.Patch(ctx, m, payload)
+	mp, ok := m.(documents.Patcher)
+	if !ok {
+		return nil, documents.ErrNotPatcher
+	}
+
+	doc, err := mp.Patch(payload)
 	if err != nil {
 		return nil, err
 	}

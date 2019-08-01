@@ -28,6 +28,12 @@ type DocumentProof struct {
 	FieldProofs []*proofspb.Proof
 }
 
+// Patcher interface defines a Patch method for inner Models
+type Patcher interface {
+	// Patch merges payload data into model
+	Patch(payload UpdatePayload) (Model, error)
+}
+
 // Service provides an interface for functions common to all document types
 type Service interface {
 
@@ -77,9 +83,6 @@ type Service interface {
 	// Document Data will be patched from the old and attributes and collaborators are imported
 	// If not provided, it is a fresh document.
 	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
-
-	// Patch merges payload data into model
-	Patch(ctx context.Context, model Model, payload UpdatePayload) (Model, error)
 
 	// Commit triggers validations, state change and anchor job
 	Commit(ctx context.Context, model Model) (jobs.JobID, error)
@@ -389,16 +392,6 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 	}
 
 	return srv.Derive(ctx, payload)
-}
-
-// Patch merges payload data into model
-func (s service) Patch(ctx context.Context, model Model, payload UpdatePayload) (Model, error) {
-	srv, err := s.registry.LocateService(payload.Scheme)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentSchemeUnknown, err)
-	}
-
-	return srv.Patch(ctx, model, payload)
 }
 
 // Validate takes care of document validation
