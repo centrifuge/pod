@@ -15,8 +15,14 @@ var srvLog = logging.Logger("pending-service")
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
 const ErrPendingDocumentExists = errors.Error("Pending document already created")
 
+// ErrPendingDocumentDoesNotExist is a sentinel error used when document does not exist
+const ErrPendingDocumentDoesNotExist = errors.Error("Pending document does not exist")
+
 // Service provides an interface for functions common to all document types
 type Service interface {
+
+	// Update updates a pending document from the payload
+	Update(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
 
 	// Create creates a pending document from the payload
 	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
@@ -63,6 +69,26 @@ func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (d
 	// we create one document per ID. hence, we use ID instead of current version
 	// since its common to all document versions.
 	return doc, s.pendingRepo.Create(accID[:], doc.ID(), doc)
+}
+
+// Update updates a pending document from the payload
+func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	m, err := s.pendingRepo.Get(accID[:], payload.DocumentID)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, err := s.docSrv.Patch(ctx, m, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, s.pendingRepo.Update(accID[:], doc.ID(), doc)
 }
 
 // Commit triggers validations, state change and anchor job

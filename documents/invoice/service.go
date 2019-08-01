@@ -205,6 +205,18 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	return inv, jobID, err
 }
 
+func (s service) Patch(ctx context.Context, model documents.Model, payload documents.UpdatePayload) (documents.Model, error) {
+	oldInv, ok := model.(*Invoice)
+	if !ok {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.DocumentID)))
+	}
+	inv, err := oldInv.unpackFromUpdatePayload(payload)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
+	}
+	return inv, nil
+}
+
 // Derive derives the document from the payload
 // if document_id is not nil, we prepare the next invoice version by patching the data
 // else return a fresh invoice.

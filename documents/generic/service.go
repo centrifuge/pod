@@ -150,6 +150,11 @@ func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (d
 	return nil, errors.New("not implemented")
 }
 
+// TODO
+func (s service) Patch(ctx context.Context, model documents.Model, payload documents.UpdatePayload) (documents.Model, error) {
+	return nil, errors.New("not implemented")
+}
+
 // Validate takes care of document validation
 func (s service) Validate(ctx context.Context, model documents.Model) error {
 	return nil
