@@ -38,6 +38,11 @@ func (m *mockRepo) Create(accID, id []byte, doc documents.Model) error {
 	return args.Error(0)
 }
 
+func (m *mockRepo) Update(accID, id []byte, doc documents.Model) error {
+	args := m.Called(accID, id, doc)
+	return args.Error(0)
+}
+
 func TestService_Commit(t *testing.T) {
 	s := service{}
 
@@ -115,4 +120,45 @@ func TestService_Create(t *testing.T) {
 	doc.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 	repo.AssertExpectations(t)
+}
+
+func TestService_Update(t *testing.T) {
+	s := service{}
+
+	// missing did
+	ctx := context.Background()
+	payload := documents.UpdatePayload{}
+	_, err := s.Update(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// document doesnt exist yet
+	repo := new(mockRepo)
+	repo.On("Get", did[:], payload.DocumentID).Return(nil, errors.New("not found")).Once()
+	s.pendingRepo = repo
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	_, err = s.Update(ctx, payload)
+	assert.Error(t, err)
+
+	// wrong status
+	oldModel := new(documents.MockModel)
+	oldModel.On("GetStatus").Return(documents.Committing).Once()
+	repo.On("Get", did[:], payload.DocumentID).Return(oldModel, nil).Once()
+	_, err = s.Update(ctx, payload)
+	assert.Error(t, err)
+
+	// Patch error
+	oldModel.On("GetStatus").Return(documents.Pending)
+	oldModel.On("Patch", payload).Return(nil, errors.New("error patching")).Once()
+	repo.On("Get", did[:], payload.DocumentID).Return(oldModel, nil)
+	_, err = s.Update(ctx, payload)
+	assert.Error(t, err)
+
+	// Success
+	oldModel.On("ID").Return(payload.DocumentID).Once()
+	oldModel.On("Patch", payload).Return(oldModel, nil).Once()
+	repo.On("Update", did[:], payload.DocumentID, oldModel).Return(nil).Once()
+	_, err = s.Update(ctx, payload)
+	assert.NoError(t, err)
+
 }

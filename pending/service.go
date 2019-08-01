@@ -15,6 +15,9 @@ var srvLog = logging.Logger("pending-service")
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
 const ErrPendingDocumentExists = errors.Error("Pending document already created")
 
+// ErrInProcessDocument is a sentinel error used when a document is not in pending state
+const ErrInProcessDocument = errors.Error("document is not in pending state")
+
 // Service provides an interface for functions common to all document types
 type Service interface {
 
@@ -78,6 +81,10 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 	m, err := s.pendingRepo.Get(accID[:], payload.DocumentID)
 	if err != nil {
 		return nil, err
+	}
+
+	if m.GetStatus() != documents.Pending {
+		return nil, ErrInProcessDocument
 	}
 
 	mp, ok := m.(documents.Patcher)
