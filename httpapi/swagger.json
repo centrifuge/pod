@@ -3079,29 +3079,6 @@
                 }
             }
         },
-        "coreapi.Proof": {
-            "type": "object",
-            "properties": {
-                "hash": {
-                    "type": "string"
-                },
-                "property": {
-                    "type": "string"
-                },
-                "salt": {
-                    "type": "string"
-                },
-                "sorted_hashes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "coreapi.ProofResponseHeader": {
             "type": "object",
             "properties": {
@@ -3133,7 +3110,7 @@
                 "field_proofs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/coreapi.Proof"
+                        "$ref": "#/definitions/documents.Proof"
                     }
                 },
                 "header": {
@@ -3317,6 +3294,29 @@
                 },
                 "reference": {
                     "description": "payment reference (e.g. reference field on bank transfer)",
+                    "type": "string"
+                }
+            }
+        },
+        "documents.Proof": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "property": {
+                    "type": "string"
+                },
+                "salt": {
+                    "type": "string"
+                },
+                "sorted_hashes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "value": {
                     "type": "string"
                 }
             }
