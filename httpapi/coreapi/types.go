@@ -224,51 +224,21 @@ type ProofResponseHeader struct {
 	State      string             `json:"state"`
 }
 
-// Proof represents a single proof
-type Proof struct {
-	Property     byteutils.HexBytes   `json:"property" swaggertype:"primitive,string"`
-	Value        byteutils.HexBytes   `json:"value" swaggertype:"primitive,string"`
-	Salt         byteutils.HexBytes   `json:"salt" swaggertype:"primitive,string"`
-	Hash         byteutils.HexBytes   `json:"hash" swaggertype:"primitive,string"`
-	SortedHashes []byteutils.HexBytes `json:"sorted_hashes" swaggertype:"array,string"`
-}
-
 // ProofsResponse holds the proofs for the fields given for a document.
 type ProofsResponse struct {
 	Header      ProofResponseHeader `json:"header"`
-	FieldProofs []Proof             `json:"field_proofs"`
+	FieldProofs []documents.Proof   `json:"field_proofs"`
 }
 
 func convertProofs(proof *documents.DocumentProof) ProofsResponse {
-	resp := ProofsResponse{
+	return ProofsResponse{
 		Header: ProofResponseHeader{
 			DocumentID: proof.DocumentID,
 			VersionID:  proof.VersionID,
 			State:      proof.State,
 		},
+		FieldProofs: documents.ConvertProofs(proof.FieldProofs),
 	}
-
-	var proofs []Proof
-	for _, pf := range proof.FieldProofs {
-		pff := Proof{
-			Value:    pf.Value,
-			Hash:     pf.Hash,
-			Salt:     pf.Salt,
-			Property: pf.GetCompactName(),
-		}
-
-		var hashes []byteutils.HexBytes
-		for _, h := range pf.SortedHashes {
-			h := h
-			hashes = append(hashes, h)
-		}
-
-		pff.SortedHashes = hashes
-		proofs = append(proofs, pff)
-	}
-
-	resp.FieldProofs = proofs
-	return resp
 }
 
 // MintNFTRequest holds required fields for minting NFT
