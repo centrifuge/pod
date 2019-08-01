@@ -35,7 +35,7 @@ func (m *mockModel) Scheme() string {
 	return args.String(0)
 }
 
-func (m *mockModel) SetStatus(st status) error {
+func (m *mockModel) SetStatus(st Status) error {
 	args := m.Called(st)
 	return args.Error(0)
 }

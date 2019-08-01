@@ -116,3 +116,35 @@ func TestService_Create(t *testing.T) {
 	docSrv.AssertExpectations(t)
 	repo.AssertExpectations(t)
 }
+
+func TestService_Get(t *testing.T) {
+	// not pending document
+	st := documents.Committed
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", docID).Return(new(documents.MockModel), nil).Once()
+	s.docSrv = docSrv
+	doc, err := s.Get(ctx, docID, st)
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+
+	// pending doc
+	// missing did from context
+	st = documents.Pending
+	_, err = s.Get(ctx, docID, st)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// success
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(doc, nil).Once()
+	s.pendingRepo = repo
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	gdoc, err := s.Get(ctx, docID, st)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, gdoc)
+	docSrv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}

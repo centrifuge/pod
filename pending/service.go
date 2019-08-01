@@ -17,6 +17,8 @@ const ErrPendingDocumentExists = errors.Error("Pending document already created"
 
 // Service provides an interface for functions common to all document types
 type Service interface {
+	// Get returns the document associated with docID and Status.
+	Get(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error)
 
 	// Create creates a pending document from the payload
 	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
@@ -37,6 +39,22 @@ func DefaultService(docSrv documents.Service, repo Repository) Service {
 		docSrv:      docSrv,
 		pendingRepo: repo,
 	}
+}
+
+// Get returns the document associated with docID
+// If status is pending, we return the pending document from pending repo.
+// else, we defer Get to document service.
+func (s service) Get(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error) {
+	if status != documents.Pending {
+		return s.docSrv.GetCurrentVersion(ctx, docID)
+	}
+
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	return s.pendingRepo.Get(did[:], docID)
 }
 
 // Create creates either a new document or next version of an anchored document and stores the document.

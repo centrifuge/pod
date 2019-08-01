@@ -129,12 +129,12 @@ func (m *MockModel) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool
 	return args.Error(0)
 }
 
-func (m *MockModel) GetStatus() status {
+func (m *MockModel) GetStatus() Status {
 	args := m.Called()
-	return args.Get(0).(status)
+	return args.Get(0).(Status)
 }
 
-func (m *MockModel) SetStatus(st status) error {
+func (m *MockModel) SetStatus(st Status) error {
 	args := m.Called(st)
 	return args.Error(0)
 }

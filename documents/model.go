@@ -149,10 +149,10 @@ type Model interface {
 	GetData() interface{}
 
 	// GetStatus returns the status of the document.
-	GetStatus() status
+	GetStatus() Status
 
 	// SetStatus set the status of the document.
-	SetStatus(st status) error
+	SetStatus(st Status) error
 }
 
 // TokenRegistry defines NFT related functions.
