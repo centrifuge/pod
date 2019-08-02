@@ -274,6 +274,64 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c4[:])
 }
 
+func TestCoreDocument_Patch(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	// not in allowed status error
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+	ncd, err := cd.Patch(nil, CollaboratorsAccess{}, nil)
+	assert.Error(t, err)
+	assert.Nil(t, ncd)
+
+	cd, err = newCoreDocument()
+	assert.NoError(t, err)
+	h := sha256.New()
+	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
+	var expectedCurrentVersion []byte
+	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
+	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
+	c1 := testingidentity.GenerateRandomDID()
+	c2 := testingidentity.GenerateRandomDID()
+	attr, err := NewAttribute("test", AttrString, "value")
+	assert.NoError(t, err)
+	attrs := map[AttrKey]Attribute{
+		attr.Key: attr,
+	}
+
+	ncd, err = cd.Patch(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
+	assert.Equal(t, cd.NextVersion(), ncd.NextVersion())
+	collabs, err := ncd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, collabs.ReadCollaborators, 2)
+	assert.Equal(t, c1, collabs.ReadCollaborators[0])
+	assert.Len(t, ncd.Attributes, 1)
+	assert.Equal(t, ncd.Attributes[attr.Key].Value, attr.Value)
+
+	// Override existing collaborators and attribute
+	c3 := testingidentity.GenerateRandomDID()
+	attr, err = NewAttribute("test1", AttrString, "value1")
+	assert.NoError(t, err)
+	attrs = map[AttrKey]Attribute{
+		attr.Key: attr,
+	}
+	oncd, err := ncd.Patch(nil, CollaboratorsAccess{[]identity.DID{c3}, nil}, attrs)
+	assert.NoError(t, err)
+	assert.NotNil(t, oncd)
+	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
+	assert.Equal(t, cd.NextVersion(), ncd.NextVersion())
+	collabs, err = oncd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, collabs.ReadCollaborators, 1)
+	assert.Equal(t, c3, collabs.ReadCollaborators[0])
+	assert.Len(t, oncd.Attributes, 1)
+	assert.Equal(t, oncd.Attributes[attr.Key].Value, attr.Value)
+}
+
 func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
 	did1 := testingidentity.GenerateRandomDID()
 	did2 := testingidentity.GenerateRandomDID()

@@ -667,3 +667,31 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	assert.Len(t, old.Data.Attachments, 0)
 	assert.Len(t, inv.Data.Attachments, 1)
 }
+
+func TestInvoice_Patch(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	inv, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
+
+	// invalid data
+	payload.Data = invalidDecimalData(t)
+	err := inv.Patch(payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
+
+	// valid
+	payload.Data = validData(t)
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttrString
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	err = inv.Patch(payload)
+	assert.NoError(t, err)
+	assert.Equal(t, inv.Data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	collabs, err := inv.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, collabs.ReadWriteCollaborators, 0)
+}

@@ -288,6 +288,11 @@ func (e *EntityRelationship) unpackFromCreatePayload(ctx context.Context, payloa
 	return nil
 }
 
+// Patch merges payload data into model
+func (e *EntityRelationship) Patch(payload documents.UpdatePayload) error {
+	return documents.ErrNotImplemented
+}
+
 // revokeRelationship revokes a relationship by deleting the access token in the Entity
 func (e *EntityRelationship) revokeRelationship(old *EntityRelationship, grantee identity.DID) error {
 	e.Data = old.Data

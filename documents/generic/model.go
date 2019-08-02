@@ -290,6 +290,11 @@ func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.Update
 	return nil
 }
 
+// Patch merges payload data into model
+func (g *Generic) Patch(payload documents.UpdatePayload) error {
+	return documents.ErrNotImplemented
+}
+
 // Scheme returns the invoice Scheme.
 func (g *Generic) Scheme() string {
 	return Scheme
