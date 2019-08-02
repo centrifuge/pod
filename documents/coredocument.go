@@ -241,8 +241,8 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	cd.Modified = true
 }
 
-// PrepareNewData overrides only core document data without provisioning new versions since for document updates
-func (cd *CoreDocument) PrepareNewData(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
+// Patch overrides only core document data without provisioning new versions since for document updates
+func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		CurrentVersion:     cd.Document.CurrentVersion,

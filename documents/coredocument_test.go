@@ -274,7 +274,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c4[:])
 }
 
-func TestCoreDocument_PrepareNewData(t *testing.T) {
+func TestCoreDocument_Patch(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	h := sha256.New()
@@ -289,7 +289,7 @@ func TestCoreDocument_PrepareNewData(t *testing.T) {
 	attrs := map[AttrKey]Attribute{
 		attr.Key: attr,
 	}
-	ncd, err := cd.PrepareNewData(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
+	ncd, err := cd.Patch(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
@@ -308,7 +308,7 @@ func TestCoreDocument_PrepareNewData(t *testing.T) {
 	attrs = map[AttrKey]Attribute{
 		attr.Key: attr,
 	}
-	oncd, err := ncd.PrepareNewData(nil, CollaboratorsAccess{[]identity.DID{c3}, nil}, attrs)
+	oncd, err := ncd.Patch(nil, CollaboratorsAccess{[]identity.DID{c3}, nil}, attrs)
 	assert.NoError(t, err)
 	assert.NotNil(t, oncd)
 	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())

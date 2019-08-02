@@ -641,7 +641,7 @@ func (i *Invoice) Patch(payload documents.UpdatePayload) error {
 		return err
 	}
 
-	ncd, err := i.CoreDocument.PrepareNewData(compactPrefix(), payload.Collaborators, payload.Attributes)
+	ncd, err := i.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return err
 	}
