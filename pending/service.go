@@ -21,6 +21,9 @@ type Service interface {
 	// Get returns the document associated with docID and Status.
 	Get(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error)
 
+	// GetVersion returns the document associated with docID and versionID.
+	GetVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error)
+
 	// Create creates a pending document from the payload
 	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
 
