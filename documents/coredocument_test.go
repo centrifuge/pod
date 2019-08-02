@@ -277,6 +277,16 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 func TestCoreDocument_Patch(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
+
+	// not in allowed status error
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+	ncd, err := cd.Patch(nil, CollaboratorsAccess{}, nil)
+	assert.Error(t, err)
+	assert.Nil(t, ncd)
+
+	cd, err = newCoreDocument()
+	assert.NoError(t, err)
 	h := sha256.New()
 	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
 	var expectedCurrentVersion []byte
@@ -289,7 +299,8 @@ func TestCoreDocument_Patch(t *testing.T) {
 	attrs := map[AttrKey]Attribute{
 		attr.Key: attr,
 	}
-	ncd, err := cd.Patch(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
+
+	ncd, err = cd.Patch(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
 	assert.NoError(t, err)
 	assert.NotNil(t, ncd)
 	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())

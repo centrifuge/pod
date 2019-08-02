@@ -243,6 +243,10 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 
 // Patch overrides only core document data without provisioning new versions since for document updates
 func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
+	if cd.Status == Committing || cd.Status == Committed {
+		return nil, ErrDocumentNotInAllowedState
+	}
+
 	cdp := coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		CurrentVersion:     cd.Document.CurrentVersion,

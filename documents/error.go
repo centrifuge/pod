@@ -50,8 +50,8 @@ const (
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
-	// ErrNotPatcher must be used if an expected patcher model is not a patcher
-	ErrNotPatcher = errors.Error("model not patcher")
+	// ErrNotPatcher must be used if an expected patcher model does not support patching
+	ErrNotPatcher = errors.Error("document doesn't support patching")
 
 	// Coredoc errors
 
@@ -69,6 +69,9 @@ const (
 
 	// ErrCDStatus is a sentinel error used when status is being chnaged from Committed to anything else.
 	ErrCDStatus = errors.Error("cannot change the status of a committed document")
+
+	// ErrDocumentNotInAllowedState is a sentinel error used when a document is not in allowed state for certain op
+	ErrDocumentNotInAllowedState = errors.Error("document is not in allowed state")
 
 	// Read ACL errors
 
