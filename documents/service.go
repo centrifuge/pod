@@ -28,6 +28,12 @@ type DocumentProof struct {
 	FieldProofs []*proofspb.Proof
 }
 
+// Patcher interface defines a Patch method for inner Models
+type Patcher interface {
+	// Patch merges payload data into model
+	Patch(payload UpdatePayload) error
+}
+
 // Service provides an interface for functions common to all document types
 type Service interface {
 

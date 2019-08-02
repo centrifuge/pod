@@ -240,6 +240,45 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	cd.Modified = true
 }
 
+// Patch overrides only core document data without provisioning new versions since for document updates
+func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
+	if cd.Status == Committing || cd.Status == Committed {
+		return nil, ErrDocumentNotInAllowedState
+	}
+
+	cdp := coredocumentpb.CoreDocument{
+		DocumentIdentifier: cd.Document.DocumentIdentifier,
+		CurrentVersion:     cd.Document.CurrentVersion,
+		PreviousVersion:    cd.Document.PreviousVersion,
+		NextVersion:        cd.Document.NextVersion,
+		CurrentPreimage:    cd.Document.CurrentPreimage,
+		NextPreimage:       cd.Document.NextPreimage,
+		Nfts:               cd.Document.Nfts,
+		AccessTokens:       cd.Document.AccessTokens,
+		SignatureData:      new(coredocumentpb.SignatureData),
+	}
+	// TODO convert it back to override when we have implemented add/delete for collaborators in API
+	// for now it always overrides
+	rcs := collaborators.ReadCollaborators
+	wcs := collaborators.ReadWriteCollaborators
+	rcs = append(rcs, wcs...)
+
+	ncd := &CoreDocument{Document: cdp}
+	ncd.addCollaboratorsToReadSignRules(rcs)
+	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
+	// TODO convert it back to override when we have implemented add/delete for attributes in API
+	// for now it always overrides
+	p2pAttrs, attrs, err := updateAttributes(nil, attrs)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
+	}
+
+	ncd.Document.Attributes = p2pAttrs
+	ncd.Attributes = attrs
+	ncd.Modified = true
+	return ncd, nil
+}
+
 // PrepareNewVersion prepares the next version of the CoreDocument
 // if initSalts is true, salts will be generated for new version.
 func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
@@ -282,7 +321,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	return ncd, nil
 }
 
-// updateAttributes updates the p2p attributes with new ones and returns the both the formats
+// updateAttributes updates the p2p attributes with new ones and returns both formats
 func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey]Attribute) ([]*coredocumentpb.Attribute, map[AttrKey]Attribute, error) {
 	oldAttrsMap, err := fromProtocolAttributes(oldAttrs)
 	if err != nil {

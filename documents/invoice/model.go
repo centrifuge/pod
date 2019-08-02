@@ -601,16 +601,11 @@ func (i *Invoice) unpackFromUpdatePayloadOld(old *Invoice, payload documents.Upd
 	return nil
 }
 
-// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
+// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
 func (i *Invoice) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Invoice, error) {
-	var d Data
-	err := copier.Copy(&d, &i.Data)
+	d, err := i.patch(payload)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := loadData(payload.Data, &d); err != nil {
-		return nil, errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
 	ncd, err := i.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
@@ -622,6 +617,38 @@ func (i *Invoice) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Inv
 		Data:         d,
 		CoreDocument: ncd,
 	}, nil
+}
+
+// patch merges payload into model data
+func (i *Invoice) patch(payload documents.UpdatePayload) (Data, error) {
+	var d Data
+	err := copier.Copy(&d, &i.Data)
+	if err != nil {
+		return d, err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return Data{}, errors.NewTypedError(ErrInvoiceInvalidData, err)
+	}
+
+	return d, nil
+}
+
+// Patch merges payload data into model
+func (i *Invoice) Patch(payload documents.UpdatePayload) error {
+	d, err := i.patch(payload)
+	if err != nil {
+		return err
+	}
+
+	ncd, err := i.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	i.Data = d
+	i.CoreDocument = ncd
+	return nil
 }
 
 // Scheme returns the invoice Scheme.

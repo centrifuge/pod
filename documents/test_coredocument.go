@@ -138,3 +138,8 @@ func (m *MockModel) SetStatus(st Status) error {
 	args := m.Called(st)
 	return args.Error(0)
 }
+
+func (m *MockModel) Patch(payload UpdatePayload) error {
+	args := m.Called(payload)
+	return args.Error(0)
+}
