@@ -83,20 +83,16 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 		return nil, err
 	}
 
-	if m.GetStatus() != documents.Pending {
-		return nil, ErrInProcessDocument
-	}
-
 	mp, ok := m.(documents.Patcher)
 	if !ok {
 		return nil, documents.ErrNotPatcher
 	}
 
-	doc, err := mp.Patch(payload)
+	err = mp.Patch(payload)
 	if err != nil {
 		return nil, err
 	}
-
+	doc := mp.(documents.Model)
 	return doc, s.pendingRepo.Update(accID[:], doc.ID(), doc)
 }
 

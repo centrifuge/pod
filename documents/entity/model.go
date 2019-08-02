@@ -432,8 +432,8 @@ func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePa
 }
 
 // Patch merges payload data into model
-func (e *Entity) Patch(payload documents.UpdatePayload) (documents.Model, error) {
-	return nil, documents.ErrNotImplemented
+func (e *Entity) Patch(payload documents.UpdatePayload) error {
+	return documents.ErrNotImplemented
 }
 
 // Scheme returns the entity scheme.

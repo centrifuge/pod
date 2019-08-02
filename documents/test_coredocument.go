@@ -139,8 +139,7 @@ func (m *MockModel) SetStatus(st status) error {
 	return args.Error(0)
 }
 
-func (m *MockModel) Patch(payload UpdatePayload) (Model, error) {
+func (m *MockModel) Patch(payload UpdatePayload) error {
 	args := m.Called(payload)
-	md, _ := args.Get(0).(Model)
-	return md, args.Error(1)
+	return args.Error(0)
 }

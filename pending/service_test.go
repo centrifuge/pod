@@ -140,23 +140,16 @@ func TestService_Update(t *testing.T) {
 	_, err = s.Update(ctx, payload)
 	assert.Error(t, err)
 
-	// wrong status
-	oldModel := new(documents.MockModel)
-	oldModel.On("GetStatus").Return(documents.Committing).Once()
-	repo.On("Get", did[:], payload.DocumentID).Return(oldModel, nil).Once()
-	_, err = s.Update(ctx, payload)
-	assert.Error(t, err)
-
 	// Patch error
-	oldModel.On("GetStatus").Return(documents.Pending)
-	oldModel.On("Patch", payload).Return(nil, errors.New("error patching")).Once()
+	oldModel := new(documents.MockModel)
+	oldModel.On("Patch", payload).Return(errors.New("error patching")).Once()
 	repo.On("Get", did[:], payload.DocumentID).Return(oldModel, nil)
 	_, err = s.Update(ctx, payload)
 	assert.Error(t, err)
 
 	// Success
 	oldModel.On("ID").Return(payload.DocumentID).Once()
-	oldModel.On("Patch", payload).Return(oldModel, nil).Once()
+	oldModel.On("Patch", payload).Return(nil).Once()
 	repo.On("Update", did[:], payload.DocumentID, oldModel).Return(nil).Once()
 	_, err = s.Update(ctx, payload)
 	assert.NoError(t, err)

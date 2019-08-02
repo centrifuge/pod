@@ -670,13 +670,13 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 
 func TestInvoice_Patch(t *testing.T) {
 	payload := documents.UpdatePayload{}
-	old, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
+	inv, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 
 	// invalid data
 	payload.Data = invalidDecimalData(t)
-	_, err := old.Patch(payload)
+	err := inv.Patch(payload)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
+	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
 	// valid
 	payload.Data = validData(t)
@@ -688,9 +688,10 @@ func TestInvoice_Patch(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	inv, err := old.unpackFromUpdatePayload(payload)
+	err = inv.Patch(payload)
 	assert.NoError(t, err)
-	assert.NotEqual(t, inv.Data, old.Data)
 	assert.Equal(t, inv.Data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-	assert.Equal(t, old.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	collabs, err := inv.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, collabs.ReadWriteCollaborators, 0)
 }
