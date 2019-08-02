@@ -122,6 +122,78 @@ func TestService_Create(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+func TestService_Get(t *testing.T) {
+	// not pending document
+	st := documents.Committed
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetCurrentVersion", docID).Return(new(documents.MockModel), nil).Once()
+	s.docSrv = docSrv
+	doc, err := s.Get(ctx, docID, st)
+	assert.NoError(t, err)
+	assert.NotNil(t, doc)
+
+	// pending doc
+	// missing did from context
+	st = documents.Pending
+	_, err = s.Get(ctx, docID, st)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// success
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(doc, nil).Once()
+	s.pendingRepo = repo
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	gdoc, err := s.Get(ctx, docID, st)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, gdoc)
+	docSrv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}
+
+func TestService_GetVersion(t *testing.T) {
+	// found in docService
+	doc := new(documents.MockModel)
+	docID, versionID := utils.RandomSlice(32), utils.RandomSlice(32)
+	s := service{}
+	ctx := context.Background()
+	docSrv := new(testingdocuments.MockService)
+	docSrv.On("GetVersion", docID, versionID).Return(doc, nil).Once()
+	s.docSrv = docSrv
+	gdoc, err := s.GetVersion(ctx, docID, versionID)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, gdoc)
+
+	// not found in docService
+	// ctx with no did
+	docSrv.On("GetVersion", docID, versionID).Return(nil, documents.ErrDocumentNotFound)
+	_, err = s.GetVersion(ctx, docID, versionID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// different current version
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(doc, nil)
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	s.pendingRepo = repo
+	_, err = s.GetVersion(ctx, docID, versionID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// successful retrieval
+	doc.On("CurrentVersion").Return(versionID).Once()
+	gdoc, err = s.GetVersion(ctx, docID, versionID)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, gdoc)
+	docSrv.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}
+
 func TestService_Update(t *testing.T) {
 	s := service{}
 
@@ -153,5 +225,4 @@ func TestService_Update(t *testing.T) {
 	repo.On("Update", did[:], payload.DocumentID, oldModel).Return(nil).Once()
 	_, err = s.Update(ctx, payload)
 	assert.NoError(t, err)
-
 }

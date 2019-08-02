@@ -55,17 +55,17 @@ const (
 	SignaturesTreePrefix = "signatures_tree"
 
 	// Pending status represents document is in pending state
-	Pending status = "pending"
+	Pending Status = "pending"
 
 	// Committing status represents document is being committed.
-	Committing status = "committing"
+	Committing Status = "committing"
 
 	// Committed status represents document is committed/anchored.
-	Committed status = "committed"
+	Committed Status = "committed"
 )
 
-// status represents the document status.
-type status string
+// Status represents the document status.
+type Status string
 
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
@@ -102,7 +102,7 @@ type CoreDocument struct {
 	Attributes map[AttrKey]Attribute
 
 	// Status represents document status.
-	Status status
+	Status Status
 
 	Document coredocumentpb.CoreDocument
 }
@@ -216,14 +216,13 @@ func (cd *CoreDocument) NextVersion() []byte {
 }
 
 // GetStatus returns document status
-// nolint
-func (cd *CoreDocument) GetStatus() status {
+func (cd *CoreDocument) GetStatus() Status {
 	return cd.Status
 }
 
 // SetStatus set the status of the document.
 // if the document is already committed, returns an error if set status is called.
-func (cd *CoreDocument) SetStatus(st status) error {
+func (cd *CoreDocument) SetStatus(st Status) error {
 	if cd.Status == Committed && st != Committed {
 		return ErrCDStatus
 	}
