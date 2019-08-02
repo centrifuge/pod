@@ -1,6 +1,7 @@
 package pending
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -55,6 +56,28 @@ func (s service) Get(ctx context.Context, docID []byte, status documents.Status)
 	}
 
 	return s.pendingRepo.Get(did[:], docID)
+}
+
+// GetVersion return the specific version of the document
+// We try to fetch the version from the document service, if found return
+// else look in pending repo for specific version.
+func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+	doc, err := s.docSrv.GetVersion(ctx, docID, versionID)
+	if err == nil {
+		return doc, nil
+	}
+
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err = s.pendingRepo.Get(accID[:], docID)
+	if err != nil || !bytes.Equal(versionID, doc.CurrentVersion()) {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	return doc, nil
 }
 
 // Create creates either a new document or next version of an anchored document and stores the document.
