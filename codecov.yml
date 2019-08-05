@@ -5,5 +5,7 @@ ignore:
   - nft/invoice_unpaid_contract.go
   - documents/entity/test_entity.go
   - documents/invoice/test_invoice.go
+  - pending/test_pending.go
+  - httpapi/v2/test_v2.go
   - migrations/files/*
   - testworld/*

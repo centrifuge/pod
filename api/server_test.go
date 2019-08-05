@@ -24,10 +24,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/stretchr/testify/assert"
@@ -51,6 +53,7 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
+		pending.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
@@ -64,6 +67,7 @@ func TestMain(m *testing.M) {
 		funding.Bootstrapper{},
 		transferdetails.Bootstrapper{},
 		userapi.Bootstrapper{},
+		v2.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 

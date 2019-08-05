@@ -307,7 +307,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
-	ncd := &CoreDocument{Document: cdp}
+	ncd := &CoreDocument{Document: cdp, Status: Pending}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)

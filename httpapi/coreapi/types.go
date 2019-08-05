@@ -64,6 +64,7 @@ type ResponseHeader struct {
 	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
 	JobID       string         `json:"job_id,omitempty"`
 	NFTs        []NFT          `json:"nfts"`
+	Status      string         `json:"status,omitempty"`
 }
 
 // DocumentResponse is the common response for Document APIs.
