@@ -266,18 +266,12 @@ func updateDocument(e *httpexpect.Expect, auth string, documentType string, stat
 
 func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 	docIdentifier := response.Value("header").Path("$.document_id").String().NotEmpty().Raw()
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
 	return docIdentifier
 }
 
 func getDocumentStatus(t *testing.T, response *httpexpect.Object) string {
-	docIdentifier := response.Value("header").Path("$.status").String().NotEmpty().Raw()
-	if docIdentifier == "" {
-		t.Error("status is empty")
-	}
-	return docIdentifier
+	status := response.Value("header").Path("$.status").String().NotEmpty().Raw()
+	return status
 }
 
 func getAgreementId(t *testing.T, response *httpexpect.Object) string {
