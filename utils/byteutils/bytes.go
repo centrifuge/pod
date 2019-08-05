@@ -153,3 +153,27 @@ func (h HexBytes) Bytes() []byte {
 	copy(d, h[:])
 	return d
 }
+
+// OptionalHex can have empty hex string and doesn't error.
+type OptionalHex struct {
+	HexBytes
+}
+
+// UnmarshalJSON unmarshalls hex encoded string to bytes.
+// if the data is an empty string, it decoded value is empty bytes.
+func (o *OptionalHex) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	str = strings.TrimSpace(strings.Trim(str, "\""))
+	if str == "" {
+		o.HexBytes = nil
+		return nil
+	}
+
+	d, err := hexutil.Decode(str)
+	if err != nil {
+		return err
+	}
+
+	*o = OptionalHex{HexBytes(d)}
+	return nil
+}

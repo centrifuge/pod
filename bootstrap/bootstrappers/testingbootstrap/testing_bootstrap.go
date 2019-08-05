@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -54,6 +55,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	funding.Bootstrapper{},
 	transferdetails.Bootstrapper{},
 	userapi.Bootstrapper{},
+	v2.Bootstrapper{},
 	&queue.Starter{},
 }
 

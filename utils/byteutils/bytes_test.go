@@ -389,3 +389,48 @@ func TestHexBytes_UnmarshalJSON(t *testing.T) {
 		assert.Equal(t, hexutil.Encode(c.d), th.Hex.String())
 	}
 }
+
+func TestOptionalHex_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		str string
+		d   []byte
+		err bool
+	}{
+		// nil
+		{str: "{}"},
+
+		// empty
+		{str: `{"hex": ""}`},
+
+		// invalid
+		{str: `{"hex": "12345dswr"}`, err: true},
+
+		// valid
+		{str: `{"hex": "0x"}`},
+
+		// valid
+		{str: `{"hex": "0xde0a3a82af"}`, d: []byte{222, 10, 58, 130, 175}},
+	}
+
+	type testHex struct {
+		Hex OptionalHex `json:"hex"`
+	}
+
+	for _, c := range tests {
+		th := new(testHex)
+		err := json.Unmarshal([]byte(c.str), th)
+		if c.err {
+			assert.Error(t, err)
+			continue
+		}
+
+		assert.NoError(t, err)
+		assert.Equal(t, len(c.d), len(th.Hex.Bytes()))
+		if len(c.d) < 1 {
+			continue
+		}
+
+		assert.Equal(t, c.d, th.Hex.Bytes())
+		assert.Equal(t, hexutil.Encode(c.d), th.Hex.String())
+	}
+}

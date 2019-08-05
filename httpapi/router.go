@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/health"
 	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
@@ -65,6 +66,11 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	// beta apis
 	r.Route("/beta", func(r chi.Router) {
 		userapi.RegisterBeta(cctx, r)
+	})
+
+	// v2 apis
+	r.Route("/v2", func(r chi.Router) {
+		v2.Register(cctx, r)
 	})
 
 	return r, nil
