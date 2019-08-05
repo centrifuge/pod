@@ -202,6 +202,13 @@ func createDocument(e *httpexpect.Expect, auth string, documentType string, stat
 	return obj
 }
 
+func createDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/v2/"+documentType), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, docID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docID), auth).
 		WithJSON(payload).
@@ -261,6 +268,14 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 	docIdentifier := response.Value("header").Path("$.document_id").String().NotEmpty().Raw()
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
+	}
+	return docIdentifier
+}
+
+func getDocumentStatus(t *testing.T, response *httpexpect.Object) string {
+	docIdentifier := response.Value("header").Path("$.status").String().NotEmpty().Raw()
+	if docIdentifier == "" {
+		t.Error("status is empty")
 	}
 	return docIdentifier
 }

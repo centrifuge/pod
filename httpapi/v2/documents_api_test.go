@@ -143,9 +143,11 @@ func TestHandler_CreateDocument(t *testing.T) {
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.CreateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Contains(t, w.Body.String(), "\"status\":\"pending\"")
 	pendingSrv.AssertExpectations(t)
 	doc.AssertExpectations(t)
 }

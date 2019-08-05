@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/jobs"
 )
 
 func toDocumentsPayload(req CreateDocumentRequest) (payload documents.UpdatePayload, err error) {
@@ -16,6 +17,16 @@ func toDocumentsPayload(req CreateDocumentRequest) (payload documents.UpdatePayl
 	}
 
 	return documents.UpdatePayload{CreatePayload: cp, DocumentID: req.DocumentID.Bytes()}, nil
+}
+
+func toDocumentResponse(doc documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (coreapi.DocumentResponse, error) {
+	resp, err := coreapi.GetDocumentResponse(doc, tokenRegistry, jobID)
+	if err != nil {
+		return resp, err
+	}
+
+	resp.Header.Status = string(doc.GetStatus())
+	return resp, err
 }
 
 // unmarshalBody unmarshals req.Body to val.

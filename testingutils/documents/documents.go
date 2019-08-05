@@ -209,6 +209,12 @@ func (m *MockModel) AddAttributes(ca documents.CollaboratorsAccess, prepareNewVe
 	return args.Error(0)
 }
 
+func (m *MockModel) GetStatus() documents.Status {
+	args := m.Called()
+	st, _ := args.Get(0).(documents.Status)
+	return st
+}
+
 type MockRegistry struct {
 	mock.Mock
 }

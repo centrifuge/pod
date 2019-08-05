@@ -62,7 +62,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := coreapi.GetDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
