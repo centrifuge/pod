@@ -13,7 +13,7 @@ func TestV2DocumentCreate_new_document(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// Alice shares document with Bob
+	// Alice prepares document to share with Bob
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
@@ -50,4 +50,29 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 
 	// alice should not have this version
 	nonExistingDocumentVersionCheck(alice.httpExpect, alice.id.String(), "documents", params)
+}
+
+func TestV2DocumentCommit_new_document(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	// Alice prepares document to share with Bob
+	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
+	status := getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+	docID := getDocumentIdentifier(t, res)
+	assert.NotEmpty(t, docID)
+
+	// Commits document and shares with Bob
+	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, docID)
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	assert.Equal(t, status, "success", message)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+
+	// Bob should have the document
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+
+	// try to commit same document again - failure
+	commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusBadRequest, docID)
 }

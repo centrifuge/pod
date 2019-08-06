@@ -88,7 +88,7 @@ type Service interface {
 	Commit(ctx context.Context, model Model) (jobs.JobID, error)
 
 	// Validate takes care of document validation
-	Validate(ctx context.Context, model Model) error
+	Validate(ctx context.Context, model Model, old Model) error
 }
 
 // service implements Service
@@ -395,26 +395,25 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 }
 
 // Validate takes care of document validation
-func (s service) Validate(ctx context.Context, model Model) error {
+func (s service) Validate(ctx context.Context, model Model, old Model) error {
 	srv, err := s.registry.LocateService(model.Scheme())
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentSchemeUnknown, err)
 	}
 
-	if old, err := s.GetCurrentVersion(ctx, model.ID()); err != nil {
-		if !errors.IsOfType(ErrDocumentVersionNotFound, err) {
-			return err
-		}
-		if err := CreateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
-			return errors.NewTypedError(ErrDocumentValidation, err)
-		}
-	} else {
+	// If old version provided
+	if old != nil {
 		if err := UpdateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
+	} else {
+		if err := CreateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
+			return errors.NewTypedError(ErrDocumentValidation, err)
+		}
 	}
+
 	// Run document specific validations if any
-	return srv.Validate(ctx, model)
+	return srv.Validate(ctx, model, old)
 }
 
 // Commit triggers validations, state change and anchor job
@@ -424,7 +423,13 @@ func (s service) Commit(ctx context.Context, model Model) (jobs.JobID, error) {
 		return jobs.NilJobID(), ErrDocumentConfigAccountID
 	}
 
-	if err := s.Validate(ctx, model); err != nil {
+	// Get latest committed version
+	old, err := s.GetCurrentVersion(ctx, model.ID())
+	if err != nil && !errors.IsOfType(ErrDocumentNotFound, err) {
+		return jobs.NilJobID(), err
+	}
+
+	if err := s.Validate(ctx, model, old); err != nil {
 		return jobs.NilJobID(), errors.NewTypedError(ErrDocumentValidation, err)
 	}
 
