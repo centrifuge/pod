@@ -82,7 +82,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @tags Documents
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
-// @param body body v2.CreateDocumentRequest true "Document Create request"
+// @param document_id path string true "Document Identifier"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
