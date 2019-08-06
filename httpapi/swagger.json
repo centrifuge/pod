@@ -2856,8 +2856,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"

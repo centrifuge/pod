@@ -5,9 +5,8 @@ package pending
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/jobs"
-
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/stretchr/testify/mock"
 )
 
