@@ -33,7 +33,6 @@ before_install:
 
 install:
   - mkdir -p ~/bin
-  - go get -u github.com/kyoh86/richgo
   - make install
 
 jobs:
