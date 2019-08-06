@@ -209,6 +209,19 @@ func createDocumentV2(e *httpexpect.Expect, auth string, documentType string, st
 	return obj
 }
 
+func updateDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PATCH("/v2/"+documentType+"/"+payload["document_id"].(string)), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func checkDocumentParams(obj *httpexpect.Object, params map[string]string) {
+	for k, v := range params {
+		obj.Path("$.data." + k).String().Equal(v)
+	}
+}
+
 func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, docID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docID), auth).
 		WithJSON(payload).
