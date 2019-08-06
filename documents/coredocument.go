@@ -263,7 +263,7 @@ func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators Collaborators
 	wcs := collaborators.ReadWriteCollaborators
 	rcs = append(rcs, wcs...)
 
-	ncd := &CoreDocument{Document: cdp}
+	ncd := &CoreDocument{Document: cdp, Status: Pending}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	// TODO convert it back to override when we have implemented add/delete for attributes in API

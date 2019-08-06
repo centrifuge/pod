@@ -10,13 +10,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 )
 
-func toDocumentsPayload(req CreateDocumentRequest) (payload documents.UpdatePayload, err error) {
-	cp, err := coreapi.ToDocumentsCreatePayload(req.DocumentRequest)
+func toDocumentsPayload(req DocumentRequest, docID []byte) (payload documents.UpdatePayload, err error) {
+	cp, err := coreapi.ToDocumentsCreatePayload(req)
 	if err != nil {
 		return payload, err
 	}
 
-	return documents.UpdatePayload{CreatePayload: cp, DocumentID: req.DocumentID.Bytes()}, nil
+	return documents.UpdatePayload{CreatePayload: cp, DocumentID: docID}, nil
 }
 
 func toDocumentResponse(doc documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (coreapi.DocumentResponse, error) {

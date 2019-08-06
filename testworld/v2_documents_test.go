@@ -17,6 +17,29 @@ func TestV2DocumentCreate_new_document(t *testing.T) {
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
+	params := map[string]string{
+		"currency": "EUR",
+		"number":   "12345",
+	}
+	checkDocumentParams(res, params)
+	docID := getDocumentIdentifier(t, res)
+
+	// Alice updates the document
+	payload := invoiceCoreAPIUpdate(nil)
+	// update currency to USD and number to 56789
+	data := payload["data"].(map[string]interface{})
+	data["currency"] = "USD"
+	data["number"] = "56789"
+	payload["data"] = data
+	payload["document_id"] = docID
+	res = updateDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, payload)
+	status = getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+	params = map[string]string{
+		"currency": "USD",
+		"number":   "56789",
+	}
+	checkDocumentParams(res, params)
 }
 
 func TestV2DocumentCreate_next_version(t *testing.T) {
