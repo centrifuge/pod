@@ -49,7 +49,7 @@ func TestService_Commit(t *testing.T) {
 	// missing did
 	ctx := context.Background()
 	docID := utils.RandomSlice(32)
-	_, err := s.Commit(ctx, docID)
+	_, _, err := s.Commit(ctx, docID)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
 
@@ -58,7 +58,7 @@ func TestService_Commit(t *testing.T) {
 	repo := new(mockRepo)
 	repo.On("Get", did[:], docID).Return(nil, errors.New("not found")).Once()
 	s.pendingRepo = repo
-	_, err = s.Commit(ctx, docID)
+	_, _, err = s.Commit(ctx, docID)
 	assert.Error(t, err)
 
 	// failed commit
@@ -67,16 +67,17 @@ func TestService_Commit(t *testing.T) {
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("Commit", ctx, doc).Return(nil, errors.New("failed to commit")).Once()
 	s.docSrv = docSrv
-	_, err = s.Commit(ctx, docID)
+	_, _, err = s.Commit(ctx, docID)
 	assert.Error(t, err)
 
 	// success
 	jobID := jobs.NewJobID()
 	repo.On("Delete", did[:], docID).Return(nil)
 	docSrv.On("Commit", ctx, doc).Return(jobID, nil)
-	jid, err := s.Commit(ctx, docID)
+	m, jid, err := s.Commit(ctx, docID)
 	assert.NoError(t, err)
 	assert.Equal(t, jobID, jid)
+	assert.NotNil(t, m)
 	docSrv.AssertExpectations(t)
 	doc.AssertExpectations(t)
 }

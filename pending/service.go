@@ -31,7 +31,7 @@ type Service interface {
 	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
 
 	// Commit validates, shares and anchors document
-	Commit(ctx context.Context, docID []byte) (jobs.JobID, error)
+	Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error)
 }
 
 // service implements Service
@@ -138,21 +138,21 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 }
 
 // Commit triggers validations, state change and anchor job
-func (s service) Commit(ctx context.Context, docID []byte) (jobs.JobID, error) {
+func (s service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
 	accID, err := contextutil.AccountDID(ctx)
 	if err != nil {
-		return jobs.NilJobID(), contextutil.ErrDIDMissingFromContext
+		return nil, jobs.NilJobID(), contextutil.ErrDIDMissingFromContext
 	}
 
 	model, err := s.pendingRepo.Get(accID[:], docID)
 	if err != nil {
-		return jobs.NilJobID(), documents.ErrDocumentNotFound
+		return nil, jobs.NilJobID(), documents.ErrDocumentNotFound
 	}
 
 	jobID, err := s.docSrv.Commit(ctx, model)
 	if err != nil {
-		return jobs.NilJobID(), err
+		return nil, jobs.NilJobID(), err
 	}
 
-	return jobID, s.pendingRepo.Delete(accID[:], docID)
+	return model, jobID, s.pendingRepo.Delete(accID[:], docID)
 }

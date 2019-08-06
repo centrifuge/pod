@@ -14,10 +14,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -149,5 +151,68 @@ func TestHandler_CreateDocument(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusCreated)
 	assert.Contains(t, w.Body.String(), "\"status\":\"pending\"")
 	pendingSrv.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}
+
+func TestHandler_Commit(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/documents/{document_id}/commit", b).WithContext(ctx)
+	}
+
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.Commit(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// invalid hex
+	rctx.URLParams.Values[0] = "invalid hex"
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.Commit(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// commit error
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(32))
+	srv := new(pending.MockService)
+	h = handler{srv: Service{pendingDocSrv: srv}}
+	srv.On("Commit", ctx, mock.Anything).Return(nil, nil, errors.New("Failed to commit document")).Once()
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.Commit(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "Failed to commit document")
+
+	// failed to convert collaborators in document
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(invoice.Data{}).Twice()
+	doc.On("Scheme").Return("invoice").Twice()
+	doc.On("GetAttributes").Return(nil).Twice()
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	srv.On("Commit", ctx, mock.Anything).Return(doc, nil, nil)
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.Commit(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Committing).Once()
+	w, r = getHTTPReqAndResp(ctx, validPayload(t))
+	h.Commit(w, r)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Contains(t, w.Body.String(), "\"status\":\"committing\"")
+	srv.AssertExpectations(t)
 	doc.AssertExpectations(t)
 }

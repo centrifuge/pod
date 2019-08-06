@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
 
@@ -17,4 +18,9 @@ type Service struct {
 // if the document_id is provided, next version of the document is created.
 func (s Service) CreateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Model, error) {
 	return s.pendingDocSrv.Create(ctx, req)
+}
+
+// Commit creates a document out of a pending document.
+func (s Service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
+	return s.pendingDocSrv.Commit(ctx, docID)
 }
