@@ -507,6 +507,6 @@ func TestService_UpdateModel(t *testing.T) {
 
 func TestService_ValidateError(t *testing.T) {
 	srv := service{}
-	err := srv.Validate(context.Background(), nil)
+	err := srv.Validate(context.Background(), nil, nil)
 	assert.Error(t, err)
 }
