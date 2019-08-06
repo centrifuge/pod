@@ -285,7 +285,7 @@ func TestHandler_Commit(t *testing.T) {
 	doc.On("GetStatus").Return(documents.Committing).Once()
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.Commit(w, r)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusAccepted, w.Code)
 	assert.Contains(t, w.Body.String(), "\"status\":\"committing\"")
 	srv.AssertExpectations(t)
 	doc.AssertExpectations(t)
