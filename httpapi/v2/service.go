@@ -20,6 +20,11 @@ func (s Service) CreateDocument(ctx context.Context, req documents.UpdatePayload
 	return s.pendingDocSrv.Create(ctx, req)
 }
 
+// UpdateDocument updates a pending document with the given payload
+func (s Service) UpdateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Model, error) {
+	return s.pendingDocSrv.Update(ctx, req)
+}
+
 // Commit creates a document out of a pending document.
 func (s Service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
 	return s.pendingDocSrv.Commit(ctx, docID)

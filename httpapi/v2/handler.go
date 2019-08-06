@@ -19,5 +19,6 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	h := handler{srv: srv}
 
 	r.Post("/documents", h.CreateDocument)
+	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}", h.UpdateDocument)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/commit", h.Commit)
 }
