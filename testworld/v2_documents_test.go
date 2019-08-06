@@ -64,7 +64,7 @@ func TestV2DocumentCommit_new_document(t *testing.T) {
 	assert.NotEmpty(t, docID)
 
 	// Commits document and shares with Bob
-	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, docID)
+	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	assert.Equal(t, status, "success", message)
