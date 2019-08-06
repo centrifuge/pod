@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/go-chi/chi"
 	logging "github.com/ipfs/go-log"
 )
@@ -18,4 +19,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	h := handler{srv: srv}
 
 	r.Post("/documents", h.CreateDocument)
+	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}", h.UpdateDocument)
 }

@@ -18,3 +18,8 @@ type Service struct {
 func (s Service) CreateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Model, error) {
 	return s.pendingDocSrv.Create(ctx, req)
 }
+
+// UpdateDocument updates a pending document with the given payload
+func (s Service) UpdateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Model, error) {
+	return s.pendingDocSrv.Update(ctx, req)
+}
