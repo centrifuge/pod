@@ -89,7 +89,7 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 	// bob creates a next pending version of the document
 	payload := invoiceCoreAPICreate(nil)
 	payload["document_id"] = docID
-	res = createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	res = createDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, payload)
 	status = getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending", "document must be in pending status")
 	edocID := getDocumentIdentifier(t, res)
@@ -117,4 +117,5 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 	// bob shouldn't have any pending documents but has a committed one
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusNotFound)
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "committed", http.StatusOK)
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
 }
