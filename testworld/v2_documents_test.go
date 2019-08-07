@@ -25,6 +25,12 @@ func TestV2DocumentCreateAndCommit_new_document(t *testing.T) {
 	docID := getDocumentIdentifier(t, res)
 	assert.NotEmpty(t, docID)
 
+	// getting pending document should be successful
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
+
+	// committed shouldn't be success
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusNotFound)
+
 	// Alice updates the document
 	payload := invoiceCoreAPIUpdate([]string{bob.id.String()})
 	// update currency to USD and number to 56789
@@ -41,6 +47,7 @@ func TestV2DocumentCreateAndCommit_new_document(t *testing.T) {
 		"number":   "56789",
 	}
 	checkDocumentParams(res, params)
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
 
 	// Commits document and shares with Bob
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
@@ -48,6 +55,12 @@ func TestV2DocumentCreateAndCommit_new_document(t *testing.T) {
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	assert.Equal(t, status, "success", message)
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
+
+	// pending document should fail
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
+
+	// committed should be successful
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
 
 	// Bob should have the document
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
@@ -70,6 +83,9 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 	assert.Equal(t, docID, versionID, "failed to create a fresh document")
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
+	// there should be no pending document with alice
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
+
 	// bob creates a next pending version of the document
 	payload := invoiceCoreAPICreate(nil)
 	payload["document_id"] = docID
@@ -87,4 +103,18 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 
 	// alice should not have this version
 	nonExistingDocumentVersionCheck(alice.httpExpect, alice.id.String(), "documents", params)
+
+	// bob has pending document
+	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusOK)
+
+	// commit the document
+	// Commits document and shares with alice
+	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID)
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	assert.Equal(t, status, "success", message)
+
+	// bob shouldn't have any pending documents but has a committed one
+	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusNotFound)
+	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "committed", http.StatusOK)
 }
