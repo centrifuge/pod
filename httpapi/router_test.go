@@ -93,5 +93,5 @@ func TestRouter(t *testing.T) {
 	// v1 routes
 	assert.Len(t, r.Routes()[2].SubRoutes.Routes(), 29)
 	// v2 routes
-	assert.Len(t, r.Routes()[3].SubRoutes.Routes(), 5)
+	assert.Len(t, r.Routes()[3].SubRoutes.Routes(), 6)
 }

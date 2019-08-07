@@ -349,3 +349,66 @@ func TestHandler_GetDocument(t *testing.T) {
 	pendingSrv.AssertExpectations(t)
 	doc.AssertExpectations(t)
 }
+
+func TestHandler_GetDocumentVersion(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("GET", "/documents/{document_id}/versions/{version_id}", nil).WithContext(ctx)
+	}
+
+	// empty document_id and invalid
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Keys[1] = "version_id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	h := handler{}
+
+	for _, id := range []string{"", "invalid"} {
+		rctx.URLParams.Values[0] = id
+		rctx.URLParams.Values[1] = id
+		w, r := getHTTPReqAndResp(ctx)
+		h.GetDocumentVersion(w, r)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	}
+
+	// missing document
+	docID := utils.RandomSlice(32)
+	versionID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	rctx.URLParams.Values[1] = hexutil.Encode(versionID)
+	pendingSrv := new(pending.MockService)
+	pendingSrv.On("GetVersion", ctx, docID, versionID).Return(nil, coreapi.ErrDocumentNotFound).Once()
+	h.srv.pendingDocSrv = pendingSrv
+	w, r := getHTTPReqAndResp(ctx)
+	h.GetDocumentVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
+
+	// failed conversion
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(invoice.Data{}).Times(2)
+	doc.On("Scheme").Return("invoice").Times(2)
+	doc.On("GetAttributes").Return(nil).Times(2)
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	pendingSrv.On("GetVersion", ctx, docID, versionID).Return(doc, nil)
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetDocumentVersion(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success pending
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetDocumentVersion(w, r)
+	assert.Equal(t, http.StatusOK, w.Code)
+	pendingSrv.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}
