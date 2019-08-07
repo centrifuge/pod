@@ -41,3 +41,9 @@ func (m *MockService) Commit(ctx context.Context, docID []byte) (documents.Model
 	jobID, _ := args.Get(1).(jobs.JobID)
 	return doc, jobID, args.Error(2)
 }
+
+func (m *MockService) Get(ctx context.Context, docID []byte, st documents.Status) (documents.Model, error) {
+	args := m.Called(ctx, docID, st)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}

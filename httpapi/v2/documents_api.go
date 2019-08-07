@@ -3,6 +3,7 @@ package v2
 import (
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
@@ -171,14 +172,14 @@ func (h handler) Commit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	model, jobID, err := h.srv.Commit(ctx, docID)
+	doc, jobID, err := h.srv.Commit(ctx, docID)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	resp, err := toDocumentResponse(model, h.srv.tokenRegistry, jobID)
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -187,4 +188,73 @@ func (h handler) Commit(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
+}
+
+func (h handler) getDocumentWithStatus(w http.ResponseWriter, r *http.Request, st documents.Status) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	ctx := r.Context()
+	doc, err := h.srv.GetDocument(ctx, docID, st)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = coreapi.ErrDocumentNotFound
+		return
+	}
+
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, resp)
+}
+
+// GetPendingDocument returns the pending document associated with docID.
+// @summary Returns the pending document associated with docID.
+// @description Returns the pending document associated with docID.
+// @id get_pending_document
+// @tags Documents
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.DocumentResponse
+// @router /v2/documents/{document_id}/pending [get]
+func (h handler) GetPendingDocument(w http.ResponseWriter, r *http.Request) {
+	h.getDocumentWithStatus(w, r, documents.Pending)
+}
+
+// GetCommittedDocument returns the latest committed document associated with docID.
+// @summary Returns the latest committed document associated with docID.
+// @description Returns the latest committed document associated with docID.
+// @id get_committed_document
+// @tags Documents
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @success 200 {object} coreapi.DocumentResponse
+// @router /v2/documents/{document_id}/committed [get]
+func (h handler) GetCommittedDocument(w http.ResponseWriter, r *http.Request) {
+	h.getDocumentWithStatus(w, r, documents.Committed)
 }
