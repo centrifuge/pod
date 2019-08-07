@@ -111,7 +111,7 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 	// Commits document and shares with alice
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID)
 	txID = getTransactionID(t, res)
-	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	assert.Equal(t, status, "success", message)
 
 	// bob shouldn't have any pending documents but has a committed one
