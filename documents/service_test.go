@@ -79,7 +79,7 @@ func TestService_Validate(t *testing.T) {
 	r := NewServiceRegistry()
 	scheme := "invoice"
 	srv := new(MockService)
-	srv.On("Validate", mock.Anything, mock.Anything).Return(nil)
+	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
 	assert.NoError(t, err)
 
@@ -87,18 +87,11 @@ func TestService_Validate(t *testing.T) {
 	m := new(mockModel)
 	m.On("Scheme", mock.Anything).Return("some scheme")
 	s := service{registry: r}
-	err = s.Validate(context.Background(), m)
-	assert.Error(t, err)
-
-	// version fetch error
-	m = new(mockModel)
-	id := utils.RandomSlice(32)
-	m.On("ID", mock.Anything).Return(id)
-	m.On("Scheme", mock.Anything).Return("invoice")
-	err = s.Validate(context.Background(), m)
+	err = s.Validate(context.Background(), m, nil)
 	assert.Error(t, err)
 
 	// create validation error, already anchored
+	id := utils.RandomSlice(32)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	m = new(mockModel)
 	nid := utils.RandomSlice(32)
@@ -107,20 +100,17 @@ func TestService_Validate(t *testing.T) {
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
 	m.On("Scheme", mock.Anything).Return("invoice")
-	mr := new(MockRepository)
-	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
-	s.repo = mr
 	anchorRepo := new(mockRepo)
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	s.anchorRepo = anchorRepo
-	err = s.Validate(ctxh, m)
+	err = s.Validate(ctxh, m, nil)
 	assert.Error(t, err)
 
 	// create validation success
 	anchorRepo = new(mockRepo)
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
 	s.anchorRepo = anchorRepo
-	err = s.Validate(ctxh, m)
+	err = s.Validate(ctxh, m, nil)
 	assert.NoError(t, err)
 
 	// Update validation error, already anchored
@@ -131,30 +121,27 @@ func TestService_Validate(t *testing.T) {
 	m1.On("NextVersion").Return(nid1)
 	m1.On("PreviousVersion").Return(id)
 	m1.On("Scheme", mock.Anything).Return("invoice")
-	mr = new(MockRepository)
-	mr.On("GetLatest", mock.Anything, mock.Anything).Return(m, nil)
-	s.repo = mr
 	anchorRepo = new(mockRepo)
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	s.anchorRepo = anchorRepo
-	err = s.Validate(ctxh, m1)
+	err = s.Validate(ctxh, m1, m)
 	assert.Error(t, err)
 
 	// update validation success
 	anchorRepo = new(mockRepo)
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
 	s.anchorRepo = anchorRepo
-	err = s.Validate(ctxh, m1)
+	err = s.Validate(ctxh, m1, m)
 	assert.NoError(t, err)
 
 	// specific document validation error
 	r = NewServiceRegistry()
 	srv = new(MockService)
-	srv.On("Validate", mock.Anything, mock.Anything).Return(errors.New("specific document error"))
+	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("specific document error"))
 	err = r.Register(scheme, srv)
 	assert.NoError(t, err)
 	s.registry = r
-	err = s.Validate(ctxh, m1)
+	err = s.Validate(ctxh, m1, m)
 	assert.Error(t, err)
 }
 
@@ -162,7 +149,7 @@ func TestService_Commit(t *testing.T) {
 	r := NewServiceRegistry()
 	scheme := "invoice"
 	srv := new(MockService)
-	srv.On("Validate", mock.Anything, mock.Anything).Return(nil)
+	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
 	assert.NoError(t, err)
 	s := service{registry: r}
@@ -175,12 +162,19 @@ func TestService_Commit(t *testing.T) {
 	_, err = s.Commit(context.Background(), m)
 	assert.Error(t, err)
 
+	// db error when fetching
+	mr := new(MockRepository)
+	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, errors.New("some db error")).Once()
+	s.repo = mr
+	_, err = s.Commit(context.Background(), m)
+	assert.Error(t, err)
+
 	// Fail validation
 	nid := utils.RandomSlice(32)
 	m.On("CurrentVersion").Return(id)
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
-	mr := new(MockRepository)
+	mr = new(MockRepository)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
 	s.repo = mr
 	anchorRepo := new(mockRepo)

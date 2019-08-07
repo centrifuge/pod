@@ -222,6 +222,12 @@ func checkDocumentParams(obj *httpexpect.Object, params map[string]string) {
 	}
 }
 
+func commitDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/"+docIdentifier+"/commit"), auth).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, docID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docID), auth).
 		WithJSON(payload).

@@ -395,6 +395,6 @@ func TestService_Derive(t *testing.T) {
 
 func TestService_Validate(t *testing.T) {
 	srv := service{}
-	err := srv.Validate(context.Background(), nil)
+	err := srv.Validate(context.Background(), nil, nil)
 	assert.NoError(t, err)
 }

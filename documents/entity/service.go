@@ -323,6 +323,6 @@ func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (d
 }
 
 // Validate takes care of entity validation
-func (s service) Validate(ctx context.Context, model documents.Model) error {
-	return fieldValidator(s.factory).Validate(nil, model)
+func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
+	return fieldValidator(s.factory).Validate(old, model)
 }

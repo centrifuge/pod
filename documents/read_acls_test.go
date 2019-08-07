@@ -45,8 +45,8 @@ func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model,
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Validate(ctx context.Context, model Model) error {
-	args := m.Called(ctx, model)
+func (m *MockService) Validate(ctx context.Context, model Model, old Model) error {
+	args := m.Called(ctx, model, old)
 	return args.Error(0)
 }
 

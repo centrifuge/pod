@@ -151,6 +151,6 @@ func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (d
 }
 
 // Validate takes care of document validation
-func (s service) Validate(ctx context.Context, model documents.Model) error {
+func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
 	return nil
 }

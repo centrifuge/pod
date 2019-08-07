@@ -23,7 +23,7 @@ import (
 // Router returns the http mux for the server.
 // @title Centrifuge OS Node API
 // @description Centrifuge OS Node API
-// @version 0.0.5
+// @version 0.0.6
 // @contact.name Centrifuge
 // @contact.url https://github.com/centrifuge/go-centrifuge
 // @contact.email hello@centrifuge.io
