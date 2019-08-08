@@ -472,3 +472,9 @@ func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, document
 		Expect().Status(404).JSON().NotNull()
 	return objGet
 }
+
+func getV2DocumentWithStatus(e *httpexpect.Expect, auth, docID, status string, code int) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v2/documents/"+docID+"/"+status), auth).
+		Expect().Status(code).JSON().NotNull()
+	return objGet
+}
