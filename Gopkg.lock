@@ -92,14 +92,14 @@
   revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
-  digest = "1:37231b09a3facf49d61e6c56d88383cf09899d606e7e56a7015963bcd868382a"
+  digest = "1:f46a61d4cdbfd59f161576753d03df52844379a7c65dc8bd9d264da2dee134b4"
   name = "github.com/centrifuge/precise-proofs"
   packages = [
     "proofs",
     "proofs/proto",
   ]
   pruneopts = "UT"
-  revision = "f443fbe849de3fae72475c0838ec8eabf6930edd"
+  revision = "2ed0cc3986aa6f8c5e9efc0f661607bf2857713f"
 
 [[projects]]
   branch = "master"
@@ -544,7 +544,6 @@
   revision = "b497e2f366b8624394fb2e89c10ab607bebdde0b"
 
 [[projects]]
-  branch = "master"
   digest = "1:ae940e9156d0d778ce1991bcc99e58fa5ca2790ddf7c5f0bc05385854416f7a6"
   name = "github.com/jinzhu/copier"
   packages = ["."]
@@ -1381,12 +1380,12 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:65f2553aabd1d6879691058ce20eac0f798a82d92c71f13cd56de3350fa06183"
+  digest = "1:2833602d8454c0f7dac4f73c1a1c0fc1a52dcc738e3ad87d4a64f6446966510d"
   name = "github.com/xsleonard/go-merkle"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a73b8999d89d80bdcd89d199f41ab7fcdfd12dde"
-  source = "github.com/mikiquantum/go-merkle"
+  revision = "f8894f6f7351abae156c2365b31354d4cd78a1af"
+  source = "github.com/centrifuge/go-merkle"
 
 [[projects]]
   branch = "master"

@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"math/big"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -117,12 +119,20 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
+	optProofs := docProofs.FieldProofs
+	if req.UseGeneric {
+		optProofs, err = proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha256.New())
+		if err != nil {
+			return mreq, err
+		}
+	}
+
 	// useful to log proof data to be passed to mint method
 	log.Debugf("\nDocumentRoot %x\nSignaturesRoot %x\nSigningRoot %x\nDocumentID %x\nCurrentVersion %x\n",
 		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
-	log.Debug(json.MarshalIndent(documents.ConvertProofs(docProofs.FieldProofs), "", "  "))
+	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, signingRoot, signaturesRoot, docProofs.FieldProofs)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}

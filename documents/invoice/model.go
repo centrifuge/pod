@@ -419,7 +419,11 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if i.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-	t := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, err
+	}
+
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
