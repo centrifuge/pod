@@ -261,8 +261,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %x, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
-			requestData.TokenID, requestData.AnchorID, hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
+			hexutil.Encode(requestData.TokenID.Bytes()), hexutil.Encode(requestData.AnchorID.Bytes()), hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
