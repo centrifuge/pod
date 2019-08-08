@@ -189,13 +189,13 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 func TestGenericMintNFT(t *testing.T) {
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
-	loanAmountValue := "100"
+	loanAmountValue := "100.10001"
 	attr0, err := documents.NewAttribute(loanAmount, documents.AttrDecimal, loanAmountValue)
 	assert.NoError(t, err)
 	attrs[attr0.Key] = attr0
-	asIsValue := "asIsValue"
-	asIsValueValue := "1000"
-	attr1, err := documents.NewAttribute(asIsValue, documents.AttrDecimal, asIsValueValue)
+	asIsValue := "dateValue"
+	asIsValueValue := time.Now().UTC().Format(time.RFC3339)
+	attr1, err := documents.NewAttribute(asIsValue, documents.AttrTimestamp, asIsValueValue)
 	assert.NoError(t, err)
 	attrs[attr1.Key] = attr1
 	afterRehabValue := "afterRehabValue"

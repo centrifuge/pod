@@ -194,7 +194,10 @@ func TestAttributes_signed(t *testing.T) {
 
 	pattrs, err := toProtocolAttributes(attrs)
 	assert.NoError(t, err)
-
+	assert.Equal(t, "decimal_test", string(pattrs[3].KeyLabel))
+	assert.Len(t, pattrs[3].GetByteVal(), maxDecimalByteLength) //decimal length padded to 32 bytes
+	assert.Equal(t, "time_test", string(pattrs[0].KeyLabel))
+	assert.Len(t, pattrs[0].GetByteVal(), maxTimeByteLength) //decimal length padded to 8 bytes
 	gattrs, err := fromProtocolAttributes(pattrs)
 	assert.NoError(t, err)
 	assert.Equal(t, attrs, gattrs)

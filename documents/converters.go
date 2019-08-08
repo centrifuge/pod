@@ -1,6 +1,8 @@
 package documents
 
 import (
+	"bytes"
+	"encoding/binary"
 	"strings"
 	"time"
 
@@ -9,7 +11,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
+
+const maxTimeByteLength = 8
 
 // BinaryAttachment represent a single file attached to invoice.
 type BinaryAttachment struct {
@@ -195,7 +200,13 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 		case AttrBytes:
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
 		case AttrTimestamp:
-			pattr.Value = &coredocumentpb.Attribute_TimeVal{TimeVal: attr.Value.Timestamp}
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, attr.Value.Timestamp.Seconds)
+			if err != nil {
+				return nil, err
+			}
+			b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b}
 		case AttrSigned:
 			signed := attr.Value.Signed
 			pattr.Value = &coredocumentpb.Attribute_SignedVal{
@@ -269,7 +280,12 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 	case AttrBytes:
 		attrVal.Bytes = attribute.GetByteVal()
 	case AttrTimestamp:
-		attrVal.Timestamp = attribute.GetTimeVal()
+		var n int64
+		err := binary.Read(bytes.NewBuffer(attribute.GetByteVal()), binary.BigEndian, &n)
+		if err != nil {
+			return attrVal, err
+		}
+		attrVal.Timestamp = &timestamp.Timestamp{Seconds: n}
 	case AttrSigned:
 		val := attribute.GetSignedVal()
 		did, err := identity.NewDIDFromBytes(val.Identity)

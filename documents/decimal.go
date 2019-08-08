@@ -110,9 +110,9 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 		return nil, err
 	}
 
-	// integer bytes should be atleast 8 byte, prepend Zeroes if not
-	if len(integer) < maxFractionByteLength {
-		integer = append(make([]byte, maxFractionByteLength-len(integer)), integer...)
+	// integer bytes should be atleast 32 byte, prepend Zeroes if len(integer)+sign(1) < maxDecimalByteLength
+	if len(integer) < maxDecimalByteLength {
+		integer = append(make([]byte, maxDecimalByteLength-(len(integer)+1)), integer...)
 	}
 
 	decimal = append(decimal, integer...)
@@ -128,7 +128,7 @@ func (d *Decimal) Bytes() (decimal []byte, err error) {
 
 // SetBytes parse the bytes to Decimal.
 func (d *Decimal) SetBytes(dec []byte) error {
-	if len(dec) < minDecimalByteLength || len(dec) > maxDecimalByteLength {
+	if len(dec) != maxDecimalByteLength {
 		return ErrInvalidDecimal
 	}
 
@@ -141,7 +141,7 @@ func (d *Decimal) SetBytes(dec []byte) error {
 	s := i.String()
 	// edge case for only fractions
 	// if dec is 8 bytes, then its just a fraction, so convert to string and prepend required zeroes
-	if len(dec) == maxFractionByteLength && decimalPrecision-len(s) > 0 {
+	if decimalPrecision-len(s) > 0 {
 		s = strings.Repeat("0", decimalPrecision-len(s)) + s
 	}
 
