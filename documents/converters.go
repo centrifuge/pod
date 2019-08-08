@@ -14,7 +14,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-const maxTimeByteLength = 8
+const maxTimeByteLength = 12
 
 // BinaryAttachment represent a single file attached to invoice.
 type BinaryAttachment struct {
@@ -205,6 +205,10 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 			if err != nil {
 				return nil, err
 			}
+			err = binary.Write(buf, binary.BigEndian, attr.Value.Timestamp.Nanos)
+			if err != nil {
+				return nil, err
+			}
 			b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b}
 		case AttrSigned:
@@ -280,12 +284,19 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 	case AttrBytes:
 		attrVal.Bytes = attribute.GetByteVal()
 	case AttrTimestamp:
-		var n int64
-		err := binary.Read(bytes.NewBuffer(attribute.GetByteVal()), binary.BigEndian, &n)
+		var ns int64
+		var nn int32
+		bs := bytes.NewBuffer(attribute.GetByteVal()[:maxTimeByteLength-4])
+		bn := bytes.NewBuffer(attribute.GetByteVal()[maxTimeByteLength-4:])
+		err := binary.Read(bs, binary.BigEndian, &ns)
 		if err != nil {
 			return attrVal, err
 		}
-		attrVal.Timestamp = &timestamp.Timestamp{Seconds: n}
+		err = binary.Read(bn, binary.BigEndian, &nn)
+		if err != nil {
+			return attrVal, err
+		}
+		attrVal.Timestamp = &timestamp.Timestamp{Seconds: ns, Nanos: nn}
 	case AttrSigned:
 		val := attribute.GetSignedVal()
 		did, err := identity.NewDIDFromBytes(val.Identity)

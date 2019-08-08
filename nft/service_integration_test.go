@@ -194,7 +194,7 @@ func TestGenericMintNFT(t *testing.T) {
 	assert.NoError(t, err)
 	attrs[attr0.Key] = attr0
 	asIsValue := "dateValue"
-	asIsValueValue := time.Now().UTC().Format(time.RFC3339)
+	asIsValueValue := time.Now().UTC().Format(time.RFC3339Nano)
 	attr1, err := documents.NewAttribute(asIsValue, documents.AttrTimestamp, asIsValueValue)
 	assert.NoError(t, err)
 	attrs[attr1.Key] = attr1
