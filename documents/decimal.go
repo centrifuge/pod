@@ -140,7 +140,7 @@ func (d *Decimal) SetBytes(dec []byte) error {
 
 	s := i.String()
 	// edge case for only fractions
-	// if dec is 8 bytes, then its just a fraction, so convert to string and prepend required zeroes
+	// if s is less than 18 bytes, then its just a fraction, so convert to string and prepend required zeroes
 	if decimalPrecision-len(s) > 0 {
 		s = strings.Repeat("0", decimalPrecision-len(s)) + s
 	}
