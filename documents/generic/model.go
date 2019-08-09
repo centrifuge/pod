@@ -103,7 +103,11 @@ func (g *Generic) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
 
-	t := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, err
+	}
+
 	err = t.AddLeavesFromDocument(getProtoGenericData())
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)

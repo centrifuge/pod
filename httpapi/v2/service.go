@@ -29,3 +29,13 @@ func (s Service) UpdateDocument(ctx context.Context, req documents.UpdatePayload
 func (s Service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
 	return s.pendingDocSrv.Commit(ctx, docID)
 }
+
+// GetDocument returns the document associated with docID and status.
+func (s Service) GetDocument(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error) {
+	return s.pendingDocSrv.Get(ctx, docID, status)
+}
+
+// GetDocumentVersion returns the specific version of the document.
+func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+	return s.pendingDocSrv.GetVersion(ctx, docID, versionID)
+}
