@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
+// maxTimeByteLength is the max length of the byte representation of a timestamp attribute
 const maxTimeByteLength = 12
 
 // BinaryAttachment represent a single file attached to invoice.
