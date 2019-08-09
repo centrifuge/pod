@@ -269,7 +269,8 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	testTree := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	testTree, err := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
 	props := []proofs.Property{NewLeafProperty("invoice.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200})}
 	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)

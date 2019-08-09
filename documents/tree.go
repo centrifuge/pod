@@ -12,20 +12,20 @@ import (
 )
 
 // DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
-func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) *proofs.DocumentTree {
+func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
 	var prop proofs.Property
 	if prefix != "" {
 		prop = NewLeafProperty(prefix, compactPrefix)
 	}
 
-	t := proofs.NewDocumentTree(proofs.TreeOptions{
+	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		CompactProperties: true,
 		EnableHashSorting: true,
 		Hash:              sha256.New(),
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
 	})
-	return &t
+	return &t, err
 }
 
 // NewLeafProperty returns a proof property with the literal and the compact

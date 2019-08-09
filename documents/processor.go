@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Config defines required methods required for the documents package.
@@ -61,7 +62,7 @@ func DefaultProcessor(idService identity.Service, p2pClient Client, repository a
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
 func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (err error) {
-	log.Infof("sending document %x to recipient %x", cd.DocumentIdentifier, id)
+	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.String())
 	ctx, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
 	defer cancel()
 
@@ -70,7 +71,7 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 		return errors.New("failed to send document to the node: %v", err)
 	}
 
-	log.Infof("Sent document to %x\n", id)
+	log.Infof("Sent document to %s\n", id.String())
 	return nil
 }
 

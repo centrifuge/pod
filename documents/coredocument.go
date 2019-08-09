@@ -459,7 +459,10 @@ func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 
 // getSignatureDataTree returns the merkle tree for the Signature Data root.
 func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
-	tree = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
+	if err != nil {
+		return nil, err
+	}
 	err = tree.AddLeavesFromDocument(cd.Document.SignatureData)
 	if err != nil {
 		return nil, err
@@ -480,7 +483,10 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree 
 		return nil, err
 	}
 
-	tree = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	if err != nil {
+		return nil, err
+	}
 
 	// The first leave added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
@@ -524,7 +530,11 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	if err != nil {
+		return nil, err
+	}
+
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
 			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(DataRootField)...)),
@@ -552,7 +562,10 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 
 // coredocTree returns the merkle tree of the CoreDocument.
 func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
+	if err != nil {
+		return nil, err
+	}
 	err = tree.AddLeavesFromDocument(&cd.Document)
 	if err != nil {
 		return nil, err
