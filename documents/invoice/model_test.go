@@ -659,14 +659,14 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	inv, err = old.DeriveFromUpdatePayload(payload)
 	assert.NoError(t, err)
 	// check if patch worked
-	assert.NotEqual(t, inv.Data, old.Data)
-	assert.Equal(t, inv.Data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.NotEqual(t, inv.GetData(), old.Data)
+	assert.Equal(t, inv.GetData().(Data).Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.Equal(t, old.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Len(t, inv.Data.LineItems, 1)
+	assert.Len(t, inv.GetData().(Data).LineItems, 1)
 
 	// new data
 	assert.Len(t, old.Data.Attachments, 0)
-	assert.Len(t, inv.Data.Attachments, 1)
+	assert.Len(t, inv.GetData().(Data).Attachments, 1)
 }
 
 func TestInvoice_Patch(t *testing.T) {
