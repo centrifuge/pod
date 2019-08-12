@@ -91,7 +91,8 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 	}
 
 	g := new(Generic)
-	if err := g.unpackFromCreatePayload(did, payload); err != nil {
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	if err := g.DeriveFromCreatePayload(payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 

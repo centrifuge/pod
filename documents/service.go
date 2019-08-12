@@ -401,7 +401,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 		}
 
 		payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-		if err := doc.(deriver).DeriveFromCreatePayload(payload.CreatePayload); err != nil {
+		if err := doc.(Deriver).DeriveFromCreatePayload(payload.CreatePayload); err != nil {
 			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 		}
 
@@ -418,7 +418,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 		return nil, errors.NewTypedError(ErrDocumentInvalidType, errors.New("%v is not an %s", hexutil.Encode(payload.DocumentID), payload.Scheme))
 	}
 
-	doc, err := old.(deriver).DeriveFromUpdatePayload(payload)
+	doc, err := old.(Deriver).DeriveFromUpdatePayload(payload)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}

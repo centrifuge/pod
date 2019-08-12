@@ -178,7 +178,7 @@ type UpdatePayload struct {
 	DocumentID []byte
 }
 
-type deriver interface {
+type Deriver interface {
 	// DeriveFromCreatePayload loads the payload into self.
 	DeriveFromCreatePayload(payload CreatePayload) error
 

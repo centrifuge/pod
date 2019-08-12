@@ -258,9 +258,8 @@ func (g *Generic) GetData() interface{} {
 	return g.Data
 }
 
-// unpackFromCreatePayload unpacks the invoice data from the Payload.
-func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+// DeriveFromCreatePayload unpacks the invoice data from the Payload.
+func (g *Generic) DeriveFromCreatePayload(payload documents.CreatePayload) error {
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
@@ -292,8 +291,8 @@ func (g *Generic) Patch(payload documents.UpdatePayload) error {
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (g *Generic) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Generic, error) {
+// DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
+func (g *Generic) DeriveFromUpdatePayload(payload documents.UpdatePayload) (*Generic, error) {
 	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return nil, err
