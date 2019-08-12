@@ -85,7 +85,7 @@ func TestP2PAttributes(t *testing.T) {
 	cattrs := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
-			Value: time.Now().UTC().Format(time.RFC3339),
+			Value: time.Now().UTC().Format(time.RFC3339Nano),
 		},
 
 		"string_test": {
@@ -143,7 +143,7 @@ func TestAttributes_signed(t *testing.T) {
 	cattrs := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
-			Value: time.Now().UTC().Format(time.RFC3339),
+			Value: time.Now().UTC().Format(time.RFC3339Nano),
 		},
 
 		"string_test": {
@@ -194,7 +194,10 @@ func TestAttributes_signed(t *testing.T) {
 
 	pattrs, err := toProtocolAttributes(attrs)
 	assert.NoError(t, err)
-
+	assert.Equal(t, "decimal_test", string(pattrs[3].KeyLabel))
+	assert.Len(t, pattrs[3].GetByteVal(), maxDecimalByteLength) //decimal length padded to 32 bytes
+	assert.Equal(t, "time_test", string(pattrs[0].KeyLabel))
+	assert.Len(t, pattrs[0].GetByteVal(), maxTimeByteLength) //timestamp length padded to 12 bytes
 	gattrs, err := fromProtocolAttributes(pattrs)
 	assert.NoError(t, err)
 	assert.Equal(t, attrs, gattrs)
