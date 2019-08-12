@@ -3,7 +3,6 @@
 package documents
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"math/big"
@@ -27,28 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockService struct {
-	Service
-	mock.Mock
-}
-
-func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
-	args := m.Called(documentID, version)
-	doc, _ := args.Get(0).(Model)
-	return doc, args.Error(1)
-}
-
-func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
-	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(Model)
-	return doc, args.Error(1)
-}
-
-func (m *MockService) Validate(ctx context.Context, model Model, old Model) error {
-	args := m.Called(ctx, model, old)
-	return args.Error(0)
-}
 
 func TestReadACLs_initReadRules(t *testing.T) {
 	cd, err := newCoreDocument()

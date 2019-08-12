@@ -468,7 +468,7 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = g.unpackFromUpdatePayload(old.(*Generic), payload)
+	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
 
@@ -478,6 +478,6 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = g.unpackFromUpdatePayload(old.(*Generic), payload)
+	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
 	assert.NoError(t, err)
 }

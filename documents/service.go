@@ -89,6 +89,9 @@ type Service interface {
 
 	// Validate takes care of document validation
 	Validate(ctx context.Context, model Model, old Model) error
+
+	// New returns a new uninitialised document.
+	New(scheme string) (Model, error)
 }
 
 // service implements Service
@@ -386,12 +389,41 @@ func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model,
 
 // Derive looks for specific document type service based in the schema and delegates the Derivation to that service.˜
 func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
-	srv, err := s.registry.LocateService(payload.Scheme)
-	if err != nil {
-		return nil, errors.NewTypedError(ErrDocumentSchemeUnknown, err)
+	if len(payload.DocumentID) == 0 {
+		did, err := contextutil.AccountDID(ctx)
+		if err != nil {
+			return nil, ErrDocumentConfigAccountID
+		}
+
+		doc, err := s.New(payload.Scheme)
+		if err != nil {
+			return nil, err
+		}
+
+		payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+		if err := doc.(deriver).DeriveFromCreatePayload(payload.CreatePayload); err != nil {
+			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
+		}
+
+		return doc, nil
 	}
 
-	return srv.Derive(ctx, payload)
+	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if the scheme is correct
+	if old.Scheme() != payload.Scheme {
+		return nil, errors.NewTypedError(ErrDocumentInvalidType, errors.New("%v is not an %s", hexutil.Encode(payload.DocumentID), payload.Scheme))
+	}
+
+	doc, err := old.(deriver).DeriveFromUpdatePayload(payload)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
+	}
+
+	return doc, nil
 }
 
 // Validate takes care of document validation
@@ -449,4 +481,14 @@ func (s service) Commit(ctx context.Context, model Model) (jobs.JobID, error) {
 	}
 
 	return jobID, nil
+}
+
+// New returns a new uninitialised document for the scheme.
+func (s service) New(scheme string) (Model, error) {
+	srv, err := s.registry.LocateService(scheme)
+	if err != nil {
+		return nil, ErrDocumentSchemeUnknown
+	}
+
+	return srv.New(scheme)
 }

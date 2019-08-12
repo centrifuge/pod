@@ -16,65 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockRepository struct {
-	mock.Mock
-}
-
-func (m *MockRepository) Exists(accountID, id []byte) bool {
-	args := m.Called(accountID, id)
-	return args.Get(0).(bool)
-}
-
-func (m *MockRepository) Get(accountID, id []byte) (Model, error) {
-	args := m.Called(accountID, id)
-	doc, _ := args.Get(0).(Model)
-	return doc, args.Error(0)
-}
-
-func (m *MockRepository) Create(accountID, id []byte, model Model) error {
-	args := m.Called(accountID, id)
-	return args.Error(0)
-}
-
-func (m *MockRepository) Update(accountID, id []byte, model Model) error {
-	args := m.Called(accountID, id)
-	return args.Error(0)
-}
-
-func (m *MockRepository) Register(model Model) {
-	m.Called(model)
-	return
-}
-
-func (m *MockRepository) GetLatest(accountID, docID []byte) (Model, error) {
-	args := m.Called(accountID, docID)
-	doc, _ := args.Get(0).(Model)
-	return doc, args.Error(1)
-}
-
-func TestService_Derive(t *testing.T) {
-	r := NewServiceRegistry()
-	scheme := "invoice"
-	srv := new(MockService)
-	srv.On("Derive", mock.Anything, mock.Anything).Return(new(mockModel), nil)
-	err := r.Register(scheme, srv)
-	assert.NoError(t, err)
-
-	// missing service
-	payload := UpdatePayload{CreatePayload: CreatePayload{Scheme: "some scheme"}}
-	s := service{registry: r}
-	_, err = s.Derive(context.Background(), payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentSchemeUnknown, err))
-
-	// success
-	payload.Scheme = scheme
-	m, err := s.Derive(context.Background(), payload)
-	assert.NoError(t, err)
-	assert.NotNil(t, m)
-	srv.AssertExpectations(t)
-}
-
 func TestService_Validate(t *testing.T) {
 	r := NewServiceRegistry()
 	scheme := "invoice"
@@ -210,5 +151,72 @@ func TestService_Commit(t *testing.T) {
 	s.jobManager = jobMan
 	_, err = s.Commit(ctxh, m)
 	assert.NoError(t, err)
+}
 
+func TestService_Derive(t *testing.T) {
+	scheme := "invoice"
+	payload := UpdatePayload{CreatePayload: CreatePayload{Scheme: scheme}}
+	s := service{}
+
+	// missing account ctx
+	ctx := context.Background()
+	_, err := s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentConfigAccountID, err))
+
+	// unknown scheme
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	s.registry = NewServiceRegistry()
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentSchemeUnknown, err))
+
+	// derive failed
+	doc := new(MockModel)
+	docSrv := new(MockService)
+	docSrv.On("New", scheme).Return(doc, nil)
+	doc.On("DeriveFromCreatePayload", mock.Anything).Return(errors.New("derive failed")).Once()
+	assert.NoError(t, s.registry.Register(scheme, docSrv))
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
+
+	// create successful
+	doc.On("DeriveFromCreatePayload", mock.Anything).Return(nil).Once()
+	gdoc, err := s.Derive(ctx, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, gdoc)
+
+	// missing old version
+	docID := utils.RandomSlice(32)
+	repo := new(MockRepository)
+	repo.On("GetLatest", did[:], docID).Return(nil, ErrDocumentNotFound).Once()
+	s.repo = repo
+	payload.DocumentID = docID
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentNotFound, err))
+
+	// invalid type
+	doc.On("Scheme").Return("invalid").Once()
+	repo.On("GetLatest", did[:], docID).Return(doc, nil)
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalidType, err))
+
+	// DeriveFromUpdatePayload failed
+	doc.On("Scheme").Return(scheme)
+	doc.On("DeriveFromUpdatePayload", payload).Return(nil, ErrDocumentInvalid).Once()
+	_, err = s.Derive(ctx, payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
+
+	// success
+	doc.On("DeriveFromUpdatePayload", payload).Return(doc, nil).Once()
+	gdoc, err = s.Derive(ctx, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, gdoc, doc)
+	doc.AssertExpectations(t)
+	repo.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
 }

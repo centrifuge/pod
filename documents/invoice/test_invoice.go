@@ -60,13 +60,15 @@ func CreateInvoicePayload(t *testing.T, collaborators []identity.DID) documents.
 
 func InitInvoice(t *testing.T, did identity.DID, payload documents.CreatePayload) *Invoice {
 	inv := new(Invoice)
-	assert.NoError(t, inv.unpackFromCreatePayload(did, payload))
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	assert.NoError(t, inv.DeriveFromCreatePayload(payload))
 	return inv
 }
 
 func CreateInvoiceWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Invoice, coredocumentpb.CoreDocument) {
 	inv := new(Invoice)
-	err := inv.unpackFromCreatePayload(did, payload)
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	err := inv.DeriveFromCreatePayload(payload)
 	assert.NoError(t, err)
 	inv.GetTestCoreDocWithReset()
 	_, err = inv.CalculateDataRoot()

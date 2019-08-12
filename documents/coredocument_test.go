@@ -34,6 +34,7 @@ import (
 
 var ctx map[string]interface{}
 var cfg config.Configuration
+var did = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
 	ctx = make(map[string]interface{})
@@ -54,11 +55,11 @@ func TestMain(m *testing.M) {
 	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("identityId", did.String())
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)

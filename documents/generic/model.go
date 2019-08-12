@@ -1,7 +1,6 @@
 package generic
 
 import (
-	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -259,18 +258,6 @@ func (g *Generic) GetData() interface{} {
 	return g.Data
 }
 
-// loadData unmarshals json blob to Data.
-func (g *Generic) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
-	if err != nil {
-		return err
-	}
-
-	g.Data = d
-	return nil
-}
-
 // unpackFromCreatePayload unpacks the invoice data from the Payload.
 func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
@@ -283,8 +270,8 @@ func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.Cr
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.UpdatePayload) error {
+// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
+func (g *Generic) unpackFromUpdatePayloadOld(old *Generic, payload documents.UpdatePayload) error {
 	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return err
@@ -296,7 +283,25 @@ func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.Update
 
 // Patch merges payload data into model
 func (g *Generic) Patch(payload documents.UpdatePayload) error {
-	return documents.ErrNotImplemented
+	ncd, err := g.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	g.CoreDocument = ncd
+	return nil
+}
+
+// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
+func (g *Generic) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Generic, error) {
+	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Generic{
+		CoreDocument: ncd,
+	}, nil
 }
 
 // Scheme returns the invoice Scheme.

@@ -18,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -190,7 +189,9 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// failed validator
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
+	payload := CreateInvoicePayload(t, nil)
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(payload))
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return errors.New("validations fail")
 	})
@@ -201,7 +202,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// create failed
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
+	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(payload))
 	err = invSrv.repo.Create(accountID, inv.CurrentVersion(), inv)
 	assert.Nil(t, err)
 	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
@@ -211,7 +212,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// success
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
+	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(payload))
 	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)
@@ -336,61 +337,6 @@ func TestService_UpdateModel(t *testing.T) {
 	assert.Equal(t, m.ID(), inv.ID())
 	assert.Equal(t, m.CurrentVersion(), inv.NextVersion())
 	jm.AssertExpectations(t)
-}
-
-func TestService_Derive(t *testing.T) {
-	// new document
-	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Scheme: Scheme, Data: invalidDecimalData(t)}}
-	s := service{}
-
-	// missing account ctx
-	ctx := context.Background()
-	_, err := s.Derive(ctx, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
-
-	// invalid payload
-	ctx = testingconfig.CreateAccountContext(t, cfg)
-	_, err = s.Derive(ctx, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
-
-	// valid data
-	payload.Data = validData(t)
-	inv, err := s.Derive(ctx, payload)
-	assert.NoError(t, err)
-	assert.NotNil(t, inv)
-
-	// update document
-	docID := utils.RandomSlice(32)
-	payload.DocumentID = docID
-	srv := new(testingdocuments.MockService)
-	srv.On("GetCurrentVersion", docID).Return(nil, documents.ErrDocumentNotFound).Once()
-	s.Service = srv
-	_, err = s.Derive(ctx, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
-
-	// invalid type
-	srv.On("GetCurrentVersion", docID).Return(new(mockModel), nil).Once()
-	_, err = s.Derive(ctx, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
-
-	// invalid data
-	payload.Data = invalidDIDData(t)
-	old, _ := CreateInvoiceWithEmbedCD(t, ctx, did, nil)
-	srv.On("GetCurrentVersion", docID).Return(old, nil)
-	_, err = s.Derive(ctx, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
-
-	// success
-	payload.Data = validData(t)
-	inv, err = s.Derive(ctx, payload)
-	assert.NoError(t, err)
-	assert.NotNil(t, inv)
-	srv.AssertExpectations(t)
 }
 
 func TestService_Validate(t *testing.T) {

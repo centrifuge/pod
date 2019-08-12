@@ -141,7 +141,8 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 	}
 
 	inv := new(Invoice)
-	if err := inv.unpackFromCreatePayload(did, payload); err != nil {
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	if err := inv.DeriveFromCreatePayload(payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
@@ -205,43 +206,12 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	return inv, jobID, err
 }
 
-// Derive derives the document from the payload
-// if document_id is not nil, we prepare the next invoice version by patching the data
-// else return a fresh invoice.
-func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
-	if len(payload.DocumentID) == 0 {
-		did, err := contextutil.AccountDID(ctx)
-		if err != nil {
-			return nil, documents.ErrDocumentConfigAccountID
-		}
-
-		inv := new(Invoice)
-		if err := inv.unpackFromCreatePayload(did, payload.CreatePayload); err != nil {
-			return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-		}
-
-		return inv, nil
-	}
-
-	old, err := s.GetCurrentVersion(ctx, payload.DocumentID)
-	if err != nil {
-		return nil, err
-	}
-
-	oldInv, ok := old.(*Invoice)
-	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("%v is not an invoice", hexutil.Encode(payload.DocumentID)))
-	}
-
-	inv, err := oldInv.unpackFromUpdatePayload(payload)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
-	return inv, nil
-}
-
 // Validate takes care of document validation
 func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
 	return nil
+}
+
+// New returns a new uninitialised invoice.
+func (s service) New(_ string) (documents.Model, error) {
+	return new(Invoice), nil
 }
