@@ -605,7 +605,7 @@ func (i *Invoice) unpackFromUpdatePayloadOld(old *Invoice, payload documents.Upd
 }
 
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (i *Invoice) DeriveFromUpdatePayload(payload documents.UpdatePayload) (*Invoice, error) {
+func (i *Invoice) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
 	d, err := i.patch(payload)
 	if err != nil {
 		return nil, err

@@ -292,7 +292,7 @@ func (g *Generic) Patch(payload documents.UpdatePayload) error {
 }
 
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (g *Generic) DeriveFromUpdatePayload(payload documents.UpdatePayload) (*Generic, error) {
+func (g *Generic) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
 	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return nil, err

@@ -178,6 +178,7 @@ type UpdatePayload struct {
 	DocumentID []byte
 }
 
+// Deriver defines the functions that can derive Document from the Payloads.
 type Deriver interface {
 	// DeriveFromCreatePayload loads the payload into self.
 	DeriveFromCreatePayload(payload CreatePayload) error
