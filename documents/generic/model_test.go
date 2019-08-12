@@ -425,8 +425,10 @@ func validData(t *testing.T) []byte {
 	return marshallData(t, d)
 }
 
-func TestGeneric_unpackFromCreatePayload(t *testing.T) {
-	payload := documents.CreatePayload{}
+func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
+	payload := documents.CreatePayload{Collaborators: documents.CollaboratorsAccess{
+		ReadWriteCollaborators: []identity.DID{did},
+	}}
 	g := new(Generic)
 
 	// invalid attributes
@@ -439,7 +441,7 @@ func TestGeneric_unpackFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = g.unpackFromCreatePayload(did, payload)
+	err = g.DeriveFromCreatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 
@@ -449,7 +451,7 @@ func TestGeneric_unpackFromCreatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = g.unpackFromCreatePayload(did, payload)
+	err = g.DeriveFromCreatePayload(payload)
 	assert.NoError(t, err)
 }
 
@@ -468,7 +470,7 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = g.unpackFromUpdatePayload(old.(*Generic), payload)
+	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
 
@@ -478,6 +480,6 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = g.unpackFromUpdatePayload(old.(*Generic), payload)
+	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
 	assert.NoError(t, err)
 }

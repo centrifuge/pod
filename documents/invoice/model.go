@@ -573,13 +573,12 @@ func loadData(data []byte, v *Data) error {
 	return nil
 }
 
-// unpackFromCreatePayload unpacks the invoice data from the Payload.
-func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
+// DeriveFromCreatePayload unpacks the invoice data from the Payload.
+func (i *Invoice) DeriveFromCreatePayload(payload documents.CreatePayload) error {
 	if err := loadData(payload.Data, &i.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
-	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
@@ -605,8 +604,8 @@ func (i *Invoice) unpackFromUpdatePayloadOld(old *Invoice, payload documents.Upd
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (i *Invoice) unpackFromUpdatePayload(payload documents.UpdatePayload) (*Invoice, error) {
+// DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
+func (i *Invoice) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
 	d, err := i.patch(payload)
 	if err != nil {
 		return nil, err

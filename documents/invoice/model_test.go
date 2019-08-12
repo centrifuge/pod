@@ -85,7 +85,7 @@ func TestInvoice_PackCoreDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	inv := new(Invoice)
-	assert.NoError(t, inv.unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
+	assert.NoError(t, inv.DeriveFromCreatePayload(CreateInvoicePayload(t, []identity.DID{did})))
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
@@ -96,7 +96,7 @@ func TestInvoice_JSON(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, inv.unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
+	assert.NoError(t, inv.DeriveFromCreatePayload(CreateInvoicePayload(t, []identity.DID{did})))
 
 	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
@@ -150,7 +150,7 @@ func TestInvoiceModel_calculateDataRoot(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 	m := new(Invoice)
-	assert.NoError(t, m.unpackFromCreatePayload(did, CreateInvoicePayload(t, nil)))
+	assert.NoError(t, m.DeriveFromCreatePayload(CreateInvoicePayload(t, []identity.DID{did})))
 	assert.Nil(t, err, "Init must pass")
 
 	dr, err := m.CalculateDataRoot()
@@ -561,8 +561,9 @@ func TestInvoice_unpackFromCreatePayload(t *testing.T) {
 	inv := new(Invoice)
 
 	// invalid data
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	payload.Data = invalidDecimalData(t)
-	err := inv.unpackFromCreatePayload(did, payload)
+	err := inv.DeriveFromCreatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
@@ -576,7 +577,7 @@ func TestInvoice_unpackFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = inv.unpackFromCreatePayload(did, payload)
+	err = inv.DeriveFromCreatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 
@@ -586,7 +587,7 @@ func TestInvoice_unpackFromCreatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = inv.unpackFromCreatePayload(did, payload)
+	err = inv.DeriveFromCreatePayload(payload)
 	assert.NoError(t, err)
 }
 
@@ -631,7 +632,7 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 
 	// invalid data
 	payload.Data = invalidDecimalData(t)
-	inv, err := old.unpackFromUpdatePayload(payload)
+	inv, err := old.DeriveFromUpdatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
@@ -645,7 +646,7 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	_, err = old.unpackFromUpdatePayload(payload)
+	_, err = old.DeriveFromUpdatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
 
@@ -655,17 +656,17 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	inv, err = old.unpackFromUpdatePayload(payload)
+	inv, err = old.DeriveFromUpdatePayload(payload)
 	assert.NoError(t, err)
 	// check if patch worked
-	assert.NotEqual(t, inv.Data, old.Data)
-	assert.Equal(t, inv.Data.Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.NotEqual(t, inv.GetData(), old.Data)
+	assert.Equal(t, inv.GetData().(Data).Recipient.String(), "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.Equal(t, old.Data.Recipient.String(), "0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
-	assert.Len(t, inv.Data.LineItems, 1)
+	assert.Len(t, inv.GetData().(Data).LineItems, 1)
 
 	// new data
 	assert.Len(t, old.Data.Attachments, 0)
-	assert.Len(t, inv.Data.Attachments, 1)
+	assert.Len(t, inv.GetData().(Data).Attachments, 1)
 }
 
 func TestInvoice_Patch(t *testing.T) {

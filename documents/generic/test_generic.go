@@ -12,6 +12,15 @@ import (
 
 func InitGeneric(t *testing.T, did identity.DID, payload documents.CreatePayload) *Generic {
 	gen := new(Generic)
-	assert.NoError(t, gen.unpackFromCreatePayload(did, payload))
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	assert.NoError(t, gen.DeriveFromCreatePayload(payload))
 	return gen
+}
+
+func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
+func (Bootstrapper) TestTearDown() error {
+	return nil
 }

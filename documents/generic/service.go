@@ -91,7 +91,8 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 	}
 
 	g := new(Generic)
-	if err := g.unpackFromCreatePayload(did, payload); err != nil {
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	if err := g.DeriveFromCreatePayload(payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
@@ -124,7 +125,7 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	}
 
 	g := new(Generic)
-	err = g.unpackFromUpdatePayload(oldGeneric, payload)
+	err = g.unpackFromUpdatePayloadOld(oldGeneric, payload)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -145,9 +146,9 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	return g, jobID, err
 }
 
-// TODO
-func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
-	return nil, errors.New("not implemented")
+// New returns a new uninitialised Generic document.
+func (s service) New(_ string) (documents.Model, error) {
+	return new(Generic), nil
 }
 
 // Validate takes care of document validation

@@ -9,18 +9,56 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestV2DocumentCreateAndCommit_new_document(t *testing.T) {
+func TestV2InvoiceCreateAndCommit_new_document(t *testing.T) {
+	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
+		params := map[string]string{
+			"currency": "EUR",
+			"number":   "12345",
+		}
+		return invoiceCoreAPICreate(dids), params
+	}, func(dids []string) (map[string]interface{}, map[string]string) {
+		// Alice updates the document
+		payload := invoiceCoreAPIUpdate(dids)
+		// update currency to USD and number to 56789
+		data := payload["data"].(map[string]interface{})
+		data["currency"] = "USD"
+		data["number"] = "56789"
+		payload["data"] = data
+		return payload, map[string]string{
+			"currency": "USD",
+			"number":   "56789",
+		}
+	})
+}
+
+func TestV2InvoiceCreate_next_version(t *testing.T) {
+	createNextDocument(t, invoiceCoreAPICreate)
+}
+
+func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
+	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
+		return genericCoreAPICreate(dids), nil
+	}, func(dids []string) (map[string]interface{}, map[string]string) {
+		return genericCoreAPIUpdate(dids), nil
+	})
+}
+
+func TestV2GenericCreate_next_version(t *testing.T) {
+	createNextDocument(t, genericCoreAPICreate)
+}
+
+func createNewDocument(
+	t *testing.T,
+	createPayloadParams, updatePayloadParams func([]string) (map[string]interface{}, map[string]string)) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice prepares document to share with Bob
-	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
+	payload, params := createPayloadParams([]string{bob.id.String()})
+	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
-	params := map[string]string{
-		"currency": "EUR",
-		"number":   "12345",
-	}
+
 	checkDocumentParams(res, params)
 	docID := getDocumentIdentifier(t, res)
 	assert.NotEmpty(t, docID)
@@ -32,20 +70,11 @@ func TestV2DocumentCreateAndCommit_new_document(t *testing.T) {
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusNotFound)
 
 	// Alice updates the document
-	payload := invoiceCoreAPIUpdate([]string{bob.id.String()})
-	// update currency to USD and number to 56789
-	data := payload["data"].(map[string]interface{})
-	data["currency"] = "USD"
-	data["number"] = "56789"
-	payload["data"] = data
+	payload, params = updatePayloadParams([]string{bob.id.String()})
 	payload["document_id"] = docID
 	res = updateDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, payload)
 	status = getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
-	params = map[string]string{
-		"currency": "USD",
-		"number":   "56789",
-	}
 	checkDocumentParams(res, params)
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
 
@@ -69,12 +98,12 @@ func TestV2DocumentCreateAndCommit_new_document(t *testing.T) {
 	commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusBadRequest, docID)
 }
 
-func TestV2DocumentCreate_next_version(t *testing.T) {
+func createNextDocument(t *testing.T, createPayload func([]string) map[string]interface{}) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, invoiceCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, createPayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	assert.Equal(t, status, "success", message)
@@ -87,7 +116,7 @@ func TestV2DocumentCreate_next_version(t *testing.T) {
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
 
 	// bob creates a next pending version of the document
-	payload := invoiceCoreAPICreate(nil)
+	payload := createPayload(nil)
 	payload["document_id"] = docID
 	res = createDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, payload)
 	status = getDocumentStatus(t, res)

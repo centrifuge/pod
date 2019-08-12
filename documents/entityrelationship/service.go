@@ -236,9 +236,9 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	return er, jobID, err
 }
 
-// TODO
-func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
-	return nil, errors.New("not implemented")
+// New returns a new uninitialised EntityRelationship.
+func (s service) New(_ string) (documents.Model, error) {
+	return new(EntityRelationship), nil
 }
 
 // Validate takes care of document validation

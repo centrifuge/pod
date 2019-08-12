@@ -3,10 +3,13 @@
 package documents
 
 import (
+	"context"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -63,6 +66,34 @@ func (m *MockModel) JSON() ([]byte, error) {
 	args := m.Called()
 	data, _ := args.Get(0).([]byte)
 	return data, args.Error(1)
+}
+
+type MockService struct {
+	Service
+	mock.Mock
+}
+
+func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
+	args := m.Called(documentID, version)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
+	args := m.Called(ctx, payload)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) Validate(ctx context.Context, model Model, old Model) error {
+	args := m.Called(ctx, model, old)
+	return args.Error(0)
+}
+
+func (m *MockService) New(scheme string) (Model, error) {
+	args := m.Called(scheme)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
 }
 
 func (m *MockModel) ID() []byte {
@@ -142,4 +173,70 @@ func (m *MockModel) SetStatus(st Status) error {
 func (m *MockModel) Patch(payload UpdatePayload) error {
 	args := m.Called(payload)
 	return args.Error(0)
+}
+
+func (m *MockModel) DeriveFromCreatePayload(payload CreatePayload) error {
+	args := m.Called(payload)
+	return args.Error(0)
+}
+
+func (m *MockModel) DeriveFromUpdatePayload(payload UpdatePayload) (Model, error) {
+	args := m.Called(payload)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+type MockRepository struct {
+	mock.Mock
+}
+
+func (m *MockRepository) Exists(accountID, id []byte) bool {
+	args := m.Called(accountID, id)
+	return args.Get(0).(bool)
+}
+
+func (m *MockRepository) Get(accountID, id []byte) (Model, error) {
+	args := m.Called(accountID, id)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(0)
+}
+
+func (m *MockRepository) Create(accountID, id []byte, model Model) error {
+	args := m.Called(accountID, id)
+	return args.Error(0)
+}
+
+func (m *MockRepository) Update(accountID, id []byte, model Model) error {
+	args := m.Called(accountID, id)
+	return args.Error(0)
+}
+
+func (m *MockRepository) Register(model Model) {
+	m.Called(model)
+	return
+}
+
+func (m *MockRepository) GetLatest(accountID, docID []byte) (Model, error) {
+	args := m.Called(accountID, docID)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	if _, ok := context[storage.BootstrappedDB]; !ok {
+		return errors.New("initializing LevelDB repository failed")
+	}
+	return b.Bootstrap(context)
+}
+
+func (Bootstrapper) TestTearDown() error {
+	return nil
+}
+
+func (b PostBootstrapper) TestBootstrap(ctx map[string]interface{}) error {
+	return b.Bootstrap(ctx)
+}
+
+func (PostBootstrapper) TestTearDown() error {
+	return nil
 }

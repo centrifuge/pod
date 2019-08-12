@@ -317,9 +317,9 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	return e, jobID, err
 }
 
-// TODO
-func (s service) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
-	return nil, errors.New("not implemented")
+// New returns a new uninitialised Entity.
+func (s service) New(_ string) (documents.Model, error) {
+	return new(Entity), nil
 }
 
 // Validate takes care of entity validation
