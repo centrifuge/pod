@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/jinzhu/copier"
 )
 
 const (
@@ -385,9 +386,8 @@ func isOnlyOneSet(methods ...interface{}) error {
 // loadData unmarshals json blob to Data.
 // Only one of the payment method has to be set.
 // errors out if multiple payment methods are set or none is set.
-func (e *Entity) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
+func loadData(data []byte, d *Data) error {
+	err := json.Unmarshal(data, d)
 	if err != nil {
 		return err
 	}
@@ -400,29 +400,30 @@ func (e *Entity) loadData(data []byte) error {
 		}
 	}
 
-	e.Data = d
 	return nil
 }
 
-// unpackFromCreatePayload unpacks the entity data from the Payload.
-func (e *Entity) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := e.loadData(payload.Data); err != nil {
+// DeriveFromCreatePayload unpacks the entity data from the Payload.
+func (e *Entity) DeriveFromCreatePayload(payload documents.CreatePayload) error {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
 		return errors.NewTypedError(ErrEntityInvalidData, err)
 	}
 
-	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
 	}
 
+	e.Data = d
 	e.CoreDocument = cd
 	return nil
 }
 
 // unpackFromUpdatePayload unpacks the update payload and prepares a new version.
 func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
-	if err := e.loadData(payload.Data); err != nil {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
 		return errors.NewTypedError(ErrEntityInvalidData, err)
 	}
 
@@ -431,13 +432,58 @@ func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePa
 		return err
 	}
 
+	e.Data = d
 	e.CoreDocument = ncd
 	return nil
 }
 
+// DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
+func (e *Entity) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
+	d, err := e.patch(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	ncd, err := e.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Entity{
+		Data:         d,
+		CoreDocument: ncd,
+	}, nil
+}
+
+func (e *Entity) patch(payload documents.UpdatePayload) (Data, error) {
+	var d Data
+	err := copier.Copy(&d, &e.Data)
+	if err != nil {
+		return d, err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return d, errors.NewTypedError(ErrEntityInvalidData, err)
+	}
+
+	return d, nil
+}
+
 // Patch merges payload data into model
 func (e *Entity) Patch(payload documents.UpdatePayload) error {
-	return documents.ErrNotImplemented
+	d, err := e.patch(payload)
+	if err != nil {
+		return err
+	}
+
+	ncd, err := e.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	e.Data = d
+	e.CoreDocument = ncd
+	return nil
 }
 
 // Scheme returns the entity scheme.

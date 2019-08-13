@@ -461,8 +461,10 @@ func validDataWithIdentity(t *testing.T) []byte {
 }
 
 func checkEntityPayloadDataError(t *testing.T, e *Entity, payload documents.CreatePayload) {
-	err := e.loadData(payload.Data)
+	var d Data
+	err := loadData(payload.Data, &d)
 	assert.Error(t, err)
+	e.Data = d
 }
 
 func TestEntity_loadData(t *testing.T) {
@@ -487,8 +489,10 @@ func TestEntity_loadData(t *testing.T) {
 
 	// valid data
 	payload.Data = validData(t)
-	err := e.loadData(payload.Data)
+	var d Data
+	err := loadData(payload.Data, &d)
 	assert.NoError(t, err)
+	e.Data = d
 	data := e.GetData().(Data)
 	assert.Equal(t, data.LegalName, "Hello, World!")
 	assert.Len(t, data.PaymentDetails, 1)
@@ -499,13 +503,14 @@ func TestEntity_loadData(t *testing.T) {
 	assert.Equal(t, data.PaymentDetails[0].BankPaymentMethod.Identifier.String(), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
 }
 
-func TestEntity_unpackFromCreatePayload(t *testing.T) {
+func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 	payload := documents.CreatePayload{}
 	e := new(Entity)
 
 	// invalid data
 	payload.Data = invalidDIDData(t)
-	err := e.unpackFromCreatePayload(did, payload)
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	err := e.DeriveFromCreatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
 
@@ -519,7 +524,7 @@ func TestEntity_unpackFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = e.unpackFromCreatePayload(did, payload)
+	err = e.DeriveFromCreatePayload(payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 
@@ -529,7 +534,7 @@ func TestEntity_unpackFromCreatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = e.unpackFromCreatePayload(did, payload)
+	err = e.DeriveFromCreatePayload(payload)
 	assert.NoError(t, err)
 }
 
@@ -566,4 +571,55 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	}
 	err = e.unpackFromUpdatePayload(old, payload)
 	assert.NoError(t, err)
+}
+
+func TestEntity_Patch(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	err := doc.Patch(payload)
+	assert.Error(t, err)
+
+	// coredoc patch failed
+	doc.CoreDocument.Status = documents.Committed
+	payload.Data = validDataWithIdentity(t)
+	err = doc.Patch(payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotInAllowedState, err))
+
+	// success
+	doc.CoreDocument.Status = documents.Pending
+	err = doc.Patch(payload)
+	assert.NoError(t, err)
+}
+
+func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	_, err := doc.DeriveFromUpdatePayload(payload)
+	assert.Error(t, err)
+
+	// coredoc failed
+	payload.Data = validDataWithIdentity(t)
+	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	_, err = doc.DeriveFromUpdatePayload(payload)
+	assert.Error(t, err)
+
+	// Success
+	payload.Attributes = nil
+	gdoc, err := doc.DeriveFromUpdatePayload(payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, gdoc)
 }

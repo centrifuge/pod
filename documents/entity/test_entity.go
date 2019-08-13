@@ -147,13 +147,15 @@ func CreateEntityPayload(t *testing.T, collaborators []identity.DID) documents.C
 
 func InitEntity(t *testing.T, did identity.DID, payload documents.CreatePayload) *Entity {
 	entity := new(Entity)
-	assert.NoError(t, entity.unpackFromCreatePayload(did, payload))
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	assert.NoError(t, entity.DeriveFromCreatePayload(payload))
 	return entity
 }
 
 func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Entity, coredocumentpb.CoreDocument) {
 	entity := new(Entity)
-	err := entity.unpackFromCreatePayload(did, payload)
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	err := entity.DeriveFromCreatePayload(payload)
 	assert.NoError(t, err)
 	entity.GetTestCoreDocWithReset()
 	_, err = entity.CalculateDataRoot()
