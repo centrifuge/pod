@@ -175,14 +175,14 @@ func TestService_Derive(t *testing.T) {
 	doc := new(MockModel)
 	docSrv := new(MockService)
 	docSrv.On("New", scheme).Return(doc, nil)
-	doc.On("DeriveFromCreatePayload", mock.Anything).Return(errors.New("derive failed")).Once()
+	doc.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(errors.New("derive failed")).Once()
 	assert.NoError(t, s.registry.Register(scheme, docSrv))
 	_, err = s.Derive(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
 
 	// create successful
-	doc.On("DeriveFromCreatePayload", mock.Anything).Return(nil).Once()
+	doc.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(nil).Once()
 	gdoc, err := s.Derive(ctx, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, doc, gdoc)
@@ -206,13 +206,13 @@ func TestService_Derive(t *testing.T) {
 
 	// DeriveFromUpdatePayload failed
 	doc.On("Scheme").Return(scheme)
-	doc.On("DeriveFromUpdatePayload", payload).Return(nil, ErrDocumentInvalid).Once()
+	doc.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(nil, ErrDocumentInvalid).Once()
 	_, err = s.Derive(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
 
 	// success
-	doc.On("DeriveFromUpdatePayload", payload).Return(doc, nil).Once()
+	doc.On("DeriveFromUpdatePayload", mock.Anything, payload).Return(doc, nil).Once()
 	gdoc, err = s.Derive(ctx, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, gdoc, doc)

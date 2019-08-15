@@ -3,6 +3,7 @@
 package generic
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -430,6 +431,7 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 		ReadWriteCollaborators: []identity.DID{did},
 	}}
 	g := new(Generic)
+	ctx := context.Background()
 
 	// invalid attributes
 	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
@@ -441,7 +443,7 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = g.DeriveFromCreatePayload(payload)
+	err = g.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 
@@ -451,7 +453,7 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = g.DeriveFromCreatePayload(payload)
+	err = g.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 }
 

@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -259,7 +260,7 @@ func (g *Generic) GetData() interface{} {
 }
 
 // DeriveFromCreatePayload unpacks the invoice data from the Payload.
-func (g *Generic) DeriveFromCreatePayload(payload documents.CreatePayload) error {
+func (g *Generic) DeriveFromCreatePayload(_ context.Context, payload documents.CreatePayload) error {
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
@@ -292,7 +293,7 @@ func (g *Generic) Patch(payload documents.UpdatePayload) error {
 }
 
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (g *Generic) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
+func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
 	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return nil, err

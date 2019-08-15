@@ -191,7 +191,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	inv = new(Invoice)
 	payload := CreateInvoicePayload(t, nil)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(payload))
+	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(ctxh, payload))
 	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
 		return errors.New("validations fail")
 	})
@@ -202,7 +202,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// create failed
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(payload))
+	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(ctxh, payload))
 	err = invSrv.repo.Create(accountID, inv.CurrentVersion(), inv)
 	assert.Nil(t, err)
 	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
@@ -212,7 +212,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// success
 	inv = new(Invoice)
-	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(payload))
+	assert.NoError(t, inv.(*Invoice).DeriveFromCreatePayload(ctxh, payload))
 	inv, err = invSrv.validateAndPersist(ctxh, nil, inv, CreateValidator())
 	assert.Nil(t, err)
 	assert.NotNil(t, inv)

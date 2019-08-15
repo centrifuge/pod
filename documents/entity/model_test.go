@@ -3,6 +3,7 @@
 package entity
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -506,11 +507,12 @@ func TestEntity_loadData(t *testing.T) {
 func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 	payload := documents.CreatePayload{}
 	e := new(Entity)
+	ctx := context.Background()
 
 	// invalid data
 	payload.Data = invalidDIDData(t)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-	err := e.DeriveFromCreatePayload(payload)
+	err := e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
 
@@ -524,7 +526,7 @@ func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = e.DeriveFromCreatePayload(payload)
+	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 
@@ -534,7 +536,7 @@ func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = e.DeriveFromCreatePayload(payload)
+	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 }
 
@@ -598,10 +600,11 @@ func TestEntity_Patch(t *testing.T) {
 func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+	ctx := context.Background()
 
 	// invalid data
 	payload.Data = invalidDIDData(t)
-	_, err := doc.DeriveFromUpdatePayload(payload)
+	_, err := doc.DeriveFromUpdatePayload(ctx, payload)
 	assert.Error(t, err)
 
 	// coredoc failed
@@ -614,12 +617,12 @@ func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	_, err = doc.DeriveFromUpdatePayload(payload)
+	_, err = doc.DeriveFromUpdatePayload(ctx, payload)
 	assert.Error(t, err)
 
 	// Success
 	payload.Attributes = nil
-	gdoc, err := doc.DeriveFromUpdatePayload(payload)
+	gdoc, err := doc.DeriveFromUpdatePayload(ctx, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, gdoc)
 }

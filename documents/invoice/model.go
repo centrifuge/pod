@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -574,7 +575,7 @@ func loadData(data []byte, v *Data) error {
 }
 
 // DeriveFromCreatePayload unpacks the invoice data from the Payload.
-func (i *Invoice) DeriveFromCreatePayload(payload documents.CreatePayload) error {
+func (i *Invoice) DeriveFromCreatePayload(_ context.Context, payload documents.CreatePayload) error {
 	if err := loadData(payload.Data, &i.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
@@ -605,7 +606,7 @@ func (i *Invoice) unpackFromUpdatePayloadOld(old *Invoice, payload documents.Upd
 }
 
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (i *Invoice) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
+func (i *Invoice) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
 	d, err := i.patch(payload)
 	if err != nil {
 		return nil, err

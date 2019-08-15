@@ -142,7 +142,7 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 
 	inv := new(Invoice)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-	if err := inv.DeriveFromCreatePayload(payload); err != nil {
+	if err := inv.DeriveFromCreatePayload(ctx, payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
