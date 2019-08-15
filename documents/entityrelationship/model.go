@@ -297,7 +297,7 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 }
 
 // DeriveFromUpdatePayload is not implemented for entity relationship.
-func (e *EntityRelationship) DeriveFromUpdatePayload(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (e *EntityRelationship) DeriveFromUpdatePayload(context.Context, documents.UpdatePayload) (documents.Model, error) {
 	return nil, ErrEntityRelationshipUpdate
 }
 
