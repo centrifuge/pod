@@ -92,7 +92,6 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @param document_id path string true "Document Identifier"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
-// @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 200 {object} coreapi.DocumentResponse
@@ -128,8 +127,8 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := h.srv.UpdateDocument(ctx, payload)
 	if err != nil {
-		code = http.StatusNotFound
-		err = coreapi.ErrDocumentNotFound
+		code = http.StatusBadRequest
+		log.Error(err)
 		return
 	}
 

@@ -27,7 +27,7 @@ func InitEntityRelationship(t *testing.T, ctx context.Context, data Data) *Entit
 	er := new(EntityRelationship)
 	d, err := json.Marshal(data)
 	assert.NoError(t, err)
-	err = er.unpackFromCreatePayload(ctx, documents.CreatePayload{Data: d})
+	err = er.DeriveFromCreatePayload(ctx, documents.CreatePayload{Data: d})
 	assert.NoError(t, err)
 	return er
 }

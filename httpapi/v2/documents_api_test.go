@@ -197,8 +197,8 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	pendingSrv.On("Update", ctx, mock.Anything).Return(nil, errors.New("Failed to update document")).Once()
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.UpdateDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), "document not found")
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "Failed to update document")
 
 	// failed document conversion
 	doc := new(testingdocuments.MockModel)

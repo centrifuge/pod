@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/jinzhu/copier"
 )
 
 const (
@@ -24,6 +25,9 @@ const (
 
 	// Scheme to identify entity relationship
 	Scheme = prefix
+
+	// ErrEntityRelationshipUpdate is a sentinel error for update failure.
+	ErrEntityRelationshipUpdate = errors.Error("Entity relationship doesn't support updates.")
 )
 
 // tree prefixes for specific documents use the second byte of a 4 byte slice by convention
@@ -261,26 +265,25 @@ func (e *EntityRelationship) Scheme() string {
 }
 
 // loadData unmarshals json blob to Data.
-func (e *EntityRelationship) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
+func loadData(data []byte, d *Data) error {
+	err := json.Unmarshal(data, d)
 	if err != nil {
 		return err
 	}
 
-	e.Data = d
 	return nil
 }
 
-// unpackFromCreatePayload unpacks the entity relationship data from the Payload.
-func (e *EntityRelationship) unpackFromCreatePayload(ctx context.Context, payload documents.CreatePayload) error {
-	if err := e.loadData(payload.Data); err != nil {
+// DeriveFromCreatePayload unpacks the entity relationship data from the Payload.
+func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payload documents.CreatePayload) error {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
 		return err
 	}
 
 	params := documents.AccessTokenParams{
-		Grantee:            e.Data.TargetIdentity.String(),
-		DocumentIdentifier: e.Data.EntityIdentifier.String(),
+		Grantee:            d.TargetIdentity.String(),
+		DocumentIdentifier: d.EntityIdentifier.String(),
 	}
 
 	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
@@ -289,12 +292,35 @@ func (e *EntityRelationship) unpackFromCreatePayload(ctx context.Context, payloa
 	}
 
 	e.CoreDocument = cd
+	e.Data = d
 	return nil
 }
 
-// Patch merges payload data into model
+// DeriveFromUpdatePayload is not implemented for entity relationship.
+func (e *EntityRelationship) DeriveFromUpdatePayload(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	return nil, ErrEntityRelationshipUpdate
+}
+
+// Patch merges payload data into Document.
 func (e *EntityRelationship) Patch(payload documents.UpdatePayload) error {
-	return documents.ErrNotImplemented
+	var d Data
+	err := copier.Copy(&d, &e.Data)
+	if err != nil {
+		return err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return err
+	}
+
+	ncd, err := e.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	e.Data = d
+	e.CoreDocument = ncd
+	return nil
 }
 
 // revokeRelationship revokes a relationship by deleting the access token in the Entity
