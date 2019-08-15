@@ -155,30 +155,50 @@ func invoiceCoreAPIUpdate(collaborators []string) map[string]interface{} {
 }
 
 func entityCoreAPICreate(identity string, collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
+	p := map[string]interface{}{
 		"scheme":       "entity",
 		"write_access": collaborators,
-		"data": map[string]interface{}{
-			"identity":   identity,
-			"legal_name": "test company",
-			"contacts": []map[string]interface{}{
-				{
-					"name": "test name",
-				},
-			},
+		"attributes":   createAttributes(),
+	}
 
-			"payment_details": []map[string]interface{}{
-				{
-					"predefined": true,
-					"bank_payment_method": map[string]interface{}{
-						"identifier":  hexutil.Encode(utils.RandomSlice(32)),
-						"holder_name": "John Doe",
-					},
+	data := map[string]interface{}{
+		"legal_name": "test company",
+		"contacts": []map[string]interface{}{
+			{
+				"name": "test name",
+			},
+		},
+
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier":  hexutil.Encode(utils.RandomSlice(32)),
+					"holder_name": "John Doe",
 				},
 			},
 		},
-		"attributes": createAttributes(),
 	}
+
+	if identity != "" {
+		data["identity"] = identity
+	}
+
+	p["data"] = data
+	return p
+}
+
+func entityCoreAPIUpdate(collabs []string) map[string]interface{} {
+	p := map[string]interface{}{
+		"scheme":       "entity",
+		"write_access": collabs,
+		"data": map[string]interface{}{
+			"legal_name": "updated company",
+		},
+		"attributes": updateAttributes(),
+	}
+
+	return p
 }
 
 func genericCoreAPICreate(collaborators []string) map[string]interface{} {

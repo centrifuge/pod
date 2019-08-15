@@ -47,6 +47,33 @@ func TestV2GenericCreate_next_version(t *testing.T) {
 	createNextDocument(t, genericCoreAPICreate)
 }
 
+func TestV2EntityCreateAndCommit_new_document(t *testing.T) {
+	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
+		params := map[string]string{
+			"legal_name": "test company",
+			"identity":   dids[0],
+		}
+		return entityCoreAPICreate(dids[0], dids), params
+	}, func(dids []string) (map[string]interface{}, map[string]string) {
+		p := entityCoreAPIUpdate(dids)
+		params := map[string]string{
+			"legal_name": "updated company",
+		}
+
+		return p, params
+	})
+}
+
+func TestV2EntityCreate_next_version(t *testing.T) {
+	createNextDocument(t, func(dids []string) map[string]interface{} {
+		var id string
+		if len(dids) > 0 {
+			id = dids[0]
+		}
+		return entityCoreAPICreate(id, dids)
+	})
+}
+
 func createNewDocument(
 	t *testing.T,
 	createPayloadParams, updatePayloadParams func([]string) (map[string]interface{}, map[string]string)) {
