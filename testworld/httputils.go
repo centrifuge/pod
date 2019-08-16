@@ -4,6 +4,7 @@ package testworld
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -450,6 +451,7 @@ func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string,
 
 	if len(attrs) > 0 {
 		gattrs := objGet.Path("$.attributes").Object().Raw()
+		fmt.Println(gattrs)
 		cattrs := make(map[string]map[string]string)
 		for k, v := range gattrs {
 			atr := v.(map[string]interface{})

@@ -46,9 +46,9 @@ type CreateDocumentRequest struct {
 // Value simple value of the attribute
 // MonetaryValue value for only monetary attribute
 type AttributeRequest struct {
-	Type          string        `json:"type" enums:"integer,decimal,string,bytes,timestamp,monetary"`
-	Value         string        `json:"value"`
-	MonetaryValue MonetaryValue `json:"monetary_value"`
+	Type          string         `json:"type" enums:"integer,decimal,string,bytes,timestamp,monetary"`
+	Value         string         `json:"value"`
+	MonetaryValue *MonetaryValue `json:"monetary_value,omitempty"`
 }
 
 // AttributeResponse adds key to the attribute.
@@ -172,7 +172,7 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 		case documents.AttrMonetary:
 			attrReq = AttributeRequest{
 				Type: v.Value.Type.String(),
-				MonetaryValue: MonetaryValue{
+				MonetaryValue: &MonetaryValue{
 					Value:   v.Value.Monetary.Value.String(),
 					ChainID: v.Value.Monetary.ChainID,
 					ID:      string(v.Value.Monetary.ID),
