@@ -3,6 +3,7 @@
 package generic
 
 import (
+	"context"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -13,7 +14,7 @@ import (
 func InitGeneric(t *testing.T, did identity.DID, payload documents.CreatePayload) *Generic {
 	gen := new(Generic)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-	assert.NoError(t, gen.DeriveFromCreatePayload(payload))
+	assert.NoError(t, gen.DeriveFromCreatePayload(context.Background(), payload))
 	return gen
 }
 

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 
@@ -404,7 +405,7 @@ func loadData(data []byte, d *Data) error {
 }
 
 // DeriveFromCreatePayload unpacks the entity data from the Payload.
-func (e *Entity) DeriveFromCreatePayload(payload documents.CreatePayload) error {
+func (e *Entity) DeriveFromCreatePayload(_ context.Context, payload documents.CreatePayload) error {
 	var d Data
 	if err := loadData(payload.Data, &d); err != nil {
 		return errors.NewTypedError(ErrEntityInvalidData, err)
@@ -438,7 +439,7 @@ func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePa
 }
 
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (e *Entity) DeriveFromUpdatePayload(payload documents.UpdatePayload) (documents.Model, error) {
+func (e *Entity) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
 	d, err := e.patch(payload)
 	if err != nil {
 		return nil, err

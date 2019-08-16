@@ -181,9 +181,9 @@ type UpdatePayload struct {
 // Deriver defines the functions that can derive Document from the Payloads.
 type Deriver interface {
 	// DeriveFromCreatePayload loads the payload into self.
-	DeriveFromCreatePayload(payload CreatePayload) error
+	DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error
 
 	// DeriveFromUpdatePayload create the next version of the document.
 	// Patches the old data with Payload data
-	DeriveFromUpdatePayload(payload UpdatePayload) (Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error)
 }

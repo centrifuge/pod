@@ -175,13 +175,13 @@ func (m *MockModel) Patch(payload UpdatePayload) error {
 	return args.Error(0)
 }
 
-func (m *MockModel) DeriveFromCreatePayload(payload CreatePayload) error {
-	args := m.Called(payload)
+func (m *MockModel) DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error {
+	args := m.Called(ctx, payload)
 	return args.Error(0)
 }
 
-func (m *MockModel) DeriveFromUpdatePayload(payload UpdatePayload) (Model, error) {
-	args := m.Called(payload)
+func (m *MockModel) DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error) {
+	args := m.Called(ctx, payload)
 	doc, _ := args.Get(0).(Model)
 	return doc, args.Error(1)
 }

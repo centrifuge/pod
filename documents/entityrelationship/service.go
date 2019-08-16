@@ -172,7 +172,7 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 // CreateModel creates entity relationship from the payload, validates, persists, and returns the document.
 func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
 	e := new(EntityRelationship)
-	if err := e.unpackFromCreatePayload(ctx, payload); err != nil {
+	if err := e.DeriveFromCreatePayload(ctx, payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 

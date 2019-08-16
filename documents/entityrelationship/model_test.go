@@ -345,34 +345,69 @@ func TestEntityRelationship_loadData(t *testing.T) {
 
 	// invalid data
 	d := invalidData(t)
-	err := e.loadData(d)
+	err := loadData(d, &e.Data)
 	assert.Error(t, err)
 
 	d = validData(t, testingidentity.GenerateRandomDID())
-	err = e.loadData(d)
+	err = loadData(d, &e.Data)
 	assert.NoError(t, err)
 }
 
-func TestEntityRelationship_unpackCreatePayload(t *testing.T) {
+func TestEntityRelationship_DeriveFromCreatePayload(t *testing.T) {
 	e := new(EntityRelationship)
 	var payload documents.CreatePayload
 	ctx := context.Background()
 
 	// invalid data
 	payload.Data = invalidData(t)
-	err := e.unpackFromCreatePayload(ctx, payload)
+	err := e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 
 	// missing account context
 	payload.Data = validData(t, did)
-	err = e.unpackFromCreatePayload(ctx, payload)
+	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), documents.ErrDocumentConfigAccountID.Error())
 
 	// success
 	ctx = testingconfig.CreateAccountContext(t, cfg)
-	err = e.unpackFromCreatePayload(ctx, payload)
+	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
+}
+
+func TestEntityRelationship_DeriveFromUpdatePayload(t *testing.T) {
+	e := new(EntityRelationship)
+	_, err := e.DeriveFromUpdatePayload(context.Background(), documents.UpdatePayload{})
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEntityRelationshipUpdate, err))
+}
+
+func TestEntityRelationship_Patch(t *testing.T) {
+	e := CreateRelationship(t, testingconfig.CreateAccountContext(t, cfg))
+
+	// invalid data
+	d := invalidData(t)
+	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Data: d}}
+	err := e.Patch(payload)
+	assert.Error(t, err)
+
+	// core doc patch failed
+	e.CoreDocument.Status = documents.Committed
+	self := did
+	target := testingidentity.GenerateRandomDID()
+	assert.NotEqual(t, e.Data.TargetIdentity, &target)
+	payload.Data = validDataWithTargetDID(t, self, target)
+	err = e.Patch(payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotInAllowedState, err))
+
+	// success
+	assert.NotEqual(t, e.Data.TargetIdentity, &target)
+	e.CoreDocument.Status = documents.Pending
+	err = e.Patch(payload)
+	assert.NoError(t, err)
+	assert.Equal(t, e.Data.TargetIdentity, &target)
+	assert.Equal(t, e.Data.OwnerIdentity, &self)
 }
 
 func TestEntityRelationship_revokeRelationship(t *testing.T) {
