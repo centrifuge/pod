@@ -66,7 +66,7 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 	}
 
 	if !model.AttributeExists(key) {
-		return documents.NewAttribute(typeLabel, documents.AttrInt256, "0")
+		return documents.NewStringAttribute(typeLabel, documents.AttrInt256, "0")
 	}
 
 	idx, err := GetArrayLatestIDX(model, typeLabel)
@@ -80,7 +80,7 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 		return attr, err
 	}
 
-	return documents.NewAttribute(typeLabel, documents.AttrInt256, newIdx.String())
+	return documents.NewStringAttribute(typeLabel, documents.AttrInt256, newIdx.String())
 }
 
 // FillAttributeList fills an attributes list from the JSON object
@@ -95,7 +95,7 @@ func FillAttributeList(data interface{}, idx, fieldKey string) ([]documents.Attr
 			label := LabelFromJSONTag(idx, jsonKey, fieldKey)
 
 			attrType := types.Field(i).Tag.Get("attr")
-			attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
+			attr, err := documents.NewStringAttribute(label, documents.AttributeType(attrType), value)
 			if err != nil {
 				return nil, err
 			}

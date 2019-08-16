@@ -295,7 +295,7 @@ func TestCoreDocument_Patch(t *testing.T) {
 	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
 	c1 := testingidentity.GenerateRandomDID()
 	c2 := testingidentity.GenerateRandomDID()
-	attr, err := NewAttribute("test", AttrString, "value")
+	attr, err := NewStringAttribute("test", AttrString, "value")
 	assert.NoError(t, err)
 	attrs := map[AttrKey]Attribute{
 		attr.Key: attr,
@@ -315,7 +315,7 @@ func TestCoreDocument_Patch(t *testing.T) {
 
 	// Override existing collaborators and attribute
 	c3 := testingidentity.GenerateRandomDID()
-	attr, err = NewAttribute("test1", AttrString, "value1")
+	attr, err = NewStringAttribute("test1", AttrString, "value1")
 	assert.NoError(t, err)
 	attrs = map[AttrKey]Attribute{
 		attr.Key: attr,
@@ -694,7 +694,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	attr, err := NewAttribute(label, AttrString, value)
+	attr, err := NewStringAttribute(label, AttrString, value)
 	assert.NoError(t, err)
 	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true, nil, attr)
 	assert.NoError(t, err)
@@ -714,7 +714,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 
 	// update
 	nvalue := "2000"
-	attr, err = NewAttribute(label, AttrDecimal, nvalue)
+	attr, err = NewStringAttribute(label, AttrDecimal, nvalue)
 	assert.NoError(t, err)
 	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true, nil, attr)
 	assert.NoError(t, err)

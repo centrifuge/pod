@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -38,12 +39,15 @@ const (
 
 	// AttrSigned is the custom signature attribute type
 	AttrSigned AttributeType = "signed"
+
+	// AttrMonetary is the monetary attribute type
+	AttrMonetary AttributeType = "monetary"
 )
 
 // isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
 func isAttrTypeAllowed(attr AttributeType) bool {
 	switch attr {
-	case AttrInt256, AttrDecimal, AttrString, AttrBytes, AttrTimestamp, AttrSigned:
+	case AttrInt256, AttrDecimal, AttrString, AttrBytes, AttrTimestamp, AttrSigned, AttrMonetary:
 		return true
 	default:
 		return false
@@ -104,6 +108,22 @@ func (s Signed) String() string {
 	return s.Identity.String()
 }
 
+// Monetary is a custom attribute type for monetary values
+type Monetary struct {
+	Value   *Decimal
+	ChainID []byte
+	ID      []byte // Currency USD|0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2(DAI)|ETH
+}
+
+// String returns the readable representation of the monetary value
+func (m Monetary) String() string {
+	chStr := ""
+	if len(m.ChainID) > 0 {
+		chStr = "@" + string(m.ChainID)
+	}
+	return fmt.Sprintf("%s %s%s", m.Value.String(), string(m.ID), chStr)
+}
+
 // AttrVal represents a strongly typed value of an attribute
 type AttrVal struct {
 	Type      AttributeType
@@ -113,6 +133,7 @@ type AttrVal struct {
 	Bytes     []byte
 	Timestamp *timestamp.Timestamp
 	Signed    Signed
+	Monetary  Monetary
 }
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
@@ -129,11 +150,10 @@ func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, e
 		attrVal.Bytes, err = hexutil.Decode(value)
 	case AttrTimestamp:
 		var t time.Time
-		t, err = time.Parse(time.RFC3339, value)
+		t, err = time.Parse(time.RFC3339Nano, value)
 		if err != nil {
 			return attrVal, err
 		}
-
 		attrVal.Timestamp, err = utils.ToTimestamp(t.UTC())
 	default:
 		return attrVal, ErrNotValidAttrType
@@ -163,10 +183,11 @@ func (attrVal AttrVal) String() (str string, err error) {
 		if err != nil {
 			break
 		}
-
-		str = tp.UTC().Format(time.RFC3339)
+		str = tp.UTC().Format(time.RFC3339Nano)
 	case AttrSigned:
 		str = attrVal.Signed.String()
+	case AttrMonetary:
+		str = attrVal.Monetary.String()
 	}
 
 	return str, err
@@ -179,8 +200,8 @@ type Attribute struct {
 	Value    AttrVal
 }
 
-// NewAttribute creates a new custom attribute.
-func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr Attribute, err error) {
+// NewStringAttribute creates a new custom attribute.
+func NewStringAttribute(keyLabel string, attrType AttributeType, value string) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
@@ -189,6 +210,30 @@ func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr A
 	attrVal, err := AttrValFromString(attrType, value)
 	if err != nil {
 		return attr, err
+	}
+
+	return Attribute{
+		KeyLabel: keyLabel,
+		Key:      attrKey,
+		Value:    attrVal,
+	}, nil
+}
+
+// NewMonetaryAttribute creates new instance of Monetary Attribute
+func NewMonetaryAttribute(keyLabel string, value string, chainID, id []byte) (attr Attribute, err error) {
+	attrKey, err := AttrKeyFromLabel(keyLabel)
+	if err != nil {
+		return attr, err
+	}
+
+	dec, err := NewDecimal(value)
+	if err != nil {
+		return attr, err
+	}
+
+	attrVal := AttrVal{
+		Type:     AttrMonetary,
+		Monetary: Monetary{Value: dec, ChainID: chainID, ID: id},
 	}
 
 	return Attribute{

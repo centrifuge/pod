@@ -19,6 +19,16 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// MonetaryValue defines user format to represent currency type
+// Value string representation of decimal number
+// ChainID hex bytes representing the chain where the currency is relevant
+// ID string representing the Currency (USD|ETH|0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2(DAI)...)
+type MonetaryValue struct {
+	Value   string             `json:"value" enums:"decimal"`
+	ChainID byteutils.HexBytes `json:"chain_id" swaggertype:"primitive,string"`
+	ID      string             `json:"id"`
+}
+
 // AttributeMapRequest defines a map of attributes with attribute key as key
 type AttributeMapRequest map[string]AttributeRequest
 
@@ -32,9 +42,13 @@ type CreateDocumentRequest struct {
 }
 
 // AttributeRequest defines a single attribute.
+// Type type of the attribute
+// Value simple value of the attribute
+// MonetaryValue value for only monetary attribute
 type AttributeRequest struct {
-	Type  string `json:"type" enums:"integer,decimal,string,bytes,timestamp"`
-	Value string `json:"value"`
+	Type          string        `json:"type" enums:"integer,decimal,string,bytes,timestamp,monetary"`
+	Value         string        `json:"value"`
+	MonetaryValue MonetaryValue `json:"monetary_value"`
 }
 
 // AttributeResponse adds key to the attribute.
@@ -78,9 +92,19 @@ type DocumentResponse struct {
 func toDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
-		attr, err := documents.NewAttribute(k, documents.AttributeType(v.Type), v.Value)
-		if err != nil {
-			return nil, err
+		var attr documents.Attribute
+		var err error
+		switch documents.AttributeType(v.Type) {
+		case documents.AttrMonetary:
+			attr, err = documents.NewMonetaryAttribute(k, v.MonetaryValue.Value, v.MonetaryValue.ChainID.Bytes(), []byte(v.MonetaryValue.ID))
+			if err != nil {
+				return nil, err
+			}
+		default:
+			attr, err = documents.NewStringAttribute(k, documents.AttributeType(v.Type), v.Value)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		attrs[attr.Key] = attr
@@ -143,17 +167,31 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
 	m := make(AttributeMapResponse)
 	for _, v := range attrs {
-		val, err := v.Value.String()
-		if err != nil {
-			return nil, err
+		var attrReq AttributeRequest
+		switch v.Value.Type {
+		case documents.AttrMonetary:
+			attrReq = AttributeRequest{
+				Type: v.Value.Type.String(),
+				MonetaryValue: MonetaryValue{
+					Value:   v.Value.Monetary.Value.String(),
+					ChainID: v.Value.Monetary.ChainID,
+					ID:      string(v.Value.Monetary.ID),
+				},
+			}
+		default:
+			val, err := v.Value.String()
+			if err != nil {
+				return nil, err
+			}
+			attrReq = AttributeRequest{
+				Type:  v.Value.Type.String(),
+				Value: val,
+			}
 		}
 
 		m[v.KeyLabel] = AttributeResponse{
-			AttributeRequest: AttributeRequest{
-				Type:  v.Value.Type.String(),
-				Value: val,
-			},
-			Key: v.Key[:],
+			AttributeRequest: attrReq,
+			Key:              v.Key[:],
 		}
 	}
 

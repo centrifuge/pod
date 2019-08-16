@@ -278,7 +278,7 @@ func TestEntityRelationship_AddAttributes(t *testing.T) {
 	e, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// success
@@ -300,7 +300,7 @@ func TestEntityRelationship_DeleteAttribute(t *testing.T) {
 	e, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// failed

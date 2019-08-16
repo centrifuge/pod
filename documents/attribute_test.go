@@ -108,7 +108,7 @@ func TestNewAttribute(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			attr, err := NewAttribute(test.readableKey, test.attrType, test.value)
+			attr, err := NewStringAttribute(test.readableKey, test.attrType, test.value)
 			if test.errs {
 				assert.Error(t, err)
 				assert.Equal(t, test.errStr, err.Error())
@@ -179,7 +179,12 @@ func TestAttrValFromString(t *testing.T) {
 			time.Now().UTC().Format(time.RFC3339),
 			false,
 		},
-
+		{
+			"timestamp_nano",
+			AttrTimestamp,
+			time.Now().UTC().Format(time.RFC3339Nano),
+			false,
+		},
 		{
 			"unknown type",
 			AttributeType("some type"),
@@ -260,4 +265,28 @@ func TestNewSignedAttribute(t *testing.T) {
 	assert.Equal(t, signature, attr.Value.Signed.Signature)
 	acc.AssertExpectations(t)
 	model.AssertExpectations(t)
+}
+
+func TestNewMonetaryAttribute(t *testing.T) {
+	// empty label
+	_, err := NewMonetaryAttribute("", "", nil, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
+
+	// decimal error, empty string
+	_, err = NewMonetaryAttribute("invoice_amount", "", nil, nil)
+	assert.Error(t, err)
+
+	// success
+	label := "invoice_amount"
+	chainID := []byte{1}
+	id := []byte("USD")
+	attr, err := NewMonetaryAttribute(label, "1001.1001", chainID, id)
+	assert.NoError(t, err)
+	assert.Equal(t, AttrMonetary, attr.Value.Type)
+	attrKey, err := AttrKeyFromLabel(label)
+	assert.NoError(t, err)
+	assert.Equal(t, attrKey, attr.Key)
+	assert.Equal(t, id, attr.Value.Monetary.ID)
+	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
 }

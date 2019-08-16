@@ -72,7 +72,7 @@ type attribute struct {
 func toAttrsMap(t *testing.T, cattrs map[string]attribute) map[AttrKey]Attribute {
 	m := make(map[AttrKey]Attribute)
 	for k, at := range cattrs {
-		attr, err := NewAttribute(k, AttributeType(at.Type), at.Value)
+		attr, err := NewStringAttribute(k, AttributeType(at.Type), at.Value)
 		assert.NoError(t, err)
 
 		m[attr.Key] = attr
@@ -207,4 +207,32 @@ func TestAttributes_signed(t *testing.T) {
 	signed.Identity = nil
 	_, err = fromProtocolAttributes(pattrs)
 	assert.Error(t, err)
+}
+
+func TestAttributes_monetary(t *testing.T) {
+	label := "invoice_amount"
+	value := "10001.1001"
+	chainID := []byte{1}
+	id := []byte("USD")
+	mon, err := NewMonetaryAttribute(label, value, chainID, id)
+	assert.NoError(t, err)
+	m := map[AttrKey]Attribute{
+		mon.Key: mon,
+	}
+	// convert to protocol
+	pattrs, err := toProtocolAttributes(m)
+	assert.NoError(t, err)
+	assert.Len(t, pattrs, 1)
+	assert.Equal(t, []byte(label), pattrs[0].KeyLabel)
+	assert.Equal(t, coredocumentpb.AttributeType_ATTRIBUTE_TYPE_MONETARY, pattrs[0].Type)
+	assert.Len(t, pattrs[0].GetMonetaryVal().Value, 32)
+	assert.Len(t, pattrs[0].GetMonetaryVal().Id, 32)
+	assert.Len(t, pattrs[0].GetMonetaryVal().Chain, 4)
+
+	// convert from protocol
+	cAttr, err := fromProtocolAttributes(pattrs)
+	assert.NoError(t, err)
+	assert.Equal(t, mon.Value.Monetary.Value, cAttr[mon.Key].Value.Monetary.Value)
+	assert.Equal(t, mon.Value.Monetary.ChainID, cAttr[mon.Key].Value.Monetary.ChainID)
+	assert.Equal(t, mon.Value.Monetary.ID, cAttr[mon.Key].Value.Monetary.ID)
 }

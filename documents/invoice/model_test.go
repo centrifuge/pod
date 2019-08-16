@@ -363,7 +363,7 @@ func TestInvoice_AddAttributes(t *testing.T) {
 	inv, _ := createCDWithEmbeddedInvoice(t)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// success
@@ -385,7 +385,7 @@ func TestInvoice_DeleteAttribute(t *testing.T) {
 	inv, _ := createCDWithEmbeddedInvoice(t)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// failed
@@ -568,7 +568,7 @@ func TestInvoice_unpackFromCreatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -603,7 +603,7 @@ func TestInvoice_unpackFromUpdatePayloadOld(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -637,7 +637,7 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrInvoiceInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -681,7 +681,7 @@ func TestInvoice_Patch(t *testing.T) {
 
 	// valid
 	payload.Data = validData(t)
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttrString

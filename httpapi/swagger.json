@@ -14,7 +14,7 @@
         "license": {
             "name": "MIT"
         },
-        "version": "0.0.6"
+        "version": "0.0.7"
     },
     "host": "localhost:8082",
     "basePath": "/",
@@ -3253,6 +3253,10 @@
             "additionalProperties": {
                 "type": "object",
                 "properties": {
+                    "monetary_value": {
+                        "type": "object",
+                        "$ref": "#/definitions/coreapi.MonetaryValue"
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -3260,7 +3264,8 @@
                             "decimal",
                             "string",
                             "bytes",
-                            "timestamp"
+                            "timestamp",
+                            "monetary"
                         ]
                     },
                     "value": {
@@ -3277,6 +3282,10 @@
                     "key": {
                         "type": "string"
                     },
+                    "monetary_value": {
+                        "type": "object",
+                        "$ref": "#/definitions/coreapi.MonetaryValue"
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -3284,7 +3293,8 @@
                             "decimal",
                             "string",
                             "bytes",
-                            "timestamp"
+                            "timestamp",
+                            "monetary"
                         ]
                     },
                     "value": {
@@ -3296,6 +3306,10 @@
         "coreapi.AttributeRequest": {
             "type": "object",
             "properties": {
+                "monetary_value": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.MonetaryValue"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -3303,7 +3317,8 @@
                         "decimal",
                         "string",
                         "bytes",
-                        "timestamp"
+                        "timestamp",
+                        "monetary"
                     ]
                 },
                 "value": {
@@ -3317,6 +3332,10 @@
                 "key": {
                     "type": "string"
                 },
+                "monetary_value": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.MonetaryValue"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -3324,7 +3343,8 @@
                         "decimal",
                         "string",
                         "bytes",
-                        "timestamp"
+                        "timestamp",
+                        "monetary"
                     ]
                 },
                 "value": {
@@ -3457,6 +3477,23 @@
                 },
                 "token_id": {
                     "type": "string"
+                }
+            }
+        },
+        "coreapi.MonetaryValue": {
+            "type": "object",
+            "properties": {
+                "chain_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string",
+                    "enum": [
+                        "decimal"
+                    ]
                 }
             }
         },

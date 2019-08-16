@@ -32,11 +32,20 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 			Type:  "decimal",
 			Value: "100001.001",
 		},
+
+		"monetary_test": {
+			Type: "monetary",
+			MonetaryValue: MonetaryValue{
+				ID:      "USD",
+				Value:   "100001.002",
+				ChainID: []byte{1},
+			},
+		},
 	}
 
 	atts, err := toDocumentAttributes(attrs)
 	assert.NoError(t, err)
-	assert.Len(t, atts, 2)
+	assert.Len(t, atts, 3)
 
 	var attrList []documents.Attribute
 	for _, v := range atts {
@@ -47,6 +56,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 	assert.Len(t, cattrs, len(attrs))
 	assert.Equal(t, cattrs["string_test"].Value, attrs["string_test"].Value)
 	assert.Equal(t, cattrs["decimal_test"].Value, attrs["decimal_test"].Value)
+	assert.Equal(t, cattrs["monetary_test"].MonetaryValue, attrs["monetary_test"].MonetaryValue)
 
 	attrs["invalid"] = AttributeRequest{Type: "unknown", Value: "some value"}
 	_, err = toDocumentAttributes(attrs)
