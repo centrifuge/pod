@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -216,25 +217,32 @@ func genericCoreAPIUpdate(collaborators []string) map[string]interface{} {
 	return payload
 }
 
-func createAttributes() map[string]map[string]string {
-	return map[string]map[string]string{
-		"string_test": {
-			"type":  "string",
-			"value": "hello, world",
+func createAttributes() coreapi.AttributeMapRequest {
+	return coreapi.AttributeMapRequest{
+		"string_test": coreapi.AttributeRequest{
+			Type:  "string",
+			Value: "hello, world",
+		},
+		"monetary_test": coreapi.AttributeRequest{
+			Type: "monetary",
+			MonetaryValue: &coreapi.MonetaryValue{
+				Value: "100001.002",
+				ID:    "USD",
+			},
 		},
 	}
 }
 
-func updateAttributes() map[string]map[string]string {
-	return map[string]map[string]string{
-		"decimal_test": {
-			"type":  "decimal",
-			"value": "100.001",
+func updateAttributes() coreapi.AttributeMapRequest {
+	return coreapi.AttributeMapRequest{
+		"decimal_test": coreapi.AttributeRequest{
+			Type:  "decimal",
+			Value: "100.001",
 		},
 	}
 }
 
-func allAttributes() map[string]map[string]string {
+func allAttributes() coreapi.AttributeMapRequest {
 	attrs := createAttributes()
 	for k, v := range updateAttributes() {
 		attrs[k] = v

@@ -35,7 +35,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 
 		"monetary_test": {
 			Type: "monetary",
-			MonetaryValue: MonetaryValue{
+			MonetaryValue: &MonetaryValue{
 				ID:      "USD",
 				Value:   "100001.002",
 				ChainID: []byte{1},
