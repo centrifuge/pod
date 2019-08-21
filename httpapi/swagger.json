@@ -3490,10 +3490,7 @@
                     "type": "string"
                 },
                 "value": {
-                    "type": "string",
-                    "enum": [
-                        "decimal"
-                    ]
+                    "type": "string"
                 }
             }
         },

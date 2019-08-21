@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -218,6 +219,7 @@ func genericCoreAPIUpdate(collaborators []string) map[string]interface{} {
 }
 
 func createAttributes() coreapi.AttributeMapRequest {
+	dec, _ := documents.NewDecimal("100001.002")
 	return coreapi.AttributeMapRequest{
 		"string_test": coreapi.AttributeRequest{
 			Type:  "string",
@@ -226,7 +228,7 @@ func createAttributes() coreapi.AttributeMapRequest {
 		"monetary_test": coreapi.AttributeRequest{
 			Type: "monetary",
 			MonetaryValue: &coreapi.MonetaryValue{
-				Value: "100001.002",
+				Value: dec,
 				ID:    "USD",
 			},
 		},

@@ -24,7 +24,7 @@ import (
 // ChainID hex bytes representing the chain where the currency is relevant
 // ID string representing the Currency (USD|ETH|0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2(DAI)...)
 type MonetaryValue struct {
-	Value   string             `json:"value" enums:"decimal"`
+	Value   *documents.Decimal `json:"value" swaggertype:"primitive,string"`
 	ChainID byteutils.HexBytes `json:"chain_id" swaggertype:"primitive,string"`
 	ID      string             `json:"id"`
 }
@@ -96,7 +96,10 @@ func toDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.Att
 		var err error
 		switch documents.AttributeType(v.Type) {
 		case documents.AttrMonetary:
-			attr, err = documents.NewMonetaryAttribute(k, v.MonetaryValue.Value, v.MonetaryValue.ChainID.Bytes(), []byte(v.MonetaryValue.ID))
+			if v.MonetaryValue == nil {
+				return nil, errors.NewTypedError(documents.ErrWrongAttrFormat, errors.New("empty value field"))
+			}
+			attr, err = documents.NewMonetaryAttribute(k, v.MonetaryValue.Value, v.MonetaryValue.ChainID.Bytes(), v.MonetaryValue.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -173,7 +176,7 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 			attrReq = AttributeRequest{
 				Type: v.Value.Type.String(),
 				MonetaryValue: &MonetaryValue{
-					Value:   v.Value.Monetary.Value.String(),
+					Value:   v.Value.Monetary.Value,
 					ChainID: v.Value.Monetary.ChainID,
 					ID:      string(v.Value.Monetary.ID),
 				},

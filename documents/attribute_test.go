@@ -268,25 +268,30 @@ func TestNewSignedAttribute(t *testing.T) {
 }
 
 func TestNewMonetaryAttribute(t *testing.T) {
+	dec, err := NewDecimal("1001.1001")
+	assert.NoError(t, err)
+
 	// empty label
-	_, err := NewMonetaryAttribute("", "", nil, nil)
+	_, err = NewMonetaryAttribute("", dec, nil, "")
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
 
-	// decimal error, empty string
-	_, err = NewMonetaryAttribute("invoice_amount", "", nil, nil)
-	assert.Error(t, err)
-
-	// success
+	// monetary ID exceeded length
 	label := "invoice_amount"
 	chainID := []byte{1}
-	id := []byte("USD")
-	attr, err := NewMonetaryAttribute(label, "1001.1001", chainID, id)
+	idd := "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a29f8f72aa9304c8b593d555f12ef6589cc3a579a2" // 40 bytes
+	_, err = NewMonetaryAttribute(label, dec, chainID, idd)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrWrongAttrFormat, err))
+
+	// success
+	idd = "USD"
+	attr, err := NewMonetaryAttribute(label, dec, chainID, idd)
 	assert.NoError(t, err)
 	assert.Equal(t, AttrMonetary, attr.Value.Type)
 	attrKey, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)
 	assert.Equal(t, attrKey, attr.Key)
-	assert.Equal(t, id, attr.Value.Monetary.ID)
+	assert.Equal(t, []byte(idd), attr.Value.Monetary.ID)
 	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
 }

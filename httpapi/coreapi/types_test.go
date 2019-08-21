@@ -22,6 +22,9 @@ import (
 )
 
 func TestTypes_toAttributeMapResponse(t *testing.T) {
+	dec, err := documents.NewDecimal("100001.002")
+	assert.NoError(t, err)
+
 	attrs := AttributeMapRequest{
 		"string_test": {
 			Type:  "string",
@@ -37,7 +40,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 			Type: "monetary",
 			MonetaryValue: &MonetaryValue{
 				ID:      "USD",
-				Value:   "100001.002",
+				Value:   dec,
 				ChainID: []byte{1},
 			},
 		},
@@ -57,6 +60,16 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 	assert.Equal(t, cattrs["string_test"].Value, attrs["string_test"].Value)
 	assert.Equal(t, cattrs["decimal_test"].Value, attrs["decimal_test"].Value)
 	assert.Equal(t, cattrs["monetary_test"].MonetaryValue, attrs["monetary_test"].MonetaryValue)
+
+	attrs["monetary_test_empty"] = AttributeRequest{Type: "monetary"}
+	_, err = toDocumentAttributes(attrs)
+	assert.Error(t, err)
+	delete(attrs, "monetary_test_empty")
+
+	attrs["monetary_test_dec_empty"] = AttributeRequest{Type: "monetary", MonetaryValue: &MonetaryValue{ID: "USD", ChainID: []byte{1}}}
+	_, err = toDocumentAttributes(attrs)
+	assert.Error(t, err)
+	delete(attrs, "monetary_test_dec_empty")
 
 	attrs["invalid"] = AttributeRequest{Type: "unknown", Value: "some value"}
 	_, err = toDocumentAttributes(attrs)

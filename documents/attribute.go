@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -220,20 +221,28 @@ func NewStringAttribute(keyLabel string, attrType AttributeType, value string) (
 }
 
 // NewMonetaryAttribute creates new instance of Monetary Attribute
-func NewMonetaryAttribute(keyLabel string, value string, chainID, id []byte) (attr Attribute, err error) {
+func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id string) (attr Attribute, err error) {
+	if value == nil {
+		return attr, errors.NewTypedError(ErrWrongAttrFormat, errors.New("empty value field"))
+	}
+
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
 	}
 
-	dec, err := NewDecimal(value)
+	idb, err := hexutil.Decode(id)
 	if err != nil {
-		return attr, err
+		idb = []byte(id)
+	}
+
+	if len(idb) > monetaryIDLength {
+		return attr, errors.NewTypedError(ErrWrongAttrFormat, errors.New("monetaryIDLength exceeds 32 bytes"))
 	}
 
 	attrVal := AttrVal{
 		Type:     AttrMonetary,
-		Monetary: Monetary{Value: dec, ChainID: chainID, ID: id},
+		Monetary: Monetary{Value: value, ChainID: chainID, ID: idb},
 	}
 
 	return Attribute{
