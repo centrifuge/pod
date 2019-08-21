@@ -4,6 +4,7 @@ package documents
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -284,7 +285,7 @@ func TestNewMonetaryAttribute(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrWrongAttrFormat, err))
 
-	// success
+	// success fiat
 	idd = "USD"
 	attr, err := NewMonetaryAttribute(label, dec, chainID, idd)
 	assert.NoError(t, err)
@@ -294,4 +295,21 @@ func TestNewMonetaryAttribute(t *testing.T) {
 	assert.Equal(t, attrKey, attr.Key)
 	assert.Equal(t, []byte(idd), attr.Value.Monetary.ID)
 	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
+	assert.Equal(t, "", attr.Value.Monetary.Type.String())
+	assert.Equal(t, fmt.Sprintf("%s %s@%s", dec.String(), idd, hexutil.Encode(chainID)), attr.Value.Monetary.String())
+
+	// success erc20
+	idd = "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2"
+	attr, err = NewMonetaryAttribute(label, dec, chainID, idd)
+	assert.NoError(t, err)
+	assert.Equal(t, AttrMonetary, attr.Value.Type)
+	attrKey, err = AttrKeyFromLabel(label)
+	assert.NoError(t, err)
+	assert.Equal(t, attrKey, attr.Key)
+	decIdd, err := hexutil.Decode(idd)
+	assert.NoError(t, err)
+	assert.Equal(t, decIdd, attr.Value.Monetary.ID)
+	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
+	assert.Equal(t, MonetaryToken, attr.Value.Monetary.Type)
+	assert.Equal(t, fmt.Sprintf("%s %s@%s", dec.String(), idd, hexutil.Encode(chainID)), attr.Value.Monetary.String())
 }

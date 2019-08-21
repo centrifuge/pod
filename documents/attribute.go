@@ -22,6 +22,14 @@ func (a AttributeType) String() string {
 	return string(a)
 }
 
+// MonetaryType represents the monetary type of the attribute
+type MonetaryType string
+
+// String returns the readable name of the monetary type.
+func (a MonetaryType) String() string {
+	return string(a)
+}
+
 const (
 	// AttrInt256 is the standard integer custom attribute type
 	AttrInt256 AttributeType = "integer"
@@ -43,6 +51,9 @@ const (
 
 	// AttrMonetary is the monetary attribute type
 	AttrMonetary AttributeType = "monetary"
+
+	// MonetaryToken is the monetary type for tokens
+	MonetaryToken MonetaryType = "token"
 )
 
 // isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
@@ -113,6 +124,7 @@ func (s Signed) String() string {
 type Monetary struct {
 	Value   *Decimal
 	ChainID []byte
+	Type    MonetaryType
 	ID      []byte // Currency USD|0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2(DAI)|ETH
 }
 
@@ -120,9 +132,13 @@ type Monetary struct {
 func (m Monetary) String() string {
 	chStr := ""
 	if len(m.ChainID) > 0 {
-		chStr = "@" + string(m.ChainID)
+		chStr = "@" + hexutil.Encode(m.ChainID)
 	}
-	return fmt.Sprintf("%s %s%s", m.Value.String(), string(m.ID), chStr)
+	mID := string(m.ID)
+	if m.Type == MonetaryToken {
+		mID = hexutil.Encode(m.ID)
+	}
+	return fmt.Sprintf("%s %s%s", m.Value.String(), mID, chStr)
 }
 
 // AttrVal represents a strongly typed value of an attribute
@@ -231,8 +247,10 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 		return attr, err
 	}
 
+	token := MonetaryToken
 	idb, err := hexutil.Decode(id)
 	if err != nil {
+		token = ""
 		idb = []byte(id)
 	}
 
@@ -242,7 +260,7 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 
 	attrVal := AttrVal{
 		Type:     AttrMonetary,
-		Monetary: Monetary{Value: value, ChainID: chainID, ID: idb},
+		Monetary: Monetary{Value: value, Type: token, ChainID: chainID, ID: idb},
 	}
 
 	return Attribute{

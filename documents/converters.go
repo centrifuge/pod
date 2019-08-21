@@ -237,6 +237,7 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 			}
 			pattr.Value = &coredocumentpb.Attribute_MonetaryVal{
 				MonetaryVal: &coredocumentpb.Monetary{
+					Type:  getProtocolMonetaryType(monetary.Type),
 					Value: decBytes,
 					Chain: append(make([]byte, monetaryChainIDLength-len(monetary.ChainID)), monetary.ChainID...),
 					Id:    append(make([]byte, monetaryIDLength-len(monetary.ID)), monetary.ID...),
@@ -260,6 +261,22 @@ func getProtocolAttributeType(attrType AttributeType) coredocumentpb.AttributeTy
 func getAttributeTypeFromProtocolType(attrType coredocumentpb.AttributeType) AttributeType {
 	str := coredocumentpb.AttributeType_name[int32(attrType)]
 	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeProtocolPrefix)))
+}
+
+func getProtocolMonetaryType(mType MonetaryType) []byte {
+	ret := []byte{1}
+	if mType == MonetaryToken {
+		ret = []byte{2}
+	}
+	return ret
+}
+
+func getMonetaryTypeFromProtocolType(mType []byte) MonetaryType {
+	var ret MonetaryType
+	if bytes.Equal(mType, []byte{2}) {
+		ret = MonetaryToken
+	}
+	return ret
 }
 
 // fromProtocolAttributes converts protocol attribute list to model attribute map
@@ -338,6 +355,7 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 			return attrVal, err
 		}
 		attrVal.Monetary = Monetary{
+			Type:    getMonetaryTypeFromProtocolType(val.Type),
 			Value:   dec,
 			ChainID: bytes.TrimLeft(val.Chain, "\x00"),
 			ID:      bytes.TrimLeft(val.Id, "\x00"),

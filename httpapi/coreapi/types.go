@@ -173,12 +173,16 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 		var attrReq AttributeRequest
 		switch v.Value.Type {
 		case documents.AttrMonetary:
+			id := string(v.Value.Monetary.ID)
+			if v.Value.Monetary.Type == documents.MonetaryToken {
+				id = hexutil.Encode(v.Value.Monetary.ID)
+			}
 			attrReq = AttributeRequest{
 				Type: v.Value.Type.String(),
 				MonetaryValue: &MonetaryValue{
 					Value:   v.Value.Monetary.Value,
 					ChainID: v.Value.Monetary.ChainID,
-					ID:      string(v.Value.Monetary.ID),
+					ID:      id,
 				},
 			}
 		default:
