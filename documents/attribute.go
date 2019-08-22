@@ -1,11 +1,13 @@
 package documents
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,6 +19,14 @@ type AttributeType string
 
 // String returns the readable name of the attribute type.
 func (a AttributeType) String() string {
+	return string(a)
+}
+
+// MonetaryType represents the monetary type of the attribute
+type MonetaryType string
+
+// String returns the readable name of the monetary type.
+func (a MonetaryType) String() string {
 	return string(a)
 }
 
@@ -38,12 +48,18 @@ const (
 
 	// AttrSigned is the custom signature attribute type
 	AttrSigned AttributeType = "signed"
+
+	// AttrMonetary is the monetary attribute type
+	AttrMonetary AttributeType = "monetary"
+
+	// MonetaryToken is the monetary type for tokens
+	MonetaryToken MonetaryType = "token"
 )
 
 // isAttrTypeAllowed checks if the given attribute type is implemented and returns its `reflect.Type` if allowed.
 func isAttrTypeAllowed(attr AttributeType) bool {
 	switch attr {
-	case AttrInt256, AttrDecimal, AttrString, AttrBytes, AttrTimestamp, AttrSigned:
+	case AttrInt256, AttrDecimal, AttrString, AttrBytes, AttrTimestamp, AttrSigned, AttrMonetary:
 		return true
 	default:
 		return false
@@ -104,6 +120,27 @@ func (s Signed) String() string {
 	return s.Identity.String()
 }
 
+// Monetary is a custom attribute type for monetary values
+type Monetary struct {
+	Value   *Decimal
+	ChainID []byte
+	Type    MonetaryType
+	ID      []byte // Currency USD|0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2(DAI)|ETH
+}
+
+// String returns the readable representation of the monetary value
+func (m Monetary) String() string {
+	chStr := ""
+	if len(m.ChainID) > 0 {
+		chStr = "@" + hexutil.Encode(m.ChainID)
+	}
+	mID := string(m.ID)
+	if m.Type == MonetaryToken {
+		mID = hexutil.Encode(m.ID)
+	}
+	return fmt.Sprintf("%s %s%s", m.Value.String(), mID, chStr)
+}
+
 // AttrVal represents a strongly typed value of an attribute
 type AttrVal struct {
 	Type      AttributeType
@@ -113,6 +150,7 @@ type AttrVal struct {
 	Bytes     []byte
 	Timestamp *timestamp.Timestamp
 	Signed    Signed
+	Monetary  Monetary
 }
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
@@ -129,11 +167,10 @@ func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, e
 		attrVal.Bytes, err = hexutil.Decode(value)
 	case AttrTimestamp:
 		var t time.Time
-		t, err = time.Parse(time.RFC3339, value)
+		t, err = time.Parse(time.RFC3339Nano, value)
 		if err != nil {
 			return attrVal, err
 		}
-
 		attrVal.Timestamp, err = utils.ToTimestamp(t.UTC())
 	default:
 		return attrVal, ErrNotValidAttrType
@@ -163,10 +200,11 @@ func (attrVal AttrVal) String() (str string, err error) {
 		if err != nil {
 			break
 		}
-
-		str = tp.UTC().Format(time.RFC3339)
+		str = tp.UTC().Format(time.RFC3339Nano)
 	case AttrSigned:
 		str = attrVal.Signed.String()
+	case AttrMonetary:
+		str = attrVal.Monetary.String()
 	}
 
 	return str, err
@@ -179,8 +217,8 @@ type Attribute struct {
 	Value    AttrVal
 }
 
-// NewAttribute creates a new custom attribute.
-func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr Attribute, err error) {
+// NewStringAttribute creates a new custom attribute.
+func NewStringAttribute(keyLabel string, attrType AttributeType, value string) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
@@ -189,6 +227,40 @@ func NewAttribute(keyLabel string, attrType AttributeType, value string) (attr A
 	attrVal, err := AttrValFromString(attrType, value)
 	if err != nil {
 		return attr, err
+	}
+
+	return Attribute{
+		KeyLabel: keyLabel,
+		Key:      attrKey,
+		Value:    attrVal,
+	}, nil
+}
+
+// NewMonetaryAttribute creates new instance of Monetary Attribute
+func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id string) (attr Attribute, err error) {
+	if value == nil {
+		return attr, errors.NewTypedError(ErrWrongAttrFormat, errors.New("empty value field"))
+	}
+
+	attrKey, err := AttrKeyFromLabel(keyLabel)
+	if err != nil {
+		return attr, err
+	}
+
+	token := MonetaryToken
+	idb, err := hexutil.Decode(id)
+	if err != nil {
+		token = ""
+		idb = []byte(id)
+	}
+
+	if len(idb) > monetaryIDLength {
+		return attr, errors.NewTypedError(ErrWrongAttrFormat, errors.New("monetaryIDLength exceeds 32 bytes"))
+	}
+
+	attrVal := AttrVal{
+		Type:     AttrMonetary,
+		Monetary: Monetary{Value: value, Type: token, ChainID: chainID, ID: idb},
 	}
 
 	return Attribute{

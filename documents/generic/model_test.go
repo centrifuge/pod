@@ -183,17 +183,17 @@ func TestAttributeProof(t *testing.T) {
 	var attrs []documents.Attribute
 	loanAmount := "loanAmount"
 	loanAmountValue := "100"
-	attr0, err := documents.NewAttribute(loanAmount, documents.AttrInt256, loanAmountValue)
+	attr0, err := documents.NewStringAttribute(loanAmount, documents.AttrInt256, loanAmountValue)
 	assert.NoError(t, err)
 	attrs = append(attrs, attr0)
 	asIsValue := "asIsValue"
 	asIsValueValue := "1000"
-	attr1, err := documents.NewAttribute(asIsValue, documents.AttrInt256, asIsValueValue)
+	attr1, err := documents.NewStringAttribute(asIsValue, documents.AttrInt256, asIsValueValue)
 	assert.NoError(t, err)
 	attrs = append(attrs, attr1)
 	afterRehabValue := "afterRehabValue"
 	afterRehabValueValue := "2000"
-	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrInt256, afterRehabValueValue)
+	attr2, err := documents.NewStringAttribute(afterRehabValue, documents.AttrInt256, afterRehabValueValue)
 	assert.NoError(t, err)
 	attrs = append(attrs, attr2)
 
@@ -373,7 +373,7 @@ func TestGeneric_AddAttributes(t *testing.T) {
 	g, _ := createCDWithEmbeddedGeneric(t)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// success
@@ -395,7 +395,7 @@ func TestGeneric_DeleteAttribute(t *testing.T) {
 	g, _ := createCDWithEmbeddedGeneric(t)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// failed
@@ -434,7 +434,7 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 	ctx := context.Background()
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -463,7 +463,7 @@ func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
 	g := new(Generic)
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")

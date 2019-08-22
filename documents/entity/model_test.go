@@ -333,7 +333,7 @@ func TestEntity_AddAttributes(t *testing.T) {
 	e, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// success
@@ -355,7 +355,7 @@ func TestEntity_DeleteAttribute(t *testing.T) {
 	e, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// failed
@@ -517,7 +517,7 @@ func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -552,7 +552,7 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -609,7 +609,7 @@ func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
 
 	// coredoc failed
 	payload.Data = validDataWithIdentity(t)
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")

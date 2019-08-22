@@ -3246,6 +3246,10 @@
             "additionalProperties": {
                 "type": "object",
                 "properties": {
+                    "monetary_value": {
+                        "type": "object",
+                        "$ref": "#/definitions/coreapi.MonetaryValue"
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -3253,7 +3257,8 @@
                             "decimal",
                             "string",
                             "bytes",
-                            "timestamp"
+                            "timestamp",
+                            "monetary"
                         ]
                     },
                     "value": {
@@ -3270,6 +3275,10 @@
                     "key": {
                         "type": "string"
                     },
+                    "monetary_value": {
+                        "type": "object",
+                        "$ref": "#/definitions/coreapi.MonetaryValue"
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -3277,7 +3286,8 @@
                             "decimal",
                             "string",
                             "bytes",
-                            "timestamp"
+                            "timestamp",
+                            "monetary"
                         ]
                     },
                     "value": {
@@ -3289,6 +3299,10 @@
         "coreapi.AttributeRequest": {
             "type": "object",
             "properties": {
+                "monetary_value": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.MonetaryValue"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -3296,7 +3310,8 @@
                         "decimal",
                         "string",
                         "bytes",
-                        "timestamp"
+                        "timestamp",
+                        "monetary"
                     ]
                 },
                 "value": {
@@ -3310,6 +3325,10 @@
                 "key": {
                     "type": "string"
                 },
+                "monetary_value": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.MonetaryValue"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -3317,7 +3336,8 @@
                         "decimal",
                         "string",
                         "bytes",
-                        "timestamp"
+                        "timestamp",
+                        "monetary"
                     ]
                 },
                 "value": {
@@ -3449,6 +3469,20 @@
                     "type": "string"
                 },
                 "token_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.MonetaryValue": {
+            "type": "object",
+            "properties": {
+                "chain_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }

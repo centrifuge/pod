@@ -137,6 +137,9 @@ const (
 	// ErrEmptyAttrLabel is a sentinel error when the attribute label is empty
 	ErrEmptyAttrLabel = errors.Error("empty attribute label")
 
+	// ErrWrongAttrFormat is a sentinel error when the attribute format is wrong
+	ErrWrongAttrFormat = errors.Error("wrong attribute format")
+
 	// ErrDocumentValidation must be used when document validation fails
 	ErrDocumentValidation = errors.Error("document validation failure")
 )

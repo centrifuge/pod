@@ -287,7 +287,7 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusBadRequest, wrongInvoicePayload([]string{bob.id.String()}))
 
 	errMsg := response.Raw()["message"].(string)
-	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"some invalid ti")
+	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")
 }
 
 func TestDocument_latestDocumentVersion(t *testing.T) {

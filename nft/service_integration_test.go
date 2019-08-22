@@ -190,17 +190,17 @@ func TestGenericMintNFT(t *testing.T) {
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
 	loanAmountValue := "100.10001"
-	attr0, err := documents.NewAttribute(loanAmount, documents.AttrDecimal, loanAmountValue)
+	attr0, err := documents.NewStringAttribute(loanAmount, documents.AttrDecimal, loanAmountValue)
 	assert.NoError(t, err)
 	attrs[attr0.Key] = attr0
 	asIsValue := "dateValue"
 	asIsValueValue := time.Now().UTC().Format(time.RFC3339Nano)
-	attr1, err := documents.NewAttribute(asIsValue, documents.AttrTimestamp, asIsValueValue)
+	attr1, err := documents.NewStringAttribute(asIsValue, documents.AttrTimestamp, asIsValueValue)
 	assert.NoError(t, err)
 	attrs[attr1.Key] = attr1
 	afterRehabValue := "afterRehabValue"
 	afterRehabValueValue := "2000"
-	attr2, err := documents.NewAttribute(afterRehabValue, documents.AttrDecimal, afterRehabValueValue)
+	attr2, err := documents.NewStringAttribute(afterRehabValue, documents.AttrDecimal, afterRehabValueValue)
 	assert.NoError(t, err)
 	attrs[attr2.Key] = attr2
 	scAddrs := testingutils.GetDAppSmartContractAddresses()

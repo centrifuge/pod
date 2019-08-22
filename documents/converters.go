@@ -14,8 +14,14 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// maxTimeByteLength is the max length of the byte representation of a timestamp attribute
-const maxTimeByteLength = 12
+const (
+	// maxTimeByteLength is the max length of the byte representation of a timestamp attribute
+	maxTimeByteLength = 12
+	// monetaryChainIDLength is the fixed length of the byte representation of ChainID
+	monetaryChainIDLength = 4
+	// monetaryIDLength is the fixed length of the byte representation of monetary ID
+	monetaryIDLength = 32
+)
 
 // BinaryAttachment represent a single file attached to invoice.
 type BinaryAttachment struct {
@@ -223,6 +229,20 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 					Identity:   signed.Identity[:],
 				},
 			}
+		case AttrMonetary:
+			monetary := attr.Value.Monetary
+			decBytes, err := monetary.Value.Bytes()
+			if err != nil {
+				return nil, err
+			}
+			pattr.Value = &coredocumentpb.Attribute_MonetaryVal{
+				MonetaryVal: &coredocumentpb.Monetary{
+					Type:  getProtocolMonetaryType(monetary.Type),
+					Value: decBytes,
+					Chain: append(make([]byte, monetaryChainIDLength-len(monetary.ChainID)), monetary.ChainID...),
+					Id:    append(make([]byte, monetaryIDLength-len(monetary.ID)), monetary.ID...),
+				},
+			}
 		}
 
 		pattrs = append(pattrs, pattr)
@@ -241,6 +261,22 @@ func getProtocolAttributeType(attrType AttributeType) coredocumentpb.AttributeTy
 func getAttributeTypeFromProtocolType(attrType coredocumentpb.AttributeType) AttributeType {
 	str := coredocumentpb.AttributeType_name[int32(attrType)]
 	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeProtocolPrefix)))
+}
+
+func getProtocolMonetaryType(mType MonetaryType) []byte {
+	ret := []byte{1}
+	if mType == MonetaryToken {
+		ret = []byte{2}
+	}
+	return ret
+}
+
+func getMonetaryTypeFromProtocolType(mType []byte) MonetaryType {
+	var ret MonetaryType
+	if bytes.Equal(mType, []byte{2}) {
+		ret = MonetaryToken
+	}
+	return ret
 }
 
 // fromProtocolAttributes converts protocol attribute list to model attribute map
@@ -311,6 +347,18 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 			PublicKey:       val.PublicKey,
 			Value:           val.Value,
 			Signature:       val.Signature,
+		}
+	case AttrMonetary:
+		val := attribute.GetMonetaryVal()
+		dec, err := DecimalFromBytes(val.Value)
+		if err != nil {
+			return attrVal, err
+		}
+		attrVal.Monetary = Monetary{
+			Type:    getMonetaryTypeFromProtocolType(val.Type),
+			Value:   dec,
+			ChainID: bytes.TrimLeft(val.Chain, "\x00"),
+			ID:      bytes.TrimLeft(val.Id, "\x00"),
 		}
 	}
 
