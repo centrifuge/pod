@@ -24,11 +24,11 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/golang/protobuf/protoc-gen-go", "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway", "golang.org/x/tools/cmd/goimports", "github.com/swaggo/swag", "github.com/urfave/cli"]
+required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/roboll/go-vendorinstall", "github.com/ghodss/yaml", "golang.org/x/tools/cmd/goimports", "github.com/swaggo/swag", "github.com/urfave/cli"]
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "7d846bc3247e93446882acde5edc23767cb12824"
+  revision = "a4dc99bb9e43371800469049e6536cc8052ce5ef"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
@@ -40,7 +40,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[override]]
   name = "github.com/centrifuge/precise-proofs"
-  revision = "f443fbe849de3fae72475c0838ec8eabf6930edd"
+  revision = "2ed0cc3986aa6f8c5e9efc0f661607bf2857713f"
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
@@ -65,10 +65,6 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   name = "github.com/golang/protobuf"
   version = "1.3.0"
-
-[[override]]
-  name = "github.com/grpc-ecosystem/grpc-gateway"
-  revision= "8558711daa6c2853489043207b563dceacbc19cf"
 
 [[constraint]]
   name = "golang.org/x/tools"
@@ -255,16 +251,8 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
 
 [[constraint]]
-  name = "google.golang.org/grpc"
-  version = "1.15.0"
-
-[[constraint]]
   name = "gopkg.in/resty.v1"
   version = "1.9.1"
-
-[[override]]
-  name = "google.golang.org/genproto"
-  revision = "5a2fd4cab2d6d4a18e70c34937662526cd0c4bd1"
 
 [[prune.project]]
     name = "github.com/libp2p/go-libp2p"
@@ -283,16 +271,13 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
     unused-packages = false
 
 [[prune.project]]
-    name = "github.com/grpc-ecosystem/grpc-gateway"
-    unused-packages = false
-
-[[prune.project]]
     name = "github.com/hashicorp/go-multierror"
     unused-packages = false
 
 [prune]
-  go-tests = true
-  unused-packages = true
+    go-tests = true
+    unused-packages = true
+
 [[constraint]]
   branch = "master"
   name = "github.com/savaki/jq"
@@ -324,3 +309,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 [[constraint]]
   name = "github.com/urfave/cli"
   version = "1.20.0"
+
+[[constraint]]
+  name = "github.com/jinzhu/copier"
+  revision = "976e0346caa839d22a17f8031a96bcd0870c0128"

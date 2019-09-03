@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	notificationpb "github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -24,12 +23,12 @@ func (mockConfig) GetEthereumContextWaitTimeout() time.Duration {
 	panic("implement me")
 }
 
-var sendChan chan *notificationpb.NotificationMessage
+var sendChan chan notification.Message
 
 type mockSender struct{}
 
 // Send mocks failure and returns to channel
-func (mockSender) Send(ctx context.Context, ntf *notificationpb.NotificationMessage) (notification.Status, error) {
+func (mockSender) Send(ctx context.Context, ntf notification.Message) (notification.Status, error) {
 	sendChan <- ntf
 	return notification.Failure, nil
 }
@@ -41,8 +40,8 @@ func TestService_ExecuteWithinTX_happy(t *testing.T) {
 		err <- nil
 	})
 	assert.NoError(t, err)
-	<-done
-	assert.NoError(t, err)
+	doneErr := <-done
+	assert.NoError(t, doneErr)
 	assert.NotNil(t, jobID)
 	job, err := srv.GetJob(did, jobID)
 	assert.NoError(t, err)
@@ -57,14 +56,15 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 	mngr := NewManager(msrv.config, msrv.repo)
 	omgr := mngr.(*manager)
 	omgr.notifier = &mockSender{}
-	sendChan = make(chan *notificationpb.NotificationMessage)
+	sendChan = make(chan notification.Message)
 	jobID, done, err := omgr.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "SomeTask", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- errors.New(errStr)
 	})
 	assert.NoError(t, err)
-	<-done
+	doneErr := <-done
+	assert.Error(t, doneErr)
 	ntf := <-sendChan
-	assert.Equal(t, uint32(notification.JobCompleted), ntf.EventType)
+	assert.Equal(t, notification.JobCompleted, ntf.EventType)
 	assert.Equal(t, jobs.JobDataTypeURL, ntf.DocumentType)
 	assert.Equal(t, string(jobs.Failed), ntf.Status)
 	assert.Equal(t, errStr, ntf.Message)
@@ -87,8 +87,8 @@ func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
 	})
 	canc()
 	assert.NoError(t, err)
-	<-done
-	assert.NoError(t, err)
+	doneErr := <-done
+	assert.NoError(t, doneErr)
 	assert.NotNil(t, tid)
 	job, err := srv.GetJob(did, tid)
 	assert.NoError(t, err)

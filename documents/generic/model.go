@@ -1,7 +1,7 @@
 package generic
 
 import (
-	"encoding/json"
+	"context"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -20,7 +20,8 @@ import (
 const (
 	prefix string = "generic"
 
-	scheme = prefix
+	// Scheme to identify generic document
+	Scheme = prefix
 )
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
@@ -37,7 +38,7 @@ type Generic struct {
 
 func getProtoGenericData() *genericpb.GenericData {
 	return &genericpb.GenericData{
-		Scheme: []byte(scheme),
+		Scheme: []byte(Scheme),
 	}
 }
 
@@ -102,7 +103,11 @@ func (g *Generic) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
 
-	t := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, err
+	}
+
 	err = t.AddLeavesFromDocument(getProtoGenericData())
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -254,25 +259,8 @@ func (g *Generic) GetData() interface{} {
 	return g.Data
 }
 
-// loadData unmarshals json blob to Data.
-func (g *Generic) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
-	if err != nil {
-		return err
-	}
-
-	g.Data = d
-	return nil
-}
-
-// unpackFromCreatePayload unpacks the invoice data from the Payload.
-func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := g.loadData(payload.Data); err != nil {
-		return err
-	}
-
-	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+// DeriveFromCreatePayload unpacks the invoice data from the Payload.
+func (g *Generic) DeriveFromCreatePayload(_ context.Context, payload documents.CreatePayload) error {
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
@@ -282,12 +270,8 @@ func (g *Generic) unpackFromCreatePayload(did identity.DID, payload documents.Cr
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.UpdatePayload) error {
-	if err := g.loadData(payload.Data); err != nil {
-		return err
-	}
-
+// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
+func (g *Generic) unpackFromUpdatePayloadOld(old *Generic, payload documents.UpdatePayload) error {
 	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return err
@@ -297,7 +281,30 @@ func (g *Generic) unpackFromUpdatePayload(old *Generic, payload documents.Update
 	return nil
 }
 
-// Scheme returns the invoice scheme.
+// Patch merges payload data into model
+func (g *Generic) Patch(payload documents.UpdatePayload) error {
+	ncd, err := g.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	g.CoreDocument = ncd
+	return nil
+}
+
+// DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
+func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Generic{
+		CoreDocument: ncd,
+	}, nil
+}
+
+// Scheme returns the invoice Scheme.
 func (g *Generic) Scheme() string {
-	return scheme
+	return Scheme
 }

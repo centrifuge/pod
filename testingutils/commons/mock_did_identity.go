@@ -39,15 +39,15 @@ func (i *MockIdentityService) GetKey(did identity.DID, key [32]byte) (*identity.
 }
 
 // RawExecute calls the execute method on the identity contract
-func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID identity.IDTX, done chan bool, err error) {
+func (i *MockIdentityService) RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID identity.IDTX, done chan error, err error) {
 	args := i.Called(ctx, to, data)
-	return args.Get(0).(identity.IDTX), args.Get(1).(chan bool), args.Error(2)
+	return args.Get(0).(identity.IDTX), args.Get(1).(chan error), args.Error(2)
 }
 
-// Execute creates the abi encoding an calls the execute method on the identity contract
-func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID identity.IDTX, done chan bool, err error) {
+// Execute creates the abi encoding and calls the execute method on the identity contract
+func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID identity.IDTX, done chan error, err error) {
 	a := i.Called(ctx, to, contractAbi, methodName, args)
-	return a.Get(0).(identity.IDTX), a.Get(1).(chan bool), a.Error(2)
+	return a.Get(0).(identity.IDTX), a.Get(1).(chan error), a.Error(2)
 }
 
 // AddMultiPurposeKey adds a key with multiple purposes

@@ -11,6 +11,7 @@ import (
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -22,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	docSrv := documents.DefaultService(cfg, nil, nil, registry, mockIDService)
+	docSrv := documents.DefaultService(cfg, nil, nil, registry, mockIDService, nil, nil)
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)

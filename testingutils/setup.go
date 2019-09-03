@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -54,6 +55,41 @@ func RunSmartContractMigrations() {
 
 	// trying 3 times to migrate didnt work
 	log.Fatal(err, string(out))
+}
+
+func RunDAppSmartContractMigrations() {
+	var err error
+	var out []byte
+	projDir := GetProjectDir()
+	smAddr := GetSmartContractAddresses()
+	fmt.Println("Using AnchorAddr for DApp Contracts", smAddr.AnchorRepositoryAddr)
+	migrationScript := path.Join(projDir, "build", "scripts", "migrateDApp.sh")
+	cmd := exec.Command(migrationScript, smAddr.AnchorRepositoryAddr, projDir)
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err, string(out))
+		return
+	}
+	return
+}
+
+func GetDAppSmartContractAddresses() map[string]string {
+	projDir := GetProjectDir()
+	addresses := map[string]string{}
+	b, err := ioutil.ReadFile(path.Join(projDir, "localAddresses"))
+	if err != nil {
+		return addresses
+	}
+	f := strings.TrimSpace(string(b))
+	elems := strings.Split(f, "\n")
+	for i := 0; i < len(elems); i++ {
+		addrEntry := strings.Split(elems[i], " ")
+		if len(addrEntry) < 2 {
+			return addresses
+		}
+		addresses[addrEntry[0]] = addrEntry[1]
+	}
+	return addresses
 }
 
 // GetSmartContractAddresses finds migrated smart contract addresses for localgeth
@@ -158,6 +194,7 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
 	RunSmartContractMigrations()
+	RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

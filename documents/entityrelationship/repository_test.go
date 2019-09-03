@@ -5,11 +5,9 @@ package entityrelationship
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,38 +18,27 @@ func TestRepo_FindEntityRelationshipIdentifier(t *testing.T) {
 	assert.NotNil(t, repo)
 
 	// no relationships in repo
-	rp := testingdocuments.CreateRelationshipPayload()
-	id, err := hexutil.Decode(rp.DocumentId)
-	assert.NoError(t, err)
-
-	tID, err := identity.StringsToDIDs(rp.TargetIdentity)
-	assert.NoError(t, err)
-
-	_, err = repo.FindEntityRelationshipIdentifier(id, did, *tID[0])
+	er := CreateRelationship(t, ctxh)
+	_, err := repo.FindEntityRelationshipIdentifier(er.Data.EntityIdentifier, did, *er.Data.TargetIdentity)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found in the system database")
 
-	// create relationships
-	m, err := service{}.DeriveFromCreatePayload(ctxh, rp)
+	err = repo.Create(did[:], er.ID(), er)
 	assert.NoError(t, err)
 
-	err = repo.Create(did[:], m.ID(), m)
-	assert.NoError(t, err)
-
-	rp.TargetIdentity = testingidentity.GenerateRandomDID().String()
-	m2, err := service{}.DeriveFromCreatePayload(ctxh, rp)
-	assert.NoError(t, err)
-
+	tid := testingidentity.GenerateRandomDID()
+	m2 := CreateRelationship(t, ctxh)
+	m2.Data.TargetIdentity = &tid
 	err = repo.Create(did[:], m2.ID(), m2)
 	assert.NoError(t, err)
 
 	// attempt to get relationships
-	r, err := repo.FindEntityRelationshipIdentifier(id, did, *tID[0])
+	r, err := repo.FindEntityRelationshipIdentifier(m2.Data.EntityIdentifier, did, tid)
 	assert.NoError(t, err)
-	assert.Equal(t, r, m.CurrentVersion())
+	assert.Equal(t, r, m2.CurrentVersion())
 
 	// throws err if relationship not found in the repo
-	r, err = repo.FindEntityRelationshipIdentifier(id, testingidentity.GenerateRandomDID(), *tID[0])
+	r, err = repo.FindEntityRelationshipIdentifier(er.ID(), testingidentity.GenerateRandomDID(), tid)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "document not found in the system database")
 }
@@ -62,39 +49,17 @@ func TestRepo_ListAllRelationships(t *testing.T) {
 	repo := testEntityRepo()
 	assert.NotNil(t, repo)
 
-	rp := testingdocuments.CreateRelationshipPayload()
-	id, err := hexutil.Decode(rp.DocumentId)
-	assert.NoError(t, err)
-
 	// no relationships in repo returns a nil map
+	id := utils.RandomSlice(32)
 	r, err := repo.ListAllRelationships(id, did)
 	assert.Equal(t, r, map[string][]byte{})
 
 	// create relationships
-	m, err := service{}.DeriveFromCreatePayload(ctxh, rp)
-	assert.NoError(t, err)
-
+	m := CreateRelationship(t, ctxh)
+	m.Data.EntityIdentifier = id
 	err = repo.Create(did[:], m.ID(), m)
 	assert.NoError(t, err)
 
-	rp.TargetIdentity = testingidentity.GenerateRandomDID().String()
-	m2, err := service{}.DeriveFromCreatePayload(ctxh, rp)
-	assert.NoError(t, err)
-
-	err = repo.Create(did[:], m2.ID(), m2)
-	assert.NoError(t, err)
-
-	rp.TargetIdentity = testingidentity.GenerateRandomDID().String()
-	m3, err := service{}.DeriveFromCreatePayload(ctxh, rp)
-	assert.NoError(t, err)
-
-	err = repo.Create(did[:], m3.ID(), m3)
-	assert.NoError(t, err)
-
-	// attempt to get relationships
-	id, err = hexutil.Decode(rp.DocumentId)
-	assert.NoError(t, err)
-
 	r, err = repo.ListAllRelationships(id, did)
-	assert.Len(t, r, 3)
+	assert.Len(t, r, 1)
 }

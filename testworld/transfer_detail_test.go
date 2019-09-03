@@ -19,7 +19,7 @@ func Test_CreateGetUpdateTransfers(t *testing.T) {
 }
 
 func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transferId, docIdentifier string) {
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -35,7 +35,7 @@ func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfer
 	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
 
 	// Alice creates a transfer designating Bob as the recipient
-	res = createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusCreated, defaultTransferPayload(alice.id.String(), bob.id.String()))
+	res = createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultTransferPayload(alice.id.String(), bob.id.String()))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -58,7 +58,7 @@ func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfer
 func listTransfer(t *testing.T, alice, bob hostTestSuite, docIdentifier string) {
 	var transfers []string
 	for i := 0; i < 5; i++ {
-		res := createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusCreated, defaultTransferPayload(alice.id.String(), bob.id.String()))
+		res := createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultTransferPayload(alice.id.String(), bob.id.String()))
 		txID := getTransactionID(t, res)
 		status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 		if status != "success" {
@@ -79,7 +79,7 @@ func listTransfer(t *testing.T, alice, bob hostTestSuite, docIdentifier string) 
 }
 
 func testUpdateTransfer(t *testing.T, alice, bob hostTestSuite, docID, transferID string) {
-	res := updateTransfer(alice.httpExpect, alice.id.String(), http.StatusCreated, docID, transferID, updateTransferPayload(alice.id.String(), bob.id.String()))
+	res := updateTransfer(alice.httpExpect, alice.id.String(), http.StatusAccepted, docID, transferID, updateTransferPayload(alice.id.String(), bob.id.String()))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {

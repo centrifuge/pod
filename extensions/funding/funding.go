@@ -1,11 +1,10 @@
-//nolint
 package funding
 
-// Data is the default funding extension schema
+// Data is the default funding extension schema.
 type Data struct {
-	AgreementId           string `json:"agreement_id,omitempty" attr:"bytes"`
-	BorrowerId            string `json:"borrower_id,omitempty" attr:"bytes"`
-	FunderId              string `json:"funder_id,omitempty" attr:"bytes"`
+	AgreementID           string `json:"agreement_id,omitempty" attr:"bytes"`
+	BorrowerID            string `json:"borrower_id,omitempty" attr:"bytes"`
+	FunderID              string `json:"funder_id,omitempty" attr:"bytes"`
 	Amount                string `json:"amount,omitempty" attr:"decimal"`
 	Apr                   string `json:"apr,omitempty" attr:"string"`
 	Days                  string `json:"days,omitempty" attr:"integer"`
@@ -14,6 +13,14 @@ type Data struct {
 	RepaymentOccurredDate string `json:"repayment_occurred_date,omitempty" attr:"timestamp"`
 	RepaymentAmount       string `json:"repayment_amount,omitempty" attr:"decimal"`
 	Currency              string `json:"currency,omitempty" attr:"string"`
-	NftAddress            string `json:"nft_address,omitempty" attr:"bytes"`
-	PaymentDetailsId      string `json:"payment_details_id,omitempty" attr:"bytes"`
+	NFTAddress            string `json:"nft_address,omitempty" attr:"bytes"`
+	PaymentDetailsID      string `json:"payment_details_id,omitempty" attr:"bytes"`
+}
+
+// Signature is the funding agreement Signature.
+type Signature struct {
+	Valid             string `json:"valid"`
+	OutdatedSignature string `json:"outdated_signature"`
+	Identity          string `json:"identity"`
+	SignedVersion     string `json:"signed_version"`
 }

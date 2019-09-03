@@ -53,7 +53,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to register generic doc service: %v", err)
 	}
 
-	err = registry.Register(scheme, srv)
+	err = registry.Register(Scheme, srv)
 	if err != nil {
 		return errors.New("failed to register generic doc service: %v", err)
 	}

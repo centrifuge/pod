@@ -153,15 +153,15 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 func updateKeys(c config.Configuration) config.Configuration {
 	n := c.(*configstore.NodeConfig)
 	n.MainIdentity.P2PKeyPair.Pub = "../build/resources/p2pKey.pub.pem"
-	n.MainIdentity.P2PKeyPair.Priv = "../build/resources/p2pKey.key.pem"
+	n.MainIdentity.P2PKeyPair.Pvt = "../build/resources/p2pKey.key.pem"
 	n.MainIdentity.SigningKeyPair.Pub = "../build/resources/signingKey.pub.pem"
-	n.MainIdentity.SigningKeyPair.Priv = "../build/resources/signingKey.key.pem"
+	n.MainIdentity.SigningKeyPair.Pvt = "../build/resources/signingKey.key.pem"
 	return c
 }
 
 func mockmockConfigStore(n config.Configuration) *configstore.MockService {
 	mockConfigStore := &configstore.MockService{}
 	mockConfigStore.On("GetConfig").Return(n, nil)
-	mockConfigStore.On("GetAllAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.DIDLength)}}, nil)
+	mockConfigStore.On("GetAccounts").Return([]config.Account{&configstore.Account{IdentityID: utils.RandomSlice(identity.DIDLength)}}, nil)
 	return mockConfigStore
 }

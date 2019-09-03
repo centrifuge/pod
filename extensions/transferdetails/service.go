@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -32,7 +33,7 @@ type Service interface {
 
 // service implements Service and handles all funding related persistence and validations
 type service struct {
-	srv           documents.Service
+	coreAPISrv    coreapi.Service
 	tokenRegistry documents.TokenRegistry
 }
 
@@ -44,11 +45,11 @@ const (
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
-	srv documents.Service,
+	srv coreapi.Service,
 	tokenRegistry documents.TokenRegistry,
 ) Service {
 	return service{
-		srv:           srv,
+		coreAPISrv:    srv,
 		tokenRegistry: tokenRegistry,
 	}
 }
@@ -56,7 +57,7 @@ func DefaultService(
 var log = logging.Logger("transferdetail-api")
 
 // TODO: get rid of this or make generic
-func deriveDIDs(data *TransferDetailData) ([]identity.DID, error) {
+func deriveDIDs(data *Data) ([]identity.DID, error) {
 	var c []identity.DID
 	for _, id := range []string{data.SenderID, data.RecipientID} {
 		if id != "" {
@@ -77,16 +78,13 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		return nil, jobs.NilJobID(), err
 	}
 
-	a := model.GetAttributes()
-	attr, err := extensions.ToMapAttributes(a)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
 	d, err := json.Marshal(model.GetData())
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
+
+	a := model.GetAttributes()
+	attr := extensions.ToMapAttributes(a)
 
 	payload := documents.UpdatePayload{
 		DocumentID: model.ID(),
@@ -98,9 +96,7 @@ func (s service) updateModel(ctx context.Context, model documents.Model) (docume
 		},
 	}
 
-	// TODO: use coreapi.UpdateDocument
-	//updated, jobID, err := coreapi.Service.UpdateDocument(ctx, payload)
-	updated, jobID, err := s.srv.UpdateModel(ctx, payload)
+	updated, jobID, err := s.coreAPISrv.UpdateDocument(ctx, payload)
 	if err != nil {
 		return nil, jobID, err
 	}
@@ -134,7 +130,7 @@ func (s service) deriveFromPayload(ctx context.Context, req CreateTransferDetail
 		return nil, err
 	}
 
-	model, err = s.srv.GetCurrentVersion(ctx, docID)
+	model, err = s.coreAPISrv.GetDocument(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -197,7 +193,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 		return nil, err
 	}
 
-	model, err = s.srv.GetCurrentVersion(ctx, docID)
+	model, err = s.coreAPISrv.GetDocument(ctx, docID)
 	if err != nil {
 		log.Error(err)
 		return nil, documents.ErrDocumentNotFound
@@ -216,7 +212,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 
 	// overwriting is not enough because it is not required that
 	// the TransferDetail payload contains all TransferDetail attributes
-	model, err = extensions.DeleteAttributesSet(model, TransferDetailData{}, idx, transfersFieldKey)
+	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, transfersFieldKey)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +243,7 @@ func (s service) deriveFromUpdatePayload(ctx context.Context, req UpdateTransfer
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) findTransfer(model documents.Model, transferID string) (*TransferDetailData, error) {
+func (s service) findTransfer(model documents.Model, transferID string) (*Data, error) {
 	idx, err := extensions.FindAttributeSetIDX(model, transferID, transfersLabel, transferIDLabel, transfersFieldKey)
 	if err != nil {
 		return nil, err
@@ -256,8 +252,8 @@ func (s service) findTransfer(model documents.Model, transferID string) (*Transf
 }
 
 // TODO: move to generic function in attribute utils
-func (s service) deriveTransferData(model documents.Model, idx string) (*TransferDetailData, error) {
-	data := new(TransferDetailData)
+func (s service) deriveTransferData(model documents.Model, idx string) (*Data, error) {
+	data := new(Data)
 
 	types := reflect.TypeOf(*data)
 	for i := 0; i < types.NumField(); i++ {
@@ -320,7 +316,7 @@ func (s service) DeriveTransferList(ctx context.Context, model documents.Model) 
 	if !model.AttributeExists(fl) {
 		return &TransferDetailList{
 			Data: nil,
-		}, nil, nil
+		}, model, nil
 	}
 
 	lastIdx, err := extensions.GetArrayLatestIDX(model, transfersLabel)

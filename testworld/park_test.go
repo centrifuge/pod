@@ -23,7 +23,7 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusOK, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -47,7 +47,7 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	// bobs node sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(bob.id.String(), int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
 	fmt.Println("Host test success")
 }
 
@@ -77,7 +77,7 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 	acc1 := sleepyHost.accounts[0]
 	res := getAccount(sleepyTS.httpExpect, sleepyTS.id.String(), http.StatusOK, acc1)
 	acc1Res := res.Value("identity_id").String().NotEmpty()
-	acc1Res.Equal(acc1)
+	acc1Res.Equal(strings.ToLower(acc1))
 
 	// Stop host
 	sleepyHost.kill()
@@ -91,5 +91,5 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 	// Verify accounts are available after restart
 	res = getAccount(sleepyTS.httpExpect, sleepyTS.id.String(), http.StatusOK, acc1)
 	acc1Res = res.Value("identity_id").String().NotEmpty()
-	acc1Res.Equal(acc1)
+	acc1Res.Equal(strings.ToLower(acc1))
 }

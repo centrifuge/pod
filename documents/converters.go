@@ -1,18 +1,26 @@
 package documents
 
 import (
+	"bytes"
+	"encoding/binary"
 	"strings"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/common"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/timestamp"
+)
+
+const (
+	// maxTimeByteLength is the max length of the byte representation of a timestamp attribute
+	maxTimeByteLength = 12
+	// monetaryChainIDLength is the fixed length of the byte representation of ChainID
+	monetaryChainIDLength = 4
+	// monetaryIDLength is the fixed length of the byte representation of monetary ID
+	monetaryIDLength = 32
 )
 
 // BinaryAttachment represent a single file attached to invoice.
@@ -20,17 +28,17 @@ type BinaryAttachment struct {
 	Name     string             `json:"name"`
 	FileType string             `json:"file_type"` // mime type of attached file
 	Size     int                `json:"size"`      // in bytes
-	Data     byteutils.HexBytes `json:"data"`
-	Checksum byteutils.HexBytes `json:"checksum"` // the md5 checksum of the original file for easier verification
+	Data     byteutils.HexBytes `json:"data" swaggertype:"primitive,string"`
+	Checksum byteutils.HexBytes `json:"checksum" swaggertype:"primitive,string"` // the md5 checksum of the original file for easier verification
 }
 
 // PaymentDetails holds the payment related details for invoice.
 type PaymentDetails struct {
 	ID                    string        `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *time.Time    `json:"date_executed"`
-	Payee                 *identity.DID `json:"payee"` // centrifuge id of payee
-	Payer                 *identity.DID `json:"payer"` // centrifuge id of payer
-	Amount                *Decimal      `json:"amount"`
+	DateExecuted          *time.Time    `json:"date_executed" swaggertype:"primitive,string"`
+	Payee                 *identity.DID `json:"payee" swaggertype:"primitive,string"` // centrifuge id of payee
+	Payer                 *identity.DID `json:"payer" swaggertype:"primitive,string"` // centrifuge id of payer
+	Amount                *Decimal      `json:"amount" swaggertype:"primitive,string"`
 	Currency              string        `json:"currency"`
 	Reference             string        `json:"reference"` // payment reference (e.g. reference field on bank transfer)
 	BankName              string        `json:"bank_name"`
@@ -45,31 +53,6 @@ type PaymentDetails struct {
 	CryptoTransactionID string `json:"crypto_transaction_id"` // the transaction in which the payment happened
 	CryptoFrom          string `json:"crypto_from"`           // from address
 	CryptoTo            string `json:"crypto_to"`             // to address
-}
-
-// ToClientAttachments converts Attachments to Client Attachments.
-func ToClientAttachments(atts []*BinaryAttachment) []*documentpb.BinaryAttachment {
-	var catts []*documentpb.BinaryAttachment
-	for _, att := range atts {
-		var data, checksum string
-		if len(att.Data) > 0 {
-			data = hexutil.Encode(att.Data)
-		}
-
-		if len(att.Checksum) > 0 {
-			checksum = hexutil.Encode(att.Checksum)
-		}
-
-		catts = append(catts, &documentpb.BinaryAttachment{
-			Name:     att.Name,
-			FileType: att.FileType,
-			Size:     uint64(att.Size),
-			Data:     data,
-			Checksum: checksum,
-		})
-	}
-
-	return catts
 }
 
 // ToProtocolAttachments converts Binary Attchments to protocol attachments.
@@ -88,38 +71,6 @@ func ToProtocolAttachments(atts []*BinaryAttachment) []*commonpb.BinaryAttachmen
 	return patts
 }
 
-// FromClientAttachments converts Client Attachments to Binary Attachments
-func FromClientAttachments(catts []*documentpb.BinaryAttachment) ([]*BinaryAttachment, error) {
-	var atts []*BinaryAttachment
-	for _, att := range catts {
-		var data, checksum []byte
-		var err error
-		if s := strings.TrimSpace(att.Data); s != "" {
-			data, err = hexutil.Decode(s)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if s := strings.TrimSpace(att.Checksum); s != "" {
-			checksum, err = hexutil.Decode(s)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		atts = append(atts, &BinaryAttachment{
-			Name:     att.Name,
-			FileType: att.FileType,
-			Size:     int(att.Size),
-			Data:     data,
-			Checksum: checksum,
-		})
-	}
-
-	return atts, nil
-}
-
 // FromProtocolAttachments converts Protocol attachments to Binary Attachments
 func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttachment {
 	var atts []*BinaryAttachment
@@ -134,42 +85,6 @@ func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttach
 	}
 
 	return atts
-}
-
-// ToClientPaymentDetails converts PaymentDetails to client payment details.
-func ToClientPaymentDetails(details []*PaymentDetails) ([]*documentpb.PaymentDetails, error) {
-	var cdetails []*documentpb.PaymentDetails
-	for _, detail := range details {
-		decs := DecimalsToStrings(detail.Amount)
-		dids := identity.DIDsToStrings(detail.Payee, detail.Payer)
-		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
-		if err != nil {
-			return nil, err
-		}
-
-		cdetails = append(cdetails, &documentpb.PaymentDetails{
-			Id:                    detail.ID,
-			DateExecuted:          tms[0],
-			Payee:                 dids[0],
-			Payer:                 dids[1],
-			Amount:                decs[0],
-			Currency:              detail.Currency,
-			Reference:             detail.Reference,
-			BankName:              detail.BankName,
-			BankAddress:           detail.BankAddress,
-			BankAccountCurrency:   detail.BankAccountCurrency,
-			BankAccountHolderName: detail.BankAccountHolderName,
-			BankAccountNumber:     detail.BankAccountNumber,
-			BankCountry:           detail.BankCountry,
-			BankKey:               detail.BankKey,
-			CryptoChainUri:        detail.CryptoChainURI,
-			CryptoFrom:            detail.CryptoFrom,
-			CryptoTo:              detail.CryptoTo,
-			CryptoTransactionId:   detail.CryptoTransactionID,
-		})
-	}
-
-	return cdetails, nil
 }
 
 // ToProtocolPaymentDetails converts payment details to protocol payment details
@@ -210,50 +125,6 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 	}
 
 	return pdetails, nil
-}
-
-// FromClientPaymentDetails converts Client PaymentDetails to PaymentDetails
-func FromClientPaymentDetails(cdetails []*documentpb.PaymentDetails) ([]*PaymentDetails, error) {
-	var details []*PaymentDetails
-	for _, detail := range cdetails {
-		decs, err := StringsToDecimals(detail.Amount)
-		if err != nil {
-			return nil, err
-		}
-
-		dids, err := identity.StringsToDIDs(detail.Payee, detail.Payer)
-		if err != nil {
-			return nil, err
-		}
-
-		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
-		if err != nil {
-			return nil, err
-		}
-
-		details = append(details, &PaymentDetails{
-			ID:                    detail.Id,
-			DateExecuted:          pts[0],
-			Payee:                 dids[0],
-			Payer:                 dids[1],
-			Amount:                decs[0],
-			Currency:              detail.Currency,
-			Reference:             detail.Reference,
-			BankName:              detail.BankName,
-			BankAddress:           detail.BankAddress,
-			BankAccountCurrency:   detail.BankAccountCurrency,
-			BankAccountHolderName: detail.BankAccountHolderName,
-			BankAccountNumber:     detail.BankAccountNumber,
-			BankCountry:           detail.BankCountry,
-			BankKey:               detail.BankKey,
-			CryptoChainURI:        detail.CryptoChainUri,
-			CryptoFrom:            detail.CryptoFrom,
-			CryptoTo:              detail.CryptoTo,
-			CryptoTransactionID:   detail.CryptoTransactionId,
-		})
-	}
-
-	return details, nil
 }
 
 // FromProtocolPaymentDetails converts protocol payment details to PaymentDetails
@@ -299,173 +170,6 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 	return details, nil
 }
 
-// FromClientCollaboratorAccess converts client collaborator access to CollaboratorsAccess
-func FromClientCollaboratorAccess(racess, waccess []string) (ca CollaboratorsAccess, err error) {
-	wmap, rmap := make(map[string]struct{}), make(map[string]struct{})
-	var wcs, rcs []string
-	if waccess != nil {
-		for _, c := range waccess {
-			c = strings.TrimSpace(strings.ToLower(c))
-			if c == "" {
-				continue
-			}
-
-			if _, ok := wmap[c]; ok {
-				continue
-			}
-
-			wmap[c] = struct{}{}
-			wcs = append(wcs, c)
-		}
-	}
-
-	if racess != nil {
-		for _, c := range racess {
-			c = strings.TrimSpace(strings.ToLower(c))
-			if c == "" {
-				continue
-			}
-
-			if _, ok := wmap[c]; ok {
-				continue
-			}
-
-			if _, ok := rmap[c]; ok {
-				continue
-			}
-
-			rcs = append(rcs, c)
-			rmap[c] = struct{}{}
-		}
-	}
-
-	rdids, err := identity.StringsToDIDs(rcs...)
-	if err != nil {
-		return ca, err
-	}
-
-	wdids, err := identity.StringsToDIDs(wcs...)
-	if err != nil {
-		return ca, err
-	}
-
-	return CollaboratorsAccess{
-		ReadCollaborators:      identity.FromPointerDIDs(rdids...),
-		ReadWriteCollaborators: identity.FromPointerDIDs(wdids...),
-	}, nil
-}
-
-// ToClientCollaboratorAccess converts CollaboratorAccess to client collaborator access
-func ToClientCollaboratorAccess(ca CollaboratorsAccess) (readAccess, writeAccess []string) {
-	rcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadCollaborators...)...)
-	wcs := identity.DIDsToStrings(identity.DIDsPointers(ca.ReadWriteCollaborators...)...)
-	return rcs, wcs
-}
-
-// ToClientAttributes converts attribute map to the client api format
-func ToClientAttributes(attributes []Attribute) (map[string]*documentpb.Attribute, error) {
-	if len(attributes) < 1 {
-		return nil, nil
-	}
-
-	m := make(map[string]*documentpb.Attribute)
-	for _, v := range attributes {
-		val, err := v.Value.String()
-		if err != nil {
-			return nil, errors.NewTypedError(ErrCDAttribute, err)
-		}
-
-		m[v.KeyLabel] = &documentpb.Attribute{
-			Key:   v.Key.String(),
-			Type:  v.Value.Type.String(),
-			Value: val,
-		}
-	}
-
-	return m, nil
-}
-
-// FromClientAttributes converts the api attributes type to local Attributes map.
-func FromClientAttributes(attrs map[string]*documentpb.Attribute) (map[AttrKey]Attribute, error) {
-	if len(attrs) < 1 {
-		return nil, nil
-	}
-
-	m := make(map[AttrKey]Attribute)
-	for k, at := range attrs {
-		attr, err := NewAttribute(k, AttributeType(at.Type), at.Value)
-		if err != nil {
-			return nil, errors.NewTypedError(ErrCDAttribute, err)
-		}
-
-		m[attr.Key] = attr
-	}
-
-	return m, nil
-}
-
-// DeriveResponseHeader derives common response header for model
-func DeriveResponseHeader(tokenRegistry TokenRegistry, model Model) (*documentpb.ResponseHeader, error) {
-	cs, err := model.GetCollaborators()
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCollaborators, err)
-	}
-
-	// we ignore error here because it can happen when a model is first created but its not anchored yet
-	a, _ := model.Author()
-	author := a.String()
-
-	// we ignore error here because it can happen when a model is first created but its not anchored yet
-	time := ""
-	t, err := model.Timestamp()
-	if err == nil {
-		time = t.UTC().String()
-	}
-
-	nfts := model.NFTs()
-	cnfts, err := convertNFTs(tokenRegistry, nfts)
-	if err != nil {
-		// this could be a temporary failure, so we ignore but warn about the error
-		log.Warningf("errors encountered when trying to set nfts to the response: %v", errors.NewTypedError(ErrNftNotFound, err))
-	}
-
-	rcs, wcs := ToClientCollaboratorAccess(cs)
-	return &documentpb.ResponseHeader{
-		DocumentId:  hexutil.Encode(model.ID()),
-		VersionId:   hexutil.Encode(model.CurrentVersion()),
-		Author:      author,
-		CreatedAt:   time,
-		ReadAccess:  rcs,
-		WriteAccess: wcs,
-		Nfts:        cnfts,
-	}, nil
-}
-
-func convertNFTs(tokenRegistry TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []*documentpb.NFT, err error) {
-	for _, n := range nfts {
-		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
-		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
-		if errn != nil || i == nil {
-			err = errors.AppendError(err, errors.New("token index received is nil or other error: %v", errn))
-			continue
-		}
-
-		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
-		if errn != nil {
-			err = errors.AppendError(err, errn)
-			continue
-		}
-
-		nnfts = append(nnfts, &documentpb.NFT{
-			Registry:   regAddress.Hex(),
-			Owner:      o.Hex(),
-			TokenId:    hexutil.Encode(n.TokenId),
-			TokenIndex: hexutil.Encode(i.Bytes()),
-		})
-	}
-	return nnfts, err
-}
-
 // toProtocolAttributes convert model attributes to p2p attributes
 // since the protocol representation of attributes is a list, we will always sort the keys and then insert to the list.
 func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb.Attribute, err error) {
@@ -503,7 +207,17 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 		case AttrBytes:
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
 		case AttrTimestamp:
-			pattr.Value = &coredocumentpb.Attribute_TimeVal{TimeVal: attr.Value.Timestamp}
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, attr.Value.Timestamp.Seconds)
+			if err != nil {
+				return nil, err
+			}
+			err = binary.Write(buf, binary.BigEndian, attr.Value.Timestamp.Nanos)
+			if err != nil {
+				return nil, err
+			}
+			b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
+			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b}
 		case AttrSigned:
 			signed := attr.Value.Signed
 			pattr.Value = &coredocumentpb.Attribute_SignedVal{
@@ -513,6 +227,20 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 					Signature:  signed.Signature,
 					PublicKey:  signed.PublicKey,
 					Identity:   signed.Identity[:],
+				},
+			}
+		case AttrMonetary:
+			monetary := attr.Value.Monetary
+			decBytes, err := monetary.Value.Bytes()
+			if err != nil {
+				return nil, err
+			}
+			pattr.Value = &coredocumentpb.Attribute_MonetaryVal{
+				MonetaryVal: &coredocumentpb.Monetary{
+					Type:  getProtocolMonetaryType(monetary.Type),
+					Value: decBytes,
+					Chain: append(make([]byte, monetaryChainIDLength-len(monetary.ChainID)), monetary.ChainID...),
+					Id:    append(make([]byte, monetaryIDLength-len(monetary.ID)), monetary.ID...),
 				},
 			}
 		}
@@ -533,6 +261,22 @@ func getProtocolAttributeType(attrType AttributeType) coredocumentpb.AttributeTy
 func getAttributeTypeFromProtocolType(attrType coredocumentpb.AttributeType) AttributeType {
 	str := coredocumentpb.AttributeType_name[int32(attrType)]
 	return AttributeType(strings.ToLower(strings.TrimPrefix(str, attributeProtocolPrefix)))
+}
+
+func getProtocolMonetaryType(mType MonetaryType) []byte {
+	ret := []byte{1}
+	if mType == MonetaryToken {
+		ret = []byte{2}
+	}
+	return ret
+}
+
+func getMonetaryTypeFromProtocolType(mType []byte) MonetaryType {
+	var ret MonetaryType
+	if bytes.Equal(mType, []byte{2}) {
+		ret = MonetaryToken
+	}
+	return ret
 }
 
 // fromProtocolAttributes converts protocol attribute list to model attribute map
@@ -577,7 +321,19 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 	case AttrBytes:
 		attrVal.Bytes = attribute.GetByteVal()
 	case AttrTimestamp:
-		attrVal.Timestamp = attribute.GetTimeVal()
+		var ns int64
+		var nn int32
+		bs := bytes.NewBuffer(attribute.GetByteVal()[:maxTimeByteLength-4])
+		bn := bytes.NewBuffer(attribute.GetByteVal()[maxTimeByteLength-4:])
+		err := binary.Read(bs, binary.BigEndian, &ns)
+		if err != nil {
+			return attrVal, err
+		}
+		err = binary.Read(bn, binary.BigEndian, &nn)
+		if err != nil {
+			return attrVal, err
+		}
+		attrVal.Timestamp = &timestamp.Timestamp{Seconds: ns, Nanos: nn}
 	case AttrSigned:
 		val := attribute.GetSignedVal()
 		did, err := identity.NewDIDFromBytes(val.Identity)
@@ -591,6 +347,18 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 			PublicKey:       val.PublicKey,
 			Value:           val.Value,
 			Signature:       val.Signature,
+		}
+	case AttrMonetary:
+		val := attribute.GetMonetaryVal()
+		dec, err := DecimalFromBytes(val.Value)
+		if err != nil {
+			return attrVal, err
+		}
+		attrVal.Monetary = Monetary{
+			Type:    getMonetaryTypeFromProtocolType(val.Type),
+			Value:   dec,
+			ChainID: bytes.TrimLeft(val.Chain, "\x00"),
+			ID:      bytes.TrimLeft(val.Id, "\x00"),
 		}
 	}
 

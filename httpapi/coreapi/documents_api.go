@@ -33,7 +33,7 @@ type handler struct {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} coreapi.DocumentResponse
+// @success 202 {object} coreapi.DocumentResponse
 // @router /v1/documents [post]
 func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -56,7 +56,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -70,14 +70,14 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 
@@ -94,14 +94,14 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} coreapi.DocumentResponse
+// @success 202 {object} coreapi.DocumentResponse
 // @router /v1/documents/{document_id} [put]
 func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -125,7 +125,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -139,14 +139,14 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobID)
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobID)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 
@@ -158,6 +158,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -168,7 +169,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -184,7 +185,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -204,6 +205,7 @@ func (h handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 // @param document_id path string true "Document Identifier"
 // @param version_id path string true "Document Version Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -215,7 +217,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 	defer httputils.RespondIfError(&code, &err, w, r)
 
 	ids := make([][]byte, 2, 2)
-	for i, idStr := range []string{chi.URLParam(r, documentIDParam), chi.URLParam(r, versionIDParam)} {
+	for i, idStr := range []string{chi.URLParam(r, DocumentIDParam), chi.URLParam(r, VersionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)
 		if err != nil {
@@ -236,7 +238,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := getDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
+	resp, err := GetDocumentResponse(model, h.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -256,6 +258,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 // @param document_id path string true "Document Identifier"
 // @param body body coreapi.ProofsRequest true "Document proof request"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
@@ -265,7 +268,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -309,6 +312,7 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 // @param version_id path string true "Document Version Identifier"
 // @param body body coreapi.ProofsRequest true "Document proof request"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
@@ -319,7 +323,7 @@ func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request
 	defer httputils.RespondIfError(&code, &err, w, r)
 
 	ids := make([][]byte, 2, 2)
-	for i, idStr := range []string{chi.URLParam(r, documentIDParam), chi.URLParam(r, versionIDParam)} {
+	for i, idStr := range []string{chi.URLParam(r, DocumentIDParam), chi.URLParam(r, VersionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)
 		if err != nil {

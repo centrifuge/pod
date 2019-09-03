@@ -48,8 +48,8 @@ func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerDI
 		if !ok {
 			continue
 		}
-		if bytes.Equal(e.EntityIdentifier, entityIdentifier) && targetDID.Equal(*e.TargetIdentity) {
-			return e.Document.DocumentIdentifier, nil
+		if bytes.Equal(e.Data.EntityIdentifier, entityIdentifier) && targetDID.Equal(*e.Data.TargetIdentity) {
+			return e.ID(), nil
 		}
 	}
 	return nil, documents.ErrDocumentNotFound
@@ -73,7 +73,7 @@ func (r *repo) ListAllRelationships(entityIdentifier []byte, ownerDID identity.D
 			continue
 		}
 		_, found := relationships[string(e.Document.DocumentIdentifier)]
-		if bytes.Equal(e.EntityIdentifier, entityIdentifier) && !found {
+		if bytes.Equal(e.Data.EntityIdentifier, entityIdentifier) && !found {
 			relationships[string(e.Document.DocumentIdentifier)] = e.Document.DocumentIdentifier
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
 	crypto2 "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -13,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
-	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
@@ -109,16 +109,13 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 }
 
 func (s *peer) initProtocols() error {
-	tcs, err := s.config.GetAllAccounts()
+	tcs, err := s.config.GetAccounts()
 	if err != nil {
 		return err
 	}
 	var protocols []protocol.ID
 	for _, t := range tcs {
-		accID, err := t.GetIdentityID()
-		if err != nil {
-			return err
-		}
+		accID := t.GetIdentityID()
 		DID, err := identity.NewDIDFromBytes(accID)
 		if err != nil {
 			return err

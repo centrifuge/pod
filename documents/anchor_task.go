@@ -2,10 +2,7 @@ package documents
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -98,7 +95,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 	tc, err := d.config.GetAccount(d.accountID[:])
 	if err != nil {
 		log.Error(err)
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+		return nil, errors.New("failed to get header: %v", err)
 	}
 	jobCtx := contextutil.WithJob(context.Background(), d.JobID)
 	ctxh, err := contextutil.New(jobCtx, tc)
@@ -142,7 +139,7 @@ func initDocumentAnchorTask(jobMan jobs.Manager, tq queue.TaskQueuer, accountID 
 }
 
 // CreateAnchorJob creates a job for anchoring a document using jobs manager
-func CreateAnchorJob(parentCtx context.Context, jobsMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan bool, error) {
+func CreateAnchorJob(parentCtx context.Context, jobsMan jobs.Manager, tq queue.TaskQueuer, self identity.DID, jobID jobs.JobID, documentID []byte) (jobs.JobID, chan error, error) {
 	jobID, done, err := jobsMan.ExecuteWithinJob(contextutil.Copy(parentCtx), self, jobID, "anchor document", func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errChan chan<- error) {
 		tr, err := initDocumentAnchorTask(jobsMan, tq, accountID, documentID, jobID)
 		if err != nil {

@@ -9,10 +9,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
@@ -23,11 +25,9 @@ import (
 	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -169,7 +169,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorResp, err := handler.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: &cd}, accDID)
 	assert.Error(t, err)
@@ -217,7 +217,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 	cd, err = po.PackCoreDocument()
 	assert.NoError(t, err)
 
@@ -246,7 +246,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 
 	watchCommittedAnchor = <-anchorConfirmations
-	assert.True(t, watchCommittedAnchor, "No error should be thrown by context")
+	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 	ncd, err = npo.PackCoreDocument()
 	assert.NoError(t, err)
 
@@ -295,7 +295,7 @@ func createIdentity(t *testing.T) identity.DID {
 	return *did
 }
 
-func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
+func prepareDocumentForP2PHandler(t *testing.T, inv *invoice.Invoice) (*invoice.Invoice, coredocumentpb.CoreDocument) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	accCfg, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
@@ -303,18 +303,15 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 	acc.IdentityID = defaultDID[:]
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	if po == nil {
-		payload := testingdocuments.CreatePOPayload()
-		po = new(purchaseorder.PurchaseOrder)
-		err = po.InitPurchaseOrderInput(payload, defaultDID)
-		assert.NoError(t, err)
+	if inv == nil {
+		inv = invoice.InitInvoice(t, defaultDID, invoice.CreateInvoicePayload(t, nil))
 	}
-	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
-	err = po.AddUpdateLog(defaultDID)
+	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
+	err = inv.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
-	_, err = po.CalculateDataRoot()
+	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
+	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
@@ -324,19 +321,19 @@ func prepareDocumentForP2PHandler(t *testing.T, po *purchaseorder.PurchaseOrder)
 		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature:   s,
 	}
-	po.AppendSignatures(sig)
-	_, err = po.CalculateDocumentRoot()
+	inv.AppendSignatures(sig)
+	_, err = inv.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	cd, err := po.PackCoreDocument()
+	cd, err := inv.PackCoreDocument()
 	assert.NoError(t, err)
-	return po, cd
+	return inv, cd
 }
 
-func updateDocumentForP2Phandler(t *testing.T, po *purchaseorder.PurchaseOrder) (*purchaseorder.PurchaseOrder, coredocumentpb.CoreDocument) {
-	cd, err := po.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{}, nil)
+func updateDocumentForP2Phandler(t *testing.T, inv *invoice.Invoice) (*invoice.Invoice, coredocumentpb.CoreDocument) {
+	cd, err := inv.CoreDocument.PrepareNewVersion(nil, documents.CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
-	po.CoreDocument = cd
-	return prepareDocumentForP2PHandler(t, po)
+	inv.CoreDocument = cd
+	return prepareDocumentForP2PHandler(t, inv)
 }
 
 func resolveSignatureResponse(t *testing.T, p2pEnv *protocolpb.P2PEnvelope) *p2ppb.SignatureResponse {

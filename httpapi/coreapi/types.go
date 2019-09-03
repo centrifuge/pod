@@ -2,9 +2,13 @@ package coreapi
 
 import (
 	"encoding/json"
+	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -15,23 +19,46 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// AttributeMap defines a map of attributes with attribute key as key
-type AttributeMap map[string]Attribute
+// MonetaryValue defines user format to represent currency type
+// Value string representation of decimal number
+// ChainID hex bytes representing the chain where the currency is relevant
+// ID string representing the Currency (USD|ETH|0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2(DAI)...)
+type MonetaryValue struct {
+	Value   *documents.Decimal `json:"value" swaggertype:"primitive,string"`
+	ChainID byteutils.HexBytes `json:"chain_id" swaggertype:"primitive,string"`
+	ID      string             `json:"id"`
+}
+
+// AttributeMapRequest defines a map of attributes with attribute key as key
+type AttributeMapRequest map[string]AttributeRequest
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string           `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	Data        interface{}      `json:"data"`
-	Attributes  AttributeMap     `json:"attributes"`
+	Scheme      string              `json:"scheme" enums:"generic,invoice,entity"`
+	ReadAccess  []identity.DID      `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID      `json:"write_access" swaggertype:"array,string"`
+	Data        interface{}         `json:"data"`
+	Attributes  AttributeMapRequest `json:"attributes"`
 }
 
-// Attribute defines a single attribute.
-type Attribute struct {
-	Type  string `json:"type" enums:"integer,decimal,string,bytes,timestamp"`
-	Value string `json:"value"`
+// AttributeRequest defines a single attribute.
+// Type type of the attribute
+// Value simple value of the attribute
+// MonetaryValue value for only monetary attribute
+type AttributeRequest struct {
+	Type          string         `json:"type" enums:"integer,decimal,string,bytes,timestamp,monetary"`
+	Value         string         `json:"value"`
+	MonetaryValue *MonetaryValue `json:"monetary_value,omitempty"`
 }
+
+// AttributeResponse adds key to the attribute.
+type AttributeResponse struct {
+	AttributeRequest
+	Key byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+}
+
+// AttributeMapResponse maps attribute label to AttributeResponse
+type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
@@ -43,30 +70,44 @@ type NFT struct {
 
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
-	DocumentID  string           `json:"document_id"`
-	VersionID   string           `json:"version_id"`
-	Author      string           `json:"author"`
-	CreatedAt   string           `json:"created_at"`
-	ReadAccess  []common.Address `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []common.Address `json:"write_access" swaggertype:"array,string"`
-	JobID       string           `json:"job_id,omitempty"`
-	NFTs        []NFT            `json:"nfts"`
+	DocumentID  string         `json:"document_id"`
+	VersionID   string         `json:"version_id"`
+	Author      string         `json:"author"`
+	CreatedAt   string         `json:"created_at"`
+	ReadAccess  []identity.DID `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
+	JobID       string         `json:"job_id,omitempty"`
+	NFTs        []NFT          `json:"nfts"`
+	Status      string         `json:"status,omitempty"`
 }
 
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
-	Header     ResponseHeader `json:"header"`
-	Scheme     string         `json:"scheme" enums:"generic,invoice,purchase_order,entity"`
-	Data       interface{}    `json:"data"`
-	Attributes AttributeMap   `json:"attributes"`
+	Header     ResponseHeader       `json:"header"`
+	Scheme     string               `json:"scheme" enums:"generic,invoice,entity"`
+	Data       interface{}          `json:"data"`
+	Attributes AttributeMapResponse `json:"attributes"`
 }
 
-func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+func toDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
-		attr, err := documents.NewAttribute(k, documents.AttributeType(v.Type), v.Value)
-		if err != nil {
-			return nil, err
+		var attr documents.Attribute
+		var err error
+		switch documents.AttributeType(v.Type) {
+		case documents.AttrMonetary:
+			if v.MonetaryValue == nil {
+				return nil, errors.NewTypedError(documents.ErrWrongAttrFormat, errors.New("empty value field"))
+			}
+			attr, err = documents.NewMonetaryAttribute(k, v.MonetaryValue.Value, v.MonetaryValue.ChainID.Bytes(), v.MonetaryValue.ID)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			attr, err = documents.NewStringAttribute(k, documents.AttributeType(v.Type), v.Value)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		attrs[attr.Key] = attr
@@ -75,12 +116,13 @@ func toDocumentAttributes(cattrs map[string]Attribute) (map[documents.AttrKey]do
 	return attrs, nil
 }
 
-func toDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
+// ToDocumentsCreatePayload converts CoreAPI create payload to documents payload.
+func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePayload, error) {
 	payload := documents.CreatePayload{
 		Scheme: request.Scheme,
 		Collaborators: documents.CollaboratorsAccess{
-			ReadCollaborators:      identity.AddressToDIDs(request.ReadAccess...),
-			ReadWriteCollaborators: identity.AddressToDIDs(request.WriteAccess...),
+			ReadCollaborators:      request.ReadAccess,
+			ReadWriteCollaborators: request.WriteAccess,
 		},
 	}
 
@@ -104,8 +146,9 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
 		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
 		if errn != nil || i == nil {
-			err = errors.AppendError(err, errors.New("token index received is nil or other error: %v", errn))
-			continue
+			// Optional value to be part of the document response
+			log.Debug(errors.New("token index received is nil or other error: %v", errn))
+			i = new(big.Int)
 		}
 
 		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
@@ -124,17 +167,38 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 	return nnfts, err
 }
 
-func convertAttributes(attrs []documents.Attribute) (AttributeMap, error) {
-	m := make(AttributeMap)
+func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
+	m := make(AttributeMapResponse)
 	for _, v := range attrs {
-		val, err := v.Value.String()
-		if err != nil {
-			return nil, err
+		var attrReq AttributeRequest
+		switch v.Value.Type {
+		case documents.AttrMonetary:
+			id := string(v.Value.Monetary.ID)
+			if v.Value.Monetary.Type == documents.MonetaryToken {
+				id = hexutil.Encode(v.Value.Monetary.ID)
+			}
+			attrReq = AttributeRequest{
+				Type: v.Value.Type.String(),
+				MonetaryValue: &MonetaryValue{
+					Value:   v.Value.Monetary.Value,
+					ChainID: v.Value.Monetary.ChainID,
+					ID:      id,
+				},
+			}
+		default:
+			val, err := v.Value.String()
+			if err != nil {
+				return nil, err
+			}
+			attrReq = AttributeRequest{
+				Type:  v.Value.Type.String(),
+				Value: val,
+			}
 		}
 
-		m[v.KeyLabel] = Attribute{
-			Type:  v.Value.Type.String(),
-			Value: val,
+		m[v.KeyLabel] = AttributeResponse{
+			AttributeRequest: attrReq,
+			Key:              v.Key[:],
 		}
 	}
 
@@ -170,17 +234,18 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		VersionID:   hexutil.Encode(model.CurrentVersion()),
 		Author:      author.String(),
 		CreatedAt:   ts,
-		ReadAccess:  identity.DIDsToAddress(cs.ReadCollaborators...),
-		WriteAccess: identity.DIDsToAddress(cs.ReadWriteCollaborators...),
+		ReadAccess:  cs.ReadCollaborators,
+		WriteAccess: cs.ReadWriteCollaborators,
 		NFTs:        cnfts,
 		JobID:       id.String(),
 	}, nil
 }
 
-func getDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
+// GetDocumentResponse converts model to a client api format.
+func GetDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
-	attrMap, err := convertAttributes(model.GetAttributes())
+	attrMap, err := toAttributeMapResponse(model.GetAttributes())
 	if err != nil {
 		return resp, err
 	}
@@ -205,51 +270,21 @@ type ProofResponseHeader struct {
 	State      string             `json:"state"`
 }
 
-// Proof represents a single proof
-type Proof struct {
-	Property     byteutils.HexBytes   `json:"property" swaggertype:"primitive,string"`
-	Value        byteutils.HexBytes   `json:"value" swaggertype:"primitive,string"`
-	Salt         byteutils.HexBytes   `json:"salt" swaggertype:"primitive,string"`
-	Hash         byteutils.HexBytes   `json:"hash" swaggertype:"primitive,string"`
-	SortedHashes []byteutils.HexBytes `json:"sorted_hashes" swaggertype:"array,string"`
-}
-
 // ProofsResponse holds the proofs for the fields given for a document.
 type ProofsResponse struct {
 	Header      ProofResponseHeader `json:"header"`
-	FieldProofs []Proof             `json:"field_proofs"`
+	FieldProofs []documents.Proof   `json:"field_proofs"`
 }
 
 func convertProofs(proof *documents.DocumentProof) ProofsResponse {
-	resp := ProofsResponse{
+	return ProofsResponse{
 		Header: ProofResponseHeader{
 			DocumentID: proof.DocumentID,
 			VersionID:  proof.VersionID,
 			State:      proof.State,
 		},
+		FieldProofs: documents.ConvertProofs(proof.FieldProofs),
 	}
-
-	var proofs []Proof
-	for _, pf := range proof.FieldProofs {
-		pff := Proof{
-			Value:    pf.Value,
-			Hash:     pf.Hash,
-			Salt:     pf.Salt,
-			Property: pf.GetCompactName(),
-		}
-
-		var hashes []byteutils.HexBytes
-		for _, h := range pf.SortedHashes {
-			h := h
-			hashes = append(hashes, h)
-		}
-
-		pff.SortedHashes = hashes
-		proofs = append(proofs, pff)
-	}
-
-	resp.FieldProofs = proofs
-	return resp
 }
 
 // MintNFTRequest holds required fields for minting NFT
@@ -319,4 +354,91 @@ type SignResponse struct {
 	Signature byteutils.HexBytes `json:"signature" swaggertype:"primitive,string"`
 	PublicKey byteutils.HexBytes `json:"public_key" swaggertype:"primitive,string"`
 	SignerID  byteutils.HexBytes `json:"signer_id" swaggertype:"primitive,string"`
+}
+
+// KeyPair represents the public and private key.
+type KeyPair struct {
+	Pub string `json:"pub"`
+	Pvt string `json:"pvt"`
+}
+
+// EthAccount holds address of the account.
+type EthAccount struct {
+	Address  string `json:"address"`
+	Key      string `json:"key,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+// Account holds the single account details.
+type Account struct {
+	EthereumAccount                  EthAccount         `json:"eth_account"`
+	EthereumDefaultAccountName       string             `json:"eth_default_account_name"`
+	ReceiveEventNotificationEndpoint string             `json:"receive_event_notification_endpoint"`
+	IdentityID                       byteutils.HexBytes `json:"identity_id" swaggertype:"primitive,string"`
+	SigningKeyPair                   KeyPair            `json:"signing_key_pair"`
+	P2PKeyPair                       KeyPair            `json:"p2p_key_pair"`
+}
+
+// Accounts holds a list of accounts
+type Accounts struct {
+	Data []Account `json:"data"`
+}
+
+func toClientAccount(acc config.Account) Account {
+	var p2pkp, signingkp KeyPair
+	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
+	signingkp.Pub, signingkp.Pvt = acc.GetSigningKeyPair()
+
+	return Account{
+		EthereumAccount: EthAccount{
+			Address: acc.GetEthereumAccount().Address,
+		},
+		IdentityID:                       acc.GetIdentityID(),
+		ReceiveEventNotificationEndpoint: acc.GetReceiveEventNotificationEndpoint(),
+		EthereumDefaultAccountName:       acc.GetEthereumDefaultAccountName(),
+		P2PKeyPair:                       p2pkp,
+		SigningKeyPair:                   signingkp,
+	}
+}
+
+func toClientAccounts(accs []config.Account) Accounts {
+	var caccs Accounts
+	for _, acc := range accs {
+		caccs.Data = append(caccs.Data, toClientAccount(acc))
+	}
+
+	return caccs
+}
+
+func isKeyPairEmpty(kp *KeyPair) bool {
+	kp.Pvt, kp.Pub = strings.TrimSpace(kp.Pvt), strings.TrimSpace(kp.Pub)
+	return kp.Pvt == "" || kp.Pub == ""
+}
+
+func fromClientAccount(cacc Account) (config.Account, error) {
+	acc := new(configstore.Account)
+	if cacc.EthereumAccount.Address == "" || cacc.EthereumAccount.Key == "" {
+		return nil, errors.New("ethereum address/key cannot be empty")
+	}
+	ca := config.AccountConfig(cacc.EthereumAccount)
+	acc.EthereumAccount = &ca
+	acc.EthereumDefaultAccountName = cacc.EthereumDefaultAccountName
+
+	if isKeyPairEmpty(&cacc.P2PKeyPair) {
+		return nil, errors.New("p2p key pair is invalid")
+	}
+	acc.P2PKeyPair = configstore.KeyPair(cacc.P2PKeyPair)
+
+	if isKeyPairEmpty(&cacc.SigningKeyPair) {
+		return nil, errors.New("signing key pair is invalid")
+	}
+	acc.SigningKeyPair = configstore.KeyPair(cacc.SigningKeyPair)
+
+	if len(cacc.IdentityID) < 1 {
+		return nil, errors.New("Identity ID cannot be empty")
+	}
+
+	acc.IdentityID = cacc.IdentityID
+	acc.ReceiveEventNotificationEndpoint = cacc.ReceiveEventNotificationEndpoint
+	return acc, nil
 }

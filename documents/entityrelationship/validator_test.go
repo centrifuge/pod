@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,8 +40,8 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 	// identity not created from the identity factory
 	idFactory := new(testingcommons.MockIdentityFactory)
-	relationship := createEntityRelationship(t)
-	idFactory.On("IdentityExists", relationship.OwnerIdentity).Return(false, nil).Once()
+	relationship := CreateRelationship(t, testingconfig.CreateAccountContext(t, cfg))
+	idFactory.On("IdentityExists", relationship.Data.OwnerIdentity).Return(false, nil).Once()
 	fv = fieldValidator(idFactory)
 	err = fv.Validate(nil, relationship)
 	assert.Error(t, err)
@@ -48,8 +49,8 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 	// identity created from identity factory
 	idFactory = new(testingcommons.MockIdentityFactory)
-	idFactory.On("IdentityExists", relationship.TargetIdentity).Return(true, nil).Once()
-	idFactory.On("IdentityExists", relationship.OwnerIdentity).Return(true, nil).Once()
+	idFactory.On("IdentityExists", relationship.Data.TargetIdentity).Return(true, nil).Once()
+	idFactory.On("IdentityExists", relationship.Data.OwnerIdentity).Return(true, nil).Once()
 	fv = fieldValidator(idFactory)
 	err = fv.Validate(nil, relationship)
 	assert.NoError(t, err)

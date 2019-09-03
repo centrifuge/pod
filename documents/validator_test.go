@@ -169,6 +169,11 @@ func TestUpdateVersionValidator(t *testing.T) {
 	assert.Len(t, uvv, 3)
 }
 
+func TestCreateVersionValidator(t *testing.T) {
+	uvv := CreateVersionValidator(nil)
+	assert.Len(t, uvv, 3)
+}
+
 func TestValidator_baseValidator(t *testing.T) {
 	bv := baseValidator()
 
@@ -397,8 +402,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	sv = SignatureValidator(idService, repo)
 	s, err = account.SignMsg(sr)
 	assert.NoError(t, err)
-	acID, err := account.GetIdentityID()
-	assert.NoError(t, err)
+	acID := account.GetIdentityID()
 	did1, err = identity.NewDIDFromBytes(acID)
 	assert.NoError(t, err)
 	model = new(mockModel)

@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -54,7 +53,19 @@ const (
 
 	// SignaturesTreePrefix is the human readable prefix for signature props
 	SignaturesTreePrefix = "signatures_tree"
+
+	// Pending status represents document is in pending state
+	Pending Status = "pending"
+
+	// Committing status represents document is being committed.
+	Committing Status = "committing"
+
+	// Committed status represents document is committed/anchored.
+	Committed Status = "committed"
 )
+
+// Status represents the document status.
+type Status string
 
 // CompactProperties returns the compact property for a given prefix
 func CompactProperties(key string) []byte {
@@ -90,6 +101,9 @@ type CoreDocument struct {
 	// Attributes are the custom attributes added to the document
 	Attributes map[AttrKey]Attribute
 
+	// Status represents document status.
+	Status Status
+
 	Document coredocumentpb.CoreDocument
 }
 
@@ -109,7 +123,12 @@ func newCoreDocument() (*CoreDocument, error) {
 		return nil, err
 	}
 
-	return &CoreDocument{Document: cd, Modified: true, Attributes: make(map[AttrKey]Attribute)}, nil
+	return &CoreDocument{
+		Document:   cd,
+		Modified:   true,
+		Attributes: make(map[AttrKey]Attribute),
+		Status:     Pending,
+	}, nil
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -118,6 +137,11 @@ func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) (coreDoc *CoreD
 	coreDoc = &CoreDocument{Document: cd}
 	coreDoc.Attributes, err = fromProtocolAttributes(cd.Attributes)
 	return coreDoc, err
+}
+
+// AccessTokenParams holds details of Grantee and DocumentIdentifier.
+type AccessTokenParams struct {
+	Grantee, DocumentIdentifier string
 }
 
 // NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
@@ -139,7 +163,7 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
 // It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
-func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params documentpb.AccessTokenParams) (*CoreDocument, error) {
+func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params AccessTokenParams) (*CoreDocument, error) {
 	did, err := identity.StringsToDIDs(params.Grantee)
 	if err != nil {
 		return nil, err
@@ -191,6 +215,22 @@ func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
 }
 
+// GetStatus returns document status
+func (cd *CoreDocument) GetStatus() Status {
+	return cd.Status
+}
+
+// SetStatus set the status of the document.
+// if the document is already committed, returns an error if set status is called.
+func (cd *CoreDocument) SetStatus(st Status) error {
+	if cd.Status == Committed && st != Committed {
+		return ErrCDStatus
+	}
+
+	cd.Status = st
+	return nil
+}
+
 // AppendSignatures appends signatures to core document.
 func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	if cd.Document.SignatureData == nil {
@@ -198,6 +238,45 @@ func (cd *CoreDocument) AppendSignatures(signs ...*coredocumentpb.Signature) {
 	}
 	cd.Document.SignatureData.Signatures = append(cd.Document.SignatureData.Signatures, signs...)
 	cd.Modified = true
+}
+
+// Patch overrides only core document data without provisioning new versions since for document updates
+func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators CollaboratorsAccess, attrs map[AttrKey]Attribute) (*CoreDocument, error) {
+	if cd.Status == Committing || cd.Status == Committed {
+		return nil, ErrDocumentNotInAllowedState
+	}
+
+	cdp := coredocumentpb.CoreDocument{
+		DocumentIdentifier: cd.Document.DocumentIdentifier,
+		CurrentVersion:     cd.Document.CurrentVersion,
+		PreviousVersion:    cd.Document.PreviousVersion,
+		NextVersion:        cd.Document.NextVersion,
+		CurrentPreimage:    cd.Document.CurrentPreimage,
+		NextPreimage:       cd.Document.NextPreimage,
+		Nfts:               cd.Document.Nfts,
+		AccessTokens:       cd.Document.AccessTokens,
+		SignatureData:      new(coredocumentpb.SignatureData),
+	}
+	// TODO convert it back to override when we have implemented add/delete for collaborators in API
+	// for now it always overrides
+	rcs := collaborators.ReadCollaborators
+	wcs := collaborators.ReadWriteCollaborators
+	rcs = append(rcs, wcs...)
+
+	ncd := &CoreDocument{Document: cdp, Status: Pending}
+	ncd.addCollaboratorsToReadSignRules(rcs)
+	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
+	// TODO convert it back to override when we have implemented add/delete for attributes in API
+	// for now it always overrides
+	p2pAttrs, attrs, err := updateAttributes(nil, attrs)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
+	}
+
+	ncd.Document.Attributes = p2pAttrs
+	ncd.Attributes = attrs
+	ncd.Modified = true
+	return ncd, nil
 }
 
 // PrepareNewVersion prepares the next version of the CoreDocument
@@ -228,7 +307,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
-	ncd := &CoreDocument{Document: cdp}
+	ncd := &CoreDocument{Document: cdp, Status: Pending}
 	ncd.addCollaboratorsToReadSignRules(rcs)
 	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
 	p2pAttrs, attrs, err := updateAttributes(cd.Document.Attributes, attrs)
@@ -242,7 +321,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	return ncd, nil
 }
 
-// updateAttributes updates the p2p attributes with new ones and returns the both the formats
+// updateAttributes updates the p2p attributes with new ones and returns both formats
 func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey]Attribute) ([]*coredocumentpb.Attribute, map[AttrKey]Attribute, error) {
 	oldAttrsMap, err := fromProtocolAttributes(oldAttrs)
 	if err != nil {
@@ -293,6 +372,7 @@ func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
 // CreateProofs takes document data tree and list to fields and generates proofs.
 // we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
 // errors out when the proof generation is failed on core document tree.
+// It only generates proofs up to the signingRoot level
 func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
 	treeProofs := make(map[string]*TreeProof, 3)
 	drTree, err := cd.DocumentRootTree(docType, dataTree.RootHash())
@@ -324,12 +404,12 @@ func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTr
 	}
 
 	treeProofs[DRTreePrefix] = newTreeProof(drTree, nil)
-	// (dataProof => dataRoot) + cdRoot+ signatureRoot = documentRoot
-	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}, signatureTree.RootHash()))
+	// (dataProof => dataRoot) + cdRoot = signingRoot
+	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}))
 	// (signatureProof => signatureRoot) + signingRoot = documentRoot
 	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{signingRoot})
-	// (cdProof => cdRoot) + dataRoot + signatureRoot = documentRoot
-	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}, signatureTree.RootHash()))
+	// (cdProof => cdRoot) + dataRoot = signingRoot
+	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}))
 
 	return generateProofs(fields, treeProofs)
 }
@@ -379,7 +459,10 @@ func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 
 // getSignatureDataTree returns the merkle tree for the Signature Data root.
 func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
-	tree = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
+	if err != nil {
+		return nil, err
+	}
 	err = tree.AddLeavesFromDocument(cd.Document.SignatureData)
 	if err != nil {
 		return nil, err
@@ -400,7 +483,10 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree 
 		return nil, err
 	}
 
-	tree = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	if err != nil {
+		return nil, err
+	}
 
 	// The first leave added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
@@ -444,7 +530,11 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 	}
 
 	// create the signing tree with data root and coredoc root as siblings
-	tree = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	if err != nil {
+		return nil, err
+	}
+
 	err = tree.AddLeaves([]proofs.LeafNode{
 		{
 			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(DataRootField)...)),
@@ -472,7 +562,10 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 
 // coredocTree returns the merkle tree of the CoreDocument.
 func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
+	tree, err = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
+	if err != nil {
+		return nil, err
+	}
 	err = tree.AddLeavesFromDocument(&cd.Document)
 	if err != nil {
 		return nil, err

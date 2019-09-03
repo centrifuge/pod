@@ -7,6 +7,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -19,6 +20,8 @@ const (
 	signingPubKeyName  = "signingKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
 )
+
+var accLog = log.Logger("accounts")
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
@@ -45,7 +48,7 @@ func (s service) GetAccount(identifier []byte) (config.Account, error) {
 	return s.repo.GetAccount(identifier)
 }
 
-func (s service) GetAllAccounts() ([]config.Account, error) {
+func (s service) GetAccounts() ([]config.Account, error) {
 	return s.repo.GetAllAccounts()
 }
 
@@ -58,10 +61,7 @@ func (s service) CreateConfig(data config.Configuration) (config.Configuration, 
 }
 
 func (s service) CreateAccount(data config.Account) (config.Account, error) {
-	id, err := data.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	id := data.GetIdentityID()
 	return data, s.repo.CreateAccount(id, data)
 }
 
@@ -118,10 +118,10 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 		return nil, err
 	}
 	acc.SigningKeyPair = KeyPair{
-		Pub:  sPub,
-		Priv: sPriv,
+		Pub: sPub,
+		Pvt: sPriv,
 	}
-	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Priv, crypto.CurveSecp256K1)
+	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Pvt, crypto.CurveSecp256K1)
 	if err != nil {
 		return nil, err
 	}
@@ -142,10 +142,7 @@ func createKeyPath(keyStorepath string, DID *identity.DID, keyName string) (stri
 }
 
 func (s service) UpdateAccount(data config.Account) (config.Account, error) {
-	id, err := data.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	id := data.GetIdentityID()
 	return data, s.repo.UpdateAccount(id, data)
 }
 
@@ -171,13 +168,13 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configurati
 		// may be we need a way to detect a corrupted db here
 		cfg, err = cfgService.GetConfig()
 		if err != nil {
-			apiLog.Warningf("could not load config from db: %v", err)
+			accLog.Warningf("could not load config from db: %v", err)
 		}
 		return cfg, nil
 	}
 
 	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && cfg == nil && !dbOnly {
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && !dbOnly {
 		cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	} else {
 		return nil, errors.NewTypedError(config.ErrConfigRetrieve, err)

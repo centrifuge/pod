@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	documentpb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -22,8 +21,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestTypes_convertAttributes(t *testing.T) {
-	attrs := AttributeMap{
+func TestTypes_toAttributeMapResponse(t *testing.T) {
+	dec, err := documents.NewDecimal("100001.002")
+	assert.NoError(t, err)
+
+	attrs := AttributeMapRequest{
 		"string_test": {
 			Type:  "string",
 			Value: "hello, world!",
@@ -33,26 +35,48 @@ func TestTypes_convertAttributes(t *testing.T) {
 			Type:  "decimal",
 			Value: "100001.001",
 		},
+
+		"monetary_test": {
+			Type: "monetary",
+			MonetaryValue: &MonetaryValue{
+				ID:      "USD",
+				Value:   dec,
+				ChainID: []byte{1},
+			},
+		},
 	}
 
 	atts, err := toDocumentAttributes(attrs)
 	assert.NoError(t, err)
-	assert.Len(t, atts, 2)
+	assert.Len(t, atts, 3)
 
 	var attrList []documents.Attribute
 	for _, v := range atts {
 		attrList = append(attrList, v)
 	}
-	cattrs, err := convertAttributes(attrList)
+	cattrs, err := toAttributeMapResponse(attrList)
 	assert.NoError(t, err)
-	assert.Equal(t, attrs, cattrs)
+	assert.Len(t, cattrs, len(attrs))
+	assert.Equal(t, cattrs["string_test"].Value, attrs["string_test"].Value)
+	assert.Equal(t, cattrs["decimal_test"].Value, attrs["decimal_test"].Value)
+	assert.Equal(t, cattrs["monetary_test"].MonetaryValue, attrs["monetary_test"].MonetaryValue)
 
-	attrs["invalid"] = Attribute{Type: "unknown", Value: "some value"}
+	attrs["monetary_test_empty"] = AttributeRequest{Type: "monetary"}
+	_, err = toDocumentAttributes(attrs)
+	assert.Error(t, err)
+	delete(attrs, "monetary_test_empty")
+
+	attrs["monetary_test_dec_empty"] = AttributeRequest{Type: "monetary", MonetaryValue: &MonetaryValue{ID: "USD", ChainID: []byte{1}}}
+	_, err = toDocumentAttributes(attrs)
+	assert.Error(t, err)
+	delete(attrs, "monetary_test_dec_empty")
+
+	attrs["invalid"] = AttributeRequest{Type: "unknown", Value: "some value"}
 	_, err = toDocumentAttributes(attrs)
 	assert.Error(t, err)
 
 	attrList = append(attrList, documents.Attribute{Value: documents.AttrVal{Type: "invalid"}})
-	_, err = convertAttributes(attrList)
+	_, err = toAttributeMapResponse(attrList)
 	assert.Error(t, err)
 }
 
@@ -115,17 +139,17 @@ func TestTypes_toDocumentCreatePayload(t *testing.T) {
 	request.Data = invoiceData()
 
 	// success
-	payload, err := toDocumentsCreatePayload(request)
+	payload, err := ToDocumentsCreatePayload(request)
 	assert.NoError(t, err)
 	assert.Equal(t, payload.Scheme, "invoice")
 	assert.NotNil(t, payload.Data)
 
 	// failure
-	request.Attributes = map[string]Attribute{
+	request.Attributes = map[string]AttributeRequest{
 		"invalid": {Type: "unknown", Value: "some value"},
 	}
 
-	_, err = toDocumentsCreatePayload(request)
+	_, err = ToDocumentsCreatePayload(request)
 	assert.Error(t, err)
 }
 
@@ -154,7 +178,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 		errLen       int
 		errMsg       string
 		nftLen       int
-		expectedNFTs []*documentpb.NFT
+		expectedNFTs []NFT
 	}{
 		{
 			name: "1 nft, no error",
@@ -174,11 +198,11 @@ func TestTypes_convertNFTs(t *testing.T) {
 			},
 			isErr:  false,
 			nftLen: 1,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[0][:20]),
 					Owner:      addrs[0].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[0]),
+					TokenID:    hexutil.Encode(tokIDs[0]),
 					TokenIndex: hexutil.Encode(tokIDx[0].Bytes()),
 				},
 			},
@@ -207,17 +231,17 @@ func TestTypes_convertNFTs(t *testing.T) {
 			},
 			isErr:  false,
 			nftLen: 2,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[0][:20]),
 					Owner:      addrs[0].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[0]),
+					TokenID:    hexutil.Encode(tokIDs[0]),
 					TokenIndex: hexutil.Encode(tokIDx[0].Bytes()),
 				},
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[1]),
+					TokenID:    hexutil.Encode(tokIDs[1]),
 					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
 				},
 			},
@@ -248,11 +272,11 @@ func TestTypes_convertNFTs(t *testing.T) {
 			errLen: 1,
 			errMsg: "owner",
 			nftLen: 1,
-			expectedNFTs: []*documentpb.NFT{
+			expectedNFTs: []NFT{
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[1]),
+					TokenID:    hexutil.Encode(tokIDs[1]),
 					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
 				},
 			},
@@ -261,6 +285,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, CurrentIndexOfToken error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
+				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], errors.New("CurrentIndexOfToken error")).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], nil).Once()
@@ -278,15 +303,19 @@ func TestTypes_convertNFTs(t *testing.T) {
 					},
 				}
 			},
-			isErr:  true,
-			errLen: 1,
-			errMsg: "CurrentIndexOfToken",
-			nftLen: 1,
-			expectedNFTs: []*documentpb.NFT{
+			isErr:  false,
+			nftLen: 2,
+			expectedNFTs: []NFT{
+				{
+					Registry:   hexutil.Encode(regIDs[0][:20]),
+					Owner:      addrs[0].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[0]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
 				{
 					Registry:   hexutil.Encode(regIDs[1][:20]),
 					Owner:      addrs[1].Hex(),
-					TokenId:    hexutil.Encode(tokIDs[1]),
+					TokenID:    hexutil.Encode(tokIDs[1]),
 					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
 				},
 			},
@@ -295,6 +324,8 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, 2 CurrentIndexOfToken error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
+				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
+				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], errors.New("CurrentIndexOfToken error")).Once()
 				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], errors.New("CurrentIndexOfToken error")).Once()
 				return m
@@ -311,10 +342,23 @@ func TestTypes_convertNFTs(t *testing.T) {
 					},
 				}
 			},
-			isErr:  true,
-			errLen: 2,
+			isErr:  false,
 			errMsg: "CurrentIndexOfToken",
-			nftLen: 0,
+			nftLen: 2,
+			expectedNFTs: []NFT{
+				{
+					Registry:   hexutil.Encode(regIDs[0][:20]),
+					Owner:      addrs[0].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[0]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
+				{
+					Registry:   hexutil.Encode(regIDs[1][:20]),
+					Owner:      addrs[1].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[1]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
+			},
 		},
 		{
 			name: "2 nft, ownerOf and CurrentIndexOfToken error",
@@ -339,9 +383,17 @@ func TestTypes_convertNFTs(t *testing.T) {
 				}
 			},
 			isErr:  true,
-			errLen: 2,
+			errLen: 1,
 			errMsg: "owner",
-			nftLen: 0,
+			nftLen: 1,
+			expectedNFTs: []NFT{
+				{
+					Registry:   hexutil.Encode(regIDs[1][:20]),
+					Owner:      addrs[1].Hex(),
+					TokenID:    hexutil.Encode(tokIDs[1]),
+					TokenIndex: hexutil.Encode([]byte{}),
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -359,7 +411,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 				for i, nn := range n {
 					assert.Equal(t, strings.ToLower(nn.Registry), strings.ToLower(test.expectedNFTs[i].Registry))
 					assert.Equal(t, strings.ToLower(nn.TokenIndex), strings.ToLower(test.expectedNFTs[i].TokenIndex))
-					assert.Equal(t, strings.ToLower(nn.TokenID), strings.ToLower(test.expectedNFTs[i].TokenId))
+					assert.Equal(t, strings.ToLower(nn.TokenID), strings.ToLower(test.expectedNFTs[i].TokenID))
 					assert.Equal(t, strings.ToLower(nn.Owner), strings.ToLower(test.expectedNFTs[i].Owner))
 				}
 			}

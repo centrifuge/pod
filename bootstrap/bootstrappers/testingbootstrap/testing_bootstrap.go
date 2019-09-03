@@ -13,14 +13,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -42,14 +45,17 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	documents.Bootstrapper{},
 	&invoice.Bootstrapper{},
 	&entityrelationship.Bootstrapper{},
-	&purchaseorder.Bootstrapper{},
 	generic.Bootstrapper{},
 	&nft.Bootstrapper{},
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
+	pending.Bootstrapper{},
+	coreapi.Bootstrapper{},
 	&entity.Bootstrapper{},
 	funding.Bootstrapper{},
 	transferdetails.Bootstrapper{},
+	userapi.Bootstrapper{},
+	v2.Bootstrapper{},
 	&queue.Starter{},
 }
 

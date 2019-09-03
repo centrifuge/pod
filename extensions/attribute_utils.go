@@ -66,7 +66,7 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 	}
 
 	if !model.AttributeExists(key) {
-		return documents.NewAttribute(typeLabel, documents.AttrInt256, "0")
+		return documents.NewStringAttribute(typeLabel, documents.AttrInt256, "0")
 	}
 
 	idx, err := GetArrayLatestIDX(model, typeLabel)
@@ -76,12 +76,11 @@ func IncrementArrayAttrIDX(model documents.Model, typeLabel string) (attr docume
 
 	// increment idx
 	newIdx, err := idx.Inc()
-
 	if err != nil {
 		return attr, err
 	}
 
-	return documents.NewAttribute(typeLabel, documents.AttrInt256, newIdx.String())
+	return documents.NewStringAttribute(typeLabel, documents.AttrInt256, newIdx.String())
 }
 
 // FillAttributeList fills an attributes list from the JSON object
@@ -96,7 +95,7 @@ func FillAttributeList(data interface{}, idx, fieldKey string) ([]documents.Attr
 			label := LabelFromJSONTag(idx, jsonKey, fieldKey)
 
 			attrType := types.Field(i).Tag.Get("attr")
-			attr, err := documents.NewAttribute(label, documents.AttributeType(attrType), value)
+			attr, err := documents.NewStringAttribute(label, documents.AttributeType(attrType), value)
 			if err != nil {
 				return nil, err
 			}
@@ -124,9 +123,7 @@ func CreateAttributesList(current documents.Model, data interface{}, fieldKey, t
 
 	// add updated idx
 	attributes = append(attributes, idx)
-
 	return attributes, nil
-
 }
 
 // DeleteAttributesSet deletes attributes that already exist on a given model for the addition of new attributes to the set
@@ -193,21 +190,21 @@ func FindAttributeSetIDX(model documents.Model, attributeSetID, typeLabel, idLab
 }
 
 // ToMapAttributes converts an array of documents.Attributes to a map
-func ToMapAttributes(attrs []documents.Attribute) (map[documents.AttrKey]documents.Attribute, error) {
+func ToMapAttributes(attrs []documents.Attribute) map[documents.AttrKey]documents.Attribute {
 	if len(attrs) < 1 {
-		return nil, nil
+		return nil
 	}
 
 	m := make(map[documents.AttrKey]documents.Attribute)
 	for _, v := range attrs {
 		m[v.Key] = documents.Attribute{
-			KeyLabel: v.Key.String(),
+			KeyLabel: v.KeyLabel,
 			Key:      v.Key,
 			Value:    v.Value,
 		}
 	}
 
-	return m, nil
+	return m
 }
 
 // TODO: placeholder below for generic finding and deriving data from attribute sets

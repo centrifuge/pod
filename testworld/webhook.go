@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/notification"
 )
 
 type webhookReceiver struct {
@@ -19,7 +20,7 @@ type webhookReceiver struct {
 	endpoint string
 
 	// receivedMsgs maps accountID+documentID to expected messages
-	receivedMsgs     map[string]*notificationpb.NotificationMessage
+	receivedMsgs     map[string]notification.Message
 	receivedMsgsLock sync.RWMutex
 
 	s *http.Server
@@ -29,7 +30,7 @@ func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
 	return &webhookReceiver{
 		port:             port,
 		endpoint:         endpoint,
-		receivedMsgs:     make(map[string]*notificationpb.NotificationMessage),
+		receivedMsgs:     make(map[string]notification.Message),
 		receivedMsgsLock: sync.RWMutex{},
 	}
 }
@@ -71,25 +72,25 @@ func (w *webhookReceiver) start(ctx context.Context) {
 
 func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var msg *notificationpb.NotificationMessage
+	var msg notification.Message
 	err := decoder.Decode(&msg)
 	if err != nil {
 		log.Error(err)
 	}
-	log.Infof("webhook received for received document %s from collaborator %s for node %s", msg.DocumentId, msg.FromId, msg.AccountId)
+	log.Infof("webhook received for received document %s from collaborator %s for node %s", msg.DocumentID, msg.FromID, msg.AccountID)
 
 	// store
 	w.receivedMsgsLock.Lock()
 	defer w.receivedMsgsLock.Unlock()
-	w.receivedMsgs[msg.AccountId+"-"+strconv.Itoa(int(msg.EventType))+"-"+msg.DocumentId] = msg
+	w.receivedMsgs[strings.ToLower(msg.AccountID)+"-"+strconv.Itoa(int(msg.EventType))+"-"+msg.DocumentID] = msg
 }
 
-func (w *webhookReceiver) getReceivedMsg(accountID string, eventType int, docID string) (*notificationpb.NotificationMessage, error) {
+func (w *webhookReceiver) getReceivedMsg(accountID string, eventType int, docID string) (notification.Message, error) {
 	w.receivedMsgsLock.RLock()
 	defer w.receivedMsgsLock.RUnlock()
-	n, ok := w.receivedMsgs[accountID+"-"+strconv.Itoa(eventType)+"-"+docID]
+	n, ok := w.receivedMsgs[strings.ToLower(accountID)+"-"+strconv.Itoa(eventType)+"-"+docID]
 	if !ok {
-		return nil, errors.New("not found")
+		return n, errors.New("not found")
 	}
 
 	return n, nil

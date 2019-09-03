@@ -39,7 +39,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	repo := NewDBRepository(ldb)
-
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
 		return errors.New("anchor repository not initialised")
@@ -55,7 +54,17 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return ErrDocumentConfigNotInitialised
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorRepo, registry, didService)
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
+	if !ok {
+		return errors.New("queue server not initialised")
+	}
+
+	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
+	if !ok {
+		return errors.New("transaction service not initialised")
+	}
+
+	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorRepo, registry, didService, queueSrv, jobManager)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil

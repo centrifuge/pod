@@ -115,7 +115,7 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 }
 
 func (m *MockConfig) GetEthereumAccount(accountName string) (account *config.AccountConfig, err error) {
-	args := m.Called()
+	args := m.Called(accountName)
 	return args.Get(0).(*config.AccountConfig), args.Error(1)
 }
 
@@ -125,17 +125,17 @@ func (m *MockConfig) GetNetworkString() string {
 }
 
 func (m *MockConfig) GetNetworkKey(k string) string {
-	args := m.Called()
+	args := m.Called(k)
 	return args.Get(0).(string)
 }
 
 func (m *MockConfig) GetContractAddressString(address string) string {
-	args := m.Called()
+	args := m.Called(address)
 	return args.Get(0).(string)
 }
 
 func (m *MockConfig) GetContractAddress(contractName config.ContractName) common.Address {
-	args := m.Called()
+	args := m.Called(contractName)
 	return args.Get(0).(common.Address)
 }
 
@@ -193,8 +193,8 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 }
 
 func HandlerContext(service config.Service) context.Context {
-	tcs, _ := service.GetAllAccounts()
-	cid, _ := tcs[0].GetIdentityID()
+	tcs, _ := service.GetAccounts()
+	cid := tcs[0].GetIdentityID()
 	cidHex := hexutil.Encode(cid)
 	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, cidHex)
 	return ctx

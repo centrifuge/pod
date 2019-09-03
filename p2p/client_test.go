@@ -8,16 +8,13 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -52,7 +49,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	cd, model := createCDWithEmbeddedPO(t, ctx, did, nil)
+	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -71,7 +68,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	cd, model := createCDWithEmbeddedPO(t, ctx, did, nil)
+	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -91,7 +88,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	cd, model := createCDWithEmbeddedPO(t, ctx, did, nil)
+	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -104,7 +101,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	m.AssertExpectations(t)
 	assert.Nil(t, resp, "must be nil")
 	assert.Error(t, err, "must not be nil")
-	assert.Contains(t, err.Error(), "[5]signature invalid with err: provided bytes doesn't match centID")
+	assert.Contains(t, err.Error(), "signature invalid with err: provided bytes doesn't match centID")
 
 }
 
@@ -135,37 +132,4 @@ func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb
 	}
 
 	return &protocolpb.P2PEnvelope{Body: reqB}
-}
-
-func createCDWithEmbeddedPO(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (coredocumentpb.CoreDocument, documents.Model) {
-	po := new(purchaseorder.PurchaseOrder)
-	data := testingdocuments.CreatePOPayload()
-	if len(collaborators) > 0 {
-		var cs []string
-		for _, c := range collaborators {
-			cs = append(cs, c.String())
-		}
-
-		data.WriteAccess = cs
-	}
-	err := po.InitPurchaseOrderInput(data, did)
-	assert.NoError(t, err)
-	_, err = po.CalculateDataRoot()
-	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
-	assert.NoError(t, err)
-
-	acc, err := contextutil.Account(ctx)
-	assert.NoError(t, err)
-
-	sig, err := acc.SignMsg(sr)
-	assert.NoError(t, err)
-
-	po.AppendSignatures(sig)
-	_, err = po.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	cd, err := po.PackCoreDocument()
-	assert.NoError(t, err)
-
-	return cd, po
 }

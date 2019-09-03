@@ -52,7 +52,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan bool, error) {
+func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -91,7 +91,8 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 	}
 
 	g := new(Generic)
-	if err := g.unpackFromCreatePayload(did, payload); err != nil {
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	if err := g.DeriveFromCreatePayload(ctx, payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
@@ -124,7 +125,7 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	}
 
 	g := new(Generic)
-	err = g.unpackFromUpdatePayload(oldGeneric, payload)
+	err = g.unpackFromUpdatePayloadOld(oldGeneric, payload)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -143,4 +144,14 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	jobID := contextutil.Job(ctx)
 	jobID, _, err = documents.CreateAnchorJob(ctx, s.jobManager, s.queueSrv, did, jobID, g.CurrentVersion())
 	return g, jobID, err
+}
+
+// New returns a new uninitialised Generic document.
+func (s service) New(_ string) (documents.Model, error) {
+	return new(Generic), nil
+}
+
+// Validate takes care of document validation
+func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
+	return nil
 }

@@ -2,10 +2,7 @@ package contextutil
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -52,10 +49,7 @@ func AccountDID(ctx context.Context) (identity.DID, error) {
 	if err != nil {
 		return identity.DID{}, err
 	}
-	didBytes, err := acc.GetIdentityID()
-	if err != nil {
-		return identity.DID{}, err
-	}
+	didBytes := acc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
 		return identity.DID{}, err
@@ -76,22 +70,22 @@ func Account(ctx context.Context) (config.Account, error) {
 func Context(ctx context.Context, cs config.Service) (context.Context, error) {
 	tcIDHex, ok := ctx.Value(config.AccountHeaderKey).(string)
 	if !ok {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header %v", config.AccountHeaderKey))
+		return nil, errors.New("failed to get header %v", config.AccountHeaderKey)
 	}
 
 	tcID, err := hexutil.Decode(tcIDHex)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+		return nil, errors.New("failed to get header: %v", err)
 	}
 
 	tc, err := cs.GetAccount(tcID)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+		return nil, errors.New("failed to get header: %v", err)
 	}
 
 	ctxHeader, err := New(ctx, tc)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, fmt.Sprintf("failed to get header: %v", err))
+		return nil, errors.New("failed to get header: %v", err)
 	}
 	return ctxHeader, nil
 }

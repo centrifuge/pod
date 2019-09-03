@@ -1,16 +1,18 @@
 package coreapi
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/go-chi/chi"
 )
 
 const (
-	documentIDParam      = "document_id"
-	versionIDParam       = "version_id"
+	// DocumentIDParam for document_id in api path.
+	DocumentIDParam = "document_id"
+
+	// VersionIDParam for version_id in api path.
+	VersionIDParam = "version_id"
+
 	jobIDParam           = "job_id"
 	tokenIDParam         = "token_id"
 	registryAddressParam = "registry_address"
@@ -18,24 +20,28 @@ const (
 )
 
 // Register registers the core apis to the router.
-func Register(r chi.Router,
-	nftSrv nft.Service,
-	accountSrv config.Service,
-	docSrv documents.Service,
-	jobsSrv jobs.Manager) {
+func Register(ctx map[string]interface{}, r chi.Router) {
+	coreAPISrv := ctx[BootstrappedCoreAPIService].(Service)
+	tokenRegistry := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
 	h := handler{
-		srv:           Service{docService: docSrv, jobsService: jobsSrv, nftService: nftSrv, accountsService: accountSrv},
-		tokenRegistry: nftSrv.(documents.TokenRegistry),
+		srv:           coreAPISrv,
+		tokenRegistry: tokenRegistry,
 	}
+
 	r.Post("/documents", h.CreateDocument)
-	r.Put("/documents/{"+documentIDParam+"}", h.UpdateDocument)
-	r.Get("/documents/{"+documentIDParam+"}", h.GetDocument)
-	r.Get("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}", h.GetDocumentVersion)
-	r.Post("/documents/{"+documentIDParam+"}/proofs", h.GenerateProofs)
-	r.Post("/documents/{"+documentIDParam+"}/versions/{"+versionIDParam+"}/proofs", h.GenerateProofsForVersion)
+	r.Put("/documents/{"+DocumentIDParam+"}", h.UpdateDocument)
+	r.Get("/documents/{"+DocumentIDParam+"}", h.GetDocument)
+	r.Get("/documents/{"+DocumentIDParam+"}/versions/{"+VersionIDParam+"}", h.GetDocumentVersion)
+	r.Post("/documents/{"+DocumentIDParam+"}/proofs", h.GenerateProofs)
+	r.Post("/documents/{"+DocumentIDParam+"}/versions/{"+VersionIDParam+"}/proofs", h.GenerateProofsForVersion)
 	r.Get("/jobs/{"+jobIDParam+"}", h.GetJobStatus)
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/mint", h.MintNFT)
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 	r.Get("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/owner", h.OwnerOfNFT)
 	r.Post("/accounts/{"+accountIDParam+"}/sign", h.SignPayload)
+	r.Post("/accounts/generate", h.GenerateAccount)
+	r.Get("/accounts/{"+accountIDParam+"}", h.GetAccount)
+	r.Get("/accounts", h.GetAccounts)
+	r.Post("/accounts", h.CreateAccount)
+	r.Put("/accounts/{"+accountIDParam+"}", h.UpdateAccount)
 }

@@ -5,6 +5,8 @@ package extensions
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,4 +25,26 @@ func TestGenerateLabel(t *testing.T) {
 func TestLabelFromJSONTag(t *testing.T) {
 	assert.Equal(t, "testing_test", LabelFromJSONTag(idxKey, "test", "testing_"))
 	assert.Equal(t, "test_agreement[{IDX}].json", LabelFromJSONTag(idxKey, testJSONKey, testFieldKey))
+}
+
+func TestToMapAttributes(t *testing.T) {
+	attrs := []documents.Attribute{
+		{
+			KeyLabel: "test_details[0].something",
+			Key:      utils.RandomByte32(),
+			Value:    documents.AttrVal{Str: "whatever"},
+		},
+		{
+			KeyLabel: "test_details[0].else",
+			Key:      utils.RandomByte32(),
+			Value:    documents.AttrVal{Str: "nope"},
+		},
+	}
+	mapAttr := ToMapAttributes(nil)
+	assert.Empty(t, mapAttr)
+	mapAttr = ToMapAttributes(attrs)
+	assert.NotEmpty(t, mapAttr[attrs[0].Key])
+	assert.Equal(t, attrs[0].KeyLabel, mapAttr[attrs[0].Key].KeyLabel)
+	assert.NotEmpty(t, mapAttr[attrs[1].Key])
+	assert.Equal(t, attrs[1].KeyLabel, mapAttr[attrs[1].Key].KeyLabel)
 }

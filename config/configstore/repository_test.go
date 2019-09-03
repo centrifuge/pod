@@ -95,8 +95,7 @@ func TestAccountOperations(t *testing.T) {
 	readaccount, err := repo.GetAccount(id)
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.TypeOf(newaccount), readaccount.Type())
-	i, err := readaccount.GetIdentityID()
-	assert.Nil(t, err)
+	i := readaccount.GetIdentityID()
 	assert.Equal(t, newaccount.IdentityID, i)
 
 	// Update account
@@ -179,9 +178,9 @@ func TestLevelDBRepo_GetAllAccounts(t *testing.T) {
 	accounts, err := repo.GetAllAccounts()
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(accounts))
-	t0Id, _ := accounts[0].GetIdentityID()
-	t1Id, _ := accounts[1].GetIdentityID()
-	t2Id, _ := accounts[2].GetIdentityID()
+	t0Id := accounts[0].GetIdentityID()
+	t1Id := accounts[1].GetIdentityID()
+	t2Id := accounts[2].GetIdentityID()
 	assert.Contains(t, ids, t0Id)
 	assert.Contains(t, ids, t1Id)
 	assert.Contains(t, ids, t2Id)
@@ -191,7 +190,7 @@ func cleanupDBFiles() {
 	for _, db := range dbFiles {
 		err := os.RemoveAll(db)
 		if err != nil {
-			apiLog.Warningf("Cleanup warn: %v", err)
+			accLog.Warningf("Cleanup warn: %v", err)
 		}
 	}
 }

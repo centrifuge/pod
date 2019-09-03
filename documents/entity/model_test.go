@@ -3,6 +3,8 @@
 package entity
 
 import (
+	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -25,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -41,7 +41,6 @@ import (
 
 var ctx = map[string]interface{}{}
 var cfg config.Configuration
-var configService config.Service
 
 var (
 	did       = testingidentity.GenerateRandomDID()
@@ -73,7 +72,7 @@ func TestMain(m *testing.M) {
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	jobMan := &testingjobs.MockJobManager{}
 	ctx[jobs.BootstrappedService] = jobMan
-	done := make(chan bool)
+	done := make(chan error)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
 	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
@@ -92,7 +91,6 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("identityId", did.String())
-	configService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstrappers)
 	os.Exit(result)
@@ -103,21 +101,17 @@ func TestEntity_PackCoreDocument(t *testing.T) {
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
 
-	entity := new(Entity)
-	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did))
-
+	entity, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd.EmbeddedData)
 }
 
 func TestEntity_JSON(t *testing.T) {
-	entity := new(Entity)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, entity.InitEntityInput(testingdocuments.CreateEntityPayload(), did))
-
+	entity, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	cd, err := entity.PackCoreDocument()
 	assert.NoError(t, err)
 	jsonBytes, err := entity.JSON()
@@ -155,99 +149,47 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	assert.Error(t, err)
 
 	// successful
-	entity, cd := createCDWithEmbeddedEntity(t)
+	entity, cd := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	err = model.UnpackCoreDocument(cd)
 	assert.NoError(t, err)
 
-	d := model.getClientData()
-	d1 := entity.(*Entity).getClientData()
+	d := model.Data
+	d1 := entity.Data
 	assert.Equal(t, d.Addresses[0], d1.Addresses[0])
 	assert.Equal(t, model.ID(), entity.ID())
 	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
 }
 
-func TestEntityModel_getClientData(t *testing.T) {
-	entityData := testingdocuments.CreateEntityData()
-	entity := new(Entity)
-	entity.CoreDocument = new(documents.CoreDocument)
-	err := entity.loadFromP2PProtobuf(&entityData)
-	assert.NoError(t, err)
-
-	data := entity.getClientData()
-	assert.NotNil(t, data, "entity data should not be nil")
-	assert.Equal(t, data.Addresses, entityData.Addresses, "addresses should match")
-	assert.Equal(t, data.Contacts, entityData.Contacts, "contacts should match")
-	assert.Equal(t, data.LegalName, entityData.LegalName, "legal name should match")
-}
-
-func TestEntityModel_InitEntityInput(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	did, err := contextutil.AccountDID(ctx)
-	assert.NoError(t, err)
-
-	// fail recipient
-	data := &cliententitypb.EntityData{
-		Identity:  testingidentity.GenerateRandomDID().ToAddress().String(),
-		LegalName: "Company Test",
-		Contacts:  []*entitypb.Contact{{Name: "Satoshi Nakamoto"}},
-		Addresses: []*entitypb.Address{{IsMain: true,
-			AddressLine1: "Sample Street 1",
-			Zip:          "12345",
-			State:        "Germany",
-		}, {IsMain: false, State: "US"}},
-	}
-	e := new(Entity)
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data}, did)
-	assert.Nil(t, err, "should be successful")
-
-	e = new(Entity)
-	collabs := []string{"0x010102040506", "some id"}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: collabs}, did)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to decode collaborator")
-
-	collab1, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-	assert.NoError(t, err)
-	collab2, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3")
-	assert.NoError(t, err)
-	collabs = []string{collab1.String(), collab2.String()}
-	err = e.InitEntityInput(&cliententitypb.EntityCreatePayload{Data: data, WriteAccess: collabs}, did)
-	assert.Nil(t, err, "must be nil")
-
-}
-
 func TestEntityModel_calculateDataRoot(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	m := new(Entity)
-	err = m.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
-	assert.Nil(t, err, "Init must pass")
-	m.GetTestCoreDocWithReset()
+	entity, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 
-	dr, err := m.CalculateDataRoot()
+	dr, err := entity.CalculateDataRoot()
 	assert.Nil(t, err, "calculate must pass")
 	assert.False(t, utils.IsEmptyByteSlice(dr))
 }
 
 func TestEntity_CreateProofs(t *testing.T) {
-	e := createEntity(t)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	e, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	rk := e.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := e.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	tree, err := e.DocumentRootTree()
+	signingRoot, err := e.CalculateSigningRoot()
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := tree.ValidateProof(proof[0])
+	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = tree.ValidateProof(proof[1])
+	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -257,38 +199,27 @@ func TestEntity_CreateProofs(t *testing.T) {
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = tree.ValidateProof(proof[2])
+	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
 
-func createEntity(t *testing.T) *Entity {
-	e := new(Entity)
-	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
-	assert.NoError(t, err)
-	e.GetTestCoreDocWithReset()
-	_, err = e.CalculateDataRoot()
-	assert.NoError(t, err)
-	_, err = e.CalculateSigningRoot()
-	assert.NoError(t, err)
-	_, err = e.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	return e
-}
-
 func TestEntityModel_createProofsFieldDoesNotExist(t *testing.T) {
-	e := createEntity(t)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	e, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	_, err := e.CreateProofs([]string{"nonexisting"})
 	assert.NotNil(t, err)
 }
 
 func TestEntityModel_GetDocumentID(t *testing.T) {
-	e := createEntity(t)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	e, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	assert.Equal(t, e.CoreDocument.ID(), e.ID())
 }
 
 func TestEntityModel_getDocumentDataTree(t *testing.T) {
-	e := createEntity(t)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	e, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	tree, err := e.getDocumentDataTree()
 	assert.Nil(t, err, "tree should be generated without error")
 	_, leaf := tree.GetLeafByProperty("entity.legal_name")
@@ -297,7 +228,8 @@ func TestEntityModel_getDocumentDataTree(t *testing.T) {
 }
 
 func TestEntity_CollaboratorCanUpdate(t *testing.T) {
-	entity := createEntity(t)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+	entity, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
 	id1 := did
 	id2 := testingidentity.GenerateRandomDID()
 	id3 := testingidentity.GenerateRandomDID()
@@ -312,9 +244,19 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err := testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity := model.(*Entity)
-	data := oldEntity.getClientData()
+	data := oldEntity.Data
 	data.LegalName = "new legal name"
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id3}}, oldEntity.Attributes)
+	d, err := json.Marshal(data)
+	assert.NoError(t, err)
+	err = entity.unpackFromUpdatePayload(entity, documents.UpdatePayload{
+		DocumentID: entity.ID(),
+		CreatePayload: documents.CreatePayload{
+			Data: d,
+			Collaborators: documents.CollaboratorsAccess{
+				ReadWriteCollaborators: []identity.DID{id3},
+			},
+		},
+	})
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -332,10 +274,17 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 	model, err = testRepo().Get(id1[:], entity.CurrentVersion())
 	assert.NoError(t, err)
 	oldEntity = model.(*Entity)
-	data = oldEntity.getClientData()
+	data = oldEntity.Data
 	data.LegalName = "second new legal name"
 	data.Contacts = nil
-	err = entity.PrepareNewVersion(entity, data, documents.CollaboratorsAccess{}, oldEntity.Attributes)
+	d, err = json.Marshal(data)
+	assert.NoError(t, err)
+	err = entity.unpackFromUpdatePayload(entity, documents.UpdatePayload{
+		DocumentID: entity.ID(),
+		CreatePayload: documents.CreatePayload{
+			Data: d,
+		},
+	})
 	assert.NoError(t, err)
 
 	// id1 should have permission
@@ -380,26 +329,11 @@ func testRepo() documents.Repository {
 	return testRepoGlobal
 }
 
-func createCDWithEmbeddedEntity(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
-	e := new(Entity)
-	err := e.InitEntityInput(testingdocuments.CreateEntityPayload(), did)
-	assert.NoError(t, err)
-	_, err = e.CalculateDataRoot()
-	assert.NoError(t, err)
-	_, err = e.CalculateSigningRoot()
-	assert.NoError(t, err)
-	_, err = e.CalculateDocumentRoot()
-	assert.NoError(t, err)
-	cd, err := e.PackCoreDocument()
-	assert.NoError(t, err)
-	return e, cd
-}
-
 func TestEntity_AddAttributes(t *testing.T) {
-	e, _ := createCDWithEmbeddedEntity(t)
+	e, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// success
@@ -418,10 +352,10 @@ func TestEntity_AddAttributes(t *testing.T) {
 }
 
 func TestEntity_DeleteAttribute(t *testing.T) {
-	e, _ := createCDWithEmbeddedEntity(t)
+	e, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	label := "some key"
 	value := "some value"
-	attr, err := documents.NewAttribute(label, documents.AttrString, value)
+	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
 	assert.NoError(t, err)
 
 	// failed
@@ -436,7 +370,7 @@ func TestEntity_DeleteAttribute(t *testing.T) {
 }
 
 func TestEntity_GetData(t *testing.T) {
-	e := createEntity(t)
+	e, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	data := e.GetData()
 	assert.Equal(t, e.Data, data)
 }
@@ -528,8 +462,10 @@ func validDataWithIdentity(t *testing.T) []byte {
 }
 
 func checkEntityPayloadDataError(t *testing.T, e *Entity, payload documents.CreatePayload) {
-	err := e.loadData(payload.Data)
+	var d Data
+	err := loadData(payload.Data, &d)
 	assert.Error(t, err)
+	e.Data = d
 }
 
 func TestEntity_loadData(t *testing.T) {
@@ -554,8 +490,10 @@ func TestEntity_loadData(t *testing.T) {
 
 	// valid data
 	payload.Data = validData(t)
-	err := e.loadData(payload.Data)
+	var d Data
+	err := loadData(payload.Data, &d)
 	assert.NoError(t, err)
+	e.Data = d
 	data := e.GetData().(Data)
 	assert.Equal(t, data.LegalName, "Hello, World!")
 	assert.Len(t, data.PaymentDetails, 1)
@@ -566,18 +504,20 @@ func TestEntity_loadData(t *testing.T) {
 	assert.Equal(t, data.PaymentDetails[0].BankPaymentMethod.Identifier.String(), "0xbaeb33a61f05e6f269f1c4b4cff91a901b54daf7")
 }
 
-func TestEntity_unpackFromCreatePayload(t *testing.T) {
+func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 	payload := documents.CreatePayload{}
 	e := new(Entity)
+	ctx := context.Background()
 
 	// invalid data
 	payload.Data = invalidDIDData(t)
-	err := e.unpackFromCreatePayload(did, payload)
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
+	err := e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -586,7 +526,7 @@ func TestEntity_unpackFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload.Data = validData(t)
-	err = e.unpackFromCreatePayload(did, payload)
+	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 
@@ -596,13 +536,13 @@ func TestEntity_unpackFromCreatePayload(t *testing.T) {
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
 	}
-	err = e.unpackFromCreatePayload(did, payload)
+	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 }
 
 func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	payload := documents.UpdatePayload{}
-	old := createEntity(t)
+	old, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	e := new(Entity)
 
 	// invalid data
@@ -612,7 +552,7 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
 
 	// invalid attributes
-	attr, err := documents.NewAttribute("test", documents.AttrString, "value")
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
 	val.Type = documents.AttributeType("some type")
@@ -633,4 +573,56 @@ func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
 	}
 	err = e.unpackFromUpdatePayload(old, payload)
 	assert.NoError(t, err)
+}
+
+func TestEntity_Patch(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	err := doc.Patch(payload)
+	assert.Error(t, err)
+
+	// coredoc patch failed
+	doc.CoreDocument.Status = documents.Committed
+	payload.Data = validDataWithIdentity(t)
+	err = doc.Patch(payload)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotInAllowedState, err))
+
+	// success
+	doc.CoreDocument.Status = documents.Pending
+	err = doc.Patch(payload)
+	assert.NoError(t, err)
+}
+
+func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
+	payload := documents.UpdatePayload{}
+	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+	ctx := context.Background()
+
+	// invalid data
+	payload.Data = invalidDIDData(t)
+	_, err := doc.DeriveFromUpdatePayload(ctx, payload)
+	assert.Error(t, err)
+
+	// coredoc failed
+	payload.Data = validDataWithIdentity(t)
+	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
+	assert.NoError(t, err)
+	val := attr.Value
+	val.Type = documents.AttributeType("some type")
+	attr.Value = val
+	payload.Attributes = map[documents.AttrKey]documents.Attribute{
+		attr.Key: attr,
+	}
+	_, err = doc.DeriveFromUpdatePayload(ctx, payload)
+	assert.Error(t, err)
+
+	// Success
+	payload.Attributes = nil
+	gdoc, err := doc.DeriveFromUpdatePayload(ctx, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, gdoc)
 }

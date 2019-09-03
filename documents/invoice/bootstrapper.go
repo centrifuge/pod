@@ -4,16 +4,10 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-)
-
-const (
-	// BootstrappedInvoiceHandler maps to grpc handler for invoices
-	BootstrappedInvoiceHandler string = "BootstrappedInvoiceHandler"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -47,11 +41,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	cfgSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
-	if !ok {
-		return errors.New("config service not initialised")
-	}
-
 	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	if !ok {
 		return anchors.ErrAnchorRepoNotInitialised
@@ -74,11 +63,10 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to register invoice service: %v", err)
 	}
 
-	err = registry.Register(scheme, srv)
+	err = registry.Register(Scheme, srv)
 	if err != nil {
 		return errors.New("failed to register invoice service: %v", err)
 	}
 
-	ctx[BootstrappedInvoiceHandler] = GRPCHandler(cfgSrv, srv)
 	return nil
 }

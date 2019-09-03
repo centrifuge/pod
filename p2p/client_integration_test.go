@@ -17,14 +17,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
+	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -133,21 +131,21 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	acc.IdentityID = defaultDID[:]
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	payalod := testingdocuments.CreatePOPayload()
-	var cs []string
-	for _, c := range collaborators {
-		cs = append(cs, hexutil.Encode(c))
+	payload := invoice.CreateInvoicePayload(t, nil)
+	dids, err := identity.BytesToDIDs(collaborators...)
+	assert.NoError(t, err)
+	var cs []identity.DID
+	for _, did := range dids {
+		cs = append(cs, *did)
 	}
-	payalod.WriteAccess = cs
-	po := new(purchaseorder.PurchaseOrder)
-	err = po.InitPurchaseOrderInput(payalod, defaultDID)
+	payload.Collaborators.ReadWriteCollaborators = cs
+	inv := invoice.InitInvoice(t, defaultDID, payload)
+	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
+	err = inv.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
-	po.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
-	err = po.AddUpdateLog(defaultDID)
+	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
-	_, err = po.CalculateDataRoot()
-	assert.NoError(t, err)
-	sr, err := po.CalculateSigningRoot()
+	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
@@ -157,8 +155,8 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
 		Signature:   s,
 	}
-	po.AppendSignatures(sig)
-	_, err = po.CalculateDocumentRoot()
+	inv.AppendSignatures(sig)
+	_, err = inv.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	return po
+	return inv
 }

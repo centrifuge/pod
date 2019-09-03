@@ -19,20 +19,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/documents/invoice"
-	"github.com/centrifuge/go-centrifuge/documents/purchaseorder"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 var ctx = map[string]interface{}{}
@@ -53,18 +53,21 @@ func TestMain(m *testing.M) {
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
+		pending.Bootstrapper{},
 		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
-		&purchaseorder.Bootstrapper{},
 		generic.Bootstrapper{},
 		&ethereum.Bootstrapper{},
 		&nft.Bootstrapper{},
 		&queue.Starter{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
+		coreapi.Bootstrapper{},
 		&entity.Bootstrapper{},
 		funding.Bootstrapper{},
 		transferdetails.Bootstrapper{},
+		userapi.Bootstrapper{},
+		v2.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
@@ -124,46 +127,4 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
 	assert.Equal(t, "failed to get NodeObjRegistry", err.Error())
-}
-
-func Test_auth(t *testing.T) {
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return ctx.Value(config.AccountHeaderKey), nil
-	}
-
-	// send ping path
-	resp, err := auth(
-		context.Background(),
-		nil,
-		&grpc.UnaryServerInfo{FullMethod: noAuthPaths[0]},
-		handler,
-	)
-	assert.Nil(t, resp)
-	assert.Nil(t, err)
-
-	// send no auth
-	resp, err = auth(
-		context.Background(),
-		nil,
-		&grpc.UnaryServerInfo{FullMethod: "some method"},
-		handler,
-	)
-
-	assert.Nil(t, resp)
-	assert.True(t, errors.IsOfType(ErrNoAuthHeader, err))
-
-	// send Auth
-	ctx := metadata.NewIncomingContext(
-		context.Background(),
-		map[string][]string{"authorization": {"1234567890"}})
-
-	resp, err = auth(
-		ctx,
-		nil,
-		&grpc.UnaryServerInfo{FullMethod: "some method"},
-		handler,
-	)
-
-	assert.Nil(t, err)
-	assert.Equal(t, "1234567890", resp)
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -23,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
-	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -335,6 +335,6 @@ func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
 func updateKeys(c config.Configuration) config.Configuration {
 	n := c.(*configstore.NodeConfig)
 	n.MainIdentity.SigningKeyPair.Pub = "../../build/resources/signingKey.pub.pem"
-	n.MainIdentity.SigningKeyPair.Priv = "../../build/resources/signingKey.key.pem"
+	n.MainIdentity.SigningKeyPair.Pvt = "../../build/resources/signingKey.key.pem"
 	return c
 }

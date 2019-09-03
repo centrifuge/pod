@@ -4,18 +4,19 @@ package testworld
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
 const typeInvoice string = "invoices"
 const typeEntity string = "entities"
-const typePO string = "purchase_orders"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
@@ -112,6 +113,9 @@ func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, docume
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
 	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
+	if versionID, ok := params["version_id"]; ok {
+		objGet.Path("$.header.version_id").String().Equal(versionID.(string))
+	}
 	if checkattrs {
 		attrs := objGet.Path("$.attributes").Object().Raw()
 		eattrs := defaultAttributePayload()
@@ -164,7 +168,7 @@ func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, documentTy
 	relationshipIdentifier := params["r_identifier"].(string)
 
 	objGet := addCommonHeaders(e.GET("/v1/relationships/"+relationshipIdentifier+"/entity"), auth).
-		Expect().Status(500).JSON().NotNull()
+		Expect().Status(http.StatusNotFound).JSON().NotNull()
 
 	return objGet
 }
@@ -180,13 +184,48 @@ func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType st
 	docIdentifier := params["document_id"].(string)
 
 	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
-		Expect().Status(500).JSON().NotNull()
+		Expect().Status(http.StatusNotFound).JSON().NotNull()
+	return objGet
+}
+
+func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
+	docIdentifier := params["document_id"].(string)
+	versionID := params["version_id"].(string)
+
+	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier+"/versions/"+versionID), auth).
+		Expect().Status(http.StatusNotFound).JSON().NotNull()
 	return objGet
 }
 
 func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v1/"+documentType), auth).
 		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func createDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/v2/"+documentType), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func updateDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.PATCH("/v2/"+documentType+"/"+payload["document_id"].(string)), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
+func checkDocumentParams(obj *httpexpect.Object, params map[string]string) {
+	for k, v := range params {
+		obj.Path("$.data." + k).String().Equal(v)
+	}
+}
+
+func commitDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/"+docIdentifier+"/commit"), auth).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
@@ -248,10 +287,12 @@ func updateDocument(e *httpexpect.Expect, auth string, documentType string, stat
 
 func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 	docIdentifier := response.Value("header").Path("$.document_id").String().NotEmpty().Raw()
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
 	return docIdentifier
+}
+
+func getDocumentStatus(t *testing.T, response *httpexpect.Object) string {
+	status := response.Value("header").Path("$.status").String().NotEmpty().Raw()
+	return status
 }
 
 func getAgreementId(t *testing.T, response *httpexpect.Object) string {
@@ -280,7 +321,7 @@ func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
-	versionID := resp.Value("header").Path("$.version").String().Raw()
+	versionID := resp.Value("header").Path("$.version_id").String().Raw()
 	if versionID == "" {
 		t.Error("version ID empty")
 	}
@@ -401,7 +442,7 @@ func getAccounts(accounts *httpexpect.Array) map[string]string {
 	return accIDs
 }
 
-func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}, attrs map[string]map[string]string) *httpexpect.Value {
+func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}, attrs coreapi.AttributeMapRequest) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(documentID)
@@ -410,20 +451,29 @@ func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string,
 	}
 
 	if len(attrs) > 0 {
-		gattrs := objGet.Path("$.attributes").Object().Raw()
-		cattrs := make(map[string]map[string]string)
-		for k, v := range gattrs {
-			atr := v.(map[string]interface{})
-			delete(atr, "key")
-			atri := make(map[string]string)
-			for k1, v1 := range atr {
-				atri[k1] = v1.(string)
-			}
-
-			cattrs[k] = atri
+		reqJson, err := json.Marshal(attrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
 		}
 
-		assert.Equal(t, attrs, cattrs)
+		gattrs := objGet.Path("$.attributes").Object().Raw()
+		// Since we want to perform an equals check on the request attributes and response attributes we need to marshal and
+		// unmarshal twice over the object
+		respJson, err := json.Marshal(gattrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		var cattrs coreapi.AttributeMapRequest
+		err = json.Unmarshal(respJson, &cattrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		respJson, err = json.Marshal(cattrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		assert.Equal(t, reqJson, respJson)
 	}
 	return objGet
 }
@@ -431,5 +481,11 @@ func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string,
 func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, documentID string) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(404).JSON().NotNull()
+	return objGet
+}
+
+func getV2DocumentWithStatus(e *httpexpect.Expect, auth, docID, status string, code int) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v2/documents/"+docID+"/"+status), auth).
+		Expect().Status(code).JSON().NotNull()
 	return objGet
 }

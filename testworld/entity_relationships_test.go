@@ -19,7 +19,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice anchors entity
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, defaultEntityPayload(alice.id.String(), []string{}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, defaultEntityPayload(alice.id.String(), []string{}))
 	entityIdentifier := getDocumentIdentifier(t, res)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -28,7 +28,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	}
 
 	// Alice creates an EntityRelationship with Bob
-	resB := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
+	resB := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusAccepted, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
 	relationshipIdentifierB := getDocumentIdentifier(t, resB)
 	txID = getTransactionID(t, resB)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -47,7 +47,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response.Path("$.data.entity.legal_name").String().Equal("test company")
 
 	// Alice updates her entity
-	res = updateDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusOK, entityIdentifier, updatedEntityPayload(alice.id.String(), []string{}))
+	res = updateDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, entityIdentifier, updatedEntityPayload(alice.id.String(), []string{}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -61,10 +61,10 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	// Alice wants to list all relationships associated with her entity, this should return her one (with Bob)
 	response = getEntity(alice.httpExpect, alice.id.String(), entityIdentifier)
 	response.Path("$.data.relationships[0].active").Boolean().Equal(true)
-	response.Path("$.data.relationships[0].identity").String().Equal(bob.id.String())
+	response.Path("$.data.relationships[0].target_identity").String().Equal(bob.id.String())
 
 	// Alice creates an EntityRelationship with Charlie
-	resC := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, charlie.id.String()))
+	resC := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusAccepted, defaultRelationshipPayload(entityIdentifier, charlie.id.String()))
 	relationshipIdentifierC := getDocumentIdentifier(t, resC)
 	txID = getTransactionID(t, resC)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
@@ -86,7 +86,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	response.Path("$.data.relationships[" + bIdx + "].active").Boolean().Equal(true)
 
 	// Alice revokes the EntityRelationship with Bob
-	resB = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusOK, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
+	resB = revokeEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusAccepted, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
 	txID = getTransactionID(t, resB)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -107,7 +107,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 
 func checkRelationships(response *httpexpect.Value, charlieDID, bobDID string) (string, string) {
 	response.Path("$.data.relationships").Array().Length().Equal(2)
-	firstR := response.Path("$.data.relationships[0].identity").String().Raw()
+	firstR := response.Path("$.data.relationships[0].target_identity").String().Raw()
 	charlieIdx := 0
 	if firstR != charlieDID {
 		charlieIdx = 1
@@ -115,8 +115,8 @@ func checkRelationships(response *httpexpect.Value, charlieDID, bobDID string) (
 	}
 	bIdx := strconv.Itoa(1 - charlieIdx)
 	cIdx := strconv.Itoa(charlieIdx)
-	response.Path("$.data.relationships[" + cIdx + "].identity").String().Equal(charlieDID)
-	response.Path("$.data.relationships[" + bIdx + "].identity").String().Equal(bobDID)
+	response.Path("$.data.relationships[" + cIdx + "].target_identity").String().Equal(charlieDID)
+	response.Path("$.data.relationships[" + bIdx + "].target_identity").String().Equal(bobDID)
 
 	return cIdx, bIdx
 }

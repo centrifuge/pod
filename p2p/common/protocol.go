@@ -8,10 +8,10 @@ import (
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -113,11 +113,7 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 		return nil, err
 	}
 
-	centIDBytes, err := self.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
-
+	centIDBytes := self.GetIdentityID()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err

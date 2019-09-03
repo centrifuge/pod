@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"hash"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -11,20 +12,20 @@ import (
 )
 
 // DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
-func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) *proofs.DocumentTree {
+func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
 	var prop proofs.Property
 	if prefix != "" {
 		prop = NewLeafProperty(prefix, compactPrefix)
 	}
 
-	t := proofs.NewDocumentTree(proofs.TreeOptions{
+	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		CompactProperties: true,
 		EnableHashSorting: true,
 		Hash:              sha256.New(),
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
 	})
-	return &t
+	return &t, err
 }
 
 // NewLeafProperty returns a proof property with the literal and the compact
@@ -63,4 +64,23 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 		cd.Document.Salts = salts
 		return randbytes, nil
 	}
+}
+
+// ValidateProof by comparing it to the provided rootHash
+func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash) (valid bool, err error) {
+	var fieldHash []byte
+	if len(proof.Hash) == 0 {
+		fieldHash, err = proofs.CalculateHashForProofField(proof, hashFunc)
+	} else {
+		fieldHash = proof.Hash
+	}
+	if err != nil {
+		return false, err
+	}
+	if len(proof.SortedHashes) > 0 {
+		valid, err = proofs.ValidateProofSortedHashes(fieldHash, proof.SortedHashes, rootHash, hashFunc)
+	} else {
+		valid, err = proofs.ValidateProofHashes(fieldHash, proof.Hashes, rootHash, hashFunc)
+	}
+	return valid, err
 }

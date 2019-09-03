@@ -30,17 +30,12 @@ func TestService_CreateModel(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentConfigAccountID, err))
 
-	// invalid data
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	_, _, err = srv.CreateModel(ctxh, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unexpected end of JSON input")
-
 	// success
+	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	payload.Data = validData(t)
 	srv.repo = testRepo()
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	m, _, err := srv.CreateModel(ctxh, payload)
 	assert.NoError(t, err)
@@ -59,7 +54,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, documents
 	repo := testRepo()
 	anchorRepo := &testinganchors.MockAnchorRepo{}
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
-	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), &idService)
+	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), &idService, nil, nil)
 	return idService, DefaultService(
 		docSrv,
 		repo,
@@ -90,9 +85,6 @@ func TestService_UpdateModel(t *testing.T) {
 	err = testRepo().Create(did[:], g.ID(), g)
 	assert.NoError(t, err)
 	payload.DocumentID = g.ID()
-	_, _, err = srv.UpdateModel(ctxh, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// failed validations
 	payload.Data = validData(t)
@@ -108,7 +100,7 @@ func TestService_UpdateModel(t *testing.T) {
 
 	// Success
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
 	srv.anchorRepo = oldRepo
 	m, _, err := srv.UpdateModel(ctxh, payload)
@@ -150,7 +142,7 @@ func TestService_Update(t *testing.T) {
 
 	// success
 	jm := testingjobs.MockJobManager{}
-	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan bool), nil)
+	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	gsrv.jobManager = jm
 	m, _, _, err := gsrv.Update(ctxh, g)
 	assert.NoError(t, err)
@@ -159,4 +151,10 @@ func TestService_Update(t *testing.T) {
 	assert.Equal(t, m.ID(), g.ID())
 	assert.Equal(t, m.CurrentVersion(), g.NextVersion())
 	jm.AssertExpectations(t)
+}
+
+func TestService_Validate(t *testing.T) {
+	srv := service{}
+	err := srv.Validate(context.Background(), nil, nil)
+	assert.NoError(t, err)
 }

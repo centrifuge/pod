@@ -71,9 +71,9 @@ func TestExecute_successful(t *testing.T) {
 
 	// call execute
 	_, done, err := idSrv.Execute(aCtx, anchorAddress, anchors.AnchorContractABI, "commit", testAnchorIdPreimage.BigInt(), testRootHash, proofs)
-	isDone := <-done
-	assert.True(t, isDone)
 	assert.Nil(t, err, "Execute method calls should be successful")
+	doneErr := <-done
+	assert.NoError(t, doneErr)
 
 	checkAnchor(t, testAnchorId, rootHash)
 	resetDefaultCentID()
@@ -181,10 +181,8 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 			errOut <- nil
 		})
 	assert.Nil(t, err, "add anchor commit tx should be successful ")
-	isDone := <-done
-	// non async task
-
-	assert.True(t, isDone, "add anchor commit tx should be successful ")
+	doneErr := <-done
+	assert.Nil(t, doneErr, "add anchor commit tx should be successful ")
 
 	return nil
 

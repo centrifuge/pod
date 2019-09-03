@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
@@ -441,7 +440,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 }
 
 // AddAccessToken adds the AccessToken to the document
-func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.AccessTokenParams) (*CoreDocument, error) {
+func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload AccessTokenParams) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, err
@@ -458,20 +457,15 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload documentpb.A
 }
 
 // DeleteAccessToken deletes an access token on the Document
-func (cd *CoreDocument) DeleteAccessToken(ctx context.Context, granteeID string) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAccessToken(granteeID identity.DID) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = identity.StringsToDIDs(granteeID)
 	if err != nil {
 		return nil, err
 	}
 
 	accessTokens := ncd.Document.AccessTokens
 	for i, t := range accessTokens {
-		if hexutil.Encode(t.Grantee) == granteeID {
+		if bytes.Equal(t.Grantee, granteeID.ToAddress().Bytes()) {
 			ncd.Document.AccessTokens = removeTokenAtIndex(i, accessTokens)
 			ncd.Modified = true
 			return ncd, nil
@@ -488,16 +482,13 @@ func removeTokenAtIndex(idx int, tokens []*coredocumentpb.AccessToken) []*coredo
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken(ctx context.Context, payload documentpb.AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
+func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
 	account, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
 	}
 	tokenIdentifier := utils.RandomSlice(32)
-	id, err := account.GetIdentityID()
-	if err != nil {
-		return nil, err
-	}
+	id := account.GetIdentityID()
 	granterID, err := identity.NewDIDFromBytes(id)
 	if err != nil {
 		return nil, err

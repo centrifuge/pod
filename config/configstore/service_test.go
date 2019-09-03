@@ -57,7 +57,7 @@ func TestService_GetAccount(t *testing.T) {
 	svc := DefaultService(repo, idService)
 	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	accID, _ := accountCfg.GetIdentityID()
+	accID := accountCfg.GetIdentityID()
 	err = repo.CreateAccount(accID, accountCfg)
 	assert.Nil(t, err)
 	cfg, err := svc.GetAccount(accID)
@@ -91,10 +91,8 @@ func TestService_Createaccount(t *testing.T) {
 	assert.Nil(t, err)
 	newCfg, err := svc.CreateAccount(accountCfg)
 	assert.Nil(t, err)
-	i, err := newCfg.GetIdentityID()
-	assert.Nil(t, err)
-	accID, err := accountCfg.GetIdentityID()
-	assert.Nil(t, err)
+	i := newCfg.GetIdentityID()
+	accID := accountCfg.GetIdentityID()
 	assert.Equal(t, accID, i)
 
 	//account already exists
@@ -117,10 +115,8 @@ func TestService_Updateaccount(t *testing.T) {
 
 	newCfg, err = svc.CreateAccount(accountCfg)
 	assert.Nil(t, err)
-	i, err := newCfg.GetIdentityID()
-	assert.Nil(t, err)
-	accID, err := accountCfg.GetIdentityID()
-	assert.Nil(t, err)
+	i := newCfg.GetIdentityID()
+	accID := accountCfg.GetIdentityID()
 	assert.Equal(t, accID, i)
 
 	acc := accountCfg.(*Account)
@@ -138,8 +134,7 @@ func TestService_Deleteaccount(t *testing.T) {
 	svc := DefaultService(repo, idService)
 	accountCfg, err := NewAccount("main", cfg)
 	assert.Nil(t, err)
-	accID, err := accountCfg.GetIdentityID()
-	assert.Nil(t, err)
+	accID := accountCfg.GetIdentityID()
 
 	//No config, no error
 	err = svc.DeleteAccount(accID)
@@ -163,7 +158,7 @@ func TestGenerateaccountKeys(t *testing.T) {
 	assert.NotNil(t, tc.SigningKeyPair)
 	_, err = os.Stat(tc.SigningKeyPair.Pub)
 	assert.False(t, os.IsNotExist(err))
-	_, err = os.Stat(tc.SigningKeyPair.Priv)
+	_, err = os.Stat(tc.SigningKeyPair.Pvt)
 	assert.False(t, os.IsNotExist(err))
 }
 
@@ -186,8 +181,7 @@ func TestService_Sign(t *testing.T) {
 	assert.Nil(t, err)
 	acc, err := svc.CreateAccount(accountCfg)
 	assert.NoError(t, err)
-	accountID, err = acc.GetIdentityID()
-	assert.NoError(t, err)
+	accountID = acc.GetIdentityID()
 	sig, err := svc.Sign(accountID, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, sig.SignerId, accountID)

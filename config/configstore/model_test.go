@@ -10,10 +10,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/account"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -275,91 +273,6 @@ func TestNewAccountConfig(t *testing.T) {
 	_, err := NewAccount("name", c)
 	assert.NoError(t, err)
 	c.AssertExpectations(t)
-}
-
-func TestAccountProtobuf_validationFailures(t *testing.T) {
-	c := &mockConfig{}
-	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil)
-	c.On("GetEthereumDefaultAccountName").Return("dummyAcc")
-	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier")
-	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil)
-	c.On("GetP2PKeyPair").Return("pub", "priv")
-	c.On("GetSigningKeyPair").Return("pub", "priv")
-	c.On("GetEthereumContextWaitTimeout").Return(time.Second)
-	c.On("GetPrecommitEnabled").Return(true)
-	tc, err := NewAccount("name", c)
-	assert.Nil(t, err)
-	c.AssertExpectations(t)
-
-	// Nil EthAccount
-	tco := tc.(*Account)
-	tco.EthereumAccount = nil
-	accpb, err := tco.CreateProtobuf()
-	assert.Error(t, err)
-	assert.Nil(t, accpb)
-
-	// Nil payload
-	tc, err = NewAccount("name", c)
-	assert.Nil(t, err)
-	accpb, err = tc.CreateProtobuf()
-	assert.NoError(t, err)
-	tco = tc.(*Account)
-	err = tco.loadFromProtobuf(nil)
-	assert.Error(t, err)
-
-	// Nil EthAccount
-	ethacc := proto.Clone(accpb.EthAccount)
-	accpb.EthAccount = nil
-	err = tco.loadFromProtobuf(accpb)
-	assert.Error(t, err)
-	accpb.EthAccount = ethacc.(*accountpb.EthereumAccount)
-
-	// Nil P2PKeyPair
-	p2pKey := proto.Clone(accpb.P2PKeyPair)
-	accpb.P2PKeyPair = nil
-	err = tco.loadFromProtobuf(accpb)
-	assert.Error(t, err)
-	accpb.P2PKeyPair = p2pKey.(*accountpb.KeyPair)
-
-	// Nil SigningKeyPair
-	signKey := proto.Clone(accpb.SigningKeyPair)
-	accpb.SigningKeyPair = nil
-	err = tco.loadFromProtobuf(accpb)
-	assert.Error(t, err)
-	accpb.SigningKeyPair = signKey.(*accountpb.KeyPair)
-
-}
-
-func TestAccountConfigProtobuf(t *testing.T) {
-	c := &mockConfig{}
-	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
-	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
-	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
-	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
-	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	c.On("GetPrecommitEnabled").Return(true).Once()
-	tc, err := NewAccount("name", c)
-	assert.Nil(t, err)
-	c.AssertExpectations(t)
-
-	accpb, err := tc.CreateProtobuf()
-	assert.NoError(t, err)
-	assert.Equal(t, tc.GetReceiveEventNotificationEndpoint(), accpb.ReceiveEventNotificationEndpoint)
-	i, err := tc.GetIdentityID()
-	assert.Nil(t, err)
-
-	assert.Equal(t, common.BytesToAddress(i).Hex(), common.HexToAddress(accpb.IdentityId).Hex())
-	_, priv := tc.GetSigningKeyPair()
-	assert.Equal(t, priv, accpb.SigningKeyPair.Pvt)
-
-	tcCopy := new(Account)
-	err = tcCopy.loadFromProtobuf(accpb)
-	assert.NoError(t, err)
-	assert.Equal(t, accpb.ReceiveEventNotificationEndpoint, tcCopy.ReceiveEventNotificationEndpoint)
-	assert.Equal(t, common.HexToAddress(accpb.IdentityId).Hex(), common.BytesToAddress(tcCopy.IdentityID).Hex())
-	assert.Equal(t, accpb.SigningKeyPair.Pvt, tcCopy.SigningKeyPair.Priv)
 }
 
 func createMockConfig() *mockConfig {

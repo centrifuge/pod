@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // StringsToDIDs converts hex strings to DIDs.
@@ -121,22 +120,4 @@ func RemoveDuplicateDIDs(dids []DID) []DID {
 	}
 
 	return res
-}
-
-// AddressToDIDs converts addresses to DIDs.
-func AddressToDIDs(addrs ...common.Address) (dids []DID) {
-	for _, addr := range addrs {
-		dids = append(dids, NewDID(addr))
-	}
-
-	return dids
-}
-
-// DIDsToAddress converts DIDs to addresses.
-func DIDsToAddress(dids ...DID) (addrs []common.Address) {
-	for _, did := range dids {
-		addrs = append(addrs, did.ToAddress())
-	}
-
-	return addrs
 }

@@ -3,7 +3,7 @@
 package documents
 
 import (
-	"context"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
@@ -15,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -27,16 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockService struct {
-	Service
-	mock.Mock
-}
-
-func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
-	args := m.Called(documentID, version)
-	return args.Get(0).(Model), args.Error(1)
-}
 
 func TestReadACLs_initReadRules(t *testing.T) {
 	cd, err := newCoreDocument()
@@ -257,7 +246,8 @@ func TestCoreDocument_getRoleProofKey(t *testing.T) {
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	testTree := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	testTree, err := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
 	props := []proofs.Property{NewLeafProperty("invoice.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200})}
 	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
 	assert.NoError(t, err)
@@ -270,11 +260,9 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
 	cd, err = cd.AddNFT(true, registry, tokenID)
+	assert.NoError(t, err)
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
@@ -324,9 +312,6 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		},
 	}
 
-	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-
 	for _, c := range tests {
 		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
@@ -338,7 +323,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		assert.True(t, len(pfs) > 0)
 
 		for _, pf := range pfs {
-			valid, err := tree.ValidateProof(pf)
+			valid, err := ValidateProof(pf, signingRoot, sha256.New())
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}
@@ -350,15 +335,14 @@ func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
 	account, _ := contextutil.Account(ctx)
 	srv := new(testingcommons.MockIdentityService)
 	docSrv := new(MockService)
-	id, err := account.GetIdentityID()
-	assert.NoError(t, err)
+	id := account.GetIdentityID()
 	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
 	granterID, err := identity.NewDIDFromBytes(id)
 	assert.NoError(t, err)
 	cd, err := NewCoreDocument(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{granterID}}, nil)
 	assert.NoError(t, err)
-	payload := documentpb.AccessTokenParams{
+	payload := AccessTokenParams{
 		Grantee:            hexutil.Encode(granteeID[:]),
 		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
 	}
@@ -407,7 +391,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Len(t, cd.AccessTokens, 0)
 
 	// invalid centID format
-	payload := documentpb.AccessTokenParams{
+	payload := AccessTokenParams{
 		// invalid grantee format
 		Grantee:            "randomCentID",
 		DocumentIdentifier: "randomDocID",
@@ -417,7 +401,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to construct access token: malformed address provided")
 	// invalid centID length
 	invalidCentID := utils.RandomSlice(25)
-	payload = documentpb.AccessTokenParams{
+	payload = AccessTokenParams{
 		Grantee:            hexutil.Encode(invalidCentID),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
@@ -425,10 +409,9 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: malformed address provided")
 	// invalid docID length
-	id, err := account.GetIdentityID()
-	assert.NoError(t, err)
+	id := account.GetIdentityID()
 	invalidDocID := utils.RandomSlice(33)
-	payload = documentpb.AccessTokenParams{
+	payload = AccessTokenParams{
 		Grantee:            hexutil.Encode(id),
 		DocumentIdentifier: hexutil.Encode(invalidDocID),
 	}
@@ -437,7 +420,7 @@ func TestCoreDocumentModel_AddAccessToken(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to construct access token: invalid identifier length")
 	// valid
-	payload = documentpb.AccessTokenParams{
+	payload = AccessTokenParams{
 		Grantee:            hexutil.Encode(id),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
@@ -455,19 +438,18 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 	account, err := contextutil.Account(ctx)
 	assert.NoError(t, err)
 
-	id, err := account.GetIdentityID()
+	id, err := identity.NewDIDFromBytes(account.GetIdentityID())
 	assert.NoError(t, err)
-
 	cd := m.Document
 	assert.Len(t, cd.AccessTokens, 0)
 
-	payload := documentpb.AccessTokenParams{
-		Grantee:            hexutil.Encode(id),
+	payload := AccessTokenParams{
+		Grantee:            id.String(),
 		DocumentIdentifier: hexutil.Encode(m.Document.DocumentIdentifier),
 	}
 
 	// no access token found
-	_, err = m.DeleteAccessToken(ctx, hexutil.Encode(id))
+	_, err = m.DeleteAccessToken(id)
 	assert.Error(t, err)
 
 	// add access token
@@ -476,7 +458,7 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 	assert.Len(t, ncd.Document.AccessTokens, 1)
 
 	// invalid granteeID
-	_, err = ncd.DeleteAccessToken(ctx, hexutil.Encode(utils.RandomSlice(32)))
+	_, err = ncd.DeleteAccessToken(testingidentity.GenerateRandomDID())
 	assert.Error(t, err)
 	assert.Len(t, ncd.Document.AccessTokens, 1)
 
@@ -487,7 +469,7 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, updated.Document.AccessTokens, 2)
 
-	final, err := updated.DeleteAccessToken(ctx, hexutil.Encode(id))
+	final, err := updated.DeleteAccessToken(id)
 	assert.NoError(t, err)
 	assert.Len(t, final.Document.AccessTokens, 1)
 	assert.Equal(t, final.Document.AccessTokens[0].Grantee, did[:])

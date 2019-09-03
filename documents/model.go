@@ -147,6 +147,12 @@ type Model interface {
 
 	// GetData returns the document data. Ex: invoice.Data
 	GetData() interface{}
+
+	// GetStatus returns the status of the document.
+	GetStatus() Status
+
+	// SetStatus set the status of the document.
+	SetStatus(st Status) error
 }
 
 // TokenRegistry defines NFT related functions.
@@ -170,4 +176,14 @@ type CreatePayload struct {
 type UpdatePayload struct {
 	CreatePayload
 	DocumentID []byte
+}
+
+// Deriver defines the functions that can derive Document from the Payloads.
+type Deriver interface {
+	// DeriveFromCreatePayload loads the payload into self.
+	DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error
+
+	// DeriveFromUpdatePayload create the next version of the document.
+	// Patches the old data with Payload data
+	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error)
 }

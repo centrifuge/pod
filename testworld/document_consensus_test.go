@@ -34,11 +34,6 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 			typeInvoice,
 			multiHostMultiAccount,
 		},
-		{
-			"PO_AddExternalCollaborator",
-			typePO,
-			multiHost,
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -62,7 +57,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	c := accounts[2]
 
 	// a shares document with b first
-	res := createDocument(bob.httpExpect, a, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{b}))
+	res := createDocument(bob.httpExpect, a, documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{b}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(bob.httpExpect, a, txID)
 	if status != "success" {
@@ -88,12 +83,12 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	// account b sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromID))
 	log.Debug("Host test success")
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// b updates invoice and shares with c as well
-	res = updateDocument(bob.httpExpect, b, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
+	res = updateDocument(bob.httpExpect, b, documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, []string{a, c}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, b, txID)
 	if status != "success" {
@@ -111,7 +106,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	// account c sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromID))
 }
 
 func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType string) {
@@ -128,7 +123,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{a, b}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{a, b}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -155,11 +150,11 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	// bobs account b sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromId))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
 	nonExistingDocumentCheck(bob.httpExpect, c, documentType, params)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
-	res = updateDocument(bob.httpExpect, a, documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), b, c, d, e}))
+	res = updateDocument(bob.httpExpect, a, documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), b, c, d, e}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, a, txID)
 	if status != "success" {
@@ -187,7 +182,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -208,7 +203,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
+	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, []string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -232,7 +227,6 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 
 	//currently can't be run in parallel (because of node kill)
 	collaboratorTimeOut(t, typeInvoice)
-	collaboratorTimeOut(t, typePO)
 }
 
 func collaboratorTimeOut(t *testing.T, documentType string) {
@@ -240,7 +234,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusOK, defaultInvoicePayload([]string{bob.id.String()}))
+	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, response)
 	status, message := getTransactionStatusAndMessage(kenny.httpExpect, kenny.id.String(), txID)
 	if status != "success" {
@@ -263,7 +257,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 	updatedPayload := updatedDocumentPayload(documentType, []string{kenny.id.String()})
 
 	// Bob will anchor the document without Kennys signature
-	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusOK, docIdentifier, updatedPayload)
+	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedPayload)
 	txID = getTransactionID(t, response)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "failed" {
@@ -290,7 +284,78 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusInternalServerError, wrongInvoicePayload([]string{bob.id.String()}))
-	errMsg := response.Raw()["error"].(string)
-	assert.Contains(t, errMsg, "model attribute error")
+	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusBadRequest, wrongInvoicePayload([]string{bob.id.String()}))
+
+	errMsg := response.Raw()["message"].(string)
+	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")
+}
+
+func TestDocument_latestDocumentVersion(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+	kenny := doctorFord.getHostTestSuite(t, "Kenny")
+	documentType := typeInvoice
+
+	// alice creates a document with bob and kenny
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{bob.id.String(), kenny.id.String()}))
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier := getDocumentIdentifier(t, res)
+	versionID := getDocumentCurrentVersion(t, res)
+	if versionID != docIdentifier {
+		t.Errorf("docID(%s) != versionID(%s)\n", docIdentifier, versionID)
+	}
+
+	params := map[string]interface{}{
+		"document_id": docIdentifier,
+		"version_id":  versionID,
+		"currency":    "USD",
+	}
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, params, true)
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, params)
+
+	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
+	kenny.host.kill()
+	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, []string{charlie.id.String()}))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "failed" {
+		t.Error(message)
+	}
+
+	docIdentifier = getDocumentIdentifier(t, res)
+	versionID = getDocumentCurrentVersion(t, res)
+	params["currency"] = "EUR"
+	params["version_id"] = versionID
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, params, true)
+	// bring kenny back and should not have the latest version
+	doctorFord.reLive(t, kenny.name)
+	nonExistingDocumentVersionCheck(kenny.httpExpect, kenny.id.String(), documentType, params)
+
+	// alice updates document
+	res = updateDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedDocumentPayload(documentType, nil))
+	txID = getTransactionID(t, res)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	docIdentifier = getDocumentIdentifier(t, res)
+	versionID = getDocumentCurrentVersion(t, res)
+	params["version_id"] = versionID
+
+	// everyone should have the latest version
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, params, true)
+	getDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, params, true)
 }

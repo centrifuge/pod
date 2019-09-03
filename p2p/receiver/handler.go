@@ -6,21 +6,22 @@ import (
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/centerrors"
-	"github.com/centrifuge/go-centrifuge/code"
+	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
-	pb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
+	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/libp2p/go-libp2p-protocol"
 )
+
+var log = logging.Logger("p2p-handler")
 
 // Handler implements protocol message handlers
 type Handler struct {
@@ -145,7 +146,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 
 	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	return &p2ppb.SignatureResponse{Signature: signature}, nil
@@ -194,7 +195,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 
 	err = srv.docSrv.ReceiveAnchoredDocument(ctx, model, collaborator)
 	if err != nil {
-		return nil, centerrors.New(code.Unknown, err.Error())
+		return nil, err
 	}
 
 	return &p2ppb.AnchorDocumentResponse{Accepted: true}, nil
@@ -285,6 +286,9 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 }
 
 func (srv *Handler) convertToErrorEnvelop(ierr error) (*pb.P2PEnvelope, error) {
+	// Log on server side
+	log.Error(ierr)
+
 	ierr = errors.Mask(ierr)
 	errPb := &errorspb.Error{Message: ierr.Error()}
 	errBytes, errx := proto.Marshal(errPb)

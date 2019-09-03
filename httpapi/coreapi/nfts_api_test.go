@@ -96,7 +96,7 @@ func TestHandler_MintNFT(t *testing.T) {
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	srv := new(testingnfts.MockNFTService)
 	srv.On("MintNFT", ctx, mock.Anything).Return(nil, nil, errors.New("failed to mint nft")).Once()
-	h.srv.nftService = srv
+	h.srv.nftSrv = srv
 	h.MintNFT(w, r)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "failed to mint nft")
@@ -111,9 +111,9 @@ func TestHandler_MintNFT(t *testing.T) {
 			TokenID: tokenID,
 			JobID:   jobs.NewJobID().String(),
 		}, nil, nil).Once()
-	h.srv.nftService = srv
+	h.srv.nftSrv = srv
 	h.MintNFT(w, r)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusAccepted, w.Code)
 	assert.Contains(t, w.Body.String(), tokenID)
 	srv.AssertExpectations(t)
 }
@@ -145,7 +145,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
 
-	// service fail
+	// Service fail
 	to := hexutil.Encode(utils.RandomSlice(20))
 	body := map[string]interface{}{
 		"to": to,
@@ -154,7 +154,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	assert.NoError(t, err)
 	srv := new(testingnfts.MockNFTService)
 	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil, errors.New("failed to transfer")).Once()
-	h.srv.nftService = srv
+	h.srv.nftSrv = srv
 	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)
 	h.TransferNFT(w, r)
@@ -168,7 +168,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 		TokenID: tokenID.String(),
 		JobID:   jobs.NewJobID().String(),
 	}, nil, nil).Once()
-	h.srv.nftService = srv
+	h.srv.nftSrv = srv
 	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)
 	h.TransferNFT(w, r)
@@ -197,7 +197,7 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	// owner failed
 	srv := new(testingnfts.MockNFTService)
 	srv.On("OwnerOf", mock.Anything, mock.Anything).Return(nil, errors.New("failed to get owner")).Once()
-	h.srv.nftService = srv
+	h.srv.nftSrv = srv
 	w, r := getHTTPReqAndResp(ctx)
 	h.OwnerOfNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
@@ -208,7 +208,7 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	owner := common.BytesToAddress(utils.RandomSlice(20))
 	srv = new(testingnfts.MockNFTService)
 	srv.On("OwnerOf", mock.Anything, mock.Anything).Return(owner, nil).Once()
-	h.srv.nftService = srv
+	h.srv.nftSrv = srv
 	w, r = getHTTPReqAndResp(ctx)
 	h.OwnerOfNFT(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)

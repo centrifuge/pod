@@ -59,7 +59,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 	d, err = json.Marshal(data)
 	assert.NoError(t, err)
 	docSrv := new(testingdocuments.MockService)
-	srv := Service{docService: docSrv}
+	srv := Service{docSrv: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("failed to create model"))
 	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
@@ -75,7 +75,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 	m.On("GetAttributes").Return(nil)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
 	docSrv = new(testingdocuments.MockService)
-	srv = Service{docService: docSrv}
+	srv = Service{docSrv: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
@@ -97,13 +97,13 @@ func TestHandler_CreateDocument(t *testing.T) {
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
 	docSrv = new(testingdocuments.MockService)
-	srv = Service{docService: docSrv}
+	srv = Service{docSrv: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	r = httptest.NewRequest("POST", "/documents", bytes.NewReader(d))
 	w = httptest.NewRecorder()
 	h.CreateDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
@@ -165,7 +165,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	d, err = json.Marshal(data)
 	assert.NoError(t, err)
 	docSrv := new(testingdocuments.MockService)
-	srv := Service{docService: docSrv}
+	srv := Service{docSrv: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("failed to update model"))
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
@@ -180,7 +180,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	m.On("GetAttributes").Return(nil)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
 	docSrv = new(testingdocuments.MockService)
-	srv = Service{docService: docSrv}
+	srv = Service{docSrv: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
@@ -201,12 +201,12 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
 	docSrv = new(testingdocuments.MockService)
-	srv = Service{docService: docSrv}
+	srv = Service{docSrv: docSrv}
 	h = handler{srv: srv}
 	docSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.UpdateDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
 }
@@ -237,7 +237,7 @@ func TestHandler_GetDocument(t *testing.T) {
 	rctx.URLParams.Values[0] = hexutil.Encode(id)
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", id).Return(nil, errors.New("failed"))
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r := getHTTPReqAndResp(ctx)
 	h.GetDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusNotFound)
@@ -263,7 +263,7 @@ func TestHandler_GetDocument(t *testing.T) {
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", id).Return(m, nil)
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
@@ -284,7 +284,7 @@ func TestHandler_GetDocument(t *testing.T) {
 	m.On("GetAttributes").Return(nil)
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", id).Return(m, nil)
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
@@ -322,7 +322,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	rctx.URLParams.Values[1] = hexutil.Encode(vid)
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetVersion", id, vid).Return(nil, errors.New("failed"))
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r := getHTTPReqAndResp(ctx)
 	h.GetDocumentVersion(w, r)
 	assert.Equal(t, w.Code, http.StatusNotFound)
@@ -348,7 +348,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators"))
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetVersion", id, vid).Return(m, nil)
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetDocumentVersion(w, r)
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
@@ -369,7 +369,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	m.On("GetAttributes").Return(nil)
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetVersion", id, vid).Return(m, nil)
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetDocumentVersion(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
@@ -414,7 +414,7 @@ func TestHandler_GenerateProofs(t *testing.T) {
 	buf := bytes.NewReader(d)
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(nil, errors.New("failed to generate proofs"))
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
 	h.GenerateProofs(w, r)
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
@@ -445,7 +445,7 @@ func TestHandler_GenerateProofs(t *testing.T) {
 	}
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(proof, nil)
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
 	h.GenerateProofs(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
@@ -494,7 +494,7 @@ func TestHandler_GenerateProofsForVersion(t *testing.T) {
 	buf := bytes.NewReader(d)
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(nil, errors.New("failed to generate proofs"))
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
 	h.GenerateProofsForVersion(w, r)
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
@@ -525,7 +525,7 @@ func TestHandler_GenerateProofsForVersion(t *testing.T) {
 		},
 	}
 	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(proof, nil)
-	h = handler{srv: Service{docService: docSrv}}
+	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
 	h.GenerateProofsForVersion(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)

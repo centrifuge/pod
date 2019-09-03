@@ -109,9 +109,9 @@ func commitAnchor(t *testing.T, anchorID, documentRoot []byte, documentProof [32
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	done, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, documentProof)
-	isDone := <-done
-	assert.True(t, isDone, "isDone should be true")
 	assert.Nil(t, err)
+	doneErr := <-done
+	assert.NoError(t, doneErr, "no error")
 }
 
 func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
@@ -121,15 +121,15 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	done, err := anchorRepo.PreCommitAnchor(ctx, anchorIDTyped, docRootTyped)
-	isDone := <-done
-	assert.True(t, isDone, "isDone should be true")
 	assert.Nil(t, err)
+	doneErr := <-done
+	assert.NoError(t, doneErr, "no error")
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	t.Parallel()
 	var commitDataList [5]*anchors.CommitData
-	var doneList [5]chan bool
+	var doneList [5]chan error
 
 	for ix := 0; ix < 5; ix++ {
 		anchorIDPreImage := utils.RandomSlice(32)
@@ -156,8 +156,8 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 	}
 
 	for ix := 0; ix < 5; ix++ {
-		isDone := <-doneList[ix]
-		assert.True(t, isDone)
+		doneErr := <-doneList[ix]
+		assert.NoError(t, doneErr)
 		anchorID := commitDataList[ix].AnchorID
 		docRoot := commitDataList[ix].DocumentRoot
 		gotDocRoot, _, err := anchorRepo.GetAnchorData(anchorID)

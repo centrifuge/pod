@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -16,7 +18,7 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, invoiceCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, invoiceCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -37,51 +39,7 @@ func TestCoreAPI_DocumentInvoiceCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, invoiceCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
-	txID = getTransactionID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-	params["currency"] = "EUR"
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
-}
-
-func TestCoreAPI_DocumentPOCreateAndUpdate(t *testing.T) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-
-	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, poCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	params := map[string]interface{}{
-		"currency": "EUR",
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
-	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
-
-	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, poCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, invoiceCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -104,7 +62,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, genericCoreAPICreate([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -122,7 +80,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusCreated, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
 	txID = getTransactionID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
@@ -144,7 +102,7 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -198,63 +156,51 @@ func invoiceCoreAPIUpdate(collaborators []string) map[string]interface{} {
 	return payload
 }
 
-func poCoreAPICreate(collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
-		"scheme":       "purchase_order",
-		"write_access": collaborators,
-		"data": map[string]interface{}{
-			"number":         "12345",
-			"status":         "unpaid",
-			"total_amount":   "12.345",
-			"recipient":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-			"date_sent":      "2019-05-24T14:48:44.308854Z", // rfc3339nano
-			"date_confirmed": "2019-05-24T14:48:44Z",        // rfc3339
-			"currency":       "EUR",
-			"attachments": []map[string]interface{}{
-				{
-					"name":      "test",
-					"file_type": "pdf",
-					"size":      1000202,
-					"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-					"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
-				},
-			},
-		},
-		"attributes": createAttributes(),
-	}
-}
-
-func poCoreAPIUpdate(collaborators []string) map[string]interface{} {
-	payload := poCoreAPICreate(collaborators)
-	payload["attributes"] = updateAttributes()
-	return payload
-}
-
 func entityCoreAPICreate(identity string, collaborators []string) map[string]interface{} {
-	return map[string]interface{}{
+	p := map[string]interface{}{
 		"scheme":       "entity",
 		"write_access": collaborators,
-		"data": map[string]interface{}{
-			"identity":   identity,
-			"legal_name": "test company",
-			"contacts": []map[string]interface{}{
-				{
-					"name": "test name",
-				},
-			},
+		"attributes":   createAttributes(),
+	}
 
-			"payment_details": []map[string]interface{}{
-				{
-					"predefined": true,
-					"bank_payment_method": map[string]interface{}{
-						"identifier":  hexutil.Encode(utils.RandomSlice(32)),
-						"holder_name": "John Doe",
-					},
+	data := map[string]interface{}{
+		"legal_name": "test company",
+		"contacts": []map[string]interface{}{
+			{
+				"name": "test name",
+			},
+		},
+
+		"payment_details": []map[string]interface{}{
+			{
+				"predefined": true,
+				"bank_payment_method": map[string]interface{}{
+					"identifier":  hexutil.Encode(utils.RandomSlice(32)),
+					"holder_name": "John Doe",
 				},
 			},
 		},
-		"attributes": createAttributes(),
 	}
+
+	if identity != "" {
+		data["identity"] = identity
+	}
+
+	p["data"] = data
+	return p
+}
+
+func entityCoreAPIUpdate(collabs []string) map[string]interface{} {
+	p := map[string]interface{}{
+		"scheme":       "entity",
+		"write_access": collabs,
+		"data": map[string]interface{}{
+			"legal_name": "updated company",
+		},
+		"attributes": updateAttributes(),
+	}
+
+	return p
 }
 
 func genericCoreAPICreate(collaborators []string) map[string]interface{} {
@@ -272,25 +218,33 @@ func genericCoreAPIUpdate(collaborators []string) map[string]interface{} {
 	return payload
 }
 
-func createAttributes() map[string]map[string]string {
-	return map[string]map[string]string{
-		"string_test": {
-			"type":  "string",
-			"value": "hello, world",
+func createAttributes() coreapi.AttributeMapRequest {
+	dec, _ := documents.NewDecimal("100001.002")
+	return coreapi.AttributeMapRequest{
+		"string_test": coreapi.AttributeRequest{
+			Type:  "string",
+			Value: "hello, world",
+		},
+		"monetary_test": coreapi.AttributeRequest{
+			Type: "monetary",
+			MonetaryValue: &coreapi.MonetaryValue{
+				Value: dec,
+				ID:    "USD",
+			},
 		},
 	}
 }
 
-func updateAttributes() map[string]map[string]string {
-	return map[string]map[string]string{
-		"decimal_test": {
-			"type":  "decimal",
-			"value": "100.001",
+func updateAttributes() coreapi.AttributeMapRequest {
+	return coreapi.AttributeMapRequest{
+		"decimal_test": coreapi.AttributeRequest{
+			Type:  "decimal",
+			Value: "100.001",
 		},
 	}
 }
 
-func allAttributes() map[string]map[string]string {
+func allAttributes() coreapi.AttributeMapRequest {
 	attrs := createAttributes()
 	for k, v := range updateAttributes() {
 		attrs[k] = v

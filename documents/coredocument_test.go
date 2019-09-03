@@ -16,10 +16,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -33,8 +33,8 @@ import (
 )
 
 var ctx map[string]interface{}
-var ConfigService config.Service
 var cfg config.Configuration
+var did = testingidentity.GenerateRandomDID()
 
 func TestMain(m *testing.M) {
 	ctx = make(map[string]interface{})
@@ -54,13 +54,12 @@ func TestMain(m *testing.M) {
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	ConfigService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
+	cfg.Set("identityId", did.String())
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
@@ -184,27 +183,27 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 	did1 := testingidentity.GenerateRandomDID()
 
 	// wrong granteeID format
-	at := &documentpb.AccessTokenParams{
+	at := AccessTokenParams{
 		Grantee:            "random string",
 		DocumentIdentifier: id,
 	}
-	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
 	assert.Error(t, err)
 
 	// wrong docID
-	at = &documentpb.AccessTokenParams{
+	at = AccessTokenParams{
 		Grantee:            did1.String(),
 		DocumentIdentifier: "random string",
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
 	assert.Error(t, err)
 
 	// correct access token params
-	at = &documentpb.AccessTokenParams{
+	at = AccessTokenParams{
 		Grantee:            did1.String(),
 		DocumentIdentifier: id,
 	}
-	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), *at)
+	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
 	assert.NoError(t, err)
 
 	token := ncd.Document.AccessTokens[0]
@@ -274,6 +273,64 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators, 2)
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[0], c3[:])
 	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c4[:])
+}
+
+func TestCoreDocument_Patch(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	// not in allowed status error
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+	ncd, err := cd.Patch(nil, CollaboratorsAccess{}, nil)
+	assert.Error(t, err)
+	assert.Nil(t, ncd)
+
+	cd, err = newCoreDocument()
+	assert.NoError(t, err)
+	h := sha256.New()
+	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
+	var expectedCurrentVersion []byte
+	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
+	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
+	c1 := testingidentity.GenerateRandomDID()
+	c2 := testingidentity.GenerateRandomDID()
+	attr, err := NewStringAttribute("test", AttrString, "value")
+	assert.NoError(t, err)
+	attrs := map[AttrKey]Attribute{
+		attr.Key: attr,
+	}
+
+	ncd, err = cd.Patch(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
+	assert.NoError(t, err)
+	assert.NotNil(t, ncd)
+	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
+	assert.Equal(t, cd.NextVersion(), ncd.NextVersion())
+	collabs, err := ncd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, collabs.ReadCollaborators, 2)
+	assert.Equal(t, c1, collabs.ReadCollaborators[0])
+	assert.Len(t, ncd.Attributes, 1)
+	assert.Equal(t, ncd.Attributes[attr.Key].Value, attr.Value)
+
+	// Override existing collaborators and attribute
+	c3 := testingidentity.GenerateRandomDID()
+	attr, err = NewStringAttribute("test1", AttrString, "value1")
+	assert.NoError(t, err)
+	attrs = map[AttrKey]Attribute{
+		attr.Key: attr,
+	}
+	oncd, err := ncd.Patch(nil, CollaboratorsAccess{[]identity.DID{c3}, nil}, attrs)
+	assert.NoError(t, err)
+	assert.NotNil(t, oncd)
+	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
+	assert.Equal(t, cd.NextVersion(), ncd.NextVersion())
+	collabs, err = oncd.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, collabs.ReadCollaborators, 1)
+	assert.Equal(t, c3, collabs.ReadCollaborators[0])
+	assert.Len(t, oncd.Attributes, 1)
+	assert.Equal(t, oncd.Attributes[attr.Key].Value, attr.Value)
 }
 
 func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
@@ -417,7 +474,8 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	h := sha256.New()
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	testTree := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
 	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
 	compactProps := [][]byte{props[0].Compact, props[1].Compact}
 	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
@@ -434,9 +492,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
-	_, err = cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
 	assert.NoError(t, err)
 
 	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
@@ -449,22 +505,22 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		{
 			"prefix.sample_field",
 			false,
-			3,
+			2,
 		},
 		{
 			CDTreePrefix + ".document_identifier",
 			true,
-			6,
+			5,
 		},
 		{
 			"prefix.sample_field2",
 			false,
-			3,
+			2,
 		},
 		{
 			CDTreePrefix + ".next_version",
 			true,
-			6,
+			5,
 		},
 	}
 	for _, test := range tests {
@@ -485,7 +541,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 				assert.NoError(t, err)
 				assert.True(t, valid)
 			}
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, docRoot, h)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, signingRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		})
@@ -638,7 +694,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	attr, err := NewAttribute(label, AttrString, value)
+	attr, err := NewStringAttribute(label, AttrString, value)
 	assert.NoError(t, err)
 	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true, nil, attr)
 	assert.NoError(t, err)
@@ -658,7 +714,7 @@ func TestCoreDocument_Attribute(t *testing.T) {
 
 	// update
 	nvalue := "2000"
-	attr, err = NewAttribute(label, AttrDecimal, nvalue)
+	attr, err = NewStringAttribute(label, AttrDecimal, nvalue)
 	assert.NoError(t, err)
 	cd, err = cd.AddAttributes(CollaboratorsAccess{}, true, nil, attr)
 	assert.NoError(t, err)
@@ -691,7 +747,7 @@ func TestCoreDocument_SetUsedAnchorRepoAddress(t *testing.T) {
 }
 
 func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
-	oldCAttrs := map[string]*documentpb.Attribute{
+	oldCAttrs := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().UTC().Format(time.RFC3339),
@@ -718,7 +774,7 @@ func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 		},
 	}
 
-	updates := map[string]*documentpb.Attribute{
+	updates := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
@@ -750,11 +806,8 @@ func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 		},
 	}
 
-	oldAttrs, err := FromClientAttributes(oldCAttrs)
-	assert.NoError(t, err)
-
-	newAttrs, err := FromClientAttributes(updates)
-	assert.NoError(t, err)
+	oldAttrs := toAttrsMap(t, oldCAttrs)
+	newAttrs := toAttrsMap(t, updates)
 
 	newPattrs, err := toProtocolAttributes(newAttrs)
 	assert.NoError(t, err)
@@ -774,7 +827,7 @@ func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
 }
 
 func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
-	updates := map[string]*documentpb.Attribute{
+	updates := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
@@ -806,9 +859,7 @@ func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
 		},
 	}
 
-	newAttrs, err := FromClientAttributes(updates)
-	assert.NoError(t, err)
-
+	newAttrs := toAttrsMap(t, updates)
 	newPattrs, err := toProtocolAttributes(newAttrs)
 	assert.NoError(t, err)
 
@@ -820,7 +871,7 @@ func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
 }
 
 func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
-	oldCAttrs := map[string]*documentpb.Attribute{
+	oldCAttrs := map[string]attribute{
 		"time_test": {
 			Type:  AttrTimestamp.String(),
 			Value: time.Now().UTC().Format(time.RFC3339),
@@ -847,9 +898,7 @@ func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
 		},
 	}
 
-	oldAttrs, err := FromClientAttributes(oldCAttrs)
-	assert.NoError(t, err)
-
+	oldAttrs := toAttrsMap(t, oldCAttrs)
 	oldPattrs, err := toProtocolAttributes(oldAttrs)
 	assert.NoError(t, err)
 
@@ -865,4 +914,21 @@ func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, upattrs, 0)
 	assert.Len(t, uattrs, 0)
+}
+
+func TestCoreDocument_Status(t *testing.T) {
+	cd, err := NewCoreDocument(nil, CollaboratorsAccess{}, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.GetStatus(), Pending)
+
+	// set status to Committed
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+	assert.Equal(t, cd.GetStatus(), Committed)
+
+	// try to update status to Committing
+	err = cd.SetStatus(Committing)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrCDStatus, err))
+	assert.Equal(t, cd.GetStatus(), Committed)
 }

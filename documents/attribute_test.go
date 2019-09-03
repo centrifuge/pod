@@ -4,6 +4,7 @@ package documents
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -108,7 +109,7 @@ func TestNewAttribute(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			attr, err := NewAttribute(test.readableKey, test.attrType, test.value)
+			attr, err := NewStringAttribute(test.readableKey, test.attrType, test.value)
 			if test.errs {
 				assert.Error(t, err)
 				assert.Equal(t, test.errStr, err.Error())
@@ -179,7 +180,12 @@ func TestAttrValFromString(t *testing.T) {
 			time.Now().UTC().Format(time.RFC3339),
 			false,
 		},
-
+		{
+			"timestamp_nano",
+			AttrTimestamp,
+			time.Now().UTC().Format(time.RFC3339Nano),
+			false,
+		},
 		{
 			"unknown type",
 			AttributeType("some type"),
@@ -260,4 +266,50 @@ func TestNewSignedAttribute(t *testing.T) {
 	assert.Equal(t, signature, attr.Value.Signed.Signature)
 	acc.AssertExpectations(t)
 	model.AssertExpectations(t)
+}
+
+func TestNewMonetaryAttribute(t *testing.T) {
+	dec, err := NewDecimal("1001.1001")
+	assert.NoError(t, err)
+
+	// empty label
+	_, err = NewMonetaryAttribute("", dec, nil, "")
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
+
+	// monetary ID exceeded length
+	label := "invoice_amount"
+	chainID := []byte{1}
+	idd := "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a29f8f72aa9304c8b593d555f12ef6589cc3a579a2" // 40 bytes
+	_, err = NewMonetaryAttribute(label, dec, chainID, idd)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrWrongAttrFormat, err))
+
+	// success fiat
+	idd = "USD"
+	attr, err := NewMonetaryAttribute(label, dec, chainID, idd)
+	assert.NoError(t, err)
+	assert.Equal(t, AttrMonetary, attr.Value.Type)
+	attrKey, err := AttrKeyFromLabel(label)
+	assert.NoError(t, err)
+	assert.Equal(t, attrKey, attr.Key)
+	assert.Equal(t, []byte(idd), attr.Value.Monetary.ID)
+	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
+	assert.Equal(t, "", attr.Value.Monetary.Type.String())
+	assert.Equal(t, fmt.Sprintf("%s %s@%s", dec.String(), idd, hexutil.Encode(chainID)), attr.Value.Monetary.String())
+
+	// success erc20
+	idd = "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2"
+	attr, err = NewMonetaryAttribute(label, dec, chainID, idd)
+	assert.NoError(t, err)
+	assert.Equal(t, AttrMonetary, attr.Value.Type)
+	attrKey, err = AttrKeyFromLabel(label)
+	assert.NoError(t, err)
+	assert.Equal(t, attrKey, attr.Key)
+	decIdd, err := hexutil.Decode(idd)
+	assert.NoError(t, err)
+	assert.Equal(t, decIdd, attr.Value.Monetary.ID)
+	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
+	assert.Equal(t, MonetaryToken, attr.Value.Monetary.Type)
+	assert.Equal(t, fmt.Sprintf("%s %s@%s", dec.String(), idd, hexutil.Encode(chainID)), attr.Value.Monetary.String())
 }

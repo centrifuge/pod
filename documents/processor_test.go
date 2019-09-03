@@ -30,6 +30,16 @@ type mockModel struct {
 	sigs []*coredocumentpb.Signature
 }
 
+func (m *mockModel) Scheme() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *mockModel) SetStatus(st Status) error {
+	args := m.Called(st)
+	return args.Error(0)
+}
+
 func (m *mockModel) NFTs() []*coredocumentpb.NFT {
 	args := m.Called()
 	dr, _ := args.Get(0).([]*coredocumentpb.NFT)
@@ -240,8 +250,7 @@ func TestDefaultProcessor_RequestSignatures(t *testing.T) {
 
 	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
-	did, err := self.GetIdentityID()
-	assert.NoError(t, err)
+	did := self.GetIdentityID()
 	sr := utils.RandomSlice(32)
 	sig, err := self.SignMsg(sr)
 	assert.NoError(t, err)
@@ -334,8 +343,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
-	did, err := self.GetIdentityID()
-	assert.NoError(t, err)
+	did := self.GetIdentityID()
 	sr := utils.RandomSlice(32)
 	sig, err := self.SignMsg(sr)
 	assert.NoError(t, err)
@@ -392,9 +400,9 @@ type mockRepo struct {
 	anchors.AnchorRepository
 }
 
-func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan bool, err error) {
+func (m mockRepo) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan error, err error) {
 	args := m.Called(anchorID, documentRoot, documentProof)
-	c, _ := args.Get(0).(chan bool)
+	c, _ := args.Get(0).(chan error)
 	return c, args.Error(1)
 }
 
@@ -411,7 +419,7 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
-	did, err := self.GetIdentityID()
+	did := self.GetIdentityID()
 	assert.NoError(t, err)
 	sr := utils.RandomSlice(32)
 	sig, err := self.SignMsg(sr)
@@ -490,8 +498,8 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, sr, tm).Return(nil).Once()
 	dp.identityService = srv
 	repo := mockRepo{}
-	ch := make(chan bool, 1)
-	ch <- true
+	ch := make(chan error, 1)
+	ch <- nil
 	repo.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
 	dp.anchorRepository = repo
 	err = dp.AnchorDocument(ctxh, model)
@@ -508,7 +516,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	self, err := contextutil.Account(ctxh)
 	assert.NoError(t, err)
-	didb, err := self.GetIdentityID()
+	didb := self.GetIdentityID()
 	assert.NoError(t, err)
 	did1, err := identity.NewDIDFromBytes(didb)
 	assert.NoError(t, err)

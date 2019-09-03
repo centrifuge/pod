@@ -14,7 +14,7 @@ const (
 	// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
 	BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
 
-	// ErrAnchorRepoNotInitialised is a sentinal error when repository is not initialised
+	// ErrAnchorRepoNotInitialised is a sentinel error when repository is not initialised
 	ErrAnchorRepoNotInitialised = errors.Error("anchor repository not initialised")
 )
 

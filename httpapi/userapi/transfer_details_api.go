@@ -27,7 +27,7 @@ var log = logging.Logger("user-api")
 // @summary Creates a new transfer detail extension on a document and anchors it.
 // @description Creates a new transfer detail extension on a document and anchors it.
 // @id create_transfer_detail
-// @tags TransferDetail
+// @tags Transfer Details
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body userapi.CreateTransferDetailRequest true "Transfer Detail Create Request"
@@ -36,7 +36,7 @@ var log = logging.Logger("user-api")
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.TransferDetailResponse
+// @success 202 {object} userapi.TransferDetailResponse
 // @router /v1/documents/{document_id}/transfer_details [post]
 func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -62,7 +62,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	if request.Data.TransferID == "" {
 		request.Data.TransferID = extensions.NewAttributeSetID()
 	}
-	request.DocumentID = chi.URLParam(r, documentIDParam)
+	request.DocumentID = chi.URLParam(r, coreapi.DocumentIDParam)
 
 	payload, err := toTransferDetailCreatePayload(request)
 	if err != nil {
@@ -90,7 +90,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		Data:   payload.Data,
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 
@@ -98,7 +98,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @summary Updates a new transfer detail extension on a document and anchors it.
 // @description Updates a new transfer detail extension on a document and anchors it.
 // @id update_transfer_detail
-// @tags TransferDetail
+// @tags Transfer Details
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body userapi.UpdateTransferDetailRequest true "Transfer Detail Update Request"
@@ -108,7 +108,7 @@ func (h handler) CreateTransferDetail(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 201 {object} userapi.TransferDetailResponse
+// @success 202 {object} userapi.TransferDetailResponse
 // @router /v1/documents/{document_id}/transfer_details/{transfer_id} [put]
 func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -132,7 +132,7 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request.TransferID = chi.URLParam(r, transferIDParam)
-	request.DocumentID = chi.URLParam(r, documentIDParam)
+	request.DocumentID = chi.URLParam(r, coreapi.DocumentIDParam)
 	payload, err := toTransferDetailUpdatePayload(request)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -159,19 +159,20 @@ func (h handler) UpdateTransferDetail(w http.ResponseWriter, r *http.Request) {
 		Data:   payload.Data,
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
 
 // GetTransferDetail returns the latest version of transfer detail.
 // @summary Returns the latest version of the transfer detail.
 // @description Returns the latest version of the transfer detail.
-// @id get_transfer
-// @tags Documents
+// @id get_transfer_detail
+// @tags Transfer Details
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @param transfer_id path string true "Transfer Detail Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -182,7 +183,7 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -225,11 +226,12 @@ func (h handler) GetTransferDetail(w http.ResponseWriter, r *http.Request) {
 // GetTransferDetailList returns a list of the latest versions all transfer details on the document.
 // @summary Returns a list of the latest versions of all transfer details on the document.
 // @description Returns a list of the latest versions of all transfer details on the document.
-// @id get_transfer
-// @tags Documents
+// @id list_transfer_details
+// @tags Transfer Details
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
 // @produce json
+// @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
@@ -240,7 +242,7 @@ func (h handler) GetTransferDetailList(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	docID, err := hexutil.Decode(chi.URLParam(r, documentIDParam))
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

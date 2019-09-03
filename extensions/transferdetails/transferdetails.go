@@ -1,7 +1,7 @@
 package transferdetails
 
-// TransferDetailData is the default transfer details extension schema
-type TransferDetailData struct {
+// Data is the default transfer details extension schema
+type Data struct {
 	TransferID          string `json:"transfer_id,omitempty" attr:"bytes"`
 	SenderID            string `json:"sender_id,omitempty" attr:"bytes"`
 	RecipientID         string `json:"recipient_id,omitempty" attr:"bytes"`
@@ -20,22 +20,22 @@ type TransferDetailData struct {
 // CreateTransferDetailRequest holds the required fields to create a new transfer agreement
 type CreateTransferDetailRequest struct {
 	DocumentID string
-	Data       TransferDetailData
+	Data       Data
 }
 
 // UpdateTransferDetailRequest holds the required fields to update a transfer agreement
 type UpdateTransferDetailRequest struct {
 	DocumentID string
 	TransferID string
-	Data       TransferDetailData
+	Data       Data
 }
 
 // TransferDetail holds a TransferDetail response
 type TransferDetail struct {
-	Data TransferDetailData
+	Data Data
 }
 
 // TransferDetailList holds a list of TransferDetails
 type TransferDetailList struct {
-	Data []TransferDetailData
+	Data []Data
 }

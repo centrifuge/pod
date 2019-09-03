@@ -104,7 +104,7 @@ func GetPurposeByName(name string) Purpose {
 }
 
 // DID stores the identity address of the user
-type DID common.Address
+type DID [DIDLength]byte
 
 // DIDLength contains the length of a DID
 const DIDLength = common.AddressLength
@@ -211,10 +211,10 @@ type Service interface {
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
 	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan bool, err error)
+	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan error, err error)
 
-	// Execute creates the abi encoding an calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan bool, err error)
+	// Execute creates the abi encoding and calls the execute method on the identity contract
+	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan error, err error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error

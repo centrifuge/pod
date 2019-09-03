@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -11,19 +12,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	clientinvoicepb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/invoice"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/jinzhu/copier"
 )
 
 const (
 	prefix string = "invoice"
 
-	scheme = prefix
+	// Scheme is the scheme used by invoice documents
+	Scheme = prefix
 
 	// ErrInvoiceInvalidData sentinel error when data unmarshal is failed.
 	ErrInvoiceInvalidData = errors.Error("invalid invoice data")
@@ -75,15 +77,15 @@ type Data struct {
 	ShipToZipcode            string                        `json:"ship_to_zipcode"`
 	ShipToState              string                        `json:"ship_to_state"`
 	ShipToCountry            string                        `json:"ship_to_country"`
-	Currency                 string                        `json:"currency"`     // ISO currency code
-	GrossAmount              *documents.Decimal            `json:"gross_amount"` // invoice amount including tax
-	NetAmount                *documents.Decimal            `json:"net_amount"`   // invoice amount excluding tax
-	TaxAmount                *documents.Decimal            `json:"tax_amount"`
-	TaxRate                  *documents.Decimal            `json:"tax_rate"`
+	Currency                 string                        `json:"currency"`                                    // ISO currency code
+	GrossAmount              *documents.Decimal            `json:"gross_amount" swaggertype:"primitive,string"` // invoice amount including tax
+	NetAmount                *documents.Decimal            `json:"net_amount" swaggertype:"primitive,string"`   // invoice amount excluding tax
+	TaxAmount                *documents.Decimal            `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate                  *documents.Decimal            `json:"tax_rate" swaggertype:"primitive,string"`
 	TaxOnLineLevel           bool                          `json:"tax_on_line_level"`
-	Recipient                *identity.DID                 `json:"recipient,string"` // centrifuge ID of the recipient
-	Sender                   *identity.DID                 `json:"sender,string"`    // centrifuge ID of the sender
-	Payee                    *identity.DID                 `json:"payee,string"`     // centrifuge ID of the payee
+	Recipient                *identity.DID                 `json:"recipient,string" swaggertype:"primitive,string"` // centrifuge ID of the recipient
+	Sender                   *identity.DID                 `json:"sender,string" swaggertype:"primitive,string"`    // centrifuge ID of the sender
+	Payee                    *identity.DID                 `json:"payee,string" swaggertype:"primitive,string"`     // centrifuge ID of the payee
 	Comment                  string                        `json:"comment"`
 	ShippingTerms            string                        `json:"shipping_terms"`
 	RequesterEmail           string                        `json:"requester_email"`
@@ -92,10 +94,10 @@ type Data struct {
 	IsCreditNote             bool                          `json:"is_credit_note"`
 	CreditNoteInvoiceNumber  string                        `json:"credit_note_invoice_number"`
 	CreditForInvoiceDate     *time.Time                    `json:"credit_for_invoice_date"`
-	DateDue                  *time.Time                    `json:"date_due"`
-	DatePaid                 *time.Time                    `json:"date_paid"`
-	DateUpdated              *time.Time                    `json:"date_updated"`
-	DateCreated              *time.Time                    `json:"date_created"`
+	DateDue                  *time.Time                    `json:"date_due" swaggertype:"primitive,string"`
+	DatePaid                 *time.Time                    `json:"date_paid" swaggertype:"primitive,string"`
+	DateUpdated              *time.Time                    `json:"date_updated" swaggertype:"primitive,string"`
+	DateCreated              *time.Time                    `json:"date_created" swaggertype:"primitive,string"`
 	Attachments              []*documents.BinaryAttachment `json:"attachments"`
 	LineItems                []*LineItem                   `json:"line_items"`
 	PaymentDetails           []*documents.PaymentDetails   `json:"payment_details"`
@@ -113,14 +115,14 @@ type LineItem struct {
 	ItemNumber              string             `json:"item_number"`
 	Description             string             `json:"description"`
 	SenderPartNo            string             `json:"sender_part_no"`
-	PricePerUnit            *documents.Decimal `json:"price_per_unit"`
-	Quantity                *documents.Decimal `json:"quantity"`
+	PricePerUnit            *documents.Decimal `json:"price_per_unit" swaggertype:"primitive,string"`
+	Quantity                *documents.Decimal `json:"quantity" swaggertype:"primitive,string"`
 	UnitOfMeasure           string             `json:"unit_of_measure"`
-	NetWeight               *documents.Decimal `json:"net_weight"`
-	TaxAmount               *documents.Decimal `json:"tax_amount"`
-	TaxRate                 *documents.Decimal `json:"tax_rate"`
-	TaxCode                 *documents.Decimal `json:"tax_code"`
-	TotalAmount             *documents.Decimal `json:"total_amount"` // the total amount of the line item
+	NetWeight               *documents.Decimal `json:"net_weight" swaggertype:"primitive,string"`
+	TaxAmount               *documents.Decimal `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate                 *documents.Decimal `json:"tax_rate" swaggertype:"primitive,string"`
+	TaxCode                 *documents.Decimal `json:"tax_code" swaggertype:"primitive,string"`
+	TotalAmount             *documents.Decimal `json:"total_amount" swaggertype:"primitive,string"` // the total amount of the line item
 	PurchaseOrderNumber     string             `json:"purchase_order_number"`
 	PurchaseOrderItemNumber string             `json:"purchase_order_item_number"`
 	DeliveryNoteNumber      string             `json:"delivery_note_number"`
@@ -130,96 +132,10 @@ type LineItem struct {
 type TaxItem struct {
 	ItemNumber        string             `json:"item_number"`
 	InvoiceItemNumber string             `json:"invoice_item_number"`
-	TaxAmount         *documents.Decimal `json:"tax_amount"`
-	TaxRate           *documents.Decimal `json:"tax_rate"`
-	TaxCode           *documents.Decimal `json:"tax_code"`
-	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount"`
-}
-
-// getClientData returns the client data from the invoice model
-func (i *Invoice) getClientData() (*clientinvoicepb.InvoiceData, error) {
-	d := i.Data
-	decs := documents.DecimalsToStrings(d.GrossAmount, d.NetAmount, d.TaxAmount, d.TaxRate)
-	dids := identity.DIDsToStrings(d.Recipient, d.Sender, d.Payee)
-
-	pd, err := documents.ToClientPaymentDetails(d.PaymentDetails)
-	if err != nil {
-		return nil, err
-	}
-
-	pts, err := timeutils.ToProtoTimestamps(d.CreditForInvoiceDate, d.DateDue, d.DatePaid, d.DateCreated, d.DateUpdated)
-	if err != nil {
-		return nil, err
-	}
-
-	return &clientinvoicepb.InvoiceData{
-		Number:                   d.Number,
-		Status:                   d.Status,
-		SenderInvoiceId:          d.SenderInvoiceID,
-		RecipientInvoiceId:       d.RecipientInvoiceID,
-		SenderCompanyName:        d.SenderCompanyName,
-		SenderContactPersonName:  d.SenderContactPersonName,
-		SenderStreet1:            d.SenderStreet1,
-		SenderStreet2:            d.SenderStreet2,
-		SenderCity:               d.SenderCity,
-		SenderZipcode:            d.SenderZipcode,
-		SenderState:              d.SenderState,
-		SenderCountry:            d.SenderCountry,
-		BillToCompanyName:        d.BillToCompanyName,
-		BillToContactPersonName:  d.BillToContactPersonName,
-		BillToStreet1:            d.BillToStreet1,
-		BillToStreet2:            d.BillToStreet2,
-		BillToCity:               d.BillToCity,
-		BillToZipcode:            d.BillToZipcode,
-		BillToState:              d.BillToState,
-		BillToCountry:            d.BillToCountry,
-		BillToLocalTaxId:         d.BillToLocalTaxID,
-		BillToVatNumber:          d.BillToVatNumber,
-		RemitToCompanyName:       d.RemitToCompanyName,
-		RemitToContactPersonName: d.RemitToContactPersonName,
-		RemitToStreet1:           d.RemitToStreet1,
-		RemitToStreet2:           d.RemitToStreet2,
-		RemitToCity:              d.RemitToCity,
-		RemitToCountry:           d.RemitToCountry,
-		RemitToState:             d.RemitToState,
-		RemitToZipcode:           d.RemitToZipcode,
-		RemitToLocalTaxId:        d.RemitToLocalTaxID,
-		RemitToTaxCountry:        d.RemitToTaxCountry,
-		RemitToVatNumber:         d.RemitToVatNumber,
-		ShipToCompanyName:        d.ShipToCompanyName,
-		ShipToContactPersonName:  d.ShipToContactPersonName,
-		ShipToStreet1:            d.ShipToStreet1,
-		ShipToStreet2:            d.ShipToStreet2,
-		ShipToCity:               d.ShipToCity,
-		ShipToState:              d.ShipToState,
-		ShipToCountry:            d.ShipToCountry,
-		ShipToZipcode:            d.ShipToZipcode,
-		Currency:                 d.Currency,
-		GrossAmount:              decs[0],
-		NetAmount:                decs[1],
-		TaxAmount:                decs[2],
-		TaxRate:                  decs[3],
-		TaxOnLineLevel:           d.TaxOnLineLevel,
-		Recipient:                dids[0],
-		Sender:                   dids[1],
-		Payee:                    dids[2],
-		Comment:                  d.Comment,
-		ShippingTerms:            d.ShippingTerms,
-		RequesterEmail:           d.RequesterEmail,
-		RequesterName:            d.RequesterName,
-		DeliveryNumber:           d.DeliveryNumber,
-		IsCreditNote:             d.IsCreditNote,
-		CreditNoteInvoiceNumber:  d.CreditNoteInvoiceNumber,
-		CreditForInvoiceDate:     pts[0],
-		DateDue:                  pts[1],
-		DatePaid:                 pts[2],
-		DateCreated:              pts[3],
-		DateUpdated:              pts[4],
-		Attachments:              documents.ToClientAttachments(d.Attachments),
-		LineItems:                toClientLineItems(d.LineItems),
-		PaymentDetails:           pd,
-		TaxItems:                 toClientTaxItems(d.TaxItems),
-	}, nil
+	TaxAmount         *documents.Decimal `json:"tax_amount" swaggertype:"primitive,string"`
+	TaxRate           *documents.Decimal `json:"tax_rate" swaggertype:"primitive,string"`
+	TaxCode           *documents.Decimal `json:"tax_code" swaggertype:"primitive,string"`
+	TaxBaseAmount     *documents.Decimal `json:"tax_base_amount" swaggertype:"primitive,string"`
 }
 
 // createP2PProtobuf returns centrifuge protobuf specific invoiceData
@@ -320,140 +236,6 @@ func (i *Invoice) createP2PProtobuf() (data *invoicepb.InvoiceData, err error) {
 		TaxItems:                 ti,
 	}, nil
 
-}
-
-// InitInvoiceInput initialize the model based on the received parameters from the rest api call
-func (i *Invoice) InitInvoiceInput(payload *clientinvoicepb.InvoiceCreatePayload, self identity.DID) error {
-	err := i.initInvoiceFromData(payload.Data)
-	if err != nil {
-		return err
-	}
-
-	cs, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
-	if err != nil {
-		return err
-	}
-	cs.ReadWriteCollaborators = append(cs.ReadWriteCollaborators, self)
-
-	attrs, err := documents.FromClientAttributes(payload.Attributes)
-	if err != nil {
-		return err
-	}
-	cd, err := documents.NewCoreDocument(compactPrefix(), cs, attrs)
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	i.CoreDocument = cd
-	return nil
-}
-
-// initInvoiceFromData initialises invoice from invoiceData
-func (i *Invoice) initInvoiceFromData(data *clientinvoicepb.InvoiceData) error {
-	decs, err := documents.StringsToDecimals(data.GrossAmount, data.NetAmount, data.TaxAmount, data.TaxRate)
-	if err != nil {
-		return err
-	}
-
-	dids, err := identity.StringsToDIDs(data.Recipient, data.Sender, data.Payee)
-	if err != nil {
-		return err
-	}
-
-	atts, err := documents.FromClientAttachments(data.Attachments)
-	if err != nil {
-		return err
-	}
-
-	li, err := fromClientLineItems(data.LineItems)
-	if err != nil {
-		return err
-	}
-
-	pd, err := documents.FromClientPaymentDetails(data.PaymentDetails)
-	if err != nil {
-		return err
-	}
-
-	ti, err := fromClientTaxItems(data.TaxItems)
-	if err != nil {
-		return err
-	}
-
-	tms, err := timeutils.FromProtoTimestamps(data.CreditForInvoiceDate, data.DateDue, data.DatePaid, data.DateCreated, data.DateUpdated)
-	if err != nil {
-		return err
-	}
-
-	var d Data
-	d.Number = data.Number
-	d.Status = data.Status
-	d.SenderInvoiceID = data.SenderInvoiceId
-	d.RecipientInvoiceID = data.RecipientInvoiceId
-	d.SenderCompanyName = data.SenderCompanyName
-	d.SenderContactPersonName = data.SenderContactPersonName
-	d.SenderStreet1 = data.SenderStreet1
-	d.SenderStreet2 = data.SenderStreet2
-	d.SenderCity = data.SenderCity
-	d.SenderZipcode = data.SenderZipcode
-	d.SenderState = data.SenderState
-	d.SenderCountry = data.SenderCountry
-	d.BillToCompanyName = data.BillToCompanyName
-	d.BillToContactPersonName = data.BillToContactPersonName
-	d.BillToStreet1 = data.BillToStreet1
-	d.BillToStreet2 = data.BillToStreet2
-	d.BillToCity = data.BillToCity
-	d.BillToZipcode = data.BillToZipcode
-	d.BillToState = data.BillToState
-	d.BillToCountry = data.BillToCountry
-	d.BillToVatNumber = data.BillToVatNumber
-	d.BillToLocalTaxID = data.BillToLocalTaxId
-	d.RemitToCompanyName = data.RemitToCompanyName
-	d.RemitToContactPersonName = data.RemitToContactPersonName
-	d.RemitToStreet1 = data.RemitToStreet1
-	d.RemitToStreet2 = data.RemitToStreet2
-	d.RemitToCity = data.RemitToCity
-	d.RemitToZipcode = data.RemitToZipcode
-	d.RemitToState = data.RemitToState
-	d.RemitToCountry = data.RemitToCountry
-	d.RemitToVatNumber = data.RemitToVatNumber
-	d.RemitToLocalTaxID = data.RemitToLocalTaxId
-	d.RemitToTaxCountry = data.RemitToTaxCountry
-	d.ShipToCompanyName = data.ShipToCompanyName
-	d.ShipToContactPersonName = data.ShipToContactPersonName
-	d.ShipToStreet1 = data.ShipToStreet1
-	d.ShipToStreet2 = data.ShipToStreet2
-	d.ShipToCity = data.ShipToCity
-	d.ShipToZipcode = data.ShipToZipcode
-	d.ShipToState = data.ShipToState
-	d.ShipToCountry = data.ShipToCountry
-	d.Currency = data.Currency
-	d.GrossAmount = decs[0]
-	d.NetAmount = decs[1]
-	d.TaxAmount = decs[2]
-	d.TaxRate = decs[3]
-	d.TaxOnLineLevel = data.TaxOnLineLevel
-	d.Recipient = dids[0]
-	d.Sender = dids[1]
-	d.Payee = dids[2]
-	d.Comment = data.Comment
-	d.ShippingTerms = data.ShippingTerms
-	d.RequesterEmail = data.RequesterEmail
-	d.RequesterName = data.RequesterName
-	d.DeliveryNumber = data.DeliveryNumber
-	d.IsCreditNote = data.IsCreditNote
-	d.CreditNoteInvoiceNumber = data.CreditNoteInvoiceNumber
-	d.CreditForInvoiceDate = tms[0]
-	d.DateDue = tms[1]
-	d.DatePaid = tms[2]
-	d.DateCreated = tms[3]
-	d.DateUpdated = tms[4]
-	d.Attachments = atts
-	d.LineItems = li
-	d.PaymentDetails = pd
-	d.TaxItems = ti
-	i.Data = d
-	return nil
 }
 
 // loadFromP2PProtobuf  loads the invoice from centrifuge protobuf invoice data
@@ -638,7 +420,11 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if i.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-	t := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, err
+	}
+
 	err = t.AddLeavesFromDocument(invProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -664,22 +450,6 @@ func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err e
 // DocumentType returns the invoice document type.
 func (*Invoice) DocumentType() string {
 	return documenttypes.InvoiceDataTypeUrl
-}
-
-// PrepareNewVersion prepares new version from the old invoice.
-func (i *Invoice) PrepareNewVersion(old documents.Model, data *clientinvoicepb.InvoiceData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
-	err := i.initInvoiceFromData(data)
-	if err != nil {
-		return err
-	}
-
-	oldCD := old.(*Invoice).CoreDocument
-	i.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddNFT adds NFT to the Invoice.
@@ -795,24 +565,21 @@ func (i *Invoice) GetData() interface{} {
 }
 
 // loadData unmarshals json blob to Data.
-func (i *Invoice) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
+func loadData(data []byte, v *Data) error {
+	err := json.Unmarshal(data, v)
 	if err != nil {
 		return err
 	}
 
-	i.Data = d
 	return nil
 }
 
-// unpackFromCreatePayload unpacks the invoice data from the Payload.
-func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := i.loadData(payload.Data); err != nil {
+// DeriveFromCreatePayload unpacks the invoice data from the Payload.
+func (i *Invoice) DeriveFromCreatePayload(_ context.Context, payload documents.CreatePayload) error {
+	if err := loadData(payload.Data, &i.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
-	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
@@ -822,9 +589,10 @@ func (i *Invoice) unpackFromCreatePayload(did identity.DID, payload documents.Cr
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.UpdatePayload) error {
-	if err := i.loadData(payload.Data); err != nil {
+// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
+// deprecated
+func (i *Invoice) unpackFromUpdatePayloadOld(old *Invoice, payload documents.UpdatePayload) error {
+	if err := loadData(payload.Data, &i.Data); err != nil {
 		return errors.NewTypedError(ErrInvoiceInvalidData, err)
 	}
 
@@ -837,7 +605,57 @@ func (i *Invoice) unpackFromUpdatePayload(old *Invoice, payload documents.Update
 	return nil
 }
 
-// Scheme returns the invoice scheme.
+// DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
+func (i *Invoice) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	d, err := i.patch(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	ncd, err := i.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Invoice{
+		Data:         d,
+		CoreDocument: ncd,
+	}, nil
+}
+
+// patch merges payload into model data
+func (i *Invoice) patch(payload documents.UpdatePayload) (Data, error) {
+	var d Data
+	err := copier.Copy(&d, &i.Data)
+	if err != nil {
+		return d, err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return Data{}, errors.NewTypedError(ErrInvoiceInvalidData, err)
+	}
+
+	return d, nil
+}
+
+// Patch merges payload data into model
+func (i *Invoice) Patch(payload documents.UpdatePayload) error {
+	d, err := i.patch(payload)
+	if err != nil {
+		return err
+	}
+
+	ncd, err := i.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	i.Data = d
+	i.CoreDocument = ncd
+	return nil
+}
+
+// Scheme returns the invoice Scheme.
 func (i *Invoice) Scheme() string {
-	return scheme
+	return Scheme
 }

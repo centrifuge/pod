@@ -2,6 +2,7 @@ package entityrelationship
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -10,107 +11,54 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/protobufs/gen/go/document"
-	entitypb2 "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/jinzhu/copier"
 )
 
 const (
 	prefix string = "entity_relationship"
-	scheme        = prefix
+
+	// Scheme to identify entity relationship
+	Scheme = prefix
+
+	// ErrEntityRelationshipUpdate is a sentinel error for update failure.
+	ErrEntityRelationshipUpdate = errors.Error("Entity relationship doesn't support updates.")
 )
 
 // tree prefixes for specific documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 4, 0, 0} }
 
+// Data represents entity relationship data
+type Data struct {
+	// Owner of the relationship
+	OwnerIdentity *identity.DID `json:"owner_identity" swaggertype:"primitive,string"`
+	// Entity identifier
+	EntityIdentifier byteutils.HexBytes `json:"entity_identifier" swaggertype:"primitive,string"`
+	// identity which will be granted access
+	TargetIdentity *identity.DID `json:"target_identity" swaggertype:"primitive,string"`
+}
+
 // EntityRelationship implements the documents.Model and keeps track of entity-relationship related fields and state.
 type EntityRelationship struct {
 	*documents.CoreDocument
 
-	// owner of the relationship
-	OwnerIdentity *identity.DID
-	// Entity identifier
-	EntityIdentifier []byte
-	// identity which will be granted access
-	TargetIdentity *identity.DID
-}
-
-// getRelationshipData returns the entity relationship data from the entity relationship model
-func (e *EntityRelationship) getRelationshipData() *entitypb2.RelationshipData {
-	dids := identity.DIDsToStrings(e.OwnerIdentity, e.TargetIdentity)
-	eID := hexutil.Encode(e.EntityIdentifier)
-	return &entitypb2.RelationshipData{
-		OwnerIdentity:    dids[0],
-		TargetIdentity:   dids[1],
-		EntityIdentifier: eID,
-	}
+	Data Data `json:"data"`
 }
 
 // createP2PProtobuf returns Centrifuge protobuf-specific RelationshipData.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
-	dids := identity.DIDsToBytes(e.OwnerIdentity, e.TargetIdentity)
+	d := e.Data
+	dids := identity.DIDsToBytes(d.OwnerIdentity, d.TargetIdentity)
 	return &entitypb.EntityRelationship{
 		OwnerIdentity:    dids[0],
 		TargetIdentity:   dids[1],
-		EntityIdentifier: e.EntityIdentifier,
+		EntityIdentifier: d.EntityIdentifier,
 	}
-}
-
-// InitEntityRelationshipInput initialize the model based on the received parameters from the rest api call
-func (e *EntityRelationship) InitEntityRelationshipInput(ctx context.Context, entityID string, data *entitypb2.RelationshipData) error {
-	if err := e.initEntityRelationshipFromData(data); err != nil {
-		return err
-	}
-
-	params := documentpb.AccessTokenParams{
-		Grantee:            data.TargetIdentity,
-		DocumentIdentifier: entityID,
-	}
-
-	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	e.CoreDocument = cd
-	return nil
-}
-
-// PrepareNewVersion prepares new version from the old entity.
-func (e *EntityRelationship) PrepareNewVersion(old documents.Model, data *entitypb2.RelationshipData, collaborators []string) error {
-	err := e.initEntityRelationshipFromData(data)
-	if err != nil {
-		return err
-	}
-
-	oldCD := old.(*EntityRelationship).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), documents.CollaboratorsAccess{}, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// initEntityRelationshipFromData initialises an EntityRelationship from RelationshipData.
-func (e *EntityRelationship) initEntityRelationshipFromData(data *entitypb2.RelationshipData) error {
-	dids, err := identity.StringsToDIDs(data.OwnerIdentity, data.TargetIdentity)
-	if err != nil {
-		return err
-	}
-	eID, err := hexutil.Decode(data.EntityIdentifier)
-	if err != nil {
-		return err
-	}
-	e.OwnerIdentity = dids[0]
-	e.TargetIdentity = dids[1]
-	e.EntityIdentifier = eID
-	return nil
 }
 
 // loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf.
@@ -119,9 +67,11 @@ func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.En
 	if err != nil {
 		return err
 	}
-	e.OwnerIdentity = dids[0]
-	e.TargetIdentity = dids[1]
-	e.EntityIdentifier = entityRelationship.EntityIdentifier
+	var d Data
+	d.OwnerIdentity = dids[0]
+	d.TargetIdentity = dids[1]
+	d.EntityIdentifier = entityRelationship.EntityIdentifier
+	e.Data = d
 	return nil
 }
 
@@ -198,7 +148,11 @@ func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, e
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, err
+	}
+
 	if err := t.AddLeavesFromDocument(eProto); err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
 	}
@@ -272,7 +226,7 @@ func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, iden
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity relationship but got %T", updated))
 	}
 
-	if !e.OwnerIdentity.Equal(identity) || !newEntityRelationship.OwnerIdentity.Equal(identity) {
+	if !e.Data.OwnerIdentity.Equal(identity) || !newEntityRelationship.Data.OwnerIdentity.Equal(identity) {
 		return documents.ErrIdentityNotOwner
 	}
 	return nil
@@ -302,10 +256,81 @@ func (e *EntityRelationship) DeleteAttribute(key documents.AttrKey, prepareNewVe
 
 // GetData returns entity relationship data
 func (e *EntityRelationship) GetData() interface{} {
-	return nil
+	return e.Data
 }
 
 // Scheme returns the entity relationship scheme.
 func (e *EntityRelationship) Scheme() string {
-	return scheme
+	return Scheme
+}
+
+// loadData unmarshals json blob to Data.
+func loadData(data []byte, d *Data) error {
+	err := json.Unmarshal(data, d)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeriveFromCreatePayload unpacks the entity relationship data from the Payload.
+func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payload documents.CreatePayload) error {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
+		return err
+	}
+
+	params := documents.AccessTokenParams{
+		Grantee:            d.TargetIdentity.String(),
+		DocumentIdentifier: d.EntityIdentifier.String(),
+	}
+
+	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
+	if err != nil {
+		return errors.New("failed to init core document: %v", err)
+	}
+
+	e.CoreDocument = cd
+	e.Data = d
+	return nil
+}
+
+// DeriveFromUpdatePayload is not implemented for entity relationship.
+func (e *EntityRelationship) DeriveFromUpdatePayload(context.Context, documents.UpdatePayload) (documents.Model, error) {
+	return nil, ErrEntityRelationshipUpdate
+}
+
+// Patch merges payload data into Document.
+func (e *EntityRelationship) Patch(payload documents.UpdatePayload) error {
+	var d Data
+	err := copier.Copy(&d, &e.Data)
+	if err != nil {
+		return err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return err
+	}
+
+	ncd, err := e.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	e.Data = d
+	e.CoreDocument = ncd
+	return nil
+}
+
+// revokeRelationship revokes a relationship by deleting the access token in the Entity
+func (e *EntityRelationship) revokeRelationship(old *EntityRelationship, grantee identity.DID) error {
+	e.Data = old.Data
+	cd, err := old.DeleteAccessToken(grantee)
+	if err != nil {
+		return err
+	}
+
+	e.CoreDocument = cd
+	return nil
 }

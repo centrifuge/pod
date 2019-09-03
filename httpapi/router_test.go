@@ -3,12 +3,18 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
+	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/stretchr/testify/assert"
@@ -66,8 +72,26 @@ func TestRouter_auth(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
-	r := Router(nil, nil, new(testingnfts.MockNFTService), nil, nil, nil)
+	cctx := map[string]interface{}{
+		coreapi.BootstrappedCoreAPIService:  coreapi.Service{},
+		userapi.BootstrappedUserAPIService:  userapi.Service{},
+		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
+		bootstrap.BootstrappedConfig:        new(testingconfig.MockConfig),
+		config.BootstrappedConfigStorage:    new(configstore.MockService),
+		v2.BootstrappedService:              v2.Service{},
+	}
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
+	r, err := Router(ctx)
+	assert.NoError(t, err)
 	assert.Len(t, r.Middlewares(), 3)
-	assert.Len(t, r.Routes(), 2)
-	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 12)
+	assert.Len(t, r.Routes(), 4)
+	// beta routes
+	assert.Len(t, r.Routes()[0].SubRoutes.Routes(), 3)
+	// health pattern
+	assert.Equal(t, "/ping", r.Routes()[1].Pattern)
+	// v1 routes
+	assert.Len(t, r.Routes()[2].SubRoutes.Routes(), 29)
+	// v2 routes
+	assert.Len(t, r.Routes()[3].SubRoutes.Routes(), 6)
 }

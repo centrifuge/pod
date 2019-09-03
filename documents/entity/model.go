@@ -1,9 +1,9 @@
 package entity
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
-	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,18 +11,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	cliententitypb "github.com/centrifuge/go-centrifuge/protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/jinzhu/copier"
 )
 
 const (
 	prefix string = "entity"
-	scheme        = prefix
+
+	// Scheme is entity scheme.
+	Scheme = prefix
 
 	// ErrMultiplePaymentMethodsSet is a sentinel error when multiple payment methods are set in a single payment detail.
 	ErrMultiplePaymentMethodsSet = errors.Error("multiple payment methods are set")
@@ -54,7 +56,7 @@ type Address struct {
 
 // BankPaymentMethod holds the bank details of the entity.
 type BankPaymentMethod struct {
-	Identifier        byteutils.HexBytes `json:"identifier"`
+	Identifier        byteutils.HexBytes `json:"identifier" swaggertype:"primitive,string"`
 	Address           Address            `json:"address"`
 	HolderName        string             `json:"holder_name"`
 	BankKey           string             `json:"bank_key"`
@@ -64,7 +66,7 @@ type BankPaymentMethod struct {
 
 // CryptoPaymentMethod holds the crypto details of the entity.
 type CryptoPaymentMethod struct {
-	Identifier        byteutils.HexBytes `json:"identifier"`
+	Identifier        byteutils.HexBytes `json:"identifier" swaggertype:"primitive,string"`
 	To                string             `json:"to"`
 	ChainURI          string             `json:"chain_uri"`
 	SupportedCurrency string             `json:"supported_currency"`
@@ -72,7 +74,7 @@ type CryptoPaymentMethod struct {
 
 // OtherPaymentMethod represents any other payment methods entity accepts.
 type OtherPaymentMethod struct {
-	Identifier        byteutils.HexBytes `json:"identifier"`
+	Identifier        byteutils.HexBytes `json:"identifier" swaggertype:"primitive,string"`
 	Type              string             `json:"type"`
 	PayTo             string             `json:"pay_to"`
 	SupportedCurrency string             `json:"supported_currency"`
@@ -98,7 +100,7 @@ type Contact struct {
 
 // Data represents the entity data.
 type Data struct {
-	Identity       *identity.DID   `json:"identity"`
+	Identity       *identity.DID   `json:"identity" swaggertype:"primitive,string"`
 	LegalName      string          `json:"legal_name"`
 	Addresses      []Address       `json:"addresses"`
 	PaymentDetails []PaymentDetail `json:"payment_details"`
@@ -112,19 +114,6 @@ type Entity struct {
 	Data Data
 }
 
-// getClientData returns the client data from the entity model
-func (e *Entity) getClientData() *cliententitypb.EntityData {
-	d := e.Data
-	dids := identity.DIDsToStrings(d.Identity)
-	return &cliententitypb.EntityData{
-		Identity:       dids[0],
-		LegalName:      d.LegalName,
-		Addresses:      toProtoAddresses(d.Addresses),
-		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
-		Contacts:       toProtoContacts(d.Contacts),
-	}
-}
-
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 	d := e.Data
@@ -136,55 +125,6 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
 		Contacts:       toProtoContacts(d.Contacts),
 	}
-}
-
-// InitEntityInput initialize the model based on the received parameters from the rest api call
-func (e *Entity) InitEntityInput(payload *cliententitypb.EntityCreatePayload, self identity.DID) error {
-	err := e.initEntityFromData(payload.Data)
-	if err != nil {
-		return err
-	}
-
-	ca, err := documents.FromClientCollaboratorAccess(payload.ReadAccess, payload.WriteAccess)
-	if err != nil {
-		return errors.New("failed to decode collaborator: %v", err)
-	}
-
-	ca.ReadWriteCollaborators = append(ca.ReadWriteCollaborators, self)
-	attrs, err := documents.FromClientAttributes(payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	cd, err := documents.NewCoreDocument(compactPrefix(), ca, attrs)
-	if err != nil {
-		return errors.New("failed to init core document: %v", err)
-	}
-
-	e.CoreDocument = cd
-	return nil
-}
-
-// initEntityFromData initialises entity from entityData
-func (e *Entity) initEntityFromData(data *cliententitypb.EntityData) error {
-	data.Identity = strings.TrimSpace(data.Identity)
-	if data.Identity == "" {
-		return identity.ErrMalformedAddress
-	}
-
-	dids, err := identity.StringsToDIDs(data.Identity)
-	if err != nil {
-		return errors.NewTypedError(identity.ErrMalformedAddress, err)
-	}
-
-	var d Data
-	d.Identity = dids[0]
-	d.LegalName = data.LegalName
-	d.Addresses = fromProtoAddresses(data.Addresses)
-	d.PaymentDetails = fromProtoPaymentDetails(data.PaymentDetails)
-	d.Contacts = fromProtoContacts(data.Contacts)
-	e.Data = d
-	return nil
 }
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
@@ -278,7 +218,11 @@ func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if e.CoreDocument == nil {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
-	t := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, err
+	}
+
 	err = t.AddLeavesFromDocument(eProto)
 	if err != nil {
 		return nil, errors.New("getDocumentDataTree error %v", err)
@@ -322,22 +266,6 @@ func (e *Entity) CreateProofs(fields []string) (proofs []*proofspb.Proof, err er
 // DocumentType returns the entity document type.
 func (*Entity) DocumentType() string {
 	return documenttypes.EntityDataTypeUrl
-}
-
-// PrepareNewVersion prepares new version from the old entity.
-func (e *Entity) PrepareNewVersion(old documents.Model, data *cliententitypb.EntityData, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) error {
-	err := e.initEntityFromData(data)
-	if err != nil {
-		return err
-	}
-
-	oldCD := old.(*Entity).CoreDocument
-	e.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddNFT adds NFT to the Entity.
@@ -459,9 +387,8 @@ func isOnlyOneSet(methods ...interface{}) error {
 // loadData unmarshals json blob to Data.
 // Only one of the payment method has to be set.
 // errors out if multiple payment methods are set or none is set.
-func (e *Entity) loadData(data []byte) error {
-	var d Data
-	err := json.Unmarshal(data, &d)
+func loadData(data []byte, d *Data) error {
+	err := json.Unmarshal(data, d)
 	if err != nil {
 		return err
 	}
@@ -474,29 +401,30 @@ func (e *Entity) loadData(data []byte) error {
 		}
 	}
 
-	e.Data = d
 	return nil
 }
 
-// unpackFromCreatePayload unpacks the entity data from the Payload.
-func (e *Entity) unpackFromCreatePayload(did identity.DID, payload documents.CreatePayload) error {
-	if err := e.loadData(payload.Data); err != nil {
+// DeriveFromCreatePayload unpacks the entity data from the Payload.
+func (e *Entity) DeriveFromCreatePayload(_ context.Context, payload documents.CreatePayload) error {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
 		return errors.NewTypedError(ErrEntityInvalidData, err)
 	}
 
-	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	cd, err := documents.NewCoreDocument(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrCDCreate, err)
 	}
 
+	e.Data = d
 	e.CoreDocument = cd
 	return nil
 }
 
 // unpackFromUpdatePayload unpacks the update payload and prepares a new version.
 func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
-	if err := e.loadData(payload.Data); err != nil {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
 		return errors.NewTypedError(ErrEntityInvalidData, err)
 	}
 
@@ -505,11 +433,61 @@ func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePa
 		return err
 	}
 
+	e.Data = d
+	e.CoreDocument = ncd
+	return nil
+}
+
+// DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
+func (e *Entity) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+	d, err := e.patch(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	ncd, err := e.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Entity{
+		Data:         d,
+		CoreDocument: ncd,
+	}, nil
+}
+
+func (e *Entity) patch(payload documents.UpdatePayload) (Data, error) {
+	var d Data
+	err := copier.Copy(&d, &e.Data)
+	if err != nil {
+		return d, err
+	}
+
+	if err := loadData(payload.Data, &d); err != nil {
+		return d, errors.NewTypedError(ErrEntityInvalidData, err)
+	}
+
+	return d, nil
+}
+
+// Patch merges payload data into model
+func (e *Entity) Patch(payload documents.UpdatePayload) error {
+	d, err := e.patch(payload)
+	if err != nil {
+		return err
+	}
+
+	ncd, err := e.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	e.Data = d
 	e.CoreDocument = ncd
 	return nil
 }
 
 // Scheme returns the entity scheme.
 func (e *Entity) Scheme() string {
-	return scheme
+	return Scheme
 }

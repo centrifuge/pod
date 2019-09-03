@@ -13,9 +13,6 @@ TAGINSTANCE="${TAG}"
 # GOBIN needs to be set to ensure govendor can actually be found and executed
 PATH=$(shell printenv PATH):$(GOBIN)
 
-# If you need to overwrite PROTOTOOL_BIN, you can set this environment variable.
-PROTOTOOL_BIN ?=$(shell which prototool)
-
 # Lock metalinter version
 GOMETALINTER_VERSION="v2.0.12"
 
@@ -35,41 +32,26 @@ clean: ##clean vendor's folder. Should be run before a make install
 install-deps: ## Install Dependencies
 	@command -v dep >/dev/null 2>&1 || go get -u github.com/golang/dep/...
 	@dep ensure
-	@npm --prefix ./build  install
 	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
+	@git submodule update --init --recursive
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
 lint-check: ## runs linters on go code
 	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
-	--enable=staticcheck --vendor --skip=resources --skip=testingutils --skip=protobufs  --deadline=1m ./...;
+	--enable=staticcheck --vendor --skip=resources --skip=testingutils --deadline=1m ./...;
 
 format-go: ## formats go code
 	@goimports -w .
 
-proto-lint: ## runs prototool lint
-	$(PROTOTOOL_BIN) lint protobufs
-
-proto-gen-go: ## generates the go bindings
-	$(PROTOTOOL_BIN) generate protobufs
-
-proto-all: ## runs prototool all
-	$(PROTOTOOL_BIN) all protobufs
-	@goimports -w ./protobufs/gen/
-
 gen-swagger: ## generates the swagger documentation
-	swag init -g ./httpapi/router.go -o ./protobufs/gen/swagger/api
-	rm -rf ./protobufs/gen/swagger/api/docs.go ./protobufs/gen/swagger/api/swagger.yaml
-	mv ./protobufs/gen/swagger/api/swagger.json ./protobufs/gen/swagger/api/api.swagger.json
-	npm --prefix ./build run build_swagger
+	swag init -g ./httpapi/router.go -o ./httpapi
+	rm -rf ./httpapi/docs.go ./httpapi/swagger.yaml
 
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
-	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-	go-vendorinstall github.com/golang/protobuf/protoc-gen-go
-	go-vendorinstall github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 	go-vendorinstall golang.org/x/tools/cmd/goimports
 	go-vendorinstall github.com/swaggo/swag/cmd/swag
 	go get -u github.com/jteeuwen/go-bindata/...
