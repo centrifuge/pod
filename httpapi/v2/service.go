@@ -40,7 +40,7 @@ func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte
 	return s.pendingDocSrv.GetVersion(ctx, docID, versionID)
 }
 
-// AdSignedAttribute signs the payload with acc signing key and add it the document associated with docID.
+// AddSignedAttribute signs the payload with acc signing key and add it the document associated with docID.
 func (s Service) AddSignedAttribute(ctx context.Context, docID []byte, label string, payload []byte) (documents.Model, error) {
 	return s.pendingDocSrv.AddSignedAttribute(ctx, docID, label, payload)
 }
