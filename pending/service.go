@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	logging "github.com/ipfs/go-log"
 )
@@ -32,6 +33,9 @@ type Service interface {
 
 	// Commit validates, shares and anchors document
 	Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error)
+
+	// AddSignedAttribute signs the value using the account keys and adds the attribute to the pending document.
+	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error)
 }
 
 // service implements Service
@@ -155,4 +159,34 @@ func (s service) Commit(ctx context.Context, docID []byte) (documents.Model, job
 	}
 
 	return model, jobID, s.pendingRepo.Delete(accID[:], docID)
+}
+
+func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error) {
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	model, err := s.pendingRepo.Get(acc.GetIdentityID(), docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	did, err := identity.NewDIDFromBytes(acc.GetIdentityID())
+	if err != nil {
+		return nil, err
+	}
+
+	// we use currentVersion here since the version is not anchored yet
+	attr, err := documents.NewSignedAttribute(label, did, acc, model.ID(), model.CurrentVersion(), value)
+	if err != nil {
+		return nil, err
+	}
+
+	err = model.AddAttributes(documents.CollaboratorsAccess{}, false, attr)
+	if err != nil {
+		return nil, err
+	}
+
+	return model, s.pendingRepo.Update(acc.GetIdentityID(), docID, model)
 }

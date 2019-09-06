@@ -227,3 +227,49 @@ func TestService_Update(t *testing.T) {
 	_, err = s.Update(ctx, payload)
 	assert.NoError(t, err)
 }
+
+func TestService_AddSignedAttribute(t *testing.T) {
+	s := service{}
+	label := "signed_attribute"
+	value := utils.RandomSlice(32)
+	docID := utils.RandomSlice(32)
+	versionID := utils.RandomSlice(32)
+
+	// missing did
+	ctx := context.Background()
+	_, err := s.AddSignedAttribute(ctx, docID, label, value)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing document
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	prepo := new(mockRepo)
+	prepo.On("Get", did[:], docID).Return(nil, errors.New("Missing")).Once()
+	s.pendingRepo = prepo
+	_, err = s.AddSignedAttribute(ctx, docID, label, value)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// failed to get new attribute
+	doc := new(documents.MockModel)
+	doc.On("ID").Return(docID)
+	doc.On("CurrentVersion").Return(versionID)
+	prepo.On("Get", did[:], docID).Return(doc, nil)
+	_, err = s.AddSignedAttribute(ctx, docID, "", value)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrEmptyAttrLabel, err))
+
+	// failed to add attribute to document
+	doc.On("AddAttributes", mock.Anything, false, mock.Anything).Return(errors.New("failed to add")).Once()
+	_, err = s.AddSignedAttribute(ctx, docID, label, value)
+	assert.Error(t, err)
+
+	// success
+	doc.On("AddAttributes", mock.Anything, false, mock.Anything).Return(nil).Once()
+	prepo.On("Update", did[:], docID, doc).Return(nil).Once()
+	doc1, err := s.AddSignedAttribute(ctx, docID, label, value)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, doc1)
+	prepo.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}

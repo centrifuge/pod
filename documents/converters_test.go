@@ -183,13 +183,9 @@ func TestAttributes_signed(t *testing.T) {
 	signature := utils.RandomSlice(32)
 	acc := new(mockAccount)
 	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
-	model := new(mockModel)
-	model.On("ID").Return(id).Once()
-	model.On("NextVersion").Return(version).Twice()
-	attr, err := NewSignedAttribute(label, did, acc, model, value)
+	attr, err := NewSignedAttribute(label, did, acc, id, version, value)
 	assert.NoError(t, err)
 	acc.AssertExpectations(t)
-	model.AssertExpectations(t)
 	attrs[attr.Key] = attr
 
 	pattrs, err := toProtocolAttributes(attrs)
