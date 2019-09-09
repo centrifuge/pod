@@ -275,7 +275,7 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 // doc version is next version of the document since that is the document version in which the attribute is added.
 // signature payload: sign(identity + docID + docNextVersion + value)
 // Note: versionID should always be the next version that is going to be anchored.
-func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID []byte, value []byte) (attr Attribute, err error) {
+func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
