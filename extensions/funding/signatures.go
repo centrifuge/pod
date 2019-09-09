@@ -37,7 +37,7 @@ func (s service) createSignAttrs(model documents.Model, idxFunding string, selfD
 
 	// example: "funding_agreement[2].signatures[4]"
 	sFieldLabel := extensions.GenerateLabel(extensions.GenerateLabel(fundingFieldKey, idxFunding, "")+fundingSignaturesFieldKey, attrIdx.Value.Int256.String(), "")
-	attrSign, err := documents.NewSignedAttribute(sFieldLabel, selfDID, account, model, signMsg)
+	attrSign, err := documents.NewSignedAttribute(sFieldLabel, selfDID, account, model.ID(), model.NextVersion(), signMsg)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -87,6 +89,8 @@ func createNewDocument(
 	assert.Equal(t, status, "pending")
 
 	checkDocumentParams(res, params)
+	label := "signed_attribute"
+	signedAttributeMissing(t, res, label)
 	docID := getDocumentIdentifier(t, res)
 	assert.NotEmpty(t, docID)
 
@@ -95,6 +99,11 @@ func createNewDocument(
 
 	// committed shouldn't be success
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusNotFound)
+
+	// add a signed attribute
+	value := hexutil.Encode(utils.RandomSlice(32))
+	res = addSignedAttribute(alice.httpExpect, alice.id.String(), docID, label, value)
+	signedAttributeExists(t, res, label)
 
 	// Alice updates the document
 	payload, params = updatePayloadParams([]string{bob.id.String()})

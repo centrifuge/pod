@@ -489,3 +489,23 @@ func getV2DocumentWithStatus(e *httpexpect.Expect, auth, docID, status string, c
 		Expect().Status(code).JSON().NotNull()
 	return objGet
 }
+
+func addSignedAttribute(e *httpexpect.Expect, auth, docID, label, payload string) *httpexpect.Object {
+	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/signed_attribute"), auth).WithJSON(map[string]string{
+		"label":   label,
+		"payload": payload,
+	}).Expect().Status(http.StatusOK).JSON().Object()
+	return objPost
+}
+
+func signedAttributeExists(t *testing.T, res *httpexpect.Object, label string) {
+	attrs := res.Path("$.attributes").Object().Raw()
+	_, ok := attrs[label]
+	assert.True(t, ok)
+}
+
+func signedAttributeMissing(t *testing.T, res *httpexpect.Object, label string) {
+	attrs := res.Path("$.attributes").Object().Raw()
+	_, ok := attrs[label]
+	assert.False(t, ok)
+}

@@ -273,14 +273,15 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 // NewSignedAttribute returns a new signed attribute
 // takes keyLabel, signer identity, signer account, model and value
 // doc version is next version of the document since that is the document version in which the attribute is added.
-// signature payload: sign(identity + docID + docVersion + value)
-func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, model Model, value []byte) (attr Attribute, err error) {
+// signature payload: sign(identity + docID + docNextVersion + value)
+// Note: versionID should always be the next version that is going to be anchored.
+func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
 	}
 
-	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.NextVersion(), value)
+	signPayload := attributeSignaturePayload(identity[:], docID, versionID, value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -290,7 +291,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		Type: AttrSigned,
 		Signed: Signed{
 			Identity:        identity,
-			DocumentVersion: model.NextVersion(),
+			DocumentVersion: versionID,
 			Value:           value,
 			Signature:       sig.Signature,
 			PublicKey:       sig.PublicKey,

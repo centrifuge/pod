@@ -14,7 +14,7 @@
         "license": {
             "name": "MIT"
         },
-        "version": "0.0.6"
+        "version": "0.0.7"
     },
     "host": "localhost:8082",
     "basePath": "/",
@@ -3091,6 +3091,71 @@
                 }
             }
         },
+        "/v2/documents/{document_id}/signed_attribute": {
+            "post": {
+                "description": "Signs the given payload and add it the pending document.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Signs the given payload and add it the pending document.",
+                "operationId": "add_signed_attribute",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Signed Attribute request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/v2.SignedAttributeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/documents/{document_id}/versions/{version_id}": {
             "get": {
                 "description": "Returns the specific version of the document.",
@@ -4796,6 +4861,18 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v2.SignedAttributeRequest": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "payload": {
+                    "description": "payload to be signed in hex",
+                    "type": "string"
                 }
             }
         },
