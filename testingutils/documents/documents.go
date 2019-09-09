@@ -49,9 +49,9 @@ func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (do
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
-	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
+	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
 func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {

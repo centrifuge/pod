@@ -281,7 +281,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 	}
 
 	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.NextVersion(), value)
-	sig, err := account.SignMsg(signPayload)
+	sigs, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
 	}
@@ -292,8 +292,8 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 			Identity:        identity,
 			DocumentVersion: model.NextVersion(),
 			Value:           value,
-			Signature:       sig.Signature,
-			PublicKey:       sig.PublicKey,
+			Signature:       sigs[0].Signature,
+			PublicKey:       sigs[0].PublicKey,
 		},
 	}
 
