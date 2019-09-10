@@ -932,3 +932,25 @@ func TestCoreDocument_Status(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrCDStatus, err))
 	assert.Equal(t, cd.GetStatus(), Committed)
 }
+
+func TestCoreDocument_RemoveCollaborators(t *testing.T) {
+	did1 := testingidentity.GenerateRandomDID()
+	did2 := testingidentity.GenerateRandomDID()
+	did3 := testingidentity.GenerateRandomDID() // missing
+	cd, err := NewCoreDocument(
+		nil,
+		CollaboratorsAccess{
+			ReadWriteCollaborators: []identity.DID{did1, did},
+			ReadCollaborators:      []identity.DID{did1, did2}},
+		nil)
+	assert.NoError(t, err)
+	assert.NoError(t, cd.RemoveCollaborators([]identity.DID{did1}))
+	found, err := cd.IsDIDCollaborator(did1)
+	assert.NoError(t, err)
+	assert.False(t, found)
+
+	assert.Error(t, cd.RemoveCollaborators([]identity.DID{did3}))
+	found, err = cd.IsDIDCollaborator(did3)
+	assert.NoError(t, err)
+	assert.False(t, found)
+}

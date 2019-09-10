@@ -5,6 +5,7 @@ package byteutils
 import (
 	"bytes"
 	"encoding/json"
+	"math/rand"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -432,5 +433,25 @@ func TestOptionalHex_UnmarshalJSON(t *testing.T) {
 
 		assert.Equal(t, c.d, th.Hex.Bytes())
 		assert.Equal(t, hexutil.Encode(c.d), th.Hex.String())
+	}
+}
+
+func TestCutFromSlice(t *testing.T) {
+	slice := [][]byte{
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+	}
+
+	// remove random
+	for i := 0; i < len(slice); i++ {
+		idx := rand.Intn(len(slice))
+		v := slice[idx]
+		s1 := CutFromSlice(slice, idx)
+		assert.False(t, ContainsBytesInSlice(s1, v))
+		assert.True(t, ContainsBytesInSlice(slice, v))
+		assert.Len(t, s1, len(slice)-1)
 	}
 }
