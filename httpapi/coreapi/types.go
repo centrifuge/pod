@@ -170,35 +170,36 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
 	m := make(AttributeMapResponse)
 	for _, v := range attrs {
+		vx := v // convert to value
 		var attrReq AttributeRequest
-		switch v.Value.Type {
+		switch vx.Value.Type {
 		case documents.AttrMonetary:
-			id := string(v.Value.Monetary.ID)
-			if v.Value.Monetary.Type == documents.MonetaryToken {
-				id = hexutil.Encode(v.Value.Monetary.ID)
+			id := string(vx.Value.Monetary.ID)
+			if vx.Value.Monetary.Type == documents.MonetaryToken {
+				id = hexutil.Encode(vx.Value.Monetary.ID)
 			}
 			attrReq = AttributeRequest{
-				Type: v.Value.Type.String(),
+				Type: vx.Value.Type.String(),
 				MonetaryValue: &MonetaryValue{
-					Value:   v.Value.Monetary.Value,
-					ChainID: v.Value.Monetary.ChainID,
+					Value:   vx.Value.Monetary.Value,
+					ChainID: vx.Value.Monetary.ChainID,
 					ID:      id,
 				},
 			}
 		default:
-			val, err := v.Value.String()
+			val, err := vx.Value.String()
 			if err != nil {
 				return nil, err
 			}
 			attrReq = AttributeRequest{
-				Type:  v.Value.Type.String(),
+				Type:  vx.Value.Type.String(),
 				Value: val,
 			}
 		}
 
-		m[v.KeyLabel] = AttributeResponse{
+		m[vx.KeyLabel] = AttributeResponse{
 			AttributeRequest: attrReq,
-			Key:              v.Key[:],
+			Key:              vx.Key[:],
 		}
 	}
 

@@ -60,6 +60,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 	assert.Equal(t, cattrs["string_test"].Value, attrs["string_test"].Value)
 	assert.Equal(t, cattrs["decimal_test"].Value, attrs["decimal_test"].Value)
 	assert.Equal(t, cattrs["monetary_test"].MonetaryValue, attrs["monetary_test"].MonetaryValue)
+	assert.NotEqual(t, cattrs["string_test"].Key.String(), cattrs["decimal_test"].Key.String())
 
 	attrs["monetary_test_empty"] = AttributeRequest{Type: "monetary"}
 	_, err = toDocumentAttributes(attrs)
