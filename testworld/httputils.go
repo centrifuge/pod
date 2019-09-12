@@ -218,6 +218,15 @@ func updateDocumentV2(e *httpexpect.Expect, auth string, documentType string, st
 	return obj
 }
 
+func removeCollaborators(e *httpexpect.Expect, auth string, docType string, status int, docID string, collabs ...string) *httpexpect.Object {
+	obj := addCommonHeaders(e.DELETE("/v2/"+docType+"/"+docID+"/collaborators"), auth).
+		WithJSON(map[string][]string{
+			"collaborators": collabs,
+		}).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func checkDocumentParams(obj *httpexpect.Object, params map[string]string) {
 	for k, v := range params {
 		obj.Path("$.data." + k).String().Equal(v)
