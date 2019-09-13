@@ -917,7 +917,6 @@ func (cd *CoreDocument) RemoveCollaborators(dids []identity.DID) error {
 	}
 
 	// remove each collaborator from the roles
-	var found bool
 	for _, did := range dids {
 		for _, role := range cd.Document.Roles {
 			i, f := isDIDInRole(role, did)
@@ -926,13 +925,8 @@ func (cd *CoreDocument) RemoveCollaborators(dids []identity.DID) error {
 			}
 
 			cd.Modified = true
-			found = true
 			role.Collaborators = byteutils.CutFromSlice(role.Collaborators, i)
 		}
-	}
-
-	if !found {
-		return errors.New("DIDs not found in the Document")
 	}
 
 	return nil

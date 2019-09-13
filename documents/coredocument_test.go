@@ -949,7 +949,6 @@ func TestCoreDocument_RemoveCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, found)
 
-	assert.Error(t, cd.RemoveCollaborators([]identity.DID{did3}))
 	found, err = cd.IsDIDCollaborator(did3)
 	assert.NoError(t, err)
 	assert.False(t, found)
