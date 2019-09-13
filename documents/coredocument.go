@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -154,6 +155,8 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 
 	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
 	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
+	// remove any dids that are present in both read and read write from read.
+	collaborators.ReadCollaborators = filterCollaborators(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
 	cd.Attributes = attributes
@@ -904,4 +907,27 @@ func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
 
 	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
 	return err
+}
+
+// RemoveCollaborators removes DIDs from the Document.
+// Errors out if the document is not in Pending state or collaborators are missing from the document.
+func (cd *CoreDocument) RemoveCollaborators(dids []identity.DID) error {
+	if cd.Status == Committing || cd.Status == Committed {
+		return ErrDocumentNotInAllowedState
+	}
+
+	// remove each collaborator from the roles
+	for _, did := range dids {
+		for _, role := range cd.Document.Roles {
+			i, f := isDIDInRole(role, did)
+			if !f {
+				continue
+			}
+
+			cd.Modified = true
+			role.Collaborators = byteutils.CutFromSlice(role.Collaborators, i)
+		}
+	}
+
+	return nil
 }

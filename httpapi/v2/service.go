@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
@@ -43,4 +44,9 @@ func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte
 // AddSignedAttribute signs the payload with acc signing key and add it the document associated with docID.
 func (s Service) AddSignedAttribute(ctx context.Context, docID []byte, label string, payload []byte) (documents.Model, error) {
 	return s.pendingDocSrv.AddSignedAttribute(ctx, docID, label, payload)
+}
+
+// RemoveCollaborators removes collaborators from the document.
+func (s Service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
+	return s.pendingDocSrv.RemoveCollaborators(ctx, docID, dids)
 }

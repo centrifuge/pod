@@ -36,6 +36,9 @@ type Service interface {
 
 	// AddSignedAttribute signs the value using the account keys and adds the attribute to the pending document.
 	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error)
+
+	// RemoveCollaborators removes collaborators from the document.
+	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
 }
 
 // service implements Service
@@ -189,4 +192,24 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 	}
 
 	return model, s.pendingRepo.Update(acc.GetIdentityID(), docID, model)
+}
+
+// RemoveCollaborators removes dids from the given document.
+func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err := s.pendingRepo.Get(accID[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	err = doc.RemoveCollaborators(dids)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, s.pendingRepo.Update(accID[:], docID, doc)
 }

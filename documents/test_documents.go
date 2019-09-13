@@ -68,6 +68,11 @@ func (m *MockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
+func (m *MockModel) RemoveCollaborators(dids []identity.DID) error {
+	args := m.Called(dids)
+	return args.Error(0)
+}
+
 type MockService struct {
 	Service
 	mock.Mock
