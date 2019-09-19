@@ -1,3 +1,5 @@
+#!/bin/bash
+
 TRAVIS_BRANCH?=`git rev-parse --abbrev-ref HEAD`
 GIT_COMMIT=`git rev-parse HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
@@ -6,6 +8,8 @@ TAG="${TRAVIS_BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 IMAGE_NAME?=centrifugeio/go-centrifuge
 LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/version.gitCommit=${GIT_COMMIT}"
 GCLOUD_SERVICE?="./build/peak-vista-185616-9f70002df7eb.json"
+GO_REQUIRED_VERSION=11
+GO_INSTALLED_VERSION=`go version | awk '{split($$3, a, "."); print a[2]}'`
 
 # Default TAGINSTANCE for standalone targets
 TAGINSTANCE="${TAG}"
@@ -23,6 +27,12 @@ help: ## Show this help message.
 	@echo
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
+
+check-version: ## checks if the compatible go version is installed
+	@if [ ${GO_INSTALLED_VERSION} -gt ${GO_REQUIRED_VERSION} ]; then\
+	 echo "please install GO 1.${GO_REQUIRED_VERSION}.xx to proceed with installation.";\
+	 exit 1;\
+	fi
 
 clean: ##clean vendor's folder. Should be run before a make install
 	@echo 'cleaning previous /vendor folder'
@@ -75,7 +85,7 @@ gen-abi-bindings: install-deps abigen-install
 	@rm -Rf ./tmp
 
 install: ## Builds and Install binary for development
-install: install-deps vendorinstall
+install: check-version install-deps vendorinstall
 	@go install ./cmd/centrifuge/...
 
 install-xgo: ## Install XGO
