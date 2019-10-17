@@ -259,9 +259,16 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))
 
-	// add doc to repo
+	// missing previous version, transition not validated - success
 	id := testingidentity.GenerateRandomDID()
-	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
+	doc, _ := createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, true)
+	sigs, err := srv.RequestDocumentSignature(ctxh, doc, did)
+	assert.NoError(t, err)
+	assert.False(t, sigs[0].TransitionValidated)
+
+	// add doc to repo
+	id = testingidentity.GenerateRandomDID()
+	doc, _ = createCDWithEmbeddedInvoice(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil, nil)
@@ -289,8 +296,9 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition")
 
 	// valid transition
-	_, err = srv.RequestDocumentSignature(ctxh, doc, did)
+	sigs, err = srv.RequestDocumentSignature(ctxh, doc, did)
 	assert.NoError(t, err)
+	assert.True(t, sigs[0].TransitionValidated)
 }
 
 func TestService_CreateProofsForVersionDocumentDoesntExist(t *testing.T) {
