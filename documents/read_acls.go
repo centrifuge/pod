@@ -511,7 +511,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 	}
 
 	// fetch key pair from identity
-	sigs, err := account.SignMsg(tm)
+	sig, err := account.SignMsg(tm)
 	if err != nil {
 		return nil, err
 	}
@@ -528,7 +528,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		Grantee:            granteeID[:],
 		RoleIdentifier:     roleID[:],
 		DocumentIdentifier: docID,
-		Signature:          sigs[0].Signature,
+		Signature:          sig.Signature,
 		Key:                keys[identity.KeyPurposeSigning.Name].PublicKey,
 		DocumentVersion:    docVersion,
 	}

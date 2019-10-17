@@ -223,7 +223,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NoError(t, err)
 	keys, err := self.GetKeys()
 	assert.NoError(t, err)
-	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, sr, sig.Signature, crypto.CurveSecp256K1))
+	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, ConsensusSignaturePayload(sr, byte(0)), sig.Signature, crypto.CurveSecp256K1))
 }
 
 type p2pClient struct {

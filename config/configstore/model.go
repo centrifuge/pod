@@ -425,7 +425,7 @@ func (acc *Account) GetEthereumContextWaitTimeout() time.Duration {
 }
 
 // SignMsg signs a message with the signing key
-func (acc *Account) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
+func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	keys, err := acc.GetKeys()
 	if err != nil {
 		return nil, err
@@ -435,23 +435,16 @@ func (acc *Account) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	//todo: use JubJub to sign payload once we have lib ready and add to sigs[1]
 
 	did := acc.GetIdentityID()
-	sigs := make([]*coredocumentpb.Signature, 2)
- 	sigs[0] = &coredocumentpb.Signature{
+
+	return &coredocumentpb.Signature{
 		SignatureId: append(did, signingKeyPair.PublicKey...),
 		SignerId:    did,
 		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
-	}
-	sigs[1] = &coredocumentpb.Signature{ // placeholder for jubjub signature
-		SignatureId: append(did, signingKeyPair.PublicKey...),
-		SignerId:    did,
-		PublicKey:   signingKeyPair.PublicKey,
-		Signature:   signature,
-	}
-	return sigs, nil
+	}, nil
+
 }
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {

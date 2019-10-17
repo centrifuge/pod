@@ -282,7 +282,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 	}
 
 	signPayload := attributeSignaturePayload(identity[:], docID, versionID, value)
-	sigs, err := account.SignMsg(signPayload)
+	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
 	}
@@ -293,8 +293,8 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 			Identity:        identity,
 			DocumentVersion: versionID,
 			Value:           value,
-			Signature:       sigs[0].Signature,
-			PublicKey:       sigs[0].PublicKey,
+			Signature:       sig.Signature,
+			PublicKey:       sig.PublicKey,
 		},
 	}
 

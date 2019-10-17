@@ -218,9 +218,9 @@ type mockAccount struct {
 	mock.Mock
 }
 
-func (m *mockAccount) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
+func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	args := m.Called(msg)
-	sig, _ := args.Get(0).([]*coredocumentpb.Signature)
+	sig, _ := args.Get(0).(*coredocumentpb.Signature)
 	return sig, args.Error(1)
 }
 

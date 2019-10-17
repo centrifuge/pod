@@ -49,7 +49,7 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 
 	// check author field
-	ocd.Author = utils.RandomSlice(32)
+	ocd.Author = utils.RandomSlice(20)
 	oldTree = getTree(t, &ocd, "", nil)
 	newTree = getTree(t, &ocd, "", nil)
 	cf = GetChangedFields(oldTree, newTree)

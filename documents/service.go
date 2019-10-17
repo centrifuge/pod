@@ -223,13 +223,12 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		transitionFlag = byte(1)
 	}
 
-	sigs, err := acc.SignMsg(ConsensusSignaturePayload(sr, transitionFlag))
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, transitionFlag))
 	if err != nil {
 		return nil, err
 	}
-	sigs[0].TransitionValidated = (transitionFlag != byte(0))
-	sigs[1].TransitionValidated = (transitionFlag != byte(0))
-	model.AppendSignatures(sigs...)
+	sig.TransitionValidated = (transitionFlag != byte(0))
+	model.AppendSignatures(sig)
 
 	// set the status to committing since we are at requesting signatures stage.
 	if err := model.SetStatus(Committing); err != nil {
@@ -251,7 +250,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 
 	srvLog.Infof("signed document %x with version %x", model.ID(), model.CurrentVersion())
-	return sigs, nil
+	return []*coredocumentpb.Signature{sig}, nil
 }
 
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error {
