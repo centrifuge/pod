@@ -177,3 +177,21 @@ func (o *OptionalHex) UnmarshalJSON(data []byte) error {
 	*o = OptionalHex{HexBytes(d)}
 	return nil
 }
+
+// CutFromSlice returns a new slice without the value at idx
+func CutFromSlice(slice [][]byte, idx int) [][]byte {
+	if idx >= len(slice) {
+		return slice
+	}
+
+	var ns [][]byte
+	for i, v := range slice {
+		if i == idx {
+			continue
+		}
+
+		ns = append(ns, v)
+	}
+
+	return ns
+}

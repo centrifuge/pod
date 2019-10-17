@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/stretchr/testify/mock"
 )
@@ -50,6 +51,18 @@ func (m *MockService) Get(ctx context.Context, docID []byte, st documents.Status
 
 func (m *MockService) GetVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
 	args := m.Called(ctx, docID, versionID)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error) {
+	args := m.Called(ctx, docID, label, value)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
+	args := m.Called(ctx, docID, dids)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
 }

@@ -226,7 +226,7 @@ func (m *mockAccount) SignMsg(msg []byte) ([]*coredocumentpb.Signature, error) {
 
 func TestNewSignedAttribute(t *testing.T) {
 	// empty label
-	_, err := NewSignedAttribute("", testingidentity.GenerateRandomDID(), nil, nil, nil)
+	_, err := NewSignedAttribute("", testingidentity.GenerateRandomDID(), nil, nil, nil, nil)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
 
@@ -240,23 +240,16 @@ func TestNewSignedAttribute(t *testing.T) {
 	epayload := attributeSignaturePayload(did[:], id, version, value)
 	acc := new(mockAccount)
 	acc.On("SignMsg", epayload).Return(nil, errors.New("failed")).Once()
-	model := new(mockModel)
-	model.On("ID").Return(id).Once()
-	model.On("NextVersion").Return(version).Once()
-	_, err = NewSignedAttribute(label, did, acc, model, value)
+	_, err = NewSignedAttribute(label, did, acc, id, version, value)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed")
 	acc.AssertExpectations(t)
-	model.AssertExpectations(t)
 
 	// success
 	signature := utils.RandomSlice(32)
 	acc = new(mockAccount)
 	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
-	model = new(mockModel)
-	model.On("ID").Return(id).Once()
-	model.On("NextVersion").Return(version).Twice()
-	attr, err := NewSignedAttribute(label, did, acc, model, value)
+	attr, err := NewSignedAttribute(label, did, acc, id, version, value)
 	assert.NoError(t, err)
 	attrKey, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)
@@ -265,7 +258,6 @@ func TestNewSignedAttribute(t *testing.T) {
 	assert.Equal(t, AttrSigned, attr.Value.Type)
 	assert.Equal(t, signature, attr.Value.Signed.Signature)
 	acc.AssertExpectations(t)
-	model.AssertExpectations(t)
 }
 
 func TestNewMonetaryAttribute(t *testing.T) {

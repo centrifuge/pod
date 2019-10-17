@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,14 +81,17 @@ func createNewDocument(
 	createPayloadParams, updatePayloadParams func([]string) (map[string]interface{}, map[string]string)) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	// Alice prepares document to share with Bob
-	payload, params := createPayloadParams([]string{bob.id.String()})
+	// Alice prepares document to share with Bob and charlie
+	payload, params := createPayloadParams([]string{bob.id.String(), charlie.id.String()})
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 
 	checkDocumentParams(res, params)
+	label := "signed_attribute"
+	signedAttributeMissing(t, res, label)
 	docID := getDocumentIdentifier(t, res)
 	assert.NotEmpty(t, docID)
 
@@ -96,14 +101,22 @@ func createNewDocument(
 	// committed shouldn't be success
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusNotFound)
 
+	// add a signed attribute
+	value := hexutil.Encode(utils.RandomSlice(32))
+	res = addSignedAttribute(alice.httpExpect, alice.id.String(), docID, label, value)
+	signedAttributeExists(t, res, label)
+
 	// Alice updates the document
-	payload, params = updatePayloadParams([]string{bob.id.String()})
+	payload, params = updatePayloadParams([]string{bob.id.String(), charlie.id.String()})
 	payload["document_id"] = docID
 	res = updateDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, payload)
 	status = getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 	checkDocumentParams(res, params)
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
+
+	// alice removes charlie from the list of collaborators
+	removeCollaborators(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, docID, charlie.id.String())
 
 	// Commits document and shares with Bob
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
@@ -120,6 +133,9 @@ func createNewDocument(
 
 	// Bob should have the document
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
+
+	// charlie should not have the document
+	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// try to commit same document again - failure
 	commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusBadRequest, docID)

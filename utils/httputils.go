@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/tls"
 	"net"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -9,7 +10,11 @@ import (
 
 // SendPOSTRequest sends post with data to given URL.
 func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode int, err error) {
-	resp, err := resty.R().
+	c := resty.New()
+	cfg := &tls.Config{InsecureSkipVerify: true} // Temporary until we have defined a cert truststore
+	c.SetTLSClientConfig(cfg)
+
+	resp, err := c.R().
 		SetHeader("Content-Type", contentType).
 		SetBody(payload).
 		Post(url)

@@ -17,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -411,4 +412,78 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	pendingSrv.AssertExpectations(t)
 	doc.AssertExpectations(t)
+}
+
+func TestHandler_RemoveCollaborators(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("DELETE", "/documents/{document_id}/collaborators", b).WithContext(ctx)
+	}
+
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// invalid id
+	rctx.URLParams.Values[0] = "some invalid id"
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// failed unmarshal empty body
+	docID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	w, r = getHTTPReqAndResp(ctx, nil)
+	pendingSrv := new(pending.MockService)
+	h = handler{srv: Service{pendingDocSrv: pendingSrv}}
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed to remove collaborators
+	req := map[string]interface{}{
+		"collaborators": []string{testingidentity.GenerateRandomDID().String()},
+	}
+	d, err := json.Marshal(req)
+	assert.NoError(t, err)
+	pendingSrv.On("RemoveCollaborators", ctx, docID, mock.Anything).Return(nil, errors.New("failed to delete collaborators")).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "failed to delete collaborators")
+
+	// failed conversion
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(invoice.Data{}).Twice()
+	doc.On("Scheme").Return("invoice").Twice()
+	doc.On("GetAttributes").Return(nil).Twice()
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	pendingSrv.On("RemoveCollaborators", ctx, docID, mock.Anything).Return(doc, nil)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	doc.AssertExpectations(t)
+	pendingSrv.AssertExpectations(t)
 }

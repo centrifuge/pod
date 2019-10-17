@@ -153,6 +153,9 @@ type Model interface {
 
 	// SetStatus set the status of the document.
 	SetStatus(st Status) error
+
+	// RemoveCollaborators removes collaborators from the current document.
+	RemoveCollaborators(dids []identity.DID) error
 }
 
 // TokenRegistry defines NFT related functions.

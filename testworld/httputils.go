@@ -218,6 +218,15 @@ func updateDocumentV2(e *httpexpect.Expect, auth string, documentType string, st
 	return obj
 }
 
+func removeCollaborators(e *httpexpect.Expect, auth string, docType string, status int, docID string, collabs ...string) *httpexpect.Object {
+	obj := addCommonHeaders(e.DELETE("/v2/"+docType+"/"+docID+"/collaborators"), auth).
+		WithJSON(map[string][]string{
+			"collaborators": collabs,
+		}).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func checkDocumentParams(obj *httpexpect.Object, params map[string]string) {
 	for k, v := range params {
 		obj.Path("$.data." + k).String().Equal(v)
@@ -488,4 +497,24 @@ func getV2DocumentWithStatus(e *httpexpect.Expect, auth, docID, status string, c
 	objGet := addCommonHeaders(e.GET("/v2/documents/"+docID+"/"+status), auth).
 		Expect().Status(code).JSON().NotNull()
 	return objGet
+}
+
+func addSignedAttribute(e *httpexpect.Expect, auth, docID, label, payload string) *httpexpect.Object {
+	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/signed_attribute"), auth).WithJSON(map[string]string{
+		"label":   label,
+		"payload": payload,
+	}).Expect().Status(http.StatusOK).JSON().Object()
+	return objPost
+}
+
+func signedAttributeExists(t *testing.T, res *httpexpect.Object, label string) {
+	attrs := res.Path("$.attributes").Object().Raw()
+	_, ok := attrs[label]
+	assert.True(t, ok)
+}
+
+func signedAttributeMissing(t *testing.T, res *httpexpect.Object, label string) {
+	attrs := res.Path("$.attributes").Object().Raw()
+	_, ok := attrs[label]
+	assert.False(t, ok)
 }

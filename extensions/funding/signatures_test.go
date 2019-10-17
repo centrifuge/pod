@@ -147,7 +147,7 @@ func TestService_SignVerify(t *testing.T) {
 	// older funding version signed: invalid
 	invalidValue, err := hexutil.Decode("0x1234")
 	assert.NoError(t, err)
-	attr, err := documents.NewSignedAttribute("funding_agreement[4].signatures[0]", testingidentity.GenerateRandomDID(), acc, model, invalidValue)
+	attr, err := documents.NewSignedAttribute("funding_agreement[4].signatures[0]", testingidentity.GenerateRandomDID(), acc, model.ID(), model.NextVersion(), invalidValue)
 	assert.NoError(t, err)
 	err = oldInv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.NoError(t, err)

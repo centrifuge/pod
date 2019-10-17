@@ -9,9 +9,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -226,4 +228,86 @@ func TestService_Update(t *testing.T) {
 	repo.On("Update", did[:], payload.DocumentID, oldModel).Return(nil).Once()
 	_, err = s.Update(ctx, payload)
 	assert.NoError(t, err)
+}
+
+func TestService_AddSignedAttribute(t *testing.T) {
+	s := service{}
+	label := "signed_attribute"
+	value := utils.RandomSlice(32)
+	docID := utils.RandomSlice(32)
+	versionID := utils.RandomSlice(32)
+
+	// missing did
+	ctx := context.Background()
+	_, err := s.AddSignedAttribute(ctx, docID, label, value)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing document
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	prepo := new(mockRepo)
+	prepo.On("Get", did[:], docID).Return(nil, errors.New("Missing")).Once()
+	s.pendingRepo = prepo
+	_, err = s.AddSignedAttribute(ctx, docID, label, value)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// failed to get new attribute
+	doc := new(documents.MockModel)
+	doc.On("ID").Return(docID)
+	doc.On("CurrentVersion").Return(versionID)
+	prepo.On("Get", did[:], docID).Return(doc, nil)
+	_, err = s.AddSignedAttribute(ctx, docID, "", value)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrEmptyAttrLabel, err))
+
+	// failed to add attribute to document
+	doc.On("AddAttributes", mock.Anything, false, mock.Anything).Return(errors.New("failed to add")).Once()
+	_, err = s.AddSignedAttribute(ctx, docID, label, value)
+	assert.Error(t, err)
+
+	// success
+	doc.On("AddAttributes", mock.Anything, false, mock.Anything).Return(nil).Once()
+	prepo.On("Update", did[:], docID, doc).Return(nil).Once()
+	doc1, err := s.AddSignedAttribute(ctx, docID, label, value)
+	assert.NoError(t, err)
+	assert.Equal(t, doc, doc1)
+	prepo.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}
+
+func TestService_RemoveCollaborators(t *testing.T) {
+	s := service{}
+
+	// missing did from context
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	_, err := s.RemoveCollaborators(ctx, docID, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.RemoveCollaborators(ctx, docID, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// failed to remove collaborators
+	d := new(documents.MockModel)
+	d.On("RemoveCollaborators", mock.Anything).Return(errors.New("failed")).Once()
+	repo.On("Get", did[:], docID).Return(d, nil)
+	_, err = s.RemoveCollaborators(ctx, docID, []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.Error(t, err)
+
+	// success
+	d.On("RemoveCollaborators", mock.Anything).Return(nil)
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
+	d1, err := s.RemoveCollaborators(ctx, docID, []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	assert.Equal(t, d, d1)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
 }
