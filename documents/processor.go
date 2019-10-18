@@ -107,7 +107,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	sig, err := self.SignMsg(ConsensusSignaturePayload(sr, byte(0)))
+	sig, err := self.SignMsg(ConsensusSignaturePayload(sr, false))
 	if err != nil {
 		return err
 	}
@@ -277,6 +277,10 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 }
 
 // ConsensusSignaturePayload forms the payload needed to be signed during the document consensus flow
-func ConsensusSignaturePayload(dataRoot []byte, validationFlag byte) []byte {
-	return append(dataRoot, []byte{validationFlag}...)
+func ConsensusSignaturePayload(dataRoot []byte, validated bool) []byte {
+	tFlag := byte(0)
+	if validated {
+		tFlag = byte(1)
+	}
+	return append(dataRoot, tFlag)
 }

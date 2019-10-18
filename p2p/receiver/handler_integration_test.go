@@ -99,11 +99,12 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	assert.Nil(t, err, "must be nil")
 	assert.NotNil(t, p2pResp, "must be non nil")
 	resp := resolveSignatureResponse(t, p2pResp)
-	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-	sig := resp.Signature
+	assert.NotNil(t, resp.Signatures[0].Signature, "must be non nil")
+	sig := resp.Signatures[0]
 	signingRoot, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
+	payload := documents.ConsensusSignaturePayload(signingRoot, false)
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), payload), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
@@ -139,11 +140,12 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd}, defaultDID)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp, "must be non nil")
-	assert.NotNil(t, resp.Signature.Signature, "must be non nil")
-	sig := resp.Signature
+	assert.NotNil(t, resp.Signatures[0].Signature, "must be non nil")
+	sig := resp.Signatures[0]
 	signingRoot, err := po.CalculateSigningRoot()
 	assert.NoError(t, err)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), signingRoot), "signature must be valid")
+	payload := documents.ConsensusSignaturePayload(signingRoot, true)
+	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), payload), "signature must be valid")
 
 	// document already exists
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
@@ -202,7 +204,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Add signature received
-	po.AppendSignatures(resp.Signature)
+	po.AppendSignatures(resp.Signatures...)
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
 	tree, err := po.DocumentRootTree()
@@ -234,7 +236,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Add signature received
-	npo.AppendSignatures(resp.Signature)
+	npo.AppendSignatures(resp.Signatures...)
 	tree, err = npo.DocumentRootTree()
 
 	// Anchor document
@@ -313,13 +315,14 @@ func prepareDocumentForP2PHandler(t *testing.T, inv *invoice.Invoice) (*invoice.
 	assert.NoError(t, err)
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, false), crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		SignatureId: append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
-		SignerId:    defaultDID[:],
-		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
-		Signature:   s,
+		SignatureId:         append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
+		SignerId:            defaultDID[:],
+		PublicKey:           accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature:           s,
+		TransitionValidated: false,
 	}
 	inv.AppendSignatures(sig)
 	_, err = inv.CalculateDocumentRoot()

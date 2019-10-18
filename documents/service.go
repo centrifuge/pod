@@ -217,17 +217,12 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 
 	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 
-	transitionFlag := byte(0)
 	// If there is a previous version and we have successfully validated the transition then set the signature flag
-	if old != nil {
-		transitionFlag = byte(1)
-	}
-
-	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, transitionFlag))
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, old != nil))
 	if err != nil {
 		return nil, err
 	}
-	sig.TransitionValidated = (transitionFlag != byte(0))
+	sig.TransitionValidated = (old != nil)
 	model.AppendSignatures(sig)
 
 	// set the status to committing since we are at requesting signatures stage.

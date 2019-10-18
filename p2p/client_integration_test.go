@@ -147,13 +147,14 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	assert.NoError(t, err)
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, true), crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		SignatureId: append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
-		SignerId:    defaultDID[:],
-		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
-		Signature:   s,
+		SignatureId:         append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
+		SignerId:            defaultDID[:],
+		PublicKey:           accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature:           s,
+		TransitionValidated: true,
 	}
 	inv.AppendSignatures(sig)
 	_, err = inv.CalculateDocumentRoot()

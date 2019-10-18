@@ -369,7 +369,7 @@ func (s *peer) validateSignatureResp(
 			return errors.New("signature invalid with err: %s", err.Error())
 		}
 
-		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, signingRoot, tm)
+		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated), tm)
 		if err != nil {
 			return errors.New("signature invalid with err: %s", err.Error())
 		}
