@@ -437,12 +437,14 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	}
 
 	did := acc.GetIdentityID()
+
 	return &coredocumentpb.Signature{
 		SignatureId: append(did, signingKeyPair.PublicKey...),
 		SignerId:    did,
 		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
 	}, nil
+
 }
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {

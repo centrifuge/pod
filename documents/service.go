@@ -57,7 +57,7 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
@@ -183,7 +183,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -217,10 +217,12 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 
 	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 
-	sig, err := acc.SignMsg(sr)
+	// If there is a previous version and we have successfully validated the transition then set the signature flag
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, old != nil))
 	if err != nil {
 		return nil, err
 	}
+	sig.TransitionValidated = (old != nil)
 	model.AppendSignatures(sig)
 
 	// set the status to committing since we are at requesting signatures stage.
@@ -243,7 +245,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 
 	srvLog.Infof("signed document %x with version %x", model.ID(), model.CurrentVersion())
-	return sig, nil
+	return []*coredocumentpb.Signature{sig}, nil
 }
 
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error {

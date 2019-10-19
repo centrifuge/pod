@@ -336,7 +336,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 			continue
 		}
 
-		signatures = append(signatures, resp.resp.Signature)
+		signatures = append(signatures, resp.resp.Signatures...)
 	}
 
 	return signatures, signatureCollectionErrors, nil
@@ -353,11 +353,6 @@ func (s *peer) validateSignatureResp(
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	err := identity.ValidateDIDBytes(resp.Signature.SignerId, receiver)
-	if err != nil {
-		return errors.New("signature invalid with err: %s", err.Error())
-	}
-
 	tm, err := model.Timestamp()
 	if err != nil {
 		return errors.New("cannot get model timestamp : %s", err.Error())
@@ -368,9 +363,16 @@ func (s *peer) validateSignatureResp(
 		return errors.New("failed to calculate signing root: %s", err.Error())
 	}
 
-	err = s.idService.ValidateSignature(receiver, resp.Signature.PublicKey, resp.Signature.Signature, signingRoot, tm)
-	if err != nil {
-		return errors.New("signature invalid with err: %s", err.Error())
+	for _, sig := range resp.Signatures {
+		err = identity.ValidateDIDBytes(sig.SignerId, receiver)
+		if err != nil {
+			return errors.New("signature invalid with err: %s", err.Error())
+		}
+
+		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated), tm)
+		if err != nil {
+			return errors.New("signature invalid with err: %s", err.Error())
+		}
 	}
 
 	return nil

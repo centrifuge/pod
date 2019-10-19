@@ -144,12 +144,12 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
+	signatures, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
 	if err != nil {
 		return nil, err
 	}
 
-	return &p2ppb.SignatureResponse{Signature: signature}, nil
+	return &p2ppb.SignatureResponse{Signatures: signatures}, nil
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message

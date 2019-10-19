@@ -154,7 +154,7 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 			continue
 		}
 
-		signatures = append(signatures, resp.resp.Signature)
+		signatures = append(signatures, resp.resp.Signatures...)
 	}
 
 	return signatures, signatureCollectionErrors, nil

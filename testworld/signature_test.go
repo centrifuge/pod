@@ -70,7 +70,7 @@ func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
 
 	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
 
-	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
@@ -95,9 +95,9 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 
 	sr, err := dm.CalculateSigningRoot()
 	assert.NoError(t, err)
-
+	payload := documents.ConsensusSignaturePayload(sr, false)
 	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
-	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKeyValid, payload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -109,7 +109,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 
 	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
 
-	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
@@ -123,7 +123,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	//Following simulate attack by Mallory with random keys pair
 	//Random keys pairs should cause signature verification failure
 	publicKey2, privateKey2 := GetRandomSigningKeyPair(t)
-	s, err = crypto.SignMessage(privateKey2, sr, crypto.CurveSecp256K1)
+	s, err = crypto.SignMessage(privateKey2, payload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig = &coredocumentpb.Signature{
@@ -134,7 +134,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	}
 
 	// when got request on signature of document, mocking documents.Service of Mallory return a random signature
-	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
@@ -241,15 +241,16 @@ func createCDWithEmbeddedInvoice(t *testing.T, collaborators [][]byte, identityD
 
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
-
-	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
+	signPayload := documents.ConsensusSignaturePayload(sr, false)
+	s, err := crypto.SignMessage(privateKey, signPayload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
-		SignatureId: append(identityDID[:], publicKey...),
-		SignerId:    identityDID[:],
-		PublicKey:   publicKey,
-		Signature:   s,
+		SignatureId:         append(identityDID[:], publicKey...),
+		SignerId:            identityDID[:],
+		PublicKey:           publicKey,
+		Signature:           s,
+		TransitionValidated: false,
 	}
 	inv.AppendSignatures(sig)
 

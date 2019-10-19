@@ -89,12 +89,14 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
 	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	err = model.AddUpdateLog(did)
+	assert.NoError(t, err)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
 	randomBytes := utils.RandomSlice(identity.DIDLength)
-	signature := &coredocumentpb.Signature{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signature), nil)
+	signatures := []*coredocumentpb.Signature{{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}}
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signatures), nil)
 
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 
@@ -112,8 +114,8 @@ func getIDMocks(ctx context.Context, did identity.DID) *testingcommons.MockIdent
 	return idService
 }
 
-func (s *peer) createSignatureResp(centNodeVer string, signature *coredocumentpb.Signature) *protocolpb.P2PEnvelope {
-	req, err := proto.Marshal(&p2ppb.SignatureResponse{Signature: signature})
+func (s *peer) createSignatureResp(centNodeVer string, signatures []*coredocumentpb.Signature) *protocolpb.P2PEnvelope {
+	req, err := proto.Marshal(&p2ppb.SignatureResponse{Signatures: signatures})
 	if err != nil {
 		return nil
 	}
