@@ -9,9 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"golang.org/x/crypto/blake2s"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -36,9 +33,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2s"
 )
 
 var ctx = map[string]interface{}{}

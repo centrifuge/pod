@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"golang.org/x/crypto/blake2s"
-
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+
+	"golang.org/x/crypto/blake2s"
 )
 
 const (

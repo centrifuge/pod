@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
+
 	"golang.org/x/crypto/blake2s"
 )
 
