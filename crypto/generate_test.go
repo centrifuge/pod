@@ -3,9 +3,10 @@
 package crypto
 
 import (
-	"crypto/sha256"
 	"os"
 	"testing"
+
+	"golang.org/x/crypto/blake2s"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,8 @@ func TestGenerateSigningKeyPairED25519(t *testing.T) {
 func TestGenerateHashPair(t *testing.T) {
 	pre, hash, err := GenerateHashPair(32)
 	assert.NoError(t, err)
-	h := sha256.New()
+	h, err := blake2s.New256(nil)
+	assert.NoError(t, err)
 	h.Write(pre)
 	var expectedHash []byte
 	expectedHash = h.Sum(expectedHash)

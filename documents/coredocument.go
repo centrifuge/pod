@@ -2,7 +2,6 @@ package documents
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -18,10 +17,19 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
+	// idSize represents the size of identifiers, roots etc..
+	idSize = 32
+
+	// nftByteCount is the length of combined bytes of registry and tokenID
+	nftByteCount = 52
+
+	// Tree fields and prefixes
+
 	// CDRootField represents the coredocument root property of a tree
 	CDRootField = "cd_root"
 
@@ -37,12 +45,6 @@ const (
 	// SigningRootField represents the signature root property of a tree
 	SigningRootField = "signing_root"
 
-	// idSize represents the size of identifiers, roots etc..
-	idSize = 32
-
-	// nftByteCount is the length of combined bytes of registry and tokenID
-	nftByteCount = 52
-
 	// DRTreePrefix is the human readable prefix for document root tree props
 	DRTreePrefix = "dr_tree"
 
@@ -54,6 +56,8 @@ const (
 
 	// SignaturesTreePrefix is the human readable prefix for signature props
 	SignaturesTreePrefix = "signatures_tree"
+
+	// Document states
 
 	// Pending status represents document is in pending state
 	Pending Status = "pending"
@@ -581,8 +585,7 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 		Salt:     make([]byte, 32),
 		Value:    []byte(docType),
 	}
-
-	err = documentTypeNode.HashNode(sha256.New(), true)
+	err = documentTypeNode.HashNode(sha3.NewKeccak256(), true)
 	if err != nil {
 		return nil, err
 	}

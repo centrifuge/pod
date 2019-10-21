@@ -4,12 +4,14 @@ package invoice
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/blake2s"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -173,13 +175,16 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	signingRoot, err := i.CalculateSigningRoot()
 	assert.NoError(t, err)
 
+	nodeHash, err := blake2s.New256(nil)
+	assert.NoError(t, err)
+
 	// Validate invoice_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
@@ -189,16 +194,16 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// validate line item
-	valid, err = documents.ValidateProof(proof[3], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[3], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
-	valid, err = documents.ValidateProof(proof[4], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[4], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -237,8 +242,11 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 8)
 
+	nodeHash, err := blake2s.New256(nil)
+	assert.NoError(t, err)
+
 	// Validate invoice_gross_amount
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
@@ -253,7 +261,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof[7], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[7], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

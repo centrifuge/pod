@@ -3,11 +3,13 @@
 package documents
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+	"golang.org/x/crypto/blake2s"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -322,8 +324,10 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, len(pfs) > 0)
 
+		h, err := blake2s.New256(nil)
+		assert.NoError(t, err)
 		for _, pf := range pfs {
-			valid, err := ValidateProof(pf, signingRoot, sha256.New())
+			valid, err := ValidateProof(pf, signingRoot, h, sha3.NewKeccak256())
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}
