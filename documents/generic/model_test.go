@@ -4,7 +4,6 @@ package generic
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -31,9 +30,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx = map[string]interface{}{}
@@ -157,8 +159,11 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	signingRoot, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
 
+	nodeHash, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
 	// Validate roles
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -168,7 +173,7 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	assert.True(t, g.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -221,18 +226,21 @@ func TestAttributeProof(t *testing.T) {
 	assert.NotNil(t, proof)
 	assert.Len(t, proofFields, 4)
 
+	nodeHash, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
 	// Validate loanAmount
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate asIsValue
-	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate afterRehabValue
-	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
@@ -277,8 +285,11 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
+	nodeHash, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
