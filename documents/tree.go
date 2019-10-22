@@ -36,6 +36,28 @@ func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byt
 	return &t, err
 }
 
+// DefaultZTreeWithPrefix returns a DocumentTree for the ZK branch with default opts passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultZTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	var prop proofs.Property
+	if prefix != "" {
+		prop = NewLeafProperty(prefix, compactPrefix)
+	}
+
+	b2bHash, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
+		CompactProperties: true,
+		Hash:              b2bHash,
+		ParentPrefix:      prop,
+		Salts:             cd.DocumentSaltsFunc(),
+		TreeDepth:         20,
+	})
+	return &t, err
+}
+
 // NewLeafProperty returns a proof property with the literal and the compact
 func NewLeafProperty(literal string, compact []byte) proofs.Property {
 	return proofs.NewProperty(literal, compact...)
