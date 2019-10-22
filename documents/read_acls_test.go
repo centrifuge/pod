@@ -3,7 +3,6 @@
 package documents
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
@@ -22,9 +21,12 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
@@ -322,8 +324,10 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, len(pfs) > 0)
 
+		h, err := blake2b.New256(nil)
+		assert.NoError(t, err)
 		for _, pf := range pfs {
-			valid, err := ValidateProof(pf, signingRoot, sha256.New())
+			valid, err := ValidateProof(pf, signingRoot, h, sha3.NewKeccak256())
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

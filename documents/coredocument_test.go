@@ -3,7 +3,6 @@
 package documents
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"os"
 	"testing"
@@ -31,6 +30,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx map[string]interface{}
@@ -216,7 +217,8 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	h := sha256.New()
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
 	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
 	var expectedCurrentVersion []byte
 	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
@@ -233,7 +235,8 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.Contains(t, rc, c1)
 	assert.Contains(t, rc, c2)
-	h = sha256.New()
+	h, err = blake2b.New256(nil)
+	assert.NoError(t, err)
 	h.Write(ncd.GetTestCoreDocWithReset().NextPreimage)
 	var expectedNextVersion []byte
 	expectedNextVersion = h.Sum(expectedNextVersion)
@@ -289,7 +292,8 @@ func TestCoreDocument_Patch(t *testing.T) {
 
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
-	h := sha256.New()
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
 	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
 	var expectedCurrentVersion []byte
 	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
@@ -374,8 +378,9 @@ func TestGetSigningProofHash(t *testing.T) {
 
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
-
-	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, sha256.New())
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, h)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -472,7 +477,8 @@ func TestGetDocumentRootTree(t *testing.T) {
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
-	h := sha256.New()
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})

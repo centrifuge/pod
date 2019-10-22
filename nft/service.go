@@ -2,7 +2,6 @@ package nft
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"math/big"
 	"time"
@@ -21,6 +20,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+
 	logging "github.com/ipfs/go-log"
 )
 
@@ -122,7 +123,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 
 	optProofs := docProofs.FieldProofs
 	if req.UseGeneric {
-		optProofs, err = proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha256.New())
+		optProofs, err = proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewKeccak256())
 		if err != nil {
 			return mreq, err
 		}

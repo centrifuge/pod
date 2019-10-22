@@ -3,12 +3,14 @@ package documents
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
 	"hash"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 // DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
@@ -18,10 +20,16 @@ func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byt
 		prop = NewLeafProperty(prefix, compactPrefix)
 	}
 
+	b2bHash, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
+
 	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		CompactProperties: true,
 		EnableHashSorting: true,
-		Hash:              sha256.New(),
+		Hash:              b2bHash,
+		LeafHash:          sha3.NewKeccak256(),
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
 	})
@@ -67,10 +75,10 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 }
 
 // ValidateProof by comparing it to the provided rootHash
-func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash) (valid bool, err error) {
+func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash, leafHashFunc hash.Hash) (valid bool, err error) {
 	var fieldHash []byte
 	if len(proof.Hash) == 0 {
-		fieldHash, err = proofs.CalculateHashForProofField(proof, hashFunc)
+		fieldHash, err = proofs.CalculateHashForProofField(proof, leafHashFunc)
 	} else {
 		fieldHash = proof.Hash
 	}
