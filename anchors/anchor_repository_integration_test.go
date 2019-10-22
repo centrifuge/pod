@@ -18,7 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 var (
@@ -50,7 +50,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	_, err = h.Write(anchorIDPreImage)
 	assert.NoError(t, err)
@@ -89,7 +89,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	_, err = h.Write(anchorIDPreImage)
 	assert.NoError(t, err)
@@ -141,7 +141,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		anchorIDPreImage := utils.RandomSlice(32)
 		anchorIDPreImageID, err := anchors.ToAnchorID(anchorIDPreImage)
 		assert.NoError(t, err)
-		h, err := blake2s.New256(nil)
+		h, err := blake2b.New256(nil)
 		assert.NoError(t, err)
 		_, err = h.Write(anchorIDPreImage)
 		assert.NoError(t, err)

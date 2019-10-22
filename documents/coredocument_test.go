@@ -31,7 +31,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx map[string]interface{}
@@ -217,7 +217,7 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
 	var expectedCurrentVersion []byte
@@ -235,7 +235,7 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	assert.Contains(t, rc, c1)
 	assert.Contains(t, rc, c2)
-	h, err = blake2s.New256(nil)
+	h, err = blake2b.New256(nil)
 	assert.NoError(t, err)
 	h.Write(ncd.GetTestCoreDocWithReset().NextPreimage)
 	var expectedNextVersion []byte
@@ -292,7 +292,7 @@ func TestCoreDocument_Patch(t *testing.T) {
 
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
 	var expectedCurrentVersion []byte
@@ -378,7 +378,7 @@ func TestGetSigningProofHash(t *testing.T) {
 
 	signatureTree, err := cd.getSignatureDataTree()
 	assert.Nil(t, err)
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, h)
 	assert.True(t, valid)
@@ -477,7 +477,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 }
 
 func TestCoreDocument_GenerateProofs(t *testing.T) {
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)

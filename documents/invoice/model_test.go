@@ -38,7 +38,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx = map[string]interface{}{}
@@ -175,7 +175,7 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	signingRoot, err := i.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	nodeHash, err := blake2s.New256(nil)
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate invoice_number
@@ -242,7 +242,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 8)
 
-	nodeHash, err := blake2s.New256(nil)
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate invoice_gross_amount

@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
@@ -62,7 +62,7 @@ func TestGenerateSigningKeyPairED25519(t *testing.T) {
 func TestGenerateHashPair(t *testing.T) {
 	pre, hash, err := GenerateHashPair(32)
 	assert.NoError(t, err)
-	h, err := blake2s.New256(nil)
+	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 	h.Write(pre)
 	var expectedHash []byte

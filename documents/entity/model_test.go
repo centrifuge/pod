@@ -38,7 +38,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx = map[string]interface{}{}
@@ -185,7 +185,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 	signingRoot, err := e.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	nodeHash, err := blake2s.New256(nil)
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate entity_number

@@ -10,7 +10,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 // DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
@@ -20,7 +20,7 @@ func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byt
 		prop = NewLeafProperty(prefix, compactPrefix)
 	}
 
-	b2bHash, err := blake2s.New256(nil)
+	b2bHash, err := blake2b.New256(nil)
 	if err != nil {
 		return nil, err
 	}

@@ -35,7 +35,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx = map[string]interface{}{}
@@ -159,7 +159,7 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	signingRoot, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	nodeHash, err := blake2s.New256(nil)
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate roles
@@ -226,7 +226,7 @@ func TestAttributeProof(t *testing.T) {
 	assert.NotNil(t, proof)
 	assert.Len(t, proofFields, 4)
 
-	nodeHash, err := blake2s.New256(nil)
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate loanAmount
@@ -285,7 +285,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	nodeHash, err := blake2s.New256(nil)
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate next_version
