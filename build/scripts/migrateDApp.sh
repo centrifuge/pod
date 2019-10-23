@@ -2,15 +2,8 @@
 
 set -e
 
-ANCHOR_ADDR=$1
-if [ -z ${ANCHOR_ADDR} ];
-then
-    echo "${ANCHOR_ADDR} not set"
-    exit 1
-fi
-
 # Allow passing parent directory as a parameter
-PARENT_DIR=$2
+PARENT_DIR=$1
 if [ -z ${PARENT_DIR} ];
 then
     PARENT_DIR=`pwd`
@@ -34,7 +27,7 @@ export ETH_RPC_URL=$CENT_ETHEREUM_NODEURL
 export ETH_PASSWORD="/dev/null"
 export ETH_FROM="0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
-regAddr=$(dapp create "TestNFT" "$ANCHOR_ADDR")
+regAddr=$(dapp create "NFT" "CentNFT" "CentNFT")
 
 echo -n "genericNFT $regAddr" > $PARENT_DIR/localAddresses
 
