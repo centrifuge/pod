@@ -264,9 +264,9 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	tokenID := utils.RandomSlice(32)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
+	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -315,7 +315,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
+		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
 			assert.Error(t, err)
 			continue

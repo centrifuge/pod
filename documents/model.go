@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -70,14 +69,14 @@ type Model interface {
 	Signatures() []coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
-	CreateProofs(fields []string) (proofs []*proofspb.Proof, err error)
+	CreateProofs(fields []string) (prf *DocumentProof, err error)
 
 	// CreateNFTProofs creates NFT proofs for minting.
 	CreateNFTProofs(
 		account identity.DID,
 		registry common.Address,
 		tokenID []byte,
-		nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error)
+		nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
 
 	// IsNFTMinted checks if there is any NFT minted for the registry given
 	IsNFTMinted(tr TokenRegistry, registry common.Address) bool

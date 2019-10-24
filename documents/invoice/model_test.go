@@ -179,31 +179,31 @@ func TestInvoice_CreateProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate invoice_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
 	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// validate line item
-	valid, err = documents.ValidateProof(proof[3], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[3], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
-	valid, err = documents.ValidateProof(proof[4], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[4], signingRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -222,10 +222,10 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
 	i.AppendSignatures(sig)
-	_, err = i.CalculateDataRoot()
+	dataRoot, err := i.CalculateDataRoot()
 	assert.NoError(t, err)
-	signingRoot, err := i.CalculateSigningRoot()
-	assert.NoError(t, err)
+	//signingRoot, err := i.CalculateSigningRoot()
+	//assert.NoError(t, err)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
@@ -246,22 +246,22 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate invoice_gross_amount
-	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate signing_root
-	valid, err = tree.ValidateProof(proof[5])
+	valid, err = tree.ValidateProof(proof.FieldProofs[5])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate signature
-	valid, err = tree.ValidateProof(proof[6])
+	valid, err = tree.ValidateProof(proof.FieldProofs[6])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof[7], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[7], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

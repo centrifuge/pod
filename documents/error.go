@@ -73,6 +73,9 @@ const (
 	// ErrDocumentNotInAllowedState is a sentinel error used when a document is not in allowed state for certain op
 	ErrDocumentNotInAllowedState = errors.Error("document is not in allowed state")
 
+	// ErrDataTree must be used for data tree errors
+	ErrDataTree = errors.Error("getDataTree error")
+
 	// Read ACL errors
 
 	// ErrNftNotFound must be used when the NFT is not found in the document
