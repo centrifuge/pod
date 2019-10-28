@@ -385,17 +385,6 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 	return role
 }
 
-// TreeProof is a helper structure to pass to create proofs
-type TreeProof struct {
-	tree          *proofs.DocumentTree
-	orderedHashes bool
-}
-
-// newTreeProof returns a TreeProof instance pointer
-func newTreeProof(t *proofs.DocumentTree, orderedHashes bool) *TreeProof {
-	return &TreeProof{tree: t, orderedHashes: orderedHashes}
-}
-
 // CreateProofs takes document data leaves and list to fields and generates proofs.
 func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
 	return cd.createProofs(false, docType, dataLeaves, fields)
