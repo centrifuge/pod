@@ -236,9 +236,6 @@ func createCDWithEmbeddedInvoice(t *testing.T, collaborators [][]byte, identityD
 	err = inv.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 
-	_, err = inv.CalculateDataRoot()
-	assert.NoError(t, err)
-
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
 	signPayload := documents.ConsensusSignaturePayload(sr, false)
@@ -273,9 +270,6 @@ func createCDWithEmbeddedInvoiceWithWrongSignature(t *testing.T, collaborators [
 	inv := invoice.InitInvoice(t, identityDID, payload)
 	inv.SetUsedAnchorRepoAddress(anchorRepo)
 	err = inv.AddUpdateLog(identityDID)
-	assert.NoError(t, err)
-
-	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	//Wrong Signing Root will cause wrong signature

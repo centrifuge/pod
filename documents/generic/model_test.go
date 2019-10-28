@@ -9,6 +9,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/precise-proofs/proofs"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -28,7 +30,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
@@ -87,8 +88,6 @@ func createCDWithEmbeddedGeneric(t *testing.T) (documents.Model, coredocumentpb.
 	assert.NoError(t, err)
 	g.CoreDocument = cd
 	g.GetTestCoreDocWithReset()
-	_, err = g.CalculateDataRoot()
-	assert.NoError(t, err)
 	_, err = g.CalculateSigningRoot()
 	assert.NoError(t, err)
 	_, err = g.CalculateDocumentRoot()
@@ -137,16 +136,9 @@ func TestGeneric_JSON(t *testing.T) {
 	assert.Equal(t, cd, ncd)
 }
 
-func TestGeneric_calculateDataRoot(t *testing.T) {
-	g, _ := createCDWithEmbeddedGeneric(t)
-
-	dr, err := g.CalculateDataRoot()
-	assert.Nil(t, err, "calculate must pass")
-	assert.False(t, utils.IsEmptyByteSlice(dr))
-}
-
 func TestGeneric_CreateProofs(t *testing.T) {
 	g, cd := createCDWithEmbeddedGeneric(t)
+	gg := g.(*Generic)
 	rk := cd.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
 	proof, err := g.CreateProofs([]string{pf, documents.CDTreePrefix + ".document_type"})
@@ -156,24 +148,23 @@ func TestGeneric_CreateProofs(t *testing.T) {
 		return
 	}
 
-	signingRoot, err := g.CalculateSigningRoot()
-	assert.NoError(t, err)
+	dataRoot := calculateBasicDataRoot(t, gg)
 
 	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate roles
-	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[0].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[0].Value)
 	assert.NoError(t, err)
 	assert.True(t, g.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -184,7 +175,7 @@ func TestAttributeProof(t *testing.T) {
 	acc.IdentityID = did[:]
 	assert.NoError(t, err)
 	g, _ := createCDWithEmbeddedGeneric(t)
-
+	gg := g.(*Generic)
 	var attrs []documents.Attribute
 	loanAmount := "loanAmount"
 	loanAmountValue := "100"
@@ -208,10 +199,7 @@ func TestAttributeProof(t *testing.T) {
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
 	g.AppendSignatures(sig)
-	_, err = g.CalculateDataRoot()
-	assert.NoError(t, err)
-	signingRoot, err := g.CalculateSigningRoot()
-	assert.NoError(t, err)
+	dataRoot := calculateBasicDataRoot(t, gg)
 
 	keys, err := tc.GetKeys()
 	assert.NoError(t, err)
@@ -230,17 +218,17 @@ func TestAttributeProof(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate loanAmount
-	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate asIsValue
-	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate afterRehabValue
-	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
@@ -252,13 +240,11 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	acc.IdentityID = did[:]
 	assert.NoError(t, err)
 	g, _ := createCDWithEmbeddedGeneric(t)
+	gg := g.(*Generic)
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
 	g.AppendSignatures(sig)
-	_, err = g.CalculateDataRoot()
-	assert.NoError(t, err)
-	signingRoot, err := g.CalculateSigningRoot()
-	assert.NoError(t, err)
+	dataRoot := calculateBasicDataRoot(t, gg)
 	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
@@ -271,17 +257,19 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	proof, err := g.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := g.DocumentRootTree()
+	tree := getDocumentRootTree(t, gg)
 	assert.NoError(t, err)
 	assert.Len(t, proofFields, 3)
 
 	// Validate signing_root
-	valid, err := tree.ValidateProof(proof[0])
+	valid, err := tree.ValidateProof(proof.FieldProofs[0])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate signature
-	valid, err = tree.ValidateProof(proof[1])
+	signaturesTree, err := gg.CoreDocument.GetSignaturesDataTree()
+	assert.NoError(t, err)
+	valid, err = signaturesTree.ValidateProof(proof.FieldProofs[1])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -289,7 +277,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -348,9 +336,6 @@ func TestGeneric_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	oldGeneric := model.(*Generic)
 	err = g.(*Generic).PrepareNewVersion(g, documents.CollaboratorsAccess{}, oldGeneric.Attributes)
-	assert.NoError(t, err)
-
-	_, err = g.CalculateDataRoot()
 	assert.NoError(t, err)
 
 	_, err = g.CalculateSigningRoot()
@@ -435,6 +420,22 @@ func marshallData(t *testing.T, m map[string]interface{}) []byte {
 func validData(t *testing.T) []byte {
 	d := map[string]interface{}{}
 	return marshallData(t, d)
+}
+
+func calculateBasicDataRoot(t *testing.T, g *Generic) []byte {
+	dataLeaves, err := g.getDataLeaves()
+	assert.NoError(t, err)
+	trees, _, err := g.CoreDocument.SigningDataTrees(g.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
+}
+
+func getDocumentRootTree(t *testing.T, g *Generic) *proofs.DocumentTree {
+	dataLeaves, err := g.getDataLeaves()
+	assert.NoError(t, err)
+	tree, err := g.CoreDocument.DocumentRootTree(g.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return tree
 }
 
 func TestGeneric_DeriveFromCreatePayload(t *testing.T) {

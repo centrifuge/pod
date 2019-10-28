@@ -22,12 +22,12 @@ import (
 
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
-	DocumentID  []byte
-	VersionID   []byte
-	State       string
-	FieldProofs []*proofspb.Proof
-	SiblingRoot []byte
-	SigningRoot []byte
+	DocumentID     []byte
+	VersionID      []byte
+	State          string
+	FieldProofs    []*proofspb.Proof
+	SiblingRoot    []byte
+	SigningRoot    []byte
 	SignaturesRoot []byte
 }
 

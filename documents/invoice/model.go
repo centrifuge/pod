@@ -400,16 +400,6 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
-func (i *Invoice) CalculateDataRoot() ([]byte, error) {
-	t, err := i.getDataTree()
-	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
-	}
-
-	return t.RootHash(), nil
-}
-
 func (i *Invoice) getDataLeaves() ([]proofs.LeafNode, error) {
 	t, err := i.getRawDataTree()
 	if err != nil {
@@ -435,20 +425,6 @@ func (i *Invoice) getRawDataTree() (*proofs.DocumentTree, error) {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return t, nil
-}
-
-// getDataTree creates precise-proofs data tree for the model
-func (i *Invoice) getDataTree() (*proofs.DocumentTree, error) {
-	tree, err := i.getRawDataTree()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDataTree, err)
-	}
-	err = tree.Generate()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDataTree, err)
-	}
-
-	return tree, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -519,15 +495,6 @@ func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dataLeaves)
-}
-
-// DocumentRootTree creates and returns the document root tree
-func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dataLeaves, err := i.getDataLeaves()
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDataTree, err)
-	}
-	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dataLeaves)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.

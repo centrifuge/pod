@@ -158,8 +158,6 @@ func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did i
 	err := entity.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 	entity.GetTestCoreDocWithReset()
-	_, err = entity.CalculateDataRoot()
-	assert.NoError(t, err)
 	sr, err := entity.CalculateSigningRoot()
 	assert.NoError(t, err)
 	// if acc errors out, just skip it

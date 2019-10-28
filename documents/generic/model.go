@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -87,14 +86,27 @@ func (g *Generic) Type() reflect.Type {
 	return reflect.TypeOf(g)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
-func (g *Generic) CalculateDataRoot() ([]byte, error) {
-	t, err := g.getDocumentDataTree()
+func (g *Generic) getDataLeaves() ([]proofs.LeafNode, error) {
+	t, err := g.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+	return t.GetLeaves(), nil
+}
 
-	return t.RootHash(), nil
+func (g *Generic) getRawDataTree() (*proofs.DocumentTree, error) {
+	if g.CoreDocument == nil {
+		return nil, errors.New("getDataTree error CoreDocument not set")
+	}
+	t, err := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	err = t.AddLeavesFromDocument(getProtoGenericData())
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	return t, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -122,13 +134,13 @@ func (g *Generic) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 }
 
 // CreateProofs generates proofs for given fields.
-func (g *Generic) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := g.getDocumentDataTree()
+func (g *Generic) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
+	dataLeaves, err := g.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return g.CoreDocument.CreateProofs(g.DocumentType(), tree, fields)
+	return g.CoreDocument.CreateProofs(g.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the generic document type.
@@ -160,29 +172,20 @@ func (g *Generic) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (g *Generic) CalculateSigningRoot() ([]byte, error) {
-	dr, err := g.CalculateDataRoot()
+	dataLeaves, err := g.getDataLeaves()
 	if err != nil {
-		return dr, err
+		return nil, err
 	}
-	return g.CoreDocument.CalculateSigningRoot(g.DocumentType(), dr)
+	return g.CoreDocument.CalculateSigningRoot(g.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (g *Generic) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := g.CalculateDataRoot()
-	if err != nil {
-		return dr, err
-	}
-	return g.CoreDocument.CalculateDocumentRoot(g.DocumentType(), dr)
-}
-
-// DocumentRootTree creates and returns the document root tree
-func (g *Generic) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := g.CalculateDataRoot()
+	dataLeaves, err := g.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
-	return g.CoreDocument.DocumentRootTree(g.DocumentType(), dr)
+	return g.CoreDocument.CalculateDocumentRoot(g.DocumentType(), dataLeaves)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -190,16 +193,16 @@ func (g *Generic) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (proof *documents.DocumentProof, err error) {
 
-	tree, err := g.getDocumentDataTree()
+	dataLeaves, err := g.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
 
 	return g.CoreDocument.CreateNFTProofs(
 		g.DocumentType(),
-		tree,
+		dataLeaves,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 

@@ -387,7 +387,7 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 
 // TreeProof is a helper structure to pass to create proofs
 type TreeProof struct {
-	tree       *proofs.DocumentTree
+	tree          *proofs.DocumentTree
 	orderedHashes bool
 }
 
@@ -417,12 +417,12 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 		return nil, err
 	}
 
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.GetSignaturesDataTree()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signatures tree: %v", err))
 	}
 
-	dTrees, sdr, err := cd.signingDataTrees(docType, dataLeaves)
+	dTrees, sdr, err := cd.SigningDataTrees(docType, dataLeaves)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing data trees: %v", err))
 	}
@@ -452,9 +452,9 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 	}
 
 	return &DocumentProof{
-		FieldProofs: rawProofs,
-		SiblingRoot: siblingTree.RootHash(),
-		SigningRoot: sdr,
+		FieldProofs:    rawProofs,
+		SiblingRoot:    siblingTree.RootHash(),
+		SigningRoot:    sdr,
 		SignaturesRoot: signatureTree.RootHash(),
 	}, nil
 }
@@ -490,7 +490,7 @@ func generateProofs(fields []string, treeProofs map[string]*proofs.DocumentTree)
 
 // CalculateSignaturesRoot returns the signatures root of the document.
 func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
-	tree, err := cd.getSignatureDataTree()
+	tree, err := cd.GetSignaturesDataTree()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to get signature tree: %v", err))
 	}
@@ -498,8 +498,8 @@ func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 	return tree.RootHash(), nil
 }
 
-// getSignatureDataTree returns the merkle tree for the Signature Data root.
-func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
+// GetSignaturesDataTree returns the merkle tree for the Signature Data root.
+func (cd *CoreDocument) GetSignaturesDataTree() (tree *proofs.DocumentTree, err error) {
 	tree, err = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
 	if err != nil {
 		return nil, err
@@ -538,7 +538,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.Lea
 		return nil, err
 	}
 	// Second leaf from the signature data tree
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.GetSignaturesDataTree()
 	if err != nil {
 		return nil, err
 	}
@@ -647,8 +647,8 @@ func (cd *CoreDocument) zkDataTree(docType string, dataLeaves []proofs.LeafNode,
 	return tree, nil
 }
 
-// docDataTrees returns the merkle trees (basicData and zkData) + signingRoot Hash for the document data tree provided
-func (cd *CoreDocument) signingDataTrees(docType string, dataLeaves []proofs.LeafNode) (trees []*proofs.DocumentTree, rootHash []byte, err error) {
+// SigningDataTrees returns the merkle trees (basicData and zkData) + signingRoot Hash for the document data tree provided
+func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.LeafNode) (trees []*proofs.DocumentTree, rootHash []byte, err error) {
 	if dataLeaves == nil {
 		return nil, nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
@@ -856,7 +856,7 @@ func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataLeaves []proof
 
 // CalculateSigningRoot calculates the signing root of the core document.
 func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs.LeafNode) ([]byte, error) {
-	_, treeHash, err := cd.signingDataTrees(docType, dataLeaves)
+	_, treeHash, err := cd.SigningDataTrees(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}

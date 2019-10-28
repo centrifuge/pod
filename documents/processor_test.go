@@ -46,12 +46,6 @@ func (m *mockModel) NFTs() []*coredocumentpb.NFT {
 	return dr
 }
 
-func (m *mockModel) CalculateDataRoot() ([]byte, error) {
-	args := m.Called()
-	dr, _ := args.Get(0).([]byte)
-	return dr, args.Error(1)
-}
-
 func (m *mockModel) CalculateSigningRoot() ([]byte, error) {
 	args := m.Called()
 	sr, _ := args.Get(0).([]byte)
@@ -186,17 +180,8 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(contextutil.ErrSelfNotFound, err))
 
-	// failed data root
-	model := new(mockModel)
-	model.On("CalculateDataRoot").Return(nil, errors.New("failed data root")).Once()
-	err = dp.PrepareForSignatureRequests(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed data root")
-
 	// failed signing root
-	model = new(mockModel)
-	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
+	model := new(mockModel)
 	model.On("AddUpdateLog").Return(nil).Once()
 	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return().Once()
 	model.On("CalculateSigningRoot").Return(nil, errors.New("failed signing root")).Once()
@@ -208,7 +193,6 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	// success
 	sr := utils.RandomSlice(32)
 	model = new(mockModel)
-	model.On("CalculateDataRoot").Return(utils.RandomSlice(32), nil).Once()
 	model.On("CalculateSigningRoot").Return(sr, nil).Once()
 	model.On("AddUpdateLog").Return(nil).Once()
 	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return().Once()

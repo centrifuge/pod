@@ -143,8 +143,6 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = inv.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
-	_, err = inv.CalculateDataRoot()
-	assert.NoError(t, err)
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
 	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, true), crypto.CurveSecp256K1)

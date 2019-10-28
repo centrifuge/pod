@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -47,9 +46,6 @@ type Model interface {
 	// TODO(ved): remove once the DocumentType is not used anymore.
 	Scheme() string
 
-	// CalculateDataRoot calculates the data root of the model.
-	CalculateDataRoot() ([]byte, error)
-
 	// CalculateSigningRoot calculates the signing root of the model.
 	CalculateSigningRoot() ([]byte, error)
 
@@ -58,9 +54,6 @@ type Model interface {
 
 	// CalculateSignaturesRoot returns signatures root of the model.
 	CalculateSignaturesRoot() ([]byte, error)
-
-	// DocumentRootTree returns the document root tree
-	DocumentRootTree() (tree *proofs.DocumentTree, err error)
 
 	// AppendSignatures appends the signatures to the model.
 	AppendSignatures(signatures ...*coredocumentpb.Signature)

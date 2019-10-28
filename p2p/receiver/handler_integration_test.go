@@ -200,21 +200,22 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	ctxh, err := contextutil.New(context.Background(), acc)
 	assert.Nil(t, err)
 
-	po, cd := prepareDocumentForP2PHandler(t, nil)
+	inv, cd := prepareDocumentForP2PHandler(t, nil)
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
 	// Add signature received
-	po.AppendSignatures(resp.Signatures...)
+	inv.AppendSignatures(resp.Signatures...)
 
 	// Since we have changed the coredocument by adding signatures lets generate salts again
-	tree, err := po.DocumentRootTree()
+	rootHash, err := inv.CalculateDocumentRoot()
+	assert.NoError(t, err)
 
 	// Anchor document
-	anchorIDTyped, err := anchors.ToAnchorID(po.GetTestCoreDocWithReset().CurrentPreimage)
+	anchorIDTyped, err := anchors.ToAnchorID(inv.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(tree.RootHash())
+	docRootTyped, err := anchors.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
 
 	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
@@ -222,7 +223,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 
 	watchCommittedAnchor := <-anchorConfirmations
 	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
-	cd, err = po.PackCoreDocument()
+	cd, err = inv.PackCoreDocument()
 	assert.NoError(t, err)
 
 	// this should succeed since this is the first document version
@@ -232,19 +233,20 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.True(t, anchorResp.Accepted)
 
 	// update the document
-	npo, ncd := updateDocumentForP2Phandler(t, po)
+	npo, ncd := updateDocumentForP2Phandler(t, inv)
 	resp, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &ncd}, defaultDID)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
 	// Add signature received
 	npo.AppendSignatures(resp.Signatures...)
-	tree, err = npo.DocumentRootTree()
+	rootHash, err = npo.CalculateDocumentRoot()
+	assert.NoError(t, err)
 
 	// Anchor document
 	anchorIDTyped, err = anchors.ToAnchorID(npo.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err = anchors.ToDocumentRoot(tree.RootHash())
+	docRootTyped, err = anchors.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
 	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
@@ -312,8 +314,6 @@ func prepareDocumentForP2PHandler(t *testing.T, inv *invoice.Invoice) (*invoice.
 	}
 	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = inv.AddUpdateLog(defaultDID)
-	assert.NoError(t, err)
-	_, err = inv.CalculateDataRoot()
 	assert.NoError(t, err)
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
