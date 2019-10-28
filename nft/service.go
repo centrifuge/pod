@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	logging "github.com/ipfs/go-log"
 )
@@ -30,7 +31,7 @@ const (
 	ErrNFTMinted = errors.Error("NFT already minted")
 
 	// GenericMintMethodABI constant interface to interact with mint methods
-	GenericMintMethodABI = `[{"constant":false,"inputs":[{"name":"usr","type":"address"},{"name":"tkn","type":"uint256"},{"name":"anchor","type":"uint256"},{"name":"data_root","type":"bytes32"},{"name":"signatures_root","type":"bytes32"},{"name":"properties","type":"bytes[]"},{"name":"values","type":"bytes[]"},{"name":"salts","type":"bytes32[]"},{"name":"proofs","type":"bytes32[][]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes32","name":"assetHash","type":"bytes32"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
 
 // Config is the config interface for nft package
@@ -249,9 +250,9 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric {
 			// TODO Remove once we have finalized the generic NFT work
-			filteredProofs := requestData.Proofs[:len(requestData.Proofs)-1]
+			// filteredProofs := requestData.Proofs[:len(requestData.Proofs)-1]
 			// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, signingRoot [32]byte, signaturesRoot [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.DataRoot, requestData.SignaturesRoot, requestData.Props, requestData.Values, requestData.Salts, filteredProofs}
+			args = []interface{}{requestData.To, requestData.TokenID, requestData.BundledHash, requestData.Props, requestData.Values, requestData.Salts}
 			mintContractABI = GenericMintMethodABI
 		}
 
@@ -401,6 +402,9 @@ type MintRequest struct {
 
 	// Proofs are the documents proofs that are needed
 	Proofs [][][32]byte
+
+	// bundled hash is the keccak hash of to + (props+values+salts)
+	BundledHash []byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
@@ -418,6 +422,8 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 	if err != nil {
 		return MintRequest{}, err
 	}
+
+	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
 	return MintRequest{
 		To:             to,
 		TokenID:        tokenID.BigInt(),
@@ -428,7 +434,8 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 		Props:          proofData.Props,
 		Values:         proofData.Values,
 		Salts:          proofData.Salts,
-		Proofs:         proofData.Proofs}, nil
+		Proofs:         proofData.Proofs,
+		BundledHash:    bh}, nil
 }
 
 type proofData struct {
@@ -468,6 +475,22 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 
 func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
 	return NewInvoiceUnpaidContract(address, client.GetEthClient())
+}
+
+// getBundledHash returns the sha3 of the concat of to + (props+values+salts)
+func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) []byte {
+	res := to.Bytes()
+	for i := 0; i < len(props); i++ {
+		// append prop[i]+values[i]+salts[i] to h
+		h := append(props[i], values[i]...)
+		h = append(h, salts[i][:]...)
+
+		// append keccak256(h) to res
+		res = append(res, crypto.Keccak256(h)...)
+	}
+
+	// return keccak256(res)
+	return crypto.Keccak256(res)
 }
 
 // Following are utility methods for nft parameter debugging purposes (Don't remove)

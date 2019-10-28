@@ -53,7 +53,7 @@ func Blake2bHash(value []byte) (hash []byte, err error) {
 	}
 	_, err = h.Write(value)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	return h.Sum(nil), nil
 }
@@ -63,7 +63,7 @@ func Sha256Hash(value []byte) (hash []byte, err error) {
 	h := sha256.New()
 	_, err = h.Write(value)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	return h.Sum(nil), nil
 }

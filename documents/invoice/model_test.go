@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/precise-proofs/proofs"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -34,6 +32,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
