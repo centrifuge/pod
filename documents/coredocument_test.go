@@ -4,10 +4,11 @@ package documents
 
 import (
 	"fmt"
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"os"
 	"testing"
 	"time"
+
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
