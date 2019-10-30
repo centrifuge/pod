@@ -13,8 +13,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-// DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
-func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+func (cd *CoreDocument) defaultTreeWithPrefix(prefix string, compactPrefix []byte, hashSorting bool) (*proofs.DocumentTree, error) {
 	var prop proofs.Property
 	if prefix != "" {
 		prop = NewLeafProperty(prefix, compactPrefix)
@@ -27,11 +26,43 @@ func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byt
 
 	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		CompactProperties: true,
-		EnableHashSorting: true,
+		EnableHashSorting: hashSorting,
 		Hash:              b2bHash,
 		LeafHash:          sha3.NewKeccak256(),
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
+	})
+	return &t, err
+}
+
+// DefaultTreeWithPrefix returns a DocumentTree with default opts, sorted hashing enabled and passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	return cd.defaultTreeWithPrefix(prefix, compactPrefix, true)
+}
+
+// DefaultOrderedTreeWithPrefix returns a DocumentTree with default opts, sorted hashing disabled and passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultOrderedTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	return cd.defaultTreeWithPrefix(prefix, compactPrefix, false)
+}
+
+// DefaultZTreeWithPrefix returns a DocumentTree for the ZK branch with default opts passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultZTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	var prop proofs.Property
+	if prefix != "" {
+		prop = NewLeafProperty(prefix, compactPrefix)
+	}
+
+	b2bHash, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
+		CompactProperties: true,
+		Hash:              b2bHash,
+		ParentPrefix:      prop,
+		Salts:             cd.DocumentSaltsFunc(),
+		TreeDepth:         20,
 	})
 	return &t, err
 }

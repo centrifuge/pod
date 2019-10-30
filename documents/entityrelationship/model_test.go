@@ -144,13 +144,6 @@ func TestEntityRelationship_getRelationshipData(t *testing.T) {
 	assert.Equal(t, data.TargetIdentity, er.Data.TargetIdentity)
 }
 
-func TestEntityRelationship_calculateDataRoot(t *testing.T) {
-	m, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	dr, err := m.CalculateDataRoot()
-	assert.NoError(t, err)
-	assert.False(t, utils.IsEmptyByteSlice(dr))
-}
-
 func TestEntityRelationship_AddNFT(t *testing.T) {
 	m := new(EntityRelationship)
 	err := m.AddNFT(true, common.Address{}, nil)
@@ -171,29 +164,28 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	proof, err := e.CreateProofs([]string{"entity_relationship.owner_identity", pf, documents.CDTreePrefix + ".document_type"})
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	signingRoot, err := e.CalculateSigningRoot()
-	assert.NoError(t, err)
+	dataRoot := calculateBasicDataRoot(t, e)
 
 	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -436,4 +428,12 @@ func TestEntityRelationship_revokeRelationship(t *testing.T) {
 	e.CoreDocument = cd
 	err = er.revokeRelationship(e, id)
 	assert.NoError(t, err)
+}
+
+func calculateBasicDataRoot(t *testing.T, e *EntityRelationship) []byte {
+	dataLeaves, err := e.getDataLeaves()
+	assert.NoError(t, err)
+	trees, _, err := e.CoreDocument.SigningDataTrees(e.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
@@ -368,19 +369,20 @@ func TestGetSigningProofHash(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
-	dr := utils.RandomSlice(32)
-	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, dr)
+	testTree, err := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.Nil(t, err)
 
 	cd.GetTestCoreDocWithReset()
-	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, dr)
+	docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.Nil(t, err)
 
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.GetSignaturesDataTree()
 	assert.Nil(t, err)
 	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
-	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, h)
+	valid, err := proofs.ValidateProofHashes(signingRoot, []*proofspb.MerkleHash{{Right: signatureTree.RootHash()}}, docRoot, h)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
@@ -401,7 +403,7 @@ func TestGetSignaturesTree(t *testing.T) {
 		Signature:   utils.RandomSlice(32),
 	}
 	cd.GetTestCoreDocWithReset().SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.GetSignaturesDataTree()
 
 	signatureRoot, err := cd.CalculateSignaturesRoot()
 	assert.NoError(t, err)
@@ -458,12 +460,13 @@ func TestGetDocumentRootTree(t *testing.T) {
 		Signature:   utils.RandomSlice(32),
 	}
 	cd.GetTestCoreDocWithReset().SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-	dr := utils.RandomSlice(32)
+	testTree, err := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
 
 	// successful document root generation
-	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, dr)
+	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
-	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, dr)
+	tree, err := cd.DocumentRootTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 	_, leaf := tree.GetLeafByProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField))
 	assert.NotNil(t, leaf)
@@ -499,9 +502,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
 	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
-	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-
+	dataRoot := calculateBasicDataRoot(t, cd, documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
 	assert.NoError(t, err)
 	tests := []struct {
@@ -512,7 +513,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		{
 			"prefix.sample_field",
 			false,
-			2,
+			5,
 		},
 		{
 			CDTreePrefix + ".document_identifier",
@@ -522,7 +523,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 		{
 			"prefix.sample_field2",
 			false,
-			2,
+			5,
 		},
 		{
 			CDTreePrefix + ".next_version",
@@ -532,27 +533,189 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.fieldName, func(t *testing.T) {
-			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree, []string{test.fieldName})
+			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{test.fieldName})
 			assert.NoError(t, err)
-			assert.Equal(t, test.proofLength, len(p[0].SortedHashes))
-			var l *proofs.LeafNode
-			if test.fromCoreDoc {
-				_, l = cdTree.GetLeafByProperty(test.fieldName)
-				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:4], cdTree.RootHash(), h)
-				assert.NoError(t, err)
-				assert.True(t, valid)
-			} else {
-				_, l = testTree.GetLeafByProperty(test.fieldName)
+			assert.Equal(t, test.proofLength, len(p.FieldProofs[0].SortedHashes))
+			_, l := testTree.GetLeafByProperty(test.fieldName)
+			if !test.fromCoreDoc {
 				assert.Contains(t, compactProps, l.Property.CompactName())
-				valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes[:1], testTree.RootHash(), h)
-				assert.NoError(t, err)
-				assert.True(t, valid)
+			} else {
+				_, l = cdTree.GetLeafByProperty(test.fieldName)
 			}
-			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p[0].SortedHashes, signingRoot, h)
+			assert.NotNil(t, l)
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p.FieldProofs[0].SortedHashes, dataRoot, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
+			docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+			assert.NoError(t, err)
+			signRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+			assert.NoError(t, err)
+
+			// Validate signing root for basic data tree
+			calcSignRoot := proofs.HashTwoValues(dataRoot, p.SiblingRoot, h)
+			assert.Equal(t, signRoot, calcSignRoot)
+			// Validate document root for basic data tree
+			calcDocRoot := proofs.HashTwoValues(calcSignRoot, p.SignaturesRoot, h)
+			assert.Equal(t, docRoot, calcDocRoot)
 		})
 	}
+}
+
+func TestCoreDocument_GenerateProofsFromZKTree(t *testing.T) {
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+	docAny := &any.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+
+	cd, err = newCoreDocument()
+	assert.NoError(t, err)
+	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
+	zkDataRoot := calculateZKDataRoot(t, cd, documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
+	assert.NoError(t, err)
+	fixedTreeLength := 20
+	tests := []struct {
+		fieldName   string
+		fromCoreDoc bool
+		proofLength int
+	}{
+		{
+			"prefix.sample_field",
+			false,
+			fixedTreeLength,
+		},
+		{
+			CDTreePrefix + ".document_identifier",
+			true,
+			fixedTreeLength,
+		},
+		{
+			"prefix.sample_field2",
+			false,
+			fixedTreeLength,
+		},
+		{
+			CDTreePrefix + ".next_version",
+			true,
+			fixedTreeLength,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.fieldName, func(t *testing.T) {
+			p, err := cd.CreateProofsFromZKTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{test.fieldName})
+			assert.NoError(t, err)
+			assert.Equal(t, test.proofLength, len(p.FieldProofs[0].Hashes))
+			_, l := testTree.GetLeafByProperty(test.fieldName)
+			if !test.fromCoreDoc {
+				assert.Contains(t, compactProps, l.Property.CompactName())
+			} else {
+				_, l = cdTree.GetLeafByProperty(test.fieldName)
+			}
+			assert.NotNil(t, l)
+			valid, err := proofs.ValidateProofHashes(l.Hash, p.FieldProofs[0].Hashes, zkDataRoot, h)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+
+			docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+			assert.NoError(t, err)
+			signRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+			assert.NoError(t, err)
+
+			// Validate signing root for zk data tree
+			calcSignRoot := proofs.HashTwoValues(p.SiblingRoot, zkDataRoot, h)
+			assert.Equal(t, signRoot, calcSignRoot)
+			// Validate document root for zk data tree
+			calcDocRoot := proofs.HashTwoValues(calcSignRoot, p.SignaturesRoot, h)
+			assert.Equal(t, docRoot, calcDocRoot)
+		})
+	}
+}
+
+func TestCreateProofs_fromZKTree(t *testing.T) {
+	cds, err := newCoreDocument()
+	assert.NoError(t, err)
+	testTree, err := cds.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	//compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	trees, _, err := cd.SigningDataTrees(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	assert.NoError(t, err)
+
+	pfs, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{"prefix.sample_field"})
+	assert.NoError(t, err)
+	// Sibling hash for proofs from basic tree should be the ZK tree roothash
+	assert.Equal(t, trees[1].RootHash(), pfs.SiblingRoot)
+
+	pfs, err = cd.CreateProofsFromZKTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{"prefix.sample_field"})
+	assert.NoError(t, err)
+	// Sibling hash for proofs from ZK tree should be the basicTree roothash
+	assert.Equal(t, trees[0].RootHash(), pfs.SiblingRoot)
+}
+
+func TestGetDataTreePrefix(t *testing.T) {
+	cds, err := newCoreDocument()
+	assert.NoError(t, err)
+	testTree, err := cds.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	//compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+
+	// nil length leaves
+	prfx, err := getDataTreePrefix(nil)
+	assert.Error(t, err)
+
+	// zero length leaves
+	prfx, err = getDataTreePrefix([]proofs.LeafNode{})
+	assert.Error(t, err)
+
+	// success
+	prfx, err = getDataTreePrefix(testTree.GetLeaves())
+	assert.NoError(t, err)
+	assert.Equal(t, "prefix", prfx)
+
+	// non-prefixed tree error
+	testTree, err = cds.DefaultTreeWithPrefix("", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	props = []proofs.Property{NewLeafProperty("sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	//compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+
+	prfx, err = getDataTreePrefix(testTree.GetLeaves())
+	assert.Error(t, err)
 }
 
 func TestCoreDocument_getReadCollaborators(t *testing.T) {

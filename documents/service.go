@@ -22,10 +22,13 @@ import (
 
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
-	DocumentID  []byte
-	VersionID   []byte
-	State       string
-	FieldProofs []*proofspb.Proof
+	DocumentID     []byte
+	VersionID      []byte
+	State          string
+	FieldProofs    []*proofspb.Proof
+	SiblingRoot    []byte
+	SigningRoot    []byte
+	SignaturesRoot []byte
 }
 
 // Patcher interface defines a Patch method for inner Models
@@ -162,16 +165,14 @@ func (s service) createProofs(model Model, fields []string) (*DocumentProof, err
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	proofs, err := model.CreateProofs(fields)
+	docProof, err := model.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentProof, err)
 	}
 
-	return &DocumentProof{
-		DocumentID:  model.ID(),
-		VersionID:   model.CurrentVersion(),
-		FieldProofs: proofs,
-	}, nil
+	docProof.DocumentID = model.ID()
+	docProof.VersionID = model.CurrentVersion()
+	return docProof, nil
 
 }
 

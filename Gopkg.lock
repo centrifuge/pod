@@ -1416,9 +1416,10 @@
   revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
-  digest = "1:e947e8fefea7a3008679cae8ec86a7c81d94245de13ed560d72cc24fd95c96ea"
+  digest = "1:df9f8a466a22ad92ffeacf23e5ba180ea587d9343e743aa1ff586d1822b0dd5e"
   name = "golang.org/x/crypto"
   packages = [
+    "blake2b",
     "blake2s",
     "blowfish",
     "ed25519",
@@ -1630,6 +1631,7 @@
     "github.com/ethereum/go-ethereum/core/types",
     "github.com/ethereum/go-ethereum/crypto",
     "github.com/ethereum/go-ethereum/crypto/secp256k1",
+    "github.com/ethereum/go-ethereum/crypto/sha3",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
     "github.com/ethereum/go-ethereum/log",
@@ -1679,6 +1681,7 @@
     "github.com/syndtr/goleveldb/leveldb/util",
     "github.com/urfave/cli",
     "github.com/whyrusleeping/go-logging",
+    "golang.org/x/crypto/blake2b",
     "golang.org/x/crypto/ed25519",
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/net/context",

@@ -163,17 +163,6 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
 }
 
-func TestEntityModel_calculateDataRoot(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	did, err := contextutil.AccountDID(ctx)
-	assert.NoError(t, err)
-	entity, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
-
-	dr, err := entity.CalculateDataRoot()
-	assert.Nil(t, err, "calculate must pass")
-	assert.False(t, utils.IsEmptyByteSlice(dr))
-}
-
 func TestEntity_CreateProofs(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	e, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
@@ -182,29 +171,29 @@ func TestEntity_CreateProofs(t *testing.T) {
 	proof, err := e.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	signingRoot, err := e.CalculateSigningRoot()
+	dataRoot := calculateBasicDataRoot(t, e)
 	assert.NoError(t, err)
 
 	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -630,4 +619,12 @@ func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
 	gdoc, err := doc.DeriveFromUpdatePayload(ctx, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, gdoc)
+}
+
+func calculateBasicDataRoot(t *testing.T, e *Entity) []byte {
+	dataLeaves, err := e.getDataLeaves()
+	assert.NoError(t, err)
+	trees, _, err := e.CoreDocument.SigningDataTrees(e.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
 }

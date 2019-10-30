@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
-
 	logging "github.com/ipfs/go-log"
 )
 
@@ -95,7 +94,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
-	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
+	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs.FieldProofs...)
 
 	signaturesRoot, err := model.CalculateSignaturesRoot()
 	if err != nil {
