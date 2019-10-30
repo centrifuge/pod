@@ -513,7 +513,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.Lea
 		return nil, err
 	}
 
-	tree, err = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	tree, err = cd.DefaultOrderedTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -646,7 +646,7 @@ func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.Lea
 		return nil, nil, err
 	}
 	// create the docDataTrees out of docData and coredoc trees
-	tree, err := cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	tree, err := cd.DefaultOrderedTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
 	if err != nil {
 		return nil, nil, err
 	}
