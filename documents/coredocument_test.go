@@ -676,6 +676,49 @@ func TestCreateProofs_fromZKTree(t *testing.T) {
 	assert.Equal(t, trees[0].RootHash(), pfs.SiblingRoot)
 }
 
+func TestGetDataTreePrefix(t *testing.T) {
+	cds, err := newCoreDocument()
+	assert.NoError(t, err)
+	testTree, err := cds.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	//compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+
+	// nil length leaves
+	prfx, err := getDataTreePrefix(nil)
+	assert.Error(t, err)
+
+	// zero length leaves
+	prfx, err = getDataTreePrefix([]proofs.LeafNode{})
+	assert.Error(t, err)
+
+	// success
+	prfx, err = getDataTreePrefix(testTree.GetLeaves())
+	assert.NoError(t, err)
+	assert.Equal(t, "prefix", prfx)
+
+	// non-prefixed tree error
+	testTree, err = cds.DefaultTreeWithPrefix("", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+	props = []proofs.Property{NewLeafProperty("sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	//compactProps := [][]byte{props[0].Compact, props[1].Compact}
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+	err = testTree.Generate()
+	assert.NoError(t, err)
+
+	prfx, err = getDataTreePrefix(testTree.GetLeaves())
+	assert.Error(t, err)
+}
+
 func TestCoreDocument_getReadCollaborators(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
