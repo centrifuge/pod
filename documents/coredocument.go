@@ -385,19 +385,18 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 	return role
 }
 
-// CreateProofs takes document data leaves and list to fields and generates proofs.
+// CreateProofs takes document data leaves and list of fields and generates proofs.
 func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
 	return cd.createProofs(false, docType, dataLeaves, fields)
 }
 
-// CreateProofsFromZKTree takes document data leaves and list to fields and generates proofs from ZK-ready Tree.
+// CreateProofsFromZKTree takes document data leaves and list of fields and generates proofs from ZK-ready Tree.
 func (cd *CoreDocument) CreateProofsFromZKTree(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
 	return cd.createProofs(true, docType, dataLeaves, fields)
 }
 
 // createProofs takes document data tree and list to fields and generates proofs.
-// we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
-// errors out when the proof generation is failed on core document tree.
+// it will generate proofs from the dataTree and cdTree.
 // It only generates proofs up to the root of the tree/s that correspond to
 func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
 	treeProofs := make(map[string]*proofs.DocumentTree, 4)
