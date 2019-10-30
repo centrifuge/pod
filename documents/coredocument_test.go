@@ -4,6 +4,7 @@ package documents
 
 import (
 	"fmt"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"os"
 	"testing"
 	"time"
@@ -381,7 +382,7 @@ func TestGetSigningProofHash(t *testing.T) {
 	assert.Nil(t, err)
 	h, err := blake2b.New256(nil)
 	assert.NoError(t, err)
-	valid, err := proofs.ValidateProofSortedHashes(signingRoot, [][]byte{signatureTree.RootHash()}, docRoot, h)
+	valid, err := proofs.ValidateProofHashes(signingRoot, []*proofspb.MerkleHash{{Right: signatureTree.RootHash()}}, docRoot, h)
 	assert.True(t, valid)
 	assert.Nil(t, err)
 }
