@@ -1,6 +1,7 @@
 package bootstrappers
 
 import (
+	"github.com/centrifuge/go-centrifuge/accounts"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/api"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -42,6 +43,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		accounts.Bootstrapper{},
 		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
@@ -72,6 +74,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&version.Bootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		accounts.Bootstrapper{},
 		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},

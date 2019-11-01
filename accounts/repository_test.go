@@ -21,6 +21,7 @@ func TestMain(m *testing.M) {
 	}
 
 	repo = newRepository(leveldb.NewLevelDBRepository(db))
+	srv = newService(repo)
 	result := m.Run()
 	err = os.RemoveAll(path)
 	if err != nil {

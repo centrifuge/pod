@@ -3,6 +3,7 @@
 package testingbootstrap
 
 import (
+	"github.com/centrifuge/go-centrifuge/accounts"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -36,6 +37,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
+	accounts.Bootstrapper{},
 	jobsv1.Bootstrapper{},
 	&queue.Bootstrapper{},
 	ethereum.Bootstrapper{},
