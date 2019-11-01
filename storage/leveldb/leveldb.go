@@ -84,7 +84,7 @@ func (l *levelDBRepo) parseModel(data []byte) (storage.Model, error) {
 		return nil, err
 	}
 
-	err = nm.FromJSON([]byte(v.Data))
+	err = nm.FromJSON(v.Data)
 	if err != nil {
 		return nil, errors.NewTypedError(storage.ErrModelRepositorySerialisation, errors.New("failed to unmarshal to model: %v", err))
 	}
