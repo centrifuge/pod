@@ -235,6 +235,11 @@ func (nc *NodeConfig) GetEthereumAccount(accountName string) (account *config.Ac
 	return nc.MainIdentity.EthereumAccount, nil
 }
 
+// GetCentChainAccount returns the Cent Chain account of the current node.
+func (nc *NodeConfig) GetCentChainAccount() (config.CentChainAccount, error) {
+	return nc.MainIdentity.CentChainAccount, nil
+}
+
 // GetEthereumDefaultAccountName refer the interface
 func (nc *NodeConfig) GetEthereumDefaultAccountName() string {
 	return nc.MainIdentity.EthereumDefaultAccountName
@@ -306,6 +311,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 	mainIdentity, _ := c.GetIdentityID()
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	signPub, signPriv := c.GetSigningKeyPair()
+	centChainAccount, _ := c.GetCentChainAccount()
 
 	return &NodeConfig{
 		MainIdentity: Account{
@@ -325,6 +331,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 				Pub: signPub,
 				Pvt: signPriv,
 			},
+			CentChainAccount: centChainAccount,
 		},
 		StoragePath:                    c.GetStoragePath(),
 		AccountsKeystore:               c.GetAccountsKeystore(),
@@ -382,6 +389,7 @@ type Account struct {
 	P2PKeyPair                       KeyPair
 	keys                             map[string]config.IDKey
 	PrecommitEnabled                 bool
+	CentChainAccount                 config.CentChainAccount
 }
 
 // GetPrecommitEnabled gets the enable pre commit value
@@ -392,6 +400,11 @@ func (acc *Account) GetPrecommitEnabled() bool {
 // GetEthereumAccount gets EthereumAccount
 func (acc *Account) GetEthereumAccount() *config.AccountConfig {
 	return acc.EthereumAccount
+}
+
+// GetCentChainAccount gets CentChainAccount
+func (acc *Account) GetCentChainAccount() config.CentChainAccount {
+	return acc.CentChainAccount
 }
 
 // GetEthereumDefaultAccountName gets EthereumDefaultAccountName
@@ -541,6 +554,12 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 	if err != nil {
 		return nil, err
 	}
+
+	cacc, err := c.GetCentChainAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
@@ -550,6 +569,7 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
+		CentChainAccount:                 cacc,
 	}, nil
 }
 

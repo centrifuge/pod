@@ -72,10 +72,12 @@ func (s service) GenerateAccount() (config.Account, error) {
 	}
 
 	// copy the main account for basic settings
+	// TODO(ved): override the cent chain account taken from the functional args
 	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if nil != err {
 		return nil, err
 	}
+
 	ctx, err := contextutil.New(context.Background(), acc)
 	if err != nil {
 		return nil, err

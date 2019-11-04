@@ -53,7 +53,16 @@ func TestCreateConfig(t *testing.T) {
 	dataDir := "testconfig"
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
 	scAddrs := testingutils.GetSmartContractAddresses()
-	err := CreateConfig(dataDir, "http://127.0.0.1:9545", keyPath, "", "russianhill", "127.0.0.1", 8028, 38202, nil, true, false, "", scAddrs, "")
+	err := CreateConfig(
+		dataDir,
+		"http://127.0.0.1:9545",
+		keyPath,
+		"", "russianhill",
+		"127.0.0.1", 8028, 38202,
+		nil, true, false, "", scAddrs, "",
+		"0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+		"0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+		"5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR")
 	assert.Nil(t, err, "Create Config should be successful")
 
 	// config exists

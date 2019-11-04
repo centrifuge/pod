@@ -179,6 +179,11 @@ func (m *MockConfig) IsDebugLogEnabled() bool {
 	return args.Get(0).(bool)
 }
 
+func (m *MockConfig) GetCentChainAccount() (config.CentChainAccount, error) {
+	args := m.Called()
+	return args.Get(0).(config.CentChainAccount), args.Error(1)
+}
+
 func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Context {
 	return CreateTenantContextWithContext(t, context.Background(), cfg)
 }

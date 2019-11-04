@@ -147,6 +147,9 @@ type Configuration interface {
 	// debug specific methods
 	IsPProfEnabled() bool
 	IsDebugLogEnabled() bool
+
+	// CentChain specific details.
+	GetCentChainAccount() (CentChainAccount, error)
 }
 
 // Account exposes account options
@@ -162,6 +165,7 @@ type Account interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
 	GetPrecommitEnabled() bool
+	GetCentChainAccount() CentChainAccount
 }
 
 // Service exposes functions over the config objects
@@ -207,6 +211,13 @@ type AccountConfig struct {
 	Address  string
 	Key      string
 	Password string
+}
+
+// CentChainAccount holds the cent chain account details.
+type CentChainAccount struct {
+	ID       string `json:"id"`
+	Secret   string `json:"secret"`
+	SS58Addr string `json:"ss_58_address"`
 }
 
 // IsSet check if the key is set in the config.
@@ -390,6 +401,21 @@ func (c *configuration) GetEthereumAccount(accountName string) (account *Account
 	return account, nil
 }
 
+// GetCentChainAccount returns Cent chain account from YAMl.
+func (c *configuration) GetCentChainAccount() (acc CentChainAccount, err error) {
+	k := "centChain.account"
+
+	if !c.IsSet(k) {
+		return acc, errors.New("Cent Chain Account not set")
+	}
+
+	return CentChainAccount{
+		ID:       c.GetString(fmt.Sprintf("%s.id", k)),
+		Secret:   c.GetString(fmt.Sprintf("%s.secret", k)),
+		SS58Addr: c.GetString(fmt.Sprintf("%s.address", k)),
+	}, nil
+}
+
 // GetNetworkString returns defined network the node is connected to.
 func (c *configuration) GetNetworkString() string {
 	return c.GetString("centrifugeNetwork")
@@ -532,6 +558,9 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
+	centChainID, _ := args["centChainID"].(string)
+	centChainSecret, _ := args["centChainSecret"].(string)
+	centChainAddr, _ := args["centChainAddr"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -566,6 +595,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, err
 	}
 
+	if centChainAddr == "" || centChainSecret == "" || centChainID == "" {
+		return nil, errors.New("Centrifuge chain ID, Secret, and Address are required")
+	}
+
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
@@ -585,6 +618,9 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", "")
 	v.Set("ethereum.accounts.main.password", "")
+	v.Set("centChain.account.id", centChainID)
+	v.Set("centChain.account.secret", centChainSecret)
+	v.Set("centChain.account.address", centChainAddr)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
