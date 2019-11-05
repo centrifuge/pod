@@ -178,6 +178,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetPrecommitEnabled").Return(false)
 				configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
+				configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 				queueSrv := new(testingutils.MockQueue)
 				jobMan := new(testingjobs.MockJobManager)
 				jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
@@ -231,6 +232,7 @@ func TestTokenTransfer(t *testing.T) {
 	configMock.On("GetSigningKeyPair").Return("", "")
 	configMock.On("GetPrecommitEnabled").Return(false)
 	configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
+	configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 
 	jobID := jobs.NewJobID()
 	jobMan := new(testingjobs.MockJobManager)

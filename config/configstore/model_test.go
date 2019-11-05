@@ -253,6 +253,11 @@ func (m *mockConfig) GetSigningKeyPair() (pub, priv string) {
 	return args.Get(0).(string), args.Get(1).(string)
 }
 
+func (m *mockConfig) GetCentChainAccount() (config.CentChainAccount, error) {
+	args := m.Called()
+	return args.Get(0).(config.CentChainAccount), args.Error(1)
+}
+
 func TestNewNodeConfig(t *testing.T) {
 	c := createMockConfig()
 	NewNodeConfig(c)
@@ -270,6 +275,7 @@ func TestNewAccountConfig(t *testing.T) {
 	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	c.On("GetPrecommitEnabled").Return(true).Once()
+	c.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	_, err := NewAccount("name", c)
 	assert.NoError(t, err)
 	c.AssertExpectations(t)
@@ -307,5 +313,6 @@ func createMockConfig() *mockConfig {
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
 	c.On("IsDebugLogEnabled", mock.Anything).Return(true)
 	c.On("GetLowEntropyNFTTokenEnabled", mock.Anything).Return(true)
+	c.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	return c
 }

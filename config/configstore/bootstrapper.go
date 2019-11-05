@@ -35,13 +35,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
 	}}
 
-	nc := NewNodeConfig(cfg)
-	configdb.Register(nc)
 	// install the file based config everytime so that file updates are reflected in the db, direct updates to db are not allowed
 	nc, err := service.CreateConfig(NewNodeConfig(cfg))
 	if err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}
+	configdb.Register(nc)
 
 	tc, err := NewAccount(nc.GetEthereumDefaultAccountName(), cfg)
 	if err != nil {

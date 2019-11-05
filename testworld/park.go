@@ -228,25 +228,26 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 type host struct {
 	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
-	apiPort, p2pPort   int64
-	bootstrapNodes     []string
-	bootstrappedCtx    map[string]interface{}
-	txPoolAccess       bool
-	smartContractAddrs *config.SmartContractAddresses
-	config             config.Configuration
-	identity           identity.DID
-	idFactory          identity.Factory
-	idService          identity.Service
-	node               *node.Node
-	canc               context.CancelFunc
-	createConfig       bool
-	multiAccount       bool
-	accounts           []string
-	p2pClient          documents.Client
-	configService      config.Service
-	tokenRegistry      documents.TokenRegistry
-	anchorRepo         anchors.AnchorRepository
-	entityService      entity.Service
+	apiPort, p2pPort                               int64
+	bootstrapNodes                                 []string
+	bootstrappedCtx                                map[string]interface{}
+	txPoolAccess                                   bool
+	smartContractAddrs                             *config.SmartContractAddresses
+	config                                         config.Configuration
+	identity                                       identity.DID
+	idFactory                                      identity.Factory
+	idService                                      identity.Service
+	node                                           *node.Node
+	canc                                           context.CancelFunc
+	createConfig                                   bool
+	multiAccount                                   bool
+	accounts                                       []string
+	p2pClient                                      documents.Client
+	configService                                  config.Service
+	tokenRegistry                                  documents.TokenRegistry
+	anchorRepo                                     anchors.AnchorRepository
+	entityService                                  entity.Service
+	centChainID, centChainAddress, centChainSecret string
 }
 
 func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, createConfig, multiAccount bool, smartContractAddrs *config.SmartContractAddresses) *host {
@@ -267,12 +268,21 @@ func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPasswor
 		dir:                fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
 		createConfig:       createConfig,
 		multiAccount:       multiAccount,
+		// TODO(ved): change these when working on testworld cases for centChain
+		centChainAddress: "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+		centChainID:      "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+		centChainSecret:  "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
 	}
 }
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
+		err := cmd.CreateConfig(
+			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
+			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes,
+			h.txPoolAccess, false, h.p2pTimeout,
+			h.smartContractAddrs, h.webhookURL,
+			h.centChainID, h.centChainSecret, h.centChainAddress)
 		if err != nil {
 			return err
 		}
