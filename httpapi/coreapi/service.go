@@ -93,8 +93,8 @@ func (s Service) GetAccount(accountID []byte) (config.Account, error) {
 }
 
 // GenerateAccount generates an account with defaults.
-func (s Service) GenerateAccount() (config.Account, error) {
-	return s.accountsSrv.GenerateAccount()
+func (s Service) GenerateAccount(cacc config.CentChainAccount) (config.Account, error) {
+	return s.accountsSrv.GenerateAccount(cacc)
 }
 
 // GetAccounts returns all the accounts.

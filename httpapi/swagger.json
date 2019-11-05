@@ -337,12 +337,31 @@
                 ],
                 "summary": "Generates a new account with defaults.",
                 "operationId": "generate_account",
+                "parameters": [
+                    {
+                        "description": "Centrifuge Chain Account",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/config.CentChainAccount"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
@@ -3334,9 +3353,27 @@
                 }
             }
         },
+        "config.CentChainAccount": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "ss_58_address": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.Account": {
             "type": "object",
             "properties": {
+                "centrifuge_chain_account": {
+                    "type": "object",
+                    "$ref": "#/definitions/config.CentChainAccount"
+                },
                 "eth_account": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.EthAccount"

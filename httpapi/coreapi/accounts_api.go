@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -118,6 +119,8 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 // @id generate_account
 // @tags Accounts
 // @produce json
+// @param body body config.CentChainAccount true "Centrifuge Chain Account"
+// @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.Account
 // @router /v1/accounts/generate [post]
@@ -126,7 +129,22 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	acc, err := h.srv.GenerateAccount()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var cacc config.CentChainAccount
+	err = json.Unmarshal(data, &cacc)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	acc, err := h.srv.GenerateAccount(cacc)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

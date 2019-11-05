@@ -65,19 +65,23 @@ func (s service) CreateAccount(data config.Account) (config.Account, error) {
 	return data, s.repo.CreateAccount(id, data)
 }
 
-func (s service) GenerateAccount() (config.Account, error) {
+func (s service) GenerateAccount(cacc config.CentChainAccount) (config.Account, error) {
+	if cacc.ID == "" || cacc.Secret == "" || cacc.SS58Addr == "" {
+		return nil, errors.New("Centrifuge Chain account is required")
+	}
+
 	nc, err := s.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// copy the main account for basic settings
-	// TODO(ved): override the cent chain account taken from the functional args
 	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if nil != err {
 		return nil, err
 	}
 
+	acc.(*Account).CentChainAccount = cacc
 	ctx, err := contextutil.New(context.Background(), acc)
 	if err != nil {
 		return nil, err

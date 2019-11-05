@@ -372,12 +372,13 @@ type EthAccount struct {
 
 // Account holds the single account details.
 type Account struct {
-	EthereumAccount                  EthAccount         `json:"eth_account"`
-	EthereumDefaultAccountName       string             `json:"eth_default_account_name"`
-	ReceiveEventNotificationEndpoint string             `json:"receive_event_notification_endpoint"`
-	IdentityID                       byteutils.HexBytes `json:"identity_id" swaggertype:"primitive,string"`
-	SigningKeyPair                   KeyPair            `json:"signing_key_pair"`
-	P2PKeyPair                       KeyPair            `json:"p2p_key_pair"`
+	EthereumAccount                  EthAccount              `json:"eth_account"`
+	EthereumDefaultAccountName       string                  `json:"eth_default_account_name"`
+	ReceiveEventNotificationEndpoint string                  `json:"receive_event_notification_endpoint"`
+	IdentityID                       byteutils.HexBytes      `json:"identity_id" swaggertype:"primitive,string"`
+	SigningKeyPair                   KeyPair                 `json:"signing_key_pair"`
+	P2PKeyPair                       KeyPair                 `json:"p2p_key_pair"`
+	CentChainAccount                 config.CentChainAccount `json:"centrifuge_chain_account"`
 }
 
 // Accounts holds a list of accounts
@@ -389,7 +390,8 @@ func toClientAccount(acc config.Account) Account {
 	var p2pkp, signingkp KeyPair
 	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
 	signingkp.Pub, signingkp.Pvt = acc.GetSigningKeyPair()
-
+	ccacc := acc.GetCentChainAccount()
+	ccacc.Secret = ""
 	return Account{
 		EthereumAccount: EthAccount{
 			Address: acc.GetEthereumAccount().Address,
@@ -399,6 +401,7 @@ func toClientAccount(acc config.Account) Account {
 		EthereumDefaultAccountName:       acc.GetEthereumDefaultAccountName(),
 		P2PKeyPair:                       p2pkp,
 		SigningKeyPair:                   signingkp,
+		CentChainAccount:                 ccacc,
 	}
 }
 
@@ -421,6 +424,12 @@ func fromClientAccount(cacc Account) (config.Account, error) {
 	if cacc.EthereumAccount.Address == "" || cacc.EthereumAccount.Key == "" {
 		return nil, errors.New("ethereum address/key cannot be empty")
 	}
+
+	if cacc.CentChainAccount.ID == "" || cacc.CentChainAccount.Secret == "" || cacc.CentChainAccount.SS58Addr == "" {
+		return nil, errors.New("centrifuge chain account cannot be empty ")
+	}
+
+	acc.CentChainAccount = cacc.CentChainAccount
 	ca := config.AccountConfig(cacc.EthereumAccount)
 	acc.EthereumAccount = &ca
 	acc.EthereumDefaultAccountName = cacc.EthereumDefaultAccountName

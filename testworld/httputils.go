@@ -390,8 +390,9 @@ func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpe
 	return resp.JSON().Object()
 }
 
-func generateAccount(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+func generateAccount(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]string) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/v1/accounts/generate"), auth).
+		WithJSON(payload).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }

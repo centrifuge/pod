@@ -25,8 +25,14 @@ func TestConfig_Happy(t *testing.T) {
 		t.Error("Charlies id needs to exist in the accounts list")
 	}
 
+	cacc := map[string]string{
+		"id":            "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+		"secret":        "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+		"ss_58_address": "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+	}
+
 	// generate a tenant within Charlie
-	res = generateAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK)
+	res = generateAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK, cacc)
 	tcID := res.Value("identity_id").String().NotEmpty()
 	tcID.NotEqual(charlie.id.String())
 }
