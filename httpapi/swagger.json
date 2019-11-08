@@ -339,13 +339,13 @@
                 "operationId": "generate_account",
                 "parameters": [
                     {
-                        "description": "Centrifuge Chain Account",
+                        "description": "Generate Account Payload",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
                             "type": "object",
-                            "$ref": "#/definitions/config.CentChainAccount"
+                            "$ref": "#/definitions/coreapi.GenerateAccountPayload"
                         }
                     }
                 ],
@@ -3579,6 +3579,15 @@
                 },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "coreapi.GenerateAccountPayload": {
+            "type": "object",
+            "properties": {
+                "centrifuge_chain_account": {
+                    "type": "object",
+                    "$ref": "#/definitions/config.CentChainAccount"
                 }
             }
         },

@@ -41,6 +41,11 @@ type CreateDocumentRequest struct {
 	Attributes  AttributeMapRequest `json:"attributes"`
 }
 
+// GenerateAccountPayload holds required fields to generate account with defaults.
+type GenerateAccountPayload struct {
+	CentChainAccount config.CentChainAccount `json:"centrifuge_chain_account"`
+}
+
 // AttributeRequest defines a single attribute.
 // Type type of the attribute
 // Value simple value of the attribute
