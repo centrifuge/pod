@@ -175,7 +175,7 @@ type Service interface {
 	GetAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateAccount(data Account) (Account, error)
-	GenerateAccount() (Account, error)
+	GenerateAccount(CentChainAccount) (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
 	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
@@ -216,7 +216,7 @@ type AccountConfig struct {
 // CentChainAccount holds the cent chain account details.
 type CentChainAccount struct {
 	ID       string `json:"id"`
-	Secret   string `json:"secret"`
+	Secret   string `json:"secret,omitempty"`
 	SS58Addr string `json:"ss_58_address"`
 }
 
