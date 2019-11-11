@@ -35,6 +35,10 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
+[[override]]
+  name = "github.com/centrifuge/go-substrate-rpc-client"
+  revision = "7a42f0d369ba91e50af7ca14adca0ca69cbb762d"
+
 [[constraint]]
   name = "github.com/Masterminds/semver"
   version = "1.4.2"
@@ -245,7 +249,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "golang.org/x/crypto"
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  branch = "master"
 
 [[constraint]]
   name = "golang.org/x/net"
