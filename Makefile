@@ -60,6 +60,10 @@ gen-swagger: ## generates the swagger documentation
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
+install-subkey: ## installs subkey
+	curl https://getsubstrate.io -sSf | bash -s -- --fast
+	cargo install --force --git https://github.com/paritytech/substrate subkey
+
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall
 	go install github.com/centrifuge/go-centrifuge/vendor/github.com/roboll/go-vendorinstall
 	go-vendorinstall golang.org/x/tools/cmd/goimports

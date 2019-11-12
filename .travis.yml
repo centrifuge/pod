@@ -45,6 +45,7 @@ jobs:
     - stage: "Tests"
       name: "Unit and CMD tests"
       script:
+        - make install-subkey
         - ./build/scripts/test_wrapper.sh unit cmd
       after_success:
         - bash <(curl -s https://codecov.io/bash)
