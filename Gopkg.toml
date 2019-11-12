@@ -243,7 +243,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   name = "github.com/whyrusleeping/go-smux-yamux"
   revision = "eac25f3e2d47aae211e457e7664b52634c95eea8"
 
-[[constraint]]
+[[override]]
   name = "golang.org/x/crypto"
   revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
