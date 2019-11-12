@@ -94,7 +94,7 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "7a42f0d369ba91e50af7ca14adca0ca69cbb762d"
+  revision = "3a19d9c3f3899614dbbfd659e448ca859fc296fe"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -1435,8 +1435,7 @@
   revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
-  branch = "master"
-  digest = "1:475662f7b050b9f355793124a8357eb1c62ce5aa7cf9fbaa7b043c0568ede7ac"
+  digest = "1:7c0a0e040d4c10247abe993ee6d266de2f786adbd889c78f026de7e73b952f47"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -1450,7 +1449,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "bd318be0434a57050ed475e0f45c3dbb16c09c2e"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[projects]]
   digest = "1:e10eeba0c13ad89c2bf14ee8766dde51765ed0d06f17e708633cdea6acd56607"
