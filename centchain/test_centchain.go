@@ -5,6 +5,7 @@ package centchain
 import (
 	"strings"
 
+	"github.com/centrifuge/go-substrate-rpc-client/client"
 	"github.com/centrifuge/go-substrate-rpc-client/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/stretchr/testify/mock"
@@ -35,10 +36,20 @@ func MetaDataWithCall(call string) *types.Metadata {
 	meta.AsMetadataV4.Modules = []types.ModuleMetadataV4{
 		types.ModuleMetadataV4{
 			Name:       types.Text(data[0]),
-			Prefix:     "",
-			HasStorage: false,
-			Storage:    nil,
-			HasCalls:   true,
+			Prefix:     "System",
+			HasStorage: true,
+			Storage: []types.StorageFunctionMetadataV4{
+				{
+					Name: "AccountNonce",
+					Type: types.StorageFunctionTypeV4{
+						IsMap: true,
+						AsMap: types.MapTypeV4{
+							Hasher: types.StorageHasher{IsBlake2_256: true},
+						},
+					},
+				},
+			},
+			HasCalls: true,
 			Calls: []types.FunctionMetadataV4{{
 				Name: types.Text(data[1]),
 			}},
@@ -47,4 +58,17 @@ func MetaDataWithCall(call string) *types.Metadata {
 		},
 	}
 	return meta
+}
+
+type MockClient struct {
+	mock.Mock
+	client.Client
+}
+
+func (m *MockClient) Call(result interface{}, method string, args ...interface{}) error {
+	arg := m.Called(result, method, args)
+	res := arg.Get(0).(string)
+	eres := result.(*string)
+	*eres = res
+	return arg.Error(1)
 }
