@@ -30,11 +30,11 @@ type Repository interface {
 }
 
 type repository struct {
-	api *centchain.API
+	api centchain.API
 }
 
 // NewRepository returns a new Anchor repository.
-func NewRepository(api *centchain.API) Repository {
+func NewRepository(api centchain.API) Repository {
 	return repository{api: api}
 }
 

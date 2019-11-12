@@ -144,7 +144,7 @@ func SetClient(client Client) {
 	gc = client
 }
 
-// GetClient returns the current Client
+// getClient returns the current Client
 func GetClient() Client {
 	gcMu.RLock()
 	defer gcMu.RUnlock()
