@@ -86,8 +86,7 @@
   source = "github.com/mikiquantum/centrifuge-protobufs"
 
 [[projects]]
-  branch = "master"
-  digest = "1:7f4612fdf6378683e374db1f577de08688e8310041421550ae5c7974edbbecff"
+  digest = "1:b59946b04522cde263525e7bf806062a3966437520a00205822f6b58918d79ae"
   name = "github.com/centrifuge/go-substrate-rpc-client"
   packages = [
     ".",
@@ -103,7 +102,7 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "7a42f0d369ba91e50af7ca14adca0ca69cbb762d"
+  revision = "3a19d9c3f3899614dbbfd659e448ca859fc296fe"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
@@ -1444,7 +1443,7 @@
   revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
-  digest = "1:df9f8a466a22ad92ffeacf23e5ba180ea587d9343e743aa1ff586d1822b0dd5e"
+  digest = "1:7c0a0e040d4c10247abe993ee6d266de2f786adbd889c78f026de7e73b952f47"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -1458,7 +1457,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[projects]]
   digest = "1:e10eeba0c13ad89c2bf14ee8766dde51765ed0d06f17e708633cdea6acd56607"
@@ -1647,6 +1646,7 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol",
     "github.com/centrifuge/go-substrate-rpc-client",
+    "github.com/centrifuge/go-substrate-rpc-client/client",
     "github.com/centrifuge/go-substrate-rpc-client/rpc/author",
     "github.com/centrifuge/go-substrate-rpc-client/signature",
     "github.com/centrifuge/go-substrate-rpc-client/types",

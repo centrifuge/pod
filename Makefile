@@ -62,7 +62,6 @@ generate: ## autogenerate go files for config
 
 install-subkey: ## installs subkey
 	curl https://getsubstrate.io -sSf | bash -s -- --fast
-	export PATH="$HOME/.cargo/bin:$PATH"
 	cargo install --force --git https://github.com/paritytech/substrate subkey
 
 vendorinstall: ## Installs all protobuf dependencies with go-vendorinstall

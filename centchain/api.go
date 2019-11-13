@@ -1,6 +1,8 @@
 package centchain
 
 import (
+	"sync"
+
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client"
 	"github.com/centrifuge/go-substrate-rpc-client/client"
 	"github.com/centrifuge/go-substrate-rpc-client/rpc/author"
@@ -25,6 +27,7 @@ type api struct {
 	getClient               func() client.Client
 	getBlockLatest          func() (*types.SignedBlock, error)
 	getMetadataLatest       func() (*types.Metadata, error)
+	mu                      sync.Mutex
 }
 
 // NewAPI returns a new centrifuge chain api.
@@ -44,6 +47,8 @@ func (a api) GetMetadataLatest() (*types.Metadata, error) {
 }
 
 func (a api) SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	ext := types.NewExtrinsic(c)
 	era := types.ExtrinsicEra{IsMortalEra: false}
 

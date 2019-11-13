@@ -40,7 +40,7 @@ func TestRepository_PreCommit(t *testing.T) {
 	assert.Contains(t, err.Error(), "unsupported metadata version")
 
 	// failed to submit extrinsic
-	meta := centchain.MetaDataWithCall("Anchor.pre_commit")
+	meta := centchain.MetaDataWithCall(PreCommit)
 	api.On("GetMetadataLatest").Return(meta, nil)
 	api.On("SubmitExtrinsic", meta, mock.Anything, mock.Anything).Return(nil, nil, nil, errors.New("failed to submit extrinsic")).Once()
 	_, _, _, err = repo.PreCommit(ctx, anchorID, signingRoot)
@@ -80,7 +80,7 @@ func TestRepository_Commit(t *testing.T) {
 	assert.Contains(t, err.Error(), "unsupported metadata version")
 
 	// failed to submit extrinsic
-	meta := centchain.MetaDataWithCall("Anchor.commit")
+	meta := centchain.MetaDataWithCall(Commit)
 	api.On("GetMetadataLatest").Return(meta, nil)
 	api.On("SubmitExtrinsic", meta, mock.Anything, mock.Anything).Return(nil, nil, nil, errors.New("failed to submit extrinsic")).Once()
 	_, _, _, err = repo.Commit(ctx, anchorID, documentRoot, proof, storedUntil)

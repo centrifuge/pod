@@ -9,6 +9,14 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/types"
 )
 
+const (
+	// PreCommit is centrifuge chain module function name for pre-commit call.
+	PreCommit = "Anchor.pre_commit"
+
+	// Commit is centrifuge chain module function name for commit call.
+	Commit = "Anchor.commit"
+)
+
 // Repository defines required APIs to interact with Anchor Repository on Centrifuge Chain.
 type Repository interface {
 	// PreCommit takes anchorID and signingRoot and submits an extrinsic to the Cent chain.
@@ -54,7 +62,7 @@ func (r repository) PreCommit(ctx context.Context, anchorID AnchorID, signingRoo
 		return txHash, bn, sig, err
 	}
 
-	c, err := types.NewCall(meta, "Anchor.pre_commit", types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
+	c, err := types.NewCall(meta, PreCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
 	if err != nil {
 		return txHash, bn, sig, err
 	}
@@ -85,7 +93,7 @@ func (r repository) Commit(
 
 	c, err := types.NewCall(
 		meta,
-		"Anchor.commit",
+		Commit,
 		types.NewHash(anchorIDPreImage[:]),
 		types.NewHash(documentRoot[:]),
 		types.NewHash(proof[:]),
