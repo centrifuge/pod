@@ -3,6 +3,7 @@
 package centchain
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -157,7 +158,7 @@ func TestExtrinsicStatusTask_ProcessRunTask(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.NoError(t, err)
 	_, err = task.processRunTask()
-	assert.Error(t, err)
+	assert.EqualError(t, err, fmt.Sprintf("extrinsic %s failed {true 14 0}", kwargs[TransactionExtHashParam]))
 
 	// Success - extrinsic found in block with success status
 	kwargs[TransactionFromBlockParam] = uint32(7)
