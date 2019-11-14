@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-substrate-rpc-client/signature"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -218,6 +219,16 @@ type CentChainAccount struct {
 	ID       string `json:"id"`
 	Secret   string `json:"secret,omitempty"`
 	SS58Addr string `json:"ss_58_address"`
+}
+
+// KeyRingPair returns the keyring pair for the given account.
+func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
+	pubKey, err := hexutil.Decode(cacc.ID)
+	return signature.KeyringPair{
+		URI:       cacc.Secret,
+		Address:   cacc.SS58Addr,
+		PublicKey: pubKey,
+	}, err
 }
 
 // IsSet check if the key is set in the config.
