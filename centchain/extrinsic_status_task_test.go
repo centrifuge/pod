@@ -103,7 +103,7 @@ func TestExtrinsicStatusTask_ParseKwargs(t *testing.T) {
 }
 
 func TestExtrinsicStatusTask_ProcessRunTask(t *testing.T) {
-	task := NewExtrinsicStatusTask(1*time.Second, nil, getBlockHash, getBlock)
+	task := NewExtrinsicStatusTask(1*time.Second, nil, getBlockHash, getBlock, getMetadataLatest, getStorage)
 	jobID := jobs.NewJobID().String()
 	did := testingidentity.GenerateRandomDID()
 	kwargs := map[string]interface{}{
@@ -150,8 +150,17 @@ func TestExtrinsicStatusTask_ProcessRunTask(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, uint32(6), task.fromBlock) //Incremented block number for next iteration
 
-	// Success - extrinsic found in block
+	// Failure - extrinsic found in block with fail status
 	kwargs[TransactionFromBlockParam] = uint32(6)
+	decoded, err = utils.SimulateJSONDecodeForGocelery(kwargs)
+	assert.Nil(t, err, "json decode should not thrown an error")
+	err = task.ParseKwargs(decoded)
+	assert.NoError(t, err)
+	_, err = task.processRunTask()
+	assert.Error(t, err)
+
+	// Success - extrinsic found in block with success status
+	kwargs[TransactionFromBlockParam] = uint32(7)
 	decoded, err = utils.SimulateJSONDecodeForGocelery(kwargs)
 	assert.Nil(t, err, "json decode should not thrown an error")
 	err = task.ParseKwargs(decoded)
@@ -172,25 +181,57 @@ func getBlockHash(blockNumber uint64) (types.Hash, error) {
 		hh = "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515" // will cause error in next getBlock call
 	case 5:
 		hh = "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573516" // extrinsic not in block
+	case 6:
+		hh = "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573519" // extrinsic found in block with fail status
 	}
 	return types.NewHashFromHexString(hh)
 }
 
 func getBlock(blockHash types.Hash) (*types.SignedBlock, error) {
-	bb, _ := types.HexDecodeString("0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515d18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515")
+	bb1, _ := types.HexDecodeString("0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515d18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515")
+	bb2, _ := types.HexDecodeString("0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515d18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515")
 	switch blockHash.Hex() {
 	case "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515":
 		return nil, errors.New("some error fetching block")
 	case "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573516": //Extrinsic not in block
 		return &types.SignedBlock{}, nil
+	case "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573519": // failed extrinsic
+		return &types.SignedBlock{
+			Block: types.Block{
+				Extrinsics: []types.Extrinsic{
+					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb1)}},
+					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb2)}},
+				},
+			},
+		}, nil
 	case "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515": //Extrinsic in block
 		return &types.SignedBlock{
 			Block: types.Block{
 				Extrinsics: []types.Extrinsic{
-					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb)}},
+					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb1)}},
+					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb2)}},
 				},
 			},
 		}, nil
 	}
 	return nil, nil
+}
+
+func getMetadataLatest() (*types.Metadata, error) {
+	return MetaDataWithCall("Anchor.commit"), nil
+}
+
+func getStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error {
+	rawStorage := "0800000000000000000001000000000000"
+	switch blockHash.Hex() {
+	case "0xf18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573519": //failed status
+		rawStorage = "08000000000000000000010000000001010e0000"
+	}
+
+	bb, err := types.HexDecodeString(rawStorage)
+	if err != nil {
+		return err
+	}
+
+	return types.DecodeFromBytes(bb, target)
 }

@@ -34,8 +34,10 @@ type ExtrinsicStatusTask struct {
 	timeout time.Duration
 
 	//state
-	getBlockHash func(blockNumber uint64) (types.Hash, error)
-	getBlock     func(blockHash types.Hash) (*types.SignedBlock, error)
+	getBlockHash      func(blockNumber uint64) (types.Hash, error)
+	getBlock          func(blockHash types.Hash) (*types.SignedBlock, error)
+	getMetadataLatest func() (*types.Metadata, error)
+	getStorage        func(key types.StorageKey, target interface{}, blockHash types.Hash) error
 
 	//extHash is the cent-chain extrinsic hash
 	extHash string
@@ -56,12 +58,16 @@ func NewExtrinsicStatusTask(
 	txService jobs.Manager,
 	getBlockHash func(blockNumber uint64) (types.Hash, error),
 	getBlock func(blockHash types.Hash) (*types.SignedBlock, error),
+	getMetadataLatest func() (*types.Metadata, error),
+	getStorage func(key types.StorageKey, target interface{}, blockHash types.Hash) error,
 ) *ExtrinsicStatusTask {
 	return &ExtrinsicStatusTask{
-		timeout:      timeout,
-		BaseTask:     jobsv1.BaseTask{JobManager: txService},
-		getBlockHash: getBlockHash,
-		getBlock:     getBlock,
+		timeout:           timeout,
+		BaseTask:          jobsv1.BaseTask{JobManager: txService},
+		getBlockHash:      getBlockHash,
+		getBlock:          getBlock,
+		getMetadataLatest: getMetadataLatest,
+		getStorage:        getStorage,
 	}
 }
 
@@ -169,9 +175,43 @@ func (est *ExtrinsicStatusTask) processRunTask() (resp interface{}, err error) {
 		return nil, gocelery.ErrTaskRetryable
 	}
 
-	// TODO(miguel) Add extrinsic success/failure status check
+	meta, err := est.getMetadataLatest()
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	key, err := types.CreateStorageKey(meta, "System", "Events", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var er types.EventRecordsRaw
+	err = est.getStorage(key, &er, nhBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	e := types.EventRecords{}
+	err = er.DecodeEventRecords(meta, &e)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check success events
+	for _, es := range e.System_ExtrinsicSuccess {
+		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(foundIdx) {
+			return nil, nil // Success executing extrinsic
+		}
+	}
+
+	// Otherwise, check failure events
+	for _, es := range e.System_ExtrinsicFailed {
+		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(foundIdx) {
+			return nil, errors.New("extrinsic %s failed %v", est.extHash, es.DispatchError) //Failure executing extrinsic
+		}
+	}
+
+	return nil, errors.New("should not have reached this step: %v", e)
 }
 
 func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int {

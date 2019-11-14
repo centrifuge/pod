@@ -32,19 +32,57 @@ func (m *MockAPI) SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signat
 
 func MetaDataWithCall(call string) *types.Metadata {
 	data := strings.Split(call, ".")
-	meta := types.NewMetadataV4()
-	meta.AsMetadataV4.Modules = []types.ModuleMetadataV4{
-		types.ModuleMetadataV4{
-			Name:       types.Text(data[0]),
-			Prefix:     "System",
+	meta := types.NewMetadataV8()
+	meta.AsMetadataV8.Modules = []types.ModuleMetadataV8{
+		{
+			Name:       "System",
 			HasStorage: true,
-			Storage: []types.StorageFunctionMetadataV4{
+			Storage: types.StorageMetadata{
+				Prefix: "System",
+				Items: []types.StorageFunctionMetadataV5{
+					{
+						Name: "AccountNonce",
+						Type: types.StorageFunctionTypeV5{
+							IsMap: true,
+							AsMap: types.MapTypeV4{
+								Hasher: types.StorageHasher{IsBlake2_256: true},
+							},
+						},
+					},
+					{
+						Name: "Events",
+						Type: types.StorageFunctionTypeV5{
+							IsMap: true,
+							AsMap: types.MapTypeV4{
+								Hasher: types.StorageHasher{IsBlake2_256: true},
+							},
+						},
+					},
+				},
+			},
+			HasEvents: true,
+			Events: []types.EventMetadataV4{
 				{
-					Name: "AccountNonce",
-					Type: types.StorageFunctionTypeV4{
-						IsMap: true,
-						AsMap: types.MapTypeV4{
-							Hasher: types.StorageHasher{IsBlake2_256: true},
+					Name: "ExtrinsicSuccess",
+				},
+				{
+					Name: "ExtrinsicFailed",
+				},
+			},
+		},
+		{
+			Name:       types.Text(data[0]),
+			HasStorage: true,
+			Storage: types.StorageMetadata{
+				Prefix: types.Text(data[0]),
+				Items: []types.StorageFunctionMetadataV5{
+					{
+						Name: "Events",
+						Type: types.StorageFunctionTypeV5{
+							IsMap: true,
+							AsMap: types.MapTypeV4{
+								Hasher: types.StorageHasher{IsBlake2_256: true},
+							},
 						},
 					},
 				},
@@ -53,8 +91,6 @@ func MetaDataWithCall(call string) *types.Metadata {
 			Calls: []types.FunctionMetadataV4{{
 				Name: types.Text(data[1]),
 			}},
-			HasEvents: false,
-			Events:    nil,
 		},
 	}
 	return meta
