@@ -86,7 +86,7 @@
   source = "github.com/mikiquantum/centrifuge-protobufs"
 
 [[projects]]
-  digest = "1:b59946b04522cde263525e7bf806062a3966437520a00205822f6b58918d79ae"
+  digest = "1:1ad063b70a829f8e556e0788c660300906f9cd1f2e3fd1317c460c979c29f9d5"
   name = "github.com/centrifuge/go-substrate-rpc-client"
   packages = [
     ".",
@@ -102,7 +102,7 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "3a19d9c3f3899614dbbfd659e448ca859fc296fe"
+  revision = "d362d00bce58b7a1bf5ec82077d45c6d3b029823"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"

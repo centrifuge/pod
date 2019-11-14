@@ -36,12 +36,12 @@ func TestMain(m *testing.M) {
 
 func TestApi_GetMetadataLatest(t *testing.T) {
 	api := api{getMetadataLatest: func() (*types.Metadata, error) {
-		return types.NewMetadataV4(), nil
+		return types.NewMetadataV8(), nil
 	}}
 
 	meta, err := api.getMetadataLatest()
 	assert.NoError(t, err)
-	assert.Equal(t, types.NewMetadataV4(), meta)
+	assert.Equal(t, types.NewMetadataV8(), meta)
 }
 
 func TestApi_SubmitExtrinsic(t *testing.T) {
