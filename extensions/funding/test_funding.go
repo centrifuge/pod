@@ -82,6 +82,7 @@ func CreateData() Data {
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
 		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
+		Status:                "submitted",
 	}
 }
 

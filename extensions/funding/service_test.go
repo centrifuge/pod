@@ -82,12 +82,12 @@ func TestAttributesUtils(t *testing.T) {
 	a, err := extensions.FillAttributeList(data, "0", fundingFieldKey)
 	assert.NoError(t, err)
 	// fill attribute list does not add the idx of attribute set as an attribute
-	assert.Len(t, a, 12)
+	assert.Len(t, a, 13)
 
 	// Creating an attributes list generates the correct attributes and adds an idx as an attribute
 	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
-	assert.Len(t, attributes, 13)
+	assert.Len(t, attributes, 14)
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "funding_agreement[0].currency" {
@@ -160,7 +160,7 @@ func TestAttributesUtils(t *testing.T) {
 
 	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
 	assert.NoError(t, err)
-	assert.Len(t, model.GetAttributes(), 13)
+	assert.Len(t, model.GetAttributes(), 14)
 
 	// error when trying to delete non existing attribute set
 	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
@@ -205,6 +205,7 @@ func invalidData() Data {
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
 		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
+		Status:                "submitted",
 	}
 }
 

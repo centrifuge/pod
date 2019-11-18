@@ -4107,6 +4107,9 @@
                 },
                 "repayment_occurred_date": {
                     "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
