@@ -15,6 +15,7 @@ type Data struct {
 	Currency              string `json:"currency,omitempty" attr:"string"`
 	NFTAddress            string `json:"nft_address,omitempty" attr:"bytes"`
 	PaymentDetailsID      string `json:"payment_details_id,omitempty" attr:"bytes"`
+	Status                string `json:"status,omitempty" attr:"string"`
 }
 
 // Signature is the funding agreement Signature.
