@@ -351,9 +351,8 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 			return tx, nil
 		}
 
-		if strings.Contains(err.Error(), ErrTransactionUnderpriced.Error()) || strings.Contains(err.Error(), ErrNonceTooLow.Error()) ||
-			strings.Contains(err.Error(), ErrUsrTransactionUnderpriced.Error()) || strings.Contains(err.Error(), ErrUsrNonceTooLow.Error()) {
-			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+		if strings.Contains(err.Error(), ErrIncNonce.Error()) || strings.Contains(err.Error(), ErrIncPrice.Error()) {
+			log.Warningf("Concurrent transaction identified with err [%s], trying again [%d/%d]\n", err.Error(), current, maxTries)
 			time.Sleep(gc.config.GetEthereumIntervalRetry())
 			continue
 		}

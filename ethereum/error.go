@@ -3,17 +3,12 @@ package ethereum
 import "github.com/centrifuge/go-centrifuge/errors"
 
 const (
-	// ErrTransactionUnderpriced transaction is under priced
-	ErrTransactionUnderpriced = errors.Error("replacement transaction underpriced")
 
-	// ErrUsrTransactionUnderpriced transaction is under priced
-	ErrUsrTransactionUnderpriced = errors.Error("Transaction gas price supplied is too low")
+	// ErrIncNonce is keyword to label nonce error
+	ErrIncNonce = errors.Error("nonce")
 
-	// ErrNonceTooLow nonce is too low
-	ErrNonceTooLow = errors.Error("nonce too low")
-
-	// ErrUsrNonceTooLow nonce is too low
-	ErrUsrNonceTooLow = errors.Error("There is another transaction with same nonce in the queue")
+	// ErrIncPrice is keyword to label price error
+	ErrIncPrice = errors.Error("price")
 
 	// ErrTransactionFailed error when transaction failed
 	ErrTransactionFailed = errors.Error("Transaction failed")

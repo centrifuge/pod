@@ -44,7 +44,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
-  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
+  revision = "33b7f6aa1a38203170d7d5395d5ef04485eecf95"
 
 [[override]]
   name = "github.com/ethereum/go-ethereum"

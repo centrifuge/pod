@@ -152,7 +152,8 @@ ethereum:
     nftMint: 900000
     nftTransferFrom: 150000
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
-  contextWaitTimeout: "600s"
+  # Set to higher bound ~28 days
+  contextWaitTimeout: "672h"
   # Timeout to wait for read only operations against ethereum
   contextReadWaitTimeout: "15s"
   # Node transaction pool max retries to send a transaction over
