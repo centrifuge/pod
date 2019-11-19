@@ -57,10 +57,10 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 	if transactionName == "otherError" {
 		err = errors.New("Some other error")
 	} else if transactionName == "optimisticLockingTimeout" {
-		err = ErrTransactionUnderpriced
+		err = ErrIncNonce
 	} else if transactionName == "optimisticLockingEventualSuccess" {
 		if transactionRequest.count < 3 {
-			err = ErrTransactionUnderpriced
+			err = ErrIncNonce
 		}
 	}
 
@@ -98,7 +98,7 @@ func TestInitTransactionWithRetries(t *testing.T) {
 	mockRequest.count = 0
 	// Failure and timeout with locking error
 	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "optimisticLockingTimeout", "var2")
-	assert.Contains(t, err.Error(), ErrTransactionUnderpriced, "Should error out")
+	assert.Contains(t, err.Error(), ErrIncNonce, "Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
 	mockRequest.count = 0

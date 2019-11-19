@@ -347,11 +347,12 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 		}
 
 		if err == nil {
+			log.Infof("TX %s successfully sent with nonce %s", tx.Hash().String(), opts.Nonce.String())
 			return tx, nil
 		}
 
-		if (err.Error() == ErrTransactionUnderpriced.Error()) || (err.Error() == ErrNonceTooLow.Error()) {
-			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+		if strings.Contains(err.Error(), ErrIncNonce.Error()) || strings.Contains(err.Error(), ErrIncPrice.Error()) {
+			log.Warningf("Concurrent transaction identified with err [%s], trying again [%d/%d]\n", err.Error(), current, maxTries)
 			time.Sleep(gc.config.GetEthereumIntervalRetry())
 			continue
 		}
