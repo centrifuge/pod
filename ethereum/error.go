@@ -6,8 +6,14 @@ const (
 	// ErrTransactionUnderpriced transaction is under priced
 	ErrTransactionUnderpriced = errors.Error("replacement transaction underpriced")
 
+	// ErrUsrTransactionUnderpriced transaction is under priced
+	ErrUsrTransactionUnderpriced = errors.Error("Transaction gas price supplied is too low")
+
 	// ErrNonceTooLow nonce is too low
 	ErrNonceTooLow = errors.Error("nonce too low")
+
+	// ErrUsrNonceTooLow nonce is too low
+	ErrUsrNonceTooLow = errors.Error("There is another transaction with same nonce in the queue")
 
 	// ErrTransactionFailed error when transaction failed
 	ErrTransactionFailed = errors.Error("Transaction failed")
