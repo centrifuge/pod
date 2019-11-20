@@ -160,7 +160,7 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 
 	_, done, err := txManager.ExecuteWithinJob(context.Background(), testingidentity.GenerateRandomDID(), jobs.NilJobID(), "Check TX add execute",
 		func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
+			ethTX, err := client.SubmitTransaction(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 			if err != nil {
 				errOut <- err
 				return

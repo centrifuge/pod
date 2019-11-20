@@ -205,7 +205,7 @@ func (i service) RevokeKey(ctx context.Context, key [32]byte) error {
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
 func (i service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		ethTX, err := i.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
+		ethTX, err := i.client.SubmitTransaction(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
 			return

@@ -109,7 +109,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 // ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
 func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
-		ethTX, err := s.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
+		ethTX, err := s.client.SubmitTransaction(contractMethod, opts, params...)
 		if err != nil {
 			errOut <- err
 			return

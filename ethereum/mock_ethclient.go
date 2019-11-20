@@ -50,6 +50,11 @@ func (m *MockEthClient) SubmitTransactionWithRetries(contractMethod interface{},
 	return args.Get(0).(*types.Transaction), args.Error(1)
 }
 
+func (m *MockEthClient) SubmitTransaction(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (tx *types.Transaction, err error) {
+	args := m.Called(contractMethod, opts, params)
+	return args.Get(0).(*types.Transaction), args.Error(1)
+}
+
 func (m *MockEthClient) TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error) {
 	args := m.Called(ctx, txHash)
 	return args.Get(0).(*types.Transaction), args.Get(1).(bool), args.Error(2)
