@@ -168,7 +168,7 @@ func (gc *gethClient) incrementNonce(accountName string) error {
 		ctx, _ := gc.defaultReadContext()
 		_, err := gc.getTxOptsUnsafe(ctx, accountName)
 		if err != nil {
-			return errors.New("Account not found in memory")
+			return err
 		}
 	}
 	gc.accounts[accountName].Nonce.SetUint64(gc.accounts[accountName].Nonce.Uint64() + 1)
