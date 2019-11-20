@@ -137,21 +137,6 @@ func NewGethClient(config Config) (Client, error) {
 	}, nil
 }
 
-// SetClient sets the Client
-// Note that this is a singleton and is the same connection for the whole application.
-func SetClient(client Client) {
-	gcMu.Lock()
-	defer gcMu.Unlock()
-	gc = client
-}
-
-// GetClient returns the current Client
-func GetClient() Client {
-	gcMu.RLock()
-	defer gcMu.RUnlock()
-	return gc
-}
-
 // defaultReadContext returns context with timeout for read operations
 func (gc *gethClient) defaultReadContext() (ctx context.Context, cancelFunc context.CancelFunc) {
 	toBeDone := time.Now().Add(gc.config.GetEthereumContextReadWaitTimeout())

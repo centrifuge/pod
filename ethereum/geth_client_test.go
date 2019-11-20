@@ -88,8 +88,6 @@ func TestSendTransaction(t *testing.T) {
 		accounts: make(map[string]*bind.TransactOpts),
 	}
 
-	SetClient(gc)
-
 	// Success at first
 	tx, err := gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "var1", "var2")
 	assert.Nil(t, err, "Should not error out")
@@ -103,7 +101,14 @@ func TestSendTransaction(t *testing.T) {
 }
 
 func TestGetGethCallOpts(t *testing.T) {
-	opts, cancel := GetClient().GetGethCallOpts(true)
+	mockClient := &MockEthCl{}
+	gc := &gethClient{
+		txMu:     sync.Mutex{},
+		config:   cfg,
+		client:   mockClient,
+		accounts: make(map[string]*bind.TransactOpts),
+	}
+	opts, cancel := gc.GetGethCallOpts(true)
 	assert.NotNil(t, opts)
 	assert.True(t, opts.Pending)
 	assert.NotNil(t, cancel)
