@@ -41,7 +41,7 @@ func init() {
 				log.Error(err)
 			}
 
-			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiHost, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil, "")
+			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiHost, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil, "", nil)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,

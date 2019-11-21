@@ -274,7 +274,7 @@ func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPasswor
 // init host with ethereum client if provided
 func (h *host) init(client ethereum.Client) error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL, client)
 		if err != nil {
 			return err
 		}

@@ -160,6 +160,7 @@ func (gc *gethClient) incrementNonce(accountName string) error {
 	return nil
 }
 
+// TODO change upstream context in NFT or tx manager instead of passing background context internally
 func (gc *gethClient) getTxOptsUnsafe(ctx context.Context, accountName string) (opts *bind.TransactOpts, err error) {
 	if opts, ok := gc.accounts[accountName]; ok {
 		return gc.copyOpts(context.Background(), opts)
@@ -176,11 +177,10 @@ func (gc *gethClient) getTxOptsUnsafe(ctx context.Context, accountName string) (
 	}
 
 	gc.accounts[accountName] = txOpts
-	return gc.copyOpts(ctx, txOpts)
+	return gc.copyOpts(context.Background(), txOpts)
 }
 
 // GetTxOpts returns a cached options if available else creates and returns new options
-// TODO change upstream context in NFT or tx manager instead of passing background context internally
 func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *bind.TransactOpts, err error) {
 	gc.accMu.Lock()
 	defer gc.accMu.Unlock()

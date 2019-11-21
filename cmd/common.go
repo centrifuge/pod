@@ -3,14 +3,14 @@ package cmd
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -32,7 +32,7 @@ func generateKeys(config config.Configuration) error {
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
-func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses, webhookURL string) error {
+func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses, webhookURL string, ethClient ethereum.Client) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
 		"accountKeyPath":    accountKeyPath,
@@ -57,7 +57,7 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 		return err
 	}
 	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
-	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
+	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed(), ethClient)
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
 	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
@@ -129,11 +129,14 @@ func RunBootstrap(cfgFile string) {
 }
 
 // ExecCmdBootstrap bootstraps the node for command line and testing purposes
-func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
+func ExecCmdBootstrap(cfgFile string, ethClient ethereum.Client) map[string]interface{} {
 	mb := bootstrappers.MainBootstrapper{}
 	mb.PopulateCommandBootstrappers()
 	ctx := map[string]interface{}{}
 	ctx[config.BootstrappedConfigFile] = cfgFile
+	if ethClient != nil {
+		ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	}
 	err := mb.Bootstrap(ctx)
 	if err != nil {
 		// application must not continue to run
@@ -143,8 +146,8 @@ func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
 }
 
 // CommandBootstrap bootstraps the node for one time commands
-func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
-	ctx := ExecCmdBootstrap(cfgFile)
+func CommandBootstrap(cfgFile string, ethClient ethereum.Client) (map[string]interface{}, context.CancelFunc, error) {
+	ctx := ExecCmdBootstrap(cfgFile, ethClient)
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	// init node with only the queue server which is needed by commands
 	n := node.New([]node.Server{queueSrv})
