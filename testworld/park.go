@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -126,7 +125,7 @@ func (r *hostManager) init(createConfig bool) error {
 	go r.maeve.start(r.cancCtx)
 
 	r.bernard = r.createHost("Bernard", "", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
-	err := r.bernard.init(nil)
+	err := r.bernard.init()
 	if err != nil {
 		return err
 	}
@@ -148,7 +147,7 @@ func (r *hostManager) init(createConfig bool) error {
 		m := r.maeve.url()
 		r.niceHosts[h.name] = r.createHost(h.name, m, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
 
-		err := r.niceHosts[h.name].init(r.bernard.bootstrappedCtx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+		err := r.niceHosts[h.name].init()
 		if err != nil {
 			return err
 		}
@@ -202,7 +201,7 @@ func (r *hostManager) startTempHost(name string) error {
 	if !ok {
 		return errors.New("host %s not found as temp host", name)
 	}
-	err := tempHost.init(r.bernard.bootstrappedCtx[ethereum.BootstrappedEthereumClient].(ethereum.Client))
+	err := tempHost.init()
 	if err != nil {
 		return err
 	}
@@ -272,9 +271,9 @@ func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPasswor
 }
 
 // init host with ethereum client if provided
-func (h *host) init(client ethereum.Client) error {
+func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL, client)
+		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
 		if err != nil {
 			return err
 		}
@@ -296,10 +295,6 @@ func (h *host) init(client ethereum.Client) error {
 		config.BootstrappedConfigFile: h.dir + "/config.yaml",
 	}
 
-	// Allow ethereum client instance sharing
-	if client != nil {
-		h.bootstrappedCtx[ethereum.BootstrappedEthereumClient] = client
-	}
 	err := m.Bootstrap(h.bootstrappedCtx)
 	if err != nil {
 		return err

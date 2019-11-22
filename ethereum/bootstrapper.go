@@ -31,13 +31,9 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
-	// Allow ethereum client override
-	client, ok := context[BootstrappedEthereumClient].(Client)
-	if !ok {
-		client, err = NewGethClient(cfg)
-		if err != nil {
-			return err
-		}
+	client, err := NewGethClient(cfg)
+	if err != nil {
+		return err
 	}
 
 	ethTransTask := NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txManager, client.TransactionByHash, client.TransactionReceipt, DefaultWaitForTransactionMiningContext)
