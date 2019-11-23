@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -97,6 +98,22 @@ func TestSendTransaction(t *testing.T) {
 	// Failure with non-locking error
 	tx, err = gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
+
+	mockRetries := testingutils.MockConfigOption(cfg, "ethereum.maxRetries", 10)
+	defer mockRetries()
+
+	mockRequest.count = 0
+	// Failure and timeout with locking error
+	tx, err = gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "optimisticLockingTimeout", "var2")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "max concurrent transaction tries reached", "Should error out")
+	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
+
+	mockRequest.count = 0
+	// Success after locking race condition overcome
+	tx, err = gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "optimisticLockingEventualSuccess", "var2")
+	assert.Nil(t, err, "Should not error out")
+	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
 
 }
 
