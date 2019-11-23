@@ -24,8 +24,6 @@ import (
 )
 
 var log = logging.Logger("geth-client")
-var gc Client
-var gcMu sync.RWMutex
 
 // Config defines functions to get ethereum details
 type Config interface {
