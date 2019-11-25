@@ -72,6 +72,9 @@ case "$mode" in
     API_PORT=$API_PORT P2P_PORT=$P2P_PORT \
     docker-compose -f $local_dir/docker-compose-cent-api.yml up > /tmp/cent-api-${API_PORT}.log 2>&1 &
   ;;
+  ccdev)
+    docker-compose -f $local_dir/docker-compose-cc.yml up > /tmp/cc-0.log 2>&1 &
+  ;;
   *) usage
 esac
 echo "Done"

@@ -26,6 +26,7 @@
     - [Run local peer connected to Rinkeby](#run-local-peer-connected-to-rinkeby)
     - [Checking on your local geth node](#checking-on-your-local-geth-node)
     - [Attaching to your local geth node](#attaching-to-your-local-geth-node)
+- [Run Centrifuge Chain locally in dev mode](#run-centrifuge-chain-locally-in-dev-mode)
 - [Run Integration Tests against Local/Rinkeby Environments](#run-integration-tests-against-localintegrationrinkeby-environments)
  - [Configure local dev node run integration/functional tests](#configure-local-mining--run-integrationfunctional-tests)
  - [Configure node to point to integration run integration/functional tests](#configure-node-to-point-to-integration--run-integrationfunctional-tests)
@@ -160,6 +161,12 @@ Or run for specific tests only:
 reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags=unit
 ```
 
+## Run Centrifuge Chain locally in dev mode
+For development, we use Docker Compose locally to run the Centrifuge Chain. It comes with a set of preconfigured accounts to be used. 
+
+`./build/scripts/docker/run.sh ccdev`
+
+For more info: https://github.com/centrifuge/centrifuge-chain
 
 ## Run a Geth node locally or Rinkeby environments
 
