@@ -79,16 +79,17 @@ func TestMain(m *testing.M) {
 
 func TestGetConnection_returnsSameConnection(t *testing.T) {
 	t.Parallel()
+	ethClient := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	howMany := 5
 	confChannel := make(chan ethereum.Client, howMany)
 	for ix := 0; ix < howMany; ix++ {
 		go func() {
-			confChannel <- ethereum.GetClient()
+			confChannel <- ethClient
 		}()
 	}
 	for ix := 0; ix < howMany; ix++ {
 		multiThreadCreatedCon := <-confChannel
-		assert.Equal(t, multiThreadCreatedCon, ethereum.GetClient(), "Should only return a single ethereum client")
+		assert.Equal(t, multiThreadCreatedCon, ethClient, "Should only return a single ethereum client")
 	}
 }
 

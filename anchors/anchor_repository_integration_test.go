@@ -23,12 +23,14 @@ import (
 var (
 	anchorRepo anchors.AnchorRepository
 	cfg        config.Configuration
+	ethClient  ethereum.Client
 )
 
 func TestMain(m *testing.M) {
 	ctx := cc.TestFunctionalEthereumBootstrap()
 	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -144,7 +146,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.NoError(t, err)
 		currentDocumentRoot := utils.RandomByte32()
 		documentProof := utils.RandomByte32()
-		hd, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
+		hd, err := ethClient.GetEthClient().HeaderByNumber(context.Background(), nil)
 		assert.Nil(t, err, " error must be nil")
 		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProof)
 		ctx := testingconfig.CreateAccountContext(t, cfg)

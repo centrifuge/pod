@@ -4,6 +4,7 @@ package ethereum
 
 import (
 	"context"
+	"math/big"
 	"os"
 	"sync"
 	"testing"
@@ -48,6 +49,11 @@ func (m *MockEthCl) PendingNonceAt(ctx context.Context, account common.Address) 
 	return args.Get(0).(uint64), args.Error(1)
 }
 
+func (m *MockEthCl) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*big.Int), args.Error(1)
+}
+
 type MockTransactionRequest struct {
 	count int
 }
@@ -67,29 +73,30 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 	return types.NewTransaction(1, common.Address{}, nil, 0, nil, nil), err
 }
 
-func TestInitTransactionWithRetries(t *testing.T) {
-	opts := &bind.TransactOpts{From: common.HexToAddress("0x45B9c4798999FFa52e1ff1eFce9d3e45819E4158")}
+func TestSendTransaction(t *testing.T) {
+	acc, err := cfg.GetEthereumAccount("main")
+	assert.NoError(t, err)
+	opts := &bind.TransactOpts{From: common.HexToAddress(acc.Address)}
 	mockRequest := &MockTransactionRequest{}
 
-	// noncer success
 	mockClient := &MockEthCl{}
 	mockClient.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1), nil)
+	mockClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(30000), nil)
 	gc := &gethClient{
-		txMu:   sync.Mutex{},
-		config: cfg,
-		client: mockClient,
+		txMu:     sync.Mutex{},
+		config:   cfg,
+		client:   mockClient,
+		accounts: make(map[string]*bind.TransactOpts),
 	}
 
-	SetClient(gc)
-
 	// Success at first
-	tx, err := gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "var1", "var2")
+	tx, err := gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "var1", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 1, tx.Nonce(), "Nonce should equal to the one provided")
 	assert.EqualValues(t, 1, mockRequest.count, "Transaction Run flag should be true")
 
 	// Failure with non-locking error
-	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "otherError", "var2")
+	tx, err = gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
 
 	mockRetries := testingutils.MockConfigOption(cfg, "ethereum.maxRetries", 10)
@@ -97,19 +104,28 @@ func TestInitTransactionWithRetries(t *testing.T) {
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
-	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "optimisticLockingTimeout", "var2")
-	assert.Contains(t, err.Error(), ErrIncNonce, "Should error out")
+	tx, err = gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "optimisticLockingTimeout", "var2")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "max concurrent transaction tries reached", "Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
 	mockRequest.count = 0
 	// Success after locking race condition overcome
-	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "optimisticLockingEventualSuccess", "var2")
+	tx, err = gc.SubmitTransaction(mockRequest.RegisterTransaction, opts, "optimisticLockingEventualSuccess", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
+
 }
 
 func TestGetGethCallOpts(t *testing.T) {
-	opts, cancel := GetClient().GetGethCallOpts(true)
+	mockClient := &MockEthCl{}
+	gc := &gethClient{
+		txMu:     sync.Mutex{},
+		config:   cfg,
+		client:   mockClient,
+		accounts: make(map[string]*bind.TransactOpts),
+	}
+	opts, cancel := gc.GetGethCallOpts(true)
 	assert.NotNil(t, opts)
 	assert.True(t, opts.Pending)
 	assert.NotNil(t, cancel)

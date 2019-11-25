@@ -48,7 +48,7 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 
 func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
+		ethTX, err := s.client.SubmitTransaction(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
 			errOut <- err
 			log.Infof("Failed to send identity for creation: %v", err)

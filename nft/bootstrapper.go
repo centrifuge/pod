@@ -47,7 +47,11 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
-	client := ethereum.GetClient()
+	client, ok := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	if !ok {
+		return errors.New("ethereum client not initialised")
+	}
+
 	invoiceUnpaid := newService(
 		cfg,
 		idService,
