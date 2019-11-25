@@ -29,6 +29,7 @@ var log = logging.Logger("geth-client")
 type Config interface {
 	GetEthereumMaxGasPrice() *big.Int
 	GetEthereumNodeURL() string
+	GetEthereumDefaultAccountName() string
 	GetEthereumAccount(accountName string) (account *config.AccountConfig, err error)
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
@@ -353,7 +354,7 @@ func (gc *gethClient) SubmitTransaction(contractMethod interface{}, opts *bind.T
 	}
 
 	log.Infof("TX %s successfully sent with nonce %s", tx.Hash().String(), opts.Nonce.String())
-	err = gc.incrementNonce("main") // TODO: read from context when we widely support use of many ethereum accounts
+	err = gc.incrementNonce(gc.config.GetEthereumDefaultAccountName())
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("Error found when incrementing account nonce, next transactions might fail, %v", err))
 	}
