@@ -39,13 +39,15 @@ type Repository interface {
 		proof [32]byte,
 		storedUntil time.Time) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
 
-	GetAnchorById(id *big.Int) (struct {
-		AnchorId     *big.Int
+	// GetAnchorByID returns the anchor stored on-chain
+	GetAnchorByID(id *big.Int) (struct {
+		AnchorID     *big.Int
 		DocumentRoot [32]byte
 		BlockNumber  uint32
 	}, error)
 
-	HasValidPreCommit(anchorId *big.Int) (bool, error)
+	// HasValidPreCommit checks if there is a valid anchor stored on-chain
+	HasValidPreCommit(anchorID *big.Int) (bool, error)
 }
 
 type repository struct {
@@ -116,17 +118,17 @@ func (r repository) Commit(
 	return r.api.SubmitExtrinsic(meta, c, krp)
 }
 
-func (r repository) HasValidPreCommit(anchorId *big.Int) (bool, error) {
+func (r repository) HasValidPreCommit(anchorID *big.Int) (bool, error) {
 	return false, errors.New("not implemented")
 }
 
-func (r repository) GetAnchorById(id *big.Int) (struct {
-	AnchorId     *big.Int
+func (r repository) GetAnchorByID(id *big.Int) (struct {
+	AnchorID     *big.Int
 	DocumentRoot [32]byte
 	BlockNumber  uint32
 }, error) {
 	return struct {
-		AnchorId     *big.Int
+		AnchorID     *big.Int
 		DocumentRoot [32]byte
 		BlockNumber  uint32
 	}{}, errors.New("not implemented")

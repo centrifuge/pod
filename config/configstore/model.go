@@ -375,6 +375,9 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		PprofEnabled:                   c.IsPProfEnabled(),
 		DebugLogEnabled:                c.IsDebugLogEnabled(),
 		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
+		CentChainMaxRetries:            c.GetCentChainMaxRetries(),
+		CentChainIntervalRetry:         c.GetCentChainIntervalRetry(),
+		CentChainNodeURL:               c.GetCentChainNodeURL(),
 	}
 }
 

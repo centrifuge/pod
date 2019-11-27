@@ -47,6 +47,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	txSvc, ok := ctx[centchain.BootstrappedCentChainClient].(transaction.Submitter)
+	if !ok {
+		return errors.New("centchain client hasn't been initialized")
+	}
 
 	repo := newService(cfg, repository, queueSrv, client, jobsMan, txSvc)
 	ctx[BootstrappedAnchorRepo] = repo

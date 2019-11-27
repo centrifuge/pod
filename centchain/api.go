@@ -41,6 +41,7 @@ type API interface {
 	SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
 }
 
+// Config defines functions to get centchain details
 type Config interface {
 	GetCentChainIntervalRetry() time.Duration
 	GetCentChainMaxRetries() int

@@ -5,10 +5,11 @@ package api
 import (
 	"context"
 	"flag"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/centchain"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"

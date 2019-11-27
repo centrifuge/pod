@@ -184,6 +184,21 @@ func (m *MockConfig) GetCentChainAccount() (config.CentChainAccount, error) {
 	return args.Get(0).(config.CentChainAccount), args.Error(1)
 }
 
+func (m *MockConfig) GetCentChainIntervalRetry() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
+func (m *MockConfig) GetCentChainMaxRetries() int {
+	args := m.Called()
+	return args.Get(0).(int)
+}
+
+func (m *MockConfig) GetCentChainNodeURL() string {
+	args := m.Called()
+	return args.Get(0).(string)
+}
+
 func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Context {
 	return CreateTenantContextWithContext(t, context.Background(), cfg)
 }

@@ -41,7 +41,7 @@ func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 // Returns a nil error when the anchor data is found else returns a non nil error
 func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
-	r, err := s.anchorRepository.GetAnchorById(anchorID.BigInt())
+	r, err := s.anchorRepository.GetAnchorByID(anchorID.BigInt())
 	if err != nil {
 		return docRoot, anchoredTime, err
 	}

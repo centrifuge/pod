@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/centchain"
+
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -76,6 +78,8 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
