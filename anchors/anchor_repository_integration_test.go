@@ -3,7 +3,6 @@
 package anchors_test
 
 import (
-	"context"
 	"os"
 	"testing"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -151,9 +149,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.NoError(t, err)
 		currentDocumentRoot := utils.RandomByte32()
 		documentProof := utils.RandomByte32()
-		hd, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
-		assert.Nil(t, err, " error must be nil")
-		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProof)
+		commitDataList[ix] = anchors.NewCommitData(currentAnchorId, currentDocumentRoot, documentProof)
 		ctx := testingconfig.CreateAccountContext(t, cfg)
 		doneList[ix], err = anchorRepo.CommitAnchor(ctx, anchorIDPreImageID, currentDocumentRoot, documentProof)
 		if err != nil {
