@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -38,6 +39,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&leveldb.Bootstrapper{},
 	jobsv1.Bootstrapper{},
 	&queue.Bootstrapper{},
+	centchain.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ideth.Bootstrapper{},
 	&configstore.Bootstrapper{},

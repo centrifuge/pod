@@ -2,7 +2,10 @@ package anchors
 
 import (
 	"context"
+	"math/big"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -35,6 +38,14 @@ type Repository interface {
 		documentRoot DocumentRoot,
 		proof [32]byte,
 		storedUntil time.Time) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
+
+	GetAnchorById(id *big.Int) (struct {
+		AnchorId     *big.Int
+		DocumentRoot [32]byte
+		BlockNumber  uint32
+	}, error)
+
+	HasValidPreCommit(anchorId *big.Int) (bool, error)
 }
 
 type repository struct {
@@ -103,4 +114,20 @@ func (r repository) Commit(
 	}
 
 	return r.api.SubmitExtrinsic(meta, c, krp)
+}
+
+func (r repository) HasValidPreCommit(anchorId *big.Int) (bool, error) {
+	return false, errors.New("not implemented")
+}
+
+func (r repository) GetAnchorById(id *big.Int) (struct {
+	AnchorId     *big.Int
+	DocumentRoot [32]byte
+	BlockNumber  uint32
+}, error) {
+	return struct {
+		AnchorId     *big.Int
+		DocumentRoot [32]byte
+		BlockNumber  uint32
+	}{}, errors.New("not implemented")
 }

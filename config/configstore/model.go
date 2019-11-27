@@ -58,6 +58,9 @@ type NodeConfig struct {
 	PprofEnabled                   bool
 	LowEntropyNFTTokenEnabled      bool
 	DebugLogEnabled                bool
+	CentChainNodeURL               string
+	CentChainIntervalRetry         time.Duration
+	CentChainMaxRetries            int
 }
 
 // IsSet refer the interface
@@ -238,6 +241,21 @@ func (nc *NodeConfig) GetEthereumAccount(accountName string) (account *config.Ac
 // GetCentChainAccount returns the Cent Chain account of the current node.
 func (nc *NodeConfig) GetCentChainAccount() (config.CentChainAccount, error) {
 	return nc.MainIdentity.CentChainAccount, nil
+}
+
+// GetCentChainNodeURL returns the URL of the CentChain Node.
+func (nc *NodeConfig) GetCentChainNodeURL() string {
+	return nc.CentChainNodeURL
+}
+
+// GetCentChainIntervalRetry returns duration to wait between retries.
+func (nc *NodeConfig) GetCentChainIntervalRetry() time.Duration {
+	return nc.CentChainIntervalRetry
+}
+
+// GetCentChainMaxRetries returns the max acceptable retries.
+func (nc *NodeConfig) GetCentChainMaxRetries() int {
+	return nc.CentChainMaxRetries
 }
 
 // GetEthereumDefaultAccountName refer the interface

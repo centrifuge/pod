@@ -133,6 +133,14 @@ queue:
   # Number of retries allowed for a task
   taskRetries: 10
 
+# CentChain specific configuration
+centChain:
+  nodeURL: ws://127.0.0.1:9944
+  # Node transaction pool max retries to send a transaction over
+  maxRetries: 200
+  # Node transaction pool interval retry when a concurrent transaction has been detected
+  intervalRetry: "2s"
+
 # Ethereum specific configuration
 ethereum:
   # Selects which ethereum account to use of the ones provided in the custom config file

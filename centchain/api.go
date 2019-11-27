@@ -1,7 +1,15 @@
 package centchain
 
 import (
+	"reflect"
 	"sync"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/queue"
+	logging "github.com/ipfs/go-log"
 
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client"
 	"github.com/centrifuge/go-substrate-rpc-client/client"
@@ -9,6 +17,19 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
 )
+
+const (
+	// ErrCentChainTransaction is a generic error type to be used for CentChain errors
+	ErrCentChainTransaction = errors.Error("error on centchain tx layer")
+
+	// ErrTransactionUnderpriced transaction is under priced
+	ErrTransactionUnderpriced = errors.Error("replacement transaction underpriced")
+
+	// ErrNonceTooLow nonce is too low
+	ErrNonceTooLow = errors.Error("nonce too low")
+)
+
+var log = logging.Logger("centchain-client")
 
 // API exposes required functions to interact with Centrifuge Chain.
 type API interface {
@@ -20,6 +41,11 @@ type API interface {
 	SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
 }
 
+type Config interface {
+	GetCentChainIntervalRetry() time.Duration
+	GetCentChainMaxRetries() int
+}
+
 type api struct {
 	getBlockHash            func(uint64) (types.Hash, error)
 	getRuntimeVersionLatest func() (*types.RuntimeVersion, error)
@@ -27,6 +53,7 @@ type api struct {
 	getClient               func() client.Client
 	getBlockLatest          func() (*types.SignedBlock, error)
 	getMetadataLatest       func() (*types.Metadata, error)
+	config                  Config
 	mu                      sync.Mutex
 }
 
@@ -96,4 +123,108 @@ func (a api) SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.K
 	startBlockNumber := startBlock.Block.Header.Number
 	txHash, err = auth.SubmitExtrinsic(ext)
 	return txHash, startBlockNumber, ext.Signature.Signature, err
+}
+
+func (a api) QueueCentChainEXTStatusTask(
+	accountID identity.DID,
+	jobID jobs.JobID,
+	txHash types.Hash,
+	fromBlock uint32,
+	sig types.Signature,
+	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
+
+	params := map[string]interface{}{
+		jobs.JobIDParam:              jobID.String(),
+		TransactionAccountParam:      accountID.String(),
+		TransactionExtHashParam:      txHash.Hex(),
+		TransactionFromBlockParam:    fromBlock,
+		TransactionExtSignatureParam: sig.Hex(),
+	}
+
+	return queuer.EnqueueJobWithMaxTries(ExtrinsicStatusTaskName, params)
+}
+
+/**
+SubmitWithRetries submits transaction to the centchain
+Blocking Function that sends transaction using reflection wrapped in a retrial block. It is based on the ErrTransactionUnderpriced error,
+meaning that a transaction is being attempted to run twice, and the logic is to override the existing one. As we have constant
+gas prices that means that a concurrent transaction race condition event has happened.
+- method: Transaction Method
+- params: Arbitrary number of parameters that are passed to the function fname call
+Note: method must always return "txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error"
+*/
+func (a api) SubmitWithRetries(method interface{}, params ...interface{}) (types.Hash, types.BlockNumber, types.Signature, error) {
+	f := reflect.ValueOf(method)
+	maxTries := a.config.GetCentChainMaxRetries()
+
+	var current int
+	var err error
+	for {
+		if current >= maxTries {
+			return types.Hash{}, types.BlockNumber(0), types.Signature{}, errors.NewTypedError(ErrCentChainTransaction, errors.New("max concurrent transaction tries reached: %v", err))
+		}
+
+		var in []reflect.Value
+		for _, p := range params {
+			in = append(in, reflect.ValueOf(p))
+		}
+
+		var txHash types.Hash
+		var bn types.BlockNumber
+		var sig types.Signature
+
+		result := f.Call(in)
+		if !result[0].IsNil() {
+			txHash = result[0].Interface().(types.Hash)
+		}
+
+		if !result[1].IsNil() {
+			bn = result[1].Interface().(types.BlockNumber)
+		}
+
+		if !result[2].IsNil() {
+			sig = result[2].Interface().(types.Signature)
+		}
+
+		if !result[3].IsNil() {
+			err = result[3].Interface().(error)
+		}
+
+		if err == nil {
+			return txHash, bn, sig, nil
+		}
+
+		if (err.Error() == ErrTransactionUnderpriced.Error()) || (err.Error() == ErrNonceTooLow.Error()) {
+			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+			time.Sleep(a.config.GetCentChainIntervalRetry())
+			continue
+		}
+
+		return types.Hash{}, types.BlockNumber(0), types.Signature{}, err
+
+	}
+}
+
+// SubmitAndWatch is submitting a CentChain transaction and starts a task to wait for the transaction result
+func (a api) SubmitAndWatch(method interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
+		tx, bn, sig, err := a.SubmitWithRetries(method, params)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		res, err := a.QueueCentChainEXTStatusTask(accountID, jobID, tx, uint32(bn), sig, nil)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		_, err = res.Get(jobMan.GetDefaultTaskTimeout())
+		if err != nil {
+			errOut <- err
+			return
+		}
+		errOut <- nil
+	}
 }

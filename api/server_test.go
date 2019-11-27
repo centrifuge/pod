@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"flag"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"os"
 	"sync"
 	"testing"
@@ -42,6 +43,9 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},

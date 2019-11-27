@@ -2,12 +2,12 @@ package anchors
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/transaction"
 )
 
 const (
@@ -29,17 +29,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
-		return errors.New("ethereum client hasn't been initialized")
+	if _, ok := ctx[centchain.BootstrappedCentChainClient]; !ok {
+		return errors.New("centchain client hasn't been initialized")
 	}
-	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	client := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 
-	anchorContractAddr := cfg.GetContractAddress(config.AnchorRepo)
-
-	repositoryContract, err := NewAnchorContract(anchorContractAddr, client.GetEthClient())
-	if err != nil {
-		return err
-	}
+	repository := NewRepository(client)
 
 	jobsMan, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
@@ -51,7 +46,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	repo := newService(cfg, repositoryContract, queueSrv, client, jobsMan)
+	txSvc, ok := ctx[centchain.BootstrappedCentChainClient].(transaction.Submitter)
+
+	repo := newService(cfg, repository, queueSrv, client, jobsMan, txSvc)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	return nil
