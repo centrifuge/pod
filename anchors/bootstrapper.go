@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/transaction"
 )
 
 const (
@@ -46,12 +45,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	txSvc, ok := ctx[centchain.BootstrappedCentChainClient].(transaction.Submitter)
-	if !ok {
-		return errors.New("centchain client hasn't been initialized")
-	}
-
-	repo := newService(cfg, repository, queueSrv, client, jobsMan, txSvc)
+	repo := newService(cfg, repository, queueSrv, client, jobsMan, client)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	return nil

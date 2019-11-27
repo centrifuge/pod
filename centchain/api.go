@@ -39,6 +39,9 @@ type API interface {
 	// SubmitExtrinsic signs the given call with the provided KeyRingPair and submits an extrinsic.
 	// Returns transaction hash, latest block number before extrinsic submission, and signature attached with the extrinsic.
 	SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
+
+	// SubmitAndWatch returns function that submits and watches an extrinsic, implements transaction.Submitter
+	SubmitAndWatch(method interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error)
 }
 
 // Config defines functions to get centchain details
