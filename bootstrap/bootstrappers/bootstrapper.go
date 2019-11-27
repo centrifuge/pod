@@ -76,6 +76,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
+		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&anchors.Bootstrapper{},
