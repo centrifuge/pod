@@ -27,7 +27,7 @@ type Repository interface {
 	PreCommit(
 		ctx context.Context,
 		anchorID AnchorID,
-		signingRoot DocumentRoot) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
+		signingRoot DocumentRoot) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error)
 
 	// Commit takes anchorID pre image, document root, and proof if pre-commit is submitted for this commit to commit an anchor
 	// on chain.
@@ -37,7 +37,7 @@ type Repository interface {
 		anchorIDPreImage AnchorID,
 		documentRoot DocumentRoot,
 		proof [32]byte,
-		storedUntil time.Time) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
+		storedUntil time.Time) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error)
 
 	// GetAnchorByID returns the anchor stored on-chain
 	GetAnchorByID(id *big.Int) (struct {
@@ -59,7 +59,7 @@ func NewRepository(api centchain.API) Repository {
 	return repository{api: api}
 }
 
-func (r repository) PreCommit(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error) {
+func (r repository) PreCommit(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return txHash, bn, sig, err
@@ -87,7 +87,7 @@ func (r repository) Commit(
 	ctx context.Context,
 	anchorIDPreImage AnchorID,
 	documentRoot DocumentRoot,
-	proof [32]byte, storedUntil time.Time) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error) {
+	proof [32]byte, storedUntil time.Time) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error) {
 
 	acc, err := contextutil.Account(ctx)
 	if err != nil {

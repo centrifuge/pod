@@ -45,7 +45,6 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 }
 
 func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h, err := blake2b.New256(nil)
@@ -84,7 +83,6 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 }
 
 func TestCommitAnchor_Integration(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h, err := blake2b.New256(nil)
@@ -130,7 +128,6 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	var commitDataList [5]*anchors.CommitData
 	var doneList [5]chan error

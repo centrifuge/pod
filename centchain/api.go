@@ -2,6 +2,7 @@ package centchain
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,11 +23,8 @@ const (
 	// ErrCentChainTransaction is a generic error type to be used for CentChain errors
 	ErrCentChainTransaction = errors.Error("error on centchain tx layer")
 
-	// ErrTransactionUnderpriced transaction is under priced
-	ErrTransactionUnderpriced = errors.Error("replacement transaction underpriced")
-
 	// ErrNonceTooLow nonce is too low
-	ErrNonceTooLow = errors.Error("nonce too low")
+	ErrNonceTooLow = errors.Error("Priority is too low")
 )
 
 var log = logging.Logger("centchain-client")
@@ -38,7 +36,7 @@ type API interface {
 
 	// SubmitExtrinsic signs the given call with the provided KeyRingPair and submits an extrinsic.
 	// Returns transaction hash, latest block number before extrinsic submission, and signature attached with the extrinsic.
-	SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error)
+	SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error)
 
 	// SubmitAndWatch returns function that submits and watches an extrinsic, implements transaction.Submitter
 	SubmitAndWatch(method interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error)
@@ -58,11 +56,14 @@ type api struct {
 	getBlockLatest          func() (*types.SignedBlock, error)
 	getMetadataLatest       func() (*types.Metadata, error)
 	config                  Config
+	queueSrv                *queue.Server
+	accounts                map[string]uint32
+	accMu                   sync.Mutex // accMu to protect accounts
 	mu                      sync.Mutex
 }
 
 // NewAPI returns a new centrifuge chain api.
-func NewAPI(sapi *gsrpc.SubstrateAPI) API {
+func NewAPI(sapi *gsrpc.SubstrateAPI, config Config, queueSrv *queue.Server) API {
 	return api{
 		getBlockHash:            sapi.RPC.Chain.GetBlockHash,
 		getRuntimeVersionLatest: sapi.RPC.State.GetRuntimeVersionLatest,
@@ -70,6 +71,10 @@ func NewAPI(sapi *gsrpc.SubstrateAPI) API {
 		getClient:               func() client.Client { return sapi.Client },
 		getBlockLatest:          sapi.RPC.Chain.GetBlockLatest,
 		getMetadataLatest:       sapi.RPC.State.GetMetadataLatest,
+		config:                  config,
+		queueSrv:                queueSrv,
+		accMu:                   sync.Mutex{},
+		mu:                      sync.Mutex{},
 	}
 }
 
@@ -77,7 +82,7 @@ func (a api) GetMetadataLatest() (*types.Metadata, error) {
 	return a.getMetadataLatest()
 }
 
-func (a api) SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error) {
+func (a api) SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	ext := types.NewExtrinsic(c)
@@ -157,7 +162,10 @@ gas prices that means that a concurrent transaction race condition event has hap
 - params: Arbitrary number of parameters that are passed to the function fname call
 Note: method must always return "txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error"
 */
-func (a api) SubmitWithRetries(method interface{}, params ...interface{}) (types.Hash, types.BlockNumber, types.Signature, error) {
+func (a api) SubmitWithRetries(method interface{}, params ...interface{}) (types.Hash, types.BlockNumber, types.MultiSignature, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	//TODO Add account nonce + increment accs nonces
 	f := reflect.ValueOf(method)
 	maxTries := a.config.GetCentChainMaxRetries()
 
@@ -165,7 +173,7 @@ func (a api) SubmitWithRetries(method interface{}, params ...interface{}) (types
 	var err error
 	for {
 		if current >= maxTries {
-			return types.Hash{}, types.BlockNumber(0), types.Signature{}, errors.NewTypedError(ErrCentChainTransaction, errors.New("max concurrent transaction tries reached: %v", err))
+			return types.Hash{}, types.BlockNumber(0), types.MultiSignature{}, errors.NewTypedError(ErrCentChainTransaction, errors.New("max concurrent transaction tries reached: %v", err))
 		}
 
 		var in []reflect.Value
@@ -175,36 +183,32 @@ func (a api) SubmitWithRetries(method interface{}, params ...interface{}) (types
 
 		var txHash types.Hash
 		var bn types.BlockNumber
-		var sig types.Signature
+		var sig types.MultiSignature
 
 		result := f.Call(in)
-		if !result[0].IsNil() {
-			txHash = result[0].Interface().(types.Hash)
-		}
 
-		if !result[1].IsNil() {
-			bn = result[1].Interface().(types.BlockNumber)
-		}
-
-		if !result[2].IsNil() {
-			sig = result[2].Interface().(types.Signature)
-		}
+		txHash = result[0].Interface().(types.Hash)
+		bn = result[1].Interface().(types.BlockNumber)
+		sig = result[2].Interface().(types.MultiSignature)
 
 		if !result[3].IsNil() {
 			err = result[3].Interface().(error)
 		}
 
 		if err == nil {
+			log.Infof("Successfully submitted tx %s from blockNumber %d", txHash.Hex(), bn)
 			return txHash, bn, sig, nil
 		}
 
-		if (err.Error() == ErrTransactionUnderpriced.Error()) || (err.Error() == ErrNonceTooLow.Error()) {
+		// TODO Change to equivalent method in Substrate
+		if strings.Contains(err.Error(), ErrNonceTooLow.Error()) {
 			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 			time.Sleep(a.config.GetCentChainIntervalRetry())
-			continue
+			return txHash, bn, sig, err
+			//continue //TODO enable retry once account nonce is tracked
 		}
 
-		return types.Hash{}, types.BlockNumber(0), types.Signature{}, err
+		return txHash, bn, sig, err
 
 	}
 }
@@ -212,13 +216,13 @@ func (a api) SubmitWithRetries(method interface{}, params ...interface{}) (types
 // SubmitAndWatch is submitting a CentChain transaction and starts a task to wait for the transaction result
 func (a api) SubmitAndWatch(method interface{}, params ...interface{}) func(accountID identity.DID, jobID jobs.JobID, jobsMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
-		tx, bn, sig, err := a.SubmitWithRetries(method, params)
+		tx, bn, msig, err := a.SubmitWithRetries(method, params...)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		res, err := a.QueueCentChainEXTStatusTask(accountID, jobID, tx, uint32(bn), sig, nil)
+		res, err := a.QueueCentChainEXTStatusTask(accountID, jobID, tx, uint32(bn), getSignature(msig), a.queueSrv)
 		if err != nil {
 			errOut <- err
 			return
@@ -231,4 +235,14 @@ func (a api) SubmitAndWatch(method interface{}, params ...interface{}) func(acco
 		}
 		errOut <- nil
 	}
+}
+
+func getSignature(msig types.MultiSignature) types.Signature {
+	if msig.IsEd25519 {
+		return msig.AsEd25519
+	}
+	if msig.IsSr25519 {
+		return msig.AsSr25519
+	}
+	return types.Signature{}
 }

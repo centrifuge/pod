@@ -70,7 +70,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	pc := newPreCommitData(anchorID, signingRoot)
 	log.Infof("Add Anchor to Pre-commit %s from did:%s", anchorID.String(), did.ToAddress().String())
 	_, done, err := s.jobsMan.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for anchor commit",
-		s.txSvc.SubmitAndWatch(s.anchorRepository.PreCommit, pc.AnchorID.BigInt(), pc.SigningRoot))
+		s.txSvc.SubmitAndWatch(s.anchorRepository.PreCommit, ctx, pc.AnchorID, pc.SigningRoot))
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 
 	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
 	_, done, err := s.jobsMan.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for anchor commit",
-		s.txSvc.SubmitAndWatch(s.anchorRepository.Commit, cd.AnchorID.BigInt(), cd.DocumentRoot, cd.DocumentProof))
+		s.txSvc.SubmitAndWatch(s.anchorRepository.Commit, ctx, cd.AnchorID, cd.DocumentRoot, cd.DocumentProof, time.Now().Add(24*time.Hour)))
 	if err != nil {
 		return nil, err
 	}

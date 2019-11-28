@@ -31,7 +31,8 @@ const (
 // ExtrinsicStatusTask struct for the task to check a cent-chain transaction
 type ExtrinsicStatusTask struct {
 	jobsv1.BaseTask
-	timeout time.Duration
+	timeout    time.Duration
+	maxRetries int
 
 	//state
 	getBlockHash      func(blockNumber uint64) (types.Hash, error)
@@ -55,6 +56,7 @@ type ExtrinsicStatusTask struct {
 // NewExtrinsicStatusTask returns a the struct for the task
 func NewExtrinsicStatusTask(
 	timeout time.Duration,
+	maxRetries int,
 	txService jobs.Manager,
 	getBlockHash func(blockNumber uint64) (types.Hash, error),
 	getBlock func(blockHash types.Hash) (*types.SignedBlock, error),
@@ -63,6 +65,7 @@ func NewExtrinsicStatusTask(
 ) *ExtrinsicStatusTask {
 	return &ExtrinsicStatusTask{
 		timeout:           timeout,
+		maxRetries:        maxRetries,
 		BaseTask:          jobsv1.BaseTask{JobManager: txService},
 		getBlockHash:      getBlockHash,
 		getBlock:          getBlock,
@@ -79,12 +82,17 @@ func (est *ExtrinsicStatusTask) TaskTypeName() string {
 // Copy returns a new instance of extrinsicStatusTask
 func (est *ExtrinsicStatusTask) Copy() (gocelery.CeleryTask, error) {
 	return &ExtrinsicStatusTask{
-		timeout:      est.timeout,
-		BaseTask:     jobsv1.BaseTask{JobManager: est.JobManager},
-		extHash:      est.extHash,
-		fromBlock:    est.fromBlock,
-		extSignature: est.extSignature,
-		accountID:    est.accountID,
+		timeout:           est.timeout,
+		maxRetries:        est.maxRetries,
+		BaseTask:          jobsv1.BaseTask{JobManager: est.JobManager},
+		extHash:           est.extHash,
+		fromBlock:         est.fromBlock,
+		extSignature:      est.extSignature,
+		accountID:         est.accountID,
+		getMetadataLatest: est.getMetadataLatest,
+		getStorage:        est.getStorage,
+		getBlock:          est.getBlock,
+		getBlockHash:      est.getBlockHash,
 	}, nil
 }
 
@@ -156,68 +164,87 @@ func (est *ExtrinsicStatusTask) RunTask() (resp interface{}, err error) {
 }
 
 func (est *ExtrinsicStatusTask) processRunTask() (resp interface{}, err error) {
-	nhBlock, err := est.getBlockHash(uint64(est.fromBlock))
-	if err != nil {
-		if err == ErrBlockNotReady {
-			return nil, gocelery.ErrTaskRetryable
+	var current int
+	for {
+
+		if current >= est.maxRetries {
+			return nil, errors.NewTypedError(ErrCentChainTransaction, errors.New("max concurrent transaction tries reached: %v", err))
 		}
-		return nil, err
+
+		nhBlock, err := est.getBlockHash(uint64(est.fromBlock))
+		if err != nil {
+			if err == ErrBlockNotReady {
+				time.Sleep(5 * time.Second)
+				current++
+				continue
+			}
+			return nil, err
+		}
+
+		nBlock, err := est.getBlock(nhBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		foundIdx := isExtrinsicSignatureInBlock(est.extSignature, nBlock.Block)
+		if foundIdx == -1 { // Not found in block, try next block
+			est.fromBlock = est.fromBlock + 1 // Increment block number for next iteration
+			current++
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		log.Infof("Found extrinsic %s in block %d", est.extHash, est.fromBlock)
+
+		return nil, est.parseExtrinsicStatus(nhBlock, foundIdx)
 	}
 
-	nBlock, err := est.getBlock(nhBlock)
-	if err != nil {
-		return nil, err
-	}
+}
 
-	foundIdx := isExtrinsicSignatureInBlock(est.extSignature, nBlock.Block)
-	if foundIdx == -1 { // Not found in block, try next block
-		est.fromBlock = est.fromBlock + 1 // Increment block number for next iteration
-		return nil, gocelery.ErrTaskRetryable
-	}
-
+func (est *ExtrinsicStatusTask) parseExtrinsicStatus(nhBlock types.Hash, foundIdx int) error {
 	meta, err := est.getMetadataLatest()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	key, err := types.CreateStorageKey(meta, "System", "Events", nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var er types.EventRecordsRaw
 	err = est.getStorage(key, &er, nhBlock)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	e := types.EventRecords{}
 	err = er.DecodeEventRecords(meta, &e)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Check success events
 	for _, es := range e.System_ExtrinsicSuccess {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(foundIdx) {
-			return nil, nil // Success executing extrinsic
+			return nil // Success executing extrinsic
 		}
 	}
 
 	// Otherwise, check failure events
 	for _, es := range e.System_ExtrinsicFailed {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(foundIdx) {
-			return nil, errors.New("extrinsic %s failed %v", est.extHash, es.DispatchError) //Failure executing extrinsic
+			return errors.New("extrinsic %s failed %v", est.extHash, es.DispatchError) //Failure executing extrinsic
 		}
 	}
 
-	return nil, errors.New("should not have reached this step: %v", e)
+	return errors.New("should not have reached this step: %v", e)
 }
 
 func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int {
 	found := -1
 	for idx, xx := range block.Extrinsics {
-		if xx.Signature.Signature == extSign {
+		if xx.Signature.Signature.AsSr25519 == extSign {
 			found = idx
 			break
 		}

@@ -37,8 +37,8 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	client := NewAPI(sapi)
-	extStatusTask := NewExtrinsicStatusTask(cfg.GetEthereumContextWaitTimeout(), txManager, sapi.RPC.Chain.GetBlockHash, sapi.RPC.Chain.GetBlock, client.GetMetadataLatest, sapi.RPC.State.GetStorage)
+	client := NewAPI(sapi, cfg, queueSrv)
+	extStatusTask := NewExtrinsicStatusTask(cfg.GetEthereumContextWaitTimeout(), cfg.GetCentChainMaxRetries(), txManager, sapi.RPC.Chain.GetBlockHash, sapi.RPC.Chain.GetBlock, client.GetMetadataLatest, sapi.RPC.State.GetStorage)
 	queueSrv.RegisterTaskType(extStatusTask.TaskTypeName(), extStatusTask)
 	context[BootstrappedCentChainClient] = client
 
