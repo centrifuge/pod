@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/types"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -43,8 +45,16 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	//if err != nil {
 	//	return docRoot, anchoredTime, err
 	//}
+	bts, err := types.HexDecodeString(r.DocumentRoot.Hex())
+	if err != nil {
+		return docRoot, anchoredTime, err
+	}
+	dr, err := ToDocumentRoot(bts)
+	if err != nil {
+		return docRoot, anchoredTime, err
+	}
 
-	return r.DocumentRoot, time.Unix(0, 0), nil
+	return dr, time.Unix(0, 0), nil
 }
 
 // PreCommitAnchor will call the transaction PreCommit substrate module
@@ -66,5 +76,5 @@ func getDID(ctx context.Context) (identity.DID, error) {
 
 // CommitAnchor will send a commit transaction to CentChain.
 func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error) {
-	return s.anchorRepository.Commit(ctx, anchorID, documentRoot, proof, time.Date(2020, 01, 12, 22, 51, 48, 0, time.UTC))
+	return s.anchorRepository.Commit(ctx, anchorID, documentRoot, proof, time.Now().UTC().Add(8760*time.Hour)) // 12 months storage
 }

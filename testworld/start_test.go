@@ -24,7 +24,6 @@ const (
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
-	os.Exit(0) //TODO revert once we have anchoring on centchain
 	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)

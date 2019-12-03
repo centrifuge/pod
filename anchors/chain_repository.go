@@ -43,11 +43,7 @@ type Repository interface {
 		storedUntil time.Time) (confirmations chan error, err error)
 
 	// GetAnchorByID returns the anchor stored on-chain
-	GetAnchorByID(id *big.Int) (struct {
-		AnchorID     *big.Int
-		DocumentRoot [32]byte
-		BlockNumber  uint32
-	}, error)
+	GetAnchorByID(id *big.Int) (*AnchorData, error)
 }
 
 type repository struct {
@@ -140,21 +136,18 @@ func (r repository) Commit(
 	return done, err
 }
 
-func (r repository) GetAnchorByID(id *big.Int) (struct {
-	AnchorID     *big.Int
-	DocumentRoot [32]byte
-	BlockNumber  uint32
-}, error) {
+// AnchorData holds data returned from previously anchored data against centchain
+type AnchorData struct {
+	AnchorID     types.Hash `json:"id"`
+	DocumentRoot types.Hash `json:"doc_root"`
+	BlockNumber  uint32     `json:"anchored_block"`
+}
 
-	var anchorData struct {
-		AnchorID     *big.Int
-		DocumentRoot [32]byte
-		BlockNumber  uint32
-	}
-
-	err := r.api.Call(&anchorData, GetByID, types.NewHash(id.Bytes()))
+func (r repository) GetAnchorByID(id *big.Int) (*AnchorData, error) {
+	var ad *AnchorData
+	err := r.api.Call(&ad, GetByID, types.NewHash(id.Bytes()))
 	if err != nil {
-		return anchorData, err
+		return ad, err
 	}
-	return anchorData, nil
+	return ad, nil
 }
