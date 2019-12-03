@@ -33,8 +33,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	client := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 
-	repository := NewRepository(client)
-
 	jobsMan, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
 		return errors.New("jobs repository not initialised")
@@ -45,7 +43,8 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	repo := newService(cfg, repository, queueSrv, client, jobsMan, client)
+	repository := NewRepository(client, jobsMan)
+	repo := newService(cfg, repository, queueSrv, client, jobsMan)
 	ctx[BootstrappedAnchorRepo] = repo
 
 	return nil

@@ -31,8 +31,8 @@ const (
 // ExtrinsicStatusTask struct for the task to check a cent-chain transaction
 type ExtrinsicStatusTask struct {
 	jobsv1.BaseTask
-	timeout    time.Duration
-	maxRetries int
+	intervalRetry time.Duration
+	maxRetries    int
 
 	//state
 	getBlockHash      func(blockNumber uint64) (types.Hash, error)
@@ -55,7 +55,7 @@ type ExtrinsicStatusTask struct {
 
 // NewExtrinsicStatusTask returns a the struct for the task
 func NewExtrinsicStatusTask(
-	timeout time.Duration,
+	intervalRetry time.Duration,
 	maxRetries int,
 	txService jobs.Manager,
 	getBlockHash func(blockNumber uint64) (types.Hash, error),
@@ -64,7 +64,7 @@ func NewExtrinsicStatusTask(
 	getStorage func(key types.StorageKey, target interface{}, blockHash types.Hash) error,
 ) *ExtrinsicStatusTask {
 	return &ExtrinsicStatusTask{
-		timeout:           timeout,
+		intervalRetry:     intervalRetry,
 		maxRetries:        maxRetries,
 		BaseTask:          jobsv1.BaseTask{JobManager: txService},
 		getBlockHash:      getBlockHash,
@@ -82,7 +82,7 @@ func (est *ExtrinsicStatusTask) TaskTypeName() string {
 // Copy returns a new instance of extrinsicStatusTask
 func (est *ExtrinsicStatusTask) Copy() (gocelery.CeleryTask, error) {
 	return &ExtrinsicStatusTask{
-		timeout:           est.timeout,
+		intervalRetry:     est.intervalRetry,
 		maxRetries:        est.maxRetries,
 		BaseTask:          jobsv1.BaseTask{JobManager: est.JobManager},
 		extHash:           est.extHash,
@@ -168,13 +168,14 @@ func (est *ExtrinsicStatusTask) processRunTask() (resp interface{}, err error) {
 	for {
 
 		if current >= est.maxRetries {
-			return nil, errors.NewTypedError(ErrCentChainTransaction, errors.New("max concurrent transaction tries reached: %v", err))
+			return nil, errors.NewTypedError(ErrCentChainTransaction, errors.New("max tries reached for extrinsic %s: %v", est.extHash, err))
 		}
 
 		nhBlock, err := est.getBlockHash(uint64(est.fromBlock))
 		if err != nil {
-			if err == ErrBlockNotReady {
-				time.Sleep(5 * time.Second)
+			if err.Error() == ErrBlockNotReady.Error() {
+				log.Warningf("Block %d not ready yet, trying again...", est.fromBlock)
+				time.Sleep(est.intervalRetry)
 				current++
 				continue
 			}
@@ -188,9 +189,10 @@ func (est *ExtrinsicStatusTask) processRunTask() (resp interface{}, err error) {
 
 		foundIdx := isExtrinsicSignatureInBlock(est.extSignature, nBlock.Block)
 		if foundIdx == -1 { // Not found in block, try next block
+			log.Warningf("Extrinsic %s not found in block %d, trying in next block...", est.extHash, est.fromBlock)
 			est.fromBlock = est.fromBlock + 1 // Increment block number for next iteration
 			current++
-			time.Sleep(5 * time.Second)
+			time.Sleep(est.intervalRetry)
 			continue
 		}
 

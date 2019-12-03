@@ -37,11 +37,7 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 	t.Parallel()
 	anchorID := utils.RandomSlice(32)
 	signingRoot := utils.RandomSlice(32)
-	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
-	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
-	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
-	assert.True(t, valid)
 }
 
 func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
@@ -72,8 +68,6 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
 	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
-	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
-	assert.True(t, valid)
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, proofB1)
@@ -125,6 +119,32 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 	assert.Nil(t, err)
 	doneErr := <-done
 	assert.NoError(t, doneErr, "no error")
+}
+
+func TestPreCommitAnchor_Integration_Concurrent(t *testing.T) {
+	t.Parallel()
+
+	var doneList [5]chan error
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+
+	for ix := 0; ix < 5; ix++ {
+		anchorID := utils.RandomSlice(32)
+		signingRoot := utils.RandomSlice(32)
+		anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+		assert.NoError(t, err)
+		docRootTyped, _ := anchors.ToDocumentRoot(signingRoot)
+		doneList[ix], err = anchorRepo.PreCommitAnchor(ctx, anchorIDTyped, docRootTyped)
+		if err != nil {
+			t.Fatalf("Error precommit anchor %v", err)
+		}
+	}
+
+	for ix := 0; ix < 5; ix++ {
+		doneErr := <-doneList[ix]
+		assert.NoError(t, doneErr)
+	}
+
 }
 
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {

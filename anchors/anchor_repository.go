@@ -21,7 +21,4 @@ type AnchorRepository interface {
 
 	// GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 	GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)
-
-	// HasValidPreCommit checks if the given anchorID has a valid pre-commit
-	HasValidPreCommit(anchorID AnchorID) bool
 }

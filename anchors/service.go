@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/transaction"
-
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -22,20 +20,10 @@ type service struct {
 	client           centchain.API
 	queue            *queue.Server
 	jobsMan          jobs.Manager
-	txSvc            transaction.Submitter
 }
 
-func newService(config Config, anchorRepository Repository, queue *queue.Server, client centchain.API, jobsMan jobs.Manager, txSvc transaction.Submitter) AnchorRepository {
-	return &service{config: config, anchorRepository: anchorRepository, client: client, queue: queue, jobsMan: jobsMan, txSvc: txSvc}
-}
-
-// HasValidPreCommit checks if the given anchorID has a valid pre-commit
-func (s *service) HasValidPreCommit(anchorID AnchorID) bool {
-	r, err := s.anchorRepository.HasValidPreCommit(anchorID.BigInt())
-	if err != nil {
-		return false
-	}
-	return r
+func newService(config Config, anchorRepository Repository, queue *queue.Server, client centchain.API, jobsMan jobs.Manager) AnchorRepository {
+	return &service{config: config, anchorRepository: anchorRepository, client: client, queue: queue, jobsMan: jobsMan}
 }
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
@@ -61,21 +49,7 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 
 // PreCommitAnchor will call the transaction PreCommit substrate module
 func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan error, err error) {
-	did, err := getDID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	jobID := contextutil.Job(ctx)
-	pc := newPreCommitData(anchorID, signingRoot)
-	log.Infof("Add Anchor to Pre-commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.jobsMan.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for anchor commit",
-		s.txSvc.SubmitAndWatch(s.anchorRepository.PreCommit, ctx, pc.AnchorID, pc.SigningRoot))
-	if err != nil {
-		return nil, err
-	}
-
-	return done, nil
+	return s.anchorRepository.PreCommit(ctx, anchorID, signingRoot)
 }
 
 // getDID returns DID from context.Account
@@ -92,21 +66,5 @@ func getDID(ctx context.Context) (identity.DID, error) {
 
 // CommitAnchor will send a commit transaction to CentChain.
 func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error) {
-	did, err := getDID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	jobID := contextutil.Job(ctx)
-
-	cd := NewCommitData(anchorID, documentRoot, proof)
-
-	log.Infof("Add Anchor to Commit %s from did:%s", anchorID.String(), did.ToAddress().String())
-	_, done, err := s.jobsMan.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for anchor commit",
-		s.txSvc.SubmitAndWatch(s.anchorRepository.Commit, ctx, cd.AnchorID, cd.DocumentRoot, cd.DocumentProof, time.Now().Add(24*time.Hour)))
-	if err != nil {
-		return nil, err
-	}
-
-	return done, nil
+	return s.anchorRepository.Commit(ctx, anchorID, documentRoot, proof, time.Date(2020, 01, 12, 22, 51, 48, 0, time.UTC))
 }
