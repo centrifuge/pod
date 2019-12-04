@@ -98,7 +98,7 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: &cd})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "anchor data missing")
+	assert.Contains(t, err.Error(), "Unable to find anchor")
 }
 
 func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {

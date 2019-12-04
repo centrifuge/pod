@@ -3,7 +3,11 @@
 package centchain
 
 import (
+	"context"
 	"strings"
+
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 
 	"github.com/centrifuge/go-substrate-rpc-client/client"
 	"github.com/centrifuge/go-substrate-rpc-client/signature"
@@ -22,12 +26,17 @@ func (m *MockAPI) GetMetadataLatest() (*types.Metadata, error) {
 	return md, args.Error(1)
 }
 
-func (m *MockAPI) SubmitExtrinsic(meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.Signature, err error) {
-	args := m.Called(meta, c, krp)
+func (m *MockAPI) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error) {
+	args := m.Called(ctx, meta, c, krp)
 	txHash, _ = args.Get(0).(types.Hash)
 	bn, _ = args.Get(1).(types.BlockNumber)
-	sig, _ = args.Get(2).(types.Signature)
+	sig, _ = args.Get(2).(types.MultiSignature)
 	return txHash, bn, sig, args.Error(3)
+}
+
+func (m *MockAPI) SubmitAndWatch(ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
+	//args := m.Called(ctx, meta, c, krp)
+	return nil
 }
 
 func MetaDataWithCall(call string) *types.Metadata {

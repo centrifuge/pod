@@ -37,7 +37,7 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	}
 
 	if utils.IsEmptyByte32(r.DocumentRoot) {
-		return docRoot, anchoredTime, errors.New("anchor data missing for id: %v", anchorID.String())
+		return docRoot, anchoredTime, errors.New("anchor data empty for id: %v", anchorID.String())
 	}
 
 	//TODO get block time

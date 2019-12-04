@@ -34,6 +34,7 @@ before_install:
 install:
   - mkdir -p ~/bin
   - make install
+  - wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x $HOME/.cargo/bin/subkey
 
 jobs:
   include:
@@ -45,7 +46,6 @@ jobs:
     - stage: "Tests"
       name: "Unit and CMD tests"
       script:
-        - wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x $HOME/.cargo/bin/subkey
         - ./build/scripts/test_wrapper.sh unit cmd
       after_success:
         - bash <(curl -s https://codecov.io/bash)
