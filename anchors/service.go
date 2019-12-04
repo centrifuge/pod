@@ -76,5 +76,5 @@ func getDID(ctx context.Context) (identity.DID, error) {
 
 // CommitAnchor will send a commit transaction to CentChain.
 func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error) {
-	return s.anchorRepository.Commit(ctx, anchorID, documentRoot, proof, time.Now().UTC().Add(8760*time.Hour)) // 12 months storage
+	return s.anchorRepository.Commit(ctx, anchorID, documentRoot, proof, time.Now().UTC().Add(s.config.GetCentChainAnchorLifespan()))
 }

@@ -33,6 +33,7 @@ type AnchorID [AnchorIDLength]byte
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetEthereumGasLimit(op config.ContractOp) uint64
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // ToAnchorID convert the bytes into AnchorID type

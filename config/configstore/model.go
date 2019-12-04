@@ -61,6 +61,7 @@ type NodeConfig struct {
 	CentChainNodeURL               string
 	CentChainIntervalRetry         time.Duration
 	CentChainMaxRetries            int
+	CentChainAnchorLifespan        time.Duration
 }
 
 // IsSet refer the interface
@@ -258,6 +259,11 @@ func (nc *NodeConfig) GetCentChainMaxRetries() int {
 	return nc.CentChainMaxRetries
 }
 
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (nc *NodeConfig) GetCentChainAnchorLifespan() time.Duration {
+	return nc.CentChainAnchorLifespan
+}
+
 // GetEthereumDefaultAccountName refer the interface
 func (nc *NodeConfig) GetEthereumDefaultAccountName() string {
 	return nc.MainIdentity.EthereumDefaultAccountName
@@ -377,6 +383,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
 		CentChainMaxRetries:            c.GetCentChainMaxRetries(),
 		CentChainIntervalRetry:         c.GetCentChainIntervalRetry(),
+		CentChainAnchorLifespan:        c.GetCentChainAnchorLifespan(),
 		CentChainNodeURL:               c.GetCentChainNodeURL(),
 	}
 }

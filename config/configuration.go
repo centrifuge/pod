@@ -154,6 +154,7 @@ type Configuration interface {
 	GetCentChainIntervalRetry() time.Duration
 	GetCentChainMaxRetries() int
 	GetCentChainNodeURL() string
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // Account exposes account options
@@ -443,6 +444,11 @@ func (c *configuration) GetCentChainIntervalRetry() time.Duration {
 // GetCentChainMaxRetries returns the max acceptable retries.
 func (c *configuration) GetCentChainMaxRetries() int {
 	return c.GetInt("centChain.maxRetries")
+}
+
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (c *configuration) GetCentChainAnchorLifespan() time.Duration {
+	return c.GetDuration("centChain.anchorLifespan")
 }
 
 // GetNetworkString returns defined network the node is connected to.
