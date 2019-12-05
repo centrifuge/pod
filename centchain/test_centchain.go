@@ -20,6 +20,62 @@ type MockAPI struct {
 	API
 }
 
+type MockSubstrateAPI struct {
+	mock.Mock
+	SubstrateAPI
+}
+
+func (ms *MockSubstrateAPI) GetMetadataLatest() (*types.Metadata, error) {
+	args := ms.Called()
+	md, _ := args.Get(0).(*types.Metadata)
+	return md, args.Error(1)
+}
+
+func (ms *MockSubstrateAPI) Call(result interface{}, method string, args ...interface{}) error {
+	argss := ms.Called()
+	return argss.Error(0)
+}
+
+func (ms *MockSubstrateAPI) GetBlockHash(blockNumber uint64) (types.Hash, error) {
+	args := ms.Called()
+	md, _ := args.Get(0).(types.Hash)
+	return md, args.Error(1)
+}
+
+func (ms *MockSubstrateAPI) GetBlock(blockHash types.Hash) (*types.SignedBlock, error) {
+	args := ms.Called()
+	md, _ := args.Get(0).(*types.SignedBlock)
+	return md, args.Error(1)
+}
+
+func (ms *MockSubstrateAPI) GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error {
+	args := ms.Called()
+	return args.Error(0)
+}
+
+func (ms *MockSubstrateAPI) GetBlockLatest() (*types.SignedBlock, error) {
+	args := ms.Called()
+	md, _ := args.Get(0).(*types.SignedBlock)
+	return md, args.Error(1)
+}
+
+func (ms *MockSubstrateAPI) GetRuntimeVersionLatest() (*types.RuntimeVersion, error) {
+	args := ms.Called()
+	md, _ := args.Get(0).(*types.RuntimeVersion)
+	return md, args.Error(1)
+}
+
+func (ms *MockSubstrateAPI) GetClient() client.Client {
+	args := ms.Called()
+	md, _ := args.Get(0).(client.Client)
+	return md
+}
+
+func (ms *MockSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) error {
+	args := ms.Called(key, target)
+	return args.Error(0)
+}
+
 func (m *MockAPI) GetMetadataLatest() (*types.Metadata, error) {
 	args := m.Called()
 	md, _ := args.Get(0).(*types.Metadata)

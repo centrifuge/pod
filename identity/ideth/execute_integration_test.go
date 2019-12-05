@@ -43,7 +43,7 @@ func getAnchorAddress(cfg config.Configuration) common.Address {
 }
 
 func TestExecute_successful(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
+	t.SkipNow() // TODO adapt since anchoring goes now through cent-chain
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -127,7 +127,7 @@ func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byt
 
 // Checks the standard behaviour of the anchor contract
 func TestAnchorWithoutExecute_successful(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
+	t.SkipNow() // TODO adapt since anchoring goes now through cent-chain
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)

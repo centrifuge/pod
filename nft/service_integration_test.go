@@ -148,7 +148,6 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 }
 
 func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
-	t.SkipNow() // TODO remove as soon as we have contracts adapted
 	ctx, id, registry, invSrv, cid := prepareInvoiceForNFTMinting(t)
 	regAddr := registry.String()
 	log.Info(regAddr)
@@ -188,7 +187,6 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 }
 
 func TestGenericMintNFT(t *testing.T) {
-	t.SkipNow() // TODO remove as soon as we have contracts adapted
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
 	loanAmountValue := "100.10001"
@@ -252,7 +250,6 @@ func failMintNFT(t *testing.T, grantNFT, nftReadAccess bool) {
 }
 
 func TestEthereumInvoiceUnpaid_MintNFT_no_grant_access(t *testing.T) {
-	t.SkipNow() // TODO remove as soon as we have contracts adapted
 	failMintNFT(t, false, true)
 }
 
@@ -289,7 +286,6 @@ func mintNFTWithProofs(t *testing.T, grantAccess, tokenProof, readAccessProof bo
 }
 
 func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
-	t.SkipNow() // TODO remove as soon as we have contracts adapted
 	tests := []struct {
 		grantAccess, tokenProof, readAccessProof bool
 	}{
@@ -306,7 +302,6 @@ func TestEthereumInvoiceUnpaid_MintNFT(t *testing.T) {
 }
 
 func TestTransferNFT(t *testing.T) {
-	t.SkipNow() // TODO remove as soon as we have contracts adapted
 	addresses := testingutils.GetSmartContractAddresses()
 	registry := common.HexToAddress(addresses.InvoiceUnpaidAddr)
 	ctx, tokenID, did := mintNFTWithProofs(t, true, true, true)

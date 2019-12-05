@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/client"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -48,6 +50,19 @@ type API interface {
 	SubmitAndWatch(ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error)
 }
 
+// SubstrateAPI exposes Substrate API functions
+type SubstrateAPI interface {
+	GetMetadataLatest() (*types.Metadata, error)
+	Call(result interface{}, method string, args ...interface{}) error
+	GetBlockHash(blockNumber uint64) (types.Hash, error)
+	GetBlockLatest() (*types.SignedBlock, error)
+	GetRuntimeVersionLatest() (*types.RuntimeVersion, error)
+	GetClient() client.Client
+	GetStorageLatest(key types.StorageKey, target interface{}) error
+	GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error
+	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
+}
+
 // Config defines functions to get centchain details
 type Config interface {
 	GetCentChainIntervalRetry() time.Duration
@@ -55,8 +70,48 @@ type Config interface {
 	GetCentChainAccount() (acc config.CentChainAccount, err error)
 }
 
+type defaultSubstrateAPI struct {
+	sapi *gsrpc.SubstrateAPI
+}
+
+func (dsa *defaultSubstrateAPI) GetMetadataLatest() (*types.Metadata, error) {
+	return dsa.sapi.RPC.State.GetMetadataLatest()
+}
+
+func (dsa *defaultSubstrateAPI) Call(result interface{}, method string, args ...interface{}) error {
+	return dsa.sapi.Client.Call(result, method, args...)
+}
+
+func (dsa *defaultSubstrateAPI) GetBlockHash(blockNumber uint64) (types.Hash, error) {
+	return dsa.sapi.RPC.Chain.GetBlockHash(blockNumber)
+}
+
+func (dsa *defaultSubstrateAPI) GetBlock(blockHash types.Hash) (*types.SignedBlock, error) {
+	return dsa.sapi.RPC.Chain.GetBlock(blockHash)
+}
+
+func (dsa *defaultSubstrateAPI) GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error {
+	return dsa.sapi.RPC.State.GetStorage(key, target, blockHash)
+}
+
+func (dsa *defaultSubstrateAPI) GetBlockLatest() (*types.SignedBlock, error) {
+	return dsa.sapi.RPC.Chain.GetBlockLatest()
+}
+
+func (dsa *defaultSubstrateAPI) GetRuntimeVersionLatest() (*types.RuntimeVersion, error) {
+	return dsa.sapi.RPC.State.GetRuntimeVersionLatest()
+}
+
+func (dsa *defaultSubstrateAPI) GetClient() client.Client {
+	return dsa.sapi.Client
+}
+
+func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) error {
+	return dsa.sapi.RPC.State.GetStorageLatest(key, target)
+}
+
 type api struct {
-	sapi     *gsrpc.SubstrateAPI
+	sapi     SubstrateAPI
 	config   Config
 	queueSrv *queue.Server
 	accounts map[string]uint32
@@ -65,7 +120,7 @@ type api struct {
 }
 
 // NewAPI returns a new centrifuge chain api.
-func NewAPI(sapi *gsrpc.SubstrateAPI, config Config, queueSrv *queue.Server) API {
+func NewAPI(sapi SubstrateAPI, config Config, queueSrv *queue.Server) API {
 	return &api{
 		sapi:     sapi,
 		config:   config,
@@ -77,23 +132,23 @@ func NewAPI(sapi *gsrpc.SubstrateAPI, config Config, queueSrv *queue.Server) API
 }
 
 func (a *api) Call(result interface{}, method string, args ...interface{}) error {
-	return a.sapi.Client.Call(result, method, args...)
+	return a.sapi.Call(result, method, args...)
 }
 
 func (a *api) GetMetadataLatest() (*types.Metadata, error) {
-	return a.sapi.RPC.State.GetMetadataLatest()
+	return a.sapi.GetMetadataLatest()
 }
 
 func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (txHash types.Hash, bn types.BlockNumber, sig types.MultiSignature, err error) {
 	ext := types.NewExtrinsic(c)
 	era := types.ExtrinsicEra{IsMortalEra: false}
 
-	genesisHash, err := a.sapi.RPC.Chain.GetBlockHash(0)
+	genesisHash, err := a.sapi.GetBlockHash(0)
 	if err != nil {
 		return txHash, bn, sig, err
 	}
 
-	rv, err := a.sapi.RPC.State.GetRuntimeVersionLatest()
+	rv, err := a.sapi.GetRuntimeVersionLatest()
 	if err != nil {
 		return txHash, bn, sig, err
 	}
@@ -117,8 +172,8 @@ func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types
 		return txHash, bn, sig, err
 	}
 
-	auth := author.NewAuthor(a.sapi.Client)
-	startBlock, err := a.sapi.RPC.Chain.GetBlockLatest()
+	auth := author.NewAuthor(a.sapi.GetClient())
+	startBlock, err := a.sapi.GetBlockLatest()
 	if err != nil {
 		return txHash, bn, sig, err
 	}
@@ -253,7 +308,7 @@ func (a *api) getNonceFromChain(meta *types.Metadata, krp []byte) (uint32, error
 	}
 
 	var nonce uint32
-	err = a.sapi.RPC.State.GetStorageLatest(key, &nonce)
+	err = a.sapi.GetStorageLatest(key, &nonce)
 	if err != nil {
 		return 0, err
 	}
@@ -270,6 +325,7 @@ func (a *api) setNonceInAccount(accountID string, nonce uint32) {
 func (a *api) getNonceInAccount(accountID string) (uint32, bool) {
 	a.accMu.Lock()
 	defer a.accMu.Unlock()
+
 	n, ok := a.accounts[accountID]
 	return n, ok
 }

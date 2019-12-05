@@ -51,7 +51,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	anchorID = h.Sum(anchorID)
 	proofStr := []string{"0xc0c38dd1635b279af306bc04900559fc346970ad8f654106bfced202b067a10e"}
 	signingRootStr := "0x3f274cf97a0c166e6e3fa1c10a3353e260b3cb162aff873fa01a49deafc65ec8"
-	documentRootStr := "0xd8f7d4db5f1786ed2d6ca809191b5fae8df067869ca53cb579801a9dd0ac56f8"
+	documentRootStr := "0xeefa76542337d4c1456819f4f01f362455ab0c47f7514a0a7f7fb99efd64ce82"
 
 	signingRoot, err := hexutil.Decode(signingRootStr)
 	assert.NoError(t, err)
