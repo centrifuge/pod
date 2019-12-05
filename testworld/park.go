@@ -269,9 +269,9 @@ func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPasswor
 		createConfig:       createConfig,
 		multiAccount:       multiAccount,
 		// TODO(ved): change these when working on testworld cases for centChain
-		centChainAddress: "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
-		centChainID:      "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
-		centChainSecret:  "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+		centChainAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+		centChainID:      "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+		centChainSecret:  "//Alice",
 	}
 }
 
@@ -422,11 +422,14 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 		return nil
 	}
 	// create 3 accounts
-	cacc := map[string]string{
-		"id":            "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
-		"secret":        "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
-		"ss_58_address": "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+	cacc := map[string]map[string]string{
+		"centrifuge_chain_account": {
+			"id":            "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+			"secret":        "//Alice",
+			"ss_58_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+		},
 	}
+
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
 		res := generateAccount(e, h.identity.String(), http.StatusOK, cacc)

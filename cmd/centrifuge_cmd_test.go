@@ -28,9 +28,9 @@ func TestCreateConfigCmd(t *testing.T) {
 	cmd := exec.Command(
 		testingutils.GetBinaryPath(),
 		"createconfig", "-n", "testing", "-t", dataDir, "-z", keyPath,
-		"--centchainaddr", "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
-		"--centchainid", "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
-		"--centchainsecret", "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31")
+		"--centchainaddr", "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+		"--centchainid", "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+		"--centchainsecret", "//Alice")
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CENT_NETWORKS_TESTING_CONTRACTADDRESSES_IDENTITYFACTORY=%s", scAddrs.IdentityFactoryAddr))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CENT_NETWORKS_TESTING_CONTRACTADDRESSES_ANCHORREPOSITORY=%s", scAddrs.AnchorRepositoryAddr))

@@ -28,9 +28,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	if c.RunPOAGeth {
-		// NOTE that we don't bring down geth automatically right now because this must only be used for local testing purposes
+	if c.RunChains {
+		// NOTE that we don't bring down geth/cc automatically right now because this must only be used for local testing purposes
 		testingutils.StartPOAGeth()
+		testingutils.StartCentChain()
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()

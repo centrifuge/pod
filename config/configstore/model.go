@@ -610,6 +610,11 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 	if err != nil {
 		return nil, err
 	}
+	cacc, err := c.GetCentChainAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
@@ -618,5 +623,6 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
+		CentChainAccount:                 cacc,
 	}, nil
 }

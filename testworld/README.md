@@ -19,7 +19,7 @@ Here you can create, run and test nodes with various behaviours to observe how t
       "otherLocalConfig": "configs/local/kovan.json",
       
       // following doesn't matter as those would be ignore because of first line
-      "runPOAGeth": true,
+      "runChains": true,
       "createHostConfigs": true,
       "runMigrations": false,
       "ethNodeURL": "",
@@ -33,7 +33,7 @@ Here you can create, run and test nodes with various behaviours to observe how t
     ```
     {
       "otherLocalConfig": "",
-      "runPOAGeth": true,
+      "runChains": true,
       
       // this creates host configs, and should be set to 'true' for the initial test run.
       // for subsequent test runs, this flag can be set to 'false'

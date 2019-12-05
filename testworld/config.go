@@ -27,8 +27,8 @@ type testConfig struct {
 	// Note that if you change this all other config fields in localConfigFile is ignored.
 	OtherLocalConfig string `json:"otherLocalConfig"`
 
-	// RunPOAGeth flag, Adjust this based on local testing requirements in localConfigFile
-	RunPOAGeth bool `json:"runPOAGeth"`
+	// RunChains flag, Adjust this based on local testing requirements in localConfigFile
+	RunChains bool `json:"runChains"`
 
 	// CreateHostConfigs flag, make this true this when running for the first time in local env using localConfigFile
 	CreateHostConfigs bool `json:"createHostConfigs"`
