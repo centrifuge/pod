@@ -248,11 +248,14 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][32]byte, salts [][32]byte, proofs [][][32]byte
 		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
 		mintContractABI := InvoiceUnpaidContractABI
-		if req.UseGeneric {
-			// TODO Remove once we have finalized the generic NFT work
-			// filteredProofs := requestData.Proofs[:len(requestData.Proofs)-1]
-			// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, signingRoot [32]byte, signaturesRoot [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, requestData.BundledHash, requestData.Props, requestData.Values, requestData.Salts}
+		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
+			bh32, err := utils.SliceToByte32(requestData.BundledHash)
+			if err != nil {
+				errOut <- errors.New("failed to convert slice to bytes32: %v", err)
+				return
+			}
+			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+			args = []interface{}{requestData.To, requestData.TokenID, bh32, requestData.Props, requestData.Values, requestData.Salts}
 			mintContractABI = GenericMintMethodABI
 		}
 
