@@ -29,6 +29,10 @@ const (
 
 	// ErrNonceTooLow nonce is too low
 	ErrNonceTooLow = errors.Error("Priority is too low")
+
+	// ErrInvalidTransaction wrapper for a general error
+	// Used sometimes as stale extrinsic (nonce too low)
+	ErrInvalidTransaction = errors.Error("Invalid Transaction")
 )
 
 var log = logging.Logger("centchain-client")
@@ -247,7 +251,7 @@ func (a *api) SubmitWithRetries(ctx context.Context, meta *types.Metadata, c typ
 			break
 		}
 
-		if strings.Contains(err.Error(), ErrNonceTooLow.Error()) {
+		if strings.Contains(err.Error(), ErrNonceTooLow.Error()) || strings.Contains(err.Error(), ErrInvalidTransaction.Error()) {
 			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 			chainNonce, err := a.getNonceFromChain(meta, krp.PublicKey)
 			if err != nil {

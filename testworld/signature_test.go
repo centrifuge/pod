@@ -207,13 +207,6 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 
-	// Bob creates document with Eve whose key is revoked
-	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
-	assert.NoError(t, err)
-
-	// Revoke Key
-	RevokeKey(t, eve.host.idService, keys[0].GetKey(), eve.id, ctxh)
-
 	res := createDocument(bob.httpExpect, bob.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{eve.id.String()}))
 	txID := getTransactionID(t, res)
 	status, _ := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
