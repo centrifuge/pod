@@ -6,21 +6,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/client"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	logging "github.com/ipfs/go-log"
-
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client"
+	"github.com/centrifuge/go-substrate-rpc-client/client"
 	"github.com/centrifuge/go-substrate-rpc-client/rpc/author"
 	"github.com/centrifuge/go-substrate-rpc-client/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
+	logging "github.com/ipfs/go-log"
 )
 
 const (
@@ -280,7 +277,13 @@ func (a *api) SubmitAndWatch(ctx context.Context, meta *types.Metadata, c types.
 			return
 		}
 
-		res, err := a.QueueCentChainEXTStatusTask(accountID, jobID, tx, uint32(bn), getSignature(msig), a.queueSrv)
+		sig, err := getSignature(msig)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		res, err := a.QueueCentChainEXTStatusTask(accountID, jobID, tx, uint32(bn), sig, a.queueSrv)
 		if err != nil {
 			errOut <- err
 			return
@@ -334,12 +337,12 @@ func (a *api) getNonceInAccount(accountID string) (uint32, bool) {
 	return n, ok
 }
 
-func getSignature(msig types.MultiSignature) types.Signature {
+func getSignature(msig types.MultiSignature) (types.Signature, error) {
 	if msig.IsEd25519 {
-		return msig.AsEd25519
+		return msig.AsEd25519, nil
 	}
 	if msig.IsSr25519 {
-		return msig.AsSr25519
+		return msig.AsSr25519, nil
 	}
-	return types.Signature{}
+	return types.Signature{}, errors.New("MultiSignature not supported")
 }

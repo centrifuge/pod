@@ -103,8 +103,7 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "7ea333cd24744eaae7997a227915df70f35b34af"
-  source = "github.com/philipstanislaus/go-substrate-rpc-client"
+  revision = "e2d6a14d02f31bbf2d3715a88c100226982b90ae"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"

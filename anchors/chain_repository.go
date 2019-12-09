@@ -5,10 +5,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/jobs"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
 )
 
@@ -144,10 +143,10 @@ type AnchorData struct {
 }
 
 func (r repository) GetAnchorByID(id *big.Int) (*AnchorData, error) {
-	var ad *AnchorData
+	var ad AnchorData
 	err := r.api.Call(&ad, GetByID, types.NewHash(id.Bytes()))
 	if err != nil {
-		return ad, err
+		return &ad, err
 	}
-	return ad, nil
+	return &ad, nil
 }
