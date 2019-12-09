@@ -10,6 +10,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	log2 "github.com/ethereum/go-ethereum/log"
 )
 
 type testType string
@@ -24,6 +25,7 @@ const (
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
+	log2.Root().SetHandler(log2.StdoutHandler) //TODO remove after centchain integration stable
 	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)
