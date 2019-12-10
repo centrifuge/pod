@@ -3,7 +3,6 @@
 package anchors_test
 
 import (
-	"context"
 	"os"
 	"testing"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -39,15 +37,10 @@ func TestPreCommitAnchor_Integration(t *testing.T) {
 	t.Parallel()
 	anchorID := utils.RandomSlice(32)
 	signingRoot := utils.RandomSlice(32)
-	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
-	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
-	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
-	assert.True(t, valid)
 }
 
 func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h, err := blake2b.New256(nil)
@@ -58,7 +51,7 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	anchorID = h.Sum(anchorID)
 	proofStr := []string{"0xc0c38dd1635b279af306bc04900559fc346970ad8f654106bfced202b067a10e"}
 	signingRootStr := "0x3f274cf97a0c166e6e3fa1c10a3353e260b3cb162aff873fa01a49deafc65ec8"
-	documentRootStr := "0xd8f7d4db5f1786ed2d6ca809191b5fae8df067869ca53cb579801a9dd0ac56f8"
+	documentRootStr := "0xeefa76542337d4c1456819f4f01f362455ab0c47f7514a0a7f7fb99efd64ce82"
 
 	signingRoot, err := hexutil.Decode(signingRootStr)
 	assert.NoError(t, err)
@@ -75,8 +68,6 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 	anchorIDTyped, err := anchors.ToAnchorID(anchorID)
 	assert.NoError(t, err)
 	preCommitAnchor(t, anchorID, signingRoot)
-	valid := anchorRepo.HasValidPreCommit(anchorIDTyped)
-	assert.True(t, valid)
 
 	docRootTyped, _ := anchors.ToDocumentRoot(documentRoot)
 	commitAnchor(t, anchorIDPreImage, documentRoot, proofB1)
@@ -86,7 +77,6 @@ func TestPreCommit_CommitAnchor_Integration(t *testing.T) {
 }
 
 func TestCommitAnchor_Integration(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	anchorIDPreImage := utils.RandomSlice(32)
 	h, err := blake2b.New256(nil)
@@ -131,8 +121,33 @@ func preCommitAnchor(t *testing.T, anchorID, documentRoot []byte) {
 	assert.NoError(t, doneErr, "no error")
 }
 
+func TestPreCommitAnchor_Integration_Concurrent(t *testing.T) {
+	t.Parallel()
+
+	var doneList [5]chan error
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+
+	for ix := 0; ix < 5; ix++ {
+		anchorID := utils.RandomSlice(32)
+		signingRoot := utils.RandomSlice(32)
+		anchorIDTyped, err := anchors.ToAnchorID(anchorID)
+		assert.NoError(t, err)
+		docRootTyped, _ := anchors.ToDocumentRoot(signingRoot)
+		doneList[ix], err = anchorRepo.PreCommitAnchor(ctx, anchorIDTyped, docRootTyped)
+		if err != nil {
+			t.Fatalf("Error precommit anchor %v", err)
+		}
+	}
+
+	for ix := 0; ix < 5; ix++ {
+		doneErr := <-doneList[ix]
+		assert.NoError(t, doneErr)
+	}
+
+}
+
 func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
-	t.SkipNow() // TODO remove once pointing anchoring to cent-chain module
 	t.Parallel()
 	var commitDataList [5]*anchors.CommitData
 	var doneList [5]chan error
@@ -151,9 +166,7 @@ func TestCommitAnchor_Integration_Concurrent(t *testing.T) {
 		assert.NoError(t, err)
 		currentDocumentRoot := utils.RandomByte32()
 		documentProof := utils.RandomByte32()
-		hd, err := ethereum.GetClient().GetEthClient().HeaderByNumber(context.Background(), nil)
-		assert.Nil(t, err, " error must be nil")
-		commitDataList[ix] = anchors.NewCommitData(hd.Number.Uint64(), currentAnchorId, currentDocumentRoot, documentProof)
+		commitDataList[ix] = anchors.NewCommitData(currentAnchorId, currentDocumentRoot, documentProof)
 		ctx := testingconfig.CreateAccountContext(t, cfg)
 		doneList[ix], err = anchorRepo.CommitAnchor(ctx, anchorIDPreImageID, currentDocumentRoot, documentProof)
 		if err != nil {

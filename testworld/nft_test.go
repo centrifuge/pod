@@ -18,13 +18,13 @@ import (
 )
 
 func TestInvoiceUnpaidMint_invoice_successful(t *testing.T) {
-	t.SkipNow() // TODO remote once we have adapted contracts
+	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
 	invoiceUnpaidMint(t, typeInvoice, true, true, true, false, "invoice")
 }
 
 func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
-	t.SkipNow() // TODO remote once we have adapted contracts
+	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
 	invoiceUnpaidMint(t, typeInvoice, false, false, false, true, "invoice")
 }
@@ -123,7 +123,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 }
 
 func TestInvoiceUnpaidMint_errors(t *testing.T) {
-	t.SkipNow() // TODO remote once we have adapted contracts
+	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	tests := []struct {
@@ -161,7 +161,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 }
 
 func TestTransferNFT_successful(t *testing.T) {
-	t.SkipNow() // TODO remote once we have adapted contracts
+	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
 	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, true, "invoice")
 	alice := doctorFord.getHostTestSuite(t, "Alice")

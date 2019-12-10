@@ -27,7 +27,7 @@ export ETH_RPC_URL=$CENT_ETHEREUM_NODEURL
 export ETH_PASSWORD="/dev/null"
 export ETH_FROM="0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
-regAddr=$(dapp create "NFT" "CentNFT" "CentNFT")
+regAddr=$(seth send --create out/NFT.bin 'NFT(string memory, string memory)' "CentNFT" "CentNFT")
 
 echo -n "genericNFT $regAddr" > $PARENT_DIR/localAddresses
 

@@ -104,7 +104,7 @@ func TestExtrinsicStatusTask_ParseKwargs(t *testing.T) {
 }
 
 func TestExtrinsicStatusTask_ProcessRunTask(t *testing.T) {
-	task := NewExtrinsicStatusTask(1*time.Second, nil, getBlockHash, getBlock, getMetadataLatest, getStorage)
+	task := NewExtrinsicStatusTask(1*time.Second, 10, nil, getBlockHash, getBlock, getMetadataLatest, getStorage)
 	jobID := jobs.NewJobID().String()
 	did := testingidentity.GenerateRandomDID()
 	kwargs := map[string]interface{}{
@@ -200,8 +200,8 @@ func getBlock(blockHash types.Hash) (*types.SignedBlock, error) {
 		return &types.SignedBlock{
 			Block: types.Block{
 				Extrinsics: []types.Extrinsic{
-					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb1)}},
-					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb2)}},
+					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb1)}}},
+					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb2)}}},
 				},
 			},
 		}, nil
@@ -209,8 +209,8 @@ func getBlock(blockHash types.Hash) (*types.SignedBlock, error) {
 		return &types.SignedBlock{
 			Block: types.Block{
 				Extrinsics: []types.Extrinsic{
-					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb1)}},
-					{Signature: types.ExtrinsicSignatureV3{Signature: types.NewSignature(bb2)}},
+					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb1)}}},
+					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb2)}}},
 				},
 			},
 		}, nil

@@ -10,6 +10,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	log2 "github.com/ethereum/go-ethereum/log"
 )
 
 type testType string
@@ -24,14 +25,15 @@ const (
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
-	os.Exit(0) //TODO revert once we have anchoring on centchain
+	log2.Root().SetHandler(log2.StdoutHandler) //TODO remove after centchain integration stable
 	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)
 	}
-	if c.RunPOAGeth {
-		// NOTE that we don't bring down geth automatically right now because this must only be used for local testing purposes
+	if c.RunChains {
+		// NOTE that we don't bring down geth/cc automatically right now because this must only be used for local testing purposes
 		testingutils.StartPOAGeth()
+		testingutils.StartCentChain()
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()

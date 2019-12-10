@@ -58,6 +58,10 @@ type NodeConfig struct {
 	PprofEnabled                   bool
 	LowEntropyNFTTokenEnabled      bool
 	DebugLogEnabled                bool
+	CentChainNodeURL               string
+	CentChainIntervalRetry         time.Duration
+	CentChainMaxRetries            int
+	CentChainAnchorLifespan        time.Duration
 }
 
 // IsSet refer the interface
@@ -240,6 +244,26 @@ func (nc *NodeConfig) GetCentChainAccount() (config.CentChainAccount, error) {
 	return nc.MainIdentity.CentChainAccount, nil
 }
 
+// GetCentChainNodeURL returns the URL of the CentChain Node.
+func (nc *NodeConfig) GetCentChainNodeURL() string {
+	return nc.CentChainNodeURL
+}
+
+// GetCentChainIntervalRetry returns duration to wait between retries.
+func (nc *NodeConfig) GetCentChainIntervalRetry() time.Duration {
+	return nc.CentChainIntervalRetry
+}
+
+// GetCentChainMaxRetries returns the max acceptable retries.
+func (nc *NodeConfig) GetCentChainMaxRetries() int {
+	return nc.CentChainMaxRetries
+}
+
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (nc *NodeConfig) GetCentChainAnchorLifespan() time.Duration {
+	return nc.CentChainAnchorLifespan
+}
+
 // GetEthereumDefaultAccountName refer the interface
 func (nc *NodeConfig) GetEthereumDefaultAccountName() string {
 	return nc.MainIdentity.EthereumDefaultAccountName
@@ -357,6 +381,10 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		PprofEnabled:                   c.IsPProfEnabled(),
 		DebugLogEnabled:                c.IsDebugLogEnabled(),
 		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
+		CentChainMaxRetries:            c.GetCentChainMaxRetries(),
+		CentChainIntervalRetry:         c.GetCentChainIntervalRetry(),
+		CentChainAnchorLifespan:        c.GetCentChainAnchorLifespan(),
+		CentChainNodeURL:               c.GetCentChainNodeURL(),
 	}
 }
 
@@ -582,6 +610,11 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 	if err != nil {
 		return nil, err
 	}
+	cacc, err := c.GetCentChainAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
@@ -590,5 +623,6 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
+		CentChainAccount:                 cacc,
 	}, nil
 }

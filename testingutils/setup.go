@@ -34,8 +34,8 @@ func StartPOAGeth() {
 	fmt.Printf("%s", string(o))
 }
 
-// StartPOACentChain runs the proof of authority centchain for tests
-func StartPOACentChain() {
+// StartCentChain runs centchain for tests
+func StartCentChain() {
 	// don't run if its already running
 	if IsPOACentChainRunning() {
 		return
@@ -218,7 +218,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
-	StartPOACentChain()
+	StartCentChain()
 	RunSmartContractMigrations()
 	RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()

@@ -29,11 +29,12 @@ before_install:
   - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
   - cachix use dapp
   - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
-  - nix-env -f $HOME/.dapp/dapptools -iA dapp solc
+  - nix-env -f $HOME/.dapp/dapptools -iA dapp seth solc
 
 install:
   - mkdir -p ~/bin
   - make install
+  - wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x $HOME/.cargo/bin/subkey
 
 jobs:
   include:
@@ -45,7 +46,6 @@ jobs:
     - stage: "Tests"
       name: "Unit and CMD tests"
       script:
-        - wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x $HOME/.cargo/bin/subkey
         - ./build/scripts/test_wrapper.sh unit cmd
       after_success:
         - bash <(curl -s https://codecov.io/bash)

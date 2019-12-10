@@ -258,6 +258,26 @@ func (m *mockConfig) GetCentChainAccount() (config.CentChainAccount, error) {
 	return args.Get(0).(config.CentChainAccount), args.Error(1)
 }
 
+func (m *mockConfig) GetCentChainIntervalRetry() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
+func (m *mockConfig) GetCentChainMaxRetries() int {
+	args := m.Called()
+	return args.Get(0).(int)
+}
+
+func (m *mockConfig) GetCentChainAnchorLifespan() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
+func (m *mockConfig) GetCentChainNodeURL() string {
+	args := m.Called()
+	return args.Get(0).(string)
+}
+
 func TestNewNodeConfig(t *testing.T) {
 	c := createMockConfig()
 	NewNodeConfig(c)
@@ -314,5 +334,9 @@ func createMockConfig() *mockConfig {
 	c.On("IsDebugLogEnabled", mock.Anything).Return(true)
 	c.On("GetLowEntropyNFTTokenEnabled", mock.Anything).Return(true)
 	c.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
+	c.On("GetCentChainIntervalRetry").Return(time.Second).Once()
+	c.On("GetCentChainAnchorLifespan").Return(time.Second).Once()
+	c.On("GetCentChainMaxRetries").Return(1).Once()
+	c.On("GetCentChainNodeURL").Return("dummyNode").Once()
 	return c
 }

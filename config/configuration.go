@@ -151,6 +151,10 @@ type Configuration interface {
 
 	// CentChain specific details.
 	GetCentChainAccount() (CentChainAccount, error)
+	GetCentChainIntervalRetry() time.Duration
+	GetCentChainMaxRetries() int
+	GetCentChainNodeURL() string
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // Account exposes account options
@@ -425,6 +429,26 @@ func (c *configuration) GetCentChainAccount() (acc CentChainAccount, err error) 
 		Secret:   c.GetString(fmt.Sprintf("%s.secret", k)),
 		SS58Addr: c.GetString(fmt.Sprintf("%s.address", k)),
 	}, nil
+}
+
+// GetCentChainNodeURL returns the URL of the CentChain Node.
+func (c *configuration) GetCentChainNodeURL() string {
+	return c.GetString("centChain.nodeURL")
+}
+
+// GetCentChainIntervalRetry returns duration to wait between retries.
+func (c *configuration) GetCentChainIntervalRetry() time.Duration {
+	return c.GetDuration("centChain.intervalRetry")
+}
+
+// GetCentChainMaxRetries returns the max acceptable retries.
+func (c *configuration) GetCentChainMaxRetries() int {
+	return c.GetInt("centChain.maxRetries")
+}
+
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (c *configuration) GetCentChainAnchorLifespan() time.Duration {
+	return c.GetDuration("centChain.anchorLifespan")
 }
 
 // GetNetworkString returns defined network the node is connected to.
