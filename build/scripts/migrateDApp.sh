@@ -31,7 +31,6 @@ dapp update
 dapp build --extract
 
 assetAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8)', "10")
-echo "assetManager $assetAddr" >> $PARENT_DIR/localAddresses
 
 # deploy NFT contract
 cd $NFT_DIR
@@ -39,6 +38,6 @@ dapp update
 dapp build --extract
 
 nftAddr=$(seth send --create out/NFT.bin 'NFT(string memory, string memory, address)' "CentNFT" "CentNFT", "$assetAddr")
-echo -n "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
+echo -n "assetManager $assetAddr\ngenericNFT $nftAddr" > $PARENT_DIR/localAddresses
 
 cd $PARENT_DIR
