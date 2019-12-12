@@ -188,6 +188,7 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 }
 
 func TestGenericMintNFT(t *testing.T) {
+	t.Skip("Skipping Generic NFT until #1322 is fixed")
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
 	loanAmountValue := "100.10001"
