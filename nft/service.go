@@ -31,7 +31,7 @@ const (
 	ErrNFTMinted = errors.Error("NFT already minted")
 
 	// GenericMintMethodABI constant interface to interact with mint methods
-	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes32","name":"assetHash","type":"bytes32"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
 
 // Config is the config interface for nft package
@@ -249,13 +249,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
-			bh32, err := utils.SliceToByte32(requestData.BundledHash)
-			if err != nil {
-				errOut <- errors.New("failed to convert slice to bytes32: %v", err)
-				return
-			}
 			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, bh32, requestData.Props, requestData.Values, requestData.Salts}
+			args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
 			mintContractABI = GenericMintMethodABI
 		}
 

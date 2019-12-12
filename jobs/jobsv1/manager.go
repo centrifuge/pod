@@ -76,7 +76,7 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			return jobs.NilJobID(), nil, err
 		}
 	}
-	// set capacity to one so that any late listener won't miss updates.
+	// set capacity to one so that any late listener won't block this routine.
 	done = make(chan error, 1)
 	go func(ctx context.Context) {
 		err := make(chan error)
