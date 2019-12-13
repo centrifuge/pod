@@ -15,6 +15,7 @@ import (
 // ValidateMint is the module call for validate NFT Mint on Centrifuge chain
 const ValidateMint = "Nfts.validate_mint"
 
+// API defines set of functions to interact with centrifuge chain
 type API interface {
 	// ValidateNFT validates the proofs and triggers a bridge event to mint NFT on Ethereum chain.
 	ValidateNFT(ctx context.Context, anchorID [32]byte, depositAddress [20]byte, proofs []SubstrateProof) (confirmations chan error, err error)
@@ -72,6 +73,6 @@ func (a api) ValidateNFT(ctx context.Context, anchorID [32]byte, depositAddress 
 	did := identity.NewDID(common.BytesToAddress(acc.GetIdentityID()))
 	jobID := contextutil.Job(ctx)
 	cctx := contextutil.Copy(ctx)
-	_, done, err := a.jobsMan.ExecuteWithinJob(cctx, did, jobID, "Check Job for anchor commit", a.api.SubmitAndWatch(cctx, meta, c, krp))
+	_, done, err := a.jobsMan.ExecuteWithinJob(cctx, did, jobID, "Check Job for Validate Mint NFT", a.api.SubmitAndWatch(cctx, meta, c, krp))
 	return done, err
 }
