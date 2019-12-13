@@ -30,6 +30,17 @@ func SliceToByte32(in []byte) (out [32]byte, err error) {
 	return out, nil
 }
 
+// MustSliceToByte32 converts the bytes to byte 32
+// panics if the input length is > 32 bytes.
+func MustSliceToByte32(in []byte) [32]byte {
+	out, err := SliceToByte32(in)
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
 // IsEmptyAddress checks if the addr is empty.
 func IsEmptyAddress(addr common.Address) bool {
 	return addr.Hex() == "0x0000000000000000000000000000000000000000"

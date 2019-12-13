@@ -49,6 +49,7 @@ type service struct {
 	docSrv          documents.Service
 	bindContract    func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error)
 	jobsManager     jobs.Manager
+	api             API
 	blockHeightFunc func() (height uint64, err error)
 }
 
@@ -61,6 +62,7 @@ func newService(
 	docSrv documents.Service,
 	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
 	jobsMan jobs.Manager,
+	api API,
 	blockHeightFunc func() (uint64, error)) *service {
 	return &service{
 		cfg:             cfg,
@@ -71,6 +73,7 @@ func newService(
 		docSrv:          docSrv,
 		jobsManager:     jobsMan,
 		blockHeightFunc: blockHeightFunc,
+		api:             api,
 	}
 }
 
@@ -246,9 +249,22 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		}
 
 		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][32]byte, salts [][32]byte, proofs [][][32]byte
-		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
+		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID.BigInt(), requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
+			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs)
+			if err != nil {
+				errOut <- err
+				return
+			}
+
+			if err := <-done; err != nil {
+				errOut <- err
+				return
+			}
+			log.Infof("Successfully validated Proofs on cent chain for anchorID %s", requestData.AnchorID.String())
+			// TODO: send txn to asset manager and wait for success
 			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
 			args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
 			mintContractABI = GenericMintMethodABI
@@ -261,11 +277,11 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		}
 
 		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
-			hexutil.Encode(requestData.TokenID.Bytes()), hexutil.Encode(requestData.AnchorID.Bytes()), hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
+			hexutil.Encode(requestData.TokenID.Bytes()), hexutil.Encode(requestData.AnchorID[:]), hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
-		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID.Bytes()))
+		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID[:]))
 		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
 		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
 		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
@@ -378,7 +394,7 @@ type MintRequest struct {
 	TokenID *big.Int
 
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
-	AnchorID *big.Int
+	AnchorID anchors.AnchorID
 
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
@@ -425,7 +441,7 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 	return MintRequest{
 		To:             to,
 		TokenID:        tokenID.BigInt(),
-		AnchorID:       anchorID.BigInt(),
+		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
 		DataRoot:       dr,
 		SignaturesRoot: sr,
@@ -479,16 +495,22 @@ func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpai
 func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) []byte {
 	res := to.Bytes()
 	for i := 0; i < len(props); i++ {
-		// append prop[i]+values[i]+salts[i] to h
-		h := append(props[i], values[i]...)
-		h = append(h, salts[i][:]...)
+		// keccak256(prop[i]+values[i]+salts[i])
+		h := getLeafHash(props[i], values[i], salts[i])
 
-		// append keccak256(h) to res
-		res = append(res, crypto.Keccak256(h)...)
+		// append h to res
+		res = append(res, h...)
 	}
 
 	// return keccak256(res)
 	return crypto.Keccak256(res)
+}
+
+func getLeafHash(prop, value []byte, salt [32]byte) []byte {
+	// append prop+value+salt
+	h := append(prop, value...)
+	h = append(h, salt[:]...)
+	return crypto.Keccak256(h)
 }
 
 // Following are utility methods for nft parameter debugging purposes (Don't remove)
