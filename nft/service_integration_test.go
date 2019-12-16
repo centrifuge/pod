@@ -141,9 +141,12 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	jobID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 	assert.NoError(t, jobManager.WaitForJob(cid, jobID))
-	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
-	assert.NoError(t, err)
-	assert.Equal(t, req.DepositAddress, owner)
+	if !req.UseGeneric {
+		// TODO: remove once nft integration is done
+		owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
+		assert.NoError(t, err)
+		assert.Equal(t, req.DepositAddress, owner)
+	}
 	return tokenID
 }
 

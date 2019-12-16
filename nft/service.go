@@ -136,7 +136,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
 	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, signingRoot, signaturesRoot, optProofs)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.DataRoot, docProofs.SiblingRoot, signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -253,7 +253,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
 			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs)
+			staticProofs := [3][32]byte{requestData.DataRoot, requestData.SiblingRoot, requestData.SignaturesRoot}
+			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
 			if err != nil {
 				errOut <- err
 				return
@@ -266,8 +267,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
 			// TODO: send txn to asset manager and wait for success
 			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
-			mintContractABI = GenericMintMethodABI
+			//args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
+			//mintContractABI = GenericMintMethodABI
 
 			// TODO: remove the return once we have the generic NFT Mint function is working
 			errOut <- nil
@@ -406,6 +407,12 @@ type MintRequest struct {
 	// DataRoot of the document
 	DataRoot [32]byte
 
+	// SiblingRoot of the document
+	SiblingRoot [32]byte
+
+	// SigningRoot of the document
+	SigningRoot [32]byte
+
 	// SignaturesRoot of the document
 	SignaturesRoot [32]byte
 
@@ -423,24 +430,27 @@ type MintRequest struct {
 
 	// bundled hash is the keccak hash of to + (props+values+salts)
 	BundledHash []byte
+
+	// static proofs holds data root, sibling root and signature root
+	StaticProofs [3][32]byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, dataRoot, signaturesRoot []byte, proofs []*proofspb.Proof) (MintRequest, error) {
+func NewMintRequest(
+	tokenID TokenID,
+	to common.Address,
+	anchorID anchors.AnchorID,
+	nextAnchorID anchors.AnchorID,
+	dataRoot, siblingRoot, signingRoot, signaturesRoot []byte,
+	proofs []*proofspb.Proof) (MintRequest, error) {
 	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
-
-	dr, err := utils.SliceToByte32(dataRoot)
-	if err != nil {
-		return MintRequest{}, err
-	}
-	sr, err := utils.SliceToByte32(signaturesRoot)
-	if err != nil {
-		return MintRequest{}, err
-	}
-
+	dr := utils.MustSliceToByte32(dataRoot)
+	sbr := utils.MustSliceToByte32(siblingRoot)
+	snr := utils.MustSliceToByte32(signingRoot)
+	sgr := utils.MustSliceToByte32(signaturesRoot)
 	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
 	return MintRequest{
 		To:             to,
@@ -448,7 +458,9 @@ func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorI
 		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
 		DataRoot:       dr,
-		SignaturesRoot: sr,
+		SiblingRoot:    sbr,
+		SigningRoot:    snr,
+		SignaturesRoot: sgr,
 		Props:          proofData.Props,
 		Values:         proofData.Values,
 		Salts:          proofData.Salts,
@@ -467,7 +479,7 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var props = make([][]byte, len(proofspb))
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
-	var proofs = make([][][32]byte, len(proofspb))
+	var pfs = make([][][32]byte, len(proofspb))
 
 	for i, p := range proofspb {
 		salt32, err := utils.SliceToByte32(p.Salt)
@@ -478,17 +490,18 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 		if err != nil {
 			return nil, err
 		}
-		props[i] = p.GetCompactName()
+
+		props[i] = proofs.AsBytes(p.Property)
 		values[i] = p.Value
 		// Scenario where it is a hashed field we copy the Hash value into the property value
 		if len(p.Value) == 0 && len(p.Salt) == 0 {
 			values[i] = p.Hash
 		}
 		salts[i] = salt32
-		proofs[i] = property
+		pfs[i] = property
 	}
 
-	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
+	return &proofData{Props: props, Values: values, Salts: salts, Proofs: pfs}, nil
 }
 
 func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {

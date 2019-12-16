@@ -18,7 +18,12 @@ const ValidateMint = "Nfts.validate_mint"
 // API defines set of functions to interact with centrifuge chain
 type API interface {
 	// ValidateNFT validates the proofs and triggers a bridge event to mint NFT on Ethereum chain.
-	ValidateNFT(ctx context.Context, anchorID [32]byte, depositAddress [20]byte, proofs []SubstrateProof) (confirmations chan error, err error)
+	ValidateNFT(
+		ctx context.Context,
+		anchorID [32]byte,
+		depositAddress [20]byte,
+		proofs []SubstrateProof,
+		staticProofs [3][32]byte) (confirmations chan error, err error)
 }
 
 // SubstrateProof holds a single proof value with specific types that goes hand in hand with types on cent chain
@@ -44,7 +49,12 @@ type api struct {
 	jobsMan jobs.Manager
 }
 
-func (a api) ValidateNFT(ctx context.Context, anchorID [32]byte, depositAddress [20]byte, proofs []SubstrateProof) (confirmations chan error, err error) {
+func (a api) ValidateNFT(
+	ctx context.Context,
+	anchorID [32]byte,
+	depositAddress [20]byte,
+	proofs []SubstrateProof,
+	staticProofs [3][32]byte) (confirmations chan error, err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -65,7 +75,8 @@ func (a api) ValidateNFT(ctx context.Context, anchorID [32]byte, depositAddress 
 		ValidateMint,
 		types.NewHash(anchorID[:]),
 		depositAddress,
-		proofs)
+		proofs,
+		staticProofs)
 	if err != nil {
 		return nil, err
 	}

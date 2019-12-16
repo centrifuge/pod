@@ -203,6 +203,19 @@ func (est *ExtrinsicStatusTask) processRunTask() (resp interface{}, err error) {
 
 }
 
+// EventNFTDeposited is emitted when NFT is ready to be deposited to other chain.
+type EventNFTDeposited struct {
+	Phase  types.Phase
+	Asset  types.Hash
+	Topics []types.Hash
+}
+
+// Events holds thee default events and custom events
+type Events struct {
+	types.EventRecords
+	Nfts_DepositAsset []EventNFTDeposited //nolint:stylecheck,golint
+}
+
 func (est *ExtrinsicStatusTask) parseExtrinsicStatus(nhBlock types.Hash, foundIdx int) error {
 	meta, err := est.getMetadataLatest()
 	if err != nil {
@@ -220,7 +233,7 @@ func (est *ExtrinsicStatusTask) parseExtrinsicStatus(nhBlock types.Hash, foundId
 		return err
 	}
 
-	e := types.EventRecords{}
+	e := Events{}
 	err = er.DecodeEventRecords(meta, &e)
 	if err != nil {
 		return err
