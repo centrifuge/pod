@@ -423,10 +423,8 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 	}
 
 	targetTree := basicDataTree
-	siblingTree := zkDataTree
 	if fromZKTree {
 		targetTree = zkDataTree
-		siblingTree = basicDataTree
 	}
 
 	treeProofs[dataPrefix] = targetTree
@@ -441,8 +439,8 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 
 	return &DocumentProof{
 		FieldProofs:    rawProofs,
-		BasicDataRoot:  targetTree.RootHash(),
-		SiblingRoot:    siblingTree.RootHash(),
+		LeftDataRooot:  basicDataTree.RootHash(),
+		RightDataRoot:  zkDataTree.RootHash(),
 		SigningRoot:    sdr,
 		SignaturesRoot: signatureTree.RootHash(),
 	}, nil

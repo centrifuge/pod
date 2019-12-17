@@ -136,7 +136,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
 	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.BasicDataRoot, docProofs.SiblingRoot, signingRoot, signaturesRoot, optProofs)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.LeftDataRooot, docProofs.RightDataRoot, signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -253,7 +253,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
 			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-			staticProofs := [3][32]byte{requestData.DataRoot, requestData.ZkDataRoot, requestData.SignaturesRoot}
+			staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
 			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
 			if err != nil {
 				errOut <- err
@@ -404,11 +404,11 @@ type MintRequest struct {
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
 
-	// BasicDataRoot of the document
-	DataRoot [32]byte
+	// LeftDataRoot of the document
+	LeftDataRoot [32]byte
 
-	// ZkDataRoot of the document
-	ZkDataRoot [32]byte
+	// RightDataRoot of the document
+	RightDataRoot [32]byte
 
 	// SigningRoot of the document
 	SigningRoot [32]byte
@@ -447,8 +447,8 @@ func NewMintRequest(
 	if err != nil {
 		return MintRequest{}, err
 	}
-	dr := utils.MustSliceToByte32(dataRoot)
-	sbr := utils.MustSliceToByte32(siblingRoot)
+	ldr := utils.MustSliceToByte32(dataRoot)
+	rdr := utils.MustSliceToByte32(siblingRoot)
 	snr := utils.MustSliceToByte32(signingRoot)
 	sgr := utils.MustSliceToByte32(signaturesRoot)
 	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
@@ -457,8 +457,8 @@ func NewMintRequest(
 		TokenID:        tokenID.BigInt(),
 		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
-		DataRoot:       dr,
-		ZkDataRoot:     sbr,
+		LeftDataRoot:   ldr,
+		RightDataRoot:  rdr,
 		SigningRoot:    snr,
 		SignaturesRoot: sgr,
 		Props:          proofData.Props,
