@@ -441,14 +441,14 @@ func NewMintRequest(
 	to common.Address,
 	anchorID anchors.AnchorID,
 	nextAnchorID anchors.AnchorID,
-	dataRoot, siblingRoot, signingRoot, signaturesRoot []byte,
+	leftDataRoot, rightDataRoot, signingRoot, signaturesRoot []byte,
 	proofs []*proofspb.Proof) (MintRequest, error) {
 	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
-	ldr := utils.MustSliceToByte32(dataRoot)
-	rdr := utils.MustSliceToByte32(siblingRoot)
+	ldr := utils.MustSliceToByte32(leftDataRoot)
+	rdr := utils.MustSliceToByte32(rightDataRoot)
 	snr := utils.MustSliceToByte32(signingRoot)
 	sgr := utils.MustSliceToByte32(signaturesRoot)
 	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
