@@ -441,7 +441,7 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 
 	return &DocumentProof{
 		FieldProofs:    rawProofs,
-		DataRoot:       targetTree.RootHash(),
+		BasicDataRoot:  targetTree.RootHash(),
 		SiblingRoot:    siblingTree.RootHash(),
 		SigningRoot:    sdr,
 		SignaturesRoot: signatureTree.RootHash(),

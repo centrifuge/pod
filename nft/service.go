@@ -136,7 +136,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
 	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.DataRoot, docProofs.SiblingRoot, signingRoot, signaturesRoot, optProofs)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.BasicDataRoot, docProofs.SiblingRoot, signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -253,7 +253,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		mintContractABI := InvoiceUnpaidContractABI
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
 			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-			staticProofs := [3][32]byte{requestData.DataRoot, requestData.SiblingRoot, requestData.SignaturesRoot}
+			staticProofs := [3][32]byte{requestData.DataRoot, requestData.ZkDataRoot, requestData.SignaturesRoot}
 			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
 			if err != nil {
 				errOut <- err
@@ -404,11 +404,11 @@ type MintRequest struct {
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
 
-	// DataRoot of the document
+	// BasicDataRoot of the document
 	DataRoot [32]byte
 
-	// SiblingRoot of the document
-	SiblingRoot [32]byte
+	// ZkDataRoot of the document
+	ZkDataRoot [32]byte
 
 	// SigningRoot of the document
 	SigningRoot [32]byte
@@ -458,7 +458,7 @@ func NewMintRequest(
 		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
 		DataRoot:       dr,
-		SiblingRoot:    sbr,
+		ZkDataRoot:     sbr,
 		SigningRoot:    snr,
 		SignaturesRoot: sgr,
 		Props:          proofData.Props,
