@@ -141,9 +141,12 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	jobID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 	assert.NoError(t, jobManager.WaitForJob(cid, jobID))
-	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
-	assert.NoError(t, err)
-	assert.Equal(t, req.DepositAddress, owner)
+	if !req.UseGeneric {
+		// TODO: remove once nft integration is done
+		owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
+		assert.NoError(t, err)
+		assert.Equal(t, req.DepositAddress, owner)
+	}
 	return tokenID
 }
 
@@ -188,7 +191,6 @@ func TestInvoiceUnpaidService_mint_grant_read_access(t *testing.T) {
 }
 
 func TestGenericMintNFT(t *testing.T) {
-	t.Skip("Skipping Generic NFT until #1322 is fixed")
 	attrs := map[documents.AttrKey]documents.Attribute{}
 	loanAmount := "loanAmount"
 	loanAmountValue := "100.10001"

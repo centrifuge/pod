@@ -84,7 +84,7 @@ func TestCommitAnchor_Integration(t *testing.T) {
 	_, err = h.Write(anchorIDPreImage)
 	assert.NoError(t, err)
 	var anchorID []byte
-	anchorID = h.Sum(anchorID)
+	anchorID = h.Sum(nil)
 	documentRoot := utils.RandomSlice(32)
 
 	anchorIDTyped, err := anchors.ToAnchorID(anchorID)

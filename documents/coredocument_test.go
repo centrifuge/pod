@@ -556,7 +556,7 @@ func TestCoreDocument_GenerateProofs(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Validate signing root for basic data tree
-			calcSignRoot := proofs.HashTwoValues(dataRoot, p.SiblingRoot, h)
+			calcSignRoot := proofs.HashTwoValues(dataRoot, p.RightDataRoot, h)
 			assert.Equal(t, signRoot, calcSignRoot)
 			// Validate document root for basic data tree
 			calcDocRoot := proofs.HashTwoValues(calcSignRoot, p.SignaturesRoot, h)
@@ -640,7 +640,7 @@ func TestCoreDocument_GenerateProofsFromZKTree(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Validate signing root for zk data tree
-			calcSignRoot := proofs.HashTwoValues(p.SiblingRoot, zkDataRoot, h)
+			calcSignRoot := proofs.HashTwoValues(p.LeftDataRooot, zkDataRoot, h)
 			assert.Equal(t, signRoot, calcSignRoot)
 			// Validate document root for zk data tree
 			calcDocRoot := proofs.HashTwoValues(calcSignRoot, p.SignaturesRoot, h)
@@ -671,12 +671,12 @@ func TestCreateProofs_fromZKTree(t *testing.T) {
 	pfs, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{"prefix.sample_field"})
 	assert.NoError(t, err)
 	// Sibling hash for proofs from basic tree should be the ZK tree roothash
-	assert.Equal(t, trees[1].RootHash(), pfs.SiblingRoot)
+	assert.Equal(t, trees[1].RootHash(), pfs.RightDataRoot)
 
 	pfs, err = cd.CreateProofsFromZKTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{"prefix.sample_field"})
 	assert.NoError(t, err)
 	// Sibling hash for proofs from ZK tree should be the basicTree roothash
-	assert.Equal(t, trees[0].RootHash(), pfs.SiblingRoot)
+	assert.Equal(t, trees[1].RootHash(), pfs.RightDataRoot)
 }
 
 func TestGetDataTreePrefix(t *testing.T) {

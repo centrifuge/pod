@@ -249,6 +249,7 @@ func (a *api) SubmitWithRetries(ctx context.Context, meta *types.Metadata, c typ
 		}
 
 		if strings.Contains(err.Error(), ErrNonceTooLow.Error()) || strings.Contains(err.Error(), ErrInvalidTransaction.Error()) {
+			log.Warningf("Used Nonce %v. Failed with error: %v\n", nonce, err)
 			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 			chainNonce, err := a.getNonceFromChain(meta, krp.PublicKey)
 			if err != nil {

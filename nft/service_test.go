@@ -199,7 +199,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
 			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
 				return &InvoiceUnpaidContract{}, nil
-			}, txMan, func() (uint64, error) { return 10, nil })
+			}, txMan, nil, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      test.request.DocumentID,
@@ -241,7 +241,7 @@ func TestTokenTransfer(t *testing.T) {
 
 	idServiceMock := &testingcommons.MockIdentityService{}
 
-	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil)
+	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil, nil)
 	ctxh := testingconfig.CreateAccountContext(t, configMock)
 
 	registryAddress := common.HexToAddress("0x111855759a39fb75fc7341139f5d7a3974d4da08")
