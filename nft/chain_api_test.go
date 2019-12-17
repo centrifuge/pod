@@ -56,21 +56,22 @@ func TestApi_ValidateNFT(t *testing.T) {
 	anchorID := utils.RandomByte32()
 	var to [20]byte
 	copy(to[:], utils.RandomSlice(20))
+	var staticProofs [3][32]byte
 
 	// missing account
-	_, err := api.ValidateNFT(context.Background(), anchorID, to, nil)
+	_, err := api.ValidateNFT(context.Background(), anchorID, to, nil, staticProofs)
 	assert.Error(t, err)
 
 	// failed to get metadata
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	centAPI.On("GetMetadataLatest").Return(nil, errors.New("failed to get metadata")).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, nil)
+	_, err = api.ValidateNFT(ctx, anchorID, to, nil, staticProofs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get metadata")
 
 	// failed to create call
 	centAPI.On("GetMetadataLatest").Return(&types.Metadata{}, nil).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, nil)
+	_, err = api.ValidateNFT(ctx, anchorID, to, nil, staticProofs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported metadata version")
 
@@ -79,14 +80,14 @@ func TestApi_ValidateNFT(t *testing.T) {
 	centAPI.On("GetMetadataLatest").Return(meta, nil)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(jobs.NilJobID(), make(chan error), errors.New("failed to start job")).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{})
+	_, err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to start job")
 
 	// success
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(jobs.NilJobID(), make(chan error), nil).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{})
+	_, err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
 	assert.NoError(t, err)
 	centAPI.AssertExpectations(t)
 	jobMan.AssertExpectations(t)
