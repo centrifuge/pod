@@ -640,7 +640,7 @@ func TestCoreDocument_GenerateProofsFromZKTree(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Validate signing root for zk data tree
-			calcSignRoot := proofs.HashTwoValues(p.RightDataRoot, zkDataRoot, h)
+			calcSignRoot := proofs.HashTwoValues(p.LeftDataRooot, zkDataRoot, h)
 			assert.Equal(t, signRoot, calcSignRoot)
 			// Validate document root for zk data tree
 			calcDocRoot := proofs.HashTwoValues(calcSignRoot, p.SignaturesRoot, h)
@@ -676,7 +676,7 @@ func TestCreateProofs_fromZKTree(t *testing.T) {
 	pfs, err = cd.CreateProofsFromZKTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{"prefix.sample_field"})
 	assert.NoError(t, err)
 	// Sibling hash for proofs from ZK tree should be the basicTree roothash
-	assert.Equal(t, trees[0].RootHash(), pfs.RightDataRoot)
+	assert.Equal(t, trees[1].RootHash(), pfs.RightDataRoot)
 }
 
 func TestGetDataTreePrefix(t *testing.T) {
