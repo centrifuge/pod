@@ -141,12 +141,9 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	jobID, err := jobs.FromString(resp.JobID)
 	assert.NoError(t, err)
 	assert.NoError(t, jobManager.WaitForJob(cid, jobID))
-	if !req.UseGeneric {
-		// TODO: remove once nft integration is done
-		owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
-		assert.NoError(t, err)
-		assert.Equal(t, req.DepositAddress, owner)
-	}
+	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, req.DepositAddress, owner)
 	return tokenID
 }
 
@@ -221,6 +218,7 @@ func TestGenericMintNFT(t *testing.T) {
 		DocumentID:               id,
 		RegistryAddress:          registry,
 		DepositAddress:           cid.ToAddress(),
+		AssetManagerAddress:      common.HexToAddress(scAddrs["assetManager"]),
 		ProofFields:              proofFields,
 		GrantNFTReadAccess:       false,
 		SubmitNFTReadAccessProof: false,

@@ -32,6 +32,9 @@ const (
 
 	// GenericMintMethodABI constant interface to interact with mint methods
 	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+
+	// AssetManagerABI holds methods used for depositing asset
+	AssetManagerABI = `[{"constant":false,"inputs":[{"internalType":"bytes32","name":"asset","type":"bytes32"}],"name":"store","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
 
 // Config is the config interface for nft package
@@ -265,14 +268,26 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 				return
 			}
 			log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
-			// TODO: send txn to asset manager and wait for success
-			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			//args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
-			//mintContractABI = GenericMintMethodABI
+			if !utils.IsEmptyAddress(req.AssetManagerAddress) {
+				txHash, done, err := s.identityService.Execute(ctx, req.AssetManagerAddress, AssetManagerABI, "store", requestData.BundledHash)
+				if err != nil {
+					errOut <- err
+					return
+				}
 
-			// TODO: remove the return once we have the generic NFT Mint function is working
-			errOut <- nil
-			return
+				err = <-done
+				if err != nil {
+					log.Errorf("failed to deposit asset: %v\n", err)
+					errOut <- err
+					return
+				}
+
+				log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
+			}
+
+			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+			args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
+			mintContractABI = GenericMintMethodABI
 		}
 
 		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, mintContractABI, "mint", args...)
@@ -292,6 +307,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
 		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
 		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
+		log.Debugf("Asset: %s", hexutil.Encode(requestData.BundledHash[:]))
+		log.Debugf("AssetManager: %s", hexutil.Encode(req.AssetManagerAddress.Bytes()))
 
 		err = <-done
 		if err != nil {
@@ -429,7 +446,7 @@ type MintRequest struct {
 	Proofs [][][32]byte
 
 	// bundled hash is the keccak hash of to + (props+values+salts)
-	BundledHash []byte
+	BundledHash [32]byte
 
 	// static proofs holds data root, sibling root and signature root
 	StaticProofs [3][32]byte
@@ -509,7 +526,7 @@ func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpai
 }
 
 // getBundledHash returns the sha3 of the concat of to + (props+values+salts)
-func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) []byte {
+func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) [32]byte {
 	res := to.Bytes()
 	for i := 0; i < len(props); i++ {
 		// keccak256(prop[i]+values[i]+salts[i])
@@ -520,7 +537,7 @@ func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte)
 	}
 
 	// return keccak256(res)
-	return crypto.Keccak256(res)
+	return utils.MustSliceToByte32(crypto.Keccak256(res))
 }
 
 func getLeafHash(prop, value []byte, salt [32]byte) []byte {
