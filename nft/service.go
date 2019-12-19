@@ -268,6 +268,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 				return
 			}
 			log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
+
+			// TODO(ved): remove as soon as bridge is integrated
 			if !utils.IsEmptyAddress(req.AssetManagerAddress) {
 				txHash, done, err := s.identityService.Execute(ctx, req.AssetManagerAddress, AssetManagerABI, "store", requestData.BundledHash)
 				if err != nil {
@@ -285,7 +287,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 				log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
 			}
 
-			// to common.Address, tokenId *big.Int, bundleHash [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
+			// to common.Address, tokenId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte
 			args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
 			mintContractABI = GenericMintMethodABI
 		}
