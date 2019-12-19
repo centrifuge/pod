@@ -54,6 +54,7 @@ func methodToOp(method string) config.ContractOp {
 		"commit":       config.AnchorCommit,
 		"preCommit":    config.AnchorPreCommit,
 		"transferFrom": config.NftTransferFrom,
+		"store":        config.AssetStore,
 	}
 	return m[method]
 }
@@ -274,6 +275,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
+
 	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 

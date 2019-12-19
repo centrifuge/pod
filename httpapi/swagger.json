@@ -4749,6 +4749,9 @@
         "userapi.MintNFTRequest": {
             "type": "object",
             "properties": {
+                "asset_manager_address": {
+                    "type": "string"
+                },
                 "deposit_address": {
                     "type": "string"
                 },

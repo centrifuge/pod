@@ -75,6 +75,9 @@ const (
 
 	// NftTransferFrom nft transferFrom operation
 	NftTransferFrom ContractOp = "nftTransferFrom"
+
+	// AssetStore is the operation name to store asset on chain
+	AssetStore ContractOp = "assetStore"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
@@ -83,8 +86,8 @@ func ContractNames() [5]ContractName {
 }
 
 // ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
-func ContractOps() [7]ContractOp {
-	return [7]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom}
+func ContractOps() [8]ContractOp {
+	return [8]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom, AssetStore}
 }
 
 // Configuration defines the methods that a config type should implement.

@@ -318,5 +318,5 @@ func Test_getBundledHash(t *testing.T) {
 
 	bh := common.FromHex("0xee49e1ca6aa1204cfb571094ce14ab254e5185005cbee3f26af9afd3140ac12d")
 	got := getBundledHash(to, props, values, salts)
-	assert.Equal(t, bh, got, "bundled hash mismatch")
+	assert.Equal(t, bh, got[:], "bundled hash mismatch")
 }

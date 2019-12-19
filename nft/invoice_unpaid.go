@@ -73,6 +73,7 @@ type MintNFTRequest struct {
 	DocumentID               []byte
 	RegistryAddress          common.Address
 	DepositAddress           common.Address
+	AssetManagerAddress      common.Address
 	ProofFields              []string
 	GrantNFTReadAccess       bool
 	SubmitTokenProof         bool
