@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	log2 "github.com/ethereum/go-ethereum/log"
 )
 
 type testType string
@@ -25,7 +24,6 @@ const (
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
-	log2.Root().SetHandler(log2.StdoutHandler) //TODO remove after centchain integration stable
 	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)
@@ -37,12 +35,16 @@ func TestMain(m *testing.M) {
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()
+		testingutils.RunDAppSmartContractMigrations()
 	}
 	var contractAddresses *config.SmartContractAddresses
+	dappAddresses := make(map[string]string)
 	if c.Network == "testing" {
 		contractAddresses = testingutils.GetSmartContractAddresses()
+		dappAddresses = testingutils.GetDAppSmartContractAddresses()
 	}
-	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses)
+	doctorFord = newHostManager(
+		c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses, dappAddresses)
 	err = doctorFord.init(c.CreateHostConfigs)
 	if err != nil {
 		panic(err)

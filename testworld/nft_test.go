@@ -12,13 +12,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInvoiceUnpaidMint_invoice_successful(t *testing.T) {
-	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
+func TestGenericMint_invoice_successful(t *testing.T) {
 	t.Parallel()
 	invoiceUnpaidMint(t, typeInvoice, true, true, true, false, "invoice")
 }
@@ -39,7 +39,8 @@ func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
 func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool, proofPrefix string) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
+	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
+	assetAddress := common.HexToAddress(alice.host.dappAddresses["assetManager"])
 
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
@@ -88,6 +89,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			"submit_token_proof":            tokenProof,
 			"submit_nft_owner_access_proof": nftReadAccessProof,
 			"grant_nft_access":              grantNFTAccess,
+			"asset_manager_address":         assetAddress,
 		}
 		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
@@ -161,9 +163,8 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 }
 
 func TestTransferNFT_successful(t *testing.T) {
-	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
-	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, true, "invoice")
+	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, false, "invoice")
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
