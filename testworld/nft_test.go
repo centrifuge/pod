@@ -3,17 +3,14 @@
 package testworld
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
@@ -68,28 +65,13 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	depositAddress := alice.id.String()
 
 	if !poWrapper {
-		acc, err := alice.host.configService.GetAccount(alice.id[:])
-		if err != nil {
-			t.Error(err)
-		}
-		keys, err := acc.GetKeys()
-		if err != nil {
-			t.Error(err)
-		}
-		signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-		signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-		signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
-
 		// mint an NFT
 		payload := map[string]interface{}{
-			"document_id":                   docIdentifier,
-			"registry_address":              registry.String(),
-			"deposit_address":               depositAddress, // Centrifuge address
-			"proof_fields":                  []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
-			"submit_token_proof":            tokenProof,
-			"submit_nft_owner_access_proof": nftReadAccessProof,
-			"grant_nft_access":              grantNFTAccess,
-			"asset_manager_address":         assetAddress,
+			"document_id":           docIdentifier,
+			"registry_address":      registry.String(),
+			"deposit_address":       depositAddress, // Centrifuge address
+			"proof_fields":          []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", documents.CDTreePrefix + ".next_version"},
+			"asset_manager_address": assetAddress,
 		}
 		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
