@@ -120,7 +120,6 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			"RegistryAddress is not a valid Ethereum address",
 			http.StatusBadRequest,
 			map[string]interface{}{
-
 				"registry_address": "0x123",
 			},
 		},
@@ -128,7 +127,6 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			"cannot unmarshal hex string without 0x",
 			http.StatusBadRequest,
 			map[string]interface{}{
-
 				"registry_address": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
 				"deposit_address":  "abc",
 			},
