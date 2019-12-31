@@ -310,7 +310,7 @@ func (a *api) incrementNonce(accountID string) {
 }
 
 func (a *api) getNonceFromChain(meta *types.Metadata, krp []byte) (uint32, error) {
-	key, err := types.CreateStorageKey(meta, "System", "AccountNonce", krp)
+	key, err := types.CreateStorageKey(meta, "System", "AccountNonce", krp, nil)
 	if err != nil {
 		return 0, err
 	}
