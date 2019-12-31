@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/ethereum/go-ethereum/common"
@@ -144,19 +143,19 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 
 func TestTransferNFT_successful(t *testing.T) {
 	t.Parallel()
-	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, false, "invoice")
+	tokenID := invoiceUnpaidMint(t, typeInvoice, true, true, true, false, "invoice")
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
+	registry := alice.host.dappAddresses["genericNFT"]
 
 	ownerOfPayload := map[string]interface{}{
 		"token_id":         tokenID.String(),
-		"registry_address": registry.String(),
+		"registry_address": registry,
 	}
 
 	transferPayload := map[string]interface{}{
 		"token_id":         tokenID.String(),
-		"registry_address": registry.String(),
+		"registry_address": registry,
 		"to":               bob.id.String(),
 	}
 
