@@ -222,7 +222,7 @@ func (est *ExtrinsicStatusTask) parseExtrinsicStatus(nhBlock types.Hash, foundId
 		return err
 	}
 
-	key, err := types.CreateStorageKey(meta, "System", "Events", nil)
+	key, err := types.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
 		return err
 	}

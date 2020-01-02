@@ -3,22 +3,18 @@
 package testworld
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInvoiceUnpaidMint_invoice_successful(t *testing.T) {
-	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
+func TestGenericMint_invoice_successful(t *testing.T) {
 	t.Parallel()
 	invoiceUnpaidMint(t, typeInvoice, true, true, true, false, "invoice")
 }
@@ -39,7 +35,8 @@ func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
 func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool, proofPrefix string) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
+	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
+	assetAddress := common.HexToAddress(alice.host.dappAddresses["assetManager"])
 
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
@@ -67,27 +64,13 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 	depositAddress := alice.id.String()
 
 	if !poWrapper {
-		acc, err := alice.host.configService.GetAccount(alice.id[:])
-		if err != nil {
-			t.Error(err)
-		}
-		keys, err := acc.GetKeys()
-		if err != nil {
-			t.Error(err)
-		}
-		signerId := hexutil.Encode(append(alice.id[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-		signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-		signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
-
 		// mint an NFT
 		payload := map[string]interface{}{
-			"document_id":                   docIdentifier,
-			"registry_address":              registry.String(),
-			"deposit_address":               depositAddress, // Centrifuge address
-			"proof_fields":                  []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"},
-			"submit_token_proof":            tokenProof,
-			"submit_nft_owner_access_proof": nftReadAccessProof,
-			"grant_nft_access":              grantNFTAccess,
+			"document_id":           docIdentifier,
+			"registry_address":      registry.String(),
+			"deposit_address":       depositAddress, // Centrifuge address
+			"proof_fields":          []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", documents.CDTreePrefix + ".next_version"},
+			"asset_manager_address": assetAddress,
 		}
 		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
@@ -136,7 +119,6 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			"RegistryAddress is not a valid Ethereum address",
 			http.StatusBadRequest,
 			map[string]interface{}{
-
 				"registry_address": "0x123",
 			},
 		},
@@ -144,7 +126,6 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 			"cannot unmarshal hex string without 0x",
 			http.StatusBadRequest,
 			map[string]interface{}{
-
 				"registry_address": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
 				"deposit_address":  "abc",
 			},
@@ -161,21 +142,20 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 }
 
 func TestTransferNFT_successful(t *testing.T) {
-	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
-	tokenID := invoiceUnpaidMint(t, typeInvoice, false, false, false, true, "invoice")
+	tokenID := invoiceUnpaidMint(t, typeInvoice, true, true, true, false, "invoice")
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := alice.host.config.GetContractAddress(config.InvoiceUnpaidNFT)
+	registry := alice.host.dappAddresses["genericNFT"]
 
 	ownerOfPayload := map[string]interface{}{
 		"token_id":         tokenID.String(),
-		"registry_address": registry.String(),
+		"registry_address": registry,
 	}
 
 	transferPayload := map[string]interface{}{
 		"token_id":         tokenID.String(),
-		"registry_address": registry.String(),
+		"registry_address": registry,
 		"to":               bob.id.String(),
 	}
 

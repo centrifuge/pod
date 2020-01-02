@@ -104,6 +104,7 @@ func TestExtrinsicStatusTask_ParseKwargs(t *testing.T) {
 }
 
 func TestExtrinsicStatusTask_ProcessRunTask(t *testing.T) {
+	t.Skip()
 	task := NewExtrinsicStatusTask(1*time.Second, 10, nil, getBlockHash, getBlock, getMetadataLatest, getStorage)
 	jobID := jobs.NewJobID().String()
 	did := testingidentity.GenerateRandomDID()

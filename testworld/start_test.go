@@ -6,11 +6,11 @@ package testworld
 import (
 	"fmt"
 	"os"
+	"syscall"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	log2 "github.com/ethereum/go-ethereum/log"
 )
 
 type testType string
@@ -25,7 +25,10 @@ const (
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
-	log2.Root().SetHandler(log2.StdoutHandler) //TODO remove after centchain integration stable
+	err := setMaxLimits()
+	if err != nil {
+		panic(err)
+	}
 	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)
@@ -39,10 +42,14 @@ func TestMain(m *testing.M) {
 		testingutils.RunSmartContractMigrations()
 	}
 	var contractAddresses *config.SmartContractAddresses
+	dappAddresses := make(map[string]string)
 	if c.Network == "testing" {
 		contractAddresses = testingutils.GetSmartContractAddresses()
+		testingutils.RunDAppSmartContractMigrations()
+		dappAddresses = testingutils.GetDAppSmartContractAddresses()
 	}
-	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses)
+	doctorFord = newHostManager(
+		c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, configName, c.TxPoolAccess, contractAddresses, dappAddresses)
 	err = doctorFord.init(c.CreateHostConfigs)
 	if err != nil {
 		panic(err)
@@ -51,4 +58,32 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	doctorFord.stop()
 	os.Exit(result)
+}
+
+func setMaxLimits() error {
+	if isRunningOnCI {
+		log.Debug("Running on CI. Not setting limits")
+		return nil
+	}
+
+	var rLimit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Previous Rlimits: %v", rLimit)
+	rLimit.Max = 999999
+	rLimit.Cur = 999999
+	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return fmt.Errorf("error setting Rlimit: %v", err)
+	}
+	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return fmt.Errorf("error getting Rlimit: %v", err)
+	}
+
+	log.Debugf("Current Rlimits: %v", rLimit)
+	return nil
 }
