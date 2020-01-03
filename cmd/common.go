@@ -3,13 +3,14 @@ package cmd
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -31,7 +32,13 @@ func generateKeys(config config.Configuration) error {
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
-func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses, webhookURL string) error {
+func CreateConfig(
+	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string,
+	apiPort, p2pPort int64,
+	bootstraps []string,
+	txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string,
+	smartContractAddrs *config.SmartContractAddresses, webhookURL string,
+	centChainID, centChainSecret, centChainAddr string) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
 		"accountKeyPath":    accountKeyPath,
@@ -46,6 +53,9 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 		"txpoolaccess":      txPoolAccess,
 		"preCommitEnabled":  preCommitEnabled,
 		"webhookURL":        webhookURL,
+		"centChainID":       centChainID,
+		"centChainSecret":   centChainSecret,
+		"centChainAddr":     centChainAddr,
 	}
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs

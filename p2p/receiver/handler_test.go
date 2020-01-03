@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -53,6 +54,8 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -233,7 +236,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: "0.0.1", NetworkIdentifier: 12, Timestamp: tm},
+			header: &p2ppb.Header{NodeVersion: "1.0.0", NetworkIdentifier: 12, Timestamp: tm},
 			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 

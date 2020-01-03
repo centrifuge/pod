@@ -98,7 +98,7 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: &cd})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "anchor data missing")
+	assert.Contains(t, err.Error(), "Unable to find anchor")
 }
 
 func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
@@ -143,17 +143,16 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
 	err = inv.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
-	_, err = inv.CalculateDataRoot()
-	assert.NoError(t, err)
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, true), crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		SignatureId: append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
-		SignerId:    defaultDID[:],
-		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
-		Signature:   s,
+		SignatureId:         append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
+		SignerId:            defaultDID[:],
+		PublicKey:           accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature:           s,
+		TransitionValidated: true,
 	}
 	inv.AppendSignatures(sig)
 	_, err = inv.CalculateDocumentRoot()

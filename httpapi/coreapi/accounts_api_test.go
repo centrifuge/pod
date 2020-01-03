@@ -139,6 +139,7 @@ func TestHandler_GetAccount(t *testing.T) {
 	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
@@ -153,18 +154,32 @@ func TestHandler_GetAccount(t *testing.T) {
 }
 
 func TestHandler_GenerateAccount(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("POST", "/accounts/generate", nil).WithContext(ctx)
+	getHTTPReqAndResp := func(ctx context.Context, body io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/accounts/generate", body).WithContext(ctx)
 	}
 
-	// failed generation
+	// empty body
 	rctx := chi.NewRouteContext()
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	h := handler{}
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h.GenerateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed generation
+	data := map[string]interface{}{
+		"centrifuge_chain_account": map[string]string{
+			"id":            "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+			"secret":        "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+			"ss_58_address": "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+		},
+	}
+	d := marshall(t, data)
 	srv := new(configstore.MockService)
-	srv.On("GenerateAccount").Return(nil, errors.New("failed to generate account")).Once()
+	srv.On("GenerateAccount", mock.Anything).Return(nil, errors.New("failed to generate account")).Once()
 	h.srv.accountsSrv = srv
-	w, r := getHTTPReqAndResp(ctx)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.GenerateAccount(w, r)
 	assert.Equal(t, w.Code, http.StatusInternalServerError)
 	assert.Contains(t, w.Body.String(), "failed to generate account")
@@ -181,12 +196,13 @@ func TestHandler_GenerateAccount(t *testing.T) {
 	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
-	srv.On("GenerateAccount").Return(acc, nil).Once()
+	srv.On("GenerateAccount", mock.Anything).Return(acc, nil).Once()
 	h.srv.accountsSrv = srv
-	w, r = getHTTPReqAndResp(ctx)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.GenerateAccount(w, r)
 	srv.AssertExpectations(t)
 	cfg.AssertExpectations(t)
@@ -223,6 +239,7 @@ func TestHandler_GetAccounts(t *testing.T) {
 	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
@@ -259,6 +276,11 @@ func TestHandler_CreateAccount(t *testing.T) {
 	// missing ethereum key and address
 	data := map[string]interface{}{
 		"eth_account": map[string]string{},
+		"centrifuge_chain_account": map[string]interface{}{
+			"id":            "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+			"secret":        "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+			"ss_58_address": "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+		},
 	}
 	d := marshall(t, data)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
@@ -318,6 +340,7 @@ func TestHandler_CreateAccount(t *testing.T) {
 	cfg.On("GetSigningKeyPair").Return("pub", "prv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
@@ -358,6 +381,11 @@ func TestHandler_UpdateAccount(t *testing.T) {
 	// missing ethereum key and address
 	data := map[string]interface{}{
 		"eth_account": map[string]string{},
+		"centrifuge_chain_account": map[string]interface{}{
+			"id":            "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+			"secret":        "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+			"ss_58_address": "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+		},
 	}
 	d := marshall(t, data)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
@@ -409,6 +437,7 @@ func TestHandler_UpdateAccount(t *testing.T) {
 	cfg.On("GetSigningKeyPair").Return("pub", "prv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)

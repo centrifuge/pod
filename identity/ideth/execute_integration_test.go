@@ -43,6 +43,7 @@ func getAnchorAddress(cfg config.Configuration) common.Address {
 }
 
 func TestExecute_successful(t *testing.T) {
+	t.SkipNow() // TODO adapt since anchoring goes now through cent-chain
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
@@ -126,6 +127,7 @@ func checkAnchor(t *testing.T, anchorId anchors.AnchorID, expectedRootHash []byt
 
 // Checks the standard behaviour of the anchor contract
 func TestAnchorWithoutExecute_successful(t *testing.T) {
+	t.SkipNow() // TODO adapt since anchoring goes now through cent-chain
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	anchorAddress := getAnchorAddress(cfg)
 	anchorContract := bindAnchorContract(t, anchorAddress)
@@ -160,7 +162,7 @@ func commitAnchorWithoutExecute(t *testing.T, anchorContract *anchors.AnchorCont
 
 	_, done, err := txManager.ExecuteWithinJob(context.Background(), testingidentity.GenerateRandomDID(), jobs.NilJobID(), "Check TX add execute",
 		func(accountID id.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-			ethTX, err := client.SubmitTransaction(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
+			ethTX, err := client.SubmitTransactionWithRetries(anchorContract.Commit, opts, anchorId.BigInt(), rootHash, proofs)
 			if err != nil {
 				errOut <- err
 				return

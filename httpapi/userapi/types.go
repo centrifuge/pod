@@ -351,9 +351,10 @@ func toFundingAgreementListResponse(ctx context.Context,
 
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
-	DocumentID     byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	DepositAddress common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-	ProofFields    []string           `json:"proof_fields"`
+	DocumentID          byteutils.HexBytes    `json:"document_id" swaggertype:"primitive,string"`
+	DepositAddress      common.Address        `json:"deposit_address" swaggertype:"primitive,string"`
+	AssetManagerAddress byteutils.OptionalHex `json:"asset_manager_address" swaggertype:"primitive,string"`
+	ProofFields         []string              `json:"proof_fields"`
 }
 
 // NFTResponseHeader holds the NFT mint job ID.
@@ -377,6 +378,7 @@ func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.Mi
 		GrantNFTReadAccess:       false,
 		ProofFields:              req.ProofFields,
 		RegistryAddress:          registryAddress,
+		AssetManagerAddress:      common.HexToAddress(req.AssetManagerAddress.String()),
 		SubmitNFTReadAccessProof: false,
 		SubmitTokenProof:         true,
 		UseGeneric:               true,

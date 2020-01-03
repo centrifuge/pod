@@ -28,11 +28,16 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/centrifuge-protobufs"
-  revision = "a4dc99bb9e43371800469049e6536cc8052ce5ef"
+  source = "github.com/mikiquantum/centrifuge-protobufs"
+  revision = "2afd78bc54055311bbd381e4ebac2d6a5bdccc50"
 
 [[override]]
   name = "github.com/centrifuge/centrifuge-ethereum-contracts"
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
+
+[[constraint]]
+  name = "github.com/centrifuge/go-substrate-rpc-client"
+  revision = "b277fcc48a0f9acc09e9b76bf48d3e4db2a7aebf"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
@@ -44,7 +49,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/gocelery"
-  revision = "33b7f6aa1a38203170d7d5395d5ef04485eecf95"
+  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[override]]
   name = "github.com/ethereum/go-ethereum"
@@ -244,7 +249,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "golang.org/x/crypto"
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[constraint]]
   name = "golang.org/x/net"

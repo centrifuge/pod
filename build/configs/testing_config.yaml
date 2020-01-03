@@ -8,6 +8,12 @@ ethereum:
 
 identityId: "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
+centChain:
+  account:
+    id: "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+    secret: "//Alice"
+    address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+
 # Accounts key storage
 accounts:
   keystore: /tmp/accounts

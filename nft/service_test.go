@@ -178,6 +178,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetPrecommitEnabled").Return(false)
 				configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
+				configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 				queueSrv := new(testingutils.MockQueue)
 				jobMan := new(testingjobs.MockJobManager)
 				jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
@@ -198,7 +199,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
 			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
 				return &InvoiceUnpaidContract{}, nil
-			}, txMan, func() (uint64, error) { return 10, nil })
+			}, txMan, nil, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      test.request.DocumentID,
@@ -231,6 +232,7 @@ func TestTokenTransfer(t *testing.T) {
 	configMock.On("GetSigningKeyPair").Return("", "")
 	configMock.On("GetPrecommitEnabled").Return(false)
 	configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
+	configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 
 	jobID := jobs.NewJobID()
 	jobMan := new(testingjobs.MockJobManager)
@@ -239,7 +241,7 @@ func TestTokenTransfer(t *testing.T) {
 
 	idServiceMock := &testingcommons.MockIdentityService{}
 
-	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil)
+	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil, nil)
 	ctxh := testingconfig.CreateAccountContext(t, configMock)
 
 	registryAddress := common.HexToAddress("0x111855759a39fb75fc7341139f5d7a3974d4da08")
@@ -292,4 +294,29 @@ func byteSliceToByteArray32(input []byte) (out [32]byte) {
 func decodeHex(hex string) []byte {
 	h, _ := hexutil.Decode(hex)
 	return h
+}
+
+func Test_getBundledHash(t *testing.T) {
+	to := common.HexToAddress("0xf2bd5de8b57ebfc45dcee97524a7a08fccc80aef")
+	props := [][]byte{
+		common.FromHex("0x392614ecdd98ce9b86b6c82242ae1b85aaf53ebe6f52490ed44539c88215b17a"),
+		common.FromHex("0x8db964a550ede5fea3f059ca6a74cf436890bb1d31a39c63ea0ccfbc8d8235fd"),
+		common.FromHex("0xc437005805629feeb716f4ff329f62a4cf393f4cbfc7cd14fc0a64d8321a3e99"),
+	}
+
+	values := [][]byte{
+		common.FromHex("0xd6ad85800460ea404f3289484f9300ed787dc951203cb3f0ef5fa0fa4db283cc"),
+		common.FromHex("0x446bfed759680364b759d32d6d217e287df7aad0bf4c82816f124d7e03ab248f"),
+		common.FromHex("0x443e4fa3d89952c9f24433d1112713a075d9205195dc9a16a12301caa1afb5d2"),
+	}
+
+	salts := [][32]byte{
+		byteSliceToByteArray32(common.FromHex("0x34ea1aa3061dca2e1e23573c3b8866f80032d18fd85934d90339c8bafcab0408")),
+		byteSliceToByteArray32(common.FromHex("0xe257b56611cf3244b2b63bfe486ea3072f10223d473285f8fea868aae2323b39")),
+		byteSliceToByteArray32(common.FromHex("0xed58f4a0d0c76770c81d2b1cc035413edebb567f5c006160596dc73b9297a9cc")),
+	}
+
+	bh := common.FromHex("0xee49e1ca6aa1204cfb571094ce14ab254e5185005cbee3f26af9afd3140ac12d")
+	got := getBundledHash(to, props, values, salts)
+	assert.Equal(t, bh, got[:], "bundled hash mismatch")
 }

@@ -1,5 +1,5 @@
 {
-  "runPOAGeth": false,
+  "runChains": false,
   "createHostConfigs": true,
   "runMigrations": false,
   "ethNodeURL": "ws://127.0.0.1:9546",

@@ -2,15 +2,8 @@
 
 set -e
 
-ANCHOR_ADDR=$1
-if [ -z ${ANCHOR_ADDR} ];
-then
-    echo "${ANCHOR_ADDR} not set"
-    exit 1
-fi
-
 # Allow passing parent directory as a parameter
-PARENT_DIR=$2
+PARENT_DIR=$1
 if [ -z ${PARENT_DIR} ];
 then
     PARENT_DIR=`pwd`
@@ -19,13 +12,11 @@ fi
 source "${PARENT_DIR}/build/scripts/test-dependencies/test-ethereum/env_vars.sh"
 
 if [ -z ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR} ]; then
-    CENT_ETHEREUM_DAPP_CONTRACTS_DIR=${PARENT_DIR}/build/privacy-enabled-erc721
+    CENT_ETHEREUM_DAPP_CONTRACTS_DIR=${PARENT_DIR}/build
 fi
 
-cd $CENT_ETHEREUM_DAPP_CONTRACTS_DIR
-
-dapp update
-dapp build --extract
+ASSET_DIR=${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/ethereum-bridge-contracts
+NFT_DIR=${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/privacy-enabled-erc721
 
 export ETH_RPC_ACCOUNTS=true
 export ETH_GAS=$CENT_ETHEREUM_GASLIMIT
@@ -34,8 +25,20 @@ export ETH_RPC_URL=$CENT_ETHEREUM_NODEURL
 export ETH_PASSWORD="/dev/null"
 export ETH_FROM="0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
-regAddr=$(dapp create "TestNFT" "$ANCHOR_ADDR")
+# deploy asset contracts
+cd $ASSET_DIR
+dapp update
+dapp build --extract
 
-echo -n "genericNFT $regAddr" > $PARENT_DIR/localAddresses
+assetAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8)' "10")
+
+# deploy NFT contract
+cd $NFT_DIR
+dapp update
+dapp build --extract
+
+nftAddr=$(seth send --create out/NFT.bin 'NFT(string memory, string memory, address)' "CentNFT" "CentNFT", "$assetAddr")
+echo "assetManager $assetAddr" > $PARENT_DIR/localAddresses
+echo -n "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
 
 cd $PARENT_DIR

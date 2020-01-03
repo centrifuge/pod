@@ -4,7 +4,6 @@ package invoice
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -33,10 +33,14 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 var ctx = map[string]interface{}{}
@@ -53,6 +57,8 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	jobMan := &testingjobs.MockJobManager{}
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
@@ -146,19 +152,6 @@ func TestInvoiceModel_UnpackCoreDocument(t *testing.T) {
 	assert.Equal(t, model.PreviousVersion(), inv.PreviousVersion())
 }
 
-func TestInvoiceModel_calculateDataRoot(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	did, err := contextutil.AccountDID(ctx)
-	assert.NoError(t, err)
-	m := new(Invoice)
-	assert.NoError(t, m.DeriveFromCreatePayload(ctx, CreateInvoicePayload(t, []identity.DID{did})))
-	assert.Nil(t, err, "Init must pass")
-
-	dr, err := m.CalculateDataRoot()
-	assert.Nil(t, err, "calculate must pass")
-	assert.False(t, utils.IsEmptyByteSlice(dr))
-}
-
 func TestInvoice_CreateProofs(t *testing.T) {
 	i, _ := CreateInvoiceWithEmbedCD(t, nil, did, nil)
 	rk := i.GetTestCoreDocWithReset().Roles[0].RoleKey
@@ -170,35 +163,37 @@ func TestInvoice_CreateProofs(t *testing.T) {
 		return
 	}
 
-	signingRoot, err := i.CalculateSigningRoot()
+	dataRoot := calculateBasicDataRoot(t, i)
+
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate invoice_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
 	assert.True(t, i.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// validate line item
-	valid, err = documents.ValidateProof(proof[3], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[3], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
-	valid, err = documents.ValidateProof(proof[4], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[4], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -217,10 +212,7 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
 	assert.NoError(t, err)
 	i.AppendSignatures(sig)
-	_, err = i.CalculateDataRoot()
-	assert.NoError(t, err)
-	signingRoot, err := i.CalculateSigningRoot()
-	assert.NoError(t, err)
+	dataRoot := calculateBasicDataRoot(t, i)
 	_, err = i.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
@@ -228,32 +220,36 @@ func TestInvoice_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 	signerId := hexutil.Encode(append(defaultDID[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
 	signingRootField := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerId)
+	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
 	proofFields := []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRootField, signatureSender, documents.CDTreePrefix + ".next_version"}
 	proof, err := i.CreateProofs(proofFields)
 	assert.Nil(t, err)
 	assert.NotNil(t, proof)
-	tree, err := i.DocumentRootTree()
-	assert.NoError(t, err)
+	tree := getDocumentRootTree(t, i)
 	assert.Len(t, proofFields, 8)
 
+	nodeHash, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
 	// Validate invoice_gross_amount
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate signing_root
-	valid, err = tree.ValidateProof(proof[5])
+	valid, err = tree.ValidateProof(proof.FieldProofs[5])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate signature
-	valid, err = tree.ValidateProof(proof[6])
+	signaturesTree, err := i.CoreDocument.GetSignaturesDataTree()
+	assert.NoError(t, err)
+	valid, err = signaturesTree.ValidateProof(proof.FieldProofs[6])
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof[7], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[7], dataRoot, nodeHash, sha3.NewKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -508,6 +504,22 @@ func validDataWithCurrency(t *testing.T) []byte {
 func checkInvoicePayloadDataError(t *testing.T, inv *Invoice, payload documents.CreatePayload) {
 	err := loadData(payload.Data, &inv.Data)
 	assert.Error(t, err)
+}
+
+func calculateBasicDataRoot(t *testing.T, i *Invoice) []byte {
+	dataLeaves, err := i.getDataLeaves()
+	assert.NoError(t, err)
+	trees, _, err := i.CoreDocument.SigningDataTrees(i.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
+}
+
+func getDocumentRootTree(t *testing.T, i *Invoice) *proofs.DocumentTree {
+	dataLeaves, err := i.getDataLeaves()
+	assert.NoError(t, err)
+	tree, err := i.CoreDocument.DocumentRootTree(i.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return tree
 }
 
 func TestInvoice_loadData(t *testing.T) {

@@ -68,7 +68,7 @@
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[projects]]
-  digest = "1:ba35b9731e67dd7e2702a8559468f10c64f6d872fbe5884c32439fa6d42ffff7"
+  digest = "1:62b2f8e1fa5c7c60fbc7c02b2612781639b998ff5baf0b69a5f5dfb64ecabbf5"
   name = "github.com/centrifuge/centrifuge-protobufs"
   packages = [
     "documenttypes",
@@ -82,14 +82,36 @@
     "gen/go/protocol",
   ]
   pruneopts = "T"
-  revision = "a4dc99bb9e43371800469049e6536cc8052ce5ef"
+  revision = "2afd78bc54055311bbd381e4ebac2d6a5bdccc50"
+  source = "github.com/mikiquantum/centrifuge-protobufs"
 
 [[projects]]
-  digest = "1:8a9e988610960db90b369d222ef4339eb13b479f02e8e7abc4d1f8eeabce02ac"
+  digest = "1:dc72a356ed883d5af98caf39d71d0819ab77829794e476d2a5c3bbd1c0c0d8d3"
+  name = "github.com/centrifuge/go-substrate-rpc-client"
+  packages = [
+    ".",
+    "client",
+    "config",
+    "gethrpc",
+    "rpc",
+    "rpc/author",
+    "rpc/chain",
+    "rpc/state",
+    "rpc/system",
+    "scale",
+    "signature",
+    "types",
+    "xxhash",
+  ]
+  pruneopts = "UT"
+  revision = "b277fcc48a0f9acc09e9b76bf48d3e4db2a7aebf"
+
+[[projects]]
+  digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "33b7f6aa1a38203170d7d5395d5ef04485eecf95"
+  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
 
 [[projects]]
   digest = "1:f46a61d4cdbfd59f161576753d03df52844379a7c65dc8bd9d264da2dee134b4"
@@ -1077,6 +1099,14 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:657ca22c61c436fc17a86b5be00bbfedb86c26795dcfe0f3294ed3571aa7223c"
+  name = "github.com/pierrec/xxHash"
+  packages = ["xxHash64"]
+  pruneopts = "UT"
+  revision = "d17cb990ad2d219d5901415ceaeb50d17df59527"
+  version = "v0.1.5"
+
+[[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -1415,9 +1445,10 @@
   revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
-  digest = "1:e947e8fefea7a3008679cae8ec86a7c81d94245de13ed560d72cc24fd95c96ea"
+  digest = "1:7c0a0e040d4c10247abe993ee6d266de2f786adbd889c78f026de7e73b952f47"
   name = "golang.org/x/crypto"
   packages = [
+    "blake2b",
     "blake2s",
     "blowfish",
     "ed25519",
@@ -1428,7 +1459,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[projects]]
   digest = "1:e10eeba0c13ad89c2bf14ee8766dde51765ed0d06f17e708633cdea6acd56607"
@@ -1616,6 +1647,11 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol",
+    "github.com/centrifuge/go-substrate-rpc-client",
+    "github.com/centrifuge/go-substrate-rpc-client/client",
+    "github.com/centrifuge/go-substrate-rpc-client/rpc/author",
+    "github.com/centrifuge/go-substrate-rpc-client/signature",
+    "github.com/centrifuge/go-substrate-rpc-client/types",
     "github.com/centrifuge/gocelery",
     "github.com/centrifuge/precise-proofs/proofs",
     "github.com/centrifuge/precise-proofs/proofs/proto",
@@ -1629,6 +1665,7 @@
     "github.com/ethereum/go-ethereum/core/types",
     "github.com/ethereum/go-ethereum/crypto",
     "github.com/ethereum/go-ethereum/crypto/secp256k1",
+    "github.com/ethereum/go-ethereum/crypto/sha3",
     "github.com/ethereum/go-ethereum/ethclient",
     "github.com/ethereum/go-ethereum/event",
     "github.com/ethereum/go-ethereum/log",
@@ -1678,6 +1715,7 @@
     "github.com/syndtr/goleveldb/leveldb/util",
     "github.com/urfave/cli",
     "github.com/whyrusleeping/go-logging",
+    "golang.org/x/crypto/blake2b",
     "golang.org/x/crypto/ed25519",
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/net/context",

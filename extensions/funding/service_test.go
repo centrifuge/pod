@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -46,6 +47,8 @@ func TestMain(m *testing.M) {
 	ethClient := new(ethereum.MockEthClient)
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	jobMan := &testingjobs.MockJobManager{}
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
@@ -82,12 +85,12 @@ func TestAttributesUtils(t *testing.T) {
 	a, err := extensions.FillAttributeList(data, "0", fundingFieldKey)
 	assert.NoError(t, err)
 	// fill attribute list does not add the idx of attribute set as an attribute
-	assert.Len(t, a, 13)
+	assert.Len(t, a, 12)
 
 	// Creating an attributes list generates the correct attributes and adds an idx as an attribute
 	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
-	assert.Len(t, attributes, 14)
+	assert.Len(t, attributes, 13)
 
 	for _, attribute := range attributes {
 		if attribute.KeyLabel == "funding_agreement[0].currency" {
@@ -160,7 +163,7 @@ func TestAttributesUtils(t *testing.T) {
 
 	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
 	assert.NoError(t, err)
-	assert.Len(t, model.GetAttributes(), 14)
+	assert.Len(t, model.GetAttributes(), 13)
 
 	// error when trying to delete non existing attribute set
 	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
@@ -205,7 +208,6 @@ func invalidData() Data {
 		RepaymentDueDate:      time.Now().UTC().Format(time.RFC3339),
 		RepaymentOccurredDate: time.Now().UTC().Format(time.RFC3339),
 		PaymentDetailsID:      hexutil.Encode(utils.RandomSlice(32)),
-		Status:                "submitted",
 	}
 }
 

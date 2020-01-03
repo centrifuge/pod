@@ -10,7 +10,7 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge
+    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PATH="$HOME/.cargo/bin:$PATH"
 
 checkout:
   post:
@@ -29,11 +29,12 @@ before_install:
   - nix-env -if https://github.com/cachix/cachix/tarball/master --substituters https://cachix.cachix.org --trusted-public-keys cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM=
   - cachix use dapp
   - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
-  - nix-env -f $HOME/.dapp/dapptools -iA dapp solc
+  - nix-env -f $HOME/.dapp/dapptools -iA dapp seth solc
 
 install:
   - mkdir -p ~/bin
   - make install
+  - wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x $HOME/.cargo/bin/subkey
 
 jobs:
   include:
@@ -61,7 +62,7 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
-      if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master))
+      if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master) OR (branch = edge))
       before_script:
        - touch ./build/peak-vista-185616-9f70002df7eb.json.enc
        - echo $CREDENTIALS_GCP | base64 -d > ./build/peak-vista-185616-9f70002df7eb.json.enc

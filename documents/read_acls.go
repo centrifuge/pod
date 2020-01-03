@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -219,11 +218,11 @@ func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common
 // CreateNFTProofs generate proofs returns proofs for NFT minting.
 func (cd *CoreDocument) CreateNFTProofs(
 	docType string,
-	dataTree *proofs.DocumentTree,
+	dataLeaves []proofs.LeafNode,
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prfs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (prf *DocumentProof, err error) {
 
 	var pfKeys []string
 	if nftUniqueProof {
@@ -243,7 +242,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 
 		pfKeys = append(pfKeys, pks...)
 	}
-	return cd.CreateProofs(docType, dataTree, pfKeys)
+	return cd.CreateProofs(docType, dataLeaves, pfKeys)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice

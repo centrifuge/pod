@@ -14,7 +14,7 @@
         "license": {
             "name": "MIT"
         },
-        "version": "0.0.7"
+        "version": "1.0.0"
     },
     "host": "localhost:8082",
     "basePath": "/",
@@ -337,12 +337,31 @@
                 ],
                 "summary": "Generates a new account with defaults.",
                 "operationId": "generate_account",
+                "parameters": [
+                    {
+                        "description": "Generate Account Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/coreapi.GenerateAccountPayload"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
@@ -3334,9 +3353,27 @@
                 }
             }
         },
+        "config.CentChainAccount": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "ss_58_address": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.Account": {
             "type": "object",
             "properties": {
+                "centrifuge_chain_account": {
+                    "type": "object",
+                    "$ref": "#/definitions/config.CentChainAccount"
+                },
                 "eth_account": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.EthAccount"
@@ -3542,6 +3579,15 @@
                 },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "coreapi.GenerateAccountPayload": {
+            "type": "object",
+            "properties": {
+                "centrifuge_chain_account": {
+                    "type": "object",
+                    "$ref": "#/definitions/config.CentChainAccount"
                 }
             }
         },
@@ -4106,9 +4152,6 @@
                     "type": "string"
                 },
                 "repayment_occurred_date": {
-                    "type": "string"
-                },
-                "status": {
                     "type": "string"
                 }
             }
@@ -4706,6 +4749,9 @@
         "userapi.MintNFTRequest": {
             "type": "object",
             "properties": {
+                "asset_manager_address": {
+                    "type": "string"
+                },
                 "deposit_address": {
                     "type": "string"
                 },

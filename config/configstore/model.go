@@ -58,6 +58,10 @@ type NodeConfig struct {
 	PprofEnabled                   bool
 	LowEntropyNFTTokenEnabled      bool
 	DebugLogEnabled                bool
+	CentChainNodeURL               string
+	CentChainIntervalRetry         time.Duration
+	CentChainMaxRetries            int
+	CentChainAnchorLifespan        time.Duration
 }
 
 // IsSet refer the interface
@@ -235,6 +239,31 @@ func (nc *NodeConfig) GetEthereumAccount(accountName string) (account *config.Ac
 	return nc.MainIdentity.EthereumAccount, nil
 }
 
+// GetCentChainAccount returns the Cent Chain account of the current node.
+func (nc *NodeConfig) GetCentChainAccount() (config.CentChainAccount, error) {
+	return nc.MainIdentity.CentChainAccount, nil
+}
+
+// GetCentChainNodeURL returns the URL of the CentChain Node.
+func (nc *NodeConfig) GetCentChainNodeURL() string {
+	return nc.CentChainNodeURL
+}
+
+// GetCentChainIntervalRetry returns duration to wait between retries.
+func (nc *NodeConfig) GetCentChainIntervalRetry() time.Duration {
+	return nc.CentChainIntervalRetry
+}
+
+// GetCentChainMaxRetries returns the max acceptable retries.
+func (nc *NodeConfig) GetCentChainMaxRetries() int {
+	return nc.CentChainMaxRetries
+}
+
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (nc *NodeConfig) GetCentChainAnchorLifespan() time.Duration {
+	return nc.CentChainAnchorLifespan
+}
+
 // GetEthereumDefaultAccountName refer the interface
 func (nc *NodeConfig) GetEthereumDefaultAccountName() string {
 	return nc.MainIdentity.EthereumDefaultAccountName
@@ -306,6 +335,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 	mainIdentity, _ := c.GetIdentityID()
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	signPub, signPriv := c.GetSigningKeyPair()
+	centChainAccount, _ := c.GetCentChainAccount()
 
 	return &NodeConfig{
 		MainIdentity: Account{
@@ -325,6 +355,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 				Pub: signPub,
 				Pvt: signPriv,
 			},
+			CentChainAccount: centChainAccount,
 		},
 		StoragePath:                    c.GetStoragePath(),
 		AccountsKeystore:               c.GetAccountsKeystore(),
@@ -350,6 +381,10 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		PprofEnabled:                   c.IsPProfEnabled(),
 		DebugLogEnabled:                c.IsDebugLogEnabled(),
 		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
+		CentChainMaxRetries:            c.GetCentChainMaxRetries(),
+		CentChainIntervalRetry:         c.GetCentChainIntervalRetry(),
+		CentChainAnchorLifespan:        c.GetCentChainAnchorLifespan(),
+		CentChainNodeURL:               c.GetCentChainNodeURL(),
 	}
 }
 
@@ -382,6 +417,7 @@ type Account struct {
 	P2PKeyPair                       KeyPair
 	keys                             map[string]config.IDKey
 	PrecommitEnabled                 bool
+	CentChainAccount                 config.CentChainAccount
 }
 
 // GetPrecommitEnabled gets the enable pre commit value
@@ -392,6 +428,11 @@ func (acc *Account) GetPrecommitEnabled() bool {
 // GetEthereumAccount gets EthereumAccount
 func (acc *Account) GetEthereumAccount() *config.AccountConfig {
 	return acc.EthereumAccount
+}
+
+// GetCentChainAccount gets CentChainAccount
+func (acc *Account) GetCentChainAccount() config.CentChainAccount {
+	return acc.CentChainAccount
 }
 
 // GetEthereumDefaultAccountName gets EthereumDefaultAccountName
@@ -437,12 +478,14 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	}
 
 	did := acc.GetIdentityID()
+
 	return &coredocumentpb.Signature{
 		SignatureId: append(did, signingKeyPair.PublicKey...),
 		SignerId:    did,
 		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
 	}, nil
+
 }
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
@@ -539,6 +582,12 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 	if err != nil {
 		return nil, err
 	}
+
+	cacc, err := c.GetCentChainAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
@@ -548,6 +597,7 @@ func NewAccount(ethAccountName string, c config.Configuration) (config.Account, 
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
+		CentChainAccount:                 cacc,
 	}, nil
 }
 
@@ -560,6 +610,11 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 	if err != nil {
 		return nil, err
 	}
+	cacc, err := c.GetCentChainAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
@@ -568,5 +623,6 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
 		SigningKeyPair:                   NewKeyPair(c.GetSigningKeyPair()),
 		PrecommitEnabled:                 c.GetPrecommitEnabled(),
+		CentChainAccount:                 cacc,
 	}, nil
 }

@@ -71,8 +71,6 @@ func CreateInvoiceWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did 
 	err := inv.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 	inv.GetTestCoreDocWithReset()
-	_, err = inv.CalculateDataRoot()
-	assert.NoError(t, err)
 	sr, err := inv.CalculateSigningRoot()
 	assert.NoError(t, err)
 	// if acc errors out, just skip it

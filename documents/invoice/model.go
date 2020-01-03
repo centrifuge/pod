@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -401,14 +400,31 @@ func (i *Invoice) Type() reflect.Type {
 	return reflect.TypeOf(i)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
-func (i *Invoice) CalculateDataRoot() ([]byte, error) {
-	t, err := i.getDocumentDataTree()
+func (i *Invoice) getDataLeaves() ([]proofs.LeafNode, error) {
+	t, err := i.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+	return t.GetLeaves(), nil
+}
 
-	return t.RootHash(), nil
+func (i *Invoice) getRawDataTree() (*proofs.DocumentTree, error) {
+	invProto, err := i.createP2PProtobuf()
+	if err != nil {
+		return nil, err
+	}
+	if i.CoreDocument == nil {
+		return nil, errors.New("getDataTree error CoreDocument not set")
+	}
+	t, err := i.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	err = t.AddLeavesFromDocument(invProto)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	return t, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -438,13 +454,13 @@ func (i *Invoice) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 }
 
 // CreateProofs generates proofs for given fields.
-func (i *Invoice) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := i.getDocumentDataTree()
+func (i *Invoice) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return i.CoreDocument.CreateProofs(i.DocumentType(), tree, fields)
+	return i.CoreDocument.CreateProofs(i.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the invoice document type.
@@ -465,29 +481,20 @@ func (i *Invoice) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (i *Invoice) CalculateSigningRoot() ([]byte, error) {
-	dr, err := i.CalculateDataRoot()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
-		return dr, err
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return i.CoreDocument.CalculateSigningRoot(i.DocumentType(), dr)
+	return i.CoreDocument.CalculateSigningRoot(i.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (i *Invoice) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := i.CalculateDataRoot()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
-		return dr, err
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
-	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dr)
-}
-
-// DocumentRootTree creates and returns the document root tree
-func (i *Invoice) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := i.CalculateDataRoot()
-	if err != nil {
-		return nil, err
-	}
-	return i.CoreDocument.DocumentRootTree(i.DocumentType(), dr)
+	return i.CoreDocument.CalculateDocumentRoot(i.DocumentType(), dataLeaves)
 }
 
 // CreateNFTProofs creates proofs specific to NFT minting.
@@ -495,16 +502,16 @@ func (i *Invoice) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (proof *documents.DocumentProof, err error) {
 
-	tree, err := i.getDocumentDataTree()
+	dataLeaves, err := i.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
 
 	return i.CoreDocument.CreateNFTProofs(
 		i.DocumentType(),
-		tree,
+		dataLeaves,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 

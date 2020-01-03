@@ -82,11 +82,6 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	_, err = model.CalculateDataRoot()
-	if err != nil {
-		return err
-	}
-
 	id := self.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(id)
 	if err != nil {
@@ -107,7 +102,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return errors.New("failed to calculate signing root: %v", err)
 	}
 
-	sig, err := self.SignMsg(sr)
+	sig, err := self.SignMsg(ConsensusSignaturePayload(sr, false))
 	if err != nil {
 		return err
 	}
@@ -201,20 +196,20 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 		return errors.New("failed to get anchor ID: %v", err)
 	}
 
-	signingRootProof, err := model.CalculateSignaturesRoot()
+	signaturesRootProof, err := model.CalculateSignaturesRoot()
 	if err != nil {
 		return errors.New("failed to get signature root: %v", err)
 	}
 
-	signingRootHash, err := utils.SliceToByte32(signingRootProof)
+	signaturesRootHash, err := utils.SliceToByte32(signaturesRootProof)
 	if err != nil {
 		return errors.New("failed to get signing root proof in ethereum format: %v", err)
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signingRootHash)
+	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
 	if err != nil {
-		return errors.New("failed to commit anchor: %v", err)
+		return errors.New("failed to send commit anchor: %v", err)
 	}
 
 	err = <-done
@@ -274,4 +269,13 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 	}
 
 	return err
+}
+
+// ConsensusSignaturePayload forms the payload needed to be signed during the document consensus flow
+func ConsensusSignaturePayload(dataRoot []byte, validated bool) []byte {
+	tFlag := byte(0)
+	if validated {
+		tFlag = byte(1)
+	}
+	return append(dataRoot, tFlag)
 }

@@ -34,6 +34,21 @@ func StartPOAGeth() {
 	fmt.Printf("%s", string(o))
 }
 
+// StartCentChain runs centchain for tests
+func StartCentChain() {
+	// don't run if its already running
+	if IsPOACentChainRunning() {
+		return
+	}
+	projDir := GetProjectDir()
+	gethRunScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+	o, err := exec.Command(gethRunScript, "ccdev").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", string(o))
+}
+
 // RunSmartContractMigrations migrates smart contracts to localgeth
 func RunSmartContractMigrations() {
 	if isRunningOnCI {
@@ -64,7 +79,7 @@ func RunDAppSmartContractMigrations() {
 	smAddr := GetSmartContractAddresses()
 	fmt.Println("Using AnchorAddr for DApp Contracts", smAddr.AnchorRepositoryAddr)
 	migrationScript := path.Join(projDir, "build", "scripts", "migrateDApp.sh")
-	cmd := exec.Command(migrationScript, smAddr.AnchorRepositoryAddr, projDir)
+	cmd := exec.Command(migrationScript, projDir)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err, string(out))
@@ -174,6 +189,16 @@ func IsPOAGethRunning() bool {
 	return len(o) != 0
 }
 
+// IsPOACentChainRunning checks if POA centchain is running in the background
+func IsPOACentChainRunning() bool {
+	cmd := "docker ps -a --filter \"name=cc-node\" --filter \"status=running\" --quiet"
+	o, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	if err != nil {
+		panic(err)
+	}
+	return len(o) != 0
+}
+
 // LoadTestConfig loads configuration for integration tests
 func LoadTestConfig() config.Configuration {
 	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
@@ -193,6 +218,7 @@ func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartCont
 func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
+	StartCentChain()
 	RunSmartContractMigrations()
 	RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()

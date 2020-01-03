@@ -118,6 +118,8 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 // @id generate_account
 // @tags Accounts
 // @produce json
+// @param body body coreapi.GenerateAccountPayload true "Generate Account Payload"
+// @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.Account
 // @router /v1/accounts/generate [post]
@@ -126,7 +128,22 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	acc, err := h.srv.GenerateAccount()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var payload GenerateAccountPayload
+	err = json.Unmarshal(data, &payload)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	acc, err := h.srv.GenerateAccount(payload)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

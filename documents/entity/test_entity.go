@@ -55,9 +55,9 @@ func (m *MockEntityRelationService) DeriveFromCoreDocument(cd coredocumentpb.Cor
 	return args.Get(0).(documents.Model), args.Error(1)
 }
 
-func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
-	return args.Get(0).(*coredocumentpb.Signature), args.Error(1)
+	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
 func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
@@ -158,8 +158,6 @@ func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did i
 	err := entity.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 	entity.GetTestCoreDocWithReset()
-	_, err = entity.CalculateDataRoot()
-	assert.NoError(t, err)
 	sr, err := entity.CalculateSigningRoot()
 	assert.NoError(t, err)
 	// if acc errors out, just skip it

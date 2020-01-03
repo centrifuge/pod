@@ -25,7 +25,12 @@ func TestCreateConfigCmd(t *testing.T) {
 	dataDir := path.Join(os.Getenv("HOME"), "datadir_test")
 	scAddrs := testingutils.GetSmartContractAddresses()
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
-	cmd := exec.Command(testingutils.GetBinaryPath(), "createconfig", "-n", "testing", "-t", dataDir, "-z", keyPath)
+	cmd := exec.Command(
+		testingutils.GetBinaryPath(),
+		"createconfig", "-n", "testing", "-t", dataDir, "-z", keyPath,
+		"--centchainaddr", "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+		"--centchainid", "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+		"--centchainsecret", "//Alice")
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CENT_NETWORKS_TESTING_CONTRACTADDRESSES_IDENTITYFACTORY=%s", scAddrs.IdentityFactoryAddr))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("CENT_NETWORKS_TESTING_CONTRACTADDRESSES_ANCHORREPOSITORY=%s", scAddrs.AnchorRepositoryAddr))

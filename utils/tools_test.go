@@ -134,6 +134,31 @@ func TestSliceToByte32(t *testing.T) {
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
 }
 
+func TestMustSliceToByte32(t *testing.T) {
+	// 32 bytes
+	eout := RandomByte32()
+	in := make([]byte, 32, 32)
+	copy(in, eout[:])
+
+	out := MustSliceToByte32(in)
+	assert.Equal(t, eout, out)
+
+	// less than 32 bytes
+	in = RandomSlice(30)
+	eout = [32]byte{}
+	copy(eout[:], in)
+	out = MustSliceToByte32(in)
+	assert.Equal(t, eout, out)
+
+	// more than 32(panic case)
+	in = RandomSlice(34)
+	defer func() {
+		err := recover()
+		assert.NotNil(t, err)
+	}()
+	MustSliceToByte32(in)
+}
+
 func TestByteSliceToBigInt(t *testing.T) {
 	// uint32
 	expected := uint32(15)

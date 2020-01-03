@@ -83,12 +83,15 @@ type hostManager struct {
 	// currently needed to restart a node
 	// parent context
 	cancCtx context.Context
+
+	// Dapp Smart contract Addresses
+	dappAddresses map[string]string
 }
 
 func newHostManager(
 	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string,
 	txPoolAccess bool,
-	smartContractAddrs *config.SmartContractAddresses) *hostManager {
+	smartContractAddrs *config.SmartContractAddresses, dappAddresses map[string]string) *hostManager {
 	return &hostManager{
 		ethNodeUrl:        ethNodeUrl,
 		accountKeyPath:    accountKeyPath,
@@ -99,6 +102,7 @@ func newHostManager(
 		contractAddresses: smartContractAddrs,
 		niceHosts:         make(map[string]*host),
 		tempHosts:         make(map[string]*host),
+		dappAddresses:     dappAddresses,
 	}
 }
 
@@ -211,7 +215,14 @@ func (r *hostManager) startTempHost(name string) error {
 }
 
 func (r *hostManager) createHost(name, webhookURL string, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	return newHost(name, r.ethNodeUrl, webhookURL, r.accountKeyPath, r.accountPassword, r.network, "0.0.0.0", twConfigName, p2pTimeout, apiPort, p2pPort, bootstraps, r.txPoolAccess, createConfig, multiAccount, r.contractAddresses)
+	return newHost(
+		name, r.ethNodeUrl,
+		webhookURL, r.accountKeyPath,
+		r.accountPassword, r.network,
+		"0.0.0.0", twConfigName,
+		p2pTimeout, apiPort, p2pPort,
+		bootstraps, r.txPoolAccess, createConfig,
+		multiAccount, r.contractAddresses, r.dappAddresses)
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
@@ -228,28 +239,37 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 type host struct {
 	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
-	apiPort, p2pPort   int64
-	bootstrapNodes     []string
-	bootstrappedCtx    map[string]interface{}
-	txPoolAccess       bool
-	smartContractAddrs *config.SmartContractAddresses
-	config             config.Configuration
-	identity           identity.DID
-	idFactory          identity.Factory
-	idService          identity.Service
-	node               *node.Node
-	canc               context.CancelFunc
-	createConfig       bool
-	multiAccount       bool
-	accounts           []string
-	p2pClient          documents.Client
-	configService      config.Service
-	tokenRegistry      documents.TokenRegistry
-	anchorRepo         anchors.AnchorRepository
-	entityService      entity.Service
+	apiPort, p2pPort                               int64
+	bootstrapNodes                                 []string
+	bootstrappedCtx                                map[string]interface{}
+	txPoolAccess                                   bool
+	smartContractAddrs                             *config.SmartContractAddresses
+	config                                         config.Configuration
+	identity                                       identity.DID
+	idFactory                                      identity.Factory
+	idService                                      identity.Service
+	node                                           *node.Node
+	canc                                           context.CancelFunc
+	createConfig                                   bool
+	multiAccount                                   bool
+	accounts                                       []string
+	p2pClient                                      documents.Client
+	configService                                  config.Service
+	tokenRegistry                                  documents.TokenRegistry
+	anchorRepo                                     anchors.AnchorRepository
+	entityService                                  entity.Service
+	centChainID, centChainAddress, centChainSecret string
+	dappAddresses                                  map[string]string
 }
 
-func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, createConfig, multiAccount bool, smartContractAddrs *config.SmartContractAddresses) *host {
+func newHost(
+	name, ethNodeUrl, webhookURL string,
+	accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string,
+	apiPort, p2pPort int64,
+	bootstraps []string,
+	txPoolAccess, createConfig, multiAccount bool,
+	smartContractAddrs *config.SmartContractAddresses,
+	dappAddresses map[string]string) *host {
 	return &host{
 		name:               name,
 		ethNodeUrl:         ethNodeUrl,
@@ -267,12 +287,21 @@ func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPasswor
 		dir:                fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
 		createConfig:       createConfig,
 		multiAccount:       multiAccount,
+		centChainAddress:   "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+		centChainID:        "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+		centChainSecret:    "//Alice",
+		dappAddresses:      dappAddresses,
 	}
 }
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
+		err := cmd.CreateConfig(
+			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
+			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes,
+			h.txPoolAccess, false, h.p2pTimeout,
+			h.smartContractAddrs, h.webhookURL,
+			h.centChainID, h.centChainSecret, h.centChainAddress)
 		if err != nil {
 			return err
 		}
@@ -392,7 +421,7 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 }
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return mintNFT(e, auth, status, inv), nil
+	return mintBetaNFT(e, auth, status, inv), nil
 }
 
 func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
@@ -412,9 +441,17 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 		return nil
 	}
 	// create 3 accounts
+	cacc := map[string]map[string]string{
+		"centrifuge_chain_account": {
+			"id":            "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d",
+			"secret":        "//Alice",
+			"ss_58_address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+		},
+	}
+
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
-		res := generateAccount(e, h.identity.String(), http.StatusOK)
+		res := generateAccount(e, h.identity.String(), http.StatusOK, cacc)
 		res.Value("identity_id").String().NotEmpty()
 	}
 	return nil

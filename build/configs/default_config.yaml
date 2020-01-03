@@ -133,6 +133,16 @@ queue:
   # Number of retries allowed for a task
   taskRetries: 10
 
+# CentChain specific configuration
+centChain:
+  nodeURL: ws://127.0.0.1:9944
+  # Node transaction pool max retries to send a transaction over
+  maxRetries: 200
+  # Node transaction pool interval retry when a concurrent transaction has been detected
+  intervalRetry: "2s"
+  # Default life value to use when committing an anchor against the centchain - 1 year
+  anchorLifespan: "8760h"
+
 # Ethereum specific configuration
 ethereum:
   # Selects which ethereum account to use of the ones provided in the custom config file
@@ -151,9 +161,9 @@ ethereum:
     anchorPreCommit: 100000
     nftMint: 900000
     nftTransferFrom: 150000
+    assetStore: 60000 # will be removed as soon as bridge is integrated
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
-  # Set to higher bound ~28 days
-  contextWaitTimeout: "672h"
+  contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum
   contextReadWaitTimeout: "15s"
   # Node transaction pool max retries to send a transaction over

@@ -39,7 +39,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_GenerateAccountHappy(t *testing.T) {
-	tct, err := cfgSvc.GenerateAccount()
+	// missing cent chain account
+	tct, err := cfgSvc.GenerateAccount(config.CentChainAccount{})
+	assert.Error(t, err)
+	tct, err = cfgSvc.GenerateAccount(config.CentChainAccount{
+		ID:       "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+		Secret:   "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+		SS58Addr: "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+	})
 	assert.NoError(t, err)
 	i := tct.GetIdentityID()
 	tc, err := cfgSvc.GetAccount(i)

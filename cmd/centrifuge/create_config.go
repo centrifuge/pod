@@ -16,6 +16,7 @@ var (
 	apiPort, p2pPort                                            int64
 	bootstraps                                                  []string
 	txPoolAccess                                                bool
+	centChainID, centChainSecret, centChainAddress              string
 )
 
 func init() {
@@ -41,7 +42,22 @@ func init() {
 				log.Error(err)
 			}
 
-			err = cmd.CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, string(pwd), network, apiHost, apiPort, p2pPort, bootstraps, txPoolAccess, false, "", nil, "")
+			err = cmd.CreateConfig(
+				targetDataDir,
+				ethNodeURL,
+				accountKeyPath,
+				string(pwd),
+				network,
+				apiHost,
+				apiPort,
+				p2pPort,
+				bootstraps,
+				txPoolAccess,
+				false,
+				"",
+				nil,
+				"",
+				centChainID, centChainSecret, centChainAddress)
 			if err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
@@ -65,5 +81,8 @@ func init() {
 	createConfigCmd.Flags().StringVarP(&network, "network", "n", "russianhill", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
 	createConfigCmd.Flags().BoolVarP(&txPoolAccess, "txpoolaccess", "x", true, "Transaction Pool access (-x=false)")
+	createConfigCmd.Flags().StringVar(&centChainID, "centchainid", "", "Centrifuge Chain Account ID")
+	createConfigCmd.Flags().StringVar(&centChainSecret, "centchainsecret", "", "Centrifuge Chain Secret URI")
+	createConfigCmd.Flags().StringVar(&centChainAddress, "centchainaddr", "", "Centrifuge Chain ss58addr")
 	rootCmd.AddCommand(createConfigCmd)
 }

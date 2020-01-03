@@ -356,6 +356,15 @@ func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[stri
 	return httpObj
 }
 
+func mintBetaNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/beta/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
 func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/v1/nfts/registries/"+payload["registry_address"].(string)+"/tokens/"+payload["token_id"].(string)+"/transfer"), auth).
 		WithJSON(payload).
@@ -390,8 +399,9 @@ func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpe
 	return resp.JSON().Object()
 }
 
-func generateAccount(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
+func generateAccount(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]map[string]string) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/v1/accounts/generate"), auth).
+		WithJSON(payload).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }

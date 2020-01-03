@@ -31,12 +31,12 @@ func TestValidate_versionValidator(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Incompatible Major
-	header.NodeVersion = "1.1.1"
+	header.NodeVersion = "2.1.1"
 	err = vv.Validate(header, nil, nil)
 	assert.NotNil(t, err)
 
 	// Compatible Minor
-	header.NodeVersion = "0.1.1"
+	header.NodeVersion = "1.1.1"
 	err = vv.Validate(header, nil, nil)
 	assert.Nil(t, err)
 

@@ -11,7 +11,9 @@ then
 fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
+CC_DOCKER_CONTAINER_NAME="cc-node"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
+CC_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${CC_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet`
 
 # Code coverage is stored in coverage.txt
 echo "" > coverage.txt

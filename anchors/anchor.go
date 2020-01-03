@@ -33,6 +33,7 @@ type AnchorID [AnchorIDLength]byte
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetEthereumGasLimit(op config.ContractOp) uint64
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // ToAnchorID convert the bytes into AnchorID type
@@ -87,7 +88,6 @@ type PreCommitData struct {
 
 // CommitData holds required document details for anchoring
 type CommitData struct {
-	BlockHeight   uint64
 	AnchorID      AnchorID
 	DocumentRoot  DocumentRoot
 	DocumentProof [DocumentProofLength]byte
@@ -121,9 +121,8 @@ func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot) (preCommitDat
 }
 
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
+func NewCommitData(anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
 	return &CommitData{
-		BlockHeight:   blockHeight,
 		AnchorID:      anchorID,
 		DocumentRoot:  documentRoot,
 		DocumentProof: proof,
