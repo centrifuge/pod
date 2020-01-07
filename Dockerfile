@@ -1,15 +1,14 @@
-FROM golang:1.11-alpine as builder
-
-RUN apk update && apk add --no-cache openssh git jq curl gcc libc-dev build-base
+FROM golang:1.11-stretch as builder
 
 ADD . /go/src/github.com/centrifuge/go-centrifuge
 WORKDIR /go/src/github.com/centrifuge/go-centrifuge
 
 RUN go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
-FROM alpine:latest
+FROM debian:stretch-slim
 
-RUN apk update && apk add --no-cache jq curl
+COPY ./subkey /usr/local/bin
+RUN /usr/local/bin/subkey --version
 
 WORKDIR /root/
 COPY --from=builder /go/bin/centrifuge .
