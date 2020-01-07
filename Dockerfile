@@ -1,18 +1,21 @@
 FROM golang:1.11-stretch as builder
 
+RUN apt-get -y update && apt-get -y upgrade && apt-get -y install wget
+
 ADD . /go/src/github.com/centrifuge/go-centrifuge
 WORKDIR /go/src/github.com/centrifuge/go-centrifuge
+RUN wget -P /go/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x /go/bin/subkey
 
 RUN go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
 FROM debian:stretch-slim
 
-COPY ./subkey /usr/local/bin
-RUN /usr/local/bin/subkey --version
-
 WORKDIR /root/
 COPY --from=builder /go/bin/centrifuge .
 COPY build/scripts/docker/entrypoint.sh /root
+
+COPY --from=builder /go/bin/subkey /usr/local/bin/
+RUN subkey --version
 
 VOLUME ["/root/config"]
 
