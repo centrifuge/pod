@@ -6,11 +6,10 @@ import (
 	"crypto/sha256"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -18,7 +17,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,8 +24,8 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	ocd := cd.Document
-	ncd := invoicepb.InvoiceData{
-		Currency: "EUR",
+	ncd := genericpb.GenericData{
+		Scheme: []byte("generic"),
 	}
 
 	oldTree := getTree(t, &ocd, "", nil)
@@ -233,17 +231,10 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	testExpectedProps(t, cf, eprops)
 }
 
-func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
-	dueDate, err := ptypes.TimestampProto(time.Now().Add(10 * time.Minute))
-	assert.NoError(t, err)
-
+func TestWriteACLs_getChangedFields_document(t *testing.T) {
 	// no change
-	doc := &invoicepb.InvoiceData{
-		Number:                  "12345",
-		SenderContactPersonName: "Alice",
-		BillToContactPersonName: "Bob",
-		DateCreated:             ptypes.TimestampNow(),
-		DateDue:                 dueDate,
+	doc := &genericpb.GenericData{
+		Scheme: []byte("Generic"),
 	}
 
 	oldTree := getTree(t, doc, "", nil)
@@ -252,32 +243,20 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 
 	// updated doc
-	ndoc := &invoicepb.InvoiceData{
-		Number:                  "123456", // updated
-		SenderContactPersonName: doc.SenderContactPersonName,
-		BillToContactPersonName: doc.BillToContactPersonName,
-		DateCreated:             doc.DateCreated,
-		DateDue:                 doc.DateDue,
-		Currency:                "EUR", // new field
+	ndoc := &genericpb.GenericData{
+		Scheme: []byte("generic"),
 	}
 
 	oldTree = getTree(t, doc, "", nil)
 	newTree = getTree(t, ndoc, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 2)
+	assert.Len(t, cf, 1)
 	eprops := map[string]ChangedField{
 		hexutil.Encode([]byte{0, 0, 0, 1}): {
 			Property: []byte{0, 0, 0, 1},
-			Name:     "number",
+			Name:     "scheme",
 			Old:      []byte{49, 50, 51, 52, 53},
 			New:      []byte{49, 50, 51, 52, 53, 54},
-		},
-
-		hexutil.Encode([]byte{0, 0, 0, 13}): {
-			Property: []byte{0, 0, 0, 13},
-			Name:     "currency",
-			Old:      []byte{},
-			New:      []byte{69, 85, 82},
 		},
 	}
 
@@ -292,17 +271,13 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 
 	// completely new doc
 	// this should give 5 property changes
-	ndoc = new(invoicepb.InvoiceData)
+	ndoc = new(genericpb.GenericData)
 	oldTree = getTree(t, doc, "", nil)
 	newTree = getTree(t, ndoc, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 5)
+	assert.Len(t, cf, 1)
 	eprps := map[string]struct{}{
-		hexutil.Encode([]byte{0, 0, 0, 1}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 6}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 44}): {},
-		hexutil.Encode([]byte{0, 0, 0, 63}): {},
-		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+		hexutil.Encode([]byte{0, 0, 0, 1}): {},
 	}
 	testExpectedProps(t, cf, eprps)
 }
@@ -367,7 +342,7 @@ func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, fie
 func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, string) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	docType := documenttypes.InvoiceDataTypeUrl
+	docType := documenttypes.GenericDataTypeUrl
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 
@@ -396,7 +371,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	doc, id1, id2, docType := prepareDocument(t)
 
 	// prepare a new version of the document with out collaborators
-	ndoc, err := doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{}, nil)
+	ndoc, err := doc.PrepareNewVersion([]byte("generic"), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	// if this was changed by the id1, everything should be fine
@@ -406,7 +381,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
-	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
+	ndoc, err = doc.PrepareNewVersion([]byte("generic"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1
@@ -507,7 +482,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.Equal(t, 3, errors.Len(err))
 }
 
-func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
+func testDocumentChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
 	oldTree := getTree(t, doc1, prefix, compact)
 	newTree := getTree(t, doc2, prefix, compact)
 
@@ -516,43 +491,30 @@ func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, do
 	return ValidateTransitions(rules, cf)
 }
 
-func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
+func TestWriteACLs_validTransitions_document_data(t *testing.T) {
 	doc, id1, id2, _ := prepareDocument(t)
-	inv := invoicepb.InvoiceData{
-		Number:                  "1234556",
-		Currency:                "EUR",
-		GrossAmount:             []byte{0, 4, 210, 0, 0, 0, 0, 0, 0, 0, 0}, // 1234
-		SenderContactPersonName: "john doe",
-		Comment:                 "Some comment",
+	g := genericpb.GenericData{
+		Scheme: []byte("Generic"),
 	}
 
-	prefix, compact := "invoice", []byte{0, 1, 0, 0}
-	// add rules to id1 to update anything on the invoice
+	prefix, compact := "generic", []byte{0, 1, 0, 0}
+	// add rules to id1 to update anything on the generic document
 	createTransitionRules(t, doc, id1, compact, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
-	// id2 can only update comment on invoice and nothing else
+	// id2 can only update comment on document and nothing else
 	createTransitionRules(t, doc, id2, append(compact, []byte{0, 0, 0, 52}...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 
-	inv2 := inv
-	inv2.GrossAmount = []byte{0, 48, 52, 0, 0, 0, 0, 0, 0, 0, 0} // 12340
+	g2 := g
+	g2.Scheme = []byte("generic")
 
 	// check if id1 made the update
-	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))
+	assert.NoError(t, testDocumentChange(t, doc, id1, &g, &g2, prefix, compact))
 
 	// id2 should fail since it can only change comment
 	// errors should be 1
-	err := testInvoiceChange(t, doc, id2, &inv, &inv2, prefix, compact)
+	err := testDocumentChange(t, doc, id2, &g, &g2, prefix, compact)
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
-
-	inv2 = inv
-	inv2.Comment = "new comment"
-
-	// check if id1 made the update
-	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))
-
-	// id2 update should go through since the update was to comment
-	assert.NoError(t, testInvoiceChange(t, doc, id2, &inv, &inv2, prefix, compact))
 }
 
 func TestWriteACLs_initTransitionRules(t *testing.T) {

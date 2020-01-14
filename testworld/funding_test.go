@@ -104,7 +104,7 @@ func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIde
 }
 
 func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (agreementId, docIdentifier string) {
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -117,8 +117,8 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, params, true)
 
 	// alice adds a funding and shares with charlie
 	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultFundingPayload(alice.id.String(), charlie.id.String()))

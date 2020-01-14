@@ -21,17 +21,17 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	}{
 		{
 			"Invoice_multiHost_AddExternalCollaborator",
-			typeInvoice,
+			typeDocuments,
 			multiHost,
 		},
 		{
 			"Invoice_withinhost_AddExternalCollaborator",
-			typeInvoice,
+			typeDocuments,
 			withinHost,
 		},
 		{
 			"Invoice_multiHostMultiAccount_AddExternalCollaborator",
-			typeInvoice,
+			typeDocuments,
 			multiHostMultiAccount,
 		},
 	}
@@ -226,7 +226,7 @@ func TestHost_CollaboratorTimeOut(t *testing.T) {
 	t.Parallel()
 
 	//currently can't be run in parallel (because of node kill)
-	collaboratorTimeOut(t, typeInvoice)
+	collaboratorTimeOut(t, typeDocuments)
 }
 
 func collaboratorTimeOut(t *testing.T, documentType string) {
@@ -284,7 +284,7 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeInvoice, http.StatusBadRequest, wrongInvoicePayload([]string{bob.id.String()}))
+	response := createDocument(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest, wrongInvoicePayload([]string{bob.id.String()}))
 
 	errMsg := response.Raw()["message"].(string)
 	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")
@@ -295,7 +295,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
-	documentType := typeInvoice
+	documentType := typeDocuments
 
 	// alice creates a document with bob and kenny
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{bob.id.String(), kenny.id.String()}))

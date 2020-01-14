@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const typeInvoice string = "invoices"
+const typeDocuments string = "documents"
 const typeEntity string = "entities"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0

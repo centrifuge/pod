@@ -8,7 +8,7 @@ import (
 
 func defaultDocumentPayload(documentType string, collaborators []string) map[string]interface{} {
 	switch documentType {
-	case typeInvoice:
+	case typeDocuments:
 		return defaultInvoicePayload(collaborators)
 	default:
 		return defaultInvoicePayload(collaborators)
@@ -156,7 +156,7 @@ func invoiceNFTPayload(collaborators []string, sender string) map[string]interfa
 
 func defaultNFTPayload(documentType string, collaborators []string, sender string) map[string]interface{} {
 	switch documentType {
-	case typeInvoice:
+	case typeDocuments:
 		return invoiceNFTPayload(collaborators, sender)
 	default:
 		return invoiceNFTPayload(collaborators, sender)
@@ -166,7 +166,7 @@ func defaultNFTPayload(documentType string, collaborators []string, sender strin
 
 func updatedDocumentPayload(documentType string, collaborators []string) map[string]interface{} {
 	switch documentType {
-	case typeInvoice:
+	case typeDocuments:
 		return updatedInvoicePayload(collaborators)
 	default:
 		return updatedInvoicePayload(collaborators)
@@ -203,7 +203,7 @@ func updatedEntityPayload(identity string, collaborators []string) map[string]in
 }
 
 func defaultProofPayload(documentType string) map[string]interface{} {
-	if documentType != typeInvoice {
+	if documentType != typeDocuments {
 		return nil
 	}
 

@@ -266,7 +266,7 @@ func TestHandler_UpdateFundingAgreement(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to update")
 
 	// success
-	inv, agreementID := funding.CreateInvoiceWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
+	inv, agreementID := funding.CreateDocumentWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
 	fundingID, err = hexutil.Decode(agreementID)
 	assert.NoError(t, err)
 	rctx.URLParams.Values[1] = agreementID
@@ -380,7 +380,7 @@ func TestHandler_GetFundingAgreementFromVersion(t *testing.T) {
 	fundingSrv := new(funding.MockService)
 	h.srv.fundingSrv = fundingSrv
 	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, errors.New("failed coneverison")).Once()
-	inv, agID := funding.CreateInvoiceWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
+	inv, agID := funding.CreateDocumentWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
 	docSrv.On("GetVersion", id, vid).Return(inv, nil)
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetFundingAgreementFromVersion(w, r)
@@ -436,7 +436,7 @@ func TestHandler_GetFundingAgreementsFromVersion(t *testing.T) {
 	fundingSrv := new(funding.MockService)
 	h.srv.fundingSrv = fundingSrv
 	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, errors.New("failed coneverison")).Once()
-	inv, _ := funding.CreateInvoiceWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
+	inv, _ := funding.CreateDocumentWithFunding(t, testingconfig.CreateAccountContext(t, cfg), did)
 	docSrv.On("GetVersion", id, vid).Return(inv, nil)
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetFundingAgreementsFromVersion(w, r)

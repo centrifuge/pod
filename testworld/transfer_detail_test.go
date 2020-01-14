@@ -19,7 +19,7 @@ func Test_CreateGetUpdateTransfers(t *testing.T) {
 }
 
 func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transferId, docIdentifier string) {
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -31,8 +31,8 @@ func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfer
 		"document_id": docIdentifier,
 		"currency":    "USD",
 	}
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
+	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, params, true)
+	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, params, true)
 
 	// Alice creates a transfer designating Bob as the recipient
 	res = createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultTransferPayload(alice.id.String(), bob.id.String()))

@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	"google.golang.org/grpc/status"
-
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestNew(t *testing.T) {

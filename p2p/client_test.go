@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/p2p/common"
@@ -49,7 +49,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	model, cd := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -68,7 +68,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	model, cd := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
@@ -88,7 +88,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 	idService := getIDMocks(ctx, did)
 	m := &MockMessenger{}
 	testClient := &peer{config: cfg, idService: idService, mes: m, disablePeerStore: true}
-	model, cd := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	model, cd := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
 	err = model.AddUpdateLog(did)
 	assert.NoError(t, err)
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})

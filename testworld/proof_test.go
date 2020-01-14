@@ -11,7 +11,7 @@ import (
 
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t, typeInvoice)
+	proofWithMultipleFields_successful(t, typeDocuments)
 }
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {

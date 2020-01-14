@@ -18,7 +18,7 @@ import (
 
 func TestService_Validate(t *testing.T) {
 	r := NewServiceRegistry()
-	scheme := "invoice"
+	scheme := "generic"
 	srv := new(MockService)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
@@ -40,7 +40,7 @@ func TestService_Validate(t *testing.T) {
 	m.On("CurrentVersion").Return(id)
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
-	m.On("Scheme", mock.Anything).Return("invoice")
+	m.On("Scheme", mock.Anything).Return("generic")
 	anchorRepo := new(mockRepo)
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	s.anchorRepo = anchorRepo
@@ -61,7 +61,7 @@ func TestService_Validate(t *testing.T) {
 	m1.On("CurrentVersion").Return(nid)
 	m1.On("NextVersion").Return(nid1)
 	m1.On("PreviousVersion").Return(id)
-	m1.On("Scheme", mock.Anything).Return("invoice")
+	m1.On("Scheme", mock.Anything).Return("generic")
 	anchorRepo = new(mockRepo)
 	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	s.anchorRepo = anchorRepo
@@ -88,7 +88,7 @@ func TestService_Validate(t *testing.T) {
 
 func TestService_Commit(t *testing.T) {
 	r := NewServiceRegistry()
-	scheme := "invoice"
+	scheme := "generic"
 	srv := new(MockService)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
@@ -97,7 +97,7 @@ func TestService_Commit(t *testing.T) {
 	m := new(mockModel)
 	id := utils.RandomSlice(32)
 	m.On("ID", mock.Anything).Return(id)
-	m.On("Scheme", mock.Anything).Return("invoice")
+	m.On("Scheme", mock.Anything).Return("generic")
 
 	// Account ID not set
 	_, err = s.Commit(context.Background(), m)
@@ -154,7 +154,7 @@ func TestService_Commit(t *testing.T) {
 }
 
 func TestService_Derive(t *testing.T) {
-	scheme := "invoice"
+	scheme := "generic"
 	payload := UpdatePayload{CreatePayload: CreatePayload{Scheme: scheme}}
 	s := service{}
 
