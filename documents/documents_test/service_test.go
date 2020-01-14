@@ -202,7 +202,7 @@ func TestService_CreateProofs(t *testing.T) {
 	assert.Equal(t, g.ID(), proof.DocumentID)
 	assert.Equal(t, g.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x64})
 }
 
 func TestService_CreateProofsInvalidField(t *testing.T) {
@@ -233,7 +233,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 	assert.Equal(t, g.ID(), proof.DocumentID)
 	assert.Equal(t, g.CurrentVersion(), proof.VersionID)
 	assert.Equal(t, len(proof.FieldProofs), 1)
-	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1})
+	assert.Equal(t, proof.FieldProofs[0].GetCompactName(), []byte{0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x64})
 }
 
 func TestService_RequestDocumentSignature(t *testing.T) {

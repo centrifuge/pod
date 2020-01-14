@@ -32,8 +32,8 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	newTree := getTree(t, &ncd, "", nil)
 
 	cf := GetChangedFields(oldTree, newTree)
-	// cf length should be len(ocd) and len(ncd) = 70 changed field
-	assert.Len(t, cf, 71)
+	// cf length should be len(ocd) and len(ncd) = 10 changed field
+	assert.Len(t, cf, 10)
 
 }
 
@@ -255,8 +255,8 @@ func TestWriteACLs_getChangedFields_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 1}): {
 			Property: []byte{0, 0, 0, 1},
 			Name:     "scheme",
-			Old:      []byte{49, 50, 51, 52, 53},
-			New:      []byte{49, 50, 51, 52, 53, 54},
+			Old:      []byte{71, 101, 110, 101, 114, 105, 99},
+			New:      []byte{103, 101, 110, 101, 114, 105, 99},
 		},
 	}
 
