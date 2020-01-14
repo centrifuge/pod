@@ -27,7 +27,6 @@ before_install:
   - travis_retry bash <(curl https://nixos.org/nix/install)
   - . $HOME/.nix-profile/etc/profile.d/nix.sh
   - nix-env -iA cachix -f https://cachix.org/api/v1/install
-  - cachix authtoken $NIX_AUTH_TOKEN
   - cachix use dapp
   - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
   - nix-env -f $HOME/.dapp/dapptools -iA dapp seth solc
