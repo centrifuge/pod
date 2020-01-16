@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenericMint_invoice_successful(t *testing.T) {
+func TestGenericMint_successful(t *testing.T) {
 	t.Parallel()
 	invoiceUnpaidMint(t, typeDocuments, false)
 }
@@ -51,8 +51,8 @@ func invoiceUnpaidMint(t *testing.T, documentType string, poWrapper bool) nft.To
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, createAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
 
 	var response *httpexpect.Object
 	var err error
@@ -86,7 +86,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, poWrapper bool) nft.To
 		t.Error(message)
 	}
 
-	docVal := getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
+	docVal := getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
 

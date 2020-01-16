@@ -150,19 +150,14 @@ func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, paylo
 	return obj
 }
 
-func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	docIdentifier := params["document_id"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
+func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+docIdentifier), auth).
 		Expect().Status(http.StatusNotFound).JSON().NotNull()
 	return objGet
 }
 
-func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	docIdentifier := params["document_id"].(string)
-	versionID := params["version_id"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier+"/versions/"+versionID), auth).
+func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, docID, versionID string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+docID+"/versions/"+versionID), auth).
 		Expect().Status(http.StatusNotFound).JSON().NotNull()
 	return objGet
 }

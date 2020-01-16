@@ -142,13 +142,8 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	assert.Equal(t, docID, edocID, "document identifiers mismatch")
 	eversionID := getDocumentCurrentVersion(t, res)
 	assert.NotEqual(t, docID, eversionID, "document ID and versionID must not be equal")
-	params := map[string]interface{}{
-		"document_id": docID,
-		"version_id":  eversionID,
-	}
-
 	// alice should not have this version
-	nonExistingDocumentVersionCheck(alice.httpExpect, alice.id.String(), "documents", params)
+	nonExistingDocumentVersionCheck(alice.httpExpect, alice.id.String(), docID, eversionID)
 
 	// bob has pending document
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusOK)

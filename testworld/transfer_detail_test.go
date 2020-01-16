@@ -27,8 +27,8 @@ func createDocumentWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfe
 	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, nil, createAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
 
 	// Alice creates a transfer designating Bob as the recipient
 	res = createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultTransferPayload(alice.id.String(), bob.id.String()))

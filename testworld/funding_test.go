@@ -112,8 +112,8 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, nil, createAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
 
 	// alice adds a funding and shares with charlie
 	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultFundingPayload(alice.id.String(), charlie.id.String()))

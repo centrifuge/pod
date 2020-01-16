@@ -69,8 +69,8 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, documentType, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, createAttributes())
 	// account a completes job with a webhook
 	msg, err := doctorFord.maeve.getReceivedMsg(a, int(notification.JobCompleted), txID)
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromID))
 	log.Debug("Host test success")
-	nonExistingDocumentCheck(bob.httpExpect, c, documentType, nil)
+	nonExistingDocumentCheck(bob.httpExpect, c, docIdentifier)
 
 	// b updates invoice and shares with c as well
 	res = updateDocument(bob.httpExpect, b, documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{a, c}))
@@ -96,9 +96,9 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, c, documentType, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, c, docIdentifier, nil, allAttributes())
 	// account c sends a webhook for received anchored doc
 	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
@@ -131,9 +131,9 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, documentType, nil, createAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, createAttributes())
 	// alices main account completes job with a webhook
 	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
 	assert.NoError(t, err)
@@ -143,7 +143,7 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
-	nonExistingDocumentCheck(bob.httpExpect, c, documentType, nil)
+	nonExistingDocumentCheck(bob.httpExpect, c, docIdentifier)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
 	res = updateDocument(bob.httpExpect, a, documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e}))
@@ -158,14 +158,14 @@ func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType st
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, allAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
 	// bobs accounts all have the document now
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, c, documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, d, documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, e, documentType, nil, allAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, f, documentType, nil)
+	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, c, docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, d, docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, e, docIdentifier, nil, allAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, f, docIdentifier)
 }
 
 func addExternalCollaborator(t *testing.T, documentType string) {
@@ -186,9 +186,9 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, nil)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
@@ -203,9 +203,9 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, nil, allAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, allAttributes())
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
@@ -231,8 +231,8 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 
 	// check if Bob and Kenny received the document
 	docIdentifier := getDocumentIdentifier(t, response)
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, createAttributes())
+	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
 
 	// Kenny gets killed
 	kenny.host.kill()
@@ -248,13 +248,13 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 		t.Error(message)
 	}
 
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
 
 	// bring Kenny back to life
 	doctorFord.reLive(t, kenny.name)
 
 	// Kenny should NOT have latest version
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, nil, createAttributes())
+	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, createAttributes())
 }
 
 func TestDocument_invalidAttributes(t *testing.T) {
@@ -288,10 +288,10 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 		t.Errorf("docID(%s) != versionID(%s)\n", docIdentifier, versionID)
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, createAttributes())
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), documentType, nil)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
 
 	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
 	kenny.host.kill()
@@ -304,12 +304,12 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 
 	docIdentifier = getDocumentIdentifier(t, res)
 	versionID = getDocumentCurrentVersion(t, res)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, nil, allAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, allAttributes())
 	// bring kenny back and should not have the latest version
 	doctorFord.reLive(t, kenny.name)
-	nonExistingDocumentVersionCheck(kenny.httpExpect, kenny.id.String(), documentType, nil)
+	nonExistingDocumentVersionCheck(kenny.httpExpect, kenny.id.String(), docIdentifier, versionID)
 
 	// alice updates document
 	res = updateDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate(nil))
@@ -323,8 +323,8 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	versionID = getDocumentCurrentVersion(t, res)
 
 	// everyone should have the latest version
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), documentType, nil, allAttributes())
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), documentType, nil, allAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, allAttributes())
+	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, allAttributes())
 }
