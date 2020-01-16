@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -76,8 +76,8 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 
 	// failed conversion
 	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(invoice.Data{}).Twice()
-	doc.On("Scheme").Return("invoice").Twice()
+	doc.On("GetData").Return(generic.Data{}).Twice()
+	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
 	pendingSrv.On("AddSignedAttribute", ctx, docID, label, payload).Return(doc, nil)

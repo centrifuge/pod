@@ -77,7 +77,6 @@
     "gen/go/entity",
     "gen/go/errors",
     "gen/go/generic",
-    "gen/go/invoice",
     "gen/go/p2p",
     "gen/go/protocol",
   ]
@@ -1644,7 +1643,6 @@
     "github.com/centrifuge/centrifuge-protobufs/gen/go/entity",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/errors",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/generic",
-    "github.com/centrifuge/centrifuge-protobufs/gen/go/invoice",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p",
     "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol",
     "github.com/centrifuge/go-substrate-rpc-client",

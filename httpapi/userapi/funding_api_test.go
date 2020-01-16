@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -314,7 +314,7 @@ func TestHandler_SignFundingAgreement(t *testing.T) {
 	rctx.URLParams.Values[1] = hexutil.Encode(fundingID)
 	fundingSrv := new(funding.MockService)
 	h.srv.fundingSrv = fundingSrv
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
+	g, _ := generic.CreateGenericWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	fundingSrv.On("SignFundingAgreement", mock.Anything, id, fundingID).Return(nil, nil, errors.New("failed to sign")).Once()
 	w, r := getHTTPReqAndResp(ctx)
 	h.SignFundingAgreement(w, r)
@@ -322,7 +322,7 @@ func TestHandler_SignFundingAgreement(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to sign")
 
 	// success
-	fundingSrv.On("SignFundingAgreement", mock.Anything, id, fundingID).Return(inv, jobs.NewJobID(), nil).Once()
+	fundingSrv.On("SignFundingAgreement", mock.Anything, id, fundingID).Return(g, jobs.NewJobID(), nil).Once()
 	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, nil)
 	w, r = getHTTPReqAndResp(ctx)
 	h.SignFundingAgreement(w, r)
