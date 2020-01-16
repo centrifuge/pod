@@ -14,7 +14,7 @@
         "license": {
             "name": "MIT"
         },
-        "version": "1.0.0"
+        "version": "2.0.0"
     },
     "host": "localhost:8082",
     "basePath": "/",
