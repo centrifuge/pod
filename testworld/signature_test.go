@@ -207,7 +207,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 
-	res := createDocument(bob.httpExpect, bob.id.String(), typeDocuments, http.StatusAccepted, defaultInvoicePayload([]string{eve.id.String()}))
+	res := createDocument(bob.httpExpect, bob.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{eve.id.String()}))
 	txID := getTransactionID(t, res)
 	status, _ := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	// Even though there was a signature validation error, as of now, we keep anchoring document

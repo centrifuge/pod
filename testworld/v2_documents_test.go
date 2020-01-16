@@ -11,32 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestV2InvoiceCreateAndCommit_new_document(t *testing.T) {
-	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
-		params := map[string]string{
-			"currency": "EUR",
-			"number":   "12345",
-		}
-		return invoiceCoreAPICreate(dids), params
-	}, func(dids []string) (map[string]interface{}, map[string]string) {
-		// Alice updates the document
-		payload := invoiceCoreAPIUpdate(dids)
-		// update currency to USD and number to 56789
-		data := payload["data"].(map[string]interface{})
-		data["currency"] = "USD"
-		data["number"] = "56789"
-		payload["data"] = data
-		return payload, map[string]string{
-			"currency": "USD",
-			"number":   "56789",
-		}
-	})
-}
-
-func TestV2InvoiceCreate_next_version(t *testing.T) {
-	createNextDocument(t, invoiceCoreAPICreate)
-}
-
 func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
 	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
 		return genericCoreAPICreate(dids), nil

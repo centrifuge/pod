@@ -23,7 +23,7 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
-	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String(), charlie.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String(), charlie.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -31,14 +31,9 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
-
-	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "USD",
-	}
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, params, true)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, params, true)
-	getDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), typeDocuments, params, true)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, nil, createAttributes())
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), typeDocuments, nil, createAttributes())
 	// alices job completes with a webhook
 	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
 	assert.NoError(t, err)

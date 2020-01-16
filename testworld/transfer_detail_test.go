@@ -13,13 +13,13 @@ func Test_CreateGetUpdateTransfers(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	transferID, identifier := createInvoiceWithTransfer(t, alice, bob)
+	transferID, identifier := createDocumentWithTransfer(t, alice, bob)
 	listTransfer(t, alice, bob, identifier)
 	testUpdateTransfer(t, alice, bob, identifier, transferID)
 }
 
-func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transferId, docIdentifier string) {
-	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
+func createDocumentWithTransfer(t *testing.T, alice, bob hostTestSuite) (transferId, docIdentifier string) {
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -27,12 +27,8 @@ func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfer
 	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
-	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "USD",
-	}
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, params, true)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, params, true)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeDocuments, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeDocuments, nil, createAttributes())
 
 	// Alice creates a transfer designating Bob as the recipient
 	res = createTransfer(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultTransferPayload(alice.id.String(), bob.id.String()))
@@ -43,7 +39,7 @@ func createInvoiceWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfer
 	}
 
 	transferId = getTransferId(t, res)
-	params = map[string]interface{}{
+	params := map[string]interface{}{
 		"document_id":    docIdentifier,
 		"amount":         "300",
 		"status":         "open",

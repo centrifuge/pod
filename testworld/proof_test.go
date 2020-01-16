@@ -19,7 +19,7 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -41,12 +41,11 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 }
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
-	compactPrefix := "0x00010000" // invoice prefix
-	prop1 := "0000002d"           // invoice.net_amount
-	prop2 := "0000000d"           // invoice.currency
+	prop1 := "0x0005000000000001" // generic.Scheme
+	prop2 := "0x0100000000000009" // cd_tree.documentIdentifier
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
-	objProof.Path("$.field_proofs[0].property").String().Equal(compactPrefix + prop1)
+	objProof.Path("$.field_proofs[0].property").String().Equal(prop1)
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()
-	objProof.Path("$.field_proofs[1].property").String().Equal(compactPrefix + prop2)
+	objProof.Path("$.field_proofs[1].property").String().Equal(prop2)
 	objProof.Path("$.field_proofs[1].sorted_hashes").NotNull()
 }

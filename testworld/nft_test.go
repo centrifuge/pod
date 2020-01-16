@@ -16,13 +16,13 @@ import (
 
 func TestGenericMint_invoice_successful(t *testing.T) {
 	t.Parallel()
-	invoiceUnpaidMint(t, typeDocuments, true, true, true, false, "invoice")
+	invoiceUnpaidMint(t, typeDocuments, false)
 }
 
 func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
 	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
 	t.Parallel()
-	invoiceUnpaidMint(t, typeDocuments, false, false, false, true, "invoice")
+	invoiceUnpaidMint(t, typeDocuments, true)
 }
 
 /* TODO: testcase not stable
@@ -32,14 +32,14 @@ func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
 }
 */
 
-func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenProof, nftReadAccessProof bool, poWrapper bool, proofPrefix string) nft.TokenID {
+func invoiceUnpaidMint(t *testing.T, documentType string, poWrapper bool) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
 	assetAddress := common.HexToAddress(alice.host.dappAddresses["assetManager"])
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, defaultNFTPayload(documentType, []string{bob.id.String()}, alice.id.String()))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -51,12 +51,8 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		t.Error("docIdentifier empty")
 	}
 
-	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "USD",
-	}
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, false)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, params, false)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), documentType, nil, createAttributes())
 
 	var response *httpexpect.Object
 	var err error
@@ -69,7 +65,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 			"document_id":           docIdentifier,
 			"registry_address":      registry.String(),
 			"deposit_address":       depositAddress, // Centrifuge address
-			"proof_fields":          []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".date_due", proofPrefix + ".sender", proofPrefix + ".status", documents.CDTreePrefix + ".next_version"},
+			"proof_fields":          []string{documents.CDTreePrefix + ".next_version"},
 			"asset_manager_address": assetAddress,
 		}
 		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
@@ -90,7 +86,7 @@ func invoiceUnpaidMint(t *testing.T, documentType string, grantNFTAccess, tokenP
 		t.Error(message)
 	}
 
-	docVal := getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, params, false)
+	docVal := getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), documentType, nil, createAttributes())
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
 
@@ -143,7 +139,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 
 func TestTransferNFT_successful(t *testing.T) {
 	t.Parallel()
-	tokenID := invoiceUnpaidMint(t, typeDocuments, true, true, true, false, "invoice")
+	tokenID := invoiceUnpaidMint(t, typeDocuments, false)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.dappAddresses["genericNFT"]
