@@ -10,6 +10,7 @@ const (
 	BootstrappedQueueServer string = "BootstrappedQueueServer"
 	NodeObjRegistry         string = "NodeObjRegistry"
 	// BootstrappedInvoiceUnpaid is the key to InvoiceUnpaid NFT in bootstrap context.
+	// TODO(ved): remove this ?
 	BootstrappedInvoiceUnpaid = "BootstrappedInvoiceUnpaid"
 )
 

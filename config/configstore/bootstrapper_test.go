@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/stretchr/testify/assert"
 )
 

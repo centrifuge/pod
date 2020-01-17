@@ -28,7 +28,7 @@ func TestMissingNode_InvalidIdentity(t *testing.T) {
 	randomDID := testingidentity.GenerateRandomDID()
 
 	// Alice shares a document with a randomly generated DID
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{randomDID.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{randomDID.String()}))
 
 	// Transaction should fail with invalid identity
 	errorMessage := "failed to send document to the node: bytecode for deployed identity contract " + randomDID.String() + " not correct"
@@ -45,7 +45,7 @@ func TestMissingNode_MissingP2PKey(t *testing.T) {
 	randomDID := createIdentity(t, alice.host.idFactory, alice.host.idService, alice.host.config)
 
 	// Alice shares a document with a randomly generated DID with missing P2P Key
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{randomDID.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{randomDID.String()}))
 
 	// Transaction should fail with missing p2p key error
 	errorMessage := "failed to send document to the node: error fetching p2p key: missing p2p key"

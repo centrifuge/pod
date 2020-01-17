@@ -29,13 +29,6 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details", h.GetTransferDetailList)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
 
-	// invoice apis
-	r.Post("/invoices", h.CreateInvoice)
-	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}", h.GetInvoice)
-	r.Put("/invoices/{"+coreapi.DocumentIDParam+"}", h.UpdateInvoice)
-	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}", h.GetInvoiceVersion)
-	r.Post("/invoices/{"+coreapi.DocumentIDParam+"}/mint/unpaid", h.MintInvoiceUnpaidNFT)
-
 	// entity api
 	r.Post("/entities", h.CreateEntity)
 	r.Put("/entities/{"+coreapi.DocumentIDParam+"}", h.UpdateEntity)

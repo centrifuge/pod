@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -40,7 +40,7 @@ func (m *mockAccount) GetIdentityID() []byte {
 }
 
 func setupFundingForTesting(t *testing.T, fundingAmount int) (Service, *testingdocuments.MockService, documents.Model, string) {
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
+	inv, _ := generic.CreateGenericWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 	docSrv := new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
 	srv := DefaultService(docSrv, nil)
@@ -125,8 +125,8 @@ func TestService_SignVerify(t *testing.T) {
 	// update funding after signature
 	oldCD, err := model.PackCoreDocument()
 	assert.NoError(t, err)
-	oldInv := new(invoice.Invoice)
-	err = oldInv.UnpackCoreDocument(oldCD)
+	oldGen := new(generic.Generic)
+	err = oldGen.UnpackCoreDocument(oldCD)
 	assert.NoError(t, err)
 
 	data.Currency = ""
@@ -138,7 +138,7 @@ func TestService_SignVerify(t *testing.T) {
 	assert.NoError(t, err)
 
 	// older funding version signed: valid
-	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil).Once()
+	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldGen, nil).Once()
 	_, signatures, err = srv.GetDataAndSignatures(ctx, updatedModel, fundingID, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "true", signatures[0].Valid)
@@ -149,11 +149,11 @@ func TestService_SignVerify(t *testing.T) {
 	assert.NoError(t, err)
 	attr, err := documents.NewSignedAttribute("funding_agreement[4].signatures[0]", testingidentity.GenerateRandomDID(), acc, model.ID(), model.NextVersion(), invalidValue)
 	assert.NoError(t, err)
-	err = oldInv.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
+	err = oldGen.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.NoError(t, err)
 
-	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldInv, nil)
-	_, signatures, err = srv.GetDataAndSignatures(ctx, oldInv, fundingID, "")
+	docSrv.On("GetVersion", mock.Anything, mock.Anything).Return(oldGen, nil)
+	_, signatures, err = srv.GetDataAndSignatures(ctx, oldGen, fundingID, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "false", signatures[0].Valid)
 	assert.Equal(t, "true", signatures[0].OutdatedSignature)

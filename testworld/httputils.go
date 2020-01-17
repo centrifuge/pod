@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const typeInvoice string = "invoices"
+const typeDocuments string = "documents"
 const typeEntity string = "entities"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
@@ -106,36 +106,6 @@ func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, agr
 	return objGet
 }
 
-func getDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}, checkattrs bool) *httpexpect.Value {
-	docIdentifier := params["document_id"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
-	objGet.Path("$.data.currency").String().Equal(params["currency"].(string))
-	if versionID, ok := params["version_id"]; ok {
-		objGet.Path("$.header.version_id").String().Equal(versionID.(string))
-	}
-	if checkattrs {
-		attrs := objGet.Path("$.attributes").Object().Raw()
-		eattrs := defaultAttributePayload()
-		cattrs := make(map[string]map[string]string)
-		for k, v := range attrs {
-			atr := v.(map[string]interface{})
-			delete(atr, "key")
-			atri := make(map[string]string)
-			for k1, v1 := range atr {
-				atri[k1] = v1.(string)
-			}
-
-			cattrs[k] = atri
-		}
-
-		assert.Equal(t, eattrs, cattrs)
-	}
-
-	return objGet
-}
 func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
@@ -180,19 +150,14 @@ func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, paylo
 	return obj
 }
 
-func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	docIdentifier := params["document_id"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
+func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+docIdentifier), auth).
 		Expect().Status(http.StatusNotFound).JSON().NotNull()
 	return objGet
 }
 
-func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	docIdentifier := params["document_id"].(string)
-	versionID := params["version_id"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier+"/versions/"+versionID), auth).
+func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, docID, versionID string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+docID+"/versions/"+versionID), auth).
 		Expect().Status(http.StatusNotFound).JSON().NotNull()
 	return objGet
 }

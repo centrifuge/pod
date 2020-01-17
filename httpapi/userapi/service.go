@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
@@ -99,48 +98,6 @@ func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versi
 	}
 
 	return data, model, nil
-}
-
-func convertInvRequest(req CreateInvoiceRequest) (documents.CreatePayload, error) {
-	coreAPIReq := coreapi.CreateDocumentRequest{
-		Scheme:      invoice.Scheme,
-		WriteAccess: req.WriteAccess,
-		ReadAccess:  req.ReadAccess,
-		Data:        req.Data,
-		Attributes:  req.Attributes,
-	}
-
-	return coreapi.ToDocumentsCreatePayload(coreAPIReq)
-}
-
-// CreateInvoice creates an invoice.
-func (s Service) CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (documents.Model, jobs.JobID, error) {
-	docReq, err := convertInvRequest(req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return s.coreAPISrv.CreateDocument(ctx, docReq)
-}
-
-// UpdateInvoice updates an invoice
-func (s Service) UpdateInvoice(ctx context.Context, docID []byte, req CreateInvoiceRequest) (documents.Model, jobs.JobID, error) {
-	docReq, err := convertInvRequest(req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{CreatePayload: docReq, DocumentID: docID})
-}
-
-// GetInvoice returns the latest version of the Invoice associated with Document ID.
-func (s Service) GetInvoice(ctx context.Context, docID []byte) (documents.Model, error) {
-	return s.coreAPISrv.GetDocument(ctx, docID)
-}
-
-// GetInvoiceVersion gets a specific version of the provided invoice document
-func (s Service) GetInvoiceVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
-	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
 }
 
 func convertEntityRequest(req CreateEntityRequest) (documents.CreatePayload, error) {

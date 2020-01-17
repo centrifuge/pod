@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -26,17 +26,17 @@ func TestAddStatusToDocuments04(t *testing.T) {
 	assert.NoError(t, err)
 	strRepo := leveldb.NewLevelDBRepository(db)
 	repo := documents.NewDBRepository(strRepo)
-	repo.Register(new(invoice.Invoice))
+	repo.Register(new(generic.Generic))
 	did := testingidentity.GenerateRandomDID()
 
 	// successful change
-	inv := invoice.InitInvoice(t, did, invoice.CreateInvoicePayload(t, nil))
-	assert.Equal(t, inv.GetStatus(), documents.Pending)
-	assert.NoError(t, repo.Create(did[:], inv.CurrentVersion(), inv))
+	g := generic.InitGeneric(t, did, generic.CreateGenericPayload(t, nil))
+	assert.Equal(t, g.GetStatus(), documents.Pending)
+	assert.NoError(t, repo.Create(did[:], g.CurrentVersion(), g))
 	assert.NoError(t, AddStatusToDocuments04(db))
-	m, err := repo.Get(did[:], inv.CurrentVersion())
+	m, err := repo.Get(did[:], g.CurrentVersion())
 	assert.NoError(t, err)
-	inv, ok := m.(*invoice.Invoice)
+	g, ok := m.(*generic.Generic)
 	assert.True(t, ok)
-	assert.Equal(t, inv.GetStatus(), documents.Committed)
+	assert.Equal(t, g.GetStatus(), documents.Committed)
 }

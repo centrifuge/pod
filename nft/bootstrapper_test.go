@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
 	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
 	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	cfg.Set("networks.testing.contractAddresses.invoiceUnpaid", "0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	cfg.Set("networks.testing.contractAddresses.nftService", "0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
