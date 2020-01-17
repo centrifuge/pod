@@ -75,6 +75,9 @@ case "$mode" in
   ccdev)
     docker-compose -f $local_dir/docker-compose-cc.yml up > /tmp/cc-0.log 2>&1 &
   ;;
+  bridge)
+    docker-compose -f $local_dir/docker-compose-bridge.yml up > /tmp/bridge-0.log 2>&1 &
+  ;;
   *) usage
 esac
 echo "Done"

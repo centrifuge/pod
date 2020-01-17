@@ -1,0 +1,6 @@
+version: '3'
+services:
+  bridge:
+    image: "centrifugeio/bridge:latest"
+    container_name: bridge
+    command:
