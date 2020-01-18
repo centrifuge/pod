@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 echo "bridge node was running? [${BRIDGE_DOCKER_CONTAINER_WAS_RUNNING}]"
 if [ -n "${BRIDGE_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
@@ -20,8 +21,8 @@ echo "MaxCount: $maxCount"
 count=0
 while true
 do
-  mining=`docker logs bridge 2>&1 | grep 'started'`
-  if [ "$mining" != "" ]; then
+  started=`docker logs bridge 2>&1 | grep 'Started'`
+  if [ "$started" != "" ]; then
     echo "Bridge successfully started"
     break
   elif [ $count -ge $maxCount ]; then
@@ -31,3 +32,5 @@ do
   sleep 2;
   ((count++))
 done
+
+${PARENT_DIR}/build/scripts/test-dependencies/test-bridge/add_balance.sh

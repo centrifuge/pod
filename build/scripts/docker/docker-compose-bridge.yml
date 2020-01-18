@@ -1,6 +1,11 @@
 version: '3'
 services:
   bridge:
-    image: "centrifugeio/bridge:latest"
+    image: "chainbridgev2_bridge:latest"
     container_name: bridge
-    command:
+    environment:
+      - KEYSTORE_PASSWORD=a
+    volumes:
+      - ${BRIDGE_CONFIGDIR}:/config/
+      - ${BRIDGE_KEYSDIR}:/keys/
+    command: --config /config/config.toml

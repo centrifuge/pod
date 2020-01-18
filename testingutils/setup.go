@@ -64,6 +64,16 @@ func StartBridge() {
 	fmt.Printf("%s", string(o))
 }
 
+func AddBalanceToBridgeAccount() {
+	projDir := GetProjectDir()
+	gethRunScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-bridge", "add_balance.sh")
+	o, err := exec.Command(gethRunScript).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", string(o))
+}
+
 // RunSmartContractMigrations migrates smart contracts to localgeth
 func RunSmartContractMigrations() {
 	if isRunningOnCI {
@@ -245,6 +255,7 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	StartPOAGeth()
 	StartCentChain()
 	StartBridge()
+	AddBalanceToBridgeAccount()
 	RunSmartContractMigrations()
 	RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()

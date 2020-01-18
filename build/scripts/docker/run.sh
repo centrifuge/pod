@@ -76,7 +76,9 @@ case "$mode" in
     docker-compose -f $local_dir/docker-compose-cc.yml up > /tmp/cc-0.log 2>&1 &
   ;;
   bridge)
-    docker-compose -f $local_dir/docker-compose-bridge.yml up > /tmp/bridge-0.log 2>&1 &
+    BRIDGE_CONFIGDIR=$PWD/build/scripts/test-dependencies/test-bridge/config/
+    BRIDGE_KEYSDIR=$PWD/build/scripts/test-dependencies/test-bridge/keys/
+    BRIDGE_CONFIGDIR=$BRIDGE_CONFIGDIR BRIDGE_KEYSDIR=$BRIDGE_KEYSDIR docker-compose -f $local_dir/docker-compose-bridge.yml up > /tmp/bridge-0.log 2>&1 &
   ;;
   *) usage
 esac

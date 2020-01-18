@@ -10,6 +10,8 @@ fi
 
 # Setup
 PARENT_DIR=`pwd`
+local_dir="$(dirname "$0")"
+source "${local_dir}/env_vars.sh"
 
 ################## Run CentChain #########################
 ## Centrifuge Chain local POA Dev testnet
