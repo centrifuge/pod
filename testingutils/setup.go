@@ -66,7 +66,7 @@ func StartBridge() {
 
 func AddBalanceToBridgeAccount() {
 	projDir := GetProjectDir()
-	gethRunScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-bridge", "add_balance.sh")
+	gethRunScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-xbridge", "add_balance.sh")
 	o, err := exec.Command(gethRunScript).Output()
 	if err != nil {
 		log.Fatal(err)

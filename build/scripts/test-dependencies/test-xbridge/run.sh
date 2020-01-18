@@ -33,4 +33,4 @@ do
   ((count++))
 done
 
-${PARENT_DIR}/build/scripts/test-dependencies/test-bridge/add_balance.sh
+${PARENT_DIR}/build/scripts/test-dependencies/test-xbridge/add_balance.sh
