@@ -25,7 +25,8 @@ do
     echo "Bridge successfully started"
     break
   elif [ $count -ge $maxCount ]; then
-    echo "Timeout Starting out Bridge"
+    echo "Timeout Starting out Bridge, printing logs:"
+    cat /tmp/bridge-0.log
     exit 1
   fi
   sleep 2;
