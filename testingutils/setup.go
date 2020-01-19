@@ -41,8 +41,8 @@ func StartCentChain() {
 		return
 	}
 	projDir := GetProjectDir()
-	gethRunScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
-	o, err := exec.Command(gethRunScript, "ccdev").Output()
+	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+	o, err := exec.Command(runScript, "ccdev").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,8 +56,8 @@ func StartBridge() {
 		return
 	}
 	projDir := GetProjectDir()
-	gethRunScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
-	o, err := exec.Command(gethRunScript, "bridge").Output()
+	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+	o, err := exec.Command(runScript, "bridge").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,8 +66,8 @@ func StartBridge() {
 
 func AddBalanceToBridgeAccount() {
 	projDir := GetProjectDir()
-	gethRunScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-xbridge", "add_balance.sh")
-	o, err := exec.Command(gethRunScript).Output()
+	runScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-xbridge", "add_balance.sh")
+	o, err := exec.Command(runScript).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
