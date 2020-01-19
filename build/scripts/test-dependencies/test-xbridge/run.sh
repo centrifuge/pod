@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 echo "bridge node was running? [${BRIDGE_DOCKER_CONTAINER_WAS_RUNNING}]"
 if [ -n "${BRIDGE_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
