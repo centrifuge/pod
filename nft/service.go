@@ -260,7 +260,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
 			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 			staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
-			block, err := s.ethClient.GetEthClient().BlockByNumber(ctx, nil)
+			block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
 			if err != nil {
 				errOut <- errors.New("failed to get latest block: %v", err)
 				return
