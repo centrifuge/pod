@@ -37,12 +37,37 @@ func StartPOAGeth() {
 // StartCentChain runs centchain for tests
 func StartCentChain() {
 	// don't run if its already running
-	if IsPOACentChainRunning() {
+	if IsCentChainRunning() {
 		return
 	}
 	projDir := GetProjectDir()
-	gethRunScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
-	o, err := exec.Command(gethRunScript, "ccdev").Output()
+	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+	o, err := exec.Command(runScript, "ccdev").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", string(o))
+}
+
+// StartBridge runs bridge for tests
+func StartBridge() {
+	// don't run if its already running
+	if IsBridgeRunning() {
+		return
+	}
+	projDir := GetProjectDir()
+	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+	o, err := exec.Command(runScript, "bridge").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", string(o))
+}
+
+func AddBalanceToBridgeAccount() {
+	projDir := GetProjectDir()
+	runScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-xbridge", "add_balance.sh")
+	o, err := exec.Command(runScript).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -189,9 +214,19 @@ func IsPOAGethRunning() bool {
 	return len(o) != 0
 }
 
-// IsPOACentChainRunning checks if POA centchain is running in the background
-func IsPOACentChainRunning() bool {
+// IsCentChainRunning checks if POS centchain is running in the background
+func IsCentChainRunning() bool {
 	cmd := "docker ps -a --filter \"name=cc-node\" --filter \"status=running\" --quiet"
+	o, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	if err != nil {
+		panic(err)
+	}
+	return len(o) != 0
+}
+
+// IsBridgeRunning checks if bridge is running in the background
+func IsBridgeRunning() bool {
+	cmd := "docker ps -a --filter \"name=bridge\" --filter \"status=running\" --quiet"
 	o, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		panic(err)
@@ -219,6 +254,8 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
 	StartCentChain()
+	StartBridge()
+	AddBalanceToBridgeAccount()
 	RunSmartContractMigrations()
 	RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()

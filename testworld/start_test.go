@@ -37,6 +37,8 @@ func TestMain(m *testing.M) {
 		// NOTE that we don't bring down geth/cc automatically right now because this must only be used for local testing purposes
 		testingutils.StartPOAGeth()
 		testingutils.StartCentChain()
+		testingutils.StartBridge()
+		testingutils.AddBalanceToBridgeAccount()
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()
