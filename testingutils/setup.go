@@ -97,22 +97,6 @@ func RunSmartContractMigrations() {
 	log.Fatal(err, string(out))
 }
 
-func RunDAppSmartContractMigrations() {
-	var err error
-	var out []byte
-	projDir := GetProjectDir()
-	smAddr := GetSmartContractAddresses()
-	fmt.Println("Using AnchorAddr for DApp Contracts", smAddr.AnchorRepositoryAddr)
-	migrationScript := path.Join(projDir, "build", "scripts", "migrateDApp.sh")
-	cmd := exec.Command(migrationScript, projDir)
-	out, err = cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err, string(out))
-		return
-	}
-	return
-}
-
 func GetDAppSmartContractAddresses() map[string]string {
 	projDir := GetProjectDir()
 	addresses := map[string]string{}
@@ -257,7 +241,6 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	StartBridge()
 	AddBalanceToBridgeAccount()
 	RunSmartContractMigrations()
-	RunDAppSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

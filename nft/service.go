@@ -294,7 +294,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 				}
 
 				// listen for event
-				txHash, done, err = ethereum.CreateWaitForEventJob(
+				_, done, err = ethereum.CreateWaitForEventJob(
 					ctx, txMan, s.queue, accountID, jobID,
 					AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
 				if err != nil {

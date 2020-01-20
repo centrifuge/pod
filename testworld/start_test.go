@@ -47,7 +47,6 @@ func TestMain(m *testing.M) {
 	dappAddresses := make(map[string]string)
 	if c.Network == "testing" {
 		contractAddresses = testingutils.GetSmartContractAddresses()
-		testingutils.RunDAppSmartContractMigrations()
 		dappAddresses = testingutils.GetDAppSmartContractAddresses()
 	}
 	doctorFord = newHostManager(

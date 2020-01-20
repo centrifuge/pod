@@ -41,3 +41,6 @@ else
 fi
 
 cd ${PARENT_DIR}
+
+# deploy dapp smartcontrcats
+./build/scripts/migrateDApp.sh

@@ -29,7 +29,7 @@ const (
 	// WaitForEventAddress is the key for the address
 	WaitForEventAddress = "WaitForEventAddress"
 
-	// WaitForEventName is the key for the name and signature of the event
+	// WaitForEventNameSignature is the key for the name and signature of the event
 	WaitForEventNameSignature = "WaitForEventNameSignature"
 
 	// WaitForEventTopic is the key for the topic
