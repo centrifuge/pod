@@ -39,6 +39,8 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	SetClient(client)
 	ethTransTask := NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txManager, client.TransactionByHash, client.TransactionReceipt, DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
+	waitEventTask := NewWaitEventTask(txManager, DefaultWaitForTransactionMiningContext, client.GetEthClient().FilterLogs)
+	queueSrv.RegisterTaskType(waitEventTask.TaskTypeName(), waitEventTask)
 	context[BootstrappedEthereumClient] = client
 	return nil
 }

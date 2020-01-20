@@ -35,6 +35,9 @@ const (
 
 	// AssetManagerABI holds methods used for depositing asset
 	AssetManagerABI = `[{"constant":false,"inputs":[{"internalType":"bytes32","name":"asset","type":"bytes32"}],"name":"store","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+
+	// AssetStoredEventSignature used for finding events
+	AssetStoredEventSignature = "AssetStored(bytes32)"
 )
 
 // Config is the config interface for nft package
@@ -257,6 +260,12 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
 			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
 			staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
+			block, err := s.ethClient.GetEthClient().BlockByNumber(ctx, nil)
+			if err != nil {
+				errOut <- errors.New("failed to get latest block: %v", err)
+				return
+			}
+
 			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
 			if err != nil {
 				errOut <- err
@@ -280,6 +289,22 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 				err = <-done
 				if err != nil {
 					log.Errorf("failed to deposit asset: %v\n", err)
+					errOut <- err
+					return
+				}
+
+				// listen for event
+				txHash, done, err = ethereum.CreateWaitForEventJob(
+					ctx, txMan, s.queue, accountID, jobID,
+					AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
+				if err != nil {
+					errOut <- err
+					return
+				}
+
+				err = <-done
+				if err != nil {
+					log.Errorf("failed to listen for deposit asset: %v\n", err)
 					errOut <- err
 					return
 				}
