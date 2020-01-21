@@ -41,4 +41,8 @@ nftAddr=$(seth send --create out/NFT.bin 'NFT(string memory, string memory, addr
 echo "assetManager $assetAddr" > $PARENT_DIR/localAddresses
 echo -n "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
 
+echo "creating bridge config with asset address $assetAddr"
+bridge_dir="$PARENT_DIR"/build/scripts/test-dependencies/bridge
+"$bridge_dir"/create_config.sh "$bridge_dir"/config "$assetAddr"
+
 cd $PARENT_DIR

@@ -55,19 +55,13 @@ func StartBridge() {
 	if IsBridgeRunning() {
 		return
 	}
+	// If the bridge is not running, then deploy contracts and run bridge
+	RunSmartContractMigrations()
+
+	// run the bridge
 	projDir := GetProjectDir()
 	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
 	o, err := exec.Command(runScript, "bridge").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s", string(o))
-}
-
-func AddBalanceToBridgeAccount() {
-	projDir := GetProjectDir()
-	runScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-xbridge", "add_balance.sh")
-	o, err := exec.Command(runScript).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -239,8 +233,6 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	StartPOAGeth()
 	StartCentChain()
 	StartBridge()
-	AddBalanceToBridgeAccount()
-	RunSmartContractMigrations()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

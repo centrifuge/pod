@@ -278,23 +278,22 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			}
 			log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
 
-			// TODO(ved): remove as soon as bridge is integrated
 			if !utils.IsEmptyAddress(req.AssetManagerAddress) {
-				txHash, done, err := s.identityService.Execute(ctx, req.AssetManagerAddress, AssetManagerABI, "store", requestData.BundledHash)
-				if err != nil {
-					errOut <- err
-					return
-				}
-
-				err = <-done
-				if err != nil {
-					log.Errorf("failed to deposit asset: %v\n", err)
-					errOut <- err
-					return
-				}
+				//txHash, done, err := s.identityService.Execute(ctx, req.AssetManagerAddress, AssetManagerABI, "store", requestData.BundledHash)
+				//if err != nil {
+				//	errOut <- err
+				//	return
+				//}
+				//
+				//err = <-done
+				//if err != nil {
+				//	log.Errorf("failed to deposit asset: %v\n", err)
+				//	errOut <- err
+				//	return
+				//}
 
 				// listen for event
-				_, done, err = ethereum.CreateWaitForEventJob(
+				txHash, done, err := ethereum.CreateWaitForEventJob(
 					ctx, txMan, s.queue, accountID, jobID,
 					AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
 				if err != nil {

@@ -38,7 +38,6 @@ func TestMain(m *testing.M) {
 		testingutils.StartPOAGeth()
 		testingutils.StartCentChain()
 		testingutils.StartBridge()
-		testingutils.AddBalanceToBridgeAccount()
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()
