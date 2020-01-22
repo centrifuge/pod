@@ -98,8 +98,8 @@ func TestWaitForEventTask_RunTask(t *testing.T) {
 	task.BaseTask = jobsv1.BaseTask{
 		JobManager: jm,
 	}
-	task.ethContextInitializer = func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc) {
-		t := time.Now().Add(d)
+	task.ethContextInitializer = func() (ctx context.Context, cancelFunc context.CancelFunc) {
+		t := time.Now().Add(5 * time.Second)
 		return context.WithDeadline(context.Background(), t)
 	}
 
