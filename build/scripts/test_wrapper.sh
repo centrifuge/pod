@@ -41,6 +41,8 @@ done
 ############################################################
 
 ################# deploy bridge########################
+## delete any stale bridge containers
+docker rm -f bridge
 path=${local_dir}/test-dependencies/bridge
 source "${path}/env_vars.sh"
 echo "Executing [${path}/run.sh]"
