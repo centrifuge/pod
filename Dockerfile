@@ -1,6 +1,6 @@
 FROM golang:1.11-stretch as builder
 
-RUN apt-get -y update && apt-get -y upgrade && apt-get -y install wget
+RUN apt-get -y update && apt-get -y upgrade && apt-get -y install wget && apt-get install ca-certificates -y
 
 ADD . /go/src/github.com/centrifuge/go-centrifuge
 WORKDIR /go/src/github.com/centrifuge/go-centrifuge
@@ -9,6 +9,7 @@ RUN wget -P /go/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey
 RUN go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
 FROM debian:stretch-slim
+RUN apt-get -y update && apt-get -y upgrade && apt-get install ca-certificates -y
 
 WORKDIR /root/
 COPY --from=builder /go/bin/centrifuge .
