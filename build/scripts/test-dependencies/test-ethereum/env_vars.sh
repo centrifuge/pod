@@ -2,7 +2,7 @@
 
 RPC_PORT=9545
 WS_PORT=9546
-NETWORK_ID=8383
+NETWORK_ID=1337
 IDENTITY=CentTestEth
 GETH_DOCKER_CONTAINER_NAME="geth-node"
 CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/vendor/github.com/centrifuge/centrifuge-ethereum-contracts

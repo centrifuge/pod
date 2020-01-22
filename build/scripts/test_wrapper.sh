@@ -19,7 +19,7 @@ CC_DOCKER_CONTAINER_WAS_RUNNING=`docker ps -a --filter "name=${CC_DOCKER_CONTAIN
 echo "" > coverage.txt
 
 ################# Run Dependencies #########################
-for path in ${local_dir}/test-dependencies/*; do
+for path in ${local_dir}/test-dependencies/test-*; do
     [ -d "${path}" ] || continue # if not a directory, skip
     source "${path}/env_vars.sh" # Every dependency should have env_vars.sh + run.sh executable files
     echo "Executing [${path}/run.sh]"
@@ -30,10 +30,26 @@ for path in ${local_dir}/test-dependencies/*; do
 done
 ############################################################
 
-################# Prepare for tests ########################
-${PARENT_DIR}/build/scripts/migrate.sh
-status=$?
+################# Migrate contracts ########################
+migrate_status=1
+while [ $migrate_status -ne 0 ]; do
+  ${PARENT_DIR}/build/scripts/migrate.sh
+  migrate_status=$?
+done
 
+
+############################################################
+
+################# deploy bridge########################
+## delete any stale bridge containers
+docker rm -f bridge
+path=${local_dir}/test-dependencies/bridge
+source "${path}/env_vars.sh"
+echo "Executing [${path}/run.sh]"
+${path}/run.sh
+if [ $? -ne 0 ]; then
+    exit 1
+fi
 ############################################################
 
 ################# Run Tests ################################
@@ -68,6 +84,10 @@ else
     echo "Bringing GETH Daemon Down"
     docker rm -f geth-node
 fi
+
+echo "Bringing bridge down..."
+docker rm -f bridge
+
 ############################################################
 
 ################# Propagate test status ####################

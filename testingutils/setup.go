@@ -49,25 +49,21 @@ func StartCentChain() {
 	fmt.Printf("%s", string(o))
 }
 
-// StartBridge runs bridge for tests
-func StartBridge() {
+// DeployContractsAndStartBridge deploys contracts and run bridge
+// if bridge is already running, this is a noop.
+func DeployContractsAndStartBridge() {
 	// don't run if its already running
 	if IsBridgeRunning() {
 		return
 	}
+
+	// If the bridge is not running, then deploy contracts and run bridge
+	RunSmartContractMigrations()
+
+	// run the bridge
 	projDir := GetProjectDir()
 	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
 	o, err := exec.Command(runScript, "bridge").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s", string(o))
-}
-
-func AddBalanceToBridgeAccount() {
-	projDir := GetProjectDir()
-	runScript := path.Join(projDir, "build", "scripts", "test-dependencies", "test-xbridge", "add_balance.sh")
-	o, err := exec.Command(runScript).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,22 +91,6 @@ func RunSmartContractMigrations() {
 
 	// trying 3 times to migrate didnt work
 	log.Fatal(err, string(out))
-}
-
-func RunDAppSmartContractMigrations() {
-	var err error
-	var out []byte
-	projDir := GetProjectDir()
-	smAddr := GetSmartContractAddresses()
-	fmt.Println("Using AnchorAddr for DApp Contracts", smAddr.AnchorRepositoryAddr)
-	migrationScript := path.Join(projDir, "build", "scripts", "migrateDApp.sh")
-	cmd := exec.Command(migrationScript, projDir)
-	out, err = cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println(err, string(out))
-		return
-	}
-	return
 }
 
 func GetDAppSmartContractAddresses() map[string]string {
@@ -149,7 +129,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 
-	addrOp := getOpForContract(".networks.8383.address")
+	addrOp := getOpForContract(".networks.1337.address")
 	return &config.SmartContractAddresses{
 		IdentityFactoryAddr:  getOpAddr(addrOp, iddat),
 		AnchorRepositoryAddr: getOpAddr(addrOp, ancdat),
@@ -254,10 +234,7 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
 	StartCentChain()
-	StartBridge()
-	AddBalanceToBridgeAccount()
-	RunSmartContractMigrations()
-	RunDAppSmartContractMigrations()
+	DeployContractsAndStartBridge()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

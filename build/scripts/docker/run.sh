@@ -16,7 +16,7 @@ mode=$1
 
 ETH_DATADIR=${ETH_DATADIR:-${HOME}/Library/Ethereum}
 BOOT_NODES=${BOOT_NODES:-'enode://2597b631806959d5d40aa07797754338ee98809c51de58024334b5951114fb013cf1a527ee941b80d776c2cdf257e9c39d31414c0efd0051f75a4c9afdcd8e9c@35.192.161.113:30303'}
-NETWORK_ID=${NETWORK_ID:-8383}
+NETWORK_ID=${NETWORK_ID:-1337}
 IDENTITY=${IDENTITY:-CentTestEth}
 API=${API:-'db,eth,net,web3,personal,txpool'}
 RPC_PORT=${RPC_PORT:-9545}
@@ -76,8 +76,8 @@ case "$mode" in
     docker-compose -f $local_dir/docker-compose-cc.yml up > /tmp/cc-0.log 2>&1 &
   ;;
   bridge)
-    BRIDGE_CONFIGDIR=$PWD/build/scripts/test-dependencies/test-xbridge/config/
-    BRIDGE_KEYSDIR=$PWD/build/scripts/test-dependencies/test-xbridge/keys/
+    BRIDGE_CONFIGDIR=$PWD/build/scripts/test-dependencies/bridge/config/
+    BRIDGE_KEYSDIR=$PWD/build/scripts/test-dependencies/bridge/keys/
     BRIDGE_CONFIGDIR=$BRIDGE_CONFIGDIR BRIDGE_KEYSDIR=$BRIDGE_KEYSDIR docker-compose -f $local_dir/docker-compose-bridge.yml up > /tmp/bridge-0.log 2>&1 &
   ;;
   *) usage

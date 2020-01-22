@@ -37,8 +37,7 @@ func TestMain(m *testing.M) {
 		// NOTE that we don't bring down geth/cc automatically right now because this must only be used for local testing purposes
 		testingutils.StartPOAGeth()
 		testingutils.StartCentChain()
-		testingutils.StartBridge()
-		testingutils.AddBalanceToBridgeAccount()
+		testingutils.DeployContractsAndStartBridge()
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()
@@ -47,7 +46,6 @@ func TestMain(m *testing.M) {
 	dappAddresses := make(map[string]string)
 	if c.Network == "testing" {
 		contractAddresses = testingutils.GetSmartContractAddresses()
-		testingutils.RunDAppSmartContractMigrations()
 		dappAddresses = testingutils.GetDAppSmartContractAddresses()
 	}
 	doctorFord = newHostManager(
