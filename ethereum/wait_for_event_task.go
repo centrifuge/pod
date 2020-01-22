@@ -3,7 +3,6 @@ package ethereum
 import (
 	"context"
 	"math/big"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -43,7 +42,7 @@ type WaitForEventTask struct {
 	accountID             identity.DID
 	query                 ethereum.FilterQuery
 	filterLogsFunc        func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
-	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc)
+	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc)
 }
 
 // Copy copies the state of the task into a new task
@@ -106,7 +105,7 @@ func (t *WaitForEventTask) ParseKwargs(kwargs map[string]interface{}) error {
 // RunTask runs the task of fetching the logs.
 func (t *WaitForEventTask) RunTask() (res interface{}, err error) {
 	var jobValue *jobs.JobValue
-	ctx, cancelFunc := t.ethContextInitializer(5 * time.Second)
+	ctx, cancelFunc := t.ethContextInitializer()
 	defer func() {
 		err = t.UpdateJobWithValue(t.accountID, t.TaskTypeName(), err, jobValue)
 	}()
@@ -137,7 +136,7 @@ func (t *WaitForEventTask) TaskTypeName() string {
 // NewWaitEventTask returns a new wait event task for registration
 func NewWaitEventTask(
 	jobsManager jobs.Manager,
-	ethContextInitializer func(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc),
+	ethContextInitializer func() (ctx context.Context, cancelFunc context.CancelFunc),
 	filterLogsFunc func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error),
 ) *WaitForEventTask {
 	return &WaitForEventTask{
