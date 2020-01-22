@@ -49,12 +49,14 @@ func StartCentChain() {
 	fmt.Printf("%s", string(o))
 }
 
-// StartBridge runs bridge for tests
-func StartBridge() {
+// DeployContractsAndStartBridge deploys contracts and run bridge
+// if bridge is already running, this is a noop.
+func DeployContractsAndStartBridge() {
 	// don't run if its already running
 	if IsBridgeRunning() {
 		return
 	}
+
 	// If the bridge is not running, then deploy contracts and run bridge
 	RunSmartContractMigrations()
 
@@ -232,7 +234,7 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
 	StartCentChain()
-	StartBridge()
+	DeployContractsAndStartBridge()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
