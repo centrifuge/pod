@@ -127,7 +127,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 
-	addrOp := getOpForContract(".networks.8383.address")
+	addrOp := getOpForContract(".networks.1337.address")
 	return &config.SmartContractAddresses{
 		IdentityFactoryAddr:  getOpAddr(addrOp, iddat),
 		AnchorRepositoryAddr: getOpAddr(addrOp, ancdat),
