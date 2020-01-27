@@ -129,12 +129,9 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
-	optProofs := docProofs.FieldProofs
-	if req.UseGeneric {
-		optProofs, err = proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewKeccak256())
-		if err != nil {
-			return mreq, err
-		}
+	optProofs, err := proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewKeccak256())
+	if err != nil {
+		return mreq, err
 	}
 
 	// useful to log proof data to be passed to mint method
@@ -254,56 +251,50 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 
-		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][32]byte, salts [][32]byte, proofs [][][32]byte
-		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID.BigInt(), requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
-		mintContractABI := InvoiceUnpaidContractABI
-		if req.UseGeneric { // TODO Remove once we have finalized the generic NFT work
-			subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-			staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
-			block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
-			if err != nil {
-				errOut <- errors.New("failed to get latest block: %v", err)
-				return
-			}
-
-			done, err := s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
-			if err != nil {
-				errOut <- err
-				return
-			}
-
-			if err := <-done; err != nil {
-				errOut <- err
-				return
-			}
-			log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
-
-			if !utils.IsEmptyAddress(req.AssetManagerAddress) {
-				// listen for event
-				txHash, done, err := ethereum.CreateWaitForEventJob(
-					ctx, txMan, s.queue, accountID, jobID,
-					AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
-				if err != nil {
-					errOut <- err
-					return
-				}
-
-				err = <-done
-				if err != nil {
-					log.Errorf("failed to listen for deposit asset: %v\n", err)
-					errOut <- err
-					return
-				}
-
-				log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
-			}
-
-			// to common.Address, tokenId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
-			mintContractABI = GenericMintMethodABI
+		subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
+		block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
+		if err != nil {
+			errOut <- errors.New("failed to get latest block: %v", err)
+			return
 		}
 
-		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, mintContractABI, "mint", args...)
+		done, err = s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		if err := <-done; err != nil {
+			errOut <- err
+			return
+		}
+		log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
+
+		if !utils.IsEmptyAddress(req.AssetManagerAddress) {
+			// listen for event
+			txHash, done, err := ethereum.CreateWaitForEventJob(
+				ctx, txMan, s.queue, accountID, jobID,
+				AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
+			if err != nil {
+				errOut <- err
+				return
+			}
+
+			err = <-done
+			if err != nil {
+				log.Errorf("failed to listen for deposit asset: %v\n", err)
+				errOut <- err
+				return
+			}
+
+			log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
+		}
+
+		// to common.Address, tokenId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte
+		args := []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
+
+		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, GenericMintMethodABI, "mint", args...)
 		if err != nil {
 			errOut <- err
 			return

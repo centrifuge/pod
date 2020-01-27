@@ -45,5 +45,9 @@ fi
 
 cd ${PARENT_DIR}
 
-# deploy dapp smartcontrcats
+# deploy dapp smartcontracts
 ./build/scripts/migrateDApp.sh
+# add bridge balance
+./build/scripts/test-dependencies/bridge/add_balance.sh
+
+export MIGRATION_RAN=true

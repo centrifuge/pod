@@ -421,7 +421,7 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 }
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return mintBetaNFT(e, auth, status, inv), nil
+	return mintNFT(e, auth, status, inv), nil
 }
 
 func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
@@ -430,10 +430,6 @@ func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params
 
 func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Value, error) {
 	return ownerOfNFT(e, auth, status, params), nil
-}
-
-func (h *host) mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return mintUnpaidInvoiceNFT(e, auth, status, documentID, inv), nil
 }
 
 func (h *host) createAccounts(e *httpexpect.Expect) error {

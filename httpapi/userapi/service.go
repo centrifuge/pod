@@ -14,8 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -166,48 +164,6 @@ func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req Share
 // GetEntityByRelationship returns an entity through a relationship ID.
 func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.entitySrv.GetEntityByRelationship(ctx, docID)
-}
-
-// MintNFT mints an NFT.
-func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
-	return s.coreAPISrv.MintNFT(ctx, request)
-}
-
-// TransferNFT transfers NFT with tokenID in a given registry to `to` address.
-func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
-	return s.coreAPISrv.TransferNFT(ctx, registry, to, tokenID)
-}
-
-// OwnerOfNFT returns the owner of the NFT.
-func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
-	return s.coreAPISrv.OwnerOfNFT(registry, tokenID)
-}
-
-// MintInvoiceUnpaidNFT mints an NFT for an unpaid invoice document.
-func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, docID []byte, depositAddr common.Address) (*nft.TokenResponse, error) {
-	// Get proof fields
-	proofFields, err := getRequiredInvoiceUnpaidProofFields(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := s.config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
-
-	nreq := nft.MintNFTRequest{
-		DocumentID:               docID,
-		RegistryAddress:          poRegistry,
-		DepositAddress:           depositAddr,
-		ProofFields:              proofFields,
-		GrantNFTReadAccess:       true,
-		SubmitNFTReadAccessProof: true,
-		SubmitTokenProof:         true,
-	}
-
-	return s.coreAPISrv.MintNFT(ctx, nreq)
 }
 
 // getRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint

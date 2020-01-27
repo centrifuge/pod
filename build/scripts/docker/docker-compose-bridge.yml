@@ -8,4 +8,4 @@ services:
     volumes:
       - ${BRIDGE_CONFIGDIR}:/config/
       - ${BRIDGE_KEYSDIR}:/keys/
-    command: --config /config/config.toml
+    command: --config /config/config.toml --gethdev --verbosity dbug
