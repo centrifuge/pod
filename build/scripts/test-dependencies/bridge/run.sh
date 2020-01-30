@@ -32,5 +32,3 @@ do
   sleep 2;
   ((count++))
 done
-
-${PARENT_DIR}/build/scripts/test-dependencies/bridge/add_balance.sh

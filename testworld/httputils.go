@@ -303,26 +303,8 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 	return versionID
 }
 
-func mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/v1/invoices/"+documentID+"/mint/unpaid"), auth).
-		WithJSON(payload).
-		Expect().Status(httpStatus)
-
-	httpObj := resp.JSON().Object()
-	return httpObj
-}
-
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/v1/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
-		WithJSON(payload).
-		Expect().Status(httpStatus)
-
-	httpObj := resp.JSON().Object()
-	return httpObj
-}
-
-func mintBetaNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/beta/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 

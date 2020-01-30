@@ -57,22 +57,3 @@ func TestRegister(t *testing.T) {
 	assert.Equal(t, r.Routes()[11].Pattern, "/relationships/{document_id}/entity")
 	assert.NotNil(t, r.Routes()[11].Handlers["GET"])
 }
-
-func TestRegisterBeta(t *testing.T) {
-	r := chi.NewRouter()
-	ctx := map[string]interface{}{
-		BootstrappedUserAPIService:          Service{},
-		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
-	}
-	RegisterBeta(ctx, r)
-	assert.Len(t, r.Routes(), 3)
-	assert.Equal(t, r.Routes()[0].Pattern, "/nfts/registries/{registry_address}/mint")
-	assert.Len(t, r.Routes()[0].Handlers, 1)
-	assert.NotNil(t, r.Routes()[0].Handlers["POST"])
-	assert.Equal(t, r.Routes()[1].Pattern, "/nfts/registries/{registry_address}/tokens/{token_id}/owner")
-	assert.Len(t, r.Routes()[1].Handlers, 1)
-	assert.NotNil(t, r.Routes()[1].Handlers["GET"])
-	assert.Equal(t, r.Routes()[2].Pattern, "/nfts/registries/{registry_address}/tokens/{token_id}/transfer")
-	assert.Len(t, r.Routes()[2].Handlers, 1)
-	assert.NotNil(t, r.Routes()[2].Handlers["POST"])
-}

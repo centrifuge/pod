@@ -16,23 +16,10 @@ import (
 
 func TestGenericMint_successful(t *testing.T) {
 	t.Parallel()
-	invoiceUnpaidMint(t, typeDocuments, false)
+	defaultNFTMint(t, typeDocuments)
 }
 
-func TestPaymentObligationWrapperMint_invoice_successful(t *testing.T) {
-	t.SkipNow() //TODO enable as soon as we have adapted NFT invoice unpaid
-	t.Parallel()
-	invoiceUnpaidMint(t, typeDocuments, true)
-}
-
-/* TODO: testcase not stable
-func TestInvoiceUnpaidMint_po_successful(t *testing.T) {
-	t.Parallel()
-	invoiceUnpaidMint(t, typePO)
-}
-*/
-
-func invoiceUnpaidMint(t *testing.T, documentType string, poWrapper bool) nft.TokenID {
+func defaultNFTMint(t *testing.T, documentType string) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
@@ -59,25 +46,15 @@ func invoiceUnpaidMint(t *testing.T, documentType string, poWrapper bool) nft.To
 
 	depositAddress := alice.id.String()
 
-	if !poWrapper {
-		// mint an NFT
-		payload := map[string]interface{}{
-			"document_id":           docIdentifier,
-			"registry_address":      registry.String(),
-			"deposit_address":       depositAddress, // Centrifuge address
-			"proof_fields":          []string{documents.CDTreePrefix + ".next_version"},
-			"asset_manager_address": assetAddress,
-		}
-		response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
-
-	} else {
-		// mint a PO NFT
-		payload := map[string]interface{}{
-			"document_id":     docIdentifier,
-			"deposit_address": depositAddress, // Centrifuge address
-		}
-		response, err = alice.host.mintUnpaidInvoiceNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, docIdentifier, payload)
+	// mint an NFT
+	payload := map[string]interface{}{
+		"document_id":           docIdentifier,
+		"registry_address":      registry.String(),
+		"deposit_address":       depositAddress, // Centrifuge address
+		"proof_fields":          []string{documents.CDTreePrefix + ".next_version"},
+		"asset_manager_address": assetAddress,
 	}
+	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
 	assert.NoError(t, err, "mintNFT should be successful")
 	txID = getTransactionID(t, response)
@@ -139,7 +116,7 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 
 func TestTransferNFT_successful(t *testing.T) {
 	t.Parallel()
-	tokenID := invoiceUnpaidMint(t, typeDocuments, false)
+	tokenID := defaultNFTMint(t, typeDocuments)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.dappAddresses["genericNFT"]

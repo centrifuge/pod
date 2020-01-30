@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -18,6 +19,7 @@ import (
 
 var log = logging.Logger("test-setup")
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
+var migrationsRan = len(os.Getenv("MIGRATIONS_RAN")) != 0
 
 // StartPOAGeth runs the proof of authority geth for tests
 func StartPOAGeth() {
@@ -32,6 +34,7 @@ func StartPOAGeth() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s", string(o))
+	time.Sleep(10 * time.Second)
 }
 
 // StartCentChain runs centchain for tests
@@ -47,19 +50,16 @@ func StartCentChain() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s", string(o))
+	time.Sleep(10 * time.Second)
 }
 
-// DeployContractsAndStartBridge deploys contracts and run bridge
+// StartBridge deploys contracts and run bridge
 // if bridge is already running, this is a noop.
-func DeployContractsAndStartBridge() {
+func StartBridge() {
 	// don't run if its already running
 	if IsBridgeRunning() {
 		return
 	}
-
-	// If the bridge is not running, then deploy contracts and run bridge
-	RunSmartContractMigrations()
-
 	// run the bridge
 	projDir := GetProjectDir()
 	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
@@ -68,11 +68,12 @@ func DeployContractsAndStartBridge() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s", string(o))
+	time.Sleep(10 * time.Second)
 }
 
 // RunSmartContractMigrations migrates smart contracts to localgeth
 func RunSmartContractMigrations() {
-	if isRunningOnCI {
+	if isRunningOnCI || migrationsRan {
 		return
 	}
 
@@ -85,6 +86,11 @@ func RunSmartContractMigrations() {
 		out, err = exec.Command(migrationScript, projDir).CombinedOutput()
 		fmt.Println(string(out))
 		if err == nil {
+			err := os.Setenv("MIGRATIONS_RAN", "true")
+			if err != nil {
+				fmt.Println("Error setting MIGRATION_RAN flag on env, setting manually")
+				migrationsRan = true
+			}
 			return
 		}
 	}
@@ -234,7 +240,8 @@ func BuildIntegrationTestingContext() map[string]interface{} {
 	projDir := GetProjectDir()
 	StartPOAGeth()
 	StartCentChain()
-	DeployContractsAndStartBridge()
+	RunSmartContractMigrations() // Running migrations so bridge addresses are generated before running bridge
+	StartBridge()
 	addresses := GetSmartContractAddresses()
 	cfg := LoadTestConfig()
 	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))

@@ -27,17 +27,17 @@ var doctorFord *hostManager
 func TestMain(m *testing.M) {
 	err := setMaxLimits()
 	if err != nil {
-		panic(err)
+		log.Warning(err)
 	}
 	c, configName, err := loadConfig(!isRunningOnCI)
 	if err != nil {
 		panic(err)
 	}
 	if c.RunChains {
-		// NOTE that we don't bring down geth/cc automatically right now because this must only be used for local testing purposes
+		// NOTE that we don't bring down geth/cc/bridge automatically right now because this must only be used for local testing purposes
 		testingutils.StartPOAGeth()
 		testingutils.StartCentChain()
-		testingutils.DeployContractsAndStartBridge()
+		testingutils.StartBridge()
 	}
 	if c.RunMigrations {
 		testingutils.RunSmartContractMigrations()

@@ -295,12 +295,10 @@ func convertProofs(proof *documents.DocumentProof) ProofsResponse {
 
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
-	DocumentID               byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	DepositAddress           common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-	ProofFields              []string           `json:"proof_fields"`
-	GrantNFTReadAccess       bool               `json:"grant_nft_access"`
-	SubmitTokenProof         bool               `json:"submit_token_proof"`
-	SubmitNFTReadAccessProof bool               `json:"submit_nft_owner_access_proof"`
+	DocumentID          byteutils.HexBytes    `json:"document_id" swaggertype:"primitive,string"`
+	DepositAddress      common.Address        `json:"deposit_address" swaggertype:"primitive,string"`
+	AssetManagerAddress byteutils.OptionalHex `json:"asset_manager_address" swaggertype:"primitive,string"`
+	ProofFields         []string              `json:"proof_fields"`
 }
 
 // NFTResponseHeader holds the NFT mint job ID.
@@ -321,11 +319,12 @@ func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.Mi
 	return nft.MintNFTRequest{
 		DocumentID:               req.DocumentID,
 		DepositAddress:           req.DepositAddress,
-		GrantNFTReadAccess:       req.GrantNFTReadAccess,
+		GrantNFTReadAccess:       false,
 		ProofFields:              req.ProofFields,
 		RegistryAddress:          registryAddress,
-		SubmitNFTReadAccessProof: req.SubmitNFTReadAccessProof,
-		SubmitTokenProof:         req.SubmitTokenProof,
+		AssetManagerAddress:      common.HexToAddress(req.AssetManagerAddress.String()),
+		SubmitNFTReadAccessProof: false,
+		SubmitTokenProof:         true,
 	}
 }
 

@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -318,60 +317,4 @@ func toFundingAgreementListResponse(ctx context.Context,
 	}
 
 	return resp, nil
-}
-
-// MintNFTRequest holds required fields for minting NFT
-type MintNFTRequest struct {
-	DocumentID          byteutils.HexBytes    `json:"document_id" swaggertype:"primitive,string"`
-	DepositAddress      common.Address        `json:"deposit_address" swaggertype:"primitive,string"`
-	AssetManagerAddress byteutils.OptionalHex `json:"asset_manager_address" swaggertype:"primitive,string"`
-	ProofFields         []string              `json:"proof_fields"`
-}
-
-// NFTResponseHeader holds the NFT mint job ID.
-type NFTResponseHeader struct {
-	JobID string `json:"job_id"`
-}
-
-// MintNFTResponse holds the details of the minted NFT.
-type MintNFTResponse struct {
-	Header          NFTResponseHeader  `json:"header"`
-	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	TokenID         string             `json:"token_id"`
-	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
-	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-}
-
-func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
-	return nft.MintNFTRequest{
-		DocumentID:               req.DocumentID,
-		DepositAddress:           req.DepositAddress,
-		GrantNFTReadAccess:       false,
-		ProofFields:              req.ProofFields,
-		RegistryAddress:          registryAddress,
-		AssetManagerAddress:      common.HexToAddress(req.AssetManagerAddress.String()),
-		SubmitNFTReadAccessProof: false,
-		SubmitTokenProof:         true,
-		UseGeneric:               true,
-	}
-}
-
-// TransferNFTRequest holds Registry Address and To address for NFT transfer
-type TransferNFTRequest struct {
-	To common.Address `json:"to" swaggertype:"primitive,string"`
-}
-
-// TransferNFTResponse is the response for NFT transfer.
-type TransferNFTResponse struct {
-	Header          NFTResponseHeader `json:"header"`
-	TokenID         string            `json:"token_id"`
-	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
-	To              common.Address    `json:"to" swaggertype:"primitive,string"`
-}
-
-// NFTOwnerResponse is the response for NFT owner request.
-type NFTOwnerResponse struct {
-	TokenID         string         `json:"token_id"`
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
 }

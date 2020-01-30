@@ -1,5 +1,5 @@
-# Default development testnet against rinkeby
-centrifugeNetwork: russianhill
+# Default development testnet against kovan
+centrifugeNetwork: flint
 # Define the default networks that Centrifuge maintains
 networks:
   # Local testing contract addresses need to be set with env variables.
@@ -11,30 +11,12 @@ networks:
     - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
       identityFactory: ""
-      anchorRepository: ""
-      invoiceUnpaid: ""
 
-  # Main development testnet network (Rinkeby)
-  russianhill:
+  # Main development test network (Kovan)
+  flint:
     # Numeric ID of the Centrifuge network
-    id: 51
-    # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
-    bootstrapPeers:
-    - "/ip4/35.246.134.95/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
-    - "/ip4/35.198.161.180/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
-    # Ethereum network ID - Rinkeby
-    ethereumNetworkId: 4
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses: 
-      identityFactory: "0xf880b860103bd45a523574AeeC07C492031f4781"
-      anchorRepository: "0x92AD44BB8F23D5d129eB82a50d3868bB4b1ceF1F"
-      invoiceUnpaid: "0xc4A8eB27fB3Ea2C0955F8a5B1615B26d85FCBe8e"
-
-  # Kovan test network
-  bernalheights:
-    # Numeric ID of the Centrifuge network
-    id: 52
-    # Bootstrap list of nodes that Centrifuge provides to the bernalheights testnet
+    id: 12
+    # Bootstrap list of nodes that Centrifuge provides to the flint testnet
     bootstrapPeers:
     - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
     - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
@@ -43,42 +25,23 @@ networks:
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
       identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
-      anchorRepository: "0x7180D77310dec8AB28Aa802Ec09FfA2DF64e907c"
-      invoiceUnpaid: "0x183170481648feffe4940F3DAAd3a7bcbb0c5AAF"
 
-  # Ropsten test network
-  dogpatch:
+  # Main staging network (Kovan)
+  amber:
     # Numeric ID of the Centrifuge network
-    id: 53
-    # Bootstrap list of nodes that Centrifuge provides to the dogpatch (TODO create ropsten bootnodes)
+    id: 11
+    # Bootstrap list of nodes that Centrifuge provides to the amber testnet
     bootstrapPeers:
-    - "/ip4/35.246.134.95/tcp/38202/ipfs/12D3KooWNsZsW7TbcZ58N71UQSK5DjZqmFkHPHwxFKTAyoUUD8df"
-    - "/ip4/35.198.161.180/tcp/38202/ipfs/12D3KooWDe2swWE3f2iJbUeQ9GUUQBHCrWLbBca9MGMqfmbCgrub"
-    # Ethereum network ID - Ropsten
-    ethereumNetworkId: 3
+      - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
+      - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
+    # Ethereum network ID - Kovan
+    ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x0d391E72325CedC41E48053E77288a89F2E31115"
-      anchorRepository: "0x2C80F1DafDa7aADeb2C175d4B43A858473E11713"
-      invoiceUnpaid: "0x49be9300C36Cf5238bF69E4C49560FF8f7F672E4"
-
-  # Mainnet test network DO NOT USE!
-  embarcaderotest:
-    # Numeric ID of the Centrifuge network
-    id: 10
-    bootstrapPeers:
-      - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
-      - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
-    # Ethereum network ID - mainnet
-    ethereumNetworkId: 1
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses:
-      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
-      anchorRepository: "0x637B8C3D2AA3Cc206D94519b54892089c9E67990"
-      invoiceUnpaid: "0xB5e423dCc740bBC80f906133e15601f980998356"
+      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
 
   # Mainnet network
-  embarcadero:
+  mainnet:
     # Numeric ID of the Centrifuge network
     id: 10
     bootstrapPeers:
@@ -89,8 +52,6 @@ networks:
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
       identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
-      anchorRepository: "0x637B8C3D2AA3Cc206D94519b54892089c9E67990"
-      invoiceUnpaid: "0xB5e423dCc740bBC80f906133e15601f980998356"
 
 # Data Storage
 storage:
