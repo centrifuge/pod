@@ -44,9 +44,9 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	nftService = ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.Service)
+	nftService = ctx[bootstrap.BootstrappedNFTService].(nft.Service)
 	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
-	tokenRegistry = ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	tokenRegistry = ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
 	os.Exit(result)
@@ -140,7 +140,6 @@ func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID
 		GrantNFTReadAccess:       false,
 		SubmitNFTReadAccessProof: false,
 		SubmitTokenProof:         true,
-		UseGeneric:               true,
 	}
 	tokenID := mintNFT(t, ctx, req, cid, registry)
 	doc, err := invSrv.GetCurrentVersion(ctx, id)

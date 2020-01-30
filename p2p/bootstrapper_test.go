@@ -34,7 +34,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ids := new(testingcommons.MockIdentityService)
 	m[identity.BootstrappedDIDService] = ids
 	m[documents.BootstrappedDocumentService] = documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), ids, nil, nil)
-	m[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	m[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)

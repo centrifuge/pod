@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -17,6 +18,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -33,12 +36,23 @@ const (
 	// GenericMintMethodABI constant interface to interact with mint methods
 	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 
-	// AssetManagerABI holds methods used for depositing asset
-	AssetManagerABI = `[{"constant":false,"inputs":[{"internalType":"bytes32","name":"asset","type":"bytes32"}],"name":"store","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
-
 	// AssetStoredEventSignature used for finding events
 	AssetStoredEventSignature = "AssetStored(bytes32)"
+
+	// ABI is string abi with required methods to call the NFT registry contract
+	ABI = `[{"constant":true,"inputs":[{"name":"tokenId","type":"uint256"}],"name":"currentIndexOfToken","outputs":[{"name":"index","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
+
+// nftABI is the default abi for caller functions on NFT registry
+var nftABI abi.ABI
+
+func init() {
+	var err error
+	nftABI, err = abi.JSON(strings.NewReader(ABI))
+	if err != nil {
+		log.Fatalf("failed to decode NFT ABI: %v", err)
+	}
+}
 
 // Config is the config interface for nft package
 type Config interface {
@@ -48,15 +62,15 @@ type Config interface {
 
 // service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
 type service struct {
-	cfg             Config
-	identityService identity.Service
-	ethClient       ethereum.Client
-	queue           queue.TaskQueuer
-	docSrv          documents.Service
-	bindContract    func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error)
-	jobsManager     jobs.Manager
-	api             API
-	blockHeightFunc func() (height uint64, err error)
+	cfg                Config
+	identityService    identity.Service
+	ethClient          ethereum.Client
+	queue              queue.TaskQueuer
+	docSrv             documents.Service
+	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
+	jobsManager        jobs.Manager
+	api                API
+	blockHeightFunc    func() (height uint64, err error)
 }
 
 // newService creates InvoiceUnpaid given the parameters
@@ -66,20 +80,20 @@ func newService(
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
-	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
+	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract,
 	jobsMan jobs.Manager,
 	api API,
 	blockHeightFunc func() (uint64, error)) *service {
 	return &service{
-		cfg:             cfg,
-		identityService: identityService,
-		ethClient:       ethClient,
-		bindContract:    bindContract,
-		queue:           queue,
-		docSrv:          docSrv,
-		jobsManager:     jobsMan,
-		blockHeightFunc: blockHeightFunc,
-		api:             api,
+		cfg:                cfg,
+		identityService:    identityService,
+		ethClient:          ethClient,
+		queue:              queue,
+		docSrv:             docSrv,
+		bindCallerContract: bindCallerContract,
+		jobsManager:        jobsMan,
+		blockHeightFunc:    blockHeightFunc,
+		api:                api,
 	}
 }
 
@@ -351,7 +365,7 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 			return
 		}
 
-		txID, done, err := s.identityService.Execute(ctx, registry, InvoiceUnpaidContractABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
+		txID, done, err := s.identityService.Execute(ctx, registry, ABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
 		if err != nil {
 			errOut <- err
 			return
@@ -386,28 +400,20 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
 func (s *service) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
-	contract, err := s.bindContract(registry, s.ethClient)
-	if err != nil {
-		return owner, errors.New("failed to bind the registry contract: %v", err)
-	}
-
+	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
-
-	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
+	return owner, c.Call(opts, &owner, "ownerOf", tokenID)
 }
 
 // CurrentIndexOfToken returns the current index of the token in the given registry
 func (s *service) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
-	contract, err := s.bindContract(registry, s.ethClient)
-	if err != nil {
-		return nil, errors.New("failed to bind the registry contract: %v", err)
-	}
-
+	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
 
-	return contract.CurrentIndexOfToken(opts, utils.ByteSliceToBigInt(tokenID))
+	res := new(big.Int)
+	return res, c.Call(opts, res, "currentIndexOfToken", utils.ByteSliceToBigInt(tokenID))
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
@@ -523,10 +529,6 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	}
 
 	return &proofData{Props: props, Values: values, Salts: salts, Proofs: pfs}, nil
-}
-
-func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
-	return NewInvoiceUnpaidContract(address, client.GetEthClient())
 }
 
 // getBundledHash returns the sha3 of the concat of to + (props+values+salts)

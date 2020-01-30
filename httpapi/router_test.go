@@ -73,12 +73,12 @@ func TestRouter_auth(t *testing.T) {
 
 func TestRouter(t *testing.T) {
 	cctx := map[string]interface{}{
-		coreapi.BootstrappedCoreAPIService:  coreapi.Service{},
-		userapi.BootstrappedUserAPIService:  userapi.Service{},
-		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
-		bootstrap.BootstrappedConfig:        new(testingconfig.MockConfig),
-		config.BootstrappedConfigStorage:    new(configstore.MockService),
-		v2.BootstrappedService:              v2.Service{},
+		coreapi.BootstrappedCoreAPIService: coreapi.Service{},
+		userapi.BootstrappedUserAPIService: userapi.Service{},
+		bootstrap.BootstrappedNFTService:   new(testingnfts.MockNFTService),
+		bootstrap.BootstrappedConfig:       new(testingconfig.MockConfig),
+		config.BootstrappedConfigStorage:   new(configstore.MockService),
+		v2.BootstrappedService:             v2.Service{},
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)

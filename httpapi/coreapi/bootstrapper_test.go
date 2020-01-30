@@ -35,10 +35,10 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[jobs.BootstrappedService] = new(testingjobs.MockJobManager)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), bootstrap.BootstrappedInvoiceUnpaid)
+	assert.Contains(t, err.Error(), bootstrap.BootstrappedNFTService)
 
 	// missing accounts service
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingnfts.MockNFTService)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingnfts.MockNFTService)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), config.BootstrappedConfigStorage)

@@ -125,21 +125,9 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 		panic(err)
 	}
 
-	ancdat, err := findContractDeployJSON("AnchorRepository.json")
-	if err != nil {
-		panic(err)
-	}
-
-	invUnpdat, err := findContractDeployJSON("InvoiceUnpaidNFT.json")
-	if err != nil {
-		panic(err)
-	}
-
 	addrOp := getOpForContract(".networks.1337.address")
 	return &config.SmartContractAddresses{
-		IdentityFactoryAddr:  getOpAddr(addrOp, iddat),
-		AnchorRepositoryAddr: getOpAddr(addrOp, ancdat),
-		InvoiceUnpaidAddr:    getOpAddr(addrOp, invUnpdat),
+		IdentityFactoryAddr: getOpAddr(addrOp, iddat),
 	}
 }
 

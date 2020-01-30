@@ -54,13 +54,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	invoiceUnpaid := newService(
+	nftSrv := newService(
 		cfg,
 		idService,
 		client,
 		queueSrv,
 		docSrv,
-		bindContract,
+		ethereum.BindContract,
 		jobManager,
 		api{
 			api:     centAPI,
@@ -74,6 +74,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = invoiceUnpaid
+	ctx[bootstrap.BootstrappedNFTService] = nftSrv
 	return nil
 }

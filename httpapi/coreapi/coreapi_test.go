@@ -14,8 +14,8 @@ import (
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
 	ctx := map[string]interface{}{
-		BootstrappedCoreAPIService:          Service{},
-		bootstrap.BootstrappedInvoiceUnpaid: new(testingnfts.MockNFTService),
+		BootstrappedCoreAPIService:       Service{},
+		bootstrap.BootstrappedNFTService: new(testingnfts.MockNFTService),
 	}
 	Register(ctx, r)
 	assert.Len(t, r.Routes(), 13)

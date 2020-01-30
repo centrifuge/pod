@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -370,16 +371,6 @@ func (gc *gethClient) GetGethCallOpts(pending bool) (*bind.CallOpts, context.Can
 	return &bind.CallOpts{Pending: pending, Context: ctx}, cancel
 }
 
-// noncer defines functions to get the next nonce
-type noncer interface {
-	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-}
-
-// callContexter defines functions to get CallContext
-type callContexter interface {
-	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
-}
-
 // setNonce updates the opts.Nonce to next valid nonce
 func (gc *gethClient) setNonce(opts *bind.TransactOpts) error {
 	ctx, cancel := gc.defaultReadContext()
@@ -394,4 +385,9 @@ func (gc *gethClient) setNonce(opts *bind.TransactOpts) error {
 	// set the nonce
 	opts.Nonce = new(big.Int).SetUint64(n)
 	return nil
+}
+
+// BindContract returns a bind contract at the address with corresponding ABI
+func BindContract(address common.Address, abi abi.ABI, client Client) *bind.BoundContract {
+	return bind.NewBoundContract(address, abi, client.GetEthClient(), client.GetEthClient(), client.GetEthClient())
 }
