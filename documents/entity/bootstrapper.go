@@ -63,7 +63,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("processor not initialised")
 	}
 
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
@@ -77,8 +77,8 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, jobManager, factory, erService, anchorRepo, processor, func() documents.ValidatorGroup {
-			return documents.PostAnchoredValidator(didService, anchorRepo)
+		queueSrv, jobManager, factory, erService, anchorSrv, processor, func() documents.ValidatorGroup {
+			return documents.PostAnchoredValidator(didService, anchorSrv)
 		})
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)

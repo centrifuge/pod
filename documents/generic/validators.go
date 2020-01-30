@@ -6,8 +6,8 @@ import (
 )
 
 // UpdateValidator returns a validator group that should be run before updating the generic document
-func UpdateValidator(repo anchors.AnchorRepository) documents.ValidatorGroup {
+func UpdateValidator(anchorSrv anchors.Service) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
-		documents.UpdateVersionValidator(repo),
+		documents.UpdateVersionValidator(anchorSrv),
 	}
 }

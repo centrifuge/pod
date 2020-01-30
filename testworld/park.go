@@ -256,7 +256,7 @@ type host struct {
 	p2pClient                                      documents.Client
 	configService                                  config.Service
 	tokenRegistry                                  documents.TokenRegistry
-	anchorRepo                                     anchors.AnchorRepository
+	anchorSrv                                      anchors.Service
 	entityService                                  entity.Service
 	centChainID, centChainAddress, centChainSecret string
 	dappAddresses                                  map[string]string
@@ -348,7 +348,7 @@ func (h *host) init() error {
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
 	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
-	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	h.anchorSrv = h.bootstrappedCtx[anchors.BootstrappedAnchorService].(anchors.Service)
 	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
 	return nil
 }

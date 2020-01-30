@@ -164,7 +164,7 @@ func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentit
 
 type mockAnchorRepo struct {
 	mock.Mock
-	anchors.AnchorRepository
+	anchors.Service
 }
 
 var mockAnchor *mockAnchorRepo
