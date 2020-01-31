@@ -403,7 +403,7 @@ func (s *service) OwnerOf(registry common.Address, tokenID []byte) (owner common
 	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
-	return owner, c.Call(opts, &owner, "ownerOf", tokenID)
+	return owner, c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
 }
 
 // CurrentIndexOfToken returns the current index of the token in the given registry
