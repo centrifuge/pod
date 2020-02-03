@@ -5,6 +5,7 @@ package testworld
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"syscall"
 	"testing"
@@ -62,6 +63,11 @@ func TestMain(m *testing.M) {
 		c.DappAddresses = testingutils.GetDAppSmartContractAddresses()
 	}
 
+	err = setEthEnvKeys(c.EthAccountKeyPath, c.EthAccountPassword)
+	if err != nil {
+		panic(err)
+	}
+
 	doctorFord = newHostManager(c)
 	err = doctorFord.init()
 	if err != nil {
@@ -100,4 +106,18 @@ func setMaxLimits() error {
 
 	log.Debugf("Current Rlimits: %v", rLimit)
 	return nil
+}
+
+func setEthEnvKeys(path, password string) error {
+	bfile, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY", string(bfile))
+	if err != nil {
+		return err
+	}
+
+	return os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", password)
 }

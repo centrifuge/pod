@@ -53,7 +53,6 @@ func loadConfig(network string) (nc networkConfig, err error) {
 	}
 
 	// if migrations were already run by the wrapper
-	fmt.Println(os.Getenv("MIGRATION_RAN"))
 	if nc.RunMigrations && os.Getenv("MIGRATION_RAN") == "true" {
 		log.Info("not running migrations again")
 		nc.RunMigrations = false
