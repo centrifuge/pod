@@ -78,7 +78,6 @@ type MintNFTRequest struct {
 	GrantNFTReadAccess       bool
 	SubmitTokenProof         bool
 	SubmitNFTReadAccessProof bool
-	UseGeneric               bool
 }
 
 // Service defines the NFT service to mint and transfer NFTs.

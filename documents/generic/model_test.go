@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},

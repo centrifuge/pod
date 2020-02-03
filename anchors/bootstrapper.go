@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	// BootstrappedAnchorRepo is used as a key to map the configured anchor repository through context.
-	BootstrappedAnchorRepo string = "BootstrappedAnchorRepo"
+	// BootstrappedAnchorService is used as a key to map the configured anchor service through context.
+	BootstrappedAnchorService string = "BootstrappedAnchorService"
 
 	// ErrAnchorRepoNotInitialised is a sentinel error when repository is not initialised
 	ErrAnchorRepoNotInitialised = errors.Error("anchor repository not initialised")
@@ -43,9 +43,8 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	repository := NewRepository(client, jobsMan)
-	repo := newService(cfg, repository, queueSrv, client, jobsMan)
-	ctx[BootstrappedAnchorRepo] = repo
-
+	repo := NewRepository(client, jobsMan)
+	srv := newService(cfg, repo, queueSrv, jobsMan)
+	ctx[BootstrappedAnchorService] = srv
 	return nil
 }

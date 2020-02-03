@@ -36,9 +36,9 @@ func CreateValidator(factory identity.Factory) documents.ValidatorGroup {
 }
 
 // UpdateValidator returns a validator group that should be run before updating the entity
-func UpdateValidator(factory identity.Factory, repo anchors.AnchorRepository) documents.ValidatorGroup {
+func UpdateValidator(factory identity.Factory, anchorSrv anchors.Service) documents.ValidatorGroup {
 	return documents.ValidatorGroup{
 		fieldValidator(factory),
-		documents.UpdateVersionValidator(repo),
+		documents.UpdateVersionValidator(anchorSrv),
 	}
 }

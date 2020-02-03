@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -15,16 +14,29 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// Service defines a set of functions that can be
+// implemented by any type that stores and retrieves the anchoring, and pre anchoring details.
+type Service interface {
+
+	// PreCommitAnchor will call the transaction PreCommit on the smart contract, to pre commit a document update
+	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan error, err error)
+
+	// CommitAnchor will send a commit transaction to Ethereum.
+	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error)
+
+	// GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
+	GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)
+}
+
 type service struct {
 	config           Config
 	anchorRepository Repository
-	client           centchain.API
 	queue            *queue.Server
 	jobsMan          jobs.Manager
 }
 
-func newService(config Config, anchorRepository Repository, queue *queue.Server, client centchain.API, jobsMan jobs.Manager) AnchorRepository {
-	return &service{config: config, anchorRepository: anchorRepository, client: client, queue: queue, jobsMan: jobsMan}
+func newService(config Config, anchorRepository Repository, queue *queue.Server, jobsMan jobs.Manager) Service {
+	return &service{config: config, anchorRepository: anchorRepository, queue: queue, jobsMan: jobsMan}
 }
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.

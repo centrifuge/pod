@@ -103,7 +103,7 @@ type service struct {
 	config     Config
 	repo       Repository
 	notifier   notification.Sender
-	anchorRepo anchors.AnchorRepository
+	anchorSrv  anchors.Service
 	registry   *ServiceRegistry
 	idService  identity.Service
 	queueSrv   queue.TaskQueuer
@@ -116,7 +116,7 @@ var srvLog = logging.Logger("document-service")
 func DefaultService(
 	config Config,
 	repo Repository,
-	anchorRepo anchors.AnchorRepository,
+	anchorSrv anchors.Service,
 	registry *ServiceRegistry,
 	idService identity.Service,
 	queueSrv queue.TaskQueuer,
@@ -124,7 +124,7 @@ func DefaultService(
 	return service{
 		config:     config,
 		repo:       repo,
-		anchorRepo: anchorRepo,
+		anchorSrv:  anchorSrv,
 		notifier:   notification.NewWebhookSender(),
 		registry:   registry,
 		idService:  idService,
@@ -162,7 +162,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorSrv).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -208,7 +208,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		}
 	}
 
-	if err := RequestDocumentSignatureValidator(s.anchorRepo, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, model); err != nil {
+	if err := RequestDocumentSignatureValidator(s.anchorSrv, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -276,7 +276,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		}
 	}
 
-	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepo, collaborator).Validate(old, model); err != nil {
+	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorSrv, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -439,11 +439,11 @@ func (s service) Validate(ctx context.Context, model Model, old Model) error {
 
 	// If old version provided
 	if old != nil {
-		if err := UpdateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
+		if err := UpdateVersionValidator(s.anchorSrv).Validate(old, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
 	} else {
-		if err := CreateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
+		if err := CreateVersionValidator(s.anchorSrv).Validate(nil, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
 	}

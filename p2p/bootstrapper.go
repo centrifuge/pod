@@ -35,7 +35,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	tokenRegistry, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	tokenRegistry, ok := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	if !ok {
 		return errors.New("token registry is not initialised")
 	}

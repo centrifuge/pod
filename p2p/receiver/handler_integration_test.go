@@ -40,7 +40,7 @@ import (
 
 var (
 	handler    *receiver.Handler
-	anchorRepo anchors.AnchorRepository
+	anchorSrv  anchors.Service
 	cfg        config.Configuration
 	idService  identity.Service
 	idFactory  identity.Factory
@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
-	anchorRepo = ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
@@ -166,7 +166,7 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
+	anchorConfirmations, err := anchorSrv.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -215,7 +215,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, err := anchors.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
+	anchorConfirmations, err := anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor := <-anchorConfirmations
@@ -245,7 +245,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	docRootTyped, err = anchors.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
-	anchorConfirmations, err = anchorRepo.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
+	anchorConfirmations, err = anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
 	watchCommittedAnchor = <-anchorConfirmations

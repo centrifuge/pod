@@ -29,7 +29,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
 	ctx[storage.BootstrappedDB] = repo
 	ctx[jobs.BootstrappedService] = jobsv1.NewManager(&testingconfig.MockConfig{}, jobsv1.NewRepository(repo))
-	ctx[anchors.BootstrappedAnchorRepo] = new(testinganchors.MockAnchorRepo)
+	ctx[anchors.BootstrappedAnchorService] = new(testinganchors.MockAnchorService)
 	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
 	ctx[jobs.BootstrappedService] = new(testingjobs.MockJobManager)
 	ctx[bootstrap.BootstrappedQueueServer] = new(queue.Server)

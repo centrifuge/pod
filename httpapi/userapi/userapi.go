@@ -16,7 +16,7 @@ const (
 
 // Register registers the core apis to the router.
 func Register(ctx map[string]interface{}, r chi.Router) {
-	tokenRegistry := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	tokenRegistry := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	userAPISrv := ctx[BootstrappedUserAPIService].(Service)
 	h := handler{
 		tokenRegistry: tokenRegistry,

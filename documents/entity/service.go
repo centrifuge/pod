@@ -34,7 +34,7 @@ type service struct {
 	factory                 identity.Factory
 	processor               documents.DocumentRequestProcessor
 	erService               entityrelationship.Service
-	anchorRepo              anchors.AnchorRepository
+	anchorSrv               anchors.Service
 	receivedEntityValidator func() documents.ValidatorGroup
 }
 
@@ -46,7 +46,7 @@ func DefaultService(
 	jobManager jobs.Manager,
 	factory identity.Factory,
 	erService entityrelationship.Service,
-	anchorRepo anchors.AnchorRepository,
+	anchorSrv anchors.Service,
 	processor documents.DocumentRequestProcessor,
 	receivedEntityValidator func() documents.ValidatorGroup,
 ) Service {
@@ -57,7 +57,7 @@ func DefaultService(
 		Service:                 srv,
 		factory:                 factory,
 		erService:               erService,
-		anchorRepo:              anchorRepo,
+		anchorSrv:               anchorSrv,
 		processor:               processor,
 		receivedEntityValidator: receivedEntityValidator,
 	}
@@ -113,7 +113,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory, s.anchorRepo))
+	new, err = s.validateAndPersist(ctx, old, new, UpdateValidator(s.factory, s.anchorSrv))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -148,7 +148,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 	//	}
 	//
 	//	// check if stored document is the latest version
-	//	if err := documents.LatestVersionValidator(s.anchorRepo).Validate(nil, entity); err != nil {
+	//	if err := documents.LatestVersionValidator(s.anchorSrv).Validate(nil, entity); err != nil {
 	//		return s.requestEntityWithRelationship(ctx, relationship)
 	//	}
 	//
@@ -303,7 +303,7 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
 
-	err = UpdateValidator(s.factory, s.anchorRepo).Validate(old, e)
+	err = UpdateValidator(s.factory, s.anchorSrv).Validate(old, e)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

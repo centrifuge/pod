@@ -266,10 +266,10 @@ func TestValidator_TransitionValidator(t *testing.T) {
 func TestValidator_SignatureValidator(t *testing.T) {
 	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	assert.NoError(t, err)
-	repo := new(mockRepo)
-	repo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv := new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	idService := new(testingcommons.MockIdentityService)
-	sv := SignatureValidator(idService, repo)
+	sv := SignatureValidator(idService, anchorSrv)
 
 	// fail to get signing root
 	model := new(mockModel)
@@ -317,7 +317,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, repo)
+	sv = SignatureValidator(idService, anchorSrv)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -337,7 +337,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// model author not found
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, repo)
+	sv = SignatureValidator(idService, anchorSrv)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -358,7 +358,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// signer not part of signing collaborators
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, repo)
+	sv = SignatureValidator(idService, anchorSrv)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -379,7 +379,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// model timestamp err
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, repo)
+	sv = SignatureValidator(idService, anchorSrv)
 	model = new(mockModel)
 	model.On("ID").Return(utils.RandomSlice(32))
 	model.On("CurrentVersion").Return(utils.RandomSlice(32))
@@ -399,7 +399,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 
 	// success
 	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, repo)
+	sv = SignatureValidator(idService, anchorSrv)
 	s, err = account.SignMsg(sr)
 	assert.NoError(t, err)
 	acID := account.GetIdentityID()
@@ -494,7 +494,7 @@ func TestPreAnchorValidator(t *testing.T) {
 }
 
 func TestValidator_LatestVersionValidator(t *testing.T) {
-	repo := mockRepo{}
+	anchorSrv := mockAnchorService{}
 	//zeros := [32]byte{}
 	next := utils.RandomSlice(32)
 	nextAid, err := anchors.ToAnchorID(next)
@@ -508,27 +508,27 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 	// failed to convert to anchor ID
 	model := new(mockModel)
 	model.On("NextVersion").Return(utils.RandomSlice(10)).Once()
-	lv := LatestVersionValidator(repo)
+	lv := LatestVersionValidator(anchorSrv)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
 
 	// successful
-	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	model = new(mockModel)
 	model.On("NextVersion").Return(next).Once()
-	lv = LatestVersionValidator(repo)
+	lv = LatestVersionValidator(anchorSrv)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.NoError(t, err)
 
 	// fail anchor exists
 	model = new(mockModel)
-	repo = mockRepo{}
-	repo.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	anchorSrv = mockAnchorService{}
+	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
 	model.On("NextVersion").Return(next).Once()
-	lv = LatestVersionValidator(repo)
+	lv = LatestVersionValidator(anchorSrv)
 	err = lv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -536,7 +536,7 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 }
 
 func TestValidator_CurrentVersionValidator(t *testing.T) {
-	repo := mockRepo{}
+	anchorSrv := mockAnchorService{}
 	//zeros := [32]byte{}
 	next := utils.RandomSlice(32)
 	nextAid, err := anchors.ToAnchorID(next)
@@ -550,27 +550,27 @@ func TestValidator_CurrentVersionValidator(t *testing.T) {
 	// failed to convert to anchor ID
 	model := new(mockModel)
 	model.On("CurrentVersion").Return(utils.RandomSlice(10)).Once()
-	cv := currentVersionValidator(repo)
+	cv := currentVersionValidator(anchorSrv)
 	err = cv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
 
 	// successful
-	repo.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(next).Once()
-	cv = currentVersionValidator(repo)
+	cv = currentVersionValidator(anchorSrv)
 	err = cv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.NoError(t, err)
 
 	// fail anchor exists
 	model = new(mockModel)
-	repo = mockRepo{}
-	repo.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	anchorSrv = mockAnchorService{}
+	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
 	model.On("CurrentVersion").Return(next).Once()
-	cv = currentVersionValidator(repo)
+	cv = currentVersionValidator(anchorSrv)
 	err = cv.Validate(nil, model)
 	model.AssertExpectations(t)
 	assert.Error(t, err)
@@ -578,7 +578,7 @@ func TestValidator_CurrentVersionValidator(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator(t *testing.T) {
-	av := anchoredValidator(mockRepo{})
+	av := anchoredValidator(mockAnchorService{})
 
 	// failed anchorID
 	model := new(mockModel)
@@ -609,7 +609,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// failed to get docRoot from chain
 	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
-	r := &mockRepo{}
+	r := &mockAnchorService{}
 	av = anchoredValidator(r)
 	r.On("GetAnchorData", anchorID).Return(nil, time.Now(), errors.New("error")).Once()
 	model = new(mockModel)
@@ -623,7 +623,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 
 	// mismatched doc roots
 	docRoot := anchors.RandomDocumentRoot()
-	r = &mockRepo{}
+	r = &mockAnchorService{}
 	av = anchoredValidator(r)
 	r.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	model = new(mockModel)
@@ -636,7 +636,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "mismatched document roots")
 
 	// anchored after max allowed time
-	r = &mockRepo{}
+	r = &mockAnchorService{}
 	av = anchoredValidator(r)
 	tm := time.Now()
 	r.On("GetAnchorData", anchorID).Return(docRoot, tm, nil).Once()
@@ -651,7 +651,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "document was anchored after max allowed time for anchor")
 
 	// success
-	r = &mockRepo{}
+	r = &mockAnchorService{}
 	av = anchoredValidator(r)
 	r.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
 	model = new(mockModel)
@@ -769,8 +769,8 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	attrs[1].Value.Signed.DocumentVersion = id
 	aid, err := anchors.ToAnchorID(id)
 	assert.NoError(t, err)
-	repo := new(mockRepo)
-	repo.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+	anchorSrv := new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
 
 	ts := time.Now().UTC()
 	model = new(mockModel)
@@ -783,16 +783,16 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	payload := attributeSignaturePayload(signed.Identity[:], docID, id, signed.Value)
 	srv := new(testingcommons.MockIdentityService)
 	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(errors.New("failed")).Once()
-	asv = attributeValidator(repo, srv)
+	asv = attributeValidator(anchorSrv, srv)
 	err = asv.Validate(nil, model)
 	assert.Error(t, err)
-	repo.AssertExpectations(t)
+	anchorSrv.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	model.AssertExpectations(t)
 
 	// success
-	repo = new(mockRepo)
-	repo.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+	anchorSrv = new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
 
 	model = new(mockModel)
 	model.On("Timestamp").Return(ts, nil).Once()
@@ -800,10 +800,10 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	model.On("ID").Return(docID).Once()
 	srv = new(testingcommons.MockIdentityService)
 	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(nil).Once()
-	asv = attributeValidator(repo, srv)
+	asv = attributeValidator(anchorSrv, srv)
 	err = asv.Validate(nil, model)
 	assert.NoError(t, err)
-	repo.AssertExpectations(t)
+	anchorSrv.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	model.AssertExpectations(t)
 }

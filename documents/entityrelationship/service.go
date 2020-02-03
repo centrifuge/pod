@@ -30,7 +30,7 @@ type service struct {
 	queueSrv   queue.TaskQueuer
 	jobManager jobs.Manager
 	factory    identity.Factory
-	anchorRepo anchors.AnchorRepository
+	anchorSrv  anchors.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -40,7 +40,7 @@ func DefaultService(
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
 	factory identity.Factory,
-	anchorRepo anchors.AnchorRepository,
+	anchorSrv anchors.Service,
 ) Service {
 	return service{
 		repo:       repo,
@@ -48,7 +48,7 @@ func DefaultService(
 		jobManager: jobManager,
 		Service:    srv,
 		factory:    factory,
-		anchorRepo: anchorRepo,
+		anchorSrv:  anchorSrv,
 	}
 }
 
@@ -124,7 +124,7 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentNotFound, err)
 	}
 
-	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory, s.anchorRepo))
+	updated, err = s.validateAndPersist(ctx, old, updated, UpdateValidator(s.factory, s.anchorSrv))
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, err
 	}
@@ -219,7 +219,7 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	}
 
 	// validate invoice
-	err = UpdateValidator(s.factory, s.anchorRepo).Validate(r, er)
+	err = UpdateValidator(s.factory, s.anchorSrv).Validate(r, er)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

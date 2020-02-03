@@ -44,19 +44,19 @@ type Client interface {
 
 // defaultProcessor implements AnchorProcessor interface
 type defaultProcessor struct {
-	identityService  identity.Service
-	p2pClient        Client
-	anchorRepository anchors.AnchorRepository
-	config           Config
+	identityService identity.Service
+	p2pClient       Client
+	anchorSrv       anchors.Service
+	config          Config
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.Service, p2pClient Client, repository anchors.AnchorRepository, config Config) AnchorProcessor {
+func DefaultProcessor(idService identity.Service, p2pClient Client, anchorSrv anchors.Service, config Config) AnchorProcessor {
 	return defaultProcessor{
-		identityService:  idService,
-		p2pClient:        p2pClient,
-		anchorRepository: repository,
-		config:           config,
+		identityService: idService,
+		p2pClient:       p2pClient,
+		anchorSrv:       anchorSrv,
+		config:          config,
 	}
 }
 
@@ -114,7 +114,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
 func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
-	psv := SignatureValidator(dp.identityService, dp.anchorRepository)
+	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)
@@ -132,7 +132,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
-	psv := SignatureValidator(dp.identityService, dp.anchorRepository)
+	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate signatures: %v", err)
@@ -159,7 +159,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 	}
 
 	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
-	done, err := dp.anchorRepository.PreCommitAnchor(ctx, anchorID, sRoot)
+	done, err := dp.anchorSrv.PreCommitAnchor(ctx, anchorID, sRoot)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
-	pav := PreAnchorValidator(dp.identityService, dp.anchorRepository)
+	pav := PreAnchorValidator(dp.identityService, dp.anchorSrv)
 	err := pav.Validate(nil, model)
 	if err != nil {
 		return errors.New("pre anchor validation failed: %v", err)
@@ -207,7 +207,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorRepository.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
+	done, err := dp.anchorSrv.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
 	if err != nil {
 		return errors.New("failed to send commit anchor: %v", err)
 	}
@@ -240,7 +240,7 @@ func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, g
 
 // SendDocument does post anchor validations and sends the document to collaborators
 func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {
-	av := PostAnchoredValidator(dp.identityService, dp.anchorRepository)
+	av := PostAnchoredValidator(dp.identityService, dp.anchorSrv)
 	err := av.Validate(nil, model)
 	if err != nil {
 		return errors.New("post anchor validations failed: %v", err)

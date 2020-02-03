@@ -111,15 +111,6 @@ func supportedSchemaVersion() uint {
 	return AnchorSchemaVersion
 }
 
-// newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot) (preCommitData *PreCommitData) {
-	return &PreCommitData{
-		AnchorID:      anchorID,
-		SigningRoot:   signingRoot,
-		SchemaVersion: supportedSchemaVersion(),
-	}
-}
-
 // NewCommitData returns a CommitData with passed in details
 func NewCommitData(anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
 	return &CommitData{

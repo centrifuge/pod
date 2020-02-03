@@ -27,7 +27,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Contains(t, err.Error(), "token registry not initialisation")
 
 	// success
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	err = b.Bootstrap(ctx)
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx[BootstrappedFundingService])

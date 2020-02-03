@@ -51,18 +51,18 @@ var (
 	accountID = did[:]
 )
 
-type mockAnchorRepo struct {
+type mockAnchorSrv struct {
 	mock.Mock
-	anchors.AnchorRepository
+	anchors.Service
 }
 
-func (m *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (m *mockAnchorSrv) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := m.Called(anchorID)
 	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
-func (m *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
+func (m *mockAnchorSrv) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := m.Called(anchorID)
 	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
 	anchoredTime, _ = args.Get(1).(time.Time)
@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
