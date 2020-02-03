@@ -18,7 +18,8 @@ import (
 )
 
 var log = logging.Logger("test-setup")
-var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
+
+//var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 var migrationsRan = len(os.Getenv("MIGRATIONS_RAN")) != 0
 
 // StartPOAGeth runs the proof of authority geth for tests
@@ -73,7 +74,7 @@ func StartBridge() {
 
 // RunSmartContractMigrations migrates smart contracts to localgeth
 func RunSmartContractMigrations() {
-	if isRunningOnCI || migrationsRan {
+	if migrationsRan {
 		return
 	}
 

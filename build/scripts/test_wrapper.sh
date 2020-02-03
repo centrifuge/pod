@@ -37,6 +37,8 @@ while [ $migrate_status -ne 0 ]; do
   migrate_status=$?
 done
 
+## adding this env here as well since the envs from previous step(child script) is not imported
+export MIGRATION_RAN=true
 
 ############################################################
 
@@ -83,6 +85,13 @@ if [ -n "${GETH_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
 else
     echo "Bringing GETH Daemon Down"
     docker rm -f geth-node
+fi
+
+if [ -n "${CC_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
+    echo "Container ${CC_DOCKER_CONTAINER_NAME} was already running before the test setup. Not tearing it down as the assumption is that the container was started outside this context."
+else
+    echo "Bringing Centtrifuge Chain down"
+    docker rm -f cc-node
 fi
 
 echo "Bringing bridge down..."

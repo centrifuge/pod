@@ -353,7 +353,7 @@ func generateAccount(e *httpexpect.Expect, auth string, httpStatus int, payload 
 	return resp.JSON().Object()
 }
 
-// TODO add rest of the endpoints for config
+// TODO add rest of the endpoints for networkConfig
 
 func createInsecureClient() *http.Client {
 	tr := &http.Transport{

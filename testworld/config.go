@@ -5,111 +5,73 @@ package testworld
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/spf13/viper"
 )
 
-// configFile is the main configuration file, used mainly on CI
-const configFile = "configs/base.json"
+// configDir points to the directory containing all configs
+const configDir = "configs"
 
-// localConfigFile is the local configuration file, when running locally for the first time,
-// copy the configFile above to this location so that you can customise for local.
-const localConfigFile = "configs/local/local.json"
+type networkConfig struct {
+	// RunNetwork flag is true of you want to spin up a local setup of entire centrifuge network
+	RunNetwork bool `json:"run_network"`
 
-type testConfig struct {
+	// RunMigrations flag is true when running for first time or network is hard reset
+	RunMigrations bool `json:"run_migrations"`
 
-	// following are env specific configs
+	// CreateHostConfigs flag, make this true this when running in local if configs are not created or outdated
+	CreateHostConfigs bool `json:"create_host_configs"`
 
-	// OtherLocalConfig is used to direct running of Testworld with different config than local json, eg: for switching networks for local testing.
-	// Note that if you change this all other config fields in localConfigFile is ignored.
-	OtherLocalConfig string `json:"otherLocalConfig"`
+	Network            string `json:"network"`
+	EthNodeURL         string `json:"eth_node_url"`
+	TxPoolAccess       bool   `json:"tx_pool_access"`
+	EthAccountKeyPath  string `json:"eth_account_key_path"`
+	EthAccountPassword string `json:"eth_account_password"`
 
-	// RunChains flag, Adjust this based on local testing requirements in localConfigFile
-	RunChains bool `json:"runChains"`
+	CentChainURL        string `json:"cent_chain_url"`
+	CentChainSecret     string `json:"cent_chain_secret"`
+	CentChainAccountID  string `json:"cent_chain_account_id"`
+	CentChainS58Address string `json:"cent_chain_s58_address"`
 
-	// CreateHostConfigs flag, make this true this when running for the first time in local env using localConfigFile
-	CreateHostConfigs bool `json:"createHostConfigs"`
-
-	// RunMigrations flag, make this false if you want to make the tests run faster locally in localConfigFile
-	RunMigrations bool `json:"runMigrations"`
-
-	// following are host(cent node) specific configs
-
-	EthNodeURL      string `json:"ethNodeURL"`
-	AccountKeyPath  string `json:"accountKeyPath"`
-	AccountPassword string `json:"accountPassword"`
-	Network         string `json:"network"`
-	TxPoolAccess    bool   `json:"txPoolAccess"`
+	ContractAddresses *config.SmartContractAddresses `json:"contract_addresses"`
+	DappAddresses     map[string]string              `json:"dapp_addresses"`
 }
 
-func loadConfig(isLocal bool) (testConfig, string, error) {
-	c := configFile
-	if isLocal {
-		c = localConfigFile
-	} else {
-		fmt.Printf("Testworld using config %s\n", configFile)
-	}
-	var config testConfig
-	conf, err := os.Open(c)
+func loadConfig(network string) (nc networkConfig, err error) {
+	file := fmt.Sprintf("%s/%s.json", configDir, network)
+	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		if isLocal {
-			// load the base config if the local config is not available
-			return loadConfig(false)
-		} else {
-			fmt.Println(err.Error())
-			return config, "", err
-		}
-	}
-	defer conf.Close()
-	jsonParser := json.NewDecoder(conf)
-	err = jsonParser.Decode(&config)
-	if err != nil {
-		fmt.Println(err.Error())
-		return config, "", err
+		return nc, err
 	}
 
-	// load custom config specified in OtherLocalConfig, if this is local
-	if isLocal && config.OtherLocalConfig != "" {
-		customConfig, err := loadCustomLocalConfig(config.OtherLocalConfig)
-		if err != nil {
-			// use the default local config
-			fmt.Printf("Testworld using config %s\n", localConfigFile)
-			return config, extractConfigName(localConfigFile), nil
-		}
-		fmt.Printf("Testworld using config %s\n", config.OtherLocalConfig)
-		return customConfig, extractConfigName(config.OtherLocalConfig), nil
-	} else if isLocal {
-		// using the default local config
-		fmt.Printf("Testworld using config %s\n", localConfigFile)
-		return config, extractConfigName(localConfigFile), nil
-	}
-	return config, extractConfigName(configFile), nil
-}
-
-func loadCustomLocalConfig(customConfigFile string) (testConfig, error) {
-	var config testConfig
-	conf, err := os.Open(customConfigFile)
+	err = json.Unmarshal(data, &nc)
 	if err != nil {
-		fmt.Println(err.Error())
-		return config, err
+		return nc, err
 	}
-	defer conf.Close()
-	jsonParser := json.NewDecoder(conf)
-	err = jsonParser.Decode(&config)
-	if err != nil {
-		fmt.Println(err.Error())
-		return config, err
-	}
-	return config, nil
-}
 
-func extractConfigName(path string) string {
-	filename := filepath.Base(path)
-	parts := strings.Split(filename, ".")
-	return parts[0]
+	// if migrations were already run by the wrapper
+	fmt.Println(os.Getenv("MIGRATION_RAN"))
+	if nc.RunMigrations && os.Getenv("MIGRATION_RAN") == "true" {
+		log.Info("not running migrations again")
+		nc.RunMigrations = false
+	}
+
+	// hack to ensure we dont regenerate the configs again.
+	dir, err := ioutil.ReadDir(fmt.Sprintf("hostConfigs/%s", nc.Network))
+	if err != nil {
+		nc.CreateHostConfigs = true
+		return nc, nil
+	}
+
+	// check if the length of dir is len(hostConfigs)+bernard
+	if len(dir) != len(hostConfig)+1 {
+		nc.CreateHostConfigs = true
+	}
+
+	return nc, nil
 }
 
 func updateConfig(dir string, values map[string]interface{}) (err error) {

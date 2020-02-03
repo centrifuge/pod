@@ -53,7 +53,7 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 	tempHostName := "Sleepy"
 	bootnode, err := doctorFord.bernard.p2pURL()
 	assert.NoError(t, err)
-	sleepyHost := doctorFord.createTempHost(tempHostName, doctorFord.twConfigName, defaultP2PTimeout, 8088, 38208, true, true, []string{bootnode})
+	sleepyHost := doctorFord.createTempHost(tempHostName, defaultP2PTimeout, 8088, 38208, true, true, []string{bootnode})
 	doctorFord.addNiceHost(tempHostName, sleepyHost)
 	err = doctorFord.startTempHost(tempHostName)
 	assert.NoError(t, err)

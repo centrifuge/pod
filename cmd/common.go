@@ -38,7 +38,7 @@ func CreateConfig(
 	bootstraps []string,
 	txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string,
 	smartContractAddrs *config.SmartContractAddresses, webhookURL string,
-	centChainID, centChainSecret, centChainAddr string) error {
+	centChainURL, centChainID, centChainSecret, centChainAddr string) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
 		"accountKeyPath":    accountKeyPath,
@@ -53,6 +53,7 @@ func CreateConfig(
 		"txpoolaccess":      txPoolAccess,
 		"preCommitEnabled":  preCommitEnabled,
 		"webhookURL":        webhookURL,
+		"centChainURL":      centChainURL,
 		"centChainID":       centChainID,
 		"centChainSecret":   centChainSecret,
 		"centChainAddr":     centChainAddr,
