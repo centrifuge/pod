@@ -1,6 +1,5 @@
 {
   "run_network": true,
-  "create_host_configs": false,
   "run_migrations": true,
   "network" : "testing",
   "eth_node_url": "ws://127.0.0.1:9546",

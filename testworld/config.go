@@ -59,15 +59,10 @@ func loadConfig(network string) (nc networkConfig, err error) {
 	}
 
 	// hack to ensure we dont regenerate the configs again.
-	dir, err := ioutil.ReadDir(fmt.Sprintf("hostConfigs/%s", nc.Network))
+	_, err = ioutil.ReadDir(fmt.Sprintf("hostConfigs/%s", nc.Network))
 	if err != nil {
 		nc.CreateHostConfigs = true
 		return nc, nil
-	}
-
-	// check if the length of dir is len(hostConfigs)+bernard
-	if len(dir) != len(hostConfig)+1 {
-		nc.CreateHostConfigs = true
 	}
 
 	return nc, nil
