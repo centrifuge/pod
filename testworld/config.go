@@ -27,7 +27,6 @@ type networkConfig struct {
 
 	Network            string `json:"network"`
 	EthNodeURL         string `json:"eth_node_url"`
-	TxPoolAccess       bool   `json:"tx_pool_access"`
 	EthAccountKeyPath  string `json:"eth_account_key_path"`
 	EthAccountPassword string `json:"eth_account_password"`
 

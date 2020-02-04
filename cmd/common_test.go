@@ -61,7 +61,7 @@ func TestCreateConfig(t *testing.T) {
 		keyPath,
 		"", "russianhill",
 		"127.0.0.1", 8028, 38202,
-		nil, true, false, "", scAddrs, "",
+		nil, false, "", scAddrs, "",
 		"ws://127.0.0.1:9944",
 		"0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
 		"0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",

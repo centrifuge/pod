@@ -592,7 +592,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
-	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
@@ -654,7 +653,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}
 	v.Set("ethereum.nodeURL", ethNodeURL)
-	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", "")
 	v.Set("ethereum.accounts.main.password", "")
 	v.Set("centChain.nodeURL", centChainURL)

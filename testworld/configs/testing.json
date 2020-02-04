@@ -3,7 +3,6 @@
   "run_migrations": true,
   "network" : "testing",
   "eth_node_url": "ws://127.0.0.1:9546",
-  "tx_pool_access": true,
   "eth_account_key_path": "../build/scripts/test-dependencies/test-ethereum/migrateAccount.json",
   "eth_account_password": "",
   "cent_chain_url":"ws://127.0.0.1:9944",

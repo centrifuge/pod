@@ -215,7 +215,6 @@ func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, api
 		p2pPort:            p2pPort,
 		p2pTimeout:         p2pTimeout,
 		bootstrapNodes:     bootstraps,
-		txPoolAccess:       r.config.TxPoolAccess,
 		smartContractAddrs: r.contractAddresses,
 		dir:                fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
 		createConfig:       createConfig,
@@ -245,7 +244,6 @@ type host struct {
 	apiPort, p2pPort                                             int64
 	bootstrapNodes                                               []string
 	bootstrappedCtx                                              map[string]interface{}
-	txPoolAccess                                                 bool
 	smartContractAddrs                                           *config.SmartContractAddresses
 	config                                                       config.Configuration
 	identity                                                     identity.DID
@@ -269,8 +267,7 @@ func (h *host) init() error {
 	if h.createConfig {
 		err := cmd.CreateConfig(
 			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
-			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes,
-			h.txPoolAccess, false, h.p2pTimeout,
+			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, false, h.p2pTimeout,
 			h.smartContractAddrs, h.webhookURL,
 			h.centChainURL, h.centChainID, h.centChainSecret, h.centChainAddress)
 		if err != nil {
