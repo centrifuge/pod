@@ -19,7 +19,7 @@ import (
 
 var log = logging.Logger("test-setup")
 
-var migrationsRan = len(os.Getenv("MIGRATIONS_RAN")) != 0
+var migrationsRan = os.Getenv("MIGRATION_RAN") == "true"
 
 // StartPOAGeth runs the proof of authority geth for tests
 func StartPOAGeth() {
