@@ -60,6 +60,12 @@ gen-swagger: ## generates the swagger documentation
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
+create-testworld-config:
+	@if [ "${TESTWORLD_NETWORK}" != "" ]; then\
+		echo ${TESTWORLD_CONFIG} | base64 -D > ./testworld/configs/${TESTWORLD_NETWORK}.json;\
+		echo ${TESTWORLD_ETH_KEY} | base64 -D > ./testworld/configs/${TESTWORLD_NETWORK}.eth;\
+	fi
+
 install-subkey: ## installs subkey
 	curl https://getsubstrate.io -sSf | bash -s -- --fast
 	cargo install --force --git https://github.com/paritytech/substrate subkey
