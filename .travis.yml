@@ -59,6 +59,10 @@ jobs:
       name: "Test world tests"
       script:
         - make create-testworld-config
+        - |
+          if [ "${TESTWORLD_NETWORK}" != "" ]; then
+             export SKIP_MIGRATION=true
+          fi
         - ./build/scripts/test_wrapper.sh testworld
       after_success:
         - bash <(curl -s https://codecov.io/bash)
