@@ -35,10 +35,9 @@ func generateKeys(config config.Configuration) error {
 func CreateConfig(
 	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string,
 	apiPort, p2pPort int64,
-	bootstraps []string,
-	txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string,
+	bootstraps []string, preCommitEnabled bool, p2pConnectionTimeout string,
 	smartContractAddrs *config.SmartContractAddresses, webhookURL string,
-	centChainID, centChainSecret, centChainAddr string) error {
+	centChainURL, centChainID, centChainSecret, centChainAddr string) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
 		"accountKeyPath":    accountKeyPath,
@@ -50,9 +49,9 @@ func CreateConfig(
 		"apiPort":           apiPort,
 		"p2pPort":           p2pPort,
 		"p2pConnectTimeout": p2pConnectionTimeout,
-		"txpoolaccess":      txPoolAccess,
 		"preCommitEnabled":  preCommitEnabled,
 		"webhookURL":        webhookURL,
+		"centChainURL":      centChainURL,
 		"centChainID":       centChainID,
 		"centChainSecret":   centChainSecret,
 		"centChainAddr":     centChainAddr,

@@ -41,15 +41,15 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 			case multiHost:
 				addExternalCollaborator(t, test.docType)
 			case multiHostMultiAccount:
-				addExternalCollaborator_multiHostMultiAccount(t, test.docType)
+				addExternalCollaboratorMultiHostMultiAccount(t, test.docType)
 			case withinHost:
-				addExternalCollaborator_withinHost(t, test.docType)
+				addExternalCollaboratorWithinHost(t, test.docType)
 			}
 		})
 	}
 }
 
-func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
+func addExternalCollaboratorWithinHost(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	accounts := doctorFord.getHost("Bob").accounts
 	a := accounts[0]
@@ -105,7 +105,7 @@ func addExternalCollaborator_withinHost(t *testing.T, documentType string) {
 	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromID))
 }
 
-func addExternalCollaborator_multiHostMultiAccount(t *testing.T, documentType string) {
+func addExternalCollaboratorMultiHostMultiAccount(t *testing.T, documentType string) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	accounts := doctorFord.getHost("Bob").accounts
