@@ -9,7 +9,6 @@ import (
 )
 
 func TestConfig_Happy(t *testing.T) {
-	t.Parallel()
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// check charlies main account

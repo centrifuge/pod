@@ -36,8 +36,6 @@ func TestMissingNode_InvalidIdentity(t *testing.T) {
 }
 
 func TestMissingNode_MissingP2PKey(t *testing.T) {
-	t.Parallel()
-
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 

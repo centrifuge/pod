@@ -15,7 +15,6 @@ import (
 )
 
 func TestGenericMint_successful(t *testing.T) {
-	t.Parallel()
 	defaultNFTMint(t, typeDocuments)
 }
 
@@ -115,7 +114,6 @@ func TestInvoiceUnpaidMint_errors(t *testing.T) {
 }
 
 func TestTransferNFT_successful(t *testing.T) {
-	t.Parallel()
 	tokenID := defaultNFTMint(t, typeDocuments)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")

@@ -258,6 +258,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 }
 
 func TestDocument_invalidAttributes(t *testing.T) {
+	t.Parallel()
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
@@ -268,6 +269,7 @@ func TestDocument_invalidAttributes(t *testing.T) {
 }
 
 func TestDocument_latestDocumentVersion(t *testing.T) {
+	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")

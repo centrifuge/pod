@@ -12,6 +12,7 @@ import (
 )
 
 func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
+	t.Parallel()
 	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
 		return genericCoreAPICreate(dids), nil
 	}, func(dids []string) (map[string]interface{}, map[string]string) {
@@ -20,10 +21,12 @@ func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
 }
 
 func TestV2GenericCreate_next_version(t *testing.T) {
+	t.Parallel()
 	createNextDocument(t, genericCoreAPICreate)
 }
 
 func TestV2EntityCreateAndCommit_new_document(t *testing.T) {
+	t.Parallel()
 	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
 		params := map[string]string{
 			"legal_name": "test company",
@@ -41,6 +44,7 @@ func TestV2EntityCreateAndCommit_new_document(t *testing.T) {
 }
 
 func TestV2EntityCreate_next_version(t *testing.T) {
+	t.Parallel()
 	createNextDocument(t, func(dids []string) map[string]interface{} {
 		var id string
 		if len(dids) > 0 {

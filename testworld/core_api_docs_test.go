@@ -13,6 +13,7 @@ import (
 )
 
 func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
+	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
@@ -53,6 +54,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 }
 
 func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
+	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")

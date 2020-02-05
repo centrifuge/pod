@@ -47,13 +47,11 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 }
 
 func TestHost_RestartWithAccounts(t *testing.T) {
-	t.Parallel()
-
 	// Name can be randomly generated
 	tempHostName := "Sleepy"
 	bootnode, err := doctorFord.bernard.p2pURL()
 	assert.NoError(t, err)
-	sleepyHost := doctorFord.createTempHost(tempHostName, defaultP2PTimeout, 8088, 38208, true, true, []string{bootnode})
+	sleepyHost := doctorFord.createTempHost(tempHostName, defaultP2PTimeout, 8090, 38210, true, true, []string{bootnode})
 	doctorFord.addNiceHost(tempHostName, sleepyHost)
 	err = doctorFord.startTempHost(tempHostName)
 	assert.NoError(t, err)

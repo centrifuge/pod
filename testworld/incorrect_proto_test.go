@@ -16,7 +16,6 @@ import (
 
 //send a valid signature request message
 func TestIncorrectProto_ValidMessage(t *testing.T) {
-	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -41,7 +40,6 @@ func TestIncorrectProto_ValidMessage(t *testing.T) {
 
 //send a signature request message with an incorrect node version
 func TestIncorrectProto_DifferentVersion(t *testing.T) {
-	t.Parallel()
 	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -68,7 +66,6 @@ func TestIncorrectProto_DifferentVersion(t *testing.T) {
 
 //send a signature request message with an invalid body
 func TestIncorrectProto_InvalidBody(t *testing.T) {
-	t.Parallel()
 	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -95,7 +92,6 @@ func TestIncorrectProto_InvalidBody(t *testing.T) {
 
 //send a signature request message with an invalid header
 func TestIncorrectProto_InvalidHeader(t *testing.T) {
-	t.Parallel()
 	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -122,7 +118,6 @@ func TestIncorrectProto_InvalidHeader(t *testing.T) {
 
 //send a signature request message with a message which is larger than the max allowed size
 func TestIncorrectProto_AboveMaxSize(t *testing.T) {
-	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
