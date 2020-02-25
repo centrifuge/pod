@@ -73,6 +73,24 @@ func (m *MockModel) RemoveCollaborators(dids []identity.DID) error {
 	return args.Error(0)
 }
 
+func (m *MockModel) AddRole(roleKey string, dids []identity.DID) (*coredocumentpb.Role, error) {
+	args := m.Called(roleKey, dids)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) GetRole(roleID []byte) (*coredocumentpb.Role, error) {
+	args := m.Called(roleID)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) UpdateRole(roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
+	args := m.Called(roleID, dids)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
+
 type MockService struct {
 	Service
 	mock.Mock

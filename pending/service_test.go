@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -308,6 +309,98 @@ func TestService_RemoveCollaborators(t *testing.T) {
 	d1, err := s.RemoveCollaborators(ctx, docID, []identity.DID{testingidentity.GenerateRandomDID()})
 	assert.NoError(t, err)
 	assert.Equal(t, d, d1)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestService_AddRole(t *testing.T) {
+	s := service{}
+	key := "roleKey"
+	collabs := []identity.DID{testingidentity.GenerateRandomDID()}
+
+	// missing did from context
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	_, err := s.AddRole(ctx, docID, key, collabs)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.AddRole(ctx, docID, key, collabs)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// success
+	d := new(documents.MockModel)
+	d.On("AddRole", key, collabs).Return(new(coredocumentpb.Role), nil).Once()
+	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	_, err = s.AddRole(ctx, docID, key, collabs)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestService_GetRole(t *testing.T) {
+	s := service{}
+	key := utils.RandomSlice(32)
+
+	// missing did from context
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	_, err := s.GetRole(ctx, docID, key)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.GetRole(ctx, docID, key)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// success
+	d := new(documents.MockModel)
+	d.On("GetRole", key).Return(new(coredocumentpb.Role), nil).Once()
+	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	_, err = s.GetRole(ctx, docID, key)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestService_UpdateRole(t *testing.T) {
+	s := service{}
+	key := utils.RandomSlice(32)
+	collabs := []identity.DID{testingidentity.GenerateRandomDID()}
+
+	// missing did from context
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	_, err := s.UpdateRole(ctx, docID, key, collabs)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.UpdateRole(ctx, docID, key, collabs)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// success
+	d := new(documents.MockModel)
+	d.On("UpdateRole", key, collabs).Return(new(coredocumentpb.Role), nil).Once()
+	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	_, err = s.UpdateRole(ctx, docID, key, collabs)
+	assert.NoError(t, err)
 	repo.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
