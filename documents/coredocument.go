@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 )
@@ -363,8 +365,8 @@ func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey
 	return uattrs, oldAttrsMap, err
 }
 
-// newRole returns a new role with random role key
-func newRole() *coredocumentpb.Role {
+// newRoleWithRandomKey returns a new role with random role key
+func newRoleWithRandomKey() *coredocumentpb.Role {
 	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(idSize)}
 }
 
@@ -377,7 +379,7 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 	}
 
 	// create a role for given collaborators
-	role := newRole()
+	role := newRoleWithRandomKey()
 	for _, c := range collaborators {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
@@ -1066,4 +1068,77 @@ func (cd *CoreDocument) RemoveCollaborators(dids []identity.DID) error {
 	}
 
 	return nil
+}
+
+// GetRole returns the role associated with key.
+// key has to be 32 bytes long.
+func (cd *CoreDocument) GetRole(key []byte) (*coredocumentpb.Role, error) {
+	if len(key) != idSize {
+		return nil, ErrInvalidRoleKey
+	}
+
+	for _, r := range cd.Document.Roles {
+		if bytes.Equal(r.RoleKey, key) {
+			return r, nil
+		}
+	}
+
+	return nil, ErrRoleNotExist
+}
+
+// AddRole adds a nw role to the document.
+// key can either be plain text or 32 byte hex string, key cannot be empty
+// If key is not 32 byte hex string, then the key is keccak'ed for 32 byte key
+func (cd *CoreDocument) AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error) {
+	rk, err := get32ByteKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = cd.GetRole(rk); err == nil {
+		return nil, ErrRoleExist
+	}
+
+	r := newRoleWithCollaborators(collabs...)
+	if r == nil {
+		return nil, ErrEmptyCollaborators
+	}
+	r.RoleKey = rk
+	cd.Document.Roles = append(cd.Document.Roles, r)
+	cd.Modified = true
+	return r, nil
+}
+
+// UpdateRole updates existing role with provided collaborators
+func (cd *CoreDocument) UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
+	r, err := cd.GetRole(rk)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(collabs) < 1 {
+		return nil, ErrEmptyCollaborators
+	}
+
+	r.Collaborators = nil
+	for _, c := range collabs {
+		c := c
+		r.Collaborators = append(r.Collaborators, c[:])
+	}
+	cd.Modified = true
+	return r, nil
+}
+
+func get32ByteKey(key string) ([]byte, error) {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return nil, ErrEmptyRoleKey
+	}
+
+	kb, err := hexutil.Decode(key)
+	if err == nil && len(kb) == idSize {
+		return kb, nil
+	}
+
+	return crypto.Sha256Hash([]byte(key))
 }

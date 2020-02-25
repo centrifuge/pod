@@ -145,6 +145,21 @@ const (
 
 	// ErrDocumentValidation must be used when document validation fails
 	ErrDocumentValidation = errors.Error("document validation failure")
+
+	// ErrRoleNotExist must be used when role doesn't exist in the document.
+	ErrRoleNotExist = errors.Error("role doesn't exist")
+
+	// ErrRoleExist must be used when role exist in the document.
+	ErrRoleExist = errors.Error("role already exists")
+
+	// ErrEmptyRoleKey must be used when role key is empty
+	ErrEmptyRoleKey = errors.Error("empty role key")
+
+	// ErrEmptyCollaborators must be used when collaborator list is empty
+	ErrEmptyCollaborators = errors.Error("empty collaborators")
+
+	// ErrInvalidRoleKey must be used when role key is not 32 bytes long
+	ErrInvalidRoleKey = errors.Error("role key is invalid")
 )
 
 // Error wraps an error with specific key
