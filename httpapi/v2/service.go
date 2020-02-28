@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -49,4 +50,19 @@ func (s Service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 // RemoveCollaborators removes collaborators from the document.
 func (s Service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
 	return s.pendingDocSrv.RemoveCollaborators(ctx, docID, dids)
+}
+
+// AddRole adds a new role to the document
+func (s Service) AddRole(ctx context.Context, docID []byte, roleKey string, dids []identity.DID) (*coredocumentpb.Role, error) {
+	return s.pendingDocSrv.AddRole(ctx, docID, roleKey, dids)
+}
+
+// GetRole gets the role from the document
+func (s Service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error) {
+	return s.pendingDocSrv.GetRole(ctx, docID, roleID)
+}
+
+// UpdateRole updates the role in the document
+func (s Service) UpdateRole(ctx context.Context, docID, roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
+	return s.pendingDocSrv.UpdateRole(ctx, docID, roleID, dids)
 }

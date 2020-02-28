@@ -5,6 +5,7 @@ package pending
 import (
 	"context"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -65,4 +66,10 @@ func (m *MockService) RemoveCollaborators(ctx context.Context, docID []byte, did
 	args := m.Called(ctx, docID, dids)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
+}
+
+func (m *MockService) GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error) {
+	args := m.Called(ctx, docID, roleID)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
 }
