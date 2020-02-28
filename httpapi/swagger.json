@@ -2626,6 +2626,65 @@
                 }
             }
         },
+        "/v2/documents/{document_id}/roles": {
+            "post": {
+                "description": "Adds a new role to the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Adds a new role to the document.",
+                "operationId": "add_role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/v2.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/documents/{document_id}/roles/{role_id}": {
             "get": {
                 "description": "Returns the role associated with the role ID in the document.",

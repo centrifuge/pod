@@ -73,3 +73,9 @@ func (m *MockService) GetRole(ctx context.Context, docID, roleID []byte) (*cored
 	r, _ := args.Get(0).(*coredocumentpb.Role)
 	return r, args.Error(1)
 }
+
+func (m *MockService) AddRole(ctx context.Context, docID []byte, roleKey string, collab []identity.DID) (*coredocumentpb.Role, error) {
+	args := m.Called(ctx, docID, roleKey, collab)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
