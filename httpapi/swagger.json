@@ -2651,6 +2651,16 @@
                         "name": "document_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Add Role Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/v2.AddRole"
+                        }
                     }
                 ],
                 "responses": {
@@ -2717,6 +2727,80 @@
                         "name": "role_id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/v2.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates an existing role on the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Updates an existing role on the document.",
+                "operationId": "update_role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Role Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/v2.UpdateRole"
+                        }
                     }
                 ],
                 "responses": {
@@ -3966,6 +4050,21 @@
                 }
             }
         },
+        "v2.AddRole": {
+            "type": "object",
+            "properties": {
+                "collaborators": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "key": {
+                    "description": "Key is either hex encoded 32 byte ID or string label.\nString label is used as a preimage to sha256 for 32 byte hash.",
+                    "type": "string"
+                }
+            }
+        },
         "v2.CreateDocumentRequest": {
             "type": "object",
             "properties": {
@@ -4062,6 +4161,17 @@
                     ]
                 },
                 "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v2.UpdateRole": {
+            "type": "object",
+            "properties": {
+                "collaborators": {
                     "type": "array",
                     "items": {
                         "type": "string"

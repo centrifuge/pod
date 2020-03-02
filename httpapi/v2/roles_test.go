@@ -156,3 +156,66 @@ func TestHandler_AddRole(t *testing.T) {
 	}, gr)
 	psrv.AssertExpectations(t)
 }
+
+func TestHandler_UpdateRole(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("patch", "/documents/{document_id}/roles/{role_id}", b).WithContext(ctx)
+	}
+
+	// invalid doc id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
+	rctx.URLParams.Keys[1] = RoleIDParam
+	rctx.URLParams.Values[0] = "some invalid id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.UpdateRole(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// invalid role ID
+	docID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	rctx.URLParams.Values[1] = "some roleID"
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.UpdateRole(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRoleID.Error())
+
+	// bad address
+	roleID := utils.RandomSlice(32)
+	rctx.URLParams.Values[1] = hexutil.Encode(roleID)
+	var role struct {
+		Collaborators []string `json:"collaborators"`
+	}
+	role.Collaborators = []string{"invalid collaborator"}
+	d, err := json.Marshal(role)
+	assert.NoError(t, err)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.UpdateRole(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "malformed address provided")
+
+	// missing document or role
+	collab := testingidentity.GenerateRandomDID()
+	role.Collaborators[0] = collab.String()
+	d, err = json.Marshal(role)
+	assert.NoError(t, err)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	psrv := new(pending.MockService)
+	psrv.On("UpdateRole", mock.Anything, docID, roleID, []identity.DID{collab}).Return(nil, errors.New("NotFound")).Once()
+	h.srv.pendingDocSrv = psrv
+	h.UpdateRole(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.Contains(t, w.Body.String(), "NotFound")
+
+	// success
+	psrv.On("UpdateRole", mock.Anything, docID, roleID, []identity.DID{collab}).Return(&coredocumentpb.Role{}, nil).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.UpdateRole(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	psrv.AssertExpectations(t)
+}

@@ -79,13 +79,14 @@ func (h handler) GetRole(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, toClientRole(rl))
 }
 
-// AddRle adds a new role to the document.
+// AddRole adds a new role to the document.
 // @summary Adds a new role to the document.
 // @description Adds a new role to the document.
 // @id add_role
 // @tags Documents
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param document_id path string true "Document Identifier"
+// @param body body v2.AddRole true "Add Role Request"
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
@@ -123,4 +124,64 @@ func (h handler) AddRole(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, toClientRole(nrl))
+}
+
+// UpdateRole holds the collaborators that are to be replaced with older one in the role.
+type UpdateRole struct {
+	Collaborators []identity.DID `json:"collaborators" swaggertype:"array,string"`
+}
+
+// UpdateRole updates an exiting role on the document.
+// @summary Updates an existing role on the document.
+// @description Updates an existing role on the document.
+// @id update_role
+// @tags Documents
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param role_id path string true "Role ID"
+// @param body body v2.UpdateRole true "Update Role Request"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @success 200 {object} v2.Role
+// @router /v2/documents/{document_id}/roles/{role_id} [patch]
+func (h handler) UpdateRole(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	roleID, err := hexutil.Decode(chi.URLParam(r, RoleIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrInvalidRoleID
+		return
+	}
+
+	var ur UpdateRole
+	err = unmarshalBody(r, &ur)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	rl, err := h.srv.UpdateRole(r.Context(), docID, roleID, ur.Collaborators)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, toClientRole(rl))
 }

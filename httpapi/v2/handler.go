@@ -28,4 +28,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/collaborators", h.RemoveCollaborators)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.GetRole)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/roles", h.AddRole)
+	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.UpdateRole)
 }
