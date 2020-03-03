@@ -491,7 +491,7 @@ func getRole(e *httpexpect.Expect, auth, docID, roleID string, status int) *http
 }
 
 func addRole(e *httpexpect.Expect, auth, docID, roleID string, collaborators []string, status int) *httpexpect.Object {
-	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/roles/"), auth).WithJSON(map[string]interface{}{
+	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/roles"), auth).WithJSON(map[string]interface{}{
 		"key":           roleID,
 		"collaborators": collaborators,
 	}).Expect().Status(status).JSON().Object()
