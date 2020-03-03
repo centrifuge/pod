@@ -334,10 +334,16 @@ func TestService_AddRole(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
-	// success
+	// failed to add role
 	d := new(documents.MockModel)
+	repo.On("Get", did[:], docID).Return(d, nil).Twice()
+	d.On("AddRole", key, collabs).Return(nil, errors.New("failed to add role")).Once()
+	_, err = s.AddRole(ctx, docID, key, collabs)
+	assert.Error(t, err)
+
+	// success
 	d.On("AddRole", key, collabs).Return(new(coredocumentpb.Role), nil).Once()
-	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
 	_, err = s.AddRole(ctx, docID, key, collabs)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
@@ -395,10 +401,16 @@ func TestService_UpdateRole(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
-	// success
+	// failed to patch role
 	d := new(documents.MockModel)
+	d.On("UpdateRole", key, collabs).Return(nil, errors.New("failed to update roles")).Once()
+	repo.On("Get", did[:], docID).Return(d, nil).Twice()
+	_, err = s.UpdateRole(ctx, docID, key, collabs)
+	assert.Error(t, err)
+
+	// success
 	d.On("UpdateRole", key, collabs).Return(new(coredocumentpb.Role), nil).Once()
-	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
 	_, err = s.UpdateRole(ctx, docID, key, collabs)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
