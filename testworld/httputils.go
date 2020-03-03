@@ -477,7 +477,7 @@ func signedAttributeMissing(t *testing.T, res *httpexpect.Object, label string) 
 }
 
 func parseRole(obj *httpexpect.Object) (roleID string, collaborators []string) {
-	roleID = obj.Path("$.role_id").String().Raw()
+	roleID = obj.Path("$.id").String().Raw()
 	for _, c := range obj.Path("$.collaborators").Array().Iter() {
 		collaborators = append(collaborators, c.String().Raw())
 	}

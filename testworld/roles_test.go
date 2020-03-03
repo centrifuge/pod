@@ -4,6 +4,7 @@ package testworld
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -65,10 +66,10 @@ func TestRoles_Add_Update(t *testing.T) {
 	// add role
 	collab := testingidentity.GenerateRandomDID()
 	obj = addRole(alice.httpExpect, alice.id.String(), docID, roleID, []string{collab.String()}, http.StatusOK)
-	obj = getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusOK)
 	groleID, gcollabs := parseRole(obj)
 	assert.Equal(t, roleID, groleID)
-	assert.Equal(t, []string{collab.String()}, gcollabs)
+	assert.Equal(t, []string{strings.ToLower(collab.String())}, gcollabs)
+	obj = getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusOK)
 
 	// update role
 	collab = testingidentity.GenerateRandomDID()
@@ -76,5 +77,5 @@ func TestRoles_Add_Update(t *testing.T) {
 	obj = getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusOK)
 	groleID, gcollabs = parseRole(obj)
 	assert.Equal(t, roleID, groleID)
-	assert.Equal(t, []string{collab.String()}, gcollabs)
+	assert.Equal(t, []string{strings.ToLower(collab.String())}, gcollabs)
 }

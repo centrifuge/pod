@@ -251,7 +251,12 @@ func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, coll
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	return doc.AddRole(roleKey, collabs)
+	r, err := doc.AddRole(roleKey, collabs)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, s.pendingRepo.Update(accID[:], docID, doc)
 }
 
 // UpdateRole updates a role in the given document
@@ -266,5 +271,10 @@ func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs [
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	return doc.UpdateRole(roleID, collabs)
+	r, err := doc.UpdateRole(roleID, collabs)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, s.pendingRepo.Update(accID[:], docID, doc)
 }
