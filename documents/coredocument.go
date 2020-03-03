@@ -1088,7 +1088,7 @@ func (cd *CoreDocument) GetRole(key []byte) (*coredocumentpb.Role, error) {
 
 // AddRole adds a nw role to the document.
 // key can either be plain text or 32 byte hex string, key cannot be empty
-// If key is not 32 byte hex string, then the key is keccak'ed for 32 byte key
+// If key is not 32 byte hex string, then the key is used as pre image for 32 byte key
 func (cd *CoreDocument) AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error) {
 	rk, err := get32ByteKey(key)
 	if err != nil {
