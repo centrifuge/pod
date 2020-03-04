@@ -26,4 +26,7 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}", h.GetDocumentVersion)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/signed_attribute", h.AddSignedAttribute)
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/collaborators", h.RemoveCollaborators)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.GetRole)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/roles", h.AddRole)
+	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.UpdateRole)
 }

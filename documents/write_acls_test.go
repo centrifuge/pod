@@ -325,7 +325,7 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 }
 
 func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
-	role := newRole()
+	role := newRoleWithRandomKey()
 	role.Collaborators = append(role.Collaborators, id[:])
 	rule := &coredocumentpb.TransitionRule{
 		RuleKey:   utils.RandomSlice(32),

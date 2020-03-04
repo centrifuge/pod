@@ -5,9 +5,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 )
 
 func toDocumentsPayload(req DocumentRequest, docID []byte) (payload documents.UpdatePayload, err error) {
@@ -38,4 +40,17 @@ func unmarshalBody(r *http.Request, val interface{}) error {
 	}
 
 	return json.Unmarshal(data, val)
+}
+
+func toClientRole(r *coredocumentpb.Role) Role {
+	var cs []byteutils.HexBytes
+	for _, c := range r.Collaborators {
+		c := c
+		cs = append(cs, c)
+	}
+
+	return Role{
+		ID:            r.RoleKey,
+		Collaborators: cs,
+	}
 }

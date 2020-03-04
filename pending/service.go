@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -39,6 +40,15 @@ type Service interface {
 
 	// RemoveCollaborators removes collaborators from the document.
 	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
+
+	// GetRole returns specific role in the given document
+	GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error)
+
+	// AddRole adds a new role to given document
+	AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error)
+
+	// UpdateRole updates a role in the given document
+	UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
 }
 
 // service implements Service
@@ -212,4 +222,59 @@ func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []i
 	}
 
 	return doc, s.pendingRepo.Update(accID[:], docID, doc)
+}
+
+// GetRole returns specific role in the given document
+func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err := s.pendingRepo.Get(accID[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	return doc.GetRole(roleID)
+}
+
+// AddRole adds a new role to given document
+func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err := s.pendingRepo.Get(accID[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	r, err := doc.AddRole(roleKey, collabs)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, s.pendingRepo.Update(accID[:], docID, doc)
+}
+
+// UpdateRole updates a role in the given document
+func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err := s.pendingRepo.Get(accID[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	r, err := doc.UpdateRole(roleID, collabs)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, s.pendingRepo.Update(accID[:], docID, doc)
 }

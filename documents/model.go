@@ -148,6 +148,15 @@ type Model interface {
 
 	// RemoveCollaborators removes collaborators from the current document.
 	RemoveCollaborators(dids []identity.DID) error
+
+	// GetRole returns the role associated with key.
+	GetRole(key []byte) (*coredocumentpb.Role, error)
+
+	// AddRole adds a nw role to the document.
+	AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error)
+
+	// UpdateRole updates existing role with provided collaborators
+	UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
 }
 
 // TokenRegistry defines NFT related functions.

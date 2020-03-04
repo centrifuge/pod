@@ -1127,3 +1127,100 @@ func TestCoreDocument_RemoveCollaborators(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, found)
 }
+
+func TestCoreDocument_AddRole(t *testing.T) {
+	key := hexutil.Encode(utils.RandomSlice(32))
+	tests := []struct {
+		key     string
+		collabs []identity.DID
+		roleKey []byte
+		err     error
+	}{
+		// empty string
+		{
+			err: ErrEmptyRoleKey,
+		},
+
+		// 30 byte hex
+		{
+			key:     hexutil.Encode(utils.RandomSlice(30)),
+			collabs: []identity.DID{testingidentity.GenerateRandomDID()},
+		},
+
+		// random string
+		{
+			key:     "role key 1",
+			collabs: []identity.DID{testingidentity.GenerateRandomDID()},
+		},
+
+		// missing collabs
+		{
+			key: hexutil.Encode(utils.RandomSlice(32)),
+			err: ErrEmptyCollaborators,
+		},
+
+		// 32 byte key
+		{
+			key:     key,
+			collabs: []identity.DID{testingidentity.GenerateRandomDID()},
+		},
+
+		// role exists
+		{
+			key:     key,
+			collabs: []identity.DID{testingidentity.GenerateRandomDID()},
+			err:     ErrRoleExist,
+		},
+	}
+
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	for _, c := range tests {
+		r, err := cd.AddRole(c.key, c.collabs)
+		if err != nil {
+			assert.Equal(t, err, c.err)
+			continue
+		}
+
+		assert.NoError(t, err)
+		assert.Len(t, r.RoleKey, idSize)
+	}
+}
+
+func TestCoreDocument_UpdateRole(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	// invalid role key
+	key := utils.RandomSlice(30)
+	collabs := []identity.DID{testingidentity.GenerateRandomDID()}
+	_, err = cd.UpdateRole(key, collabs)
+	assert.Error(t, err)
+	assert.Equal(t, err, ErrInvalidRoleKey)
+
+	// missing role
+	key = utils.RandomSlice(32)
+	_, err = cd.UpdateRole(key, collabs)
+	assert.Error(t, err)
+	assert.Equal(t, err, ErrRoleNotExist)
+
+	// empty collabs
+	r, err := cd.AddRole(hexutil.Encode(key), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	assert.Equal(t, r.RoleKey, key)
+	assert.Len(t, r.Collaborators, 1)
+	assert.NotEqual(t, r.Collaborators[0], collabs[0][:])
+	_, err = cd.UpdateRole(key, nil)
+	assert.Error(t, err)
+	assert.Equal(t, err, ErrEmptyCollaborators)
+
+	// success
+	r, err = cd.UpdateRole(key, collabs)
+	assert.NoError(t, err)
+	assert.Equal(t, r.RoleKey, key)
+	assert.Len(t, r.Collaborators, 1)
+	assert.Equal(t, r.Collaborators[0], collabs[0][:])
+	sr, err := cd.GetRole(key)
+	assert.NoError(t, err)
+	assert.Equal(t, r, sr)
+}

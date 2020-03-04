@@ -475,3 +475,32 @@ func signedAttributeMissing(t *testing.T, res *httpexpect.Object, label string) 
 	_, ok := attrs[label]
 	assert.False(t, ok)
 }
+
+func parseRole(obj *httpexpect.Object) (roleID string, collaborators []string) {
+	roleID = obj.Path("$.id").String().Raw()
+	for _, c := range obj.Path("$.collaborators").Array().Iter() {
+		collaborators = append(collaborators, c.String().Raw())
+	}
+	return roleID, collaborators
+}
+
+func getRole(e *httpexpect.Expect, auth, docID, roleID string, status int) *httpexpect.Object {
+	objPost := addCommonHeaders(e.GET("/v2/documents/"+docID+"/roles/"+roleID), auth).
+		Expect().Status(status).JSON().Object()
+	return objPost
+}
+
+func addRole(e *httpexpect.Expect, auth, docID, roleID string, collaborators []string, status int) *httpexpect.Object {
+	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/roles"), auth).WithJSON(map[string]interface{}{
+		"key":           roleID,
+		"collaborators": collaborators,
+	}).Expect().Status(status).JSON().Object()
+	return objPost
+}
+
+func updateRole(e *httpexpect.Expect, auth, docID, roleID string, collaborators []string, status int) *httpexpect.Object {
+	objPost := addCommonHeaders(e.PATCH("/v2/documents/"+docID+"/roles/"+roleID), auth).WithJSON(map[string]interface{}{
+		"collaborators": collaborators,
+	}).Expect().Status(status).JSON().Object()
+	return objPost
+}

@@ -162,7 +162,7 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 		return errors.New("failed to construct NFT: %v", err)
 	}
 
-	role := newRole()
+	role := newRoleWithRandomKey()
 	role.Nfts = append(role.Nfts, nft)
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
