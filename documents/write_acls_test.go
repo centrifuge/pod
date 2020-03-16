@@ -533,3 +533,82 @@ func TestWriteACLs_initTransitionRules(t *testing.T) {
 	assert.Len(t, cd.Document.TransitionRules, 2)
 	assert.Len(t, cd.Document.Roles, 1)
 }
+
+func roleExistsInRules(t *testing.T, cd *CoreDocument, role []byte, checkRoleCount bool, roleCount int) {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		assert.False(t, shouldAddRole(rule, role, fieldMap))
+		if checkRoleCount {
+			assert.Len(t, rule.Roles, roleCount)
+		}
+
+	}
+}
+
+func Test_addDefaultRules(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Document.TransitionRules, 0)
+
+	// no rules
+	role := utils.RandomSlice(32)
+	cd.addDefaultRules(role)
+	assert.Len(t, cd.Document.TransitionRules, 7)
+	roleExistsInRules(t, cd, role, true, 1)
+
+	// all rules present
+	role2 := utils.RandomSlice(32)
+	cd.addDefaultRules(role2)
+	assert.Len(t, cd.Document.TransitionRules, 7)
+	roleExistsInRules(t, cd, role2, true, 2)
+
+	// some rules present
+	cd.Document.TransitionRules[0].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX
+	cd.Document.TransitionRules[1].Field = utils.RandomSlice(5)
+	cd.addDefaultRules(role)
+	assert.Len(t, cd.Document.TransitionRules, 9)
+	roleExistsInRules(t, cd, role, false, 1)
+	cd.addDefaultRules(role2)
+	roleExistsInRules(t, cd, role2, false, 1)
+}
+
+func TestCoreDocument_AddTransitionRuleForAttribute(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	attrKey, err := AttrKeyFromLabel("test1")
+	assert.NoError(t, err)
+	roleKey := utils.RandomSlice(32)
+
+	// no role exists
+	r, err := cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.EqualError(t, err, ErrRoleNotExist.Error())
+	assert.Nil(t, r)
+
+	// create new set of rules
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.Len(t, cd.Document.TransitionRules, 8) // 7(default rules) + 1(attribute rule) = 8
+	roleExistsInRules(t, cd, roleKey, true, 1)
+
+	// add another attr with same role
+	attrKey1, err := AttrKeyFromLabel("test2")
+	assert.NoError(t, err)
+	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey1)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.Len(t, cd.Document.TransitionRules, 9) // 8(old rules) + 1(new rule) = 9
+	roleExistsInRules(t, cd, roleKey, true, 1)
+
+	// new role with old attr
+	roleKey = utils.RandomSlice(32)
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.Len(t, cd.Document.TransitionRules, 10) // 9(old rules) + 1(new rule) = 10
+	roleExistsInRules(t, cd, roleKey, false, 1)
+}

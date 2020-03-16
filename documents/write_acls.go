@@ -7,7 +7,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // ChangedField holds the compact property, old and new value of the field that is changed
@@ -235,7 +237,7 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte,
 }
 
 // addNewTransitionRule creates a new transition rule with the given parameters.
-func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) {
+func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) *coredocumentpb.TransitionRule {
 	rule := &coredocumentpb.TransitionRule{
 		RuleKey:   utils.RandomSlice(32),
 		MatchType: matchType,
@@ -245,4 +247,99 @@ func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocum
 	}
 	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
 	cd.Modified = true
+	return rule
+}
+
+var attributeCompactPrefix = [...]byte{1, 0, 0, 0, 0, 0, 0, 28}
+
+// getAttributeField creates a compact property of the attribute key
+func getAttributeField(key AttrKey) []byte {
+	return append(attributeCompactPrefix[:], key[:]...)
+}
+
+// defaultRuleFieldProps are the fields that every collaborator should have rule set for to update a document.
+func defaultRuleFieldProps() map[string][]byte {
+	fields := [][]byte{
+		{1, 0, 0, 0, 0, 0, 0, 3},  // current_version
+		{1, 0, 0, 0, 0, 0, 0, 4},  // next_version
+		{1, 0, 0, 0, 0, 0, 0, 16}, // previous_version
+		{1, 0, 0, 0, 0, 0, 0, 22}, // next_preimage
+		{1, 0, 0, 0, 0, 0, 0, 23}, // current_preimage
+		{1, 0, 0, 0, 0, 0, 0, 25}, // author
+		{1, 0, 0, 0, 0, 0, 0, 26}, // timestamp
+	}
+
+	fieldMap := make(map[string][]byte)
+	for _, f := range fields {
+		f := f
+		fieldMap[hexutil.Encode(f)] = f
+	}
+	return fieldMap
+}
+
+// shouldAddRole checks if the role exists in the rule that has a field in the field map.
+// will update the fieldMap by deleting fields that already has the role
+func shouldAddRole(rule *coredocumentpb.TransitionRule, role []byte, fieldMap map[string][]byte) bool {
+	field := hexutil.Encode(rule.Field)
+	if rule.MatchType != coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT {
+		// default field rules are exact match
+		return false
+	}
+
+	if _, ok := fieldMap[field]; !ok {
+		// not a match
+		return false
+	}
+
+	// delete the field from the map since the role is already present or we are going to add one to rule
+	delete(fieldMap, field)
+	if byteutils.ContainsBytesInSlice(rule.Roles, role) {
+		// rule already exists for the role
+		return false
+	}
+
+	return true
+}
+
+// addDefaultRules will update all default rules to include rolekey so that the document can be updated successfully
+// Note: assumes that role exists in the document already
+func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		if !shouldAddRole(rule, roleKey, fieldMap) {
+			continue
+		}
+
+		rule.Roles = append(rule.Roles, roleKey)
+		cd.Modified = true
+	}
+
+	if len(fieldMap) < 1 {
+		// all fields are added
+		return
+	}
+
+	for _, f := range fieldMap {
+		cd.addNewTransitionRule(
+			roleKey,
+			coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT,
+			f,
+			coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	}
+}
+
+// AddTransitionRuleForAttribute adds a new rule with key as fields for the role
+// Role must be present to create a rule.
+func (cd *CoreDocument) AddTransitionRuleForAttribute(roleKey []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
+	_, err := cd.GetRole(roleKey)
+	if err != nil {
+		return nil, err
+	}
+
+	cd.addDefaultRules(roleKey)
+	return cd.addNewTransitionRule(
+		roleKey,
+		coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX,
+		getAttributeField(key),
+		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil
 }

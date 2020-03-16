@@ -85,7 +85,7 @@ func findReadRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, r
 	return false
 }
 
-// findRole calls OnRole for every role that matches the actions passed in
+// findTransitionRole calls OnRole for every role that matches the actions passed in
 func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
 	am := make(map[int32]struct{})
 	for _, a := range actions {
