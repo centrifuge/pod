@@ -255,3 +255,45 @@ Generating go bindings and swagger with the following command
 ```bash
 make proto-all
 ```
+
+## Run Node in PM2 for Production ENV
+
+[PM2](https://pm2.keymetrics.io/) is a process manager giving you a great environment to run multiple instances of the node for a dev/staging/prod environement, automatic restarts if the node crashes, log managements, etc. 
+
+It is usually made for node.js processes but by wrapping the node exectuable in a node layer we can around this, here is how:
+
+1. Install PM2 in the machine running the node:
+Best to just follow the [PM2 Quick Start guid](https://pm2.keymetrics.io/docs/usage/quick-start/)
+
+2. NodeJS script wrapping node executable:
+At the root of the VM create a node.js script that looks like this:
+```javascript
+var shell = require('shelljs');
+ 
+shell.exec('centrifuge run -c ./config.yaml');
+```
+the command in the `shee.exec()` should be the command you use to startup your node in your Bash normally. If there are any other flags you use, this is the place to put them.
+
+3. Ecosystem file:
+The [ecosystem file](https://pm2.keymetrics.io/docs/usage/quick-start/#ecosystem-file) holds the config for the execution environement. This is where you can set the path to your log files, the name of your app, the frequency of restart, etc. Here is an example:
+
+```javascript
+module.exports = {
+  apps : [{
+    name: 'Centrifuge - Node',
+    script: './centrifugeExecutable.js',
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_file: './logs/combined.log',
+    instances: 1,
+    autorestart: true
+  }]
+};
+```
+4. Start/Monitor/Stop/Restart process
+`pm2 start ecosystem.config.js` will start your node
+`pm2 monit` will open a monitoring screen to view logs and status of the process, etc.
+`pm2 status` similar to pm2 monit but an inline view.
+
+5. pm2 plus
+[pm2 plus](https://pm2.io/docs/plus/overview/#application-overview) is a web app to monitor all aspects of your node, from CPU utilisation to number of restarts, etc. Really good for larger teams as you can set permissions and have multiple users.
