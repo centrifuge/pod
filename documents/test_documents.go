@@ -91,6 +91,12 @@ func (m *MockModel) UpdateRole(roleID []byte, dids []identity.DID) (*coredocumen
 	return r, args.Error(1)
 }
 
+func (m *MockModel) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
+	args := m.Called(roleID, key)
+	r, _ := args.Get(0).(*coredocumentpb.TransitionRule)
+	return r, args.Error(1)
+}
+
 type MockService struct {
 	Service
 	mock.Mock

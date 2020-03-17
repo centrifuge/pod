@@ -66,3 +66,9 @@ func (s Service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocume
 func (s Service) UpdateRole(ctx context.Context, docID, roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
 	return s.pendingDocSrv.UpdateRole(ctx, docID, roleID, dids)
 }
+
+// AddTransitionRules adds new rules to the document
+func (s Service) AddTransitionRules(
+	ctx context.Context, docID []byte, addRules pending.AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
+	return s.pendingDocSrv.AddTransitionRules(ctx, docID, addRules)
+}

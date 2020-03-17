@@ -297,7 +297,6 @@ func shouldAddRole(rule *coredocumentpb.TransitionRule, role []byte, fieldMap ma
 		// rule already exists for the role
 		return false
 	}
-
 	return true
 }
 
@@ -330,15 +329,15 @@ func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
 
 // AddTransitionRuleForAttribute adds a new rule with key as fields for the role
 // Role must be present to create a rule.
-func (cd *CoreDocument) AddTransitionRuleForAttribute(roleKey []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
-	_, err := cd.GetRole(roleKey)
+func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
+	_, err := cd.GetRole(roleID)
 	if err != nil {
 		return nil, err
 	}
 
-	cd.addDefaultRules(roleKey)
+	cd.addDefaultRules(roleID)
 	return cd.addNewTransitionRule(
-		roleKey,
+		roleID,
 		coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX,
 		getAttributeField(key),
 		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil

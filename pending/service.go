@@ -10,10 +10,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	logging "github.com/ipfs/go-log"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 )
-
-var srvLog = logging.Logger("pending-service")
 
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
 const ErrPendingDocumentExists = errors.Error("Pending document already created")
@@ -49,6 +47,10 @@ type Service interface {
 
 	// UpdateRole updates a role in the given document
 	UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+
+	// AddTransitionRules creates transition rules to the given document.
+	// The access is only given to the roleKey which is expected to be present already.
+	AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error)
 }
 
 // service implements Service
@@ -277,4 +279,49 @@ func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs [
 	}
 
 	return r, s.pendingRepo.Update(accID[:], docID, doc)
+}
+
+// AttributeRule contains Attribute key label for which the rule has to be created
+// with write access enabled to RoleID
+// Note: role ID should already exist in the document.
+type AttributeRule struct {
+	// attribute key label
+	KeyLabel string `json:"key_label"`
+
+	// roleID is 32 byte role ID in hex. RoleID should already be part of the document.
+	RoleID byteutils.HexBytes `json:"role_id" swaggertype:"primitive,string"`
+}
+
+// AddTransitionRules contains list of attribute rules to be created.
+type AddTransitionRules struct {
+	AttributeRules []AttributeRule `json:"attribute_rules"`
+}
+
+func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err := s.pendingRepo.Get(accID[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+
+	var rules []*coredocumentpb.TransitionRule
+	for _, r := range addRules.AttributeRules {
+		key, err := documents.AttrKeyFromLabel(r.KeyLabel)
+		if err != nil {
+			return nil, err
+		}
+
+		rule, err := doc.AddTransitionRuleForAttribute(r.RoleID[:], key)
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, rule)
+	}
+
+	return rules, s.pendingRepo.Update(accID[:], docID, doc)
 }

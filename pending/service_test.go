@@ -416,3 +416,52 @@ func TestService_UpdateRole(t *testing.T) {
 	repo.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
+
+func TestService_AddTransitionRules(t *testing.T) {
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	addRules := AddTransitionRules{AttributeRules: []AttributeRule{
+		{
+			RoleID:   utils.RandomSlice(32),
+			KeyLabel: "",
+		},
+	}}
+
+	// missing did from context
+	_, err := s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// empty label
+	d := new(documents.MockModel)
+	repo.On("Get", did[:], docID).Return(d, nil).Times(3)
+	_, err = s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrEmptyAttrLabel, err))
+
+	// failed to add repo
+	addRules.AttributeRules[0].KeyLabel = "test"
+	d.On("AddTransitionRuleForAttribute", addRules.AttributeRules[0].RoleID.Bytes(), mock.Anything).Return(
+		nil, errors.New("failed to create rule")).Once()
+	_, err = s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+
+	// success
+	d.On("AddTransitionRuleForAttribute", addRules.AttributeRules[0].RoleID.Bytes(), mock.Anything).Return(
+		new(coredocumentpb.TransitionRule), nil).Once()
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
+	_, err = s.AddTransitionRules(ctx, docID, addRules)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}

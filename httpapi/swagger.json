@@ -2900,6 +2900,75 @@
                 }
             }
         },
+        "/v2/documents/{document_id}/transition_rules": {
+            "post": {
+                "description": "Adds a new transition rules to the document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Adds a transition new rules to the document.",
+                "operationId": "add_transition_rule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Add Transition rules Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/pending.AddTransitionRules"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/v2.TransitionRules"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/documents/{document_id}/versions/{version_id}": {
             "get": {
                 "description": "Returns the specific version of the document.",
@@ -3810,6 +3879,30 @@
                 }
             }
         },
+        "pending.AddTransitionRules": {
+            "type": "object",
+            "properties": {
+                "attribute_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pending.AttributeRule"
+                    }
+                }
+            }
+        },
+        "pending.AttributeRule": {
+            "type": "object",
+            "properties": {
+                "key_label": {
+                    "description": "attribute key label",
+                    "type": "string"
+                },
+                "role_id": {
+                    "description": "roleID is 32 byte role ID in hex. RoleID should already be part of the document.",
+                    "type": "string"
+                }
+            }
+        },
         "transferdetails.Data": {
             "type": "object",
             "properties": {
@@ -4134,6 +4227,37 @@
                 "payload": {
                     "description": "payload to be signed in hex",
                     "type": "string"
+                }
+            }
+        },
+        "v2.TransitionRule": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "field": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rule_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.TransitionRules": {
+            "type": "object",
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.TransitionRule"
+                    }
                 }
             }
         },
