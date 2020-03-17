@@ -747,7 +747,14 @@ func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]ide
 		return nil, err
 	}
 
-	return filterCollaborators(sign, filterIDs...), nil
+	wcs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	if err != nil {
+		return nil, err
+	}
+
+	wc := filterCollaborators(wcs, filterIDs...)
+	rc := filterCollaborators(sign, filterIDs...)
+	return identity.RemoveDuplicateDIDs(append(wc, rc...)), nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs

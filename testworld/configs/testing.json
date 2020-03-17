@@ -1,6 +1,6 @@
 {
   "run_network": true,
-  "run_migrations": true,
+  "run_migrations": false,
   "network" : "testing",
   "eth_node_url": "ws://127.0.0.1:9546",
   "eth_account_key_path": "../build/scripts/test-dependencies/test-ethereum/migrateAccount.json",
