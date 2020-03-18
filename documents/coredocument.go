@@ -740,7 +740,7 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 }
 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
-// returns collaborators with Read_Sign permissions.
+// returns collaborators with Action_ACTION_READ_SIGN and TransitionAction_TRANSITION_ACTION_EDIT permissions.
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
 	sign, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {

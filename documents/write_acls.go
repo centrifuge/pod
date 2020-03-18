@@ -236,7 +236,7 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte,
 	cd.Modified = true
 }
 
-// addNewTransitionRule creates a new transition rule with the given parameters.
+// addNewTransitionRule creates a new transition rule with the given parameters and returns the rule
 func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) *coredocumentpb.TransitionRule {
 	rule := &coredocumentpb.TransitionRule{
 		RuleKey:   utils.RandomSlice(32),
@@ -277,9 +277,9 @@ func defaultRuleFieldProps() map[string][]byte {
 	return fieldMap
 }
 
-// shouldAddRole checks if the role exists in the rule that has a field in the field map.
+// deleteFieldIfRoleExists checks if the role exists in the rule that has a field in the field map.
 // will update the fieldMap by deleting fields that already has the role
-func shouldAddRole(rule *coredocumentpb.TransitionRule, role []byte, fieldMap map[string][]byte) bool {
+func deleteFieldIfRoleExists(rule *coredocumentpb.TransitionRule, role []byte, fieldMap map[string][]byte) bool {
 	field := hexutil.Encode(rule.Field)
 	if rule.MatchType != coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT {
 		// default field rules are exact match
@@ -305,7 +305,7 @@ func shouldAddRole(rule *coredocumentpb.TransitionRule, role []byte, fieldMap ma
 func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
 	fieldMap := defaultRuleFieldProps()
 	for _, rule := range cd.Document.TransitionRules {
-		if !shouldAddRole(rule, roleKey, fieldMap) {
+		if !deleteFieldIfRoleExists(rule, roleKey, fieldMap) {
 			continue
 		}
 
@@ -328,6 +328,7 @@ func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
 }
 
 // AddTransitionRuleForAttribute adds a new rule with key as fields for the role
+//
 // Role must be present to create a rule.
 func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
 	_, err := cd.GetRole(roleID)

@@ -537,7 +537,7 @@ func TestWriteACLs_initTransitionRules(t *testing.T) {
 func roleExistsInRules(t *testing.T, cd *CoreDocument, role []byte, checkRoleCount bool, roleCount int) {
 	fieldMap := defaultRuleFieldProps()
 	for _, rule := range cd.Document.TransitionRules {
-		assert.False(t, shouldAddRole(rule, role, fieldMap))
+		assert.False(t, deleteFieldIfRoleExists(rule, role, fieldMap))
 		if checkRoleCount {
 			assert.Len(t, rule.Roles, roleCount)
 		}
