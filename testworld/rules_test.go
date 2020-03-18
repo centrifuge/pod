@@ -38,6 +38,10 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	obj := addTransitionRules(alice.httpExpect, alice.id.String(), docID, payload, http.StatusBadRequest)
 	assert.Contains(t, obj.Path("$.message").String().Raw(), "role doesn't exist")
 
+	ruleID := utils.RandomSlice(32)
+	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusNotFound)
+	assert.Contains(t, obj.Path("$.message").String().Raw(), "transition rule missing")
+
 	// create role
 	obj = addRole(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(roleID), []string{charlie.id.String()}, http.StatusOK)
 	r, cs := parseRole(obj)
@@ -48,6 +52,10 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	obj = addTransitionRules(alice.httpExpect, alice.id.String(), docID, payload, http.StatusOK)
 	tr := parseRules(t, obj)
 	assert.Len(t, tr.Rules, 1)
+	ruleID = tr.Rules[0].RuleID[:]
+	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusOK)
+	rule := parseRule(t, obj)
+	assert.Equal(t, tr.Rules[0], rule)
 
 	// commit document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
@@ -61,12 +69,13 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
 	// Bob should have the document
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusOK)
+	rule = parseRule(t, obj)
+	assert.Equal(t, tr.Rules[0], rule)
 	return docID, hexutil.Encode(roleID)
 }
 
 func TestTransitionRules(t *testing.T) {
-	//alice := doctorFord.getHostTestSuite(t, "Alice")
-	//bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 	docID, _ := setupTransitionRuleForCharlie(t)
 

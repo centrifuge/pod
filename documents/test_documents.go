@@ -114,6 +114,12 @@ func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version
 	return doc, args.Error(1)
 }
 
+func (m *MockService) GetCurrentVersion(ctx context.Context, docID []byte) (Model, error) {
+	args := m.Called(ctx, docID)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
 func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
 	args := m.Called(ctx, payload)
 	doc, _ := args.Get(0).(Model)

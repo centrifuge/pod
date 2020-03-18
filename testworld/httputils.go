@@ -512,10 +512,24 @@ func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[st
 	return objPost
 }
 
+func getTransitionRule(e *httpexpect.Expect, auth, docID, ruleID string, status int) *httpexpect.Object {
+	objPost := addCommonHeaders(e.GET("/v2/documents/"+docID+"/transition_rules/"+ruleID), auth).
+		Expect().Status(status).JSON().Object()
+	return objPost
+}
+
 func parseRules(t *testing.T, obj *httpexpect.Object) v2.TransitionRules {
 	d, err := json.Marshal(obj.Raw())
 	assert.NoError(t, err)
 	var tr v2.TransitionRules
+	assert.NoError(t, json.Unmarshal(d, &tr))
+	return tr
+}
+
+func parseRule(t *testing.T, obj *httpexpect.Object) v2.TransitionRule {
+	d, err := json.Marshal(obj.Raw())
+	assert.NoError(t, err)
+	var tr v2.TransitionRule
 	assert.NoError(t, json.Unmarshal(d, &tr))
 	return tr
 }

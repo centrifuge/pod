@@ -39,7 +39,7 @@ type Service interface {
 	// RemoveCollaborators removes collaborators from the document.
 	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
 
-	// GetRole returns specific role in the given document
+	// GetRole returns specific role in the latest version of the document.
 	GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error)
 
 	// AddRole adds a new role to given document
@@ -52,7 +52,7 @@ type Service interface {
 	// The access is only given to the roleKey which is expected to be present already.
 	AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error)
 
-	// GetTransitionRule returns the transition rule associated with ruleID in the document.
+	// GetTransitionRule returns the transition rule associated with ruleID from the latest version of the document.
 	GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error)
 }
 
@@ -228,11 +228,20 @@ func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []i
 	return doc, s.pendingRepo.Update(accID[:], docID, doc)
 }
 
-// GetRole returns specific role in the given document
 func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error) {
 	doc, _, err := s.getDocumentAndAccount(ctx, docID)
-	if err != nil {
+	if err == nil {
+		return doc.GetRole(roleID)
+	}
+
+	if err == contextutil.ErrDIDMissingFromContext {
 		return nil, err
+	}
+
+	// fetch the document from the doc service
+	doc, err = s.docSrv.GetCurrentVersion(ctx, docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	return doc.GetRole(roleID)
@@ -310,8 +319,18 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 
 func (s service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error) {
 	doc, _, err := s.getDocumentAndAccount(ctx, docID)
-	if err != nil {
+	if err == nil {
+		return doc.GetTransitionRule(ruleID)
+	}
+
+	if err == contextutil.ErrDIDMissingFromContext {
 		return nil, err
+	}
+
+	// fetch the document from the doc service
+	doc, err = s.docSrv.GetCurrentVersion(ctx, docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
 	}
 
 	return doc.GetTransitionRule(ruleID)
