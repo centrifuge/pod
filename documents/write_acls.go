@@ -250,29 +250,29 @@ func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocum
 	return rule
 }
 
-var attributeCompactPrefix = [...]byte{1, 0, 0, 0, 0, 0, 0, 28}
-
-// getAttributeField creates a compact property of the attribute key
-func getAttributeField(key AttrKey) []byte {
-	return append(attributeCompactPrefix[:], key[:]...)
+// getAttributeFieldPrefix creates a compact property of the attribute key
+func getAttributeFieldPrefix(key AttrKey) []byte {
+	attrPrefix := append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 28}...)
+	return append(attrPrefix, key[:]...)
 }
 
 // defaultRuleFieldProps are the fields that every collaborator should have rule set for to update a document.
 func defaultRuleFieldProps() map[string][]byte {
 	fields := [][]byte{
-		{1, 0, 0, 0, 0, 0, 0, 3},  // current_version
-		{1, 0, 0, 0, 0, 0, 0, 4},  // next_version
-		{1, 0, 0, 0, 0, 0, 0, 16}, // previous_version
-		{1, 0, 0, 0, 0, 0, 0, 22}, // next_preimage
-		{1, 0, 0, 0, 0, 0, 0, 23}, // current_preimage
-		{1, 0, 0, 0, 0, 0, 0, 25}, // author
-		{1, 0, 0, 0, 0, 0, 0, 26}, // timestamp
+		{0, 0, 0, 3},  // current_version
+		{0, 0, 0, 4},  // next_version
+		{0, 0, 0, 16}, // previous_version
+		{0, 0, 0, 22}, // next_preimage
+		{0, 0, 0, 23}, // current_preimage
+		{0, 0, 0, 25}, // author
+		{0, 0, 0, 26}, // timestamp
 	}
 
 	fieldMap := make(map[string][]byte)
 	for _, f := range fields {
 		f := f
-		fieldMap[hexutil.Encode(f)] = f
+		cp := append(CompactProperties(CDTreePrefix), f...)
+		fieldMap[hexutil.Encode(cp)] = cp
 	}
 	return fieldMap
 }
@@ -341,7 +341,7 @@ func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey
 	return cd.addNewTransitionRule(
 		roleID,
 		coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX,
-		getAttributeField(key),
+		getAttributeFieldPrefix(key),
 		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil
 }
 
