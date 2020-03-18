@@ -92,3 +92,52 @@ func TestHandler_AddTransitionRules(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	psrv.AssertExpectations(t)
 }
+
+func TestHandler_GetTransitionRule(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest(
+			"Get", "/documents/{document_id}/transition_rules/{rule_id}", nil).WithContext(ctx)
+	}
+
+	// invalid doc id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
+	rctx.URLParams.Keys[1] = RuleIDParam
+	rctx.URLParams.Values[0] = "some invalid id"
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx)
+	h := handler{}
+	h.GetTransitionRule(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// invalid rule ID
+	docID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	rctx.URLParams.Values[1] = "some ruleID"
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetTransitionRule(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidRuleID.Error())
+
+	// missing document or rule
+	ruleID := utils.RandomSlice(32)
+	rctx.URLParams.Values[1] = hexutil.Encode(ruleID)
+	psrv := new(pending.MockService)
+	psrv.On("GetTransitionRule", mock.Anything, docID, ruleID).Return(nil, errors.New("NotFound")).Once()
+	h.srv.pendingDocSrv = psrv
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetTransitionRule(w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound)
+	assert.Contains(t, w.Body.String(), "NotFound")
+
+	// success
+	psrv.On("GetTransitionRule", mock.Anything, docID, ruleID).Return(
+		new(coredocumentpb.TransitionRule), nil).Once()
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetTransitionRule(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	psrv.AssertExpectations(t)
+}

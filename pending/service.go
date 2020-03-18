@@ -51,6 +51,9 @@ type Service interface {
 	// AddTransitionRules creates transition rules to the given document.
 	// The access is only given to the roleKey which is expected to be present already.
 	AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error)
+
+	// GetTransitionRule returns the transition rule associated with ruleID in the document.
+	GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error)
 }
 
 // service implements Service
@@ -65,6 +68,20 @@ func DefaultService(docSrv documents.Service, repo Repository) Service {
 		docSrv:      docSrv,
 		pendingRepo: repo,
 	}
+}
+
+func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (doc documents.Model, did identity.DID, err error) {
+	did, err = contextutil.AccountDID(ctx)
+	if err != nil {
+		return doc, did, contextutil.ErrDIDMissingFromContext
+	}
+
+	doc, err = s.pendingRepo.Get(did[:], docID)
+	if err != nil {
+		return doc, did, documents.ErrDocumentNotFound
+	}
+
+	return doc, did, nil
 }
 
 // Get returns the document associated with docID
@@ -133,12 +150,7 @@ func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (d
 
 // Update updates a pending document from the payload
 func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
-	accID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
-	}
-
-	m, err := s.pendingRepo.Get(accID[:], payload.DocumentID)
+	m, accID, err := s.getDocumentAndAccount(ctx, payload.DocumentID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,22 +170,17 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 
 // Commit triggers validations, state change and anchor job
 func (s service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
-	accID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, jobs.NilJobID(), contextutil.ErrDIDMissingFromContext
-	}
-
-	model, err := s.pendingRepo.Get(accID[:], docID)
-	if err != nil {
-		return nil, jobs.NilJobID(), documents.ErrDocumentNotFound
-	}
-
-	jobID, err := s.docSrv.Commit(ctx, model)
+	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
 	}
 
-	return model, jobID, s.pendingRepo.Delete(accID[:], docID)
+	jobID, err := s.docSrv.Commit(ctx, doc)
+	if err != nil {
+		return nil, jobs.NilJobID(), err
+	}
+
+	return doc, jobID, s.pendingRepo.Delete(accID[:], docID)
 }
 
 func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error) {
@@ -208,14 +215,9 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 
 // RemoveCollaborators removes dids from the given document.
 func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
-	}
-
-	doc, err := s.pendingRepo.Get(accID[:], docID)
-	if err != nil {
-		return nil, documents.ErrDocumentNotFound
+		return nil, err
 	}
 
 	err = doc.RemoveCollaborators(dids)
@@ -228,14 +230,9 @@ func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []i
 
 // GetRole returns specific role in the given document
 func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	doc, _, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
-	}
-
-	doc, err := s.pendingRepo.Get(accID[:], docID)
-	if err != nil {
-		return nil, documents.ErrDocumentNotFound
+		return nil, err
 	}
 
 	return doc.GetRole(roleID)
@@ -243,14 +240,9 @@ func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocume
 
 // AddRole adds a new role to given document
 func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
-	}
-
-	doc, err := s.pendingRepo.Get(accID[:], docID)
-	if err != nil {
-		return nil, documents.ErrDocumentNotFound
+		return nil, err
 	}
 
 	r, err := doc.AddRole(roleKey, collabs)
@@ -263,14 +255,9 @@ func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, coll
 
 // UpdateRole updates a role in the given document
 func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
-	}
-
-	doc, err := s.pendingRepo.Get(accID[:], docID)
-	if err != nil {
-		return nil, documents.ErrDocumentNotFound
+		return nil, err
 	}
 
 	r, err := doc.UpdateRole(roleID, collabs)
@@ -298,14 +285,9 @@ type AddTransitionRules struct {
 }
 
 func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
-	}
-
-	doc, err := s.pendingRepo.Get(accID[:], docID)
-	if err != nil {
-		return nil, documents.ErrDocumentNotFound
+		return nil, err
 	}
 
 	var rules []*coredocumentpb.TransitionRule
@@ -324,4 +306,13 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 	}
 
 	return rules, s.pendingRepo.Update(accID[:], docID, doc)
+}
+
+func (s service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error) {
+	doc, _, err := s.getDocumentAndAccount(ctx, docID)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc.GetTransitionRule(ruleID)
 }

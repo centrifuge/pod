@@ -49,14 +49,18 @@ func toClientRole(r *coredocumentpb.Role) Role {
 	}
 }
 
+func toClientRule(r *coredocumentpb.TransitionRule) TransitionRule {
+	return TransitionRule{
+		RuleID: r.RuleKey,
+		Roles:  byteutils.ToHexByteSlice(r.Roles),
+		Field:  r.Field,
+		Action: coredocumentpb.TransitionAction_name[int32(r.Action)],
+	}
+}
+
 func toClientRules(rules []*coredocumentpb.TransitionRule) (tr TransitionRules) {
 	for _, r := range rules {
-		tr.Rules = append(tr.Rules, TransitionRule{
-			RuleID: r.RuleKey,
-			Roles:  byteutils.ToHexByteSlice(r.Roles),
-			Field:  r.Field,
-			Action: coredocumentpb.TransitionAction_name[int32(r.Action)],
-		})
+		tr.Rules = append(tr.Rules, toClientRule(r))
 	}
 
 	return tr

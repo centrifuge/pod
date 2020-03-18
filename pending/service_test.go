@@ -465,3 +465,33 @@ func TestService_AddTransitionRules(t *testing.T) {
 	repo.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
+
+func TestService_GetTransitionRule(t *testing.T) {
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	ruleID := utils.RandomSlice(32)
+
+	// missing did from context
+	_, err := s.GetTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.GetTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// success
+	d := new(documents.MockModel)
+	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	d.On("GetTransitionRule", ruleID).Return(new(coredocumentpb.TransitionRule), nil).Once()
+	_, err = s.GetTransitionRule(ctx, docID, ruleID)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
