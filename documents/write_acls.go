@@ -328,7 +328,8 @@ func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
 }
 
 // AddTransitionRuleForAttribute adds a new rule with key as fields for the role
-//
+// FieldMatchType_FIELD_MATCH_TYPE_PREFIX will be used for the Field match for attributes
+// TransitionAction_TRANSITION_ACTION_EDIT is the default action we assign to the rule.
 // Role must be present to create a rule.
 func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
 	_, err := cd.GetRole(roleID)
