@@ -278,7 +278,7 @@ func defaultRuleFieldProps() map[string][]byte {
 }
 
 // deleteFieldIfRoleExists checks if the role exists in the rule that has a field in the field map.
-// will update the fieldMap by deleting fields that already has the role
+// returns true if rule match type is exact, contains field in the fieldMap, and role is missing from the rule
 func deleteFieldIfRoleExists(rule *coredocumentpb.TransitionRule, role []byte, fieldMap map[string][]byte) bool {
 	field := hexutil.Encode(rule.Field)
 	if rule.MatchType != coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT {
