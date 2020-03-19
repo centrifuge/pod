@@ -43,14 +43,21 @@ func unmarshalBody(r *http.Request, val interface{}) error {
 }
 
 func toClientRole(r *coredocumentpb.Role) Role {
-	var cs []byteutils.HexBytes
-	for _, c := range r.Collaborators {
-		c := c
-		cs = append(cs, c)
-	}
-
 	return Role{
 		ID:            r.RoleKey,
-		Collaborators: cs,
+		Collaborators: byteutils.ToHexByteSlice(r.Collaborators),
 	}
+}
+
+func toClientRules(rules []*coredocumentpb.TransitionRule) (tr TransitionRules) {
+	for _, r := range rules {
+		tr.Rules = append(tr.Rules, TransitionRule{
+			RuleID: r.RuleKey,
+			Roles:  byteutils.ToHexByteSlice(r.Roles),
+			Field:  r.Field,
+			Action: coredocumentpb.TransitionAction_name[int32(r.Action)],
+		})
+	}
+
+	return tr
 }

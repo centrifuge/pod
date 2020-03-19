@@ -138,6 +138,16 @@ func (h *HexBytes) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ToHexByteSlice converts slicee of slice of bytes to slice of HexBytes
+func ToHexByteSlice(l [][]byte) (hb []HexBytes) {
+	for _, b := range l {
+		b := b
+		hb = append(hb, b)
+	}
+
+	return hb
+}
+
 // String returns HexBytes in string format.
 func (h HexBytes) String() string {
 	return hexutil.Encode(h)

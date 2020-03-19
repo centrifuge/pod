@@ -85,3 +85,9 @@ func (m *MockService) UpdateRole(ctx context.Context, docID, roleID []byte, coll
 	r, _ := args.Get(0).(*coredocumentpb.Role)
 	return r, args.Error(1)
 }
+
+func (m *MockService) AddTransitionRules(ctx context.Context, docID []byte, addRule AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
+	args := m.Called(ctx, docID, addRule)
+	r, _ := args.Get(0).([]*coredocumentpb.TransitionRule)
+	return r, args.Error(1)
+}

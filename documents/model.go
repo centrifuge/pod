@@ -157,6 +157,10 @@ type Model interface {
 
 	// UpdateRole updates existing role with provided collaborators
 	UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+
+	// AddTransitionRules creates a new transition rule to edit an attribute.
+	// The access is only given to the roleKey which is expected to be present already.
+	AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error)
 }
 
 // TokenRegistry defines NFT related functions.

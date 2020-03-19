@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
@@ -207,8 +208,8 @@ func commitDocument(e *httpexpect.Expect, auth string, documentType string, stat
 func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, docID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docID), auth).
 		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
+		Expect().Status(status)
+	return obj.JSON().Object()
 }
 
 func createFunding(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
@@ -503,4 +504,18 @@ func updateRole(e *httpexpect.Expect, auth, docID, roleID string, collaborators 
 		"collaborators": collaborators,
 	}).Expect().Status(status).JSON().Object()
 	return objPost
+}
+
+func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[string][]map[string]string, status int) *httpexpect.Object {
+	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/transition_rules"), auth).WithJSON(
+		payload).Expect().Status(status).JSON().Object()
+	return objPost
+}
+
+func parseRules(t *testing.T, obj *httpexpect.Object) v2.TransitionRules {
+	d, err := json.Marshal(obj.Raw())
+	assert.NoError(t, err)
+	var tr v2.TransitionRules
+	assert.NoError(t, json.Unmarshal(d, &tr))
+	return tr
 }
