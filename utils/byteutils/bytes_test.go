@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -454,4 +455,45 @@ func TestCutFromSlice(t *testing.T) {
 		assert.True(t, ContainsBytesInSlice(slice, v))
 		assert.Len(t, s1, len(slice)-1)
 	}
+}
+
+func TestRemoveBytesFromSlice(t *testing.T) {
+	slice := [][]byte{
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+	}
+	b := slice[3]
+	assert.True(t, ContainsBytesInSlice(slice, b))
+	slice = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(slice, b))
+
+	// duplicates
+	slice[0] = b
+	slice = append(slice, b)
+	assert.True(t, ContainsBytesInSlice(slice, b))
+	slice = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(slice, b))
+
+	// doesn't exist
+	b = utils.RandomSlice(20)
+	assert.False(t, ContainsBytesInSlice(slice, b))
+	sliceNew := RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(sliceNew, b))
+	assert.True(t, reflect.DeepEqual(slice, sliceNew))
+
+	// nil bytes
+	b = nil
+	assert.False(t, ContainsBytesInSlice(slice, b))
+	sliceNew = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(sliceNew, b))
+	assert.True(t, reflect.DeepEqual(slice, sliceNew))
+
+	// slice contains nil
+	slice[0] = nil
+	assert.True(t, ContainsBytesInSlice(slice, b))
+	slice = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(slice, b))
 }

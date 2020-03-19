@@ -355,3 +355,70 @@ func (cd *CoreDocument) GetTransitionRule(ruleID []byte) (*coredocumentpb.Transi
 
 	return nil, ErrTransitionRuleMissing
 }
+
+// isRoleAssignedToRules checks if the given roleID is used in any transition rules except default rules
+func isRoleAssignedToRules(cd *CoreDocument, roleID []byte) bool {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		// check if the rule is the default rule
+		if _, ok := fieldMap[hexutil.Encode(rule.Field)]; ok {
+			continue
+		}
+
+		// check if the role exists in the rule
+		if byteutils.ContainsBytesInSlice(rule.Roles, roleID) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// deleteRoleFromDefaultRules deletes the role from the default rules.
+func deleteRoleFromDefaultRules(cd *CoreDocument, roleID []byte) {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		if _, ok := fieldMap[hexutil.Encode(rule.Field)]; !ok {
+			continue
+		}
+
+		rule.Roles = byteutils.RemoveBytesFromSlice(rule.Roles, roleID)
+		cd.Modified = true
+	}
+}
+
+// deleteRule deletes the rule associated with the ruleID.
+// returns false if the rule doesn't exist
+func (cd *CoreDocument) deleteRule(ruleID []byte) *coredocumentpb.TransitionRule {
+	for i, r := range cd.Document.TransitionRules {
+		if bytes.Equal(r.RuleKey, ruleID) {
+			cd.Document.TransitionRules = append(
+				cd.Document.TransitionRules[:i], cd.Document.TransitionRules[i+1:]...)
+			cd.Modified = true
+			return r
+		}
+	}
+
+	return nil
+}
+
+// DeleteRule deletes the rule associated with ruleID.
+// once the rule is deleted, we will also delete roles from the default rules
+// if the the role is not associated with another rule.
+func (cd *CoreDocument) DeleteRule(ruleID []byte) error {
+	rule := cd.deleteRule(ruleID)
+	if rule == nil {
+		return ErrTransitionRuleMissing
+	}
+
+	for _, role := range rule.Roles {
+		if isRoleAssignedToRules(cd, role) {
+			// role is associated with another rule
+			continue
+		}
+
+		deleteRoleFromDefaultRules(cd, role)
+	}
+
+	return nil
+}
