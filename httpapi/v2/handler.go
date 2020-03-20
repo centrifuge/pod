@@ -30,4 +30,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/roles", h.AddRole)
 	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.UpdateRole)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules", h.AddTransitionRules)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.GetTransitionRule)
 }

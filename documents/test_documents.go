@@ -97,6 +97,12 @@ func (m *MockModel) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*
 	return r, args.Error(1)
 }
 
+func (m *MockModel) GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error) {
+	args := m.Called(ruleID)
+	r, _ := args.Get(0).(*coredocumentpb.TransitionRule)
+	return r, args.Error(1)
+}
+
 type MockService struct {
 	Service
 	mock.Mock
@@ -104,6 +110,12 @@ type MockService struct {
 
 func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
 	args := m.Called(documentID, version)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) GetCurrentVersion(ctx context.Context, docID []byte) (Model, error) {
+	args := m.Called(ctx, docID)
 	doc, _ := args.Get(0).(Model)
 	return doc, args.Error(1)
 }

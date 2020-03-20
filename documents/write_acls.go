@@ -344,3 +344,14 @@ func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey
 		getAttributeFieldPrefix(key),
 		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil
 }
+
+// GetTransitionRule returns the transition rule associated with ruleID in the document.
+func (cd *CoreDocument) GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error) {
+	for _, r := range cd.Document.TransitionRules {
+		if bytes.Equal(r.RuleKey, ruleID) {
+			return r, nil
+		}
+	}
+
+	return nil, ErrTransitionRuleMissing
+}

@@ -161,6 +161,9 @@ type Model interface {
 	// AddTransitionRules creates a new transition rule to edit an attribute.
 	// The access is only given to the roleKey which is expected to be present already.
 	AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error)
+
+	// GetTransitionRule returns the transition rule associated with ruleID in the document.
+	GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error)
 }
 
 // TokenRegistry defines NFT related functions.

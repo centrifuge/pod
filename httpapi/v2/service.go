@@ -72,3 +72,8 @@ func (s Service) AddTransitionRules(
 	ctx context.Context, docID []byte, addRules pending.AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
 	return s.pendingDocSrv.AddTransitionRules(ctx, docID, addRules)
 }
+
+// GetTransitionRule returns the transition rule associated with ruleID in the document.
+func (s Service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error) {
+	return s.pendingDocSrv.GetTransitionRule(ctx, docID, ruleID)
+}

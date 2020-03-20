@@ -160,6 +160,9 @@ const (
 
 	// ErrInvalidRoleKey must be used when role key is not 32 bytes long
 	ErrInvalidRoleKey = errors.Error("role key is invalid")
+
+	// ErrTransitionRuleMissing is a sentinel error used when transition rule is missing from the document.
+	ErrTransitionRuleMissing = errors.Error("transition rule missing")
 )
 
 // Error wraps an error with specific key

@@ -361,22 +361,31 @@ func TestService_GetRole(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
 
-	// missing doc
+	// missing doc from both the states
 	ctx = testingconfig.CreateAccountContext(t, cfg)
 	repo := new(mockRepo)
-	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Twice()
+	docSrv := new(documents.MockService)
+	docSrv.On("GetCurrentVersion", ctx, docID).Return(nil, errors.New("failed")).Once()
 	s.pendingRepo = repo
+	s.docSrv = docSrv
 	_, err = s.GetRole(ctx, docID, key)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
-	// success
+	// missing document from the pending version
 	d := new(documents.MockModel)
-	d.On("GetRole", key).Return(new(coredocumentpb.Role), nil).Once()
+	docSrv.On("GetCurrentVersion", ctx, docID).Return(d, nil).Once()
+	d.On("GetRole", key).Return(new(coredocumentpb.Role), nil).Twice()
+	_, err = s.GetRole(ctx, docID, key)
+	assert.NoError(t, err)
+
+	// document from the pending version
 	repo.On("Get", did[:], docID).Return(d, nil).Once()
 	_, err = s.GetRole(ctx, docID, key)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
 
@@ -463,5 +472,44 @@ func TestService_AddTransitionRules(t *testing.T) {
 	_, err = s.AddTransitionRules(ctx, docID, addRules)
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func TestService_GetTransitionRule(t *testing.T) {
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	ruleID := utils.RandomSlice(32)
+
+	// missing did from context
+	_, err := s.GetTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc from both the states
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Twice()
+	docSrv := new(documents.MockService)
+	docSrv.On("GetCurrentVersion", ctx, docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	s.docSrv = docSrv
+	_, err = s.GetTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// missing document from the pending version
+	d := new(documents.MockModel)
+	docSrv.On("GetCurrentVersion", ctx, docID).Return(d, nil).Once()
+	d.On("GetTransitionRule", ruleID).Return(new(coredocumentpb.TransitionRule), nil).Twice()
+	_, err = s.GetTransitionRule(ctx, docID, ruleID)
+	assert.NoError(t, err)
+
+	// document from the pending version
+	repo.On("Get", did[:], docID).Return(d, nil).Once()
+	_, err = s.GetTransitionRule(ctx, docID, ruleID)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	docSrv.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
