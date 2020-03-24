@@ -693,7 +693,7 @@ func Test_deleteRule(t *testing.T) {
 	assert.Len(t, cd.Document.TransitionRules, 5)
 }
 
-func TestCoreDocument_DeleteRule(t *testing.T) {
+func TestCoreDocument_DeleteTransitionRule(t *testing.T) {
 	cd, rule1, role := setupRules(t)
 
 	// add new rule with same role
@@ -707,17 +707,17 @@ func TestCoreDocument_DeleteRule(t *testing.T) {
 	assert.Len(t, cd.Document.TransitionRules, 9)
 
 	// delete rule1
-	assert.NoError(t, cd.DeleteRule(rule1.RuleKey))
+	assert.NoError(t, cd.DeleteTransitionRule(rule1.RuleKey))
 	assert.False(t, roleNotExists(cd, role))
 	assert.Len(t, cd.Document.TransitionRules, 8)
 
 	// delete rule2
-	assert.NoError(t, cd.DeleteRule(rule2.RuleKey))
+	assert.NoError(t, cd.DeleteTransitionRule(rule2.RuleKey))
 	assert.True(t, roleNotExists(cd, role))
 	assert.Len(t, cd.Document.TransitionRules, 7)
 
 	// no rule exists
-	err = cd.DeleteRule(rule2.RuleKey)
+	err = cd.DeleteTransitionRule(rule2.RuleKey)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrTransitionRuleMissing, err))
 	assert.True(t, roleNotExists(cd, role))

@@ -54,6 +54,9 @@ type Service interface {
 
 	// GetTransitionRule returns the transition rule associated with ruleID from the latest version of the document.
 	GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error)
+
+	// DeleteTransitionRule deletes the transition rule associated with ruleID in th document.
+	DeleteTransitionRule(ctx context.Context, docID, ruleID []byte) error
 }
 
 // service implements Service
@@ -334,4 +337,18 @@ func (s service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*
 	}
 
 	return doc.GetTransitionRule(ruleID)
+}
+
+func (s service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte) error {
+	doc, did, err := s.getDocumentAndAccount(ctx, docID)
+	if err != nil {
+		return err
+	}
+
+	err = doc.DeleteTransitionRule(ruleID)
+	if err != nil {
+		return err
+	}
+
+	return s.pendingRepo.Update(did[:], docID, doc)
 }

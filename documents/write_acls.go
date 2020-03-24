@@ -402,10 +402,10 @@ func (cd *CoreDocument) deleteRule(ruleID []byte) *coredocumentpb.TransitionRule
 	return nil
 }
 
-// DeleteRule deletes the rule associated with ruleID.
+// DeleteTransitionRule deletes the rule associated with ruleID.
 // once the rule is deleted, we will also delete roles from the default rules
 // if the the role is not associated with another rule.
-func (cd *CoreDocument) DeleteRule(ruleID []byte) error {
+func (cd *CoreDocument) DeleteTransitionRule(ruleID []byte) error {
 	rule := cd.deleteRule(ruleID)
 	if rule == nil {
 		return ErrTransitionRuleMissing

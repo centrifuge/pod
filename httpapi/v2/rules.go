@@ -124,3 +124,48 @@ func (h handler) GetTransitionRule(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, toClientRule(rule))
 }
+
+// DeleteTransitionRule deletes the transition rule associated with ruleID from the document.
+// @summary Deletes the transition rule associated with ruleID from the document.
+// @description Deletes the transition rule associated with ruleID from the document.
+// @id delete_transition_rule
+// @tags Documents
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param document_id path string true "Document Identifier"
+// @param rule_id path string true "Transition rule ID"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @success 204 {object} nil
+// @router /v2/documents/{document_id}/transition_rules/{rule_id} [delete]
+func (h handler) DeleteTransitionRule(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	docID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
+
+	ruleID, err := hexutil.Decode(chi.URLParam(r, RuleIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = ErrInvalidRuleID
+		return
+	}
+
+	err = h.srv.DeleteTransitionRule(r.Context(), docID, ruleID)
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		return
+	}
+
+	render.NoContent(w, r)
+}
