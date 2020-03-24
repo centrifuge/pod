@@ -38,7 +38,7 @@ func createDocumentWithTransfer(t *testing.T, alice, bob hostTestSuite) (transfe
 		t.Error(message)
 	}
 
-	transferId = getTransferId(t, res)
+	transferId = getTransferID(t, res)
 	params := map[string]interface{}{
 		"document_id":    docIdentifier,
 		"amount":         "300",
@@ -61,7 +61,7 @@ func listTransfer(t *testing.T, alice, bob hostTestSuite, docIdentifier string) 
 			t.Error(message)
 		}
 
-		transferId := getTransferId(t, res)
+		transferId := getTransferID(t, res)
 		transfers = append(transfers, transferId)
 	}
 	params := map[string]interface{}{
