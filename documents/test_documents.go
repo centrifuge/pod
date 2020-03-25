@@ -103,6 +103,11 @@ func (m *MockModel) GetTransitionRule(ruleID []byte) (*coredocumentpb.Transition
 	return r, args.Error(1)
 }
 
+func (m *MockModel) DeleteTransitionRule(ruleID []byte) error {
+	args := m.Called(ruleID)
+	return args.Error(0)
+}
+
 type MockService struct {
 	Service
 	mock.Mock

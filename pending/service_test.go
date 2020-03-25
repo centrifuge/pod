@@ -513,3 +513,40 @@ func TestService_GetTransitionRule(t *testing.T) {
 	docSrv.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
+
+func TestService_DeleteTransitionRules(t *testing.T) {
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	ruleID := utils.RandomSlice(32)
+
+	// missing did from context
+	err := s.DeleteTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	err = s.DeleteTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// empty label
+	d := new(documents.MockModel)
+	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
+	d.On("DeleteTransitionRule", ruleID).Return(documents.ErrTransitionRuleMissing).Once()
+	err = s.DeleteTransitionRule(ctx, docID, ruleID)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrTransitionRuleMissing, err))
+
+	// success
+	d.On("DeleteTransitionRule", ruleID).Return(nil).Once()
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
+	err = s.DeleteTransitionRule(ctx, docID, ruleID)
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}

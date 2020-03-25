@@ -278,7 +278,7 @@ func getAgreementId(t *testing.T, response *httpexpect.Object) string {
 	return agreementID
 }
 
-func getTransferId(t *testing.T, response *httpexpect.Object) string {
+func getTransferID(t *testing.T, response *httpexpect.Object) string {
 	transferID := response.Value("data").Path("$.transfer_id").String().NotEmpty().Raw()
 	if transferID == "" {
 		t.Error("TransferId empty")
@@ -451,6 +451,12 @@ func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, document
 	return objGet
 }
 
+func nonExistingGenericDocumentVersionCheck(e *httpexpect.Expect, auth string, documentID, versionID string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID+"/versions/"+versionID), auth).
+		Expect().Status(404).JSON().NotNull()
+	return objGet
+}
+
 func getV2DocumentWithStatus(e *httpexpect.Expect, auth, docID, status string, code int) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v2/documents/"+docID+"/"+status), auth).
 		Expect().Status(code).JSON().NotNull()
@@ -515,6 +521,12 @@ func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[st
 func getTransitionRule(e *httpexpect.Expect, auth, docID, ruleID string, status int) *httpexpect.Object {
 	objPost := addCommonHeaders(e.GET("/v2/documents/"+docID+"/transition_rules/"+ruleID), auth).
 		Expect().Status(status).JSON().Object()
+	return objPost
+}
+
+func deleteTransitionRule(e *httpexpect.Expect, auth, docID, ruleID string, status int) *httpexpect.Response {
+	objPost := addCommonHeaders(e.DELETE("/v2/documents/"+docID+"/transition_rules/"+ruleID), auth).
+		Expect().Status(status)
 	return objPost
 }
 

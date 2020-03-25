@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
@@ -624,4 +625,100 @@ func TestCoreDocument_AddTransitionRuleForAttribute(t *testing.T) {
 	gr, err = cd.GetTransitionRule(r.RuleKey)
 	assert.NoError(t, err)
 	assert.Equal(t, r, gr)
+}
+
+func setupRules(t *testing.T) (*CoreDocument, *coredocumentpb.TransitionRule, []byte) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	attrKey, err := AttrKeyFromLabel("test1")
+	assert.NoError(t, err)
+	roleKey := utils.RandomSlice(32)
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	rule, err := cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.NoError(t, err)
+	assert.True(t, byteutils.ContainsBytesInSlice(rule.Roles, roleKey))
+	assert.True(t, isRoleAssignedToRules(cd, roleKey))
+	return cd, rule, roleKey
+}
+
+func Test_isRoleReUsed(t *testing.T) {
+	cd, rule, roleKey := setupRules(t)
+
+	// delete rule
+	assert.NotNil(t, cd.deleteRule(rule.RuleKey))
+	assert.False(t, isRoleAssignedToRules(cd, roleKey))
+}
+
+func roleNotExists(cd *CoreDocument, roleID []byte) bool {
+	for _, rule := range cd.Document.TransitionRules {
+		if byteutils.ContainsBytesInSlice(rule.Roles, roleID) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func Test_deleteRoleFromDefaultRules(t *testing.T) {
+	cd, rule, roleID := setupRules(t)
+
+	assert.Len(t, cd.Document.TransitionRules, 8)
+	assert.Equal(t, cd.Document.TransitionRules[7], rule)
+	assert.False(t, roleNotExists(cd, roleID))
+	cd.deleteRoleFromDefaultRules(roleID)
+	assert.NotNil(t, cd.deleteRule(rule.RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 7)
+	assert.True(t, roleNotExists(cd, roleID))
+}
+
+func Test_deleteRule(t *testing.T) {
+	cd, _, _ := setupRules(t)
+
+	// delete first rule
+	assert.Len(t, cd.Document.TransitionRules, 8)
+	assert.NotNil(t, cd.deleteRule(cd.Document.TransitionRules[0].RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 7)
+
+	// delete rule in between
+	assert.NotNil(t, cd.deleteRule(cd.Document.TransitionRules[3].RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 6)
+
+	// delete last rule
+	assert.NotNil(t, cd.deleteRule(cd.Document.TransitionRules[5].RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 5)
+
+	// delete non existent rule
+	assert.Nil(t, cd.deleteRule(utils.RandomSlice(32)))
+	assert.Len(t, cd.Document.TransitionRules, 5)
+}
+
+func TestCoreDocument_DeleteTransitionRule(t *testing.T) {
+	cd, rule1, role := setupRules(t)
+
+	// add new rule with same role
+	assert.False(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 8)
+	key, err := AttrKeyFromLabel("test2")
+	assert.NoError(t, err)
+	rule2, err := cd.AddTransitionRuleForAttribute(role, key)
+	assert.NoError(t, err)
+	assert.False(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 9)
+
+	// delete rule1
+	assert.NoError(t, cd.DeleteTransitionRule(rule1.RuleKey))
+	assert.False(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 8)
+
+	// delete rule2
+	assert.NoError(t, cd.DeleteTransitionRule(rule2.RuleKey))
+	assert.True(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 7)
+
+	// no rule exists
+	err = cd.DeleteTransitionRule(rule2.RuleKey)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrTransitionRuleMissing, err))
+	assert.True(t, roleNotExists(cd, role))
 }

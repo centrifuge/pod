@@ -62,6 +62,23 @@ func ContainsBytesInSlice(slice [][]byte, b []byte) bool {
 	return false
 }
 
+// RemoveBytesFromSlice removes bytes b from the slice of bytes
+// Note: all duplicates of b in slice will be removed.
+// Note: if thee bytes b doesn't exist, same slice is returned
+func RemoveBytesFromSlice(slice [][]byte, b []byte) [][]byte {
+	var res [][]byte
+	for _, s := range slice {
+		s := s
+		if bytes.Equal(s, b) {
+			continue
+		}
+
+		res = append(res, s)
+	}
+
+	return res
+}
+
 // SetBit sets the bit at pos in the given byte.
 func SetBit(n byte, pos uint) byte {
 	n |= 1 << pos

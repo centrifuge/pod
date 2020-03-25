@@ -164,6 +164,9 @@ type Model interface {
 
 	// GetTransitionRule returns the transition rule associated with ruleID in the document.
 	GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error)
+
+	// DeleteTransitionRule deletes the rule associated with ruleID.
+	DeleteTransitionRule(ruleID []byte) error
 }
 
 // TokenRegistry defines NFT related functions.

@@ -77,3 +77,8 @@ func (s Service) AddTransitionRules(
 func (s Service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error) {
 	return s.pendingDocSrv.GetTransitionRule(ctx, docID, ruleID)
 }
+
+// DeleteTransitionRule deletes the transition rule associated with ruleID from the document.
+func (s Service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte) error {
+	return s.pendingDocSrv.DeleteTransitionRule(ctx, docID, ruleID)
+}

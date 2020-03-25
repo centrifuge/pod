@@ -42,6 +42,10 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusNotFound)
 	assert.Contains(t, obj.Path("$.message").String().Raw(), "transition rule missing")
 
+	// delete an non existing rule
+	delRes := deleteTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusNotFound)
+	assert.Contains(t, delRes.JSON().Object().Path("$.message").String().Raw(), "transition rule missing")
+
 	// create role
 	obj = addRole(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(roleID), []string{charlie.id.String()}, http.StatusOK)
 	r, cs := parseRole(obj)
@@ -72,12 +76,13 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusOK)
 	rule = parseRule(t, obj)
 	assert.Equal(t, tr.Rules[0], rule)
-	return docID, hexutil.Encode(roleID)
+	return docID, rule.RuleID.String()
 }
 
 func TestTransitionRules(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-	docID, _ := setupTransitionRuleForCharlie(t)
+	docID, ruleID := setupTransitionRuleForCharlie(t)
 
 	// charlie updates the document with wrong attr key and tries to get full access
 	p := genericCoreAPIUpdate([]string{charlie.id.String()})
@@ -89,7 +94,7 @@ func TestTransitionRules(t *testing.T) {
 	}
 
 	// charlie updates the document with right attribute
-	docID, _ = setupTransitionRuleForCharlie(t)
+	docID, ruleID = setupTransitionRuleForCharlie(t)
 	p = genericCoreAPICreate(nil)
 	p["attributes"] = coreapi.AttributeMapRequest{
 		"oracle1": coreapi.AttributeRequest{
@@ -103,4 +108,28 @@ func TestTransitionRules(t *testing.T) {
 	if status != "success" {
 		t.Error("document should be updated")
 	}
+
+	// alice deletes the rule
+	p = genericCoreAPICreate(nil)
+	p["document_id"] = docID
+	// create a new draft of the existing document
+	res = createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, p)
+	status = getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+	ndocID := getDocumentIdentifier(t, res)
+	versionID := getDocumentCurrentVersion(t, res)
+	assert.Equal(t, docID, ndocID, "Document ID should match")
+	obj := getTransitionRule(alice.httpExpect, alice.id.String(), docID, ruleID, http.StatusOK)
+	rule := parseRule(t, obj)
+	assert.Equal(t, ruleID, rule.RuleID.String())
+	deleteTransitionRule(alice.httpExpect, alice.id.String(), docID, ruleID, http.StatusNoContent).NoContent()
+
+	// commit the document
+	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
+	txID = getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	assert.Equal(t, status, "success", message)
+
+	// charlie should not have latest document
+	nonExistingGenericDocumentVersionCheck(charlie.httpExpect, charlie.id.String(), docID, versionID)
 }
