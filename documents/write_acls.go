@@ -375,7 +375,7 @@ func isRoleAssignedToRules(cd *CoreDocument, roleID []byte) bool {
 }
 
 // deleteRoleFromDefaultRules deletes the role from the default rules.
-func deleteRoleFromDefaultRules(cd *CoreDocument, roleID []byte) {
+func (cd *CoreDocument) deleteRoleFromDefaultRules(roleID []byte) {
 	fieldMap := defaultRuleFieldProps()
 	for _, rule := range cd.Document.TransitionRules {
 		if _, ok := fieldMap[hexutil.Encode(rule.Field)]; !ok {
@@ -388,7 +388,7 @@ func deleteRoleFromDefaultRules(cd *CoreDocument, roleID []byte) {
 }
 
 // deleteRule deletes the rule associated with the ruleID.
-// returns false if the rule doesn't exist
+// returns nil if the rule doesn't exist else the rule is deleted
 func (cd *CoreDocument) deleteRule(ruleID []byte) *coredocumentpb.TransitionRule {
 	for i, r := range cd.Document.TransitionRules {
 		if bytes.Equal(r.RuleKey, ruleID) {
@@ -404,7 +404,7 @@ func (cd *CoreDocument) deleteRule(ruleID []byte) *coredocumentpb.TransitionRule
 
 // DeleteTransitionRule deletes the rule associated with ruleID.
 // once the rule is deleted, we will also delete roles from the default rules
-// if the the role is not associated with another rule.
+// if the role is not associated with another rule.
 func (cd *CoreDocument) DeleteTransitionRule(ruleID []byte) error {
 	rule := cd.deleteRule(ruleID)
 	if rule == nil {
@@ -417,7 +417,7 @@ func (cd *CoreDocument) DeleteTransitionRule(ruleID []byte) error {
 			continue
 		}
 
-		deleteRoleFromDefaultRules(cd, role)
+		cd.deleteRoleFromDefaultRules(role)
 	}
 
 	return nil

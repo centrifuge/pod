@@ -666,7 +666,7 @@ func Test_deleteRoleFromDefaultRules(t *testing.T) {
 	assert.Len(t, cd.Document.TransitionRules, 8)
 	assert.Equal(t, cd.Document.TransitionRules[7], rule)
 	assert.False(t, roleNotExists(cd, roleID))
-	deleteRoleFromDefaultRules(cd, roleID)
+	cd.deleteRoleFromDefaultRules(roleID)
 	assert.NotNil(t, cd.deleteRule(rule.RuleKey))
 	assert.Len(t, cd.Document.TransitionRules, 7)
 	assert.True(t, roleNotExists(cd, roleID))
