@@ -92,7 +92,8 @@ func (dsa *defaultSubstrateAPI) GetBlock(blockHash types.Hash) (*types.SignedBlo
 }
 
 func (dsa *defaultSubstrateAPI) GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error {
-	return dsa.sapi.RPC.State.GetStorage(key, target, blockHash)
+	_, err := dsa.sapi.RPC.State.GetStorage(key, target, blockHash)
+	return err
 }
 
 func (dsa *defaultSubstrateAPI) GetBlockLatest() (*types.SignedBlock, error) {
@@ -108,7 +109,8 @@ func (dsa *defaultSubstrateAPI) GetClient() client.Client {
 }
 
 func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) error {
-	return dsa.sapi.RPC.State.GetStorageLatest(key, target)
+	_, err := dsa.sapi.RPC.State.GetStorageLatest(key, target)
+	return err
 }
 
 type api struct {
