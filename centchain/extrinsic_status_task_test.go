@@ -201,8 +201,8 @@ func getBlock(blockHash types.Hash) (*types.SignedBlock, error) {
 		return &types.SignedBlock{
 			Block: types.Block{
 				Extrinsics: []types.Extrinsic{
-					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb1)}}},
-					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb2)}}},
+					{Signature: types.ExtrinsicSignatureV5{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb1)}}},
+					{Signature: types.ExtrinsicSignatureV5{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb2)}}},
 				},
 			},
 		}, nil
@@ -210,8 +210,8 @@ func getBlock(blockHash types.Hash) (*types.SignedBlock, error) {
 		return &types.SignedBlock{
 			Block: types.Block{
 				Extrinsics: []types.Extrinsic{
-					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb1)}}},
-					{Signature: types.ExtrinsicSignatureV4{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb2)}}},
+					{Signature: types.ExtrinsicSignatureV5{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb1)}}},
+					{Signature: types.ExtrinsicSignatureV5{Signature: types.MultiSignature{IsSr25519: true, AsSr25519: types.NewSignature(bb2)}}},
 				},
 			},
 		}, nil
