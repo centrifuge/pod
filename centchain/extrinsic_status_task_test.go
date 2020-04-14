@@ -4,6 +4,7 @@ package centchain
 
 import (
 	"fmt"
+	"github.com/centrifuge/go-substrate-rpc-client/scale"
 	"testing"
 	"time"
 
@@ -235,5 +236,5 @@ func getStorage(key types.StorageKey, target interface{}, blockHash types.Hash) 
 		return err
 	}
 
-	return types.DecodeFromBytes(bb, target)
+	return types.DecodeFromBytes(bb, target, scale.EncoderOptions{NoPalletIndices: true})
 }
