@@ -1,7 +1,7 @@
 version: '3'
 services:
   bridge:
-    image: "centrifugeio/bridge:latest"
+    image: "centrifugeio/bridge:poc-ee8c684"
     container_name: bridge
     environment:
       - KEYSTORE_PASSWORD=centrifuge

@@ -286,6 +286,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
 
 		if !utils.IsEmptyAddress(req.AssetManagerAddress) {
+			log.Infof("Triggered listener on AssetManager Address %s", req.AssetManagerAddress.Hex())
 			// listen for event
 			txHash, done, err := ethereum.CreateWaitForEventJob(
 				ctx, txMan, s.queue, accountID, jobID,
