@@ -312,17 +312,17 @@ func (a *api) incrementNonce(accountID string) {
 }
 
 func (a *api) getNonceFromChain(meta *types.Metadata, krp []byte) (uint32, error) {
-	key, err := types.CreateStorageKey(meta, "System", "AccountNonce", krp, nil)
+	key, err := types.CreateStorageKey(meta, "System", "Account", krp, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	var nonce uint32
-	err = a.sapi.GetStorageLatest(key, &nonce)
+	var accountInfo types.AccountInfo
+	err = a.sapi.GetStorageLatest(key, &accountInfo)
 	if err != nil {
 		return 0, err
 	}
-	return nonce, nil
+	return uint32(accountInfo.Nonce), nil
 }
 
 func (a *api) setNonceInAccount(accountID string, nonce uint32) {

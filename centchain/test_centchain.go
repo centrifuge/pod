@@ -106,7 +106,7 @@ func MetaDataWithCall(call string) *types.Metadata {
 				Prefix: "System",
 				Items: []types.StorageFunctionMetadataV5{
 					{
-						Name: "AccountNonce",
+						Name: "Account",
 						Type: types.StorageFunctionTypeV5{
 							IsMap: true,
 							AsMap: types.MapTypeV4{
