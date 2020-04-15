@@ -84,7 +84,7 @@
   revision = "cb87f71895145e7fa3219fbc349e26916bd28ad2"
 
 [[projects]]
-  digest = "1:8db101d668808cadb3c475e50775469ac6965ac77fccc9f1a4088f9451beda0c"
+  digest = "1:17d56f6199d3bc0244fad1d7f33c205cca3d5d7ec71b6d0ff4fc9e42010b69d2"
   name = "github.com/centrifuge/go-substrate-rpc-client"
   packages = [
     ".",
@@ -102,7 +102,7 @@
     "xxhash",
   ]
   pruneopts = "UT"
-  revision = "461cf42e77c6d3b65fefa801a1aeddf04f1174cf"
+  revision = "19654b0c21aa92bdbb9f715e79cef732eac6c650"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
