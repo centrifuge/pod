@@ -3,17 +3,22 @@
 package testworld
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/spf13/viper"
 )
 
 // configDir points to the directory containing all configs
 const configDir = "configs"
+
+const ethNodeURL = "ETH_NODE_URL"
 
 type networkConfig struct {
 	// RunNetwork flag is true of you want to spin up a local setup of entire centrifuge network
@@ -51,6 +56,27 @@ func loadConfig(network string) (nc networkConfig, err error) {
 		return nc, err
 	}
 
+	if nc.EthNodeURL == "" {
+		url := getEnv(ethNodeURL, false)
+		if url == "" {
+			return nc, errors.New("Eth node URL is empty")
+		}
+		nc.EthNodeURL = url
+	}
+
+	err = checkEthKeyPath(nc.Network, nc.EthAccountKeyPath)
+	if err != nil {
+		return nc, err
+	}
+
+	if nc.EthAccountPassword == "" {
+		nc.EthAccountPassword = getEnv("ETH_"+nc.Network+"_SECRET", true)
+	}
+
+	if nc.CentChainSecret == "" {
+		nc.CentChainSecret = getEnv("CC_"+nc.Network+"_SECRET", false)
+	}
+
 	// if migrations were already run by the wrapper
 	if nc.RunMigrations && os.Getenv("MIGRATION_RAN") == "true" {
 		log.Info("not running migrations again")
@@ -81,4 +107,39 @@ func updateConfig(dir string, values map[string]interface{}) (err error) {
 	}
 
 	return v.WriteConfig()
+}
+
+// decodes the env and returns the result
+func getEnv(env string, encoded bool) string {
+	v := strings.TrimSpace(os.Getenv(env))
+	if v == "" {
+		return v
+	}
+	if encoded {
+		d, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return ""
+		}
+		v = strings.TrimSpace(string(d))
+	}
+	return v
+}
+
+func checkEthKeyPath(network, file string) error {
+	if _, err := os.Stat(file); err == nil {
+		return nil
+	}
+
+	val := getEnv("ETH_"+network+"_KEY", true)
+	if val == "" {
+		return errors.New("failed to get eth key from the env")
+	}
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	defer f.Sync()
+	_, err = f.WriteString(val)
+	return err
 }
