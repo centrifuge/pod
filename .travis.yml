@@ -58,7 +58,6 @@ jobs:
     - stage: "Tests"
       name: "Test world tests"
       script:
-        - make create-testworld-config
         - |
           if [ "${TESTWORLD_NETWORK}" != "" ]; then
              export SKIP_MIGRATION=true
