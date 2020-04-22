@@ -9,6 +9,23 @@ then
     PARENT_DIR=`pwd`
 fi
 
+MIGRATE='false'
+
+# Clear up previous build if force build
+if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]]; then
+  MIGRATE='true'
+fi
+
+if [ ! -e $PARENT_DIR/localAddresses ]; then
+    echo "$PARENT_DIR/localAddresses doesn't exist. Probably no migrations run yet. Forcing migrations."
+    MIGRATE='true'
+fi
+
+if [[ "X${MIGRATE}" == "Xfalse" ]]; then
+    echo "not running Dapp Migrations"
+    exit 0
+fi
+
 source "${PARENT_DIR}/build/scripts/test-dependencies/test-ethereum/env_vars.sh"
 
 if [ -z ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR} ]; then

@@ -43,14 +43,14 @@ if [[ "X${MIGRATE}" == "Xtrue" ]]; then
     if [ $? -ne 0 ]; then
       exit 1
     fi
-
-    cd ${PARENT_DIR}
-
-    identityFactory=$(< $LOCAL_ETH_CONTRACT_ADDRESSES jq -r '.networks."1337".address')
-    # deploy dapp smartcontracts
-    IDENTITY_FACTORY=$identityFactory ./build/scripts/migrateDApp.sh
-    # add bridge balance
-    ./build/scripts/test-dependencies/bridge/add_balance.sh
 fi
+
+cd ${PARENT_DIR}
+
+identityFactory=$(< $LOCAL_ETH_CONTRACT_ADDRESSES jq -r '.networks."1337".address')
+# deploy dapp smartcontracts
+IDENTITY_FACTORY=$identityFactory ./build/scripts/migrateDApp.sh
+# add bridge balance
+./build/scripts/test-dependencies/bridge/add_balance.sh
 
 export MIGRATION_RAN=true
