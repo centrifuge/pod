@@ -37,7 +37,8 @@ cd $NFT_DIR
 dapp update
 dapp build --extract
 
-nftAddr=$(seth send --create out/NFT.bin 'NFT(string memory, string memory, address)' "CentNFT" "CentNFT", "$assetAddr")
+echo "Identity factory $IDENTITY_FACTORY"
+nftAddr=$(seth send --create out/AssetNFT.bin 'AssetNFT(address, address)' "$assetAddr" "$IDENTITY_FACTORY")
 echo "assetManager $assetAddr" > $PARENT_DIR/localAddresses
 echo -n "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
 

@@ -1,7 +1,7 @@
 [submodule "build/privacy-enabled-erc721"]
 	path = build/privacy-enabled-erc721
 	url = https://github.com/centrifuge/privacy-enabled-erc721.git
-	branch = feat/bundld_verifir
+	branch = develop
 [submodule "build/ethereum-bridge-contracts"]
 	path = build/ethereum-bridge-contracts
 	url = https://github.com/centrifuge/ethereum-bridge-contracts.git

@@ -224,7 +224,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	if err != nil {
 		return nil, err
 	}
-	sig.TransitionValidated = (old != nil)
+	sig.TransitionValidated = old != nil
 	model.AppendSignatures(sig)
 
 	// set the status to committing since we are at requesting signatures stage.
