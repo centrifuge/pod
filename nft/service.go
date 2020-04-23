@@ -34,7 +34,7 @@ const (
 	ErrNFTMinted = errors.Error("NFT already minted")
 
 	// GenericMintMethodABI constant interface to interact with mint methods
-	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tkn","type":"uint256"},{"internalType":"bytes32","name":"dataRoot","type":"bytes32"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 
 	// AssetStoredEventSignature used for finding events
 	AssetStoredEventSignature = "AssetStored(bytes32)"
@@ -306,8 +306,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
 		}
 
-		// to common.Address, tokenId *big.Int, properties [][]byte, values [][]byte, salts [][32]byte
-		args := []interface{}{requestData.To, requestData.TokenID, requestData.Props, requestData.Values, requestData.Salts}
+		// to common.Address, tokenId *big.Int, bytes32, properties [][]byte, values [][]byte, salts [][32]byte
+		args := []interface{}{requestData.To, requestData.TokenID, requestData.SigningRoot, requestData.Props, requestData.Values, requestData.Salts}
 
 		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, GenericMintMethodABI, "mint", args...)
 		if err != nil {
@@ -315,8 +315,12 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
-			hexutil.Encode(requestData.TokenID.Bytes()), hexutil.Encode(requestData.AnchorID[:]), hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s, signingRoot: %s] to NFT contract.",
+			hexutil.Encode(requestData.TokenID.Bytes()),
+			hexutil.Encode(requestData.AnchorID[:]),
+			hexutil.Encode(requestData.NextAnchorID.Bytes()),
+			req.RegistryAddress.String(),
+			hexutil.Encode(requestData.SigningRoot[:]))
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))

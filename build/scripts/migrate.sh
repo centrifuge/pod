@@ -21,32 +21,35 @@ npm install --pwd ${CENT_ETHEREUM_CONTRACTS_DIR} --prefix=${CENT_ETHEREUM_CONTRA
 
 # `truffle migrate` will fail if not executed in the sub-dir
 cd ${CENT_ETHEREUM_CONTRACTS_DIR}
-# Clear up previous build
-rm -Rf ./build
 
-
-LOCAL_ETH_CONTRACT_ADDRESSES="${CENT_ETHEREUM_CONTRACTS_DIR}/deployments/local.json"
-if [ ! -e $LOCAL_ETH_CONTRACT_ADDRESSES ]; then
-    echo "$LOCAL_ETH_CONTRACT_ADDRESSES doesn't exist. Probably no migrations run yet. Forcing migrations."
-    FORCE_MIGRATE='true'
+MIGRATE='false'
+# Clear up previous build if force build
+if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]]; then
+  rm -Rf ./build
+  MIGRATE='true'
 fi
 
-if [[ "X${FORCE_MIGRATE}" == "Xtrue" ]];
-then
+
+LOCAL_ETH_CONTRACT_ADDRESSES="${CENT_ETHEREUM_CONTRACTS_DIR}/build/contracts/IdentityFactory.json"
+if [ ! -e $LOCAL_ETH_CONTRACT_ADDRESSES ]; then
+    echo "$LOCAL_ETH_CONTRACT_ADDRESSES doesn't exist. Probably no migrations run yet. Forcing migrations."
+    MIGRATE='true'
+fi
+
+if [[ "X${MIGRATE}" == "Xtrue" ]]; then
     echo "Running the Solidity contracts migrations for local geth"
     sleep 30 # allow geth block gas limit to increase to more than 7000000
     ${CENT_ETHEREUM_CONTRACTS_DIR}/scripts/migrate.sh localgeth
     if [ $? -ne 0 ]; then
       exit 1
     fi
-else
-    echo "Not migrating the Solidity contracts"
 fi
 
 cd ${PARENT_DIR}
 
+identityFactory=$(< $LOCAL_ETH_CONTRACT_ADDRESSES jq -r '.networks."1337".address')
 # deploy dapp smartcontracts
-./build/scripts/migrateDApp.sh
+IDENTITY_FACTORY=$identityFactory ./build/scripts/migrateDApp.sh
 # add bridge balance
 ./build/scripts/test-dependencies/bridge/add_balance.sh
 

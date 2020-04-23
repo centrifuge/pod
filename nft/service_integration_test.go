@@ -4,10 +4,8 @@ package nft_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -52,7 +50,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func prepareGenericForNFTMinting(t *testing.T, regAddr string, attrs map[documents.AttrKey]documents.Attribute) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
+func createIdentity(t *testing.T) (identity.DID, config.Account) {
 	// create identity
 	log.Debug("Create Identity for Testing")
 	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
@@ -66,7 +64,15 @@ func prepareGenericForNFTMinting(t *testing.T, regAddr string, attrs map[documen
 	assert.NoError(t, err)
 	cid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
 	assert.NoError(t, err)
+	return cid, tcr
+}
 
+func prepareGenericForNFTMinting(
+	t *testing.T,
+	regAddr string,
+	cid identity.DID,
+	tcr config.Account,
+	attrs map[documents.AttrKey]documents.Attribute) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
 	// create Generic doc (anchor)
 	genericSrv, err := registry.LocateService(documenttypes.GenericDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting generic genSrv")
@@ -81,7 +87,6 @@ func prepareGenericForNFTMinting(t *testing.T, regAddr string, attrs map[documen
 	// get ID
 	id := modelUpdated.ID()
 	registry := common.HexToAddress(regAddr)
-
 	return ctx, id, registry, genericSrv, cid
 }
 
@@ -102,35 +107,12 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	return tokenID
 }
 
-func getAttributes(t *testing.T) (map[documents.AttrKey]documents.Attribute, []string) {
-	attrs := map[documents.AttrKey]documents.Attribute{}
-	loanAmount := "loanAmount"
-	loanAmountValue := "100.10001"
-	attr0, err := documents.NewStringAttribute(loanAmount, documents.AttrDecimal, loanAmountValue)
-	assert.NoError(t, err)
-	attrs[attr0.Key] = attr0
-	asIsValue := "dateValue"
-	asIsValueValue := time.Now().UTC().Format(time.RFC3339Nano)
-	attr1, err := documents.NewStringAttribute(asIsValue, documents.AttrTimestamp, asIsValueValue)
-	assert.NoError(t, err)
-	attrs[attr1.Key] = attr1
-	afterRehabValue := "afterRehabValue"
-	afterRehabValueValue := "2000"
-	attr2, err := documents.NewStringAttribute(afterRehabValue, documents.AttrDecimal, afterRehabValueValue)
-	assert.NoError(t, err)
-	attrs[attr2.Key] = attr2
-
-	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
-	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
-	attributeAfterRehabVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr2.Key.String())
-	proofFields := []string{attributeLoanAmount, attributeAsIsVal, attributeAfterRehabVal}
-	return attrs, proofFields
-}
-
 func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID) {
-	attrs, pfs := getAttributes(t)
+	did, acc := createIdentity(t)
+	attrs, pfs := nft.GetAttributes(t, did)
 	scAddrs := testingutils.GetDAppSmartContractAddresses()
-	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], attrs)
+	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], did, acc, attrs)
+	pfs = append(pfs, nft.GetSignatureProofField(t, acc))
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
