@@ -404,11 +404,31 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
-func (s *service) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
+func (s *service) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	var owner common.Address
+	var err error
+	var current int
+
 	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
-	return owner, c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
+
+	maxTries := 10
+	for {
+		current++
+		if current == maxTries {
+			return common.Address{}, errors.New("Error retrying getting NFT owner of tokenID %x: %v", tokenID, err)
+		}
+		err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
+		if err != nil {
+			log.Warningf("[%d/%d] Error getting NFT owner for token [%x]: %v", current, maxTries, tokenID, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		break
+	}
+
+	return owner, err
 }
 
 // CurrentIndexOfToken returns the current index of the token in the given registry
