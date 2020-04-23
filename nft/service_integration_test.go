@@ -4,10 +4,8 @@ package nft_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -22,9 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -111,34 +107,12 @@ func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid iden
 	return tokenID
 }
 
-func getAttributes(t *testing.T, did identity.DID) (map[documents.AttrKey]documents.Attribute, []string) {
-	attrs := map[documents.AttrKey]documents.Attribute{}
-	attr1, err := documents.NewStringAttribute("Originator", documents.AttrBytes, did.ToAddress().Hex())
-	assert.NoError(t, err)
-	attrs[attr1.Key] = attr1
-	attr2, err := documents.NewStringAttribute("AssetValue", documents.AttrDecimal, "100")
-	assert.NoError(t, err)
-	attrs[attr2.Key] = attr2
-	attr3, err := documents.NewStringAttribute("AssetIdentifier", documents.AttrBytes, hexutil.Encode(utils.RandomSlice(32)))
-	assert.NoError(t, err)
-	attrs[attr3.Key] = attr3
-	attr4, err := documents.NewStringAttribute("MaturityDate", documents.AttrTimestamp, time.Now().Format(time.RFC3339Nano))
-	assert.NoError(t, err)
-	attrs[attr4.Key] = attr4
-
-	var proofFields []string
-	for _, a := range []documents.Attribute{attr1, attr2, attr3, attr4} {
-		proofFields = append(proofFields, fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, a.Key.String()))
-	}
-	return attrs, proofFields
-}
-
 func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID) {
 	did, acc := createIdentity(t)
-	attrs, pfs := getAttributes(t, did)
+	attrs, pfs := nft.GetAttributes(t, did)
 	scAddrs := testingutils.GetDAppSmartContractAddresses()
 	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], did, acc, attrs)
-	pfs = append(pfs, getSignatureProofField(t, acc))
+	pfs = append(pfs, nft.GetSignatureProofField(t, acc))
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
@@ -156,15 +130,6 @@ func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID
 	assert.NoError(t, err)
 	assert.Len(t, cd.Roles, 2)
 	return ctx, tokenID, cid
-}
-
-func getSignatureProofField(t *testing.T, tcr config.Account) string {
-	did := tcr.GetIdentityID()
-	keys, err := tcr.GetKeys()
-	assert.NoError(t, err)
-	pub := keys[identity.KeyPurposeSigning.Name].PublicKey
-	id := append(did, pub...)
-	return fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, hexutil.Encode(id))
 }
 
 func TestTransferNFT(t *testing.T) {
