@@ -57,7 +57,7 @@ dapp build --extract
 echo "Identity factory $IDENTITY_FACTORY"
 nftAddr=$(seth send --create out/AssetNFT.bin 'AssetNFT(address, address)' "$assetAddr" "$IDENTITY_FACTORY")
 echo "assetManager $assetAddr" > $PARENT_DIR/localAddresses
-echo -n "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
+echo "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
 
 echo "creating bridge config with asset address $assetAddr"
 bridge_dir="$PARENT_DIR"/build/scripts/test-dependencies/bridge

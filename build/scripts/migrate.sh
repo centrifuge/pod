@@ -53,4 +53,7 @@ IDENTITY_FACTORY=$identityFactory ./build/scripts/migrateDApp.sh
 # add bridge balance
 ./build/scripts/test-dependencies/bridge/add_balance.sh
 
+# deploy centrifuge asset handler
+./build/scripts/migrateAssetHandler.sh
+
 export MIGRATION_RAN=true
