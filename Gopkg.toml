@@ -36,7 +36,7 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
 
 [[constraint]]
   name = "github.com/centrifuge/go-substrate-rpc-client"
-  revision = "03ce7c572bf00722449fafbccecc1dd4fbfc4fe5"
+  branch = "feat/missing_events"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
