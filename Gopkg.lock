@@ -84,7 +84,8 @@
   revision = "cb87f71895145e7fa3219fbc349e26916bd28ad2"
 
 [[projects]]
-  digest = "1:8135e6a4f12204c723aa95566c9508d0c9134678e28a1d0570df045ac375e260"
+  branch = "feat/missing_events"
+  digest = "1:ca28d973990dfee1e20e8ccf915f3b6e64a19ac8f471439582036d9233e9fc09"
   name = "github.com/centrifuge/go-substrate-rpc-client"
   packages = [
     ".",
@@ -102,7 +103,7 @@
     "xxhash",
   ]
   pruneopts = "UT"
-  revision = "03ce7c572bf00722449fafbccecc1dd4fbfc4fe5"
+  revision = "a0cbe778db3c419820082c44c3d92e98d3eb3f09"
 
 [[projects]]
   digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
