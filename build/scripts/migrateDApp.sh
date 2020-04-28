@@ -47,7 +47,7 @@ cd $ASSET_DIR
 dapp update
 dapp build --extract
 
-assetAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8)' "10")
+assetAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8,address)' "10" "0x11E296f2F658ab6892E8F4dceF696C0249486B8b")
 
 # deploy NFT contract
 cd $NFT_DIR
