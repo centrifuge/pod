@@ -84,9 +84,63 @@ type EventMultisigCancelled struct {
 	Topics    []types.Hash
 }
 
+type EventFungibleTransfer struct {
+	Phase        types.Phase
+	Destination  types.U8
+	DepositNonce types.U64
+	ResourceId   types.Bytes32
+	Amount       types.U32
+	Recipient    types.Bytes
+	Topics       []types.Hash
+}
+
+type EventNonFungibleTransfer struct {
+	Phase        types.Phase
+	Destination  types.U8
+	DepositNonce types.U64
+	ResourceId   types.Bytes32
+	TokenId      types.Bytes
+	Recipient    types.Bytes
+	Metadata     types.Bytes
+	Topics       []types.Hash
+}
+
+type EventGenericTransfer struct {
+	Phase        types.Phase
+	Destination  types.U8
+	DepositNonce types.U64
+	ResourceId   types.Bytes32
+	Metadata     types.Bytes
+	Topics       []types.Hash
+}
+
+type EventChainWhitelisted struct {
+	Phase        types.Phase
+	Destination  types.U8
+	Topics       []types.Hash
+}
+
+type EventRelayerAdded struct {
+	Phase        types.Phase
+	Relayer      types.AccountID
+	Topics       []types.Hash
+}
+
+type EventRelayerThresholdChanged struct {
+	Phase        types.Phase
+	Threshold    types.U32
+	Topics       []types.Hash
+}
+
 // Events holds the default events and custom events for centrifuge chain
 type Events struct {
 	types.EventRecords
+	ChainBridge_FungibleTransfer    []EventFungibleTransfer    //nolint:stylecheck,golint
+	ChainBridge_NonFungibleTransfer []EventNonFungibleTransfer //nolint:stylecheck,golint
+	ChainBridge_GenericTransfer     []EventGenericTransfer     //nolint:stylecheck,golint
+	ChainBridge_ChainWhitelisted     []EventChainWhitelisted     //nolint:stylecheck,golint
+	ChainBridge_RelayerAdded         []EventRelayerAdded //nolint:stylecheck,golint
+	ChainBridge_RelayerThresholdChanged         []EventRelayerThresholdChanged //nolint:stylecheck,golint
 	Nfts_DepositAsset                []EventNFTDeposited                   //nolint:stylecheck,golint
 	Council_Proposed                 []types.EventCollectiveProposed       //nolint:stylecheck,golint
 	Council_Voted                    []types.EventCollectiveProposed       //nolint:stylecheck,golint

@@ -47,13 +47,15 @@ fi
 
 cd ${PARENT_DIR}
 
+export FORCE_MIGRATE=$MIGRATE
+
+# deploy bridge contracts
+./build/scripts/migrateBridgeContracts.sh
+
 identityFactory=$(< $LOCAL_ETH_CONTRACT_ADDRESSES jq -r '.networks."1337".address')
 # deploy dapp smartcontracts
 IDENTITY_FACTORY=$identityFactory ./build/scripts/migrateDApp.sh
 # add bridge balance
 ./build/scripts/test-dependencies/bridge/add_balance.sh
-
-# deploy centrifuge asset handler
-./build/scripts/migrateAssetHandler.sh
 
 export MIGRATION_RAN=true
