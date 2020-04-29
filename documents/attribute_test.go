@@ -10,12 +10,16 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestAttribute_isAttrTypeAllowed(t *testing.T) {
@@ -304,4 +308,18 @@ func TestNewMonetaryAttribute(t *testing.T) {
 	assert.Equal(t, chainID, attr.Value.Monetary.ChainID)
 	assert.Equal(t, MonetaryToken, attr.Value.Monetary.Type)
 	assert.Equal(t, fmt.Sprintf("%s %s@%s", dec.String(), idd, hexutil.Encode(chainID)), attr.Value.Monetary.String())
+}
+
+func TestGenerateDocumentSignatureProofField(t *testing.T) {
+	//change with name of new keys in resources folder
+	pub := "../build/resources/signingKey.pub.pem"
+	pvt := "../build/resources/signingKey.key.pem"
+	did, err := identity.NewDIDFromString("0x2809380d36Beba06e8d0E3B66EE49203Fa50C3F4")
+	assert.NoError(t, err)
+	pk, _, err := secp256k1.GetSigningKeyPair(pub, pvt)
+	assert.NoError(t, err)
+	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	signerId := hexutil.Encode(append(did[:], address32Bytes[:]...))
+	signatureSender := fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerId)
+	fmt.Println("SignatureSender", signatureSender)
 }
