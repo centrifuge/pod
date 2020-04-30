@@ -3,6 +3,7 @@ package nft
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -284,6 +285,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 		log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
+		fmt.Println("Successfully validated Proofs on cent chain for anchorID:", requestData.AnchorID.String())
 
 		if !utils.IsEmptyAddress(req.AssetManagerAddress) {
 			log.Infof("Triggered listener on AssetManager Address %s", req.AssetManagerAddress.Hex())
@@ -303,6 +305,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 				return
 			}
 
+			fmt.Println("Asset successfully deposited with TX hash", txHash.String())
 			log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
 		}
 
@@ -314,6 +317,8 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			errOut <- err
 			return
 		}
+
+		fmt.Println("Sent off ethTX to mint", req.AssetManagerAddress.Hex(), req.RegistryAddress.Hex())
 
 		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s, signingRoot: %s] to NFT contract.",
 			hexutil.Encode(requestData.TokenID.Bytes()),
@@ -421,6 +426,7 @@ func (s *service) OwnerOf(registry common.Address, tokenID []byte) (common.Addre
 		}
 		err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
 		if err != nil {
+			fmt.Println("Error", current, err.Error())
 			log.Warningf("[%d/%d] Error getting NFT owner for token [%x]: %v", current, maxTries, tokenID, err)
 			time.Sleep(2 * time.Second)
 			continue
