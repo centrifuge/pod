@@ -51,5 +51,6 @@ func GetSignatureProofField(t *testing.T, tcr config.Account) string {
 	assert.NoError(t, err)
 	pub := keys[identity.KeyPurposeSigning.Name].PublicKey
 	id := append(did, pub...)
+	fmt.Println(len(did), len(pub), len(id), "=====")
 	return fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, hexutil.Encode(id))
 }

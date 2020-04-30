@@ -25,6 +25,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const (
+	signingPub = ""
+	p2pPub = ""
+)
+
 func TestHandler_SignPayload(t *testing.T) {
 	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
 		return httptest.NewRecorder(), httptest.NewRequest("POST", "/accounts/{account_id}/sign", b).WithContext(ctx)
@@ -136,7 +141,7 @@ func TestHandler_GetAccount(t *testing.T) {
 	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	cfg.On("GetIdentityID").Return(accountID, nil).Once()
 	cfg.On("GetP2PKeyPair").Return("pub", "priv").Once()
-	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(, "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
 	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
