@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	signingPub = ""
-	p2pPub = ""
+	signingPub = "../../build/resources/signingKey.pub.pem"
+	p2pPub     = "../../build/resources/p2pKey.pub.pem"
 )
 
 func TestHandler_SignPayload(t *testing.T) {
@@ -140,8 +140,8 @@ func TestHandler_GetAccount(t *testing.T) {
 	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	cfg.On("GetIdentityID").Return(accountID, nil).Once()
-	cfg.On("GetP2PKeyPair").Return("pub", "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(, "priv").Once()
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
 	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
@@ -197,8 +197,8 @@ func TestHandler_GenerateAccount(t *testing.T) {
 	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	cfg.On("GetIdentityID").Return(accountID, nil).Once()
-	cfg.On("GetP2PKeyPair").Return("pub", "priv").Once()
-	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
 	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
@@ -240,8 +240,8 @@ func TestHandler_GetAccounts(t *testing.T) {
 	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	cfg.On("GetIdentityID").Return(accountID, nil).Once()
-	cfg.On("GetP2PKeyPair").Return("pub", "priv").Once()
-	cfg.On("GetSigningKeyPair").Return("pub", "priv").Once()
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
 	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
@@ -341,8 +341,8 @@ func TestHandler_CreateAccount(t *testing.T) {
 	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	cfg.On("GetIdentityID").Return([]byte(id), nil).Once()
-	cfg.On("GetP2PKeyPair").Return("pub", "prv").Once()
-	cfg.On("GetSigningKeyPair").Return("pub", "prv").Once()
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
 	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
@@ -438,8 +438,8 @@ func TestHandler_UpdateAccount(t *testing.T) {
 	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
 	cfg.On("GetIdentityID").Return([]byte(id), nil).Once()
-	cfg.On("GetP2PKeyPair").Return("pub", "prv").Once()
-	cfg.On("GetSigningKeyPair").Return("pub", "prv").Once()
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
 	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	cfg.On("GetPrecommitEnabled").Return(true).Once()
 	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
