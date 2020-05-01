@@ -134,20 +134,30 @@ func TestHandler_GetAccount(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusNotFound)
 	assert.Contains(t, w.Body.String(), ErrAccountNotFound.Error())
 
-	// success
+	// missing path
 	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	cfg.On("GetIdentityID").Return(accountID, nil).Once()
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	cfg.On("GetPrecommitEnabled").Return(true).Once()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
+	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
+	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
+	cfg.On("GetPrecommitEnabled").Return(true).Twice()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
+	srv.On("GetAccount", accountID).Return(acc, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+
+	// success
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	acc, err = configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
 	srv.On("GetAccount", accountID).Return(acc, nil).Once()
 	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx)
@@ -190,21 +200,31 @@ func TestHandler_GenerateAccount(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to generate account")
 	srv.AssertExpectations(t)
 
-	// success
+	// missing path
 	accountID := utils.RandomSlice(20)
 	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	cfg.On("GetIdentityID").Return(accountID, nil).Once()
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	cfg.On("GetPrecommitEnabled").Return(true).Once()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
+	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
+	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
+	cfg.On("GetPrecommitEnabled").Return(true).Twice()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
+	srv.On("GenerateAccount", mock.Anything).Return(acc, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.GenerateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+
+	// success
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	acc, err = configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
 	srv.On("GenerateAccount", mock.Anything).Return(acc, nil).Once()
 	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
@@ -235,19 +255,30 @@ func TestHandler_GetAccounts(t *testing.T) {
 
 	// success
 	accountID := utils.RandomSlice(20)
+	// missing path
 	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	cfg.On("GetIdentityID").Return(accountID, nil).Once()
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	cfg.On("GetPrecommitEnabled").Return(true).Once()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
+	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
+	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
+	cfg.On("GetPrecommitEnabled").Return(true).Twice()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
+	srv.On("GetAccounts").Return([]config.Account{acc}, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx)
+	h.GetAccounts(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+
+	// success
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	acc, err = configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
 	srv.On("GetAccounts").Return([]config.Account{acc}, nil).Once()
 	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx)
@@ -335,17 +366,18 @@ func TestHandler_CreateAccount(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to create account")
 	srv.AssertExpectations(t)
 
-	// success
+	// missing path
+	accountID := utils.RandomSlice(20)
 	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{Address: addr.String(), Key: key.String()}, nil).Once()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	cfg.On("GetIdentityID").Return([]byte(id), nil).Once()
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	cfg.On("GetPrecommitEnabled").Return(true).Once()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
+	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
+	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
+	cfg.On("GetPrecommitEnabled").Return(true).Twice()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
@@ -353,8 +385,20 @@ func TestHandler_CreateAccount(t *testing.T) {
 	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
 	h.CreateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+
+	// success
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	acc, err = configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
+	srv.On("CreateAccount", mock.Anything).Return(acc, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.CreateAccount(w, r)
+	srv.AssertExpectations(t)
+	cfg.AssertExpectations(t)
 	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), id.String())
+	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
 }
 
 func TestHandler_UpdateAccount(t *testing.T) {
@@ -432,17 +476,18 @@ func TestHandler_UpdateAccount(t *testing.T) {
 	assert.Contains(t, w.Body.String(), ErrAccountNotFound.Error())
 	srv.AssertExpectations(t)
 
-	// success
+	// missing path
+	accountID := utils.RandomSlice(20)
 	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{Address: addr.String(), Key: key.String()}, nil).Once()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	cfg.On("GetIdentityID").Return([]byte(id), nil).Once()
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Once()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
-	cfg.On("GetPrecommitEnabled").Return(true).Once()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
+	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
+	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
+	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
+	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
+	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
+	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
+	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
+	cfg.On("GetPrecommitEnabled").Return(true).Twice()
+	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
 	acc, err := configstore.NewAccount("name", cfg)
 	assert.NoError(t, err)
 	srv = new(configstore.MockService)
@@ -450,6 +495,18 @@ func TestHandler_UpdateAccount(t *testing.T) {
 	h.srv.accountsSrv = srv
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
 	h.UpdateAccount(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+
+	// success
+	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
+	acc, err = configstore.NewAccount("name", cfg)
+	assert.NoError(t, err)
+	srv.On("UpdateAccount", mock.Anything).Return(acc, nil).Once()
+	h.srv.accountsSrv = srv
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(marshall(t, data)))
+	h.UpdateAccount(w, r)
+	srv.AssertExpectations(t)
+	cfg.AssertExpectations(t)
 	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), id.String())
+	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
 }
