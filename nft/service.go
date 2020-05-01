@@ -322,16 +322,16 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			req.RegistryAddress.String(),
 			hexutil.Encode(requestData.SigningRoot[:]))
 
-		log.Infof("To: %s", requestData.To.String())
-		log.Infof("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
-		log.Infof("AnchorID: %s", hexutil.Encode(requestData.AnchorID[:]))
-		log.Infof("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
-		log.Infof("Props: %s", byteSlicetoString(requestData.Props))
-		log.Infof("Values: %s", byteSlicetoString(requestData.Values))
-		log.Infof("Salts: %s", byte32SlicetoString(requestData.Salts))
-		log.Infof("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
-		log.Infof("Asset: %s", hexutil.Encode(requestData.BundledHash[:]))
-		log.Infof("AssetManager: %s", hexutil.Encode(req.AssetManagerAddress.Bytes()))
+		log.Debugf("To: %s", requestData.To.String())
+		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
+		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID[:]))
+		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
+		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
+		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
+		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
+		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
+		log.Debugf("Asset: %s", hexutil.Encode(requestData.BundledHash[:]))
+		log.Debugf("AssetManager: %s", hexutil.Encode(req.AssetManagerAddress.Bytes()))
 
 		err = <-done
 		if err != nil {

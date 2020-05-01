@@ -10,7 +10,7 @@ networks:
     - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
     - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
-      identityFactory: "0xAd9Ec93433Aca17C012183F201516129227F094a"
+      identityFactory: ""
 
   # Main development test network (Kovan)
   flint:
