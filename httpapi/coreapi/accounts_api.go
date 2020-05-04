@@ -108,8 +108,15 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err := toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
 
 // GenerateAccount generates a new account with defaults.
@@ -150,8 +157,15 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err := toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
 
 // GetAccounts returns all the accounts in the node.
@@ -175,8 +189,15 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	caccs, err := toClientAccounts(accs)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccounts(accs))
+	render.JSON(w, r, caccs)
 }
 
 // CreateAccount creates a new account.
@@ -224,8 +245,15 @@ func (h handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err = toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
 
 // UpdateAccount updates an existing account.
@@ -285,6 +313,13 @@ func (h handler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err = toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
