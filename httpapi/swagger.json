@@ -2398,6 +2398,13 @@
                             "type": "object",
                             "$ref": "#/definitions/v2.RemoveCollaboratorsRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2866,6 +2873,13 @@
                             "type": "object",
                             "$ref": "#/definitions/v2.SignedAttributeRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3068,13 +3082,7 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/nil"
-                        }
-                    },
+                    "204": {},
                     "400": {
                         "description": "Bad Request",
                         "schema": {
