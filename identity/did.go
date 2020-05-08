@@ -103,6 +103,22 @@ func GetPurposeByName(name string) Purpose {
 	}
 }
 
+// GetPurposeValueByName retrieves the Purpose value by name
+func GetPurposeValueByName(name string) *big.Int {
+	switch name {
+	case keyPurposeMgmt:
+		return &KeyPurposeManagement.Value
+	case keyPurposeAction:
+		return &KeyPurposeAction.Value
+	case keyPurposeP2PDiscovery:
+		return &KeyPurposeP2PDiscovery.Value
+	case keyPurposeSigning:
+		return &KeyPurposeSigning.Value
+	default:
+		return nil
+	}
+}
+
 // DID stores the identity address of the user
 type DID [DIDLength]byte
 

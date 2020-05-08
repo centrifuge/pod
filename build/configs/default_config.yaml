@@ -115,7 +115,7 @@ ethereum:
   maxGasPrice: 20000000000
   # Gas limits for different Ethereum operations
   gasLimits:
-    idCreate: 1000000
+    idCreate: 2000000
     idAddKey: 300000
     idRevokeKey: 55000
     anchorCommit: 85000

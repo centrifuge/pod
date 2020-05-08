@@ -152,8 +152,9 @@ func TestService_Deleteaccount(t *testing.T) {
 
 func TestGenerateaccountKeys(t *testing.T) {
 	DID, err := identity.NewDIDFromString("0xDcF1695B8a0df44c60825eCD0A8A833dA3875F13")
+	addr := DID.ToAddress()
 	assert.NoError(t, err)
-	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, &DID)
+	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, &addr)
 	assert.Nil(t, err)
 	assert.NotNil(t, tc.SigningKeyPair)
 	_, err = os.Stat(tc.SigningKeyPair.Pub)

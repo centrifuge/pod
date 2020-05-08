@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -87,20 +88,24 @@ func (s service) GenerateAccount(cacc config.CentChainAccount) (config.Account, 
 		return nil, err
 	}
 
+	acci := acc.(*Account)
+
+	addr, err := s.idFactory.CalculateIdentityAddress(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acci, addr)
+	if err != nil {
+		return nil, err
+	}
+
 	DID, err := s.idFactory.CreateIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), DID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.idService.AddKeysForAccount(acc)
-	if err != nil {
-		return nil, err
-	}
+	acci.IdentityID = DID[:]
 
 	err = s.repo.CreateAccount(DID[:], acc)
 	if err != nil {
@@ -113,13 +118,12 @@ func (s service) GenerateAccount(cacc config.CentChainAccount) (config.Account, 
 }
 
 // generateAccountKeys generates signing keys
-func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Account, error) {
-	acc.IdentityID = DID[:]
-	sPub, err := createKeyPath(keystore, DID, signingPubKeyName)
+func generateAccountKeys(keystore string, acc *Account, addr *common.Address) (*Account, error) {
+	sPub, err := createKeyPath(keystore, addr, signingPubKeyName)
 	if err != nil {
 		return nil, err
 	}
-	sPriv, err := createKeyPath(keystore, DID, signingPrivKeyName)
+	sPriv, err := createKeyPath(keystore, addr, signingPrivKeyName)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +139,8 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 	return acc, nil
 }
 
-func createKeyPath(keyStorepath string, DID *identity.DID, keyName string) (string, error) {
-	tdir := fmt.Sprintf("%s/%s", keyStorepath, DID.String())
+func createKeyPath(keyStorepath string, addr *common.Address, keyName string) (string, error) {
+	tdir := fmt.Sprintf("%s/%s", keyStorepath, addr.String())
 	// create account specific key dir
 	if _, err := os.Stat(tdir); os.IsNotExist(err) {
 		err := os.MkdirAll(tdir, os.ModePerm)

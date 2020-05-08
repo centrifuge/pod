@@ -68,10 +68,6 @@ func CreateConfig(
 	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("bootstrapped identity service not initialized")
-	}
 	idFactory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	if !ok {
 		return errors.New("bootstrapped identity factory not initialized")
@@ -91,12 +87,14 @@ func CreateConfig(
 	if err != nil {
 		return err
 	}
+
+	acci := acc.(*configstore.Account)
+
 	DID, err := idFactory.CreateIdentity(ctxh)
 	if err != nil {
 		return err
 	}
 
-	acci := acc.(*configstore.Account)
 	acci.IdentityID = DID[:]
 
 	configFile.Set("identityId", DID.String())
@@ -106,11 +104,6 @@ func CreateConfig(
 	}
 	cfg.Set("identityId", DID.String())
 	log.Infof("Identity created [%s]", DID.String())
-
-	err = idService.AddKeysForAccount(acci)
-	if err != nil {
-		return err
-	}
 
 	canc()
 	db := ctx[storage.BootstrappedDB].(storage.Repository)

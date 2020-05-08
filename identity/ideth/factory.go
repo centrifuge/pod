@@ -2,6 +2,7 @@ package ideth
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -46,9 +47,9 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s *factory) createIdentityTX(opts *bind.TransactOpts, keys [][32]byte, purposes []*big.Int) func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
+		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentityFor, opts, opts.From, keys, purposes)
 		if err != nil {
 			errOut <- err
 			log.Infof("Failed to send identity for creation: %v", err)
@@ -129,7 +130,21 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 
 	createdDID := id.NewDID(*calcIdentityAddress)
 
-	jobID, done, err := s.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
+	accKeys, err := tc.GetKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	keys := make([][32]byte, len(accKeys))
+	purposes := make([]*big.Int, len(accKeys))
+	i := 0
+	for p, k := range accKeys {
+		copy(keys[i][:], k.PublicKey)
+		purposes[i] = id.GetPurposeValueByName(p)
+		i++
+	}
+
+	jobID, done, err := s.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts, keys, purposes))
 	if err != nil {
 		return nil, err
 	}
