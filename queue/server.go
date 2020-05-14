@@ -99,10 +99,7 @@ func (qs *Server) EnqueueJob(taskName string, params map[string]interface{}) (Ta
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
 
-	return qs.enqueueJob(taskName, params, &gocelery.TaskSettings{
-		MaxTries: uint(qs.config.GetTaskRetries()),
-		Delay:    time.Now().UTC(),
-	})
+	return qs.enqueueJob(taskName, params, nil)
 }
 
 func (qs *Server) enqueueJob(name string, params map[string]interface{}, settings *gocelery.TaskSettings) (TaskResult, error) {
@@ -122,9 +119,7 @@ func (qs *Server) EnqueueJobWithMaxTries(taskName string, params map[string]inte
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
 
-	return qs.enqueueJob(taskName, params, &gocelery.TaskSettings{
-		MaxTries: gocelery.MaxRetries,
-	})
+	return qs.enqueueJob(taskName, params, nil)
 }
 
 // GetDuration parses key parameter to time.Duration type
