@@ -114,14 +114,6 @@ func (qs *Server) enqueueJob(name string, params map[string]interface{}, setting
 	})
 }
 
-// EnqueueJobWithMaxTries enqueues a job on the queue server for the given taskTypeName with maximum tries
-func (qs *Server) EnqueueJobWithMaxTries(taskName string, params map[string]interface{}) (TaskResult, error) {
-	qs.lock.RLock()
-	defer qs.lock.RUnlock()
-
-	return qs.enqueueJob(taskName, params, nil)
-}
-
 // GetDuration parses key parameter to time.Duration type
 func GetDuration(key interface{}) (time.Duration, error) {
 	f64, ok := key.(float64)
@@ -134,5 +126,4 @@ func GetDuration(key interface{}) (time.Duration, error) {
 // TaskQueuer can be implemented by any queueing system
 type TaskQueuer interface {
 	EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error)
-	EnqueueJobWithMaxTries(taskName string, params map[string]interface{}) (TaskResult, error)
 }
