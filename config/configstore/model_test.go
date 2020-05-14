@@ -152,12 +152,6 @@ func (m *mockConfig) GetNumWorkers() int {
 	return args.Get(0).(int)
 }
 
-// GetTaskRetries returns the number of retries allowed for a queued task
-func (m *mockConfig) GetTaskRetries() int {
-	args := m.Called()
-	return args.Get(0).(int)
-}
-
 func (m *mockConfig) GetWorkerWaitTimeMS() int {
 	args := m.Called()
 	return args.Get(0).(int)

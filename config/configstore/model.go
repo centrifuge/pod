@@ -41,7 +41,6 @@ type NodeConfig struct {
 	ServerPort                     int
 	ServerAddress                  string
 	NumWorkers                     int
-	TaskRetries                    int
 	WorkerWaitTimeMS               int
 	EthereumNodeURL                string
 	EthereumContextReadWaitTimeout time.Duration
@@ -157,11 +156,6 @@ func (nc *NodeConfig) GetServerAddress() string {
 // GetNumWorkers refer the interface
 func (nc *NodeConfig) GetNumWorkers() int {
 	return nc.NumWorkers
-}
-
-// GetTaskRetries returns the number of retries allowed for a queued task
-func (nc *NodeConfig) GetTaskRetries() int {
-	return nc.TaskRetries
 }
 
 // GetWorkerWaitTimeMS refer the interface

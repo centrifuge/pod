@@ -23,9 +23,6 @@ type Config interface {
 	// GetNumWorkers gets the number of background workers to initiate
 	GetNumWorkers() int
 
-	// GetTaskRetries returns the number of retries allowed for a queued task
-	GetTaskRetries() int
-
 	// GetWorkerWaitTime gets the worker wait time for a task to be available while polling
 	// increasing this may slow down task execution while reducing it may consume a lot of CPU cycles
 	GetWorkerWaitTimeMS() int
