@@ -42,7 +42,7 @@ type manager struct {
 }
 
 func (s *manager) GetDefaultTaskTimeout() time.Duration {
-	return s.config.GetEthereumContextWaitTimeout()
+	return s.config.GetTaskValidDuration()
 }
 
 func (s *manager) UpdateJobWithValue(accountID identity.DID, id jobs.JobID, key string, value []byte) error {

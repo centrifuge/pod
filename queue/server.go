@@ -26,6 +26,9 @@ type Config interface {
 	// GetWorkerWaitTime gets the worker wait time for a task to be available while polling
 	// increasing this may slow down task execution while reducing it may consume a lot of CPU cycles
 	GetWorkerWaitTimeMS() int
+
+	// GetTaskValidDuration until which the task is valid from the creation
+	GetTaskValidDuration() time.Duration
 }
 
 // TaskType is a task to be queued in the centrifuge node to be completed asynchronously
@@ -95,8 +98,9 @@ func (qs *Server) RegisterTaskType(name string, task interface{}) {
 func (qs *Server) EnqueueJob(taskName string, params map[string]interface{}) (TaskResult, error) {
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
-
-	return qs.enqueueJob(taskName, params, nil)
+	settings := gocelery.DefaultSettings()
+	settings.ValidUntil = time.Now().Add(qs.config.GetTaskValidDuration())
+	return qs.enqueueJob(taskName, params, settings)
 }
 
 func (qs *Server) enqueueJob(name string, params map[string]interface{}, settings *gocelery.TaskSettings) (TaskResult, error) {

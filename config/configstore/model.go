@@ -42,6 +42,7 @@ type NodeConfig struct {
 	ServerAddress                  string
 	NumWorkers                     int
 	WorkerWaitTimeMS               int
+	TaskValidDuration              time.Duration
 	EthereumNodeURL                string
 	EthereumContextReadWaitTimeout time.Duration
 	EthereumContextWaitTimeout     time.Duration
@@ -161,6 +162,11 @@ func (nc *NodeConfig) GetNumWorkers() int {
 // GetWorkerWaitTimeMS refer the interface
 func (nc *NodeConfig) GetWorkerWaitTimeMS() int {
 	return nc.WorkerWaitTimeMS
+}
+
+// GetTaskValidDuration returns the time duration until which task is valid
+func (nc *NodeConfig) GetTaskValidDuration() time.Duration {
+	return nc.TaskValidDuration
 }
 
 // GetEthereumNodeURL refer the interface
@@ -361,6 +367,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		ServerAddress:                  c.GetServerAddress(),
 		NumWorkers:                     c.GetNumWorkers(),
 		WorkerWaitTimeMS:               c.GetWorkerWaitTimeMS(),
+		TaskValidDuration:              c.GetTaskValidDuration(),
 		EthereumNodeURL:                c.GetEthereumNodeURL(),
 		EthereumContextReadWaitTimeout: c.GetEthereumContextReadWaitTimeout(),
 		EthereumContextWaitTimeout:     c.GetEthereumContextWaitTimeout(),
