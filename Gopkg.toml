@@ -35,8 +35,8 @@ required = ["github.com/centrifuge/centrifuge-ethereum-contracts", "github.com/r
   revision = "863c5efc0a49aff1e9c1cf2ef5f72f62c65425ed"
 
 [[constraint]]
-  name = "github.com/centrifuge/go-substrate-rpc-client"
-  branch = "feat/missing_events"
+  name = "github.com/mikiquantum/go-substrate-rpc-client"
+  revision = "7fb850859b5c424ce2dbacea08582f7f053fea00"
 
 [[constraint]]
   name = "github.com/Masterminds/semver"
