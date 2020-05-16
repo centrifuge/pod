@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -390,10 +391,29 @@ type Accounts struct {
 	Data []Account `json:"data"`
 }
 
-func toClientAccount(acc config.Account) Account {
+func readPublickey(file string) (string, error) {
+	data, err := utils.ReadKeyFromPemFile(file, utils.PublicKey)
+	if err != nil {
+		return "", err
+	}
+
+	return hexutil.Encode(data), nil
+}
+
+func toClientAccount(acc config.Account) (Account, error) {
 	var p2pkp, signingkp KeyPair
-	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
-	signingkp.Pub, signingkp.Pvt = acc.GetSigningKeyPair()
+	p2pPub, _ := acc.GetP2PKeyPair()
+	signingPub, _ := acc.GetSigningKeyPair()
+	var err error
+	p2pkp.Pub, err = readPublickey(p2pPub)
+	if err != nil {
+		return Account{}, err
+	}
+	signingkp.Pub, err = readPublickey(signingPub)
+	if err != nil {
+		return Account{}, err
+	}
+
 	ccacc := acc.GetCentChainAccount()
 	ccacc.Secret = ""
 	return Account{
@@ -406,16 +426,20 @@ func toClientAccount(acc config.Account) Account {
 		P2PKeyPair:                       p2pkp,
 		SigningKeyPair:                   signingkp,
 		CentChainAccount:                 ccacc,
-	}
+	}, nil
 }
 
-func toClientAccounts(accs []config.Account) Accounts {
+func toClientAccounts(accs []config.Account) (Accounts, error) {
 	var caccs Accounts
 	for _, acc := range accs {
-		caccs.Data = append(caccs.Data, toClientAccount(acc))
+		cacc, err := toClientAccount(acc)
+		if err != nil {
+			return Accounts{}, err
+		}
+		caccs.Data = append(caccs.Data, cacc)
 	}
 
-	return caccs
+	return caccs, nil
 }
 
 func isKeyPairEmpty(kp *KeyPair) bool {

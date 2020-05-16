@@ -1,7 +1,7 @@
 version: '3'
 services:
   cc:
-    image: "centrifugeio/centrifuge-chain:20200504194803-27793de"
+    image: "centrifugeio/centrifuge-chain:20200506231744-908086f"
     container_name: cc-node
     ports:
       - "9933:9933"
