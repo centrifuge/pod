@@ -168,7 +168,7 @@ type StatusResponse struct {
 
 // Config is the config interface for jobs package
 type Config interface {
-	GetEthereumContextWaitTimeout() time.Duration
+	GetTaskValidDuration() time.Duration
 }
 
 // Manager is a manager for centrifuge Jobs.
