@@ -30,6 +30,12 @@ type MonetaryValue struct {
 	ID      string             `json:"id"`
 }
 
+// SignedValue contains the Identity of who signed the attribute and value which was signed
+type SignedValue struct {
+	Identity identity.DID       `json:"identity" swaggertype:"primitive,string"`
+	Value    byteutils.HexBytes `json:"value" swaggertype:"primitive,string"`
+}
+
 // AttributeMapRequest defines a map of attributes with attribute key as key
 type AttributeMapRequest map[string]AttributeRequest
 
@@ -60,7 +66,8 @@ type AttributeRequest struct {
 // AttributeResponse adds key to the attribute.
 type AttributeResponse struct {
 	AttributeRequest
-	Key byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+	Key         byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+	SignedValue SignedValue        `json:"signed_value"`
 }
 
 // AttributeMapResponse maps attribute label to AttributeResponse
@@ -177,14 +184,16 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 	m := make(AttributeMapResponse)
 	for _, v := range attrs {
 		vx := v // convert to value
-		var attrReq AttributeRequest
+		attrRes := AttributeResponse{
+			Key: vx.Key[:],
+		}
 		switch vx.Value.Type {
 		case documents.AttrMonetary:
 			id := string(vx.Value.Monetary.ID)
 			if vx.Value.Monetary.Type == documents.MonetaryToken {
 				id = hexutil.Encode(vx.Value.Monetary.ID)
 			}
-			attrReq = AttributeRequest{
+			attrRes.AttributeRequest = AttributeRequest{
 				Type: vx.Value.Type.String(),
 				MonetaryValue: &MonetaryValue{
 					Value:   vx.Value.Monetary.Value,
@@ -192,21 +201,25 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 					ID:      id,
 				},
 			}
+		case documents.AttrSigned:
+			signed := SignedValue{
+				Identity: v.Value.Signed.Identity,
+				Value:    v.Value.Signed.Value,
+			}
+			attrRes.SignedValue = signed
+			attrRes.Type = v.Value.Type.String()
 		default:
 			val, err := vx.Value.String()
 			if err != nil {
 				return nil, err
 			}
-			attrReq = AttributeRequest{
+			attrRes.AttributeRequest = AttributeRequest{
 				Type:  vx.Value.Type.String(),
 				Value: val,
 			}
 		}
 
-		m[vx.KeyLabel] = AttributeResponse{
-			AttributeRequest: attrReq,
-			Key:              vx.Key[:],
-		}
+		m[vx.KeyLabel] = attrRes
 	}
 
 	return m, nil
