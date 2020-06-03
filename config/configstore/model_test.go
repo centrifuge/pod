@@ -17,6 +17,7 @@ import (
 )
 
 type mockConfig struct {
+	config.Configuration
 	mock.Mock
 }
 
@@ -152,12 +153,6 @@ func (m *mockConfig) GetNumWorkers() int {
 	return args.Get(0).(int)
 }
 
-// GetTaskRetries returns the number of retries allowed for a queued task
-func (m *mockConfig) GetTaskRetries() int {
-	args := m.Called()
-	return args.Get(0).(int)
-}
-
 func (m *mockConfig) GetWorkerWaitTimeMS() int {
 	args := m.Called()
 	return args.Get(0).(int)
@@ -278,6 +273,11 @@ func (m *mockConfig) GetCentChainNodeURL() string {
 	return args.Get(0).(string)
 }
 
+func (m *mockConfig) GetTaskValidDuration() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
 func TestNewNodeConfig(t *testing.T) {
 	c := createMockConfig()
 	NewNodeConfig(c)
@@ -338,5 +338,6 @@ func createMockConfig() *mockConfig {
 	c.On("GetCentChainAnchorLifespan").Return(time.Second).Once()
 	c.On("GetCentChainMaxRetries").Return(1).Once()
 	c.On("GetCentChainNodeURL").Return("dummyNode").Once()
+	c.On("GetTaskValidDuration").Return(time.Minute).Once()
 	return c
 }

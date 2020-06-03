@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -27,6 +28,12 @@ type MonetaryValue struct {
 	Value   *documents.Decimal `json:"value" swaggertype:"primitive,string"`
 	ChainID byteutils.HexBytes `json:"chain_id" swaggertype:"primitive,string"`
 	ID      string             `json:"id"`
+}
+
+// SignedValue contains the Identity of who signed the attribute and value which was signed
+type SignedValue struct {
+	Identity identity.DID       `json:"identity" swaggertype:"primitive,string"`
+	Value    byteutils.HexBytes `json:"value" swaggertype:"primitive,string"`
 }
 
 // AttributeMapRequest defines a map of attributes with attribute key as key
@@ -59,7 +66,8 @@ type AttributeRequest struct {
 // AttributeResponse adds key to the attribute.
 type AttributeResponse struct {
 	AttributeRequest
-	Key byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+	Key         byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+	SignedValue SignedValue        `json:"signed_value"`
 }
 
 // AttributeMapResponse maps attribute label to AttributeResponse
@@ -176,14 +184,16 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 	m := make(AttributeMapResponse)
 	for _, v := range attrs {
 		vx := v // convert to value
-		var attrReq AttributeRequest
+		attrRes := AttributeResponse{
+			Key: vx.Key[:],
+		}
 		switch vx.Value.Type {
 		case documents.AttrMonetary:
 			id := string(vx.Value.Monetary.ID)
 			if vx.Value.Monetary.Type == documents.MonetaryToken {
 				id = hexutil.Encode(vx.Value.Monetary.ID)
 			}
-			attrReq = AttributeRequest{
+			attrRes.AttributeRequest = AttributeRequest{
 				Type: vx.Value.Type.String(),
 				MonetaryValue: &MonetaryValue{
 					Value:   vx.Value.Monetary.Value,
@@ -191,21 +201,25 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 					ID:      id,
 				},
 			}
+		case documents.AttrSigned:
+			signed := SignedValue{
+				Identity: v.Value.Signed.Identity,
+				Value:    v.Value.Signed.Value,
+			}
+			attrRes.SignedValue = signed
+			attrRes.Type = v.Value.Type.String()
 		default:
 			val, err := vx.Value.String()
 			if err != nil {
 				return nil, err
 			}
-			attrReq = AttributeRequest{
+			attrRes.AttributeRequest = AttributeRequest{
 				Type:  vx.Value.Type.String(),
 				Value: val,
 			}
 		}
 
-		m[vx.KeyLabel] = AttributeResponse{
-			AttributeRequest: attrReq,
-			Key:              vx.Key[:],
-		}
+		m[vx.KeyLabel] = attrRes
 	}
 
 	return m, nil
@@ -390,10 +404,29 @@ type Accounts struct {
 	Data []Account `json:"data"`
 }
 
-func toClientAccount(acc config.Account) Account {
+func readPublickey(file string) (string, error) {
+	data, err := utils.ReadKeyFromPemFile(file, utils.PublicKey)
+	if err != nil {
+		return "", err
+	}
+
+	return hexutil.Encode(data), nil
+}
+
+func toClientAccount(acc config.Account) (Account, error) {
 	var p2pkp, signingkp KeyPair
-	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
-	signingkp.Pub, signingkp.Pvt = acc.GetSigningKeyPair()
+	p2pPub, _ := acc.GetP2PKeyPair()
+	signingPub, _ := acc.GetSigningKeyPair()
+	var err error
+	p2pkp.Pub, err = readPublickey(p2pPub)
+	if err != nil {
+		return Account{}, err
+	}
+	signingkp.Pub, err = readPublickey(signingPub)
+	if err != nil {
+		return Account{}, err
+	}
+
 	ccacc := acc.GetCentChainAccount()
 	ccacc.Secret = ""
 	return Account{
@@ -406,16 +439,20 @@ func toClientAccount(acc config.Account) Account {
 		P2PKeyPair:                       p2pkp,
 		SigningKeyPair:                   signingkp,
 		CentChainAccount:                 ccacc,
-	}
+	}, nil
 }
 
-func toClientAccounts(accs []config.Account) Accounts {
+func toClientAccounts(accs []config.Account) (Accounts, error) {
 	var caccs Accounts
 	for _, acc := range accs {
-		caccs.Data = append(caccs.Data, toClientAccount(acc))
+		cacc, err := toClientAccount(acc)
+		if err != nil {
+			return Accounts{}, err
+		}
+		caccs.Data = append(caccs.Data, cacc)
 	}
 
-	return caccs
+	return caccs, nil
 }
 
 func isKeyPairEmpty(kp *KeyPair) bool {

@@ -2398,6 +2398,13 @@
                             "type": "object",
                             "$ref": "#/definitions/v2.RemoveCollaboratorsRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2866,6 +2873,13 @@
                             "type": "object",
                             "$ref": "#/definitions/v2.SignedAttributeRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3068,13 +3082,7 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "type": "object",
-                            "$ref": "#/definitions/nil"
-                        }
-                    },
+                    "204": {},
                     "400": {
                         "description": "Bad Request",
                         "schema": {
@@ -3305,6 +3313,10 @@
                         "type": "object",
                         "$ref": "#/definitions/coreapi.MonetaryValue"
                     },
+                    "signed_value": {
+                        "type": "object",
+                        "$ref": "#/definitions/coreapi.SignedValue"
+                    },
                     "type": {
                         "type": "string",
                         "enum": [
@@ -3354,6 +3366,10 @@
                 "monetary_value": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.MonetaryValue"
+                },
+                "signed_value": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.SignedValue"
                 },
                 "type": {
                     "type": "string",
@@ -3655,6 +3671,17 @@
                     "type": "string"
                 },
                 "signer_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.SignedValue": {
+            "type": "object",
+            "properties": {
+                "identity": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }

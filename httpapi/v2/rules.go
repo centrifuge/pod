@@ -137,7 +137,7 @@ func (h handler) GetTransitionRule(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 404 {object} httputils.HTTPError
-// @success 204 {object} nil
+// @success 204
 // @router /v2/documents/{document_id}/transition_rules/{rule_id} [delete]
 func (h handler) DeleteTransitionRule(w http.ResponseWriter, r *http.Request) {
 	var err error

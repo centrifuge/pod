@@ -105,11 +105,11 @@
   revision = "e238735648d6272a4ddc37d7a71acc5bd971058b"
 
 [[projects]]
-  digest = "1:bdd797d675043d8547be2de04b25bcf7319ca834b72c88dd13f25972ac84e09a"
+  digest = "1:99fde5e3857d94a024fff7021f81d32d7b949e481f44600839e1032e5c0feb39"
   name = "github.com/centrifuge/gocelery"
   packages = ["."]
   pruneopts = "UT"
-  revision = "98e4381dac54051f9a6cd6d4e0c2815d87f625d8"
+  revision = "fa96f8f642b048d2c784f6dc365c0307c6e96a25"
 
 [[projects]]
   digest = "1:f46a61d4cdbfd59f161576753d03df52844379a7c65dc8bd9d264da2dee134b4"

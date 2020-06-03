@@ -162,7 +162,7 @@ func initWaitForEventTask(
 		WaitForEventNameSignature: eventSignature,
 	}
 
-	return tq.EnqueueJobWithMaxTries(ETHWaitForEvent, params)
+	return tq.EnqueueJob(ETHWaitForEvent, params)
 }
 
 // CreateWaitForEventJob creates a job for waiting for event from ethereum

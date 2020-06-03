@@ -294,7 +294,7 @@ func QueueEthTXStatusTaskWithValue(
 		params[TransactionEventValueIdx] = txValue.KeyIdx
 	}
 
-	return queuer.EnqueueJobWithMaxTries(EthTXStatusTaskName, params)
+	return queuer.EnqueueJob(EthTXStatusTaskName, params)
 }
 
 /**

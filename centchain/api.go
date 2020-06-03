@@ -202,7 +202,7 @@ func (a *api) QueueCentChainEXTStatusTask(
 		TransactionExtSignatureParam: sig.Hex(),
 	}
 
-	return queuer.EnqueueJobWithMaxTries(ExtrinsicStatusTaskName, params)
+	return queuer.EnqueueJob(ExtrinsicStatusTaskName, params)
 }
 
 /**
