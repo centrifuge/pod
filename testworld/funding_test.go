@@ -8,7 +8,7 @@ import (
 )
 
 func Test_CreateList(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	// Hosts
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
