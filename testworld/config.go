@@ -61,7 +61,6 @@ func loadConfig(network string) (nc networkConfig, err error) {
 		if url == "" {
 			return nc, errors.New("Eth node URL is empty")
 		}
-		fmt.Println("ETH_NODE_URL", url)
 		nc.EthNodeURL = url
 	}
 
