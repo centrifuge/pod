@@ -9,3 +9,4 @@
 [submodule "build/chainbridge-solidity"]
 	path = build/chainbridge-solidity
 	url = https://github.com/ChainSafe/chainbridge-solidity.git
+	branch = master

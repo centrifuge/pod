@@ -84,23 +84,83 @@ type EventMultisigCancelled struct {
 	Topics    []types.Hash
 }
 
+// EventFungibleTransfer is emitted when a bridge fungible token transfer is executed
+type EventFungibleTransfer struct {
+	Phase        types.Phase
+	Destination  types.U8
+	DepositNonce types.U64
+	ResourceID   types.Bytes32
+	Amount       types.U32
+	Recipient    types.Bytes
+	Topics       []types.Hash
+}
+
+// EventNonFungibleTransfer is emitted when a bridge non fungible token transfer is executed
+type EventNonFungibleTransfer struct {
+	Phase        types.Phase
+	Destination  types.U8
+	DepositNonce types.U64
+	ResourceID   types.Bytes32
+	TokenID      types.Bytes
+	Recipient    types.Bytes
+	Metadata     types.Bytes
+	Topics       []types.Hash
+}
+
+// EventGenericTransfer is emitted when a bridge generic transfer is executed
+type EventGenericTransfer struct {
+	Phase        types.Phase
+	Destination  types.U8
+	DepositNonce types.U64
+	ResourceID   types.Bytes32
+	Metadata     types.Bytes
+	Topics       []types.Hash
+}
+
+// EventChainWhitelisted is emitted when a new chain has been whitelisted to interact with the bridge
+type EventChainWhitelisted struct {
+	Phase       types.Phase
+	Destination types.U8
+	Topics      []types.Hash
+}
+
+// EventRelayerAdded is emitted when a new bridge relayer has been whitelisted
+type EventRelayerAdded struct {
+	Phase   types.Phase
+	Relayer types.AccountID
+	Topics  []types.Hash
+}
+
+// EventRelayerThresholdChanged is emitted when the relayer threshold is changed
+type EventRelayerThresholdChanged struct {
+	Phase     types.Phase
+	Threshold types.U32
+	Topics    []types.Hash
+}
+
 // Events holds the default events and custom events for centrifuge chain
 type Events struct {
 	types.EventRecords
-	Nfts_DepositAsset                []EventNFTDeposited                   //nolint:stylecheck,golint
-	Council_Proposed                 []types.EventCollectiveProposed       //nolint:stylecheck,golint
-	Council_Voted                    []types.EventCollectiveProposed       //nolint:stylecheck,golint
-	Council_Approved                 []types.EventCollectiveApproved       //nolint:stylecheck,golint
-	Council_Disapproved              []types.EventCollectiveDisapproved    //nolint:stylecheck,golint
-	Council_Executed                 []types.EventCollectiveExecuted       //nolint:stylecheck,golint
-	Council_MemberExecuted           []types.EventCollectiveMemberExecuted //nolint:stylecheck,golint
-	Council_Closed                   []types.EventCollectiveClosed         //nolint:stylecheck,golint
-	Fees_FeeChanged                  []EventFeeChanged                     //nolint:stylecheck,golint
-	MultiAccount_NewMultiAccount     []EventNewMultiAccount                //nolint:stylecheck,golint
-	MultiAccount_MultiAccountUpdated []EventMultiAccountUpdated            //nolint:stylecheck,golint
-	MultiAccount_MultiAccountRemoved []EventMultiAccountRemoved            //nolint:stylecheck,golint
-	MultiAccount_NewMultisig         []EventNewMultisig                    //nolint:stylecheck,golint
-	MultiAccount_MultisigApproval    []EventMultisigApproval               //nolint:stylecheck,golint
-	MultiAccount_MultisigExecuted    []EventMultisigExecuted               //nolint:stylecheck,golint
-	MultiAccount_MultisigCancelled   []EventMultisigCancelled              //nolint:stylecheck,golint
+	ChainBridge_FungibleTransfer        []EventFungibleTransfer               //nolint:stylecheck,golint
+	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer            //nolint:stylecheck,golint
+	ChainBridge_GenericTransfer         []EventGenericTransfer                //nolint:stylecheck,golint
+	ChainBridge_ChainWhitelisted        []EventChainWhitelisted               //nolint:stylecheck,golint
+	ChainBridge_RelayerAdded            []EventRelayerAdded                   //nolint:stylecheck,golint
+	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged        //nolint:stylecheck,golint
+	Nfts_DepositAsset                   []EventNFTDeposited                   //nolint:stylecheck,golint
+	Council_Proposed                    []types.EventCollectiveProposed       //nolint:stylecheck,golint
+	Council_Voted                       []types.EventCollectiveProposed       //nolint:stylecheck,golint
+	Council_Approved                    []types.EventCollectiveApproved       //nolint:stylecheck,golint
+	Council_Disapproved                 []types.EventCollectiveDisapproved    //nolint:stylecheck,golint
+	Council_Executed                    []types.EventCollectiveExecuted       //nolint:stylecheck,golint
+	Council_MemberExecuted              []types.EventCollectiveMemberExecuted //nolint:stylecheck,golint
+	Council_Closed                      []types.EventCollectiveClosed         //nolint:stylecheck,golint
+	Fees_FeeChanged                     []EventFeeChanged                     //nolint:stylecheck,golint
+	MultiAccount_NewMultiAccount        []EventNewMultiAccount                //nolint:stylecheck,golint
+	MultiAccount_MultiAccountUpdated    []EventMultiAccountUpdated            //nolint:stylecheck,golint
+	MultiAccount_MultiAccountRemoved    []EventMultiAccountRemoved            //nolint:stylecheck,golint
+	MultiAccount_NewMultisig            []EventNewMultisig                    //nolint:stylecheck,golint
+	MultiAccount_MultisigApproval       []EventMultisigApproval               //nolint:stylecheck,golint
+	MultiAccount_MultisigExecuted       []EventMultisigExecuted               //nolint:stylecheck,golint
+	MultiAccount_MultisigCancelled      []EventMultisigCancelled              //nolint:stylecheck,golint
 }
