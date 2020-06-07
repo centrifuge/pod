@@ -32,7 +32,6 @@ if [ -z ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR} ]; then
     CENT_ETHEREUM_DAPP_CONTRACTS_DIR=${PARENT_DIR}/build
 fi
 
-ASSET_DIR=${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/ethereum-bridge-contracts
 NFT_DIR=${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/privacy-enabled-erc721
 
 export ETH_RPC_ACCOUNTS=true
@@ -42,25 +41,22 @@ export ETH_RPC_URL=$CENT_ETHEREUM_NODEURL
 export ETH_PASSWORD="/dev/null"
 export ETH_FROM="0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
-# deploy asset contracts
-cd $ASSET_DIR
-dapp update
-dapp build --extract
-
-assetAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8,address)' "10" "0x11E296f2F658ab6892E8F4dceF696C0249486B8b")
-
 # deploy NFT contract
 cd $NFT_DIR
 dapp update
 dapp build --extract
 
 echo "Identity factory $IDENTITY_FACTORY"
-nftAddr=$(seth send --create out/AssetNFT.bin 'AssetNFT(address, address)' "$assetAddr" "$IDENTITY_FACTORY")
-echo "assetManager $assetAddr" > $PARENT_DIR/localAddresses
+assetManagerAddr=$(cat $PARENT_DIR/localAddresses | grep "assetManager" | awk '{print $2}' | tr -d '\n')
+nftAddr=$(seth send --create out/AssetNFT.bin 'AssetNFT(address, address)' "$assetManagerAddr" "$IDENTITY_FACTORY")
 echo "genericNFT $nftAddr" >> $PARENT_DIR/localAddresses
 
-echo "creating bridge config with asset address $assetAddr"
+genericAddr=$(cat $PARENT_DIR/localAddresses | grep "genericAddr" | awk '{print $2}' | tr -d '\n')
+bridgeAddr=$(cat $PARENT_DIR/localAddresses | grep "bridgeAddr" | awk '{print $2}' | tr -d '\n')
+erc721Addr=$(cat $PARENT_DIR/localAddresses | grep "erc721Addr" | awk '{print $2}' | tr -d '\n')
+erc20Addr=$(cat $PARENT_DIR/localAddresses | grep "erc20Addr" | awk '{print $2}' | tr -d '\n')
+echo "creating bridge config with bridge addresses $bridgeAddr $erc721Addr $erc20Addr $genericAddr"
 bridge_dir="$PARENT_DIR"/build/scripts/test-dependencies/bridge
-"$bridge_dir"/create_config.sh "$bridge_dir"/config "$assetAddr"
+"$bridge_dir"/create_config.sh "$bridge_dir"/config "$bridgeAddr" "$erc721Addr" "$erc20Addr" "$genericAddr"
 
 cd $PARENT_DIR

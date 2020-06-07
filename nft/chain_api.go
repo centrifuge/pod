@@ -12,8 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// ValidateMint is the module call for validate NFT Mint on Centrifuge chain
-const ValidateMint = "Nfts.validate_mint"
+const (
+	// ValidateMint is the module call for validate NFT Mint on Centrifuge chain
+	ValidateMint = "Nfts.validate_mint"
+	// TargetChainID is the target chain where to mint the NFT against - 0 Ethereum
+	TargetChainID = 0
+)
 
 // API defines set of functions to interact with centrifuge chain
 type API interface {
@@ -76,7 +80,8 @@ func (a api) ValidateNFT(
 		types.NewHash(anchorID[:]),
 		depositAddress,
 		proofs,
-		staticProofs)
+		staticProofs,
+		types.NewU8(TargetChainID))
 	if err != nil {
 		return nil, err
 	}
