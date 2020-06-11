@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+	logging "github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/crypto/blake2b"
@@ -18,6 +19,8 @@ const (
 	PublicKeyED25519Len    = 32
 	PrivateKeyED25519Len   = 64
 )
+
+var log = logging.Logger("keytools")
 
 func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
 	publicFileName := "publicKeyFile"

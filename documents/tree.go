@@ -8,9 +8,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 func (cd *CoreDocument) defaultTreeWithPrefix(prefix string, compactPrefix []byte, hashSorting bool) (*proofs.DocumentTree, error) {
@@ -28,7 +28,7 @@ func (cd *CoreDocument) defaultTreeWithPrefix(prefix string, compactPrefix []byt
 		CompactProperties: true,
 		EnableHashSorting: hashSorting,
 		Hash:              b2bHash,
-		LeafHash:          sha3.NewKeccak256(),
+		LeafHash:          sha3.NewLegacyKeccak256(),
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
 	})
@@ -77,7 +77,7 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 	salts := cd.Document.Salts
 	return func(compact []byte) ([]byte, error) {
 		for _, salt := range salts {
-			if bytes.Compare(salt.GetCompact(), compact) == 0 {
+			if bytes.Equal(salt.GetCompact(), compact) {
 				return salt.GetValue(), nil
 			}
 		}

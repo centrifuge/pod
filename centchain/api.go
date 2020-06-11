@@ -308,7 +308,6 @@ func (a *api) incrementNonce(accountID string) {
 		return
 	}
 	a.accounts[accountID] = a.accounts[accountID] + 1
-	return
 }
 
 func (a *api) getNonceFromChain(meta *types.Metadata, krp []byte) (uint32, error) {

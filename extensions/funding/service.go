@@ -35,7 +35,6 @@ type Service interface {
 type service struct {
 	docSrv        documents.Service
 	tokenRegistry documents.TokenRegistry
-	idSrv         identity.Service
 }
 
 var log = logging.Logger("funding_agreement")

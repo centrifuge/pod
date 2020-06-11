@@ -21,9 +21,6 @@ const (
 
 	// DocumentProofLength is the length in bytes of a single proof
 	DocumentProofLength = 32
-
-	// AnchorSchemaVersion as stored on public repository
-	AnchorSchemaVersion uint = 1
 )
 
 // AnchorID type is byte array of length AnchorIDLength
@@ -104,11 +101,6 @@ type WatchCommit struct {
 type WatchPreCommit struct {
 	PreCommit *PreCommitData
 	Error     error
-}
-
-// supportedSchemaVersion returns the current AnchorSchemaVersion
-func supportedSchemaVersion() uint {
-	return AnchorSchemaVersion
 }
 
 // NewCommitData returns a CommitData with passed in details

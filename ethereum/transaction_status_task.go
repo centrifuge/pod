@@ -40,7 +40,6 @@ const (
 // WatchTransaction holds the transaction status received form chain event
 type WatchTransaction struct {
 	Status uint64
-	txHash string
 	Error  error
 }
 

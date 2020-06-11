@@ -4,11 +4,7 @@ import "strings"
 
 // IsStringOfLength returns true if length of the string == n
 func IsStringOfLength(msg string, n int) bool {
-	if len(msg) != n {
-		return false
-	}
-
-	return true
+	return len(msg) == n
 }
 
 // IsStringEmpty returns true if the string is empty

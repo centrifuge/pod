@@ -182,7 +182,7 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	if nft == nil {
 		nft = new(coredocumentpb.NFT)
 		// add 12 empty bytes
-		eb := make([]byte, 12, 12)
+		eb := make([]byte, 12)
 		nft.RegistryId = append(registry.Bytes(), eb...)
 		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
 	}
@@ -325,20 +325,6 @@ func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (
 
 	key := hexutil.Encode(nft.RegistryId)
 	return fmt.Sprintf(CDTreePrefix+".nfts[%s]", key), nil
-}
-
-func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.DID) (pk string, err error) {
-	role, err := getRole(roleKey, roles)
-	if err != nil {
-		return pk, err
-	}
-
-	idx, found := isDIDInRole(role, account)
-	if !found {
-		return pk, ErrNFTRoleMissing
-	}
-
-	return fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx), nil
 }
 
 // isDIDInRole returns the index of the collaborator and true if did is in the given role as collaborators.

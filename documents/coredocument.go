@@ -19,8 +19,8 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -703,7 +703,7 @@ func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, er
 		Value:    []byte(docType),
 	}
 
-	err = documentTypeNode.HashNode(sha3.NewKeccak256(), true)
+	err = documentTypeNode.HashNode(sha3.NewLegacyKeccak256(), true)
 	if err != nil {
 		return nil, err
 	}

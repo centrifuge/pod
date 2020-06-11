@@ -8,10 +8,8 @@ import (
 )
 
 const (
-	transferIDParam      = "transfer_id"
-	agreementIDParam     = "agreement_id"
-	registryAddressParam = "registry_address"
-	tokenIDParam         = "token_id"
+	transferIDParam  = "transfer_id"
+	agreementIDParam = "agreement_id"
 )
 
 // Register registers the core apis to the router.

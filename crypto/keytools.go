@@ -3,11 +3,8 @@ package crypto
 import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
-	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-crypto"
 )
-
-var log = logging.Logger("keytools")
 
 // Constants shared within subfolders
 const (

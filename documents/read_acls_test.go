@@ -21,12 +21,12 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
@@ -224,27 +224,6 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
 }
 
-func TestCoreDocument_getRoleProofKey(t *testing.T) {
-	cd, err := newCoreDocument()
-	assert.NoError(t, err)
-	roleKey := make([]byte, 32, 32)
-	account := testingidentity.GenerateRandomDID()
-	pf, err := getRoleProofKey(cd.Document.Roles, roleKey, account)
-	assert.Error(t, err)
-	assert.Empty(t, pf)
-
-	cd.initReadRules([]identity.DID{account})
-	roleKey = cd.Document.Roles[0].RoleKey
-	pf, err = getRoleProofKey(cd.Document.Roles, roleKey, testingidentity.GenerateRandomDID())
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
-	assert.Empty(t, pf)
-
-	pf, err = getRoleProofKey(cd.Document.Roles, roleKey, account)
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
-}
-
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
@@ -326,7 +305,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		h, err := blake2b.New256(nil)
 		assert.NoError(t, err)
 		for _, pf := range pfs.FieldProofs {
-			valid, err := ValidateProof(pf, dataRoot, h, sha3.NewKeccak256())
+			valid, err := ValidateProof(pf, dataRoot, h, sha3.NewLegacyKeccak256())
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}

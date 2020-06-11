@@ -69,8 +69,6 @@ type P2PMessenger struct {
 	strmap map[libp2pPeer.ID]map[protocol.ID]*messageSender
 	smlk   sync.Mutex
 
-	plk sync.Mutex
-
 	handler func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
 }
 
