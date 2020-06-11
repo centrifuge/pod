@@ -37,14 +37,14 @@ install-deps: ## Install Dependencies
 	@go get -u github.com/jteeuwen/go-bindata/...
 	@go get -u github.com/swaggo/swag/cmd/swag
 	@go get -u github.com/ethereum/go-ethereum/cmd/abigen
-	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
-	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 	@command -v xgo >/dev/null 2>&1 || go get -u github.com/karalabe/xgo
 	@export GO111MODULE=auto
 	@go mod tidy
 	@go mod vendor
 	@modvendor -copy="**/*.c **/*.h"
 	@git submodule update --init --recursive
+	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
+	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
 
 lint-check: ## runs linters on go code
 	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
@@ -67,10 +67,11 @@ install-subkey: ## installs subkey
 gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts
 	npm run compile --prefix build/centrifuge-ethereum-contracts
-	@cat build/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > tmp/contracts/id.abi
-	@cat build/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > tmp/contracts/idf.abi
-	@abigen --abi tmp/contracts/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
-	@abigen --abi tmp/contracts/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
+	@mkdir ./tmp
+	@cat build/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > ./tmp/id.abi
+	@cat build/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > ./tmp/idf.abi
+	@abigen --abi ./tmp/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
+	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 
 install: install-deps ## Builds and Install binary for development

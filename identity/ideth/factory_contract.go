@@ -173,7 +173,7 @@ func (_FactoryContract *FactoryContractTransactorRaw) Transact(opts *bind.Transa
 
 // CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
 //
-// Solidity: function createdIdentity(address identityAddr) constant returns(bool valid)
+// Solidity: function createdIdentity(address identityAddr) view returns(bool valid)
 func (_FactoryContract *FactoryContractCaller) CreatedIdentity(opts *bind.CallOpts, identityAddr common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -185,14 +185,14 @@ func (_FactoryContract *FactoryContractCaller) CreatedIdentity(opts *bind.CallOp
 
 // CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
 //
-// Solidity: function createdIdentity(address identityAddr) constant returns(bool valid)
+// Solidity: function createdIdentity(address identityAddr) view returns(bool valid)
 func (_FactoryContract *FactoryContractSession) CreatedIdentity(identityAddr common.Address) (bool, error) {
 	return _FactoryContract.Contract.CreatedIdentity(&_FactoryContract.CallOpts, identityAddr)
 }
 
 // CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
 //
-// Solidity: function createdIdentity(address identityAddr) constant returns(bool valid)
+// Solidity: function createdIdentity(address identityAddr) view returns(bool valid)
 func (_FactoryContract *FactoryContractCallerSession) CreatedIdentity(identityAddr common.Address) (bool, error) {
 	return _FactoryContract.Contract.CreatedIdentity(&_FactoryContract.CallOpts, identityAddr)
 }
@@ -369,4 +369,15 @@ func (_FactoryContract *FactoryContractFilterer) WatchIdentityCreated(opts *bind
 			}
 		}
 	}), nil
+}
+
+// ParseIdentityCreated is a log parse operation binding the contract event 0xac993fde3b9423ff59e4a23cded8e89074c9c8740920d1d870f586ba7c5c8cf0.
+//
+// Solidity: event IdentityCreated(address indexed identity)
+func (_FactoryContract *FactoryContractFilterer) ParseIdentityCreated(log types.Log) (*FactoryContractIdentityCreated, error) {
+	event := new(FactoryContractIdentityCreated)
+	if err := _FactoryContract.contract.UnpackLog(event, "IdentityCreated", log); err != nil {
+		return nil, err
+	}
+	return event, nil
 }
