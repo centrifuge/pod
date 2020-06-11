@@ -10,7 +10,7 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PATH="$HOME/.cargo/bin:$PATH"
+    - IMAGE_NAME=centrifugeio/go-centrifuge PATH="$HOME/.cargo/bin:$PATH"
 
 checkout:
   post:
@@ -19,7 +19,7 @@ checkout:
 cache:
   directories:
     - ~/bin/
-    - /tmp/depcache
+    - $GOPATH/pkg/mod
 
 before_install:
   - nvm install 10.15.1
