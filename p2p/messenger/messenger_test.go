@@ -179,7 +179,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "dial attempt failed: no good addresses")
+		assert.Contains(t, err.Error(), fmt.Sprintf("failed to dial %s: no addresses", h3.ID().String()))
 	}
 
 	// 6. handler nil response
@@ -225,6 +225,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	ps := pstore.NewPeerstore(
 		pstoremem.NewKeyBook(),
 		pstoremem.NewAddrBook(),
+		pstoremem.NewProtoBook(),
 		pstoremem.NewPeerMetadata())
 
 	// Add the keys to the peerstore

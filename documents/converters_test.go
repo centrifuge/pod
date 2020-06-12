@@ -58,7 +58,9 @@ func TestPaymentDetails(t *testing.T) {
 	fpdetails, err := FromProtocolPaymentDetails(pdetails)
 	assert.NoError(t, err)
 
-	assert.Equal(t, details, fpdetails)
+	assert.Equal(t, details[0].Amount.String(), fpdetails[0].Amount.String())
+	assert.Equal(t, details[0].ID, fpdetails[0].ID)
+	assert.Equal(t, details[0].Payee, fpdetails[0].Payee)
 
 	pdetails[0].Amount = utils.RandomSlice(40)
 	_, err = FromProtocolPaymentDetails(pdetails)
@@ -101,11 +103,6 @@ func TestP2PAttributes(t *testing.T) {
 		"int256_test": {
 			Type:  AttrInt256.String(),
 			Value: "1000000001",
-		},
-
-		"decimal_test": {
-			Type:  AttrDecimal.String(),
-			Value: "1000.000001",
 		},
 	}
 
@@ -160,11 +157,6 @@ func TestAttributes_signed(t *testing.T) {
 			Type:  AttrInt256.String(),
 			Value: "1000000001",
 		},
-
-		"decimal_test": {
-			Type:  AttrDecimal.String(),
-			Value: "1000.000001",
-		},
 	}
 
 	attrs := toAttrsMap(t, cattrs)
@@ -190,7 +182,7 @@ func TestAttributes_signed(t *testing.T) {
 
 	pattrs, err := toProtocolAttributes(attrs)
 	assert.NoError(t, err)
-	assert.Equal(t, "decimal_test", string(pattrs[3].KeyLabel))
+	assert.Equal(t, "int256_test", string(pattrs[3].KeyLabel))
 	assert.Len(t, pattrs[3].GetByteVal(), maxDecimalByteLength) //decimal length padded to 32 bytes
 	assert.Equal(t, "time_test", string(pattrs[0].KeyLabel))
 	assert.Len(t, pattrs[0].GetByteVal(), maxTimeByteLength) //timestamp length padded to 12 bytes
@@ -248,7 +240,7 @@ func TestAttributes_monetary(t *testing.T) {
 		// convert from protocol
 		cAttr, err := fromProtocolAttributes(pattrs)
 		assert.NoError(t, err)
-		assert.Equal(t, mon.Value.Monetary.Value, cAttr[mon.Key].Value.Monetary.Value)
+		assert.Equal(t, mon.Value.Monetary.Value.String(), cAttr[mon.Key].Value.Monetary.Value.String())
 		assert.Equal(t, mon.Value.Monetary.ChainID, cAttr[mon.Key].Value.Monetary.ChainID)
 		assert.Equal(t, mon.Value.Monetary.ID, cAttr[mon.Key].Value.Monetary.ID)
 	}

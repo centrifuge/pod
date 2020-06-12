@@ -19,8 +19,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-protocol"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -109,7 +109,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 
 func getIDMocks(ctx context.Context, did identity.DID) *testingcommons.MockIdentityService {
 	idService := &testingcommons.MockIdentityService{}
-	idService.On("CurrentP2PKey", did).Return("5dsgvJGnvAfiR3K6HCBc4hcokSfmjj", nil)
+	idService.On("CurrentP2PKey", did).Return("QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1", nil)
 	idService.On("Exists", ctx, did).Return(nil)
 	return idService
 }

@@ -18,13 +18,12 @@ import (
 	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-crypto"
-	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/host"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-kad-dht"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
-	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -137,7 +136,7 @@ func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 
 	for _, addr := range bootstrapPeers {
 		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
+		pinfo, _ := libp2pPeer.AddrInfoFromP2pAddr(iaddr.Multiaddr())
 		if err := s.host.Connect(ctx, *pinfo); err != nil {
 			log.Info("Bootstrapping to peer failed: ", err)
 		}
@@ -184,7 +183,7 @@ func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, 
 
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
-		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
+		log.Warn("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
 	} else {
 		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 		if err != nil {

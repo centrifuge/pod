@@ -105,7 +105,7 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	err = <-startErr
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
-	assert.Equal(t, "failed to parse tcp: 100000000 failed to parse port addr: greater than 65536", err.Error())
+	assert.Equal(t, "failed to parse multiaddr \"/ip4/0.0.0.0/tcp/100000000\": invalid value \"100000000\" for protocol tcp: failed to parse port addr: greater than 65536", err.Error())
 }
 
 func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
