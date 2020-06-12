@@ -3,7 +3,7 @@ package crypto
 import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // Constants shared within subfolders

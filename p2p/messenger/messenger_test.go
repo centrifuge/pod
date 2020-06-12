@@ -238,7 +238,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
-		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
+		log.Warn("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
 	} else {
 		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 		if err != nil {

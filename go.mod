@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/aristanetworks/goarista v0.0.0-20200602234848-db8a79a18e4a // indirect
+	github.com/aristanetworks/goarista v0.0.0-20200609010056-95bcf8053598 // indirect
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200116142107-cb87f7189514
 	github.com/centrifuge/go-substrate-rpc-client v1.1.1-0.20200428140716-e238735648d6
 	github.com/centrifuge/gocelery v0.0.0-20200514084252-fa96f8f642b0
@@ -34,18 +34,13 @@ require (
 	github.com/ipfs/go-datastore v0.4.4
 	github.com/ipfs/go-ipfs-addr v0.0.1
 	github.com/ipfs/go-log v1.0.4
-	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/libp2p/go-libp2p v0.9.6
-	github.com/libp2p/go-libp2p-crypto v0.1.0
-	github.com/libp2p/go-libp2p-host v0.1.0
+	github.com/libp2p/go-libp2p-core v0.5.7
 	github.com/libp2p/go-libp2p-kad-dht v0.8.2
-	github.com/libp2p/go-libp2p-net v0.1.0
-	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
-	github.com/libp2p/go-libp2p-protocol v0.1.0
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
@@ -86,7 +81,7 @@ require (
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a // indirect
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
-	golang.org/x/tools v0.0.0-20200611032120-1fdcbd130028 // indirect
+	golang.org/x/tools v0.0.0-20200612022331-742c5eb664c2 // indirect
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/resty.v1 v1.12.0

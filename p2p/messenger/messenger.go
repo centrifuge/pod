@@ -12,11 +12,11 @@ import (
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
-	"github.com/jbenet/go-context/io"
-	"github.com/libp2p/go-libp2p-host"
-	inet "github.com/libp2p/go-libp2p-net"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-protocol"
+	"github.com/libp2p/go-libp2p-core/helpers"
+	"github.com/libp2p/go-libp2p-core/host"
+	inet "github.com/libp2p/go-libp2p-core/network"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/protocol"
 )
 
 const (
@@ -99,13 +99,9 @@ func (mes *P2PMessenger) handleNewStream(s inet.Stream) {
 
 func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 	ctx := mes.ctx
-	// ok to use. we defer close stream in this func
-	cr := ctxio.NewReader(ctx, s)
-	cw := ctxio.NewWriter(ctx, s)
-
 	// delimited readers and writers to set length of the protobuf messages to the stream
-	r := ggio.NewDelimitedReader(cr, MessageSizeMax)
-	w := newBufferedDelimitedWriter(cw)
+	r := ggio.NewDelimitedReader(s, MessageSizeMax)
+	w := newBufferedDelimitedWriter(s)
 	mPeer := s.Conn().RemotePeer()
 
 	for {
@@ -124,7 +120,7 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 
 		if mes.handler == nil {
 			s.Reset()
-			log.Warning("got back nil handler from handlerForMsgType")
+			log.Warn("got back nil handler from handlerForMsgType")
 			return
 		}
 
@@ -138,7 +134,7 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 
 		// if nil response, return it before serializing
 		if rpmes == nil {
-			log.Warning("got back nil response from request")
+			log.Warn("got back nil response from request")
 			continue
 		}
 
@@ -307,7 +303,7 @@ func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 		}
 
 		if ms.singleMes > streamReuseTries {
-			go inet.FullClose(ms.s)
+			go helpers.FullClose(ms.s)
 			ms.s = nil
 		} else if retry {
 			ms.singleMes++
