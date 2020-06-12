@@ -133,7 +133,7 @@ func GetSmartContractAddresses() *config.SmartContractAddresses {
 
 func findContractDeployJSON(file string) ([]byte, error) {
 	projDir := GetProjectDir()
-	deployJSONFile := path.Join(projDir, "vendor", "github.com", "centrifuge", "centrifuge-ethereum-contracts", "build", "contracts", file)
+	deployJSONFile := path.Join(projDir, "build", "centrifuge-ethereum-contracts", "build", "contracts", file)
 	dat, err := ioutil.ReadFile(deployJSONFile)
 	if err != nil {
 		return nil, err
