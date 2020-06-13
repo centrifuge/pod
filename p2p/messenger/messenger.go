@@ -3,6 +3,7 @@ package messenger
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -248,6 +249,8 @@ func (ms *messageSender) prep() error {
 	// set the p2p timeout as the connection timeout
 	timeoutCtx, canc := context.WithTimeout(ms.mes.ctx, ms.mes.timeout)
 	defer canc()
+	fmt.Println("Connecting to peer: ", ms.p, ms.protoc, "======")
+	fmt.Printf("%T\n", ms.mes.host)
 	nstr, err := ms.mes.host.NewStream(timeoutCtx, ms.p, ms.protoc)
 	if err != nil {
 		return err

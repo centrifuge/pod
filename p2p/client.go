@@ -178,7 +178,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 		return "", err
 	}
 
-	pid, err := ipfsAddr.ValueForProtocol(ma.P_P2P)
+	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +197,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 		defer canc()
 		pinfo, err := s.dht.FindPeer(c, peerID)
 		if err != nil {
-			return peerID, err
+			log.Infof("Unable to find Peer: %s\n", peerID)
 		}
 
 		// We have a peer ID and a targetAddr so we add it to the peer store

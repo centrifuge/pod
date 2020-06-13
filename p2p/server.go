@@ -14,16 +14,17 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
-	ds "github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-ipfs-addr"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/libp2p/go-libp2p-core/routing"
 	"github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
+	secio "github.com/libp2p/go-libp2p-secio"
+	"github.com/libp2p/go-tcp-transport"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -77,7 +78,7 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		startupErr <- err
 		return
 	}
-	s.host, err = makeBasicHost(ctx, priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
+	s.host, s.dht, err = makeBasicHost(ctx, priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
@@ -131,15 +132,24 @@ func (s *peer) InitProtocolForDID(DID *identity.DID) {
 }
 
 func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
-	s.dht = dht.NewDHT(ctx, s.host, ds.NewMapDatastore())
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
 	for _, addr := range bootstrapPeers {
-		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := libp2pPeer.AddrInfoFromP2pAddr(iaddr.Multiaddr())
-		if err := s.host.Connect(ctx, *pinfo); err != nil {
-			log.Info("Bootstrapping to peer failed: ", err)
+		multiaddr, _ := ma.NewMultiaddr(addr)
+		p, err := libp2pPeer.AddrInfoFromP2pAddr(multiaddr)
+		if err != nil {
+			log.Info(err)
+			continue
 		}
+
+		s.host.Peerstore().AddAddrs(p.ID, p.Addrs, peerstore.PermanentAddrTTL)
+		err = s.host.Connect(ctx, *p)
+		if err != nil {
+			log.Info("Bootstrapping to peer failed: ", err)
+			continue
+		}
+
+		fmt.Printf("Connection to %s %s successful\n", p.ID, p.Addrs)
 	}
 
 	err := s.dht.Bootstrap(ctx)
@@ -153,41 +163,15 @@ func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 }
 
 // makeBasicHost creates a LibP2P host with a peer ID listening on the given port
-func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, error) {
-	// Obtain Peer ID from public key
-	// We should be using the following method to get the ID, but looks like is not compatible with
-	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
-	// IDFromPublicKey(pk)
-	//pid, err := peer.IDFromEd25519PublicKey(pub)
-	pid, err := libp2pPeer.IDFromPublicKey(pub)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a peerstore
-	ps := pstoremem.NewPeerstore()
-
-	// Add the keys to the peerstore
-	// for this peer ID.
-	err = ps.AddPubKey(pid, pub)
-	if err != nil {
-		log.Infof("Could not enable encryption: %v\n", err)
-		return nil, err
-	}
-
-	err = ps.AddPrivKey(pid, priv)
-	if err != nil {
-		log.Infof("Could not enable encryption: %v\n", err)
-		return nil, err
-	}
-
+func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, *dht.IpfsDHT, error) {
+	var err error
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
 		log.Warn("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
 	} else {
 		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 		if err != nil {
-			return nil, errors.New("failed to create multiaddr: %v", err)
+			return nil, nil, errors.New("failed to create multiaddr: %v", err)
 		}
 	}
 
@@ -199,24 +183,30 @@ func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, 
 		return addrs
 	}
 
+	var idht *dht.IpfsDHT
 	opts := []libp2p.Option{
-		libp2p.Peerstore(ps),
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
 		libp2p.Identity(priv),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
+		libp2p.Security(secio.ID, secio.New),
+		// support any other default transports (TCP)
+		libp2p.Transport(tcp.NewTCPTransport),
+		// Attempt to open ports using uPNP for NATed hosts.
+		libp2p.NATPortMap(),
+		// Let this host use the DHT to find other hosts
+		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
+			idht, err = dht.New(ctx, h, dht.Mode(dht.ModeAutoServer))
+			return idht, err
+		}),
 		libp2p.DefaultMuxers,
 		libp2p.AddrsFactory(addressFactory),
 	}
 
 	bhost, err := libp2p.New(ctx, opts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	hostAddr, err := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", bhost.ID().Pretty()))
-	if err != nil {
-		return nil, errors.New("failed to get addr: %v", err)
-	}
-
-	log.Infof("P2P Server at: %s %s\n", hostAddr.String(), bhost.Addrs())
-	return bhost, nil
+	fmt.Printf("%t\n", bhost.Network())
+	log.Infof("P2P Server at: %s %s\n", bhost.ID(), bhost.Addrs())
+	return bhost, idht, err
 }

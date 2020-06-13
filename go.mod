@@ -41,6 +41,8 @@ require (
 	github.com/libp2p/go-libp2p-core v0.5.7
 	github.com/libp2p/go-libp2p-kad-dht v0.8.2
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
+	github.com/libp2p/go-libp2p-secio v0.2.2
+	github.com/libp2p/go-tcp-transport v0.2.0
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
