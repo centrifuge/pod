@@ -116,7 +116,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	assert.NoError(t, err)
-	h, err := makeBasicHost(context.Background(), priv, pub, "", listenPort)
+	h, _, err := makeBasicHost(context.Background(), priv, pub, "", listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 }
@@ -130,7 +130,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	assert.NoError(t, err)
-	h, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
+	h, _, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
@@ -148,7 +148,7 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	assert.NoError(t, err)
-	h, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
+	h, _, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)
 }
