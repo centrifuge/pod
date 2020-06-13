@@ -206,7 +206,6 @@ func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, 
 		return nil, nil, err
 	}
 
-	fmt.Printf("%t\n", bhost.Network())
 	log.Infof("P2P Server at: %s %s\n", bhost.ID(), bhost.Addrs())
 	return bhost, idht, err
 }
