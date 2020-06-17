@@ -34,7 +34,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/health.Pong"
                         }
                     }
@@ -56,14 +55,12 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Accounts"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -86,7 +83,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
                         }
                     }
@@ -95,21 +91,18 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -134,7 +127,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.GenerateAccountPayload"
                         }
                     }
@@ -143,21 +135,18 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -188,21 +177,18 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -232,7 +218,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
                         }
                     }
@@ -241,28 +226,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.Account"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -294,7 +275,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.SignRequest"
                         }
                     }
@@ -303,21 +283,18 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.SignResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -352,7 +329,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.CreateDocumentRequest"
                         }
                     }
@@ -361,28 +337,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -420,35 +392,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -488,7 +455,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.CreateDocumentRequest"
                         }
                     }
@@ -497,28 +463,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -559,35 +521,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -627,7 +584,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingRequest"
                         }
                     }
@@ -636,28 +592,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -705,35 +657,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -780,7 +727,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingRequest"
                         }
                     }
@@ -789,35 +735,30 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -865,35 +806,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -932,7 +868,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.ProofsRequest"
                         }
                     }
@@ -941,28 +876,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.ProofsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1000,35 +931,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.TransferDetailListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1061,7 +987,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.CreateTransferDetailRequest"
                         }
                     },
@@ -1077,28 +1002,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.TransferDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1143,35 +1064,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.TransferDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1204,7 +1120,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.UpdateTransferDetailRequest"
                         }
                     },
@@ -1227,28 +1142,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.TransferDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1293,35 +1204,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1366,35 +1272,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1446,28 +1347,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.FundingResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1513,7 +1410,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.ProofsRequest"
                         }
                     }
@@ -1522,28 +1418,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.ProofsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1578,7 +1470,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.CreateEntityRequest"
                         }
                     }
@@ -1587,28 +1478,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.EntityResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1646,35 +1533,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.EntityResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1714,7 +1596,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.CreateEntityRequest"
                         }
                     }
@@ -1723,28 +1604,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.EntityResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1786,7 +1663,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.ShareEntityRequest"
                         }
                     }
@@ -1795,28 +1671,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.ShareEntityResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1858,7 +1730,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.ShareEntityRequest"
                         }
                     }
@@ -1867,28 +1738,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.ShareEntityResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1926,28 +1793,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/jobs.StatusResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -1989,7 +1852,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.MintNFTRequest"
                         }
                     }
@@ -1998,28 +1860,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.MintNFTResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2064,21 +1922,18 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.NFTOwnerResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2127,7 +1982,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.TransferNFTRequest"
                         }
                     }
@@ -2136,28 +1990,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.TransferNFTResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2195,35 +2045,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/userapi.EntityResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2258,7 +2103,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.CreateDocumentRequest"
                         }
                     }
@@ -2267,28 +2111,24 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2323,7 +2163,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.UpdateDocumentRequest"
                         }
                     },
@@ -2339,28 +2178,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2395,7 +2230,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.RemoveCollaboratorsRequest"
                         }
                     },
@@ -2411,28 +2245,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2473,28 +2303,24 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2532,35 +2358,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2598,35 +2419,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2665,7 +2481,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.AddRole"
                         }
                     }
@@ -2674,28 +2489,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.Role"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2740,28 +2551,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.Role"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2805,7 +2612,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.UpdateRole"
                         }
                     }
@@ -2814,28 +2620,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.Role"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2870,7 +2672,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.SignedAttributeRequest"
                         }
                     },
@@ -2886,28 +2687,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -2946,7 +2743,6 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/pending.AddTransitionRules"
                         }
                     }
@@ -2955,28 +2751,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.TransitionRules"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -3021,28 +2813,24 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/v2.TransitionRule"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -3086,21 +2874,18 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -3145,35 +2930,30 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/coreapi.DocumentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
                     }
@@ -3198,7 +2978,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/notification.Message"
                         }
                     }
@@ -3209,14 +2988,18 @@
     "definitions": {
         "byteutils.HexBytes": {
             "type": "array",
-            "items": {}
+            "items": {
+                "type": "integer"
+            }
         },
         "byteutils.OptionalHex": {
             "type": "object",
             "properties": {
                 "HexBytes": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -3278,60 +3061,13 @@
         "coreapi.AttributeMapRequest": {
             "type": "object",
             "additionalProperties": {
-                "type": "object",
-                "properties": {
-                    "monetary_value": {
-                        "type": "object",
-                        "$ref": "#/definitions/coreapi.MonetaryValue"
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "integer",
-                            "decimal",
-                            "string",
-                            "bytes",
-                            "timestamp",
-                            "monetary"
-                        ]
-                    },
-                    "value": {
-                        "type": "string"
-                    }
-                }
+                "$ref": "#/definitions/coreapi.AttributeRequest"
             }
         },
         "coreapi.AttributeMapResponse": {
             "type": "object",
             "additionalProperties": {
-                "type": "object",
-                "properties": {
-                    "key": {
-                        "type": "string"
-                    },
-                    "monetary_value": {
-                        "type": "object",
-                        "$ref": "#/definitions/coreapi.MonetaryValue"
-                    },
-                    "signed_value": {
-                        "type": "object",
-                        "$ref": "#/definitions/coreapi.SignedValue"
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "integer",
-                            "decimal",
-                            "string",
-                            "bytes",
-                            "timestamp",
-                            "monetary"
-                        ]
-                    },
-                    "value": {
-                        "type": "string"
-                    }
-                }
+                "$ref": "#/definitions/coreapi.AttributeResponse"
             }
         },
         "coreapi.AttributeRequest": {
@@ -3982,7 +3718,9 @@
         },
         "identity.DID": {
             "type": "array",
-            "items": {}
+            "items": {
+                "type": "integer"
+            }
         },
         "jobs.StatusResponse": {
             "type": "object",
@@ -4318,35 +4056,9 @@
         "v2.CreateDocumentRequest": {
             "type": "object",
             "properties": {
-                "attributes": {
-                    "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
-                },
-                "data": {
-                    "type": "object"
-                },
                 "document_id": {
                     "description": "if provided, creates the next version of the document.",
                     "type": "string"
-                },
-                "read_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "scheme": {
-                    "type": "string",
-                    "enum": [
-                        "generic",
-                        "entity"
-                    ]
-                },
-                "write_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -4419,35 +4131,7 @@
             }
         },
         "v2.UpdateDocumentRequest": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
-                },
-                "data": {
-                    "type": "object"
-                },
-                "read_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "scheme": {
-                    "type": "string",
-                    "enum": [
-                        "generic",
-                        "entity"
-                    ]
-                },
-                "write_access": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
+            "type": "object"
         },
         "v2.UpdateRole": {
             "type": "object",

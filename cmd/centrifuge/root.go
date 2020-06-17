@@ -31,7 +31,7 @@ var log = logging.Logger("centrifuge-cmd")
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	printStartMessage()
-	logging.SetAllLoggers(gologging.INFO)
+	logging.SetAllLoggers(logging.LevelInfo)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
 
@@ -82,10 +82,10 @@ func setCentrifugeLoggers() {
 	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
 	gologging.SetFormatter(formatter)
 	if verbose {
-		logging.SetAllLoggers(gologging.DEBUG)
+		logging.SetAllLoggers(logging.LevelDebug)
 		return
 	}
 
-	logging.SetAllLoggers(gologging.INFO)
+	logging.SetAllLoggers(logging.LevelInfo)
 
 }

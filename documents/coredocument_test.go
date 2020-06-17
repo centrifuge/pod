@@ -1065,11 +1065,6 @@ func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
 			Type:  AttrInt256.String(),
 			Value: "1000000001",
 		},
-
-		"decimal_test": {
-			Type:  AttrDecimal.String(),
-			Value: "1000.000001",
-		},
 	}
 
 	oldAttrs := toAttrsMap(t, oldCAttrs)

@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11.4
+  - 1.14.3
 
 # Maybe this helps with building branches in a fork
 go_import_path: github.com/centrifuge/go-centrifuge
@@ -10,7 +10,7 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PATH="$HOME/.cargo/bin:$PATH"
+    - IMAGE_NAME=centrifugeio/go-centrifuge PATH="$HOME/.cargo/bin:$PATH"
 
 checkout:
   post:
@@ -19,11 +19,11 @@ checkout:
 cache:
   directories:
     - ~/bin/
-    - /tmp/depcache
+    - $GOPATH/pkg/mod
 
 before_install:
   - nvm install 10.15.1
-  - npm install -g truffle@4.1.13
+  - npm install -g truffle@5.1.29
   - travis_retry bash <(curl https://nixos.org/nix/install)
   - . $HOME/.nix-profile/etc/profile.d/nix.sh
   - nix-env -iA cachix -f https://cachix.org/api/v1/install

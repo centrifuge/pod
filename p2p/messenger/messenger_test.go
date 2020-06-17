@@ -33,13 +33,12 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-ipfs-addr"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-crypto"
-	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/host"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-kad-dht"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
 	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
-	"github.com/libp2p/go-libp2p-protocol"
 	ma "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
@@ -113,7 +112,7 @@ func TestHandleNewMessage(t *testing.T) {
 	h2 := createRandomHost(t, p2, r)
 	h3 := createRandomHost(t, p3, r)
 	// set h2 as the bootnode for h1
-	_ = runDHT(c, h1, []string{fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", p2, h2.ID().Pretty())})
+	_ = runDHT(t, c, h1, []string{fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", p2, h2.ID().Pretty())})
 
 	m1 := NewP2PMessenger(c, h1, 5*time.Second, mockedHandler)
 	m2 := NewP2PMessenger(c, h2, 5*time.Second, mockedHandler)
@@ -179,7 +178,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "dial attempt failed: no good addresses")
+		assert.Contains(t, err.Error(), fmt.Sprintf("failed to dial %s: no addresses", h3.ID().String()))
 	}
 
 	// 6. handler nil response
@@ -215,17 +214,13 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	// We should be using the following method to get the ID, but looks like is not compatible with
 	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
 	// IDFromPublicKey(pk)
-	//pid, err := peer.IDFromEd25519PublicKey(pub)
 	pid, err := libp2pPeer.IDFromPublicKey(pub)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a peerstore
-	ps := pstore.NewPeerstore(
-		pstoremem.NewKeyBook(),
-		pstoremem.NewAddrBook(),
-		pstoremem.NewPeerMetadata())
+	ps := pstoremem.NewPeerstore()
 
 	// Add the keys to the peerstore
 	// for this peer ID.
@@ -243,7 +238,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {
-		log.Warning("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
+		log.Warn("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
 	} else {
 		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
 		if err != nil {
@@ -280,22 +275,25 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	return bhost, nil
 }
 
-func runDHT(ctx context.Context, h host.Host, bootstrapPeers []string) error {
+func runDHT(t *testing.T, ctx context.Context, h host.Host, bootstrapPeers []string) error {
 	// Run it as a Bootstrap Node
 	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
 	for _, addr := range bootstrapPeers {
 		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := pstore.InfoFromP2pAddr(iaddr.Multiaddr())
+		pinfo, _ := libp2pPeer.AddrInfoFromP2pAddr(iaddr.Multiaddr())
 		if err := h.Connect(ctx, *pinfo); err != nil {
 			log.Info("Bootstrapping to peer failed: ", err)
 		}
 	}
 
 	// Using the sha256 of our "topic" as our rendezvous value
-	cidPref, _ := cid.NewPrefixV1(cid.Raw, mh.SHA2_256).Sum([]byte("centrifuge-dht"))
-
+	cidPref, err := cid.V1Builder{
+		Codec:  cid.Raw,
+		MhType: mh.SHA2_256,
+	}.Sum([]byte("centrifuge-dht"))
+	assert.NoError(t, err)
 	// First, announce ourselves as participating in this topic
 	log.Info("Announcing ourselves...")
 	tctx, cancel := context.WithTimeout(ctx, time.Second*10)

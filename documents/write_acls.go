@@ -122,13 +122,13 @@ func copyBytes(data []byte) []byte {
 		return nil
 	}
 
-	nb := make([]byte, len(data), len(data))
+	nb := make([]byte, len(data))
 	copy(nb, data)
 	return nb
 }
 
 func copyByteSlice(data [][]byte) [][]byte {
-	nbs := make([][]byte, len(data), len(data))
+	nbs := make([][]byte, len(data))
 	for i, b := range data {
 		nbs[i] = copyBytes(b)
 	}
@@ -293,11 +293,7 @@ func deleteFieldIfRoleExists(rule *coredocumentpb.TransitionRule, role []byte, f
 
 	// delete the field from the map since the role is already present or we are going to add one to rule
 	delete(fieldMap, field)
-	if byteutils.ContainsBytesInSlice(rule.Roles, role) {
-		// rule already exists for the role
-		return false
-	}
-	return true
+	return !byteutils.ContainsBytesInSlice(rule.Roles, role)
 }
 
 // addDefaultRules will update all default rules to include rolekey so that the document can be updated successfully

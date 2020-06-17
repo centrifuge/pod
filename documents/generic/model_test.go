@@ -31,12 +31,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 var ctx = map[string]interface{}{}
@@ -156,7 +156,7 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate roles
-	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -166,7 +166,7 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	assert.True(t, g.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -220,17 +220,17 @@ func TestAttributeProof(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate loanAmount
-	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate asIsValue
-	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate afterRehabValue
-	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
@@ -279,7 +279,7 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

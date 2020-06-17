@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//send a valid signature request message
+// send a valid signature request message
 func TestIncorrectProto_ValidMessage(t *testing.T) {
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -30,7 +30,7 @@ func TestIncorrectProto_ValidMessage(t *testing.T) {
 
 	p := p2p.AccessPeer(eve.host.p2pClient)
 
-	//send a signature request message with incorect protocol version
+	// send a signature request message with incorect protocol version
 	signatures, signatureErrors, err := p.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	assert.Nil(t, signatureErrors)

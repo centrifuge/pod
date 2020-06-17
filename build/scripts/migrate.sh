@@ -13,7 +13,7 @@ fi
 # Even if other `env_vars.sh` might hold this variable
 # Let's not count on it and be clear instead
 if [ -z ${CENT_ETHEREUM_CONTRACTS_DIR} ]; then
-    CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/vendor/github.com/centrifuge/centrifuge-ethereum-contracts
+    CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/build/centrifuge-ethereum-contracts
 fi
 
 # Assure that all the dependencies for the contracts are installed

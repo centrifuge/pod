@@ -107,10 +107,7 @@ func (i *Int256) Bytes() [32]byte {
 
 // Equals checks if the given two Int256s are equal
 func (i *Int256) Equals(o *Int256) bool {
-	if i.v.Cmp(&o.v) != 0 {
-		return false
-	}
-	return true
+	return i.v.Cmp(&o.v) == 0
 }
 
 func isValidInt256(n big.Int) bool {
@@ -123,11 +120,7 @@ func isValidInt256(n big.Int) bool {
 	two := big.NewInt(2)
 	exp := two.Exp(two, big.NewInt(255), nil)
 	maxI256 := exp.Sub(exp, big.NewInt(1))
-	if n.Abs(&n).Cmp(maxI256) > 0 {
-		return false
-	}
-
-	return true
+	return n.Abs(&n).Cmp(maxI256) <= 0
 }
 
 // Add sets i to the sum x+y and returns i

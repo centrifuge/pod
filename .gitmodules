@@ -10,3 +10,6 @@
 	path = build/chainbridge-solidity
 	url = https://github.com/ChainSafe/chainbridge-solidity.git
 	branch = master
+[submodule "build/centrifuge-ethereum-contracts"]
+	path = build/centrifuge-ethereum-contracts
+	url = https://github.com/centrifuge/centrifuge-ethereum-contracts

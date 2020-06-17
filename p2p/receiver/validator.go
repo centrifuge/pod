@@ -7,7 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 )
 
 // Validator defines method that must be implemented by any validator type.

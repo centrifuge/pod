@@ -176,7 +176,7 @@ func (h HexBytes) Bytes() []byte {
 		return nil
 	}
 
-	d := make([]byte, len(h), len(h))
+	d := make([]byte, len(h))
 	copy(d, h[:])
 	return d
 }

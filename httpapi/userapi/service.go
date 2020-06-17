@@ -2,19 +2,15 @@ package userapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service provides functionality for User APIs.
@@ -164,27 +160,6 @@ func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req Share
 // GetEntityByRelationship returns an entity through a relationship ID.
 func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.entitySrv.GetEntityByRelationship(ctx, docID)
-}
-
-// getRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
-func getRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
-	var proofFields []string
-
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return nil, err
-	}
-	accDIDBytes := acc.GetIdentityID()
-	keys, err := acc.GetKeys()
-	if err != nil {
-		return nil, err
-	}
-
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
-	return proofFields, nil
 }
 
 // CreateFundingAgreement creates a new funding agreement on a document and anchors the document.
