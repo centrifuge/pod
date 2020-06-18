@@ -13,8 +13,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
-	libp2pPeer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	pstore "github.com/libp2p/go-libp2p-core/peerstore"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -172,7 +172,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 		return "", errors.New("error fetching p2p key: %v", err)
 	}
 	target := fmt.Sprintf("/ipfs/%s", lastB58Key)
-	log.Info("Opening connection to: %s", target)
+	log.Infof("Opening connection to: %s\n", target)
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
 		return "", err
@@ -183,7 +183,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 		return "", err
 	}
 
-	peerID, err := libp2pPeer.IDB58Decode(pid)
+	peerID, err := libp2pPeer.Decode(pid)
 	if err != nil {
 		return "", err
 	}
@@ -331,7 +331,6 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 
 	for _, resp := range responses {
 		if resp.err != nil {
-			log.Warning(resp.err)
 			signatureCollectionErrors = append(signatureCollectionErrors, resp.err)
 			continue
 		}

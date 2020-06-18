@@ -8,7 +8,7 @@ import (
 
 // StringsToDIDs converts hex strings to DIDs.
 func StringsToDIDs(strs ...string) ([]*DID, error) {
-	dids := make([]*DID, len(strs), len(strs))
+	dids := make([]*DID, len(strs))
 
 	for i, str := range strs {
 		str = strings.TrimSpace(str)
@@ -29,7 +29,7 @@ func StringsToDIDs(strs ...string) ([]*DID, error) {
 
 // DIDsToStrings converts DIDs to hex strings.
 func DIDsToStrings(dids ...*DID) []string {
-	strs := make([]string, len(dids), len(dids))
+	strs := make([]string, len(dids))
 	for i, did := range dids {
 		if did == nil {
 			continue
@@ -57,7 +57,7 @@ func DIDsToBytes(dids ...*DID) [][]byte {
 
 // BytesToDIDs converts bytes to DIDs
 func BytesToDIDs(bytes ...[]byte) ([]*DID, error) {
-	dids := make([]*DID, len(bytes), len(bytes))
+	dids := make([]*DID, len(bytes))
 	for i, bs := range bytes {
 		if len(bs) < 1 {
 			continue
@@ -91,7 +91,7 @@ func DIDsPointers(dids ...DID) []*DID {
 
 // FromPointerDIDs return pointer DIDs to value DIDs
 func FromPointerDIDs(pdids ...*DID) []DID {
-	dids := make([]DID, len(pdids), len(pdids))
+	dids := make([]DID, len(pdids))
 	for i, pdid := range pdids {
 		pdid := pdid
 		if pdid == nil {

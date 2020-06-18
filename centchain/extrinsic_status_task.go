@@ -40,17 +40,13 @@ type ExtrinsicStatusTask struct {
 	getMetadataLatest func() (*types.Metadata, error)
 	getStorage        func(key types.StorageKey, target interface{}, blockHash types.Hash) error
 
-	//extHash is the cent-chain extrinsic hash
+	// extHash is the cent-chain extrinsic hash
 	extHash string
-	//fromBlock is the start block to look for extrinsic
+	// fromBlock is the start block to look for extrinsic
 	fromBlock uint32
-	//extSignature matching signature of extrinsic in block
+	// extSignature matching signature of extrinsic in block
 	extSignature types.Signature
 	accountID    identity.DID
-
-	//event filter
-	eventName     string
-	eventValueIdx int
 }
 
 // NewExtrinsicStatusTask returns a the struct for the task

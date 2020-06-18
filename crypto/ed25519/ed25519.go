@@ -3,8 +3,8 @@ package ed25519
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/libp2p/go-libp2p-crypto"
-	"github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -15,7 +15,7 @@ func GetPublicSigningKey(fileName string) (publicKey ed25519.PublicKey, err erro
 		return nil, errors.New("failed to read pem file: %v", err)
 	}
 
-	return ed25519.PublicKey(key), nil
+	return key, nil
 }
 
 // GetPrivateSigningKey returns the private key from the file
@@ -25,7 +25,7 @@ func GetPrivateSigningKey(fileName string) (privateKey ed25519.PrivateKey, err e
 		return nil, errors.New("failed to read pem file: %v", err)
 	}
 
-	return ed25519.PrivateKey(key), nil
+	return key, nil
 }
 
 // GetSigningKeyPair returns the public and private key pair
@@ -64,5 +64,5 @@ func PublicKeyToP2PKey(publicKey [32]byte) (p2pID peer.ID, err error) {
 
 // VerifySignature validates signature with payload message
 func VerifySignature(publicKey, message, sign []byte) bool {
-	return ed25519.Verify(ed25519.PublicKey(publicKey), message, sign)
+	return ed25519.Verify(publicKey, message, sign)
 }

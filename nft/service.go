@@ -23,8 +23,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	logging "github.com/ipfs/go-log"
+	"golang.org/x/crypto/sha3"
 )
 
 var log = logging.Logger("nft")
@@ -143,7 +143,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
-	optProofs, err := proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewKeccak256())
+	optProofs, err := proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewLegacyKeccak256())
 	if err != nil {
 		return mreq, err
 	}
@@ -354,7 +354,6 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), txID)
 
 		errOut <- nil
-		return
 	}
 }
 
@@ -399,7 +398,6 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 		log.Infof("token %s successfully transferred from %s to %s with transaction %s ", tokenID.String(), from.Hex(), to.Hex(), txID)
 
 		errOut <- nil
-		return
 	}
 }
 

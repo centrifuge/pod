@@ -4,12 +4,9 @@ package userapi
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -21,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -290,40 +286,4 @@ func TestService_RevokeRelationship(t *testing.T) {
 	assert.Equal(t, m, m1)
 	m.AssertExpectations(t)
 	docSrv.AssertExpectations(t)
-}
-
-func TestService_GetRequiredInvoiceUnpaidProofFields(t *testing.T) {
-	//missing account in context
-	ctxh := context.Background()
-	proofList, err := getRequiredInvoiceUnpaidProofFields(ctxh)
-	assert.Error(t, err)
-	assert.Nil(t, proofList)
-
-	//error identity keys
-	tc, err := configstore.NewAccount("main", cfg)
-	assert.Nil(t, err)
-	acc := tc.(*configstore.Account)
-	acc.EthereumAccount = &config.AccountConfig{
-		Key: "blabla",
-	}
-	ctxh, err = contextutil.New(ctxh, acc)
-	assert.Nil(t, err)
-	proofList, err = getRequiredInvoiceUnpaidProofFields(ctxh)
-	assert.Error(t, err)
-	assert.Nil(t, proofList)
-
-	//success assertions
-	tc, err = configstore.NewAccount("main", cfg)
-	assert.Nil(t, err)
-	ctxh, err = contextutil.New(ctxh, tc)
-	assert.Nil(t, err)
-	proofList, err = getRequiredInvoiceUnpaidProofFields(ctxh)
-	assert.NoError(t, err)
-	assert.Len(t, proofList, 8)
-	accDIDBytes := tc.GetIdentityID()
-	keys, err := tc.GetKeys()
-	assert.NoError(t, err)
-	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerID)
-	assert.Equal(t, signatureSender, proofList[6])
 }

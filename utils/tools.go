@@ -100,7 +100,7 @@ func ByteArrayTo32BytesLeftPadded(in []byte) ([32]byte, error) {
 		return byte32, errors.New("incorrect input length %d should be 32", len(in))
 	}
 	padLength := 32 - len(in)
-	out := append(make([]byte, padLength, padLength), in...)
+	out := append(make([]byte, padLength), in...)
 	return SliceToByte32(out)
 }
 

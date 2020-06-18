@@ -15,19 +15,6 @@ const (
 	managerLogPrefix = "manager"
 )
 
-// extendedManager exposes package specific functions.
-type extendedManager interface {
-	jobs.Manager
-
-	// saveJob only exposed for testing within package.
-	// DO NOT use this outside of the package, use ExecuteWithinJob to initiate a transaction with management.
-	saveJob(job *jobs.Job) error
-
-	// createJob only exposed for testing within package.
-	// DO NOT use this outside of the package, use ExecuteWithinJob to initiate a job with management.
-	createJob(accountID identity.DID, desc string) (*jobs.Job, error)
-}
-
 // NewManager returns a JobManager implementation.
 func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
 	return &manager{config: config, repo: repo, notifier: notification.NewWebhookSender()}

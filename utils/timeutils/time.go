@@ -12,14 +12,14 @@ var apiLog = logging.Logger("time-util")
 
 // EnsureDelayOperation delays the execution by the opDelay provided, used for return statements
 func EnsureDelayOperation(start time.Time, opDelay time.Duration) {
-	consumed := time.Now().Sub(start)
+	consumed := time.Since(start)
 	if consumed < opDelay {
 		t := time.NewTimer(opDelay - consumed)
 		<-t.C
 		t.Stop()
 	}
 	apiLog.Infof("Time consumed by operation [%s]", consumed.String())
-	apiLog.Infof("Real Response Time of operation [%s]", time.Now().Sub(start).String())
+	apiLog.Infof("Real Response Time of operation [%s]", time.Since(start).String())
 }
 
 // ToProtoTimestamps converts time.Time to timestamp.Timestamps
@@ -28,7 +28,7 @@ func ToProtoTimestamps(tms ...*time.Time) ([]*timestamp.Timestamp, error) {
 		return nil, nil
 	}
 
-	pts := make([]*timestamp.Timestamp, len(tms), len(tms))
+	pts := make([]*timestamp.Timestamp, len(tms))
 	for i, t := range tms {
 		if t == nil {
 			pts[i] = nil
@@ -52,7 +52,7 @@ func FromProtoTimestamps(pts ...*timestamp.Timestamp) ([]*time.Time, error) {
 		return nil, nil
 	}
 
-	tms := make([]*time.Time, len(pts), len(pts))
+	tms := make([]*time.Time, len(pts))
 	for i, pt := range pts {
 		if pt == nil {
 			tms[i] = nil

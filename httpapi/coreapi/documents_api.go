@@ -216,7 +216,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	ids := make([][]byte, 2, 2)
+	ids := make([][]byte, 2)
 	for i, idStr := range []string{chi.URLParam(r, DocumentIDParam), chi.URLParam(r, VersionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)
@@ -322,7 +322,7 @@ func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	ids := make([][]byte, 2, 2)
+	ids := make([][]byte, 2)
 	for i, idStr := range []string{chi.URLParam(r, DocumentIDParam), chi.URLParam(r, VersionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)

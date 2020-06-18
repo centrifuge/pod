@@ -3,7 +3,6 @@ package config
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	logging "github.com/ipfs/go-log"
-	gologging "github.com/whyrusleeping/go-logging"
 )
 
 // Bootstrap constants are keys to the value mappings in context bootstrap.
@@ -27,7 +26,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	c := LoadConfiguration(cfgFile)
 	context[bootstrap.BootstrappedConfig] = c
 	if c.IsDebugLogEnabled() {
-		logging.SetAllLoggers(gologging.DEBUG)
+		logging.SetAllLoggers(logging.LevelDebug)
 	}
 	return nil
 }

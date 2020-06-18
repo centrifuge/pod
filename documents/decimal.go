@@ -11,11 +11,9 @@ import (
 )
 
 const (
-	decimalPrecision      = 18
-	maxIntegerByteLength  = 23
-	maxFractionByteLength = 8
-	minDecimalByteLength  = 9
-	maxDecimalByteLength  = 32
+	decimalPrecision     = 18
+	maxIntegerByteLength = 23
+	maxDecimalByteLength = 32
 )
 
 // Decimal holds a fixed point decimal
@@ -174,7 +172,7 @@ func DecimalFromBytes(b []byte) (*Decimal, error) {
 // DecimalsToStrings converts decimals to string.
 // nil decimal leads to empty string.
 func DecimalsToStrings(decs ...*Decimal) []string {
-	sdecs := make([]string, len(decs), len(decs))
+	sdecs := make([]string, len(decs))
 	for i, d := range decs {
 		if d == nil {
 			continue
@@ -188,7 +186,7 @@ func DecimalsToStrings(decs ...*Decimal) []string {
 
 // DecimalsToBytes converts decimals to bytes
 func DecimalsToBytes(decs ...*Decimal) ([][]byte, error) {
-	dbytes := make([][]byte, len(decs), len(decs))
+	dbytes := make([][]byte, len(decs))
 	for i, d := range decs {
 		if d == nil {
 			continue
@@ -207,7 +205,7 @@ func DecimalsToBytes(decs ...*Decimal) ([][]byte, error) {
 
 // StringsToDecimals converts string decimals to Decimal type
 func StringsToDecimals(strs ...string) ([]*Decimal, error) {
-	decs := make([]*Decimal, len(strs), len(strs))
+	decs := make([]*Decimal, len(strs))
 	for i, s := range strs {
 		if strings.TrimSpace(s) == "" {
 			continue
@@ -226,7 +224,7 @@ func StringsToDecimals(strs ...string) ([]*Decimal, error) {
 
 // BytesToDecimals converts decimals in bytes to Decimal type
 func BytesToDecimals(bytes ...[]byte) ([]*Decimal, error) {
-	decs := make([]*Decimal, len(bytes), len(bytes))
+	decs := make([]*Decimal, len(bytes))
 	for i, d := range bytes {
 		d := d
 		if len(d) < 1 {

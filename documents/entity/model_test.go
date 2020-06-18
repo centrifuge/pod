@@ -34,12 +34,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 var ctx = map[string]interface{}{}
@@ -181,12 +181,12 @@ func TestEntity_CreateProofs(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -196,7 +196,7 @@ func TestEntity_CreateProofs(t *testing.T) {
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }

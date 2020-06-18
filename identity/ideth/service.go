@@ -368,7 +368,7 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 				return err
 			}
 
-			if big.NewInt(validateAt.Unix()).Cmp(revokedAtBlock.Time()) > 0 {
+			if validateAt.Unix() > int64(revokedAtBlock.Time()) {
 				return errors.New("the given key [%x] for purpose [%s] has been revoked before provided time %s", key, purpose.String(), validateAt.String())
 			}
 		} else {
