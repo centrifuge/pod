@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 local_dir="$(dirname "$0")"
-echo $local_dir
+
 usage() {
   echo "Usage: $0 mode[init|rinkeby|local|mine|centapi]"
   exit 1
