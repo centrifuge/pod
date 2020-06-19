@@ -81,16 +81,19 @@ require (
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a // indirect
-	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
+	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
-	golang.org/x/tools v0.0.0-20200612220849-54c614fe050c // indirect
+	golang.org/x/tools v0.0.0-20200619023621-037be6a06566 // indirect
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.24.0 // indirect
+	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6 // indirect
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
 replace (
+	github.com/centrifuge/go-substrate-rpc-client v1.1.1-0.20200428140716-e238735648d6 => github.com/mikiquantum/go-substrate-rpc-client v0.0.4-0.20200515223919-7fb850859b5c
 	github.com/satori/go.uuid v1.2.0 => github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/xsleonard/go-merkle v1.1.0 => github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b
 )
