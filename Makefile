@@ -50,7 +50,7 @@ vendor: ## Create the Go vendor folder with dependencies
 	@modvendor -copy="**/*.c **/*.h"
 
 lint-check: ## runs linters on go code
-	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	@gometalinter --exclude=anchors/service.go --exclude=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
 	--vendor --skip=resources --skip=testingutils --deadline=1m ./...;
 
 format-go: ## formats go code

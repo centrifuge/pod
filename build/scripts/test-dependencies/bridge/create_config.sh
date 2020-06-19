@@ -19,7 +19,7 @@ opts = { bridge = \"${bridge_address}\", erc721Handler = \"${erc721_address}\", 
 cent_config='[[chains]]
 name = "substrate"
 type = "substrate"
-id = \"1\"
+id = "1"
 endpoint = "ws://cc:9944"
 from = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 opts = { }'
