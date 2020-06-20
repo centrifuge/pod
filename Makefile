@@ -32,11 +32,11 @@ clean: ##clean vendor's folder. Should be run before a make install
 	@echo 'done cleaning'
 
 install-deps: vendor ## Install Dependencies
-	@go install -mod=mod github.com/goware/modvendor
-	@go install -mod=mod github.com/jteeuwen/go-bindata
-	@go install -mod=mod github.com/swaggo/swag/cmd/swag
-	@go install -mod=mod github.com/ethereum/go-ethereum/cmd/abigen
-	@go install -mod=mod github.com/karalabe/xgo
+	@go install -mod=mod github.com/goware/modvendor@v0.3.0
+	@go install -mod=mod github.com/jteeuwen/go-bindata@v3.0.7+incompatible
+	@go install -mod=mod github.com/swaggo/swag/cmd/swag@v1.6.7
+	@go install -mod=mod github.com/ethereum/go-ethereum/cmd/abigen@v1.9.15
+	@go install -mod=mod github.com/karalabe/xgo@v0.0.0-20191115072854-c5ccff8648a7
 	@git submodule update --init --recursive
 	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
