@@ -1,6 +1,6 @@
 // +build tools
 
-package centrifuge
+package build
 
 import (
 	_ "github.com/ethereum/go-ethereum/cmd/abigen"
