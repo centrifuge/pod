@@ -18,7 +18,7 @@ PATH=$(shell printenv PATH):$(GOBIN)
 # Lock metalinter version
 GOMETALINTER_VERSION="v3.0.0"
 
-.PHONY: help vendor
+.PHONY: help
 
 help: ## Show this help message.
 	@echo 'usage: make [target] ...'
@@ -32,18 +32,16 @@ clean: ##clean vendor's folder. Should be run before a make install
 	@echo 'done cleaning'
 
 install-deps: ## Install Dependencies
-	@go get github.com/goware/modvendor@v0.3.0
-	@go get github.com/jteeuwen/go-bindata@v3.0.7+incompatible
-	@go get github.com/swaggo/swag/cmd/swag@v1.6.7
-	@go get github.com/ethereum/go-ethereum/cmd/abigen@v1.9.15
-	@go get github.com/karalabe/xgo@v0.0.0-20191115072854-c5ccff8648a7
+	@go mod tidy
+	@go mod vendor
+	@go install github.com/goware/modvendor
+	@go install github.com/jteeuwen/go-bindata
+	@go install github.com/swaggo/swag/cmd/swag
+	@go install github.com/ethereum/go-ethereum/cmd/abigen
+	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
 	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
 	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
-
-vendor: install-deps ## Create the Go vendor folder with dependencies
-	@go mod tidy
-	@go mod vendor
 	@modvendor -copy="**/*.c **/*.h"
 
 lint-check: ## runs linters on go code
@@ -58,13 +56,13 @@ gen-swagger: ## generates the swagger documentation
 	rm -rf ./httpapi/docs.go ./httpapi/swagger.yaml
 
 generate: ## autogenerate go files for config
-	go generate -mod=readonly ./config/configuration.go
+	go generate ./config/configuration.go
 
 install-subkey: ## installs subkey
 	curl https://getsubstrate.io -sSf | bash -s -- --fast
 	cargo install --force --git https://github.com/paritytech/substrate subkey
 
-gen-abi-bindings: vendor ## Generates GO ABI Bindings
+gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts
 	npm run compile --prefix build/centrifuge-ethereum-contracts
 	@mkdir ./tmp
@@ -74,10 +72,10 @@ gen-abi-bindings: vendor ## Generates GO ABI Bindings
 	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 
-install: vendor ## Builds and Install binary for development
-	@go install -mod=readonly ./cmd/centrifuge/...
+install: install-deps ## Builds and Install binary for development
+	@go install ./cmd/centrifuge/...
 
-build-darwin-amd64: vendor ## Build darwin/amd64
+build-darwin-amd64: install-deps ## Build darwin/amd64
 	@echo "Building darwin-10.10-amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/darwin-amd64
 	@xgo -go 1.14.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
@@ -85,7 +83,7 @@ build-darwin-amd64: vendor ## Build darwin/amd64
 	$(eval TAGINSTANCE := $(shell echo ${TAG}))
 	@tar -zcvf cent-api-darwin-10.10-amd64-${TAGINSTANCE}.tar.gz -C build/darwin-amd64/ .
 
-build-linux-amd64: vendor ## Build linux/amd64
+build-linux-amd64: install-deps ## Build linux/amd64
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/linux-amd64
 	@xgo -go 1.14.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
