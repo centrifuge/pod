@@ -36,7 +36,7 @@ install-deps: ## Install Dependencies
 	@go mod vendor
 	@go install github.com/goware/modvendor
 	@modvendor -copy="**/*.c **/*.h"
-	@go install github.com/jteeuwen/go-bindata
+	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@go install github.com/karalabe/xgo
