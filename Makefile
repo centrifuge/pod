@@ -35,13 +35,13 @@ install-deps: ## Install Dependencies
 	@go mod tidy
 	@go mod vendor
 	@go install github.com/goware/modvendor
+	@modvendor -copy="**/*.c **/*.h"
 	@go install github.com/jteeuwen/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
 	@command -v gometalinter >/dev/null 2>&1 || (curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}; mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin)
-	@modvendor -copy="**/*.c **/*.h"
 
 lint-check: ## runs linters on go code
 	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
