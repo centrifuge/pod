@@ -67,6 +67,6 @@ dapp build --extract
 assetManagerAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8,address)' "10" "$genericAddr")
 echo "assetManager $assetManagerAddr" >> $PARENT_DIR/localAddresses
 
-cb-sol-cli --gasPrice 10000000000 --url $ETH_RPC_URL --privateKey $CENT_ETHEREUM_PRIVATE_KEY bridge register-generic-resource --bridge $bridgeAddr --handler $genericAddr --targetContract $assetManagerAddr --resourceId 0x0000000000000000000000000000000cb3858f3e48815bfd35c5347aa3b34c01 --deposit 0x00000000 --execute 0x654cf88c
+cb-sol-cli --gasLimit 7500000 --gasPrice 10000000000 --url $ETH_RPC_URL --privateKey $CENT_ETHEREUM_PRIVATE_KEY bridge register-generic-resource --bridge $bridgeAddr --handler $genericAddr --targetContract $assetManagerAddr --resourceId 0x0000000000000000000000000000000cb3858f3e48815bfd35c5347aa3b34c01 --deposit 0x00000000 --execute 0x654cf88c
 
 cd $PARENT_DIR
