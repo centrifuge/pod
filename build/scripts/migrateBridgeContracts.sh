@@ -31,7 +31,7 @@ fi
 
 BRIDGE_DEPLOYMENT_DIR=$PARENT_DIR/build/chainbridge-deploy/cb-sol-cli
 cd $BRIDGE_DEPLOYMENT_DIR
-GIT_COMMIT=3c4d52b7b70fb806efbd8cf39d6dc45d7356285c make install
+GIT_COMMIT=v0.0.2-alpha make install
 cd $PARENT_DIR
 
 if [ -z ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR} ]; then
