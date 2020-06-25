@@ -28,7 +28,7 @@ help: ## Show this help message.
 
 clean-contracts: ##clean all dev contracts in build folder
 	@rm -rf build/centrifuge-ethereum-contracts/build
-	@rm -rf build/chainbridge-deploy/chainbridge-solidity
+	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
 	@rm -rf build/ethereum-bridge-contracts/out
 	@rm -rf build/privacy-enabled-erc721/out
 
