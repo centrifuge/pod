@@ -18,7 +18,7 @@ PATH=$(shell printenv PATH):$(GOBIN)
 # Lock metalinter version
 GOMETALINTER_VERSION="v3.0.0"
 
-.PHONY: help vendor
+.PHONY: help
 
 help: ## Show this help message.
 	@echo 'usage: make [target] ...'
@@ -26,31 +26,31 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
+clean-contracts: ##clean all dev contracts in build folder
+	@rm -rf build/centrifuge-ethereum-contracts/build
+	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
+	@rm -rf build/ethereum-bridge-contracts/out
+	@rm -rf build/privacy-enabled-erc721/out
+
 clean: ##clean vendor's folder. Should be run before a make install
 	@echo 'cleaning previous /vendor folder'
 	@rm -rf vendor/
 	@echo 'done cleaning'
 
 install-deps: ## Install Dependencies
-	@export GO111MODULE=off
-	@go get -u github.com/goware/modvendor
-	@go get -u github.com/jteeuwen/go-bindata/...
-	@go get -u github.com/swaggo/swag/cmd/swag
-	@go get -u github.com/ethereum/go-ethereum/cmd/abigen
-	@command -v xgo >/dev/null 2>&1 || go get -u github.com/karalabe/xgo
-	@export GO111MODULE=auto
-	@go mod tidy
-	@git submodule update --init --recursive
-	@curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}
-	@mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin
-
-vendor: ## Create the Go vendor folder with dependencies
 	@go mod tidy
 	@go mod vendor
+	@go install github.com/goware/modvendor
 	@modvendor -copy="**/*.c **/*.h"
+	@go install github.com/jteeuwen/go-bindata/go-bindata
+	@go install github.com/swaggo/swag/cmd/swag
+	@go install github.com/ethereum/go-ethereum/cmd/abigen
+	@go install github.com/karalabe/xgo
+	@git submodule update --init --recursive
+	@command -v gometalinter >/dev/null 2>&1 || (curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}; mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin)
 
 lint-check: ## runs linters on go code
-	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	@gometalinter --exclude=anchors/service.go --exclude=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
 	--vendor --skip=resources --skip=testingutils --deadline=1m ./...;
 
 format-go: ## formats go code
@@ -77,10 +77,10 @@ gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 
-install: install-deps vendor ## Builds and Install binary for development
+install: install-deps ## Builds and Install binary for development
 	@go install ./cmd/centrifuge/...
 
-build-darwin-amd64: install-deps vendor ## Build darwin/amd64
+build-darwin-amd64: install-deps ## Build darwin/amd64
 	@echo "Building darwin-10.10-amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/darwin-amd64
 	@xgo -go 1.14.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
@@ -88,7 +88,7 @@ build-darwin-amd64: install-deps vendor ## Build darwin/amd64
 	$(eval TAGINSTANCE := $(shell echo ${TAG}))
 	@tar -zcvf cent-api-darwin-10.10-amd64-${TAGINSTANCE}.tar.gz -C build/darwin-amd64/ .
 
-build-linux-amd64: install-deps vendor ## Build linux/amd64
+build-linux-amd64: install-deps ## Build linux/amd64
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/linux-amd64
 	@xgo -go 1.14.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
