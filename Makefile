@@ -83,7 +83,7 @@ install: install-deps ## Builds and Install binary for development
 build-darwin-amd64: install-deps ## Build darwin/amd64
 	@echo "Building darwin-10.10-amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/darwin-amd64
-	@xgo -go 1.14.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
+	@xgo -go 1.13.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
 	@mv build/darwin-amd64/centrifuge-darwin-10.10-amd64 build/darwin-amd64/centrifuge
 	$(eval TAGINSTANCE := $(shell echo ${TAG}))
 	@tar -zcvf cent-api-darwin-10.10-amd64-${TAGINSTANCE}.tar.gz -C build/darwin-amd64/ .
@@ -91,7 +91,7 @@ build-darwin-amd64: install-deps ## Build darwin/amd64
 build-linux-amd64: install-deps ## Build linux/amd64
 	@echo "Building amd64 with flags [${LD_FLAGS}]"
 	@mkdir -p build/linux-amd64
-	@xgo -go 1.14.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
+	@xgo -go 1.13.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
 	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
 	$(eval TAGINSTANCE := $(shell echo ${TAG}))
 	@tar -zcvf cent-api-linux-amd64-${TAGINSTANCE}.tar.gz -C build/linux-amd64/ .
