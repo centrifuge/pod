@@ -26,6 +26,12 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
+clean-contracts: ##clean all dev contracts in build folder
+	@rm -rf build/centrifuge-ethereum-contracts/build
+	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
+	@rm -rf build/ethereum-bridge-contracts/out
+	@rm -rf build/privacy-enabled-erc721/out
+
 clean: ##clean vendor's folder. Should be run before a make install
 	@echo 'cleaning previous /vendor folder'
 	@rm -rf vendor/
@@ -44,7 +50,7 @@ install-deps: ## Install Dependencies
 	@command -v gometalinter >/dev/null 2>&1 || (curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}; mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin)
 
 lint-check: ## runs linters on go code
-	@gometalinter --exclude=anchors/service.go  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	@gometalinter --exclude=anchors/service.go --exclude=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
 	--vendor --skip=resources --skip=testingutils --deadline=1m ./...;
 
 format-go: ## formats go code

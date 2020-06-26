@@ -11,7 +11,7 @@ echo "bridge contract addresses are ${bridge_address},${erc721_address},${erc20_
 eth_config="[[chains]]
 name = \"ethereum\"
 type = \"ethereum\"
-id = 0
+id = \"0\"
 endpoint = \"ws://geth:9546\"
 from = \"0x88740f7A4A2b28F9B2Edb3F88452592d8f31311c\"
 opts = { bridge = \"${bridge_address}\", erc721Handler = \"${erc721_address}\", erc20Handler = \"${erc20_address}\", genericHandler = \"${generic_address}\" }"
@@ -19,7 +19,7 @@ opts = { bridge = \"${bridge_address}\", erc721Handler = \"${erc721_address}\", 
 cent_config='[[chains]]
 name = "substrate"
 type = "substrate"
-id = 1
+id = "1"
 endpoint = "ws://cc:9944"
 from = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 opts = { }'
