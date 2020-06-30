@@ -2,19 +2,11 @@ package documents
 
 import (
 	"math/big"
-	"regexp"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/math"
 )
-
-// signByteIdx is the index of byte that contains the sign bit of the int256 when represented as 32 bytes
-const signByteIdx = 0
-
-// validInt regex for only allowing integers
-var validInt = regexp.MustCompile(`^[-+]?\d+$`)
 
 // Int256 represents a signed 256 bit integer
 type Int256 struct {
@@ -46,12 +38,7 @@ func (i *Int256) String() string {
 // NewInt256 creates a new Int256 given a string
 func NewInt256(n string) (*Int256, error) {
 	n = strings.TrimSpace(n)
-	if !validInt.MatchString(n) {
-		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("probably a decimal value: %s", n))
-	}
-
-	nn := new(big.Int)
-	nn, ok := nn.SetString(n, 10)
+	nn, ok := new(big.Int).SetString(n, 10)
 	if !ok {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("probably an arbitrary string: %s", n))
 	}
@@ -62,46 +49,24 @@ func NewInt256(n string) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// Int256FromBytes converts the a big endian byte slice to an Int256
+// Int256FromBytes converts the a big endian 2's compliment byte slice to an Int256
 func Int256FromBytes(b []byte) (*Int256, error) {
 	if len(b) != 32 {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %x", b))
 	}
 
-	// check and record the sign bit
-	neg := false
-	if byteutils.IsBitSet(b[signByteIdx], 7) {
-		neg = true
-	}
-	// ignore the sign bit
-	b[signByteIdx] = byteutils.ClearBit(b[signByteIdx], 7)
-
-	nn := new(big.Int)
-	nn.SetBytes(b[:])
-	if !isValidInt256(*nn) {
-		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %s", nn.String()))
-	}
-
-	// negative
-	if neg {
-		nn = nn.Neg(nn)
-	}
-
+	nn := math.S256(new(big.Int).SetBytes(b))
 	return &Int256{*nn}, nil
 }
 
-// Bytes returns the big endian 32 byte representation of this int256. First bit of LSB(least significant byte) is used as the sign bit.
-func (i *Int256) Bytes() [32]byte {
+// Bytes returns the big endian 2's compliment 32 byte representation of this int256.
+func (i Int256) Bytes() [32]byte {
+	v := new(big.Int).Mul(&i.v, big.NewInt(1))
+	tc := math.U256(v)
 	var b [32]byte
 	// no of bits in i.v.Bytes() <= 255
 	// if its less, pad the number in big endian order and copy to the 32 byte array
-	copy(b[:], math.PaddedBigBytes(&i.v, 32))
-
-	//  set the sign bit
-	b[signByteIdx] = byteutils.ClearBit(b[signByteIdx], 7)
-	if i.v.Sign() == -1 {
-		b[signByteIdx] = byteutils.SetBit(b[signByteIdx], 7)
-	}
+	copy(b[:], math.PaddedBigBytes(tc, 32))
 	return b
 }
 
@@ -118,8 +83,10 @@ func isValidInt256(n big.Int) bool {
 
 	// check max
 	two := big.NewInt(2)
-	exp := two.Exp(two, big.NewInt(255), nil)
-	maxI256 := exp.Sub(exp, big.NewInt(1))
+	maxI256 := two.Exp(two, big.NewInt(255), nil)
+	if n.Sign() >= 0 {
+		maxI256 = maxI256.Sub(maxI256, big.NewInt(1))
+	}
 	return n.Abs(&n).Cmp(maxI256) <= 0
 }
 

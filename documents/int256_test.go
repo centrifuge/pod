@@ -1,6 +1,7 @@
 package documents
 
 import (
+	"bytes"
 	"math/big"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestNewInt256(t *testing.T) {
 		},
 		{
 			"int256 min",
-			"-57896044618658097711785492504343953926634992332820282019728792003956564819967",
+			"-57896044618658097711785492504343953926634992332820282019728792003956564819968",
 			false,
 		},
 		{
@@ -55,7 +56,7 @@ func TestNewInt256(t *testing.T) {
 		},
 		{
 			"less than allowed int256 (-1)",
-			"-57896044618658097711785492504343953926634992332820282019728792003956564819968",
+			"-57896044618658097711785492504343953926634992332820282019728792003956564819969",
 			true,
 		},
 		{
@@ -85,6 +86,7 @@ func TestNewInt256(t *testing.T) {
 				exp := new(big.Int)
 				exp.SetString(test.val, 10)
 				assert.True(t, i.v.Cmp(exp) == 0)
+				assert.True(t, i.String() == test.val)
 			}
 		})
 	}
@@ -105,7 +107,7 @@ func TestInt256_Bytes(t *testing.T) {
 		},
 		{
 			"int256 min",
-			"-57896044618658097711785492504343953926634992332820282019728792003956564819967",
+			"-57896044618658097711785492504343953926634992332820282019728792003956564819968",
 		},
 		{
 			"positive intermediate",
@@ -148,7 +150,7 @@ func TestFromBytes(t *testing.T) {
 		},
 		{
 			"int256 min",
-			intBytesForString(t, "-57896044618658097711785492504343953926634992332820282019728792003956564819967"),
+			intBytesForString(t, "-57896044618658097711785492504343953926634992332820282019728792003956564819968"),
 			false,
 		},
 		{
@@ -165,6 +167,8 @@ func TestFromBytes(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, i)
+				ib := i.Bytes()
+				assert.True(t, bytes.Compare(ib[:], test.val) == 0)
 			}
 		})
 	}
