@@ -112,6 +112,7 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 // Signed is a custom attribute type with signature.
 type Signed struct {
 	Identity                                     identity.DID
+	Type                                         AttributeType
 	DocumentVersion, Value, Signature, PublicKey []byte
 }
 
@@ -151,6 +152,25 @@ type AttrVal struct {
 	Timestamp *timestamp.Timestamp
 	Signed    Signed
 	Monetary  Monetary
+}
+
+// ToBytes encodes attribute value into bytes.
+func (attrVal AttrVal) ToBytes() ([]byte, error) {
+	switch attrVal.Type {
+	case AttrInt256:
+		b := attrVal.Int256.Bytes()
+		return b[:], nil
+	case AttrDecimal:
+		return attrVal.Decimal.Bytes()
+	case AttrString:
+		return []byte(attrVal.Str), nil
+	case AttrBytes:
+		return attrVal.Bytes, nil
+	case AttrTimestamp:
+		return timestampToBytes(attrVal.Timestamp)
+	default:
+		return nil, ErrNotValidAttrType
+	}
 }
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
@@ -275,7 +295,7 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 // doc version is next version of the document since that is the document version in which the attribute is added.
 // signature payload: sign(identity + docID + docNextVersion + value)
 // Note: versionID should always be the next version that is going to be anchored.
-func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte) (attr Attribute, err error) {
+func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte, valType AttributeType) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
@@ -295,6 +315,7 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 			Value:           value,
 			Signature:       sig.Signature,
 			PublicKey:       sig.PublicKey,
+			Type:            valType,
 		},
 	}
 

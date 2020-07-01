@@ -230,7 +230,7 @@ func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 
 func TestNewSignedAttribute(t *testing.T) {
 	// empty label
-	_, err := NewSignedAttribute("", testingidentity.GenerateRandomDID(), nil, nil, nil, nil)
+	_, err := NewSignedAttribute("", testingidentity.GenerateRandomDID(), nil, nil, nil, nil, AttrBytes)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
 
@@ -244,7 +244,7 @@ func TestNewSignedAttribute(t *testing.T) {
 	epayload := attributeSignaturePayload(did[:], id, version, value)
 	acc := new(mockAccount)
 	acc.On("SignMsg", epayload).Return(nil, errors.New("failed")).Once()
-	_, err = NewSignedAttribute(label, did, acc, id, version, value)
+	_, err = NewSignedAttribute(label, did, acc, id, version, value, AttrBytes)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed")
 	acc.AssertExpectations(t)
@@ -253,7 +253,7 @@ func TestNewSignedAttribute(t *testing.T) {
 	signature := utils.RandomSlice(32)
 	acc = new(mockAccount)
 	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
-	attr, err := NewSignedAttribute(label, did, acc, id, version, value)
+	attr, err := NewSignedAttribute(label, did, acc, id, version, value, AttrBytes)
 	assert.NoError(t, err)
 	attrKey, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)

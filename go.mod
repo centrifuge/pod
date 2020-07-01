@@ -7,7 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20200609010056-95bcf8053598 // indirect
-	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200116142107-cb87f7189514
+	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200701114715-fdd64198a8f4
 	github.com/centrifuge/go-substrate-rpc-client v1.1.1-0.20200428140716-e238735648d6
 	github.com/centrifuge/gocelery v0.0.0-20200514084252-fa96f8f642b0
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
