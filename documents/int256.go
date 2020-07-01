@@ -58,7 +58,7 @@ func NewInt256(n string) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// Int256FromBytes converts the a big endian 2's compliment byte slice to an Int256
+// Int256FromBytes converts the a big endian 2's complement byte slice to an Int256
 func Int256FromBytes(b []byte) (*Int256, error) {
 	if len(b) != 32 {
 		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("value: %x", b))
