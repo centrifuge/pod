@@ -1,12 +1,17 @@
 package documents
 
 import (
+	"fmt"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/ethereum/go-ethereum/common/math"
 )
+
+// validInt regex for only allowing integers
+var validInt = regexp.MustCompile(`^[-+]?\d+$`)
 
 // Int256 represents a signed 256 bit integer
 type Int256 struct {
@@ -38,9 +43,13 @@ func (i *Int256) String() string {
 // NewInt256 creates a new Int256 given a string
 func NewInt256(n string) (*Int256, error) {
 	n = strings.TrimSpace(n)
+	if !validInt.MatchString(n) {
+		return nil, errors.NewTypedError(ErrInvalidInt256, fmt.Errorf("invalid integer: %s", n))
+	}
+
 	nn, ok := new(big.Int).SetString(n, 10)
 	if !ok {
-		return nil, errors.NewTypedError(ErrInvalidInt256, errors.New("probably an arbitrary string: %s", n))
+		return nil, errors.NewTypedError(ErrInvalidInt256, fmt.Errorf("invalid integer: %s", n))
 	}
 
 	if !isValidInt256(*nn) {
@@ -59,7 +68,7 @@ func Int256FromBytes(b []byte) (*Int256, error) {
 	return &Int256{*nn}, nil
 }
 
-// Bytes returns the big endian 2's compliment 32 byte representation of this int256.
+// Bytes returns the big endian 2's complement 32 byte representation of this int256.
 func (i Int256) Bytes() [32]byte {
 	v := new(big.Int).Mul(&i.v, big.NewInt(1))
 	tc := math.U256(v)

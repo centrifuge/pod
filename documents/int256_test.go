@@ -74,6 +74,16 @@ func TestNewInt256(t *testing.T) {
 			"ewrkwebj1232312.323",
 			true,
 		},
+		{
+			"positive decimal",
+			"123.001",
+			true,
+		},
+		{
+			"negative decimal",
+			"-123.001",
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
