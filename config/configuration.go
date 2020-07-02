@@ -43,7 +43,7 @@ type ContractName string
 type ContractOp string
 
 const (
-	defaultURLPrefix = "https"
+	defaultURLScheme = "https"
 
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
@@ -739,7 +739,7 @@ func validateURL(u string) string {
 	}
 
 	if parsedURL.Scheme == "" {
-		parsedURL.Scheme = defaultURLPrefix
+		parsedURL.Scheme = defaultURLScheme
 	} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		log.Fatalf("error: url scheme %s is not allowed", parsedURL.Scheme)
 	}
