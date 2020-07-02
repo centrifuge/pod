@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
@@ -167,7 +168,7 @@ func (attrVal AttrVal) ToBytes() ([]byte, error) {
 	case AttrBytes:
 		return attrVal.Bytes, nil
 	case AttrTimestamp:
-		return timestampToBytes(attrVal.Timestamp)
+		return byteutils.TimestampToBytes(attrVal.Timestamp, maxTimeByteLength)
 	default:
 		return nil, ErrNotValidAttrType
 	}
