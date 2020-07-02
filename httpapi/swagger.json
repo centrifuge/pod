@@ -4094,8 +4094,16 @@
                     "type": "string"
                 },
                 "payload": {
-                    "description": "payload to be signed in hex",
                     "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "integer",
+                        "string",
+                        "bytes",
+                        "timestamp"
+                    ]
                 }
             }
         },

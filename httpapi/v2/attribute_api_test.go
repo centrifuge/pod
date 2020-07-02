@@ -64,6 +64,7 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 	payload := utils.RandomSlice(32)
 	req := map[string]string{
 		"label":   label,
+		"type":    "bytes",
 		"payload": hexutil.Encode(payload),
 	}
 	d, err := json.Marshal(req)

@@ -2,6 +2,7 @@ package byteutils
 
 import (
 	"bytes"
+	"encoding/binary"
 	"math/big"
 	"sort"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
@@ -221,4 +223,19 @@ func CutFromSlice(slice [][]byte, idx int) [][]byte {
 	}
 
 	return ns
+}
+
+// TimestampToBytes returns encodes timestamp into a 32 byte value
+func TimestampToBytes(tm *timestamp.Timestamp, maxTimeByteLength int) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, tm.Seconds)
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(buf, binary.BigEndian, tm.Nanos)
+	if err != nil {
+		return nil, err
+	}
+	b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
+	return b, nil
 }
