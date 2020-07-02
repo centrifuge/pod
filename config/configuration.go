@@ -666,7 +666,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}
-	v.Set("ethereum.nodeURL", parseURL(ethNodeURL))
+	v.Set("ethereum.nodeURL", validateURL(ethNodeURL))
 	v.Set("ethereum.accounts.main.key", "")
 	v.Set("ethereum.accounts.main.password", "")
 	v.Set("centChain.nodeURL", centChainURL)
@@ -732,7 +732,7 @@ func getEthereumAccountAddressFromKey(key string) (string, error) {
 	return ethAddr.Address, nil
 }
 
-func parseURL(u string) string {
+func validateURL(u string) string {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		log.Fatalf("error: %v", err)
