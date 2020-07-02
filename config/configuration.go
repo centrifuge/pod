@@ -33,6 +33,12 @@ import (
 
 var log = logging.Logger("config")
 
+var allowedURLScheme = map[string]struct{}{
+	"http":  {},
+	"https": {},
+	"ws":    {},
+}
+
 // AccountHeaderKey is used as key for the account identity in the context.ContextWithValue.
 var AccountHeaderKey struct{}
 
@@ -740,7 +746,9 @@ func validateURL(u string) string {
 
 	if parsedURL.Scheme == "" {
 		parsedURL.Scheme = defaultURLScheme
-	} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+	}
+
+	if _, ok := allowedURLScheme[parsedURL.Scheme]; !ok {
 		log.Fatalf("error: url scheme %s is not allowed", parsedURL.Scheme)
 	}
 
