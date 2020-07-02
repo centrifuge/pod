@@ -695,6 +695,8 @@ func validateURL(u string) string {
 
 	if parsedURL.Scheme == "" {
 		parsedURL.Scheme = defaultURLPrefix
+	} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		log.Fatalf("error: url scheme %s is not allowed", parsedURL.Scheme)
 	}
 
 	return parsedURL.String()
