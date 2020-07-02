@@ -159,8 +159,8 @@ type Model interface {
 	UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
 
 	// AddTransitionRules creates a new transition rule to edit an attribute.
-	// The access is only given to the roleKey which is expected to be present already.
-	AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error)
+	// If the coredocument is not intended to be a template, the access is only given to the roleKey which is expected to be present already.
+	AddTransitionRuleForAttribute(roleID []byte, key AttrKey, template bool) (*coredocumentpb.TransitionRule, error)
 
 	// GetTransitionRule returns the transition rule associated with ruleID in the document.
 	GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error)

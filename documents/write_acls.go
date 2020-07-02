@@ -327,10 +327,12 @@ func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
 // FieldMatchType_FIELD_MATCH_TYPE_PREFIX will be used for the Field match for attributes
 // TransitionAction_TRANSITION_ACTION_EDIT is the default action we assign to the rule.
 // Role must be present to create a rule.
-func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
-	_, err := cd.GetRole(roleID)
-	if err != nil {
-		return nil, err
+func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey, template bool) (*coredocumentpb.TransitionRule, error) {
+	if template != true {
+		_, err := cd.GetRole(roleID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cd.addDefaultRules(roleID)

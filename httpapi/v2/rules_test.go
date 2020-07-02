@@ -41,16 +41,19 @@ func TestHandler_AddTransitionRules(t *testing.T) {
 	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
 
 	type attrRule struct {
+		Template bool `json:"template"`
 		KeyLabel string `json:"key_label"`
 		RoleID   string `json:"role_id"`
 	}
 
 	var rule struct {
+		Template bool
 		AttributeRules []attrRule `json:"attribute_rules"`
 	}
 
 	// bad roleID
 	rule.AttributeRules = make([]attrRule, 1)
+	rule.AttributeRules[0].Template = false
 	rule.AttributeRules[0].RoleID = ""
 	rule.AttributeRules[0].KeyLabel = "test"
 	d, err := json.Marshal(rule)

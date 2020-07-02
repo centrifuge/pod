@@ -3,7 +3,6 @@ package pending
 import (
 	"bytes"
 	"context"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -293,6 +292,7 @@ type AttributeRule struct {
 
 // AddTransitionRules contains list of attribute rules to be created.
 type AddTransitionRules struct {
+	Template bool `json:"template"`
 	AttributeRules []AttributeRule `json:"attribute_rules"`
 }
 
@@ -309,7 +309,7 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 			return nil, err
 		}
 
-		rule, err := doc.AddTransitionRuleForAttribute(r.RoleID[:], key)
+		rule, err := doc.AddTransitionRuleForAttribute(r.RoleID[:], key, addRules.Template)
 		if err != nil {
 			return nil, err
 		}
