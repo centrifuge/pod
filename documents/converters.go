@@ -207,7 +207,7 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 		case AttrBytes:
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
 		case AttrTimestamp:
-			b, err := timestampToBytes(attr.Value.Timestamp)
+			b, err := byteutils.TimestampToBytes(attr.Value.Timestamp, maxTimeByteLength)
 			if err != nil {
 				return nil, err
 			}
@@ -359,18 +359,4 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 	}
 
 	return attrVal, err
-}
-
-func timestampToBytes(tm *timestamp.Timestamp) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.BigEndian, tm.Seconds)
-	if err != nil {
-		return nil, err
-	}
-	err = binary.Write(buf, binary.BigEndian, tm.Nanos)
-	if err != nil {
-		return nil, err
-	}
-	b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
-	return b, nil
 }
