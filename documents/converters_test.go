@@ -175,7 +175,7 @@ func TestAttributes_signed(t *testing.T) {
 	signature := utils.RandomSlice(32)
 	acc := new(mockAccount)
 	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
-	attr, err := NewSignedAttribute(label, did, acc, id, version, value)
+	attr, err := NewSignedAttribute(label, did, acc, id, version, value, AttrBytes)
 	assert.NoError(t, err)
 	acc.AssertExpectations(t)
 	attrs[attr.Key] = attr

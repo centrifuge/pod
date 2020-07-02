@@ -34,7 +34,7 @@ type Service interface {
 	Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error)
 
 	// AddSignedAttribute signs the value using the account keys and adds the attribute to the pending document.
-	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error)
+	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error)
 
 	// RemoveCollaborators removes collaborators from the document.
 	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
@@ -186,7 +186,7 @@ func (s service) Commit(ctx context.Context, docID []byte) (documents.Model, job
 	return doc, jobID, s.pendingRepo.Delete(accID[:], docID)
 }
 
-func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error) {
+func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, contextutil.ErrDIDMissingFromContext
@@ -203,7 +203,7 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 	}
 
 	// we use currentVersion here since the version is not anchored yet
-	attr, err := documents.NewSignedAttribute(label, did, acc, model.ID(), model.CurrentVersion(), value)
+	attr, err := documents.NewSignedAttribute(label, did, acc, model.ID(), model.CurrentVersion(), value, valType)
 	if err != nil {
 		return nil, err
 	}

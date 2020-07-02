@@ -56,7 +56,7 @@ func (m *MockService) GetVersion(ctx context.Context, docID, versionID []byte) (
 	return doc, args.Error(1)
 }
 
-func (m *MockService) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte) (documents.Model, error) {
+func (m *MockService) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error) {
 	args := m.Called(ctx, docID, label, value)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)

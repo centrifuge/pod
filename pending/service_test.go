@@ -240,7 +240,7 @@ func TestService_AddSignedAttribute(t *testing.T) {
 
 	// missing did
 	ctx := context.Background()
-	_, err := s.AddSignedAttribute(ctx, docID, label, value)
+	_, err := s.AddSignedAttribute(ctx, docID, label, value, documents.AttrBytes)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
 
@@ -249,7 +249,7 @@ func TestService_AddSignedAttribute(t *testing.T) {
 	prepo := new(mockRepo)
 	prepo.On("Get", did[:], docID).Return(nil, errors.New("Missing")).Once()
 	s.pendingRepo = prepo
-	_, err = s.AddSignedAttribute(ctx, docID, label, value)
+	_, err = s.AddSignedAttribute(ctx, docID, label, value, documents.AttrBytes)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
@@ -258,19 +258,19 @@ func TestService_AddSignedAttribute(t *testing.T) {
 	doc.On("ID").Return(docID)
 	doc.On("CurrentVersion").Return(versionID)
 	prepo.On("Get", did[:], docID).Return(doc, nil)
-	_, err = s.AddSignedAttribute(ctx, docID, "", value)
+	_, err = s.AddSignedAttribute(ctx, docID, "", value, documents.AttrBytes)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrEmptyAttrLabel, err))
 
 	// failed to add attribute to document
 	doc.On("AddAttributes", mock.Anything, false, mock.Anything).Return(errors.New("failed to add")).Once()
-	_, err = s.AddSignedAttribute(ctx, docID, label, value)
+	_, err = s.AddSignedAttribute(ctx, docID, label, value, documents.AttrBytes)
 	assert.Error(t, err)
 
 	// success
 	doc.On("AddAttributes", mock.Anything, false, mock.Anything).Return(nil).Once()
 	prepo.On("Update", did[:], docID, doc).Return(nil).Once()
-	doc1, err := s.AddSignedAttribute(ctx, docID, label, value)
+	doc1, err := s.AddSignedAttribute(ctx, docID, label, value, documents.AttrBytes)
 	assert.NoError(t, err)
 	assert.Equal(t, doc, doc1)
 	prepo.AssertExpectations(t)

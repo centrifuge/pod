@@ -207,16 +207,10 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 		case AttrBytes:
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: attr.Value.Bytes}
 		case AttrTimestamp:
-			buf := new(bytes.Buffer)
-			err := binary.Write(buf, binary.BigEndian, attr.Value.Timestamp.Seconds)
+			b, err := byteutils.TimestampToBytes(attr.Value.Timestamp, maxTimeByteLength)
 			if err != nil {
 				return nil, err
 			}
-			err = binary.Write(buf, binary.BigEndian, attr.Value.Timestamp.Nanos)
-			if err != nil {
-				return nil, err
-			}
-			b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
 			pattr.Value = &coredocumentpb.Attribute_ByteVal{ByteVal: b}
 		case AttrSigned:
 			signed := attr.Value.Signed
@@ -227,6 +221,7 @@ func toProtocolAttributes(attrs map[AttrKey]Attribute) (pattrs []*coredocumentpb
 					Signature:  signed.Signature,
 					PublicKey:  signed.PublicKey,
 					Identity:   signed.Identity[:],
+					Type:       getProtocolAttributeType(signed.Type),
 				},
 			}
 		case AttrMonetary:
@@ -346,6 +341,7 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 			DocumentVersion: val.DocVersion,
 			PublicKey:       val.PublicKey,
 			Value:           val.Value,
+			Type:            getAttributeTypeFromProtocolType(val.Type),
 			Signature:       val.Signature,
 		}
 	case AttrMonetary:

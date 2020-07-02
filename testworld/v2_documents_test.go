@@ -81,7 +81,7 @@ func createNewDocument(
 
 	// add a signed attribute
 	value := hexutil.Encode(utils.RandomSlice(32))
-	res = addSignedAttribute(alice.httpExpect, alice.id.String(), docID, label, value)
+	res = addSignedAttribute(alice.httpExpect, alice.id.String(), docID, label, value, "bytes")
 	signedAttributeExists(t, res, label)
 
 	// Alice updates the document

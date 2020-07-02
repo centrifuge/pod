@@ -463,9 +463,10 @@ func getV2DocumentWithStatus(e *httpexpect.Expect, auth, docID, status string, c
 	return objGet
 }
 
-func addSignedAttribute(e *httpexpect.Expect, auth, docID, label, payload string) *httpexpect.Object {
+func addSignedAttribute(e *httpexpect.Expect, auth, docID, label, payload, valType string) *httpexpect.Object {
 	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/signed_attribute"), auth).WithJSON(map[string]string{
 		"label":   label,
+		"type":    valType,
 		"payload": payload,
 	}).Expect().Status(http.StatusOK).JSON().Object()
 	return objPost

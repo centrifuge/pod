@@ -3,9 +3,9 @@ package v2
 import (
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -14,8 +14,9 @@ import (
 
 // SignedAttributeRequest contains the payload to be signed and added to the document.
 type SignedAttributeRequest struct {
-	Label   string             `json:"label"`
-	Payload byteutils.HexBytes `json:"payload" swaggertype:"primitive,string"` // payload to be signed in hex
+	Label   string `json:"label"`
+	Type    string `json:"type" enums:"integer,string,bytes,timestamp"`
+	Payload string `json:"payload"`
 }
 
 // AddSignedAttribute signs the given payload and add it the pending document.
@@ -54,7 +55,22 @@ func (h handler) AddSignedAttribute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doc, err := h.srv.AddSignedAttribute(r.Context(), docID, req.Label, req.Payload.Bytes())
+	tp := documents.AttributeType(req.Type)
+	val, err := documents.AttrValFromString(tp, req.Payload)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	vb, err := val.ToBytes()
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	doc, err := h.srv.AddSignedAttribute(r.Context(), docID, req.Label, vb, tp)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
