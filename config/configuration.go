@@ -604,7 +604,8 @@ func (c *configuration) initializeViper() {
 
 func (c *configuration) validateURLs(keys []string) error {
 	for _, key := range keys {
-		value, err := validateURL(c.v.Get(key).(string))
+		value, _ := c.v.Get(key).(string)
+		value, err := validateURL(value)
 		if err != nil {
 			return err
 		}
@@ -624,7 +625,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	accountKeyPath := args["accountKeyPath"].(string)
 	accountPassword := args["accountPassword"].(string)
 	network := args["network"].(string)
-	ethNodeURL := args["ethNodeURL"].(string)
+	ethNodeURL, err := validateURL(args["ethNodeURL"].(string))
+	if err != nil {
+		return nil, err
+	}
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
@@ -633,6 +637,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
 	centChainURL, _ := args["centChainURL"].(string)
+	centChainURL, err = validateURL(centChainURL)
+	if err != nil {
+		return nil, err
+	}
 	centChainID, _ := args["centChainID"].(string)
 	centChainSecret, _ := args["centChainSecret"].(string)
 	centChainAddr, _ := args["centChainAddr"].(string)
