@@ -37,6 +37,7 @@ var allowedURLScheme = map[string]struct{}{
 	"http":  {},
 	"https": {},
 	"ws":    {},
+	"wss":   {},
 }
 
 // AccountHeaderKey is used as key for the account identity in the context.ContextWithValue.
@@ -607,7 +608,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	accountKeyPath := args["accountKeyPath"].(string)
 	accountPassword := args["accountPassword"].(string)
 	network := args["network"].(string)
-	ethNodeURL := args["ethNodeURL"].(string)
+	ethNodeURL, err := validateURL(args["ethNodeURL"].(string))
+	if err != nil {
+		return nil, err
+	}
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
@@ -615,7 +619,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
-	centChainURL, _ := args["centChainURL"].(string)
+	centChainURL, err := validateURL(args["centChainURL"].(string))
+	if err != nil {
+		return nil, err
+	}
 	centChainID, _ := args["centChainID"].(string)
 	centChainSecret, _ := args["centChainSecret"].(string)
 	centChainAddr, _ := args["centChainAddr"].(string)
@@ -672,7 +679,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}
-	v.Set("ethereum.nodeURL", validateURL(ethNodeURL))
+	v.Set("ethereum.nodeURL", ethNodeURL)
 	v.Set("ethereum.accounts.main.key", "")
 	v.Set("ethereum.accounts.main.password", "")
 	v.Set("centChain.nodeURL", centChainURL)
@@ -738,10 +745,10 @@ func getEthereumAccountAddressFromKey(key string) (string, error) {
 	return ethAddr.Address, nil
 }
 
-func validateURL(u string) string {
+func validateURL(u string) (string, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return "", err
 	}
 
 	if parsedURL.Scheme == "" {
@@ -749,8 +756,8 @@ func validateURL(u string) string {
 	}
 
 	if _, ok := allowedURLScheme[parsedURL.Scheme]; !ok {
-		log.Fatalf("error: url scheme %s is not allowed", parsedURL.Scheme)
+		return "", errors.New("error: url scheme %s is not allowed", parsedURL.Scheme)
 	}
 
-	return parsedURL.String()
+	return parsedURL.String(), nil
 }
