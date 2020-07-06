@@ -583,6 +583,22 @@ func (c *configuration) initializeViper() {
 	c.v.AutomaticEnv()
 	c.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	c.v.SetEnvPrefix("CENT")
+
+	err = c.validateURLs([]string{"ethNodeURL", "centChainURL"})
+	if err != nil {
+		log.Panicf("error: %v", err)
+	}
+}
+
+func (c *configuration) validateURLs(keys []string) error {
+	for _, key := range keys {
+		value, err := validateURL(c.v.Get(key).(string))
+		if err != nil {
+			return err
+		}
+		c.v.Set(key, value)
+	}
+	return nil
 }
 
 // SmartContractAddresses encapsulates the smart contract addresses
@@ -596,10 +612,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	accountKeyPath := args["accountKeyPath"].(string)
 	accountPassword := args["accountPassword"].(string)
 	network := args["network"].(string)
-	ethNodeURL, err := validateURL(args["ethNodeURL"].(string))
-	if err != nil {
-		return nil, err
-	}
+	ethNodeURL := args["ethNodeURL"].(string)
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
@@ -607,10 +620,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
-	centChainURL, err := validateURL(args["centChainURL"].(string))
-	if err != nil {
-		return nil, err
-	}
+	centChainURL, _ := args["centChainURL"].(string)
 	centChainID, _ := args["centChainID"].(string)
 	centChainSecret, _ := args["centChainSecret"].(string)
 	centChainAddr, _ := args["centChainAddr"].(string)
@@ -711,7 +721,7 @@ func validateURL(u string) (string, error) {
 	}
 
 	if _, ok := allowedURLScheme[parsedURL.Scheme]; !ok {
-		return "", errors.New("error: url scheme %s is not allowed", parsedURL.Scheme)
+		return "", errors.New("url scheme %s is not allowed", parsedURL.Scheme)
 	}
 
 	return parsedURL.String(), nil
