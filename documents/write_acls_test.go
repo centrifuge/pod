@@ -85,12 +85,15 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// (transition_rules.Roles
 	// transition_rules.MatchType
 	// transition_rules.Action
-	// transition_rules.Field) x 2
+	// transition_rules.Field
+	// transition_rules.ComputeFields
+	// transition_rules.ComputeTargetField
+	// transition_rules.ComputeCode) x 2
 	// roles + 2
 	oldTree := getTree(t, &doc.Document, "", nil)
 	newTree := getTree(t, &ndoc.Document, "", nil)
 	cf := GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 19)
+	assert.Len(t, cf, 23)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops := map[string]struct{}{
@@ -112,6 +115,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 8}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
 	}
@@ -161,7 +170,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 20)
+	assert.Len(t, cf, 24)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
@@ -175,6 +184,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 8}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 9}):                                                              {},
 		hexutil.Encode([]byte{0, 0, 0, 4}):                                                              {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):                                                              {},
@@ -395,7 +410,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	// 1. update to roles
 	// 2. update to read_rules
 	// 3. update to read_rules action
-	assert.Equal(t, 14, errors.Len(err))
+	assert.Equal(t, 18, errors.Len(err))
 
 	// check with some random collaborator who has no permission at all
 	err = doc.CollaboratorCanUpdate(ndoc, testingidentity.GenerateRandomDID(), docType)
@@ -406,7 +421,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	// read_rule changes = 2
 	// transition rule changes = 10
 	// total = 9
-	assert.Equal(t, 19, errors.Len(err))
+	assert.Equal(t, 23, errors.Len(err))
 }
 
 func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
