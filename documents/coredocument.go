@@ -136,6 +136,7 @@ type CoreDocument struct {
 	Document coredocumentpb.CoreDocument
 }
 
+// TransitionRulesFingerprint is a wrapper for the TransitionRulesFingerprint Protobuf
 type TransitionRulesFingerprint struct {
 	Fingerprint coredocumentpb.TransitionRulesFingerprint
 }
@@ -473,7 +474,7 @@ func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionR
 	}
 
 	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
-		CompactProperties: true,
+		CompactProperties: false,
 		EnableHashSorting: true,
 		Hash:              b2bHash,
 		LeafHash:          sha3.NewLegacyKeccak256(),
