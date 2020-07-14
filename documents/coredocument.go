@@ -164,10 +164,10 @@ func newCoreDocument() (*CoreDocument, error) {
 	}, nil
 }
 
-func newFingerprint() (*TransitionRulesFingerprint) {
+func newFingerprint() *TransitionRulesFingerprint {
 	f := coredocumentpb.TransitionRulesFingerprint{
-		Roles:                nil,
-		TransitionRules:      nil,
+		Roles:           nil,
+		TransitionRules: nil,
 	}
 	return &TransitionRulesFingerprint{
 		Fingerprint: f,
@@ -466,7 +466,7 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 
 // createFingerprint takes an assembled fingerprint message and generates the root hash from this message.
 // the return value can be used to verify if transition rules or roles have changed across documents
-func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionRulesFingerprint)(*[]byte, error) {
+func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionRulesFingerprint) (*[]byte, error) {
 	b2bHash, err := blake2b.New256(nil)
 	if err != nil {
 		return nil, err
@@ -478,7 +478,7 @@ func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionR
 		Hash:              b2bHash,
 		LeafHash:          sha3.NewLegacyKeccak256(),
 		ParentPrefix:      proofs.Property{},
-		Salts: cd.DocumentSaltsFunc(),
+		Salts:             cd.DocumentSaltsFunc(),
 	})
 	if err != nil {
 		return nil, err

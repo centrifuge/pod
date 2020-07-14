@@ -1221,7 +1221,6 @@ func TestCoreDocument_UpdateRole(t *testing.T) {
 	assert.Equal(t, r, sr)
 }
 
-
 func TestFingerprintGeneration(t *testing.T) {
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
