@@ -250,21 +250,6 @@ func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocum
 	return rule
 }
 
-// addNewTransitionRuleWithRuleKey creates a new transition rule with a specific rule key as part of
-// the given parameters and returns the rule
-func (cd *CoreDocument) addNewTransitionRuleWithRuleKey(ruleKey []byte, roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) *coredocumentpb.TransitionRule {
-	rule := &coredocumentpb.TransitionRule{
-		RuleKey:   ruleKey,
-		MatchType: matchType,
-		Action:    action,
-		Field:     field,
-		Roles:     [][]byte{roleKey},
-	}
-	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
-	cd.Modified = true
-	return rule
-}
-
 // getAttributeFieldPrefix creates a compact property of the attribute key
 func getAttributeFieldPrefix(key AttrKey) []byte {
 	attrPrefix := append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 28}...)

@@ -479,7 +479,7 @@ func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionR
 		Hash:              b2bHash,
 		LeafHash:          sha3.NewLegacyKeccak256(),
 		ParentPrefix:      proofs.Property{},
-		Salts:             cd.DocumentSaltsFunc(),
+		Salts:             cd.FingerprintSaltsFunc(),
 	})
 	if err != nil {
 		return nil, err

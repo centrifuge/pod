@@ -105,6 +105,18 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 	}
 }
 
+// FingerprintSaltsFunc returns an empty function
+func (cd *CoreDocument) FingerprintSaltsFunc() func(compact []byte) ([]byte, error) {
+	salts := cd.Document.Salts
+	return func(compact []byte) ([]byte, error) {
+		for _, _ = range salts {
+			continue
+		}
+		randbytes := make([]byte, 32)
+		return randbytes, nil
+	}
+}
+
 // ValidateProof by comparing it to the provided rootHash
 func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash, leafHashFunc hash.Hash) (valid bool, err error) {
 	var fieldHash []byte
