@@ -83,15 +83,16 @@ type NFT struct {
 
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
-	DocumentID  string         `json:"document_id"`
-	VersionID   string         `json:"version_id"`
-	Author      string         `json:"author"`
-	CreatedAt   string         `json:"created_at"`
-	ReadAccess  []identity.DID `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID `json:"write_access" swaggertype:"array,string"`
-	JobID       string         `json:"job_id,omitempty"`
-	NFTs        []NFT          `json:"nfts"`
-	Status      string         `json:"status,omitempty"`
+	DocumentID  string             `json:"document_id"`
+	VersionID   string             `json:"version_id"`
+	Author      string             `json:"author"`
+	CreatedAt   string             `json:"created_at"`
+	ReadAccess  []identity.DID     `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []identity.DID     `json:"write_access" swaggertype:"array,string"`
+	JobID       string             `json:"job_id,omitempty"`
+	NFTs        []NFT              `json:"nfts"`
+	Status      string             `json:"status,omitempty"`
+	Fingerprint byteutils.HexBytes `json:"fingerprint,omitempty" swaggertype:"primitive,string"`
 }
 
 // DocumentResponse is the common response for Document APIs.
@@ -242,6 +243,11 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		ts = t.UTC().Format(time.RFC3339)
 	}
 
+	p, err := model.CalculateTransitionRulesFingerprint()
+	if err != nil {
+		return response, err
+	}
+
 	nfts := model.NFTs()
 	cnfts, err := convertNFTs(tokenRegistry, nfts)
 	if err != nil {
@@ -258,6 +264,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		WriteAccess: cs.ReadWriteCollaborators,
 		NFTs:        cnfts,
 		JobID:       id.String(),
+		Fingerprint: p,
 	}, nil
 }
 

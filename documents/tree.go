@@ -105,15 +105,10 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 	}
 }
 
-// FingerprintSaltsFunc returns an empty function
-func (cd *CoreDocument) FingerprintSaltsFunc() func(compact []byte) ([]byte, error) {
-	salts := cd.Document.Salts
+// ZeroSaltsFunc returns an empty function
+func ZeroSaltsFunc() func(compact []byte) ([]byte, error) {
 	return func(compact []byte) ([]byte, error) {
-		for _, _ = range salts {
-			continue
-		}
-		randbytes := make([]byte, 32)
-		return randbytes, nil
+		return []byte{}, nil
 	}
 }
 

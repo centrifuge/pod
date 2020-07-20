@@ -1232,10 +1232,10 @@ func TestFingerprintGeneration(t *testing.T) {
 	cd.addNewTransitionRule(role.RoleKey, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX, nil, coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
 
 	// copy over transition rules and roles to generate fingerprint
-	f := newFingerprint()
-	f.Fingerprint.Roles = cd.Document.Roles
-	f.Fingerprint.TransitionRules = cd.Document.TransitionRules
-	p, err := cd.createFingerprint(f.Fingerprint)
+	f := coredocumentpb.TransitionRulesFingerprint{}
+	f.Roles = cd.Document.Roles
+	f.TransitionRules = cd.Document.TransitionRules
+	p, err := cd.CalculateTransitionRulesFingerprint()
 	assert.NoError(t, err)
 
 	// create second document with same roles and transition rules to check if generated fingerprint is the same
@@ -1244,10 +1244,10 @@ func TestFingerprintGeneration(t *testing.T) {
 	cd1.Document.Roles = cd.Document.Roles
 	cd1.Document.TransitionRules = cd.Document.TransitionRules
 
-	f1 := newFingerprint()
-	f1.Fingerprint.Roles = cd1.Document.Roles
-	f1.Fingerprint.TransitionRules = cd1.Document.TransitionRules
-	p1, err := cd1.createFingerprint(f1.Fingerprint)
+	f1 := coredocumentpb.TransitionRulesFingerprint{}
+	f1.Roles = cd1.Document.Roles
+	f1.TransitionRules = cd1.Document.TransitionRules
+	p1, err := cd1.CalculateTransitionRulesFingerprint()
 	assert.NoError(t, err)
-	assert.True(t, bytes.Equal(*p, *p1))
+	assert.True(t, bytes.Equal(p, p1))
 }

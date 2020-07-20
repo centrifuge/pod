@@ -96,6 +96,7 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 	doc.On("NFTs").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	h.AddSignedAttribute(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 	doc.AssertExpectations(t)

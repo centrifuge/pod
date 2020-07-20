@@ -136,11 +136,6 @@ type CoreDocument struct {
 	Document coredocumentpb.CoreDocument
 }
 
-// TransitionRulesFingerprint is a wrapper for the TransitionRulesFingerprint Protobuf
-type TransitionRulesFingerprint struct {
-	Fingerprint coredocumentpb.TransitionRulesFingerprint
-}
-
 // CollaboratorsAccess allows us to differentiate between the types of access we want to give new collaborators
 type CollaboratorsAccess struct {
 	ReadCollaborators      []identity.DID
@@ -163,16 +158,6 @@ func newCoreDocument() (*CoreDocument, error) {
 		Attributes: make(map[AttrKey]Attribute),
 		Status:     Pending,
 	}, nil
-}
-
-func newFingerprint() *TransitionRulesFingerprint {
-	f := coredocumentpb.TransitionRulesFingerprint{
-		Roles:           nil,
-		TransitionRules: nil,
-	}
-	return &TransitionRulesFingerprint{
-		Fingerprint: f,
-	}
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
@@ -465,21 +450,51 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 	}, nil
 }
 
-// createFingerprint takes an assembled fingerprint message and generates the root hash from this message.
+//CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
+func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
+	f := coredocumentpb.TransitionRulesFingerprint{
+		Roles:           nil,
+		TransitionRules: nil,
+	}
+	if len(cd.Document.Roles) == 0 || len(cd.Document.TransitionRules) == 0{
+		return []byte{}, nil
+	}
+	f.TransitionRules = cd.Document.TransitionRules
+	var rks [][]byte
+	for _, t := range f.TransitionRules {
+		for _, r := range t.Roles {
+			rks = append(rks, r)
+		}
+	}
+	for _, rk := range rks {
+		for _, r := range cd.Document.Roles {
+			if bytes.Equal(rk, r.RoleKey) {
+				f.Roles = append(f.Roles, r)
+			}
+		}
+	}
+	p, err := generateTransitionRulesFingerprintHash(f)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// generateTransitionRulesFingerprintHash takes an assembled fingerprint message and generates the root hash from this message.
 // the return value can be used to verify if transition rules or roles have changed across documents
-func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionRulesFingerprint) (*[]byte, error) {
+func generateTransitionRulesFingerprintHash(fingerprint coredocumentpb.TransitionRulesFingerprint) ([]byte, error) {
 	b2bHash, err := blake2b.New256(nil)
 	if err != nil {
 		return nil, err
 	}
 
 	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
-		CompactProperties: false,
+		CompactProperties: true,
 		EnableHashSorting: true,
 		Hash:              b2bHash,
 		LeafHash:          sha3.NewLegacyKeccak256(),
 		ParentPrefix:      proofs.Property{},
-		Salts:             cd.FingerprintSaltsFunc(),
+		Salts:             ZeroSaltsFunc(),
 	})
 	if err != nil {
 		return nil, err
@@ -494,7 +509,7 @@ func (cd *CoreDocument) createFingerprint(fingerprint coredocumentpb.TransitionR
 	}
 
 	h := t.RootHash()
-	return &h, nil
+	return h, nil
 }
 
 // TODO remove as soon as we have a public method that retrieves the parent prefix

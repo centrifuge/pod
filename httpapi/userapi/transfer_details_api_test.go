@@ -72,6 +72,7 @@ func TestHandler_CreateTransferDetail(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	transferSrv = new(MockTransferService)
@@ -146,6 +147,7 @@ func TestHandler_GetTransferDetail(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 
 	w, r = getHTTPReqAndResp(ctx)
 	d := &transferdetails.TransferDetail{
@@ -210,6 +212,7 @@ func TestHandler_UpdateTransferDetail(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	transferSrv = new(MockTransferService)

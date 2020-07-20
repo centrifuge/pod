@@ -194,6 +194,7 @@ func TestTypes_toFundingResponse(t *testing.T) {
 	model.On("Author").Return(nil, errors.New("somerror"))
 	model.On("Timestamp").Return(nil, errors.New("somerror"))
 	model.On("NFTs").Return(nil)
+	model.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	fundingSrv.On("GetDataAndSignatures", ctx, model, fundingID).Return(nil, nil, errors.New("failed to get data and sigs")).Once()
 	_, err = toFundingAgreementResponse(ctx, fundingSrv, model, fundingID, nil, jobs.NilJobID())
 	assert.Error(t, err)

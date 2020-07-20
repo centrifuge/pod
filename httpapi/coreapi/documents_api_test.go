@@ -96,6 +96,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	docSrv = new(testingdocuments.MockService)
 	srv = Service{docSrv: docSrv}
 	h = handler{srv: srv}
@@ -112,6 +113,9 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
 		return httptest.NewRecorder(), httptest.NewRequest("PUT", "/documents/{document_id}", b).WithContext(ctx)
 	}
+
+	m := new(testingdocuments.MockModel)
+
 	// empty document_id
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Keys = make([]string, 1, 1)
@@ -131,7 +135,6 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	h.UpdateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), ErrInvalidDocumentID.Error())
-
 	id := hexutil.Encode(utils.RandomSlice(32))
 	data := map[string]interface{}{
 		"scheme": "invoice",
@@ -174,7 +177,6 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to update model")
 	docSrv.AssertExpectations(t)
 
-	m := new(testingdocuments.MockModel)
 	m.On("GetData").Return(data)
 	m.On("Scheme").Return("invoice")
 	m.On("GetAttributes").Return(nil)
@@ -200,6 +202,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	docSrv = new(testingdocuments.MockService)
 	srv = Service{docSrv: docSrv}
 	h = handler{srv: srv}
@@ -282,6 +285,7 @@ func TestHandler_GetDocument(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetCurrentVersion", id).Return(m, nil)
 	h = handler{srv: Service{docSrv: docSrv}}
@@ -367,6 +371,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetAttributes").Return(nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	docSrv = new(testingdocuments.MockService)
 	docSrv.On("GetVersion", id, vid).Return(m, nil)
 	h = handler{srv: Service{docSrv: docSrv}}
