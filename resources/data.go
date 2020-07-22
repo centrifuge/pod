@@ -68,7 +68,6 @@ var _bindata = map[string]func() ([]byte, error){
 	"go-centrifuge/build/configs/default_config.yaml": go_centrifuge_build_configs_default_config_yaml,
 	"go-centrifuge/build/configs/testing_config.yaml": go_centrifuge_build_configs_testing_config_yaml,
 }
-
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
@@ -105,16 +104,17 @@ func AssetDir(name string) ([]string, error) {
 }
 
 type _bintree_t struct {
-	Func     func() ([]byte, error)
+	Func func() ([]byte, error)
 	Children map[string]*_bintree_t
 }
-
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
 	"go-centrifuge": &_bintree_t{nil, map[string]*_bintree_t{
 		"build": &_bintree_t{nil, map[string]*_bintree_t{
 			"configs": &_bintree_t{nil, map[string]*_bintree_t{
-				"default_config.yaml": &_bintree_t{go_centrifuge_build_configs_default_config_yaml, map[string]*_bintree_t{}},
-				"testing_config.yaml": &_bintree_t{go_centrifuge_build_configs_testing_config_yaml, map[string]*_bintree_t{}},
+				"default_config.yaml": &_bintree_t{go_centrifuge_build_configs_default_config_yaml, map[string]*_bintree_t{
+				}},
+				"testing_config.yaml": &_bintree_t{go_centrifuge_build_configs_testing_config_yaml, map[string]*_bintree_t{
+				}},
 			}},
 		}},
 	}},
