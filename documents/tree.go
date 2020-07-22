@@ -108,7 +108,7 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 // ZeroSaltsFunc returns an empty function
 func ZeroSaltsFunc() func(compact []byte) ([]byte, error) {
 	return func(compact []byte) ([]byte, error) {
-		return []byte{}, nil
+		return nil, nil
 	}
 }
 

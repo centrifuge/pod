@@ -494,4 +494,3 @@ func (e *Entity) Patch(payload documents.UpdatePayload) error {
 func (e *Entity) Scheme() string {
 	return Scheme
 }
-

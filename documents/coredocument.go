@@ -456,7 +456,7 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 		Roles:           nil,
 		TransitionRules: nil,
 	}
-	if len(cd.Document.Roles) == 0 || len(cd.Document.TransitionRules) == 0{
+	if len(cd.Document.Roles) == 0 || len(cd.Document.TransitionRules) == 0 {
 		return []byte{}, nil
 	}
 	f.TransitionRules = cd.Document.TransitionRules

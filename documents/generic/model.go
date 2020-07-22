@@ -311,4 +311,3 @@ func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.U
 func (g *Generic) Scheme() string {
 	return Scheme
 }
-
