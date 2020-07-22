@@ -31,6 +31,8 @@ fi
 
 BRIDGE_DEPLOYMENT_DIR=$PARENT_DIR/build/chainbridge-deploy/cb-sol-cli
 cd $BRIDGE_DEPLOYMENT_DIR
+# Ensure always pull version
+rm -rf chainbridge-solidity
 GIT_COMMIT=v1.0.0 make install
 cd $PARENT_DIR
 

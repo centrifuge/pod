@@ -31,6 +31,7 @@ before_install:
   - nix-env -iA cachix -f https://cachix.org/api/v1/install
   - cachix use dapp
   - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
+  - cd $HOME/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965
   - nix-env -f $HOME/.dapp/dapptools -iA dapp seth solc
 
 install:
